@@ -41,7 +41,7 @@ public class SegmentNarrationServiceFactory {
    * @throws AIServiceException if all available services fail.
    */
   public String narrateSegment(
-      @NonNull SegmentNarrationService.SegmentNarrationContext segmentContext) {
+      @NonNull final SegmentNarrationService.SegmentNarrationContext segmentContext) {
     List<SegmentNarrationService> services = getAvailableServicesInPriorityOrder();
     Exception lastException = null;
 
@@ -72,7 +72,7 @@ public class SegmentNarrationServiceFactory {
    * @return The AI-generated summary.
    * @throws AIServiceException if all available services fail.
    */
-  public String summarizeNarration(@NonNull String narration) {
+  public String summarizeNarration(@NonNull final String narration) {
     List<SegmentNarrationService> services = getAvailableServicesInPriorityOrder();
     Exception lastException = null;
 
@@ -103,7 +103,7 @@ public class SegmentNarrationServiceFactory {
    * @return The AI-generated text.
    * @throws AIServiceException if all available services fail.
    */
-  public String generateText(@NonNull String prompt) {
+  public String generateText(@NonNull final String prompt) {
     List<SegmentNarrationService> services = getAvailableServicesInPriorityOrder();
     Exception lastException = null;
 
@@ -200,7 +200,7 @@ public class SegmentNarrationServiceFactory {
    * @param providerName The name of the provider (e.g., "Gemini", "Claude", "OpenAI", "Mock")
    * @return The service if available, null otherwise
    */
-  public SegmentNarrationService getServiceByProvider(String providerName) {
+  public SegmentNarrationService getServiceByProvider(final String providerName) {
     return availableServices.stream()
         .filter(
             service -> service.getProviderName().toLowerCase().contains(providerName.toLowerCase()))
@@ -259,7 +259,7 @@ public class SegmentNarrationServiceFactory {
   }
 
   /** Gets cost and priority information for a provider. */
-  private CostInfo getCostInfo(String providerName) {
+  private CostInfo getCostInfo(final String providerName) {
     String lowerName = providerName.toLowerCase();
 
     if (lowerName.contains("gemini")) {
@@ -301,7 +301,7 @@ public class SegmentNarrationServiceFactory {
    * @param providerName The provider name
    * @return Estimated cost in USD
    */
-  public double getEstimatedSegmentCost(String providerName) {
+  public double getEstimatedSegmentCost(final String providerName) {
     CostInfo costInfo = getCostInfo(providerName);
 
     // Typical segment narration:

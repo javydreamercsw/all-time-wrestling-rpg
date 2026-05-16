@@ -32,7 +32,7 @@ class SeasonTest {
   private Season season;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     season = new Season();
     season.setName("Test Season");
     season.setShowsPerPpv(5);
@@ -221,7 +221,7 @@ class SeasonTest {
     assertThat(ppvShows).isEqualTo(1);
   }
 
-  private Show createShow(String name, String type) {
+  private Show createShow(final String name, final String type) {
     Show show = new Show();
     show.setName(name);
     show.setDescription("Test show");

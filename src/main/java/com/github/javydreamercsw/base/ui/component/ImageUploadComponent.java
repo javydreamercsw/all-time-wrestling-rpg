@@ -36,7 +36,7 @@ public class ImageUploadComponent extends Composite<Div> {
   private final Upload upload;
 
   public ImageUploadComponent(
-      ImageStorageService imageStorageService, Consumer<String> onImageSaved) {
+      final ImageStorageService imageStorageService, final Consumer<String> onImageSaved) {
 
     this.upload = new Upload();
     this.upload.setUploadHandler(
@@ -82,7 +82,7 @@ public class ImageUploadComponent extends Composite<Div> {
    *
    * @param text The button text.
    */
-  public void setUploadButtonText(String text) {
+  public void setUploadButtonText(final String text) {
     upload.setUploadButton(new Button(text));
   }
 }

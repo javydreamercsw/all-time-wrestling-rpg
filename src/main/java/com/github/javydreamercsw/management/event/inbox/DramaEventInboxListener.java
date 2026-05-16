@@ -40,10 +40,10 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public DramaEventInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("dramaEventCreated") InboxEventType dramaEventCreated,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("dramaEventCreated") final InboxEventType dramaEventCreated,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.dramaEventCreated = dramaEventCreated;
     this.eventPublisher = eventPublisher;
@@ -51,7 +51,7 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
   }
 
   @Override
-  public void onApplicationEvent(@NonNull DramaEventCreatedEvent event) {
+  public void onApplicationEvent(@NonNull final DramaEventCreatedEvent event) {
     DramaEvent dramaEvent = event.getDramaEvent();
     log.info("Received DramaEventCreatedEvent: {}", dramaEvent.getTitle());
 
@@ -71,7 +71,7 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
 
     inboxService.createInboxItem(
         dramaEventCreated,
-        String.format("%s: %s", dramaEvent.getTitle(), dramaEvent.getDescription()),
+        "%s: %s".formatted(dramaEvent.getTitle(), dramaEvent.getDescription()),
         targets);
 
     eventPublisher.publishEvent(new InboxUpdateEvent(this));

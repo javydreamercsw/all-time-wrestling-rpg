@@ -76,9 +76,9 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
   private H5 currentDateLabel;
 
   public ShowCalendarView(
-      @NonNull ShowService showService,
-      @NonNull GameSettingService gameSettingService,
-      @NonNull ShowTemplateService showTemplateService) {
+      @NonNull final ShowService showService,
+      @NonNull final GameSettingService gameSettingService,
+      @NonNull final ShowTemplateService showTemplateService) {
     this.showService = showService;
     this.gameSettingService = gameSettingService;
     this.showTemplateService = showTemplateService;
@@ -91,7 +91,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
   }
 
   @Override
-  public void beforeEnter(@NonNull BeforeEnterEvent event) {
+  public void beforeEnter(@NonNull final BeforeEnterEvent event) {
     // Check for date parameter in URL
     String dateParam =
         event
@@ -244,7 +244,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     updateCalendarAndControls();
   }
 
-  private void navigateToYearMonth(int year, int month) {
+  private void navigateToYearMonth(final int year, final int month) {
     currentYearMonth = YearMonth.of(year, month);
     updateCalendarAndControls();
   }
@@ -267,7 +267,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     loadShowsIntoCalendar();
   }
 
-  private int getMonthNumber(String monthName) {
+  private int getMonthNumber(final String monthName) {
     return switch (monthName) {
       case "January" -> 1;
       case "February" -> 2;
@@ -381,7 +381,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     }
   }
 
-  private Div createUpcomingShowItem(@NonNull Show show) {
+  private Div createUpcomingShowItem(@NonNull final Show show) {
     Div showItem = new Div();
     showItem.addClassNames(
         LumoUtility.Padding.SMALL,

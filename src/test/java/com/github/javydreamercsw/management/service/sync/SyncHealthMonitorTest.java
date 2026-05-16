@@ -39,7 +39,7 @@ class SyncHealthMonitorTest {
   private SyncHealthMonitor healthMonitor;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     healthMonitor = new SyncHealthMonitor(syncProperties, progressTracker);
     lenient().when(syncProperties.isEnabled()).thenReturn(true);
     lenient().when(syncProperties.isSchedulerEnabled()).thenReturn(true);

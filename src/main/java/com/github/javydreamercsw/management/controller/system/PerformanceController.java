@@ -49,8 +49,10 @@ public class PerformanceController {
   @Operation(
       summary = "Get performance metrics",
       description =
-          "Returns comprehensive performance metrics including memory usage, thread counts, cache"
-              + " statistics, and operation timings")
+          """
+          Returns comprehensive performance metrics including memory usage, thread counts, cache\
+           statistics, and operation timings\
+          """)
   @ApiResponses(
       value = {
         @ApiResponse(
@@ -77,8 +79,10 @@ public class PerformanceController {
   @Operation(
       summary = "Reset performance metrics",
       description =
-          "Resets all performance counters and timers - useful for testing or starting fresh"
-              + " monitoring")
+          """
+          Resets all performance counters and timers - useful for testing or starting fresh\
+           monitoring\
+          """)
   @DeleteMapping("/metrics")
   public ResponseEntity<Map<String, String>> resetPerformanceMetrics() {
     performanceMonitoringService.resetMetrics();
@@ -165,8 +169,10 @@ public class PerformanceController {
   @Operation(
       summary = "Get operation statistics",
       description =
-          "Returns statistics about application operations including counts, timings, and error"
-              + " rates")
+          """
+          Returns statistics about application operations including counts, timings, and error\
+           rates\
+          """)
   @GetMapping("/operations")
   public ResponseEntity<Map<String, Object>> getOperationStatistics() {
     Map<String, Object> metrics = performanceMonitoringService.getPerformanceMetrics();

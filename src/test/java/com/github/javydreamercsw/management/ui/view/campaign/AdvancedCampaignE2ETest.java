@@ -28,9 +28,9 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRep
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStorylineRepository;
+import com.github.javydreamercsw.management.domain.campaign.StorylineMilestoneRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -39,9 +39,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +49,6 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignService campaignService;
-  @Autowired private FactionRepository factionRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleReignRepository titleReignRepository;
   @Autowired private CampaignRepository campaignRepository;
@@ -60,6 +56,8 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private CampaignStorylineRepository campaignStorylineRepository;
+  @Autowired private StorylineMilestoneRepository storylineMilestoneRepository;
   @Autowired private DataInitializer dataInitializer;
 
   private Wrestler player;
@@ -70,6 +68,8 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     campaignStateRepository.deleteAllInBatch();
     backstageActionHistoryRepository.deleteAllInBatch();
     campaignEncounterRepository.deleteAllInBatch();
+    storylineMilestoneRepository.deleteAllInBatch();
+    campaignStorylineRepository.deleteAllInBatch();
     campaignRepository.deleteAllInBatch();
 
     dataInitializer.init();
@@ -77,7 +77,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     Account admin = accountRepository.findByUsername("admin").get();
 
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
-    player = wrestlers.isEmpty() ? null : wrestlers.get(0);
+    player = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     if (player == null) {
       Wrestler w =
@@ -96,10 +96,10 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
   @Test
   void testFightingChampionTrigger() {
     // 1. Give player a title
-    Title title = titleRepository.findAll().get(0);
+    Title title = titleRepository.findAll().getFirst();
     TitleReign reign = new TitleReign();
     reign.setTitle(title);
-    reign.setChampions(new ArrayList<>(Collections.singletonList(player)));
+    reign.setChampions(new java.util.LinkedHashSet<>(java.util.List.of(player)));
     reign.setStartDate(Instant.now());
     titleReignRepository.saveAndFlush(reign);
 
@@ -109,8 +109,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     campaignStateRepository.saveAndFlush(campaign.getState());
 
     // 3. Verify Dashboard shows correct chapter
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     waitForText("The Fighting Champion");
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("The Fighting Champion"));
@@ -118,28 +117,13 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
 
   @Test
   void testGangWarfareTrigger() {
-    // 1. Put player in a faction
-    List<Faction> factions = factionRepository.findAll();
-    if (factions.isEmpty()) {
-      Faction f = new Faction();
-      f.setName("Test Faction");
-      f.setActive(true);
-      f.setFormedDate(Instant.now());
-      f.setCreationDate(Instant.now());
-      f = factionRepository.saveAndFlush(f);
-      factions = Collections.singletonList(f);
-    }
-    player.setFaction(factions.get(0));
-    wrestlerRepository.saveAndFlush(player);
-
-    // 2. Start Campaign and force chapter
+    // Start Campaign and force chapter directly (entry condition not evaluated)
     Campaign campaign = campaignService.startCampaign(player);
     campaign.getState().setCurrentChapterId("gang_warfare");
     campaignStateRepository.saveAndFlush(campaign.getState());
 
     // 3. Verify Dashboard shows correct chapter
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     waitForText("Gang Warfare");
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Gang Warfare"));
@@ -157,14 +141,13 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     campaignStateRepository.saveAndFlush(state);
 
     // 3. Verify Dashboard shows correct chapter
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     waitForText("Corporate Power Trip");
-    assertTrue(driver.getPageSource().contains("Corporate Power Trip"));
+    assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Corporate Power Trip"));
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

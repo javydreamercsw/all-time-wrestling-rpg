@@ -106,13 +106,13 @@ class FactionCrudTest {
   void shouldDeleteFactionThroughService() {
     // Given
     Faction factionToDelete = testFactions.get(0);
-    doNothing().when(factionService).delete(factionToDelete);
+    doNothing().when(factionService).deleteById(factionToDelete.getId());
 
     // When
-    factionService.delete(factionToDelete);
+    factionService.deleteById(factionToDelete.getId());
 
     // Then
-    verify(factionService).delete(factionToDelete);
+    verify(factionService).deleteById(factionToDelete.getId());
   }
 
   @Test

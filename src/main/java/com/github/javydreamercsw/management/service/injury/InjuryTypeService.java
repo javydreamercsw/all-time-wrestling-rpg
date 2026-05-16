@@ -44,13 +44,13 @@ public class InjuryTypeService {
   // ==================== CRUD OPERATIONS ====================
 
   /** Creates a new injury type. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public InjuryType createInjuryType(
-      String injuryName,
-      Integer healthEffect,
-      Integer staminaEffect,
-      Integer cardEffect,
-      String specialEffects) {
+      final String injuryName,
+      final Integer healthEffect,
+      final Integer staminaEffect,
+      final Integer cardEffect,
+      final String specialEffects) {
     log.debug("Creating injury type: {}", injuryName);
 
     if (injuryTypeRepository.existsByInjuryName(injuryName)) {
@@ -70,14 +70,14 @@ public class InjuryTypeService {
   }
 
   /** Updates an existing injury type with individual fields. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<InjuryType> updateInjuryType(
-      Long id,
-      String injuryName,
-      Integer healthEffect,
-      Integer staminaEffect,
-      Integer cardEffect,
-      String specialEffects) {
+      final Long id,
+      final String injuryName,
+      final Integer healthEffect,
+      final Integer staminaEffect,
+      final Integer cardEffect,
+      final String specialEffects) {
     log.debug("Updating injury type with ID: {}", id);
 
     Optional<InjuryType> existingOpt = injuryTypeRepository.findById(id);
@@ -105,8 +105,8 @@ public class InjuryTypeService {
   }
 
   /** Updates an existing injury type. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public InjuryType updateInjuryType(@NonNull InjuryType injuryType) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public InjuryType updateInjuryType(@NonNull final InjuryType injuryType) {
     log.debug("Updating injury type: {}", injuryType.getInjuryName());
 
     if (!injuryTypeRepository.existsById(injuryType.getId())) {
@@ -119,8 +119,8 @@ public class InjuryTypeService {
   }
 
   /** Deletes an injury type by ID. Returns true if deleted, false if not found. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public boolean deleteInjuryType(Long id) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public boolean deleteInjuryType(final Long id) {
     log.debug("Deleting injury type with ID: {}", id);
 
     if (!injuryTypeRepository.existsById(id)) {
@@ -134,7 +134,7 @@ public class InjuryTypeService {
       log.info("Deleted injury type with ID: {}", id);
       return true;
     } catch (Exception e) {
-      log.error("Failed to delete injury type with ID: {}", id, e);
+      log.debug("Failed to delete injury type with ID: {}", id, e);
       throw new IllegalStateException(
           "Cannot delete injury type - it may be referenced by other records");
     }
@@ -152,14 +152,14 @@ public class InjuryTypeService {
   /** Finds injury type by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<InjuryType> findById(Long id) {
+  public Optional<InjuryType> findById(final Long id) {
     return injuryTypeRepository.findById(id);
   }
 
   /** Gets injury type by ID (alias for findById for consistency with other services). */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<InjuryType> getInjuryTypeById(@NonNull Long id) {
+  public Optional<InjuryType> getInjuryTypeById(@NonNull final Long id) {
     return findById(id);
   }
 
@@ -167,7 +167,7 @@ public class InjuryTypeService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public org.springframework.data.domain.Page<InjuryType> getAllInjuryTypes(
-      @NonNull Pageable pageable) {
+      @NonNull final Pageable pageable) {
     return injuryTypeRepository.findAll(pageable);
   }
 
@@ -181,21 +181,21 @@ public class InjuryTypeService {
   /** Finds injury type by name. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<InjuryType> findByName(@NonNull String injuryName) {
+  public Optional<InjuryType> findByName(@NonNull final String injuryName) {
     return injuryTypeRepository.findByInjuryName(injuryName);
   }
 
   /** Finds injury type by external ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<InjuryType> findByExternalId(@NonNull String externalId) {
+  public Optional<InjuryType> findByExternalId(@NonNull final String externalId) {
     return injuryTypeRepository.findByExternalId(externalId);
   }
 
   /** Checks if injury type exists by external ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public boolean existsByExternalId(@NonNull String externalId) {
+  public boolean existsByExternalId(@NonNull final String externalId) {
     return injuryTypeRepository.existsByExternalId(externalId);
   }
 

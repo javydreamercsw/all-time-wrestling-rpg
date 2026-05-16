@@ -37,10 +37,10 @@ public class SegmentsApprovedInboxListener implements ApplicationListener<Segmen
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public SegmentsApprovedInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("segmentsApproved") InboxEventType segmentsApproved,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("segmentsApproved") final InboxEventType segmentsApproved,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.segmentsApproved = segmentsApproved;
     this.eventPublisher = eventPublisher;
@@ -48,11 +48,11 @@ public class SegmentsApprovedInboxListener implements ApplicationListener<Segmen
   }
 
   @Override
-  public void onApplicationEvent(@NonNull SegmentsApprovedEvent event) {
+  public void onApplicationEvent(@NonNull final SegmentsApprovedEvent event) {
     log.info("Received SegmentsApprovedEvent for show: {}", event.getShow().getName());
     inboxService.createInboxItem(
         segmentsApproved,
-        String.format("Segments approved for show: %s", event.getShow().getName()),
+        "Segments approved for show: %s".formatted(event.getShow().getName()),
         event.getShow().getId().toString(),
         InboxItemTarget.TargetType.SHOW);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));

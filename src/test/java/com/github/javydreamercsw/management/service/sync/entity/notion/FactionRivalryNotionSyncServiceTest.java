@@ -46,7 +46,7 @@ class FactionRivalryNotionSyncServiceTest extends AbstractSyncTest {
   @Captor private ArgumentCaptor<FactionRivalry> factionRivalryCaptor;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     factionRivalryNotionSyncService =
         new FactionRivalryNotionSyncService(

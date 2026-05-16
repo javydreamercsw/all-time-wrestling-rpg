@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -61,7 +62,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
   @Autowired GameSettingService gameSettingService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     showRepository.deleteAllInBatch();
     showTemplateRepository.deleteAllInBatch();
     showTypeRepository.deleteAllInBatch();
@@ -131,7 +132,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     when(securityUtils.canEdit()).thenReturn(true); // Default to true for tests
     when(securityUtils.canDelete()).thenReturn(true); // Default to true for tests
 
-    LeagueRepository leagueRepository = mock(LeagueRepository.class);
+    UniverseRepository universeRepository = mock(UniverseRepository.class);
     ImageGenerationServiceFactory imageGenerationServiceFactory =
         mock(ImageGenerationServiceFactory.class);
     ImageStorageService imageStorageService = mock(ImageStorageService.class);
@@ -140,6 +141,8 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
 
     ShowExportService exportService = mock(ShowExportService.class);
     NotificationService notificationService = mock(NotificationService.class);
+    LeagueRepository leagueRepository = mock(LeagueRepository.class);
+    when(leagueRepository.findAll()).thenReturn(java.util.Collections.emptyList());
 
     ShowListView showListView =
         new ShowListView(
@@ -147,7 +150,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             showTypeService,
             seasonService,
             showTemplateService,
-            leagueRepository,
+            universeRepository,
             securityUtils,
             imageGenerationServiceFactory,
             imageStorageService,
@@ -155,12 +158,13 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             arenaService,
             exportService,
             notificationService,
+            leagueRepository,
             clock);
     Grid<Show> grid = showListView.showGrid;
 
     // Test the part name generator
-    assertEquals("ple-show", grid.getPartNameGenerator().apply(otherShow));
-    assertNull(grid.getPartNameGenerator().apply(pleShow));
+    assertEquals("ple-show", grid.getPartNameGenerator().apply(pleShow));
+    assertNull(grid.getPartNameGenerator().apply(otherShow));
     assertNull(grid.getPartNameGenerator().apply(weeklyShow));
 
     // Test the type column renderer

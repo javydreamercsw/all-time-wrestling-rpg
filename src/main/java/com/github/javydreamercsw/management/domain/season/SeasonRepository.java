@@ -46,8 +46,10 @@ public interface SeasonRepository
 
   /** Search seasons by name or description. */
   @Query(
-      "SELECT s FROM Season s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR"
-          + " s.description LIKE CONCAT('%', :searchTerm, '%')")
+      """
+      SELECT s FROM Season s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\
+       s.description LIKE CONCAT('%', :searchTerm, '%')\
+      """)
   Page<Season> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
       String searchTerm, Pageable pageable);
 
@@ -58,10 +60,12 @@ public interface SeasonRepository
    * @return list of seasons
    */
   @Query(
-      "SELECT DISTINCT se FROM Segment s "
-          + "JOIN s.participants p "
-          + "JOIN s.show sh "
-          + "JOIN sh.season se "
-          + "WHERE p.wrestler = :wrestler")
+      """
+      SELECT DISTINCT se FROM Segment s \
+      JOIN s.participants p \
+      JOIN s.show sh \
+      JOIN sh.season se \
+      WHERE p.wrestler = :wrestler\
+      """)
   List<Season> findByWrestler(@Param("wrestler") Wrestler wrestler);
 }

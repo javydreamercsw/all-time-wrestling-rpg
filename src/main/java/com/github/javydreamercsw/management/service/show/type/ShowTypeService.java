@@ -36,20 +36,19 @@ public class ShowTypeService {
   @Autowired private Clock clock;
 
   @PreAuthorize("isAuthenticated()")
-  public List<ShowType> list(@NonNull Pageable pageable) {
+  public List<ShowType> list(@NonNull final Pageable pageable) {
     return showTypeRepository.findAllBy(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return showTypeRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       allEntries = true)
-  public ShowType save(@NonNull ShowType showType) {
+  public ShowType save(@NonNull final ShowType showType) {
     showType.setCreationDate(clock.instant());
     return showTypeRepository.saveAndFlush(showType);
   }
@@ -62,21 +61,33 @@ public class ShowTypeService {
     return showTypeRepository.findAll();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       allEntries = true)
-  public void delete(@NonNull ShowType showType) {
+  public void delete(@NonNull final ShowType showType) {
     showTypeRepository.delete(showType);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       allEntries = true)
   public ShowType createOrUpdateShowType(
-      @NonNull String name, @NonNull String description, int expectedMatches, int expectedPromos) {
+      @NonNull final String name,
+      @NonNull final String description,
+      final int expectedMatches,
+      final int expectedPromos) {
     Optional<ShowType> existingShowType = findByName(name);
+    if (existingShowType.isPresent()) {
+      ShowType st = existingShowType.get();
+      if (st.getName().equals(name)
+          && st.getDescription().equals(description)
+          && st.getExpectedMatches() == expectedMatches
+          && st.getExpectedPromos() == expectedPromos) {
+        return st;
+      }
+    }
     ShowType showType = existingShowType.orElseGet(ShowType::new);
     showType.setName(name);
     showType.setDescription(description);
@@ -95,7 +106,7 @@ public class ShowTypeService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       key = "#name")
-  public Optional<ShowType> findByName(@NonNull String name) {
+  public Optional<ShowType> findByName(@NonNull final String name) {
     return showTypeRepository.findByName(name);
   }
 
@@ -106,7 +117,7 @@ public class ShowTypeService {
    * @return true if a show type with this name exists
    */
   @PreAuthorize("isAuthenticated()")
-  public boolean existsByName(@NonNull String name) {
+  public boolean existsByName(@NonNull final String name) {
     return showTypeRepository.existsByName(name);
   }
 }

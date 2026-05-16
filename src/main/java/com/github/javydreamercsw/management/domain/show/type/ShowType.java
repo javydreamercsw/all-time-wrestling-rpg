@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.domain.show.type;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,9 +37,10 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "show_type", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class ShowType extends AbstractEntity<Long> {
+public class ShowType extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "show_type_id")
   private Long id;
 
@@ -57,11 +58,6 @@ public class ShowType extends AbstractEntity<Long> {
 
   @Column(name = "expected_promos", nullable = false)
   private int expectedPromos;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   /** Ensure default values before persisting. */
   @PrePersist

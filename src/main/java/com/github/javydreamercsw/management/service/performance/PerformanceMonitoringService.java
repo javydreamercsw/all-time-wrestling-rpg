@@ -60,7 +60,7 @@ public class PerformanceMonitoringService {
   private final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
   private final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
-  public PerformanceMonitoringService(@NonNull CacheMonitor cacheMonitor) {
+  public PerformanceMonitoringService(@NonNull final CacheMonitor cacheMonitor) {
     this.cacheMonitor = cacheMonitor;
     // Record a dummy AI call to ensure charts have baseline data
     recordTimer("operations.duration.AI.Narration.System", 100);
@@ -81,13 +81,13 @@ public class PerformanceMonitoringService {
   }
 
   /** Records the start of a performance-critical operation. */
-  public void startOperation(@NonNull String operationName) {
+  public void startOperation(@NonNull final String operationName) {
     operationStartTimes.put(operationName, Instant.now());
     incrementCounter("operations.started." + operationName);
   }
 
   /** Records the end of a performance-critical operation and calculates duration. */
-  public void endOperation(@NonNull String operationName) {
+  public void endOperation(@NonNull final String operationName) {
     Instant startTime = operationStartTimes.remove(operationName);
     if (startTime != null) {
       long durationMs = Duration.between(startTime, Instant.now()).toMillis();
@@ -110,14 +110,15 @@ public class PerformanceMonitoringService {
    * @param inputTokens Number of input tokens
    * @param outputTokens Number of output tokens
    */
-  public void recordTokenUsage(@NonNull String provider, int inputTokens, int outputTokens) {
+  public void recordTokenUsage(
+      @NonNull final String provider, final int inputTokens, final int outputTokens) {
     incrementCounter("ai.tokens.input." + provider, inputTokens);
     incrementCounter("ai.tokens.output." + provider, outputTokens);
     incrementCounter("ai.requests." + provider);
   }
 
   /** Increments a counter metric. */
-  public void incrementCounter(String counterName) {
+  public void incrementCounter(final String counterName) {
     incrementCounter(counterName, 1);
   }
 
@@ -127,29 +128,29 @@ public class PerformanceMonitoringService {
    * @param counterName The name of the counter
    * @param value The value to add
    */
-  public void incrementCounter(@NonNull String counterName, long value) {
+  public void incrementCounter(@NonNull final String counterName, final long value) {
     counters.computeIfAbsent(counterName, k -> new AtomicLong(0)).addAndGet(value);
   }
 
   /** Records a timer metric. */
-  public void recordTimer(@NonNull String timerName, long durationMs) {
+  public void recordTimer(@NonNull final String timerName, final long durationMs) {
     timers.computeIfAbsent(timerName, k -> new AtomicLong(0)).addAndGet(durationMs);
   }
 
   /** Gets the current value of a counter. */
-  public long getCounter(@NonNull String counterName) {
+  public long getCounter(@NonNull final String counterName) {
     AtomicLong counter = counters.get(counterName);
     return counter != null ? counter.get() : 0;
   }
 
   /** Gets the current value of a timer. */
-  public long getTimer(@NonNull String timerName) {
+  public long getTimer(@NonNull final String timerName) {
     AtomicLong timer = timers.get(timerName);
     return timer != null ? timer.get() : 0;
   }
 
   /** Gets comprehensive performance metrics. */
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public Map<String, Object> getPerformanceMetrics() {
     Map<String, Object> metrics = new HashMap<>();
 
@@ -248,7 +249,7 @@ public class PerformanceMonitoringService {
     double memoryUsagePercent = (double) heapMemory.getUsed() / heapMemory.getMax() * 100;
     log.debug(
         "   Memory Usage: {}% ({} MB / {} MB)",
-        String.format("%.1f", memoryUsagePercent),
+        "%.1f".formatted(memoryUsagePercent),
         heapMemory.getUsed() / 1024 / 1024,
         heapMemory.getMax() / 1024 / 1024);
 
@@ -260,7 +261,7 @@ public class PerformanceMonitoringService {
 
     // Warn about performance issues
     if (memoryUsagePercent > 80) {
-      log.warn("⚠️ High memory usage detected: {}%", String.format("%.1f", memoryUsagePercent));
+      log.warn("⚠️ High memory usage detected: {}%", "%.1f".formatted(memoryUsagePercent));
     }
 
     if (threadBean.getThreadCount() > 100) {
@@ -315,19 +316,19 @@ public class PerformanceMonitoringService {
 
     Map<String, Object> health = new HashMap<>();
     health.put("status", memoryUsagePercent > 95 ? "DOWN" : "UP");
-    health.put("memoryUsage", String.format("%.1f%%", memoryUsagePercent));
+    health.put("memoryUsage", "%.1f%%".formatted(memoryUsagePercent));
     health.put("threadCount", threadBean.getThreadCount());
     health.put("activeOperations", operationStartTimes.size());
 
     if (memoryUsagePercent > 95) {
-      health.put("reason", "Critical memory usage: " + String.format("%.1f%%", memoryUsagePercent));
+      health.put("reason", "Critical memory usage: " + "%.1f%%".formatted(memoryUsagePercent));
     }
 
     return health;
   }
 
   /** Resets all performance metrics - useful for testing. */
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public void resetMetrics() {
     counters.clear();
     timers.clear();

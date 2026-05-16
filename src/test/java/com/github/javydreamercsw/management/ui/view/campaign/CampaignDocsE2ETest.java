@@ -61,8 +61,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "beginning");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Wait for full content including alignment track before capturing
     waitForText("Campaign: All or Nothing");
@@ -70,9 +69,11 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Campaign",
         "Campaign Dashboard",
-        "Track your wrestler's progress through the campaign. The alignment track shows your"
-            + " current position between Face and Heel, while the dashboard displays available"
-            + " actions and victory points.",
+        """
+        Track your wrestler's progress through the campaign. The alignment track shows your\
+         current position between Face and Heel, while the dashboard displays available\
+         actions and victory points.\
+        """,
         "campaign-dashboard");
   }
 
@@ -85,16 +86,17 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "beginning");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: The Beginning");
     documentFeature(
         "Campaign",
         "The Beginning",
-        "Your journey starts here. Establish your reputation through backstage encounters and"
-            + " initial matches as you find your footing in All Time Wrestling.",
+        """
+        Your journey starts here. Establish your reputation through backstage encounters and\
+         initial matches as you find your footing in All Time Wrestling.\
+        """,
         "campaign-beginning");
   }
 
@@ -110,16 +112,17 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     tournamentService.initializeTournament(campaign);
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Tournament Bracket");
     documentFeature(
         "Campaign",
         "Tournament Bracket",
-        "The tournament chapter challenges you to climb the ranks in a single-elimination bracket."
-            + " Win your matches to advance to the finals and claim the trophy.",
+        """
+        The tournament chapter challenges you to climb the ranks in a single-elimination bracket.\
+         Win your matches to advance to the finals and claim the trophy.\
+        """,
         "campaign-tournament-bracket");
   }
 
@@ -132,16 +135,17 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "tag_team");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: Tag Team Redemption");
     documentFeature(
         "Campaign",
         "Tag Team Redemption",
-        "Experience the power of partnership. Find a compatible partner and dominate the tag team"
-            + " division while rebuilding your momentum.",
+        """
+        Experience the power of partnership. Find a compatible partner and dominate the tag team\
+         division while rebuilding your momentum.\
+        """,
         "campaign-tag-team");
   }
 
@@ -154,16 +158,17 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "betrayal");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: Betrayal");
     documentFeature(
         "Campaign",
         "Betrayal",
-        "Trust is a luxury you can no longer afford. Face the consequences of a broken alliance"
-            + " and seek retribution against your former partner.",
+        """
+        Trust is a luxury you can no longer afford. Face the consequences of a broken alliance\
+         and seek retribution against your former partner.\
+        """,
         "campaign-betrayal");
   }
 
@@ -176,16 +181,17 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "fighting_champion");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: The Fighting Champion");
     documentFeature(
         "Campaign",
         "Fighting Champion",
-        "As the Fighting Champion, you must defend your title against a series of challengers. Each"
-            + " defense increases your prestige but tests your stamina.",
+        """
+        As the Fighting Champion, you must defend your title against a series of challengers. Each\
+         defense increases your prestige but tests your stamina.\
+        """,
         "campaign-fighting-champion");
   }
 
@@ -198,16 +204,17 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "gang_warfare");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: Gang Warfare");
     documentFeature(
         "Campaign",
         "Gang Warfare",
-        "In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or"
-            + " crush rivals as you fight for control of the locker room.",
+        """
+        In Gang Warfare, you must navigate the dangerous world of factions. Build alliances or\
+         crush rivals as you fight for control of the locker room.\
+        """,
         "campaign-gang-warfare");
   }
 
@@ -220,16 +227,17 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "corporate_power_trip");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     waitForText("Chapter: Corporate Power Trip");
     documentFeature(
         "Campaign",
         "Corporate Power Trip",
-        "The authorities are against you. Survive impossible odds and unfair stipulations as you"
-            + " challenge the corrupt management's control.",
+        """
+        The authorities are against you. Survive impossible odds and unfair stipulations as you\
+         challenge the corrupt management's control.\
+        """,
         "campaign-corporate-power-trip");
   }
 
@@ -242,16 +250,17 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "fighting_champion"); // Any chapter works
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/actions");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/actions");
 
     // 3. Verify & Capture
     waitForText("Backstage Area");
     documentFeature(
         "Campaign",
         "Backstage Actions",
-        "Take daily actions to improve your stats, recover from injuries, or build hype for your"
-            + " next match. Choose wisely, as you have limited time each day.",
+        """
+        Take daily actions to improve your stats, recover from injuries, or build hype for your\
+         next match. Choose wisely, as you have limited time each day.\
+        """,
         "campaign-backstage-actions");
   }
 
@@ -276,9 +285,11 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Wrestler",
         "Wrestler Profile",
-        "View detailed information about any wrestler, including their core stats (Drive,"
-            + " Resilience, Charisma, Brawl), current alignment (FACE/HEEL), and championship"
-            + " history.",
+        """
+        View detailed information about any wrestler, including their core stats (Drive,\
+         Resilience, Charisma, Brawl), current alignment (FACE/HEEL), and championship\
+         history.\
+        """,
         "wrestler-profile");
   }
 
@@ -291,8 +302,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "beginning");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/promo");
 
     // 3. Verify & Capture
     // Mock AI gives "The crowd is buzzing" as opener
@@ -301,9 +311,11 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Campaign",
         "Smart Promo Hooks",
-        "The Smart Promo system uses AI to generate dynamic rhetorical hooks based on your"
-            + " wrestler's personality and current rivalries. Choose your strategy to connect"
-            + " with the audience or draw heat.",
+        """
+        The Smart Promo system uses AI to generate dynamic rhetorical hooks based on your\
+         wrestler's personality and current rivalries. Choose your strategy to connect\
+         with the audience or draw heat.\
+        """,
         "campaign-promo-hooks");
   }
 
@@ -316,8 +328,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     createCampaignInChapter(player, "beginning");
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/promo");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/promo");
 
     // 3. Perform Action (Click a hook)
     waitForPageSourceToContain("The crowd is buzzing");
@@ -341,13 +352,15 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Campaign",
         "Smart Promo Outcome",
-        "Your choices have consequences. The crowd reaction, opponent retorts, and alignment"
-            + " shifts are all dynamically calculated, affecting your wrestler's momentum and"
-            + " reputation.",
+        """
+        Your choices have consequences. The crowd reaction, opponent retorts, and alignment\
+         shifts are all dynamically calculated, affecting your wrestler's momentum and\
+         reputation.\
+        """,
         "campaign-promo-outcome");
   }
 
-  private Wrestler getOrCreateWrestler(@NonNull Account account) {
+  private Wrestler getOrCreateWrestler(@NonNull final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
@@ -366,7 +379,8 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     return wrestlerRepository.saveAndFlush(w);
   }
 
-  private Campaign createCampaignInChapter(@NonNull Wrestler player, @NonNull String chapterId) {
+  private Campaign createCampaignInChapter(
+      @NonNull final Wrestler player, @NonNull final String chapterId) {
     if (campaignService.hasActiveCampaign(player)) {
       Campaign existing = campaignRepository.findActiveByWrestler(player).get();
       existing.getState().setCurrentChapterId(chapterId);
@@ -377,7 +391,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     return campaignRepository.save(c);
   }
 
-  private void waitForText(@NonNull String text) {
+  private void waitForText(@NonNull final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

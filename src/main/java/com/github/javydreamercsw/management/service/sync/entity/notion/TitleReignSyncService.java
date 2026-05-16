@@ -44,16 +44,16 @@ public class TitleReignSyncService extends BaseSyncService {
 
   @Autowired
   public TitleReignSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      TitleReignNotionSyncService titleReignNotionSyncService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final TitleReignNotionSyncService titleReignNotionSyncService,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.titleReignNotionSyncService = titleReignNotionSyncService;
   }
 
   @Transactional
-  public SyncResult syncTitleReigns(@NonNull String operationId) {
+  public SyncResult syncTitleReigns(@NonNull final String operationId) {
     if (syncServiceDependencies
         .getSyncSessionManager()
         .isAlreadySyncedInSession(SyncEntityType.TITLE_REIGN.getKey())) {
@@ -77,7 +77,8 @@ public class TitleReignSyncService extends BaseSyncService {
     }
   }
 
-  private SyncResult performTitleReignsSync(@NonNull String operationId, long startTime) {
+  private SyncResult performTitleReignsSync(
+      @NonNull final String operationId, final long startTime) {
     if (!syncServiceDependencies
         .getNotionSyncProperties()
         .isEntityEnabled(SyncEntityType.TITLE_REIGN.getKey())) {
@@ -193,7 +194,7 @@ public class TitleReignSyncService extends BaseSyncService {
     }
   }
 
-  public SyncResult syncToNotion(@NonNull String operationId) {
+  public SyncResult syncToNotion(@NonNull final String operationId) {
     return titleReignNotionSyncService.syncToNotion(operationId);
   }
 }

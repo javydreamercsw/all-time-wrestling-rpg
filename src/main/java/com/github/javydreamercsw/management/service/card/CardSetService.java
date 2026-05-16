@@ -36,8 +36,8 @@ public class CardSetService {
   @Autowired private CardSetRepository cardSetRepository;
   @Autowired private Clock clock;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public CardSet createCardSet(@NonNull String name, @NonNull String setCode) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public CardSet createCardSet(@NonNull final String name, @NonNull final String setCode) {
     CardSet card = new CardSet();
     card.setName(name);
     card.setCode(setCode);
@@ -45,19 +45,24 @@ public class CardSetService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<CardSet> list(@NonNull Pageable pageable) {
+  public List<CardSet> list(@NonNull final Pageable pageable) {
     return cardSetRepository.findAll(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return cardSetRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public CardSet save(@NonNull CardSet card) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public CardSet save(@NonNull final CardSet card) {
     card.setCreationDate(clock.instant());
     return cardSetRepository.saveAndFlush(card);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<CardSet> saveAll(@NonNull final List<CardSet> cardSets) {
+    cardSets.forEach(cardSet -> cardSet.setCreationDate(clock.instant()));
+    return cardSetRepository.saveAll(cardSets);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -66,7 +71,7 @@ public class CardSetService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<CardSet> findBySetCode(@NonNull String setCode) {
+  public Optional<CardSet> findBySetCode(@NonNull final String setCode) {
     return cardSetRepository.findByCode(setCode);
   }
 }

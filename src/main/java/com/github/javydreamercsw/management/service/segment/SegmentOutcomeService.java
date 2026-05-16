@@ -20,88 +20,96 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.domain.card.Card;
-import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
-import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Service for determining match outcomes when none is provided. Uses the same logic as
- * NPCMatchResolutionService but adapted for match narration contexts.
- */
+/** Service responsible for determining segment outcomes. */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
+  private final InjuryService injuryService;
   private final Random random;
 
+  @Autowired
+  public SegmentOutcomeService(
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final InjuryService injuryService) {
+    this(wrestlerRepository, wrestlerService, injuryService, new Random());
+  }
+
+  public SegmentOutcomeService(
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final InjuryService injuryService,
+      final Random random) {
+    this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerService = wrestlerService;
+    this.injuryService = injuryService;
+    this.random = random;
+  }
+
   /**
-   * Determines the match outcome if none is provided in the context. Uses wrestler stats, tier
-   * bonuses, and weighted random selection.
+   * Determines the outcome of a segment if it's not already determined.
+   *
+   * @param context the narration context
+   * @return the updated context
    */
-  @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public SegmentNarrationService.SegmentNarrationContext determineOutcomeIfNeeded(
-      @NonNull SegmentNarrationService.SegmentNarrationContext context) {
-    // If outcome is already determined, return as-is
-    if (context.getDeterminedOutcome() != null
-        && !context.getDeterminedOutcome().trim().isEmpty()) {
-      log.debug("Segment outcome already determined: {}", context.getDeterminedOutcome());
-      return context;
+  public com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext
+      determineOutcomeIfNeeded(
+          final com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext
+              context) {
+    if (context.getDeterminedOutcome() == null || context.getDeterminedOutcome().isBlank()) {
+      String outcome = determineOutcome(null, context.getWrestlers(), context.getVenue(), 1L);
+      context.setDeterminedOutcome(outcome);
     }
-
-    // If it's a promo with no wrestlers, don't determine an outcome automatically.
-    // The narration will be based on the summary.
-    if ("Promo".equalsIgnoreCase(context.getSegmentType().getSegmentType())
-        && (context.getWrestlers() == null || context.getWrestlers().isEmpty())) {
-      log.debug("Segment is a promo with no wrestlers, skipping outcome determination.");
-      return context;
-    }
-
-    // If no wrestlers provided, can't determine outcome
-    if (context.getWrestlers() == null || context.getWrestlers().isEmpty()) {
-      log.warn("Cannot determine match outcome - no wrestlers provided");
-      context.setDeterminedOutcome("Segment ends in a no contest due to insufficient participants");
-      return context;
-    }
-
-    SegmentNarrationService.VenueContext venue = context.getVenue();
-
-    // Determine outcome based on number of wrestlers
-    String outcome =
-        switch (context.getWrestlers().size()) {
-          case 1 -> determineSingleWrestlerOutcome(context.getWrestlers().get(0));
-          case 2 -> determineTwoWrestlerOutcome(context.getWrestlers(), venue);
-          default -> determineMultiWrestlerOutcome(context.getWrestlers(), venue);
-        };
-
-    context.setDeterminedOutcome(outcome);
-    log.debug("Automatically determined match outcome: {}", outcome);
     return context;
   }
 
+  public String determineOutcome(
+      final Segment segment,
+      @NonNull final List<WrestlerContext> wrestlers,
+      final SegmentNarrationService.VenueContext venue,
+      @NonNull final Long universeId) {
+    if (wrestlers.isEmpty()) {
+      return "The segment ends without a clear outcome.";
+    }
+
+    if (wrestlers.size() == 1) {
+      return determineSingleWrestlerOutcome(wrestlers.get(0));
+    } else if (wrestlers.size() == 2) {
+      return determineTwoWrestlerOutcome(wrestlers, venue, universeId);
+    } else {
+      return determineMultiWrestlerOutcome(wrestlers, venue, universeId);
+    }
+  }
+
   /** Determines outcome for a single wrestler (exhibition or promo). */
-  private String determineSingleWrestlerOutcome(@NonNull WrestlerContext wrestler) {
+  private String determineSingleWrestlerOutcome(@NonNull final WrestlerContext wrestler) {
     return wrestler.getName()
         + " delivers an impressive performance, showcasing their skills to the crowd";
   }
 
   private String determineTwoWrestlerOutcome(
-      @NonNull List<WrestlerContext> wrestlers, SegmentNarrationService.VenueContext venue) {
+      @NonNull final List<WrestlerContext> wrestlers,
+      final SegmentNarrationService.VenueContext venue,
+      final Long universeId) {
     WrestlerContext wrestler1 = wrestlers.get(0);
     WrestlerContext wrestler2 = wrestlers.get(1);
 
@@ -109,8 +117,8 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     Optional<Wrestler> dbWrestler2 = findWrestlerByName(wrestler2.getName());
 
     // Calculate weights
-    int weight1 = calculateWrestlerWeight(dbWrestler1.orElse(null), wrestler1, venue);
-    int weight2 = calculateWrestlerWeight(dbWrestler2.orElse(null), wrestler2, venue);
+    int weight1 = calculateWrestlerWeight(dbWrestler1.orElse(null), wrestler1, venue, universeId);
+    int weight2 = calculateWrestlerWeight(dbWrestler2.orElse(null), wrestler2, venue, universeId);
 
     // Determine winner using weighted random selection
     int totalWeight = weight1 + weight2;
@@ -131,18 +139,21 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Generate outcome description
     String finishingMove = getRandomFinishingMove(winner.orElse(null));
-    return String.format(
-        "%s defeats %s with %s", winnerContext.getName(), loserContext.getName(), finishingMove);
+    return "%s defeats %s with %s"
+        .formatted(winnerContext.getName(), loserContext.getName(), finishingMove);
   }
 
   private String determineMultiWrestlerOutcome(
-      @NonNull List<WrestlerContext> wrestlers, SegmentNarrationService.VenueContext venue) {
+      @NonNull final List<WrestlerContext> wrestlers,
+      final SegmentNarrationService.VenueContext venue,
+      final Long universeId) {
     List<WrestlerWeight> wrestlerWeights =
         wrestlers.stream()
             .map(
                 wrestler -> {
                   Optional<Wrestler> dbWrestler = findWrestlerByName(wrestler.getName());
-                  int weight = calculateWrestlerWeight(dbWrestler.orElse(null), wrestler, venue);
+                  int weight =
+                      calculateWrestlerWeight(dbWrestler.orElse(null), wrestler, venue, universeId);
                   return new WrestlerWeight(wrestler, weight);
                 })
             .toList();
@@ -164,27 +175,35 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Generate outcome description
     String finishingMove = getRandomFinishingMove(dbWinner.orElse(null));
-    return String.format(
-        "%s emerges victorious from the %d-way match with %s",
-        winnerContext.getName(), wrestlers.size(), finishingMove);
+    return "%s emerges victorious from the %d-way match with %s"
+        .formatted(winnerContext.getName(), wrestlers.size(), finishingMove);
   }
 
   private int calculateWrestlerWeight(
-      Wrestler dbWrestler,
-      WrestlerContext contextWrestler,
-      SegmentNarrationService.VenueContext venue) {
+      final Wrestler dbWrestler,
+      final WrestlerContext contextWrestler,
+      final SegmentNarrationService.VenueContext venue,
+      final Long universeId) {
     if (dbWrestler == null) {
       log.debug(
           "Wrestler {} not found in database, using default weight", contextWrestler.getName());
       return 50;
     }
 
-    int fanWeight = dbWrestler.getFanWeight();
-    int tierBonus = getTierBonus(dbWrestler);
-    int healthPenalty = dbWrestler.getBumps();
-    long activeInjuries =
-        dbWrestler.getInjuries().stream().filter(Injury::isCurrentlyActive).count();
-    healthPenalty += (int) activeInjuries * 3;
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        wrestlerService.getOrCreateState(dbWrestler.getId(), universeId);
+
+    // Base weight from fan weight
+    int fanWeight = Math.toIntExact(state.getFans() / 5);
+
+    // Tier bonus
+    int tierBonus = getTierBonus(state);
+
+    // Health penalty from bumps and active injuries
+    int healthPenalty = state.getBumps(); // Each bump = -1 penalty
+
+    // Add injury penalties (active injuries significantly reduce effectiveness)
+    healthPenalty += injuryService.getTotalHealthPenaltyForWrestler(dbWrestler.getId(), universeId);
 
     int totalWeight = Math.max(1, fanWeight + tierBonus - healthPenalty);
 
@@ -206,7 +225,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     }
 
     log.debug(
-        "Calculated weight for {}: {} (fan: {}, tier: {}, health: {})",
+        "Weight for {}: {} (Fans: {}, TierBonus: {}, HealthPenalty: {})",
         dbWrestler.getName(),
         totalWeight,
         fanWeight,
@@ -216,70 +235,43 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
     return totalWeight;
   }
 
-  /** Gets tier bonus for wrestler weight calculation. */
-  private int getTierBonus(Wrestler wrestler) {
-    if (wrestler.getTier() == null) {
-      return 0;
-    }
-
-    return switch (wrestler.getTier()) {
-      case ROOKIE -> 0;
-      case RISER -> 2;
-      case CONTENDER -> 4;
-      case MIDCARDER -> 6;
-      case MAIN_EVENTER -> 8;
-      case ICON -> 10;
+  private int getTierBonus(final WrestlerState state) {
+    return switch (state.getTier()) {
+      case ICON -> 50;
+      case MAIN_EVENTER -> 30;
+      case MIDCARDER -> 15;
+      case CONTENDER -> 5;
+      default -> 0;
     };
   }
 
-  /** Finds wrestler by name in the database. */
-  private Optional<Wrestler> findWrestlerByName(String name) {
-    if (name == null || name.trim().isEmpty()) {
-      return Optional.empty();
-    }
-    return wrestlerRepository.findByName(name.trim());
-  }
-
-  /** Gets a random finishing move for the winner. */
-  private String getRandomFinishingMove(Wrestler wrestler) {
-    if (wrestler != null) {
-      List<Card> finishers = new ArrayList<>();
-      List<Card> signatures = new ArrayList<>();
-
-      for (Deck deck : wrestler.getDecks()) {
-        for (DeckCard deckCard : deck.getCards()) {
-          Card card = deckCard.getCard();
-          if (card.getFinisher()) {
-            finishers.add(card);
-          }
-          if (card.getSignature()) {
-            signatures.add(card);
-          }
-        }
-      }
-
+  private String getRandomFinishingMove(Wrestler winner) {
+    if (winner != null && winner.getDecks() != null) {
+      List<String> finishers =
+          winner.getDecks().stream()
+              .flatMap(deck -> deck.getCards().stream())
+              .map(DeckCard::getCard)
+              .filter(Card::getFinisher)
+              .map(Card::getName)
+              .distinct()
+              .toList();
       if (!finishers.isEmpty()) {
-        return finishers.get(random.nextInt(finishers.size())).getName();
-      }
-
-      if (!signatures.isEmpty()) {
-        return signatures.get(random.nextInt(signatures.size())).getName();
+        return finishers.get(random.nextInt(finishers.size()));
       }
     }
-    // Use generic finishing moves
-    String[] genericFinishers = {
-      "a devastating finishing move",
-      "their signature maneuver",
-      "a powerful slam",
-      "a high-impact finisher",
-      "their trademark move",
-      "a spectacular finishing sequence",
-      "a crushing blow",
-      "their ultimate technique"
-    };
-    return genericFinishers[random.nextInt(genericFinishers.length)];
+    List<String> genericFinishers =
+        List.of(
+            "a devastating powerbomb",
+            "a sudden roll-up",
+            "a high-flying splash",
+            "a precise superkick",
+            "a brutal submission hold");
+    return genericFinishers.get(random.nextInt(genericFinishers.size()));
   }
 
-  /** Record for wrestler weight calculations. */
+  private Optional<Wrestler> findWrestlerByName(final String name) {
+    return wrestlerRepository.findByName(name);
+  }
+
   private record WrestlerWeight(WrestlerContext wrestler, int weight) {}
 }

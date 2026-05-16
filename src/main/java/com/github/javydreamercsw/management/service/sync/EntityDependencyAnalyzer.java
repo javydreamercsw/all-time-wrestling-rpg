@@ -64,7 +64,7 @@ public class EntityDependencyAnalyzer {
    * @param entityNames List of entity names
    * @return List of SyncEntityType objects
    */
-  private List<SyncEntityType> convertToSyncEntityTypes(List<String> entityNames) {
+  private List<SyncEntityType> convertToSyncEntityTypes(final List<String> entityNames) {
     return entityNames.stream()
         .map(
             name -> {
@@ -101,10 +101,7 @@ public class EntityDependencyAnalyzer {
     // Also scan domain packages directly
     entityClasses.addAll(scanDomainPackages());
 
-    log.debug(
-        "🔍 Discovered {} entity classes: {}",
-        entityClasses.size(),
-        entityClasses.stream().map(Class::getSimpleName).collect(Collectors.toList()));
+    log.info("🔍 Discovered {} entity classes for dependency analysis", entityClasses.size());
 
     return entityClasses;
   }
@@ -117,7 +114,9 @@ public class EntityDependencyAnalyzer {
     scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
 
     // List of known domain packages to scan
-    String[] domainPackages = {"com.github.javydreamercsw.management.domain"};
+    String[] domainPackages = {
+      "com.github.javydreamercsw.base.domain", "com.github.javydreamercsw.management.domain"
+    };
 
     for (String packageName : domainPackages) {
       for (BeanDefinition bd : scanner.findCandidateComponents(packageName)) {
@@ -139,7 +138,7 @@ public class EntityDependencyAnalyzer {
    * @param entityClasses Set of entity classes to analyze
    * @return List of entity names in sync order (dependencies first)
    */
-  public List<String> determineSyncOrder(Set<Class<?>> entityClasses) {
+  public List<String> determineSyncOrder(final Set<Class<?>> entityClasses) {
     log.debug("🔍 Analyzing {} entity classes for dependency relationships", entityClasses.size());
 
     // Build dependency graph
@@ -156,7 +155,7 @@ public class EntityDependencyAnalyzer {
    * Builds a dependency graph by analyzing JPA annotations. Key = entity name, Value = set of
    * entities this entity depends on
    */
-  private Map<String, Set<String>> buildDependencyGraph(Set<Class<?>> entityClasses) {
+  private Map<String, Set<String>> buildDependencyGraph(final Set<Class<?>> entityClasses) {
     Map<String, Set<String>> dependencies = new HashMap<>();
     Map<String, Class<?>> entityNameToClass =
         entityClasses.stream().collect(Collectors.toMap(this::getEntityName, clazz -> clazz));
@@ -179,7 +178,9 @@ public class EntityDependencyAnalyzer {
 
   /** Analyzes a field for foreign key relationships that create dependencies. */
   private void analyzeForeignKeyDependencies(
-      Field field, Set<String> dependencies, Map<String, Class<?>> entityNameToClass) {
+      final Field field,
+      final Set<String> dependencies,
+      final Map<String, Class<?>> entityNameToClass) {
     // @ManyToOne - this entity depends on the referenced entity
     if (field.isAnnotationPresent(ManyToOne.class)) {
       String referencedEntity = getEntityNameFromFieldType(field, entityNameToClass);
@@ -223,7 +224,8 @@ public class EntityDependencyAnalyzer {
   }
 
   /** Gets the entity name from a field's type. */
-  private String getEntityNameFromFieldType(Field field, Map<String, Class<?>> entityNameToClass) {
+  private String getEntityNameFromFieldType(
+      final Field field, final Map<String, Class<?>> entityNameToClass) {
     Class<?> fieldType = field.getType();
 
     // Handle Collection types (OneToMany, ManyToMany)
@@ -244,7 +246,7 @@ public class EntityDependencyAnalyzer {
 
   /** Gets the entity name from a collection field's type. */
   private String getEntityNameFromCollectionFieldType(
-      Field field, Map<String, Class<?>> entityNameToClass) {
+      final Field field, final Map<String, Class<?>> entityNameToClass) {
     Type genericType = field.getGenericType();
     if (genericType instanceof ParameterizedType) {
       ParameterizedType parameterizedType = (ParameterizedType) genericType;
@@ -265,7 +267,7 @@ public class EntityDependencyAnalyzer {
   }
 
   /** Gets all fields from a class including inherited fields. */
-  private List<Field> getAllFields(Class<?> clazz) {
+  private List<Field> getAllFields(final Class<?> clazz) {
     List<Field> fields = new ArrayList<>();
     Class<?> currentClass = clazz;
 
@@ -278,7 +280,7 @@ public class EntityDependencyAnalyzer {
   }
 
   /** Gets the entity name from a class (uses @Entity name or class simple name). */
-  private String getEntityName(Class<?> entityClass) {
+  private String getEntityName(final Class<?> entityClass) {
     Entity entityAnnotation = entityClass.getAnnotation(Entity.class);
     if (entityAnnotation != null && !entityAnnotation.name().isEmpty()) {
       return entityAnnotation.name().toLowerCase();
@@ -290,7 +292,7 @@ public class EntityDependencyAnalyzer {
    * Performs topological sort on the dependency graph. Returns entities in dependency order
    * (dependencies first).
    */
-  private List<String> topologicalSort(Map<String, Set<String>> dependencies) {
+  private List<String> topologicalSort(final Map<String, Set<String>> dependencies) {
     List<String> result = new ArrayList<>();
     Set<String> visited = new HashSet<>();
     Set<String> visiting = new HashSet<>();
@@ -310,11 +312,11 @@ public class EntityDependencyAnalyzer {
 
   /** Recursive helper for topological sort with cycle detection. */
   private void topologicalSortVisit(
-      String entity,
-      Map<String, Set<String>> dependencies,
-      Set<String> visited,
-      Set<String> visiting,
-      List<String> result) {
+      final String entity,
+      final Map<String, Set<String>> dependencies,
+      final Set<String> visited,
+      final Set<String> visiting,
+      final List<String> result) {
     if (visiting.contains(entity)) {
       // Circular dependency detected.
       // We log it but don't throw exception to allow best-effort sorting.

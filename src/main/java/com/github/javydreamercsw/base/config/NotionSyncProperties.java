@@ -97,7 +97,7 @@ public class NotionSyncProperties {
    * @param entityName The name of the entity to check
    * @return true if sync is enabled (all entities are automatically included)
    */
-  public boolean isEntityEnabled(String entityName) {
+  public boolean isEntityEnabled(final String entityName) {
     return enabled; // All entities are automatically included when sync is enabled
   }
 
@@ -125,7 +125,7 @@ public class NotionSyncProperties {
    * @param entityName The name of the entity.
    * @param syncTime The time of synchronization.
    */
-  public void setLastSyncTime(String entityName, LocalDateTime syncTime) {
+  public void setLastSyncTime(final String entityName, final LocalDateTime syncTime) {
     lastSyncTimes.put(entityName, syncTime);
   }
 
@@ -135,7 +135,7 @@ public class NotionSyncProperties {
    * @param entityName The name of the entity.
    * @return The last sync time, or null if it has never been synced.
    */
-  public LocalDateTime getLastSyncTime(String entityName) {
+  public LocalDateTime getLastSyncTime(final String entityName) {
     return lastSyncTimes.get(entityName);
   }
 }

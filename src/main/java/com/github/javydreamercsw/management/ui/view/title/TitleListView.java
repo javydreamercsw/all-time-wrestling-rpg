@@ -67,12 +67,12 @@ public class TitleListView extends Main {
   public final Grid<Title> grid = new Grid<>(Title.class, false);
 
   public TitleListView(
-      @NonNull TitleService titleService,
-      @NonNull WrestlerService wrestlerService,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull TierRecalculationService tierRecalculationService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull ImageStorageService imageStorageService) {
+      @NonNull final TitleService titleService,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final WrestlerRepository wrestlerRepository,
+      @NonNull final TierRecalculationService tierRecalculationService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final ImageStorageService imageStorageService) {
     this.titleService = titleService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
@@ -214,7 +214,7 @@ public class TitleListView extends Main {
     return dialog;
   }
 
-  TitleFormDialog openEditDialog(@NonNull Title title) {
+  TitleFormDialog openEditDialog(@NonNull final Title title) {
     TitleFormDialog dialog =
         new TitleFormDialog(
             titleService,
@@ -228,7 +228,7 @@ public class TitleListView extends Main {
     return dialog;
   }
 
-  private void deleteTitle(@NonNull Title title) {
+  private void deleteTitle(@NonNull final Title title) {
     ConfirmDialog confirmDialog = new ConfirmDialog();
     confirmDialog.setHeader("Delete Title");
     confirmDialog.setText("Are you sure you want to delete the title '" + title.getName() + "'?");

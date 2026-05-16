@@ -6,17 +6,25 @@
 -- Index for wrestler name searches (frequently used in UI and API)
 CREATE INDEX IF NOT EXISTS idx_wrestler_name ON wrestler(name);
 
--- Index for wrestler tier queries (used in match booking)
-CREATE INDEX IF NOT EXISTS idx_wrestler_tier ON wrestler(tier);
-
 -- Index for wrestler creation date (used in reporting and analytics)
 CREATE INDEX IF NOT EXISTS idx_wrestler_creation_date ON wrestler(creation_date);
 
 -- Index for wrestler external ID (used in Notion sync operations)
 CREATE INDEX IF NOT EXISTS idx_wrestler_external_id ON wrestler(external_id);
 
--- Index for wrestler faction (used in faction-based queries)
-CREATE INDEX IF NOT EXISTS idx_wrestler_faction ON wrestler(faction_id);
+-- ==================== WRESTLER STATE TABLE INDEXES ====================
+
+-- Index for wrestler state tier queries (used in match booking)
+CREATE INDEX IF NOT EXISTS idx_wrestler_state_tier ON wrestler_state(tier);
+
+-- Index for wrestler state faction (used in faction-based queries)
+CREATE INDEX IF NOT EXISTS idx_wrestler_state_faction ON wrestler_state(faction_id);
+
+-- Index for wrestler state universe (used for universe filtering)
+CREATE INDEX IF NOT EXISTS idx_wrestler_state_universe ON wrestler_state(universe_id);
+
+-- Composite index for wrestler state queries
+CREATE INDEX IF NOT EXISTS idx_wrestler_state_wrestler_universe ON wrestler_state(wrestler_id, universe_id);
 
 -- ==================== SHOW TABLE INDEXES ====================
 
@@ -190,10 +198,6 @@ CREATE INDEX IF NOT EXISTS idx_show_creation_month ON wrestling_show(creation_da
 CREATE INDEX IF NOT EXISTS idx_rivalry_creation_month ON rivalry(creation_date);
 
 -- ==================== COMPOSITE INDEXES FOR COMPLEX QUERIES ====================
-
--- Index for wrestler availability checks (combines injury and faction data)
--- This supports queries that check if wrestlers are available for matches
-CREATE INDEX IF NOT EXISTS idx_wrestler_availability ON wrestler(tier, faction_id, creation_date);
 
 -- Index for show calendar queries (date + type combinations)
 CREATE INDEX IF NOT EXISTS idx_show_calendar ON wrestling_show(show_date DESC, show_type_id, season_id);

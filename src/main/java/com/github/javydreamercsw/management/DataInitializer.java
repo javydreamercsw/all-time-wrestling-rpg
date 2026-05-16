@@ -23,6 +23,8 @@ import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.card.Card;
@@ -39,12 +41,15 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
@@ -84,6 +89,7 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -93,6 +99,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -105,16 +112,19 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
 public class DataInitializer implements Initializable {
 
   private final boolean enabled;
+  private final boolean skipIfNotEmpty;
   private final ShowTemplateService showTemplateService;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
+  private final com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private final ShowTypeService showTypeService;
   private final SegmentRuleService segmentRuleService;
   private final SegmentTypeService segmentTypeService;
@@ -124,6 +134,8 @@ public class DataInitializer implements Initializable {
   private final TitleService titleService;
   private final DeckService deckService;
   private final GameSettingService gameSettingService;
+  private final com.github.javydreamercsw.management.domain.GameSettingRepository
+      gameSettingRepository;
   private final NpcService npcService;
   private final FactionService factionService;
   private final TeamService teamService;
@@ -144,39 +156,49 @@ public class DataInitializer implements Initializable {
 
   @Autowired
   public DataInitializer(
-      @Value("${data.initializer.enabled:true}") boolean enabled,
-      ShowTemplateService showTemplateService,
-      WrestlerRepository wrestlerRepository,
-      ShowTypeService showTypeService,
-      SegmentRuleService segmentRuleService,
-      SegmentTypeService segmentTypeService,
-      CardSetService cardSetService,
-      CardSetRepository cardSetRepository,
-      CardService cardService,
-      TitleService titleService,
-      DeckService deckService,
-      GameSettingService gameSettingService,
-      NpcService npcService,
-      FactionService factionService,
-      TeamService teamService,
-      TeamRepository teamRepository,
-      TierRecalculationService tierRecalculationService,
-      CampaignAbilityCardService campaignAbilityCardService,
-      CommentaryService commentaryService,
-      CampaignUpgradeService campaignUpgradeService,
-      StatusCardService statusCardService,
-      Environment env,
-      AchievementRepository achievementRepository,
-      RingsideActionDataService ringsideActionDataService,
-      ResourcePatternResolver resourcePatternResolver,
-      LocationRepository locationRepository,
-      ArenaRepository arenaRepository,
-      com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
+      @Value("${data.initializer.enabled:true}") final boolean enabled,
+      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      final ShowTemplateService showTemplateService,
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final com.github.javydreamercsw.management.domain.universe.UniverseRepository
+          universeRepository,
+      final WrestlerStateRepository wrestlerStateRepository,
+      final ShowTypeService showTypeService,
+      final SegmentRuleService segmentRuleService,
+      final SegmentTypeService segmentTypeService,
+      final CardSetService cardSetService,
+      final CardSetRepository cardSetRepository,
+      final CardService cardService,
+      final TitleService titleService,
+      final DeckService deckService,
+      final GameSettingService gameSettingService,
+      final com.github.javydreamercsw.management.domain.GameSettingRepository gameSettingRepository,
+      final NpcService npcService,
+      final FactionService factionService,
+      final TeamService teamService,
+      final TeamRepository teamRepository,
+      final TierRecalculationService tierRecalculationService,
+      final CampaignAbilityCardService campaignAbilityCardService,
+      final CommentaryService commentaryService,
+      final CampaignUpgradeService campaignUpgradeService,
+      final StatusCardService statusCardService,
+      final Environment env,
+      final AchievementRepository achievementRepository,
+      final RingsideActionDataService ringsideActionDataService,
+      final ResourcePatternResolver resourcePatternResolver,
+      final LocationRepository locationRepository,
+      final ArenaRepository arenaRepository,
+      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
-      ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper) {
     this.enabled = enabled;
+    this.skipIfNotEmpty = skipIfNotEmpty;
     this.showTemplateService = showTemplateService;
     this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerService = wrestlerService;
+    this.universeRepository = universeRepository;
+    this.wrestlerStateRepository = wrestlerStateRepository;
     this.showTypeService = showTypeService;
     this.segmentRuleService = segmentRuleService;
     this.segmentTypeService = segmentTypeService;
@@ -186,6 +208,7 @@ public class DataInitializer implements Initializable {
     this.titleService = titleService;
     this.deckService = deckService;
     this.gameSettingService = gameSettingService;
+    this.gameSettingRepository = gameSettingRepository;
     this.npcService = npcService;
     this.factionService = factionService;
     this.teamService = teamService;
@@ -205,36 +228,39 @@ public class DataInitializer implements Initializable {
     this.objectMapper = objectMapper;
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void init() {
     log.debug("DataInitializer.init() called. enabled={}", enabled);
     if (enabled) {
-      syncAiSettingsFromEnvironment();
-      initializeGameDate();
-      loadSegmentRulesFromFile();
-      syncShowTypesFromFile();
-      loadSegmentTypesFromFile();
-      loadShowTemplatesFromFile();
-      syncSetsFromFile();
-      syncCardsFromFile();
-      syncNpcsFromFile();
-      syncLocationsFromFile();
-      syncArenasFromFile();
-      syncWrestlersFromFile();
-      syncRelationshipsFromFile();
-      syncChampionshipsFromFile();
-      syncDecksFromFile();
-      syncFactionsFromFile();
-      syncTeamsFromFile();
-      syncCampaignAbilityCardsFromFile();
-      syncStatusCardsFromFile();
-      campaignUpgradeService.loadUpgrades();
-      syncCommentatorsFromFile();
-      syncCommentaryTeamsFromFile();
-      loadAchievements();
-      syncRingsideActions();
-      log.info("Data initialization complete.");
+      GeneralSecurityUtils.runAsAdmin(this::performInit);
     }
+  }
+
+  private void performInit() {
+    syncAiSettingsFromEnvironment();
+    initializeGameDate();
+    loadSegmentRulesFromFile();
+    syncShowTypesFromFile();
+    loadSegmentTypesFromFile();
+    loadShowTemplatesFromFile();
+    syncSetsFromFile();
+    syncCardsFromFile();
+    syncNpcsFromFile();
+    syncLocationsFromFile();
+    syncArenasFromFile();
+    syncWrestlersFromFile();
+    syncRelationshipsFromFile();
+    syncChampionshipsFromFile();
+    syncDecksFromFile();
+    syncFactionsFromFile();
+    syncTeamsFromFile();
+    syncCampaignAbilityCardsFromFile();
+    syncStatusCardsFromFile();
+    campaignUpgradeService.loadUpgrades();
+    syncCommentatorsFromFile();
+    syncCommentaryTeamsFromFile();
+    loadAchievements();
+    syncRingsideActions();
+    log.debug("Data initialization complete.");
   }
 
   private void syncRingsideActions() {
@@ -243,6 +269,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRingsideActionTypesFromFile() {
+    if (skipIfNotEmpty && ringsideActionDataService.countTypes() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("ringside_action_types.json");
     if (resource.exists()) {
       log.debug("Loading ringside action types from file: {}", resource.getPath());
@@ -266,6 +295,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRingsideActionsFromFile() {
+    if (skipIfNotEmpty && ringsideActionDataService.countActions() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("ringside_actions.json");
     if (resource.exists()) {
       log.debug("Loading ringside actions from file: {}", resource.getPath());
@@ -290,12 +322,16 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadAchievements() {
+    if (skipIfNotEmpty && achievementRepository.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("achievements.json");
     if (resource.exists()) {
       log.debug("Loading achievements from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         List<Achievement> achievementsFromFile = mapper.readValue(is, new TypeReference<>() {});
+        List<Achievement> toSave = new ArrayList<>();
         for (Achievement a : achievementsFromFile) {
           Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
           if (existingOpt.isPresent()) {
@@ -304,15 +340,15 @@ public class DataInitializer implements Initializable {
             existing.setDescription(a.getDescription());
             existing.setXpValue(a.getXpValue());
             existing.setCategory(a.getCategory());
-            achievementRepository.save(existing);
-            log.debug("Updated existing achievement: {}", existing.getName());
+            toSave.add(existing);
           } else {
-            achievementRepository.save(a);
-            log.debug("Saved new achievement: {}", a.getName());
+            toSave.add(a);
           }
         }
-        log.info(
-            "Achievement loading completed - {} achievements loaded", achievementsFromFile.size());
+        achievementRepository.saveAll(toSave);
+        log.debug(
+            "Achievement loading completed - {} achievements processed",
+            achievementsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading achievements from file", e);
       }
@@ -322,6 +358,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCommentatorsFromFile() {
+    if (skipIfNotEmpty && commentaryService.countCommentators() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("commentators.json");
     if (resource.exists()) {
       log.debug("Loading commentators from file: {}", resource.getPath());
@@ -349,6 +388,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCommentaryTeamsFromFile() {
+    if (skipIfNotEmpty && commentaryService.countTeams() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("commentary_teams.json");
     if (resource.exists()) {
       log.debug("Loading commentary teams from file: {}", resource.getPath());
@@ -366,6 +408,13 @@ public class DataInitializer implements Initializable {
     } else {
       log.warn("Commentary teams file not found: {}", resource.getPath());
     }
+  }
+
+  private Long getGlobalUniverseId() {
+    return universeRepository.findAll().stream()
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("No universe found"))
+        .getId();
   }
 
   private void syncAiSettingsFromEnvironment() {
@@ -397,14 +446,10 @@ public class DataInitializer implements Initializable {
     syncSetting("AI_GEMINI_API_KEY", null);
     syncSetting("AI_GEMINI_MODEL_NAME", "gemini-2.5-flash");
 
-    boolean openAiEnabled = isSettingEnabled("AI_OPENAI_ENABLED");
-    boolean claudeEnabled = isSettingEnabled("AI_CLAUDE_ENABLED");
-    boolean geminiEnabled = isSettingEnabled("AI_GEMINI_ENABLED");
-
     log.debug("AI settings synchronization complete.");
   }
 
-  private void syncSetting(@NonNull String key, String defaultValue) {
+  private void syncSetting(@NonNull final String key, final String defaultValue) {
     String envValue = env.getProperty(key);
     boolean forceOverride =
         Boolean.parseBoolean(env.getProperty("data.initializer.aiSettings.forceOverride", "false"));
@@ -448,27 +493,28 @@ public class DataInitializer implements Initializable {
     }
   }
 
-  private String maskIfSecret(String key, String value) {
+  private String maskIfSecret(final String key, final String value) {
     if (key != null && key.toUpperCase().contains("KEY")) {
       return "********";
     }
     return value;
   }
 
-  private void saveIfMissing(@NonNull String key, @NonNull String value) {
-    if (gameSettingService.findById(key).isEmpty()) {
-      gameSettingService.save(key, value);
+  private void saveIfMissing(@NonNull final String key, @NonNull final String value) {
+    if (gameSettingRepository.findById(key).isEmpty()) {
+      com.github.javydreamercsw.management.domain.GameSetting setting =
+          new com.github.javydreamercsw.management.domain.GameSetting();
+      setting.setId(key);
+      setting.setValue(value);
+      gameSettingRepository.save(setting);
+      log.debug("Initialized missing setting: {} = {}", key, maskIfSecret(key, value));
     }
   }
 
-  private boolean isSettingEnabled(@NonNull String key) {
-    return gameSettingService
-        .findById(key)
-        .map(gs -> Boolean.parseBoolean(gs.getValue()))
-        .orElse(false);
-  }
-
   private void syncCampaignAbilityCardsFromFile() {
+    if (skipIfNotEmpty && campaignAbilityCardService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("campaign_ability_cards.json");
     if (resource.exists()) {
       log.debug("Loading campaign ability cards from file: {}", resource.getPath());
@@ -536,6 +582,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadSegmentRulesFromFile() {
+    if (skipIfNotEmpty && segmentRuleService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("segment_rules.json");
     if (resource.exists()) {
       log.debug("Loading segment rules from file: {}", resource.getPath());
@@ -567,6 +616,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncShowTypesFromFile() {
+    if (skipIfNotEmpty && showTypeService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("show_types.json");
     if (resource.exists()) {
       log.debug("Loading show types from file: {}", resource.getPath());
@@ -592,6 +644,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadSegmentTypesFromFile() {
+    if (skipIfNotEmpty && segmentTypeService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("segment_types.json");
     if (resource.exists()) {
       log.debug("Loading segment types from file: {}", resource.getPath());
@@ -682,6 +737,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncSetsFromFile() {
+    if (skipIfNotEmpty && cardSetService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("sets.json");
     if (resource.exists()) {
       log.debug("Loading card sets from file: {}", resource.getPath());
@@ -689,19 +747,20 @@ public class DataInitializer implements Initializable {
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         List<CardSet> setsFromFile = mapper.readValue(is, new TypeReference<>() {});
+        List<CardSet> toSave = new ArrayList<>();
         for (CardSet c : setsFromFile) {
           Optional<CardSet> existingSetOpt = cardSetService.findBySetCode(c.getCode());
           if (existingSetOpt.isPresent()) {
             CardSet existingSet = existingSetOpt.get();
             // Update fields
             existingSet.setName(c.getName());
-            cardSetService.save(existingSet);
-            log.debug("Updated existing card set: {}", existingSet.getName());
+            toSave.add(existingSet);
           } else {
-            cardSetService.save(c);
-            log.debug("Saved new card set: {}", c.getName());
+            toSave.add(c);
           }
         }
+        cardSetService.saveAll(toSave);
+        log.debug("Card sets loading completed - {} sets processed", setsFromFile.size());
       } catch (IOException e) {
         log.error("Error loading card sets from file", e);
       }
@@ -709,6 +768,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncCardsFromFile() {
+    if (skipIfNotEmpty && cardService.count() > 0) {
+      return;
+    }
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:cards/*.json");
       Map<String, CardSet> setCache = new HashMap<>();
@@ -730,7 +792,7 @@ public class DataInitializer implements Initializable {
           ObjectMapper mapper = new ObjectMapper();
           try (var is = resource.getInputStream()) {
             List<CardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
-
+            List<Card> toSave = new ArrayList<>();
             for (CardDTO dto : cardsFromFile) {
               CardSet set = setCache.get(dto.getSet());
               if (set == null) {
@@ -761,13 +823,10 @@ public class DataInitializer implements Initializable {
               card.setTaunt(dto.isTaunt());
               card.setPin(dto.isPin());
               card.setRecover(dto.isRecover());
-              cardService.save(card);
-              if (existing.containsKey(key)) {
-                log.debug("Updated existing card: {}", card.getName());
-              } else {
-                log.debug("Saved new card: {}", card.getName());
-              }
+              toSave.add(card);
             }
+            cardService.saveAll(toSave);
+            log.debug("Saved/Updated {} cards from {}", toSave.size(), resource.getFilename());
           } catch (IOException e) {
             log.error("Error loading cards from file: {}", resource.getFilename(), e);
           }
@@ -779,8 +838,18 @@ public class DataInitializer implements Initializable {
   }
 
   protected void syncWrestlersFromFile() {
+    if (skipIfNotEmpty && wrestlerRepository.count() > 0) {
+      return;
+    }
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers*.json");
+      // Load universe once
+      Universe universe =
+          universeRepository.findAll().stream()
+              .findFirst()
+              .orElseThrow(() -> new IllegalStateException("No universe found"));
+      Long leagueId = universe.getId();
+
       for (Resource resource : resources) {
         if (resource.exists()) {
           log.debug("Loading wrestlers from file: {}", resource.getFilename());
@@ -789,23 +858,21 @@ public class DataInitializer implements Initializable {
           try (var is = resource.getInputStream()) {
             List<WrestlerImportDTO> wrestlersFromFile =
                 mapper.readValue(is, new TypeReference<>() {});
-            // Map existing wrestlers by name (handle duplicates by keeping the first one)
-            Map<String, Wrestler> existing =
-                wrestlerRepository.findAll().stream()
-                    .collect(
-                        Collectors.toMap(
-                            Wrestler::getName, w -> w, (existing1, existing2) -> existing1));
+
+            // Collect all wrestlers that need state refresh/creation
+            Map<String, WrestlerImportDTO> dtoMap = new HashMap<>();
+            List<Wrestler> toSaveBulk = new ArrayList<>();
+
             for (WrestlerImportDTO w : wrestlersFromFile) {
-              // Smart duplicate handling - prefer external ID, fallback to name
-              Wrestler existingWrestler = null;
-              if (w.getExternalId() != null && !w.getExternalId().trim().isEmpty()) {
+              Wrestler existingWrestler = wrestlerRepository.findByName(w.getName()).orElse(null);
+              if (existingWrestler == null
+                  && w.getExternalId() != null
+                  && !w.getExternalId().trim().isEmpty()) {
                 existingWrestler =
                     wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
               }
-              if (existingWrestler == null) {
-                existingWrestler = existing.get(w.getName());
-              }
 
+              Wrestler wrestlerToSave;
               if (existingWrestler != null) {
                 // Update fields
                 existingWrestler.setDeckSize(w.getDeckSize());
@@ -815,32 +882,29 @@ public class DataInitializer implements Initializable {
                 existingWrestler.setLowStamina(w.getLowStamina());
                 existingWrestler.setDescription(w.getDescription());
                 existingWrestler.setGender(w.getGender());
-
-                if (w.getFans() != null) {
-                  if (w.getFans() > existingWrestler.getFans()) {
-                    existingWrestler.setFans(w.getFans());
-                  }
-                }
-
-                existingWrestler.setTier(WrestlerTier.fromFanCount(existingWrestler.getFans()));
-                tierRecalculationService.recalculateTier(existingWrestler);
-
-                if (w.getBumps() != null) {
-                  if (w.getBumps() > existingWrestler.getBumps()) {
-                    existingWrestler.setBumps(w.getBumps());
-                  }
-                }
-
                 if (w.getImageUrl() != null) {
                   existingWrestler.setImageUrl(w.getImageUrl());
                 }
-
                 if (w.getHeritageTag() != null) {
                   existingWrestler.setHeritageTag(w.getHeritageTag());
                 }
-
                 if (w.getSet() != null) {
                   existingWrestler.setExpansionCode(w.getSet());
+                }
+                if (w.getExternalId() != null) {
+                  existingWrestler.setExternalId(w.getExternalId());
+                }
+                if (w.getDrive() != null) {
+                  existingWrestler.setDrive(w.getDrive());
+                }
+                if (w.getResilience() != null) {
+                  existingWrestler.setResilience(w.getResilience());
+                }
+                if (w.getCharisma() != null) {
+                  existingWrestler.setCharisma(w.getCharisma());
+                }
+                if (w.getBrawl() != null) {
+                  existingWrestler.setBrawl(w.getBrawl());
                 }
 
                 if (w.getAlignment() != null) {
@@ -861,34 +925,10 @@ public class DataInitializer implements Initializable {
                     } catch (IllegalArgumentException e) {
                       log.warn(
                           "Invalid alignment '{}' for wrestler '{}'",
-                          w.getAlignment(),
-                          w.getName());
+                          LogSanitizer.sanitize(w.getAlignment()),
+                          LogSanitizer.sanitize(w.getName()));
                     }
                   }
-                }
-
-                if (w.getExternalId() != null) {
-                  existingWrestler.setExternalId(w.getExternalId());
-                }
-
-                if (w.getManager() != null) {
-                  Npc manager = npcService.findByName(w.getManager());
-                  if (manager != null) {
-                    existingWrestler.setManager(manager);
-                  }
-                }
-
-                if (w.getDrive() != null) {
-                  existingWrestler.setDrive(w.getDrive());
-                }
-                if (w.getResilience() != null) {
-                  existingWrestler.setResilience(w.getResilience());
-                }
-                if (w.getCharisma() != null) {
-                  existingWrestler.setCharisma(w.getCharisma());
-                }
-                if (w.getBrawl() != null) {
-                  existingWrestler.setBrawl(w.getBrawl());
                 }
 
                 if (existingWrestler.getActive() == null) {
@@ -898,8 +938,10 @@ public class DataInitializer implements Initializable {
                   existingWrestler.setIsPlayer(false);
                 }
 
-                wrestlerRepository.save(existingWrestler);
-                log.debug("Updated existing wrestler: {}", existingWrestler.getName());
+                wrestlerToSave = existingWrestler;
+                log.debug(
+                    "Updated existing wrestler: {}",
+                    LogSanitizer.sanitize(existingWrestler.getName()));
               } else {
                 Wrestler newWrestler = new Wrestler();
                 newWrestler.setName(w.getName());
@@ -910,8 +952,6 @@ public class DataInitializer implements Initializable {
                 newWrestler.setLowStamina(w.getLowStamina());
                 newWrestler.setDescription(w.getDescription());
                 newWrestler.setGender(w.getGender());
-                newWrestler.setFans(w.getFans());
-                newWrestler.setBumps(w.getBumps());
                 newWrestler.setActive(true);
                 newWrestler.setIsPlayer(false);
                 newWrestler.setImageUrl(w.getImageUrl());
@@ -919,7 +959,6 @@ public class DataInitializer implements Initializable {
                 if (w.getSet() != null) {
                   newWrestler.setExpansionCode(w.getSet());
                 }
-                newWrestler.setTier(WrestlerTier.fromFanCount(newWrestler.getFans()));
                 tierRecalculationService.recalculateTier(newWrestler);
                 if (w.getExternalId() != null) {
                   newWrestler.setExternalId(w.getExternalId());
@@ -943,9 +982,53 @@ public class DataInitializer implements Initializable {
                   newWrestler.setBrawl(w.getBrawl());
                 }
 
-                wrestlerRepository.save(newWrestler);
-                log.debug("Saved new wrestler: {}", newWrestler.getName());
+                if (w.getAlignment() != null) {
+                  try {
+                    AlignmentType at = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+                    newWrestler.setAlignment(
+                        WrestlerAlignment.builder()
+                            .wrestler(newWrestler)
+                            .alignmentType(at)
+                            .level(0)
+                            .build());
+                  } catch (IllegalArgumentException e) {
+                    log.warn(
+                        "Invalid alignment '{}' for wrestler '{}'",
+                        LogSanitizer.sanitize(w.getAlignment()),
+                        LogSanitizer.sanitize(w.getName()));
+                  }
+                }
+                wrestlerToSave = newWrestler;
               }
+              toSaveBulk.add(wrestlerToSave);
+              dtoMap.put(wrestlerToSave.getName(), w);
+            }
+
+            // Save all wrestlers in one batch
+            wrestlerRepository.saveAll(toSaveBulk);
+            wrestlerRepository.flush();
+
+            // Process states in bulk-like manner (though getOrCreateState and tierRecalculation are
+            // still single)
+            for (Wrestler wrestler : toSaveBulk) {
+              WrestlerImportDTO w = dtoMap.get(wrestler.getName());
+              WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+              if (w.getFans() != null && w.getFans() > state.getFans()) {
+                state.setFans(w.getFans());
+              }
+              if (w.getBumps() != null && w.getBumps() > state.getBumps()) {
+                state.setBumps(w.getBumps());
+              }
+              state.setTier(WrestlerTier.fromFanCount(state.getFans()));
+              tierRecalculationService.recalculateTier(state);
+
+              if (w.getManager() != null) {
+                Npc manager = npcService.findByName(w.getManager());
+                if (manager != null) {
+                  state.setManager(manager);
+                }
+              }
+              wrestlerStateRepository.save(state);
             }
           } catch (IOException e) {
             log.error("Error loading wrestlers from file", e);
@@ -958,12 +1041,17 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncChampionshipsFromFile() {
+    if (skipIfNotEmpty && titleService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("championships.json");
     if (resource.exists()) {
       log.debug("Loading championships from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         List<TitleDTO> championshipsFromFile = mapper.readValue(is, new TypeReference<>() {});
+        Long universeId = getGlobalUniverseId();
+        List<Title> toSave = new ArrayList<>();
         for (TitleDTO dto : championshipsFromFile) {
           Optional<Title> existingTitle = titleService.findByName(dto.getName());
           Title title;
@@ -974,12 +1062,13 @@ public class DataInitializer implements Initializable {
                     dto.getDescription(),
                     dto.getTier(),
                     dto.getChampionshipType(),
-                    dto.getGender());
+                    dto.getGender(),
+                    universeId);
             log.debug(
                 "Created new title: {} with type: {}", dto.getName(), dto.getChampionshipType());
           } else {
             title = existingTitle.get();
-            log.debug("Title {} already exists, skipping creation.", dto.getName());
+            log.debug("Title {} already exists, updating.", dto.getName());
           }
           title.setChampionshipType(dto.getChampionshipType());
           title.setEffectScript(dto.getEffectScript());
@@ -988,11 +1077,19 @@ public class DataInitializer implements Initializable {
           if (dto.getIncludeInRankings() != null) {
             title.setIncludeInRankings(dto.getIncludeInRankings());
           }
-          titleService.save(title);
+          toSave.add(title);
+        }
+        titleService.saveAll(toSave);
 
-          // Award title if currentChampionName is provided
+        // Process awards separately as they involve complex logic
+        for (TitleDTO dto : championshipsFromFile) {
           if (dto.getCurrentChampionName() != null
               && !dto.getCurrentChampionName().trim().isEmpty()) {
+            Title title = titleService.findByName(dto.getName()).orElse(null);
+            if (title == null) {
+              continue;
+            }
+
             String[] championNames = dto.getCurrentChampionName().split(",");
             List<Wrestler> champions = new ArrayList<>();
             for (String name : championNames) {
@@ -1001,7 +1098,6 @@ public class DataInitializer implements Initializable {
             }
 
             if (!champions.isEmpty()) {
-              // Check if the title is already held by these champions
               boolean matchesCurrent =
                   title.getCurrentChampions().size() == champions.size()
                       && new HashSet<>(title.getCurrentChampions()).containsAll(champions);
@@ -1012,21 +1108,11 @@ public class DataInitializer implements Initializable {
                     "Awarded title {} to champions {}",
                     title.getName(),
                     dto.getCurrentChampionName());
-              } else {
-                log.debug(
-                    "Title {} already held by champions {}",
-                    title.getName(),
-                    dto.getCurrentChampionName());
               }
-            } else {
-              log.warn(
-                  "No champions found for names '{}' for title '{}'. Title will remain vacant.",
-                  dto.getCurrentChampionName(),
-                  dto.getName());
             }
           } else {
             // If no champion is specified in DTO leave it as it is currently.
-            log.debug("Leaving title {} as is in the database.", title.getName());
+            log.debug("Leaving title {} as is in the database.", dto.getName());
           }
         }
       } catch (IOException e) {
@@ -1036,6 +1122,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncDecksFromFile() {
+    if (skipIfNotEmpty && deckService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("decks.json");
     if (resource.exists()) {
       log.debug("Loading decks from file: {}", resource.getPath());
@@ -1052,19 +1141,17 @@ public class DataInitializer implements Initializable {
         // only one instance per ID during cascade merge.
         Map<Long, CardSet> setCache = new HashMap<>();
         cardSetRepository.findAll().forEach(cs -> setCache.put(cs.getId(), cs));
+
+        List<Deck> decksToSave = new ArrayList<>();
         for (DeckDTO deckDTO : decksFromFile) {
           Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());
           if (wrestler == null) {
             continue;
           }
-          // Try to find an existing deck for this wrestler
+
           List<Deck> byWrestler = deckService.findByWrestler(wrestler);
-          Deck deck;
-          if (!byWrestler.isEmpty()) {
-            deck = byWrestler.getFirst(); // Get the existing deck
-          } else {
-            deck = deckService.createDeck(wrestler);
-          }
+          Deck deck =
+              byWrestler.isEmpty() ? deckService.createDeck(wrestler) : byWrestler.getFirst();
 
           // Normalize existing DeckCard.set references to the canonical managed instances
           deck.getCards()
@@ -1085,17 +1172,10 @@ public class DataInitializer implements Initializable {
 
           // Keep track of cards to be removed
           Set<DeckCard> cardsToRemove = new HashSet<>(deck.getCards());
-
-          // Aggregate cards from DTO
           Map<String, Integer> cardKeyToAmount = new HashMap<>();
           Map<String, Card> cardKeyToCard = new HashMap<>();
 
           for (DeckCardDTO cardDTO : deckDTO.getCards()) {
-            log.debug(
-                "Looking for: {} in set {} from deck {}",
-                cardDTO.getNumber(),
-                cardDTO.getSet(),
-                wrestler.getName());
             Card card =
                 cardService.findByNumberAndSet(cardDTO.getNumber(), cardDTO.getSet()).orElse(null);
             if (card == null) {
@@ -1107,21 +1187,16 @@ public class DataInitializer implements Initializable {
               continue;
             }
 
-            // Ensure we use a single instance of CardSet from our cache
             CardSet canonicalSet =
-                setCache.computeIfAbsent(
-                    card.getSet().getId(),
-                    id -> {
-                      log.debug("Caching CardSet: {}", card.getSet().getName());
-                      return card.getSet();
-                    });
-            card.setSet(canonicalSet); // Replace with the cached instance
+                setCache.computeIfAbsent(card.getSet().getId(), id -> card.getSet());
+            card.setSet(canonicalSet);
 
             String key = card.getSet().getName() + "-" + card.getId();
             cardKeyToAmount.merge(key, cardDTO.getAmount(), Integer::sum);
             cardKeyToCard.putIfAbsent(key, card);
           }
 
+          boolean changed = false;
           for (var entry : cardKeyToAmount.entrySet()) {
             Card card = cardKeyToCard.get(entry.getKey());
             int amount = entry.getValue();
@@ -1133,36 +1208,36 @@ public class DataInitializer implements Initializable {
 
             if (existingDeckCardOpt.isPresent()) {
               DeckCard existingDeckCard = existingDeckCardOpt.get();
-              existingDeckCard.setAmount(amount);
-              cardsToRemove.remove(existingDeckCard); // Don't remove this card
-              log.debug(
-                  "Updated existing deck card: {} {}-{} set (Amount: {})",
-                  card.getName(),
-                  card.getSet().getName(),
-                  card.getId(),
-                  amount);
+              if (existingDeckCard.getAmount() != amount) {
+                existingDeckCard.setAmount(amount);
+                changed = true;
+              }
+              cardsToRemove.remove(existingDeckCard);
             } else {
-              log.debug(
-                  "Adding new deck card: {} {}-{} set (Amount: {})",
-                  card.getName(),
-                  card.getSet().getName(),
-                  card.getId(),
-                  amount);
               DeckCard newDeckCard = new DeckCard();
               newDeckCard.setCard(card);
               newDeckCard.setSet(card.getSet());
               newDeckCard.setAmount(amount);
-              newDeckCard.setDeck(deck); // Set the back-reference
-              deck.getCards().add(newDeckCard); // Add to the collection
+              newDeckCard.setDeck(deck);
+              deck.getCards().add(newDeckCard);
+              changed = true;
             }
           }
 
-          // Remove cards that are no longer in the DTO
-          deck.getCards().removeAll(cardsToRemove);
+          if (!cardsToRemove.isEmpty()) {
+            deck.getCards().removeAll(cardsToRemove);
+            changed = true;
+          }
 
-          deckService.save(deck); // Save the deck, which will cascade to the new cards.
-          log.debug("Saved deck for wrestler: {}", wrestler.getName());
+          if (changed) {
+            decksToSave.add(deck);
+          }
         }
+        deckService.saveAll(decksToSave);
+        log.debug(
+            "Deck loading completed - {} decks processed, {} updated",
+            decksFromFile.size(),
+            decksToSave.size());
       } catch (IOException e) {
         log.error("Error loading decks from file", e);
       }
@@ -1170,19 +1245,27 @@ public class DataInitializer implements Initializable {
   }
 
   private void initializeGameDate() {
-    if (gameSettingService.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
+    if (gameSettingRepository.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
       log.debug("In-game date not set. Initializing to current date.");
-      gameSettingService.saveCurrentGameDate(LocalDate.now());
+      com.github.javydreamercsw.management.domain.GameSetting setting =
+          new com.github.javydreamercsw.management.domain.GameSetting();
+      setting.setId(GameSettingService.CURRENT_GAME_DATE_KEY);
+      setting.setValue(LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE));
+      gameSettingRepository.save(setting);
     }
   }
 
   void syncNpcsFromFile() {
+    if (skipIfNotEmpty && npcService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("npcs.json");
     if (resource.exists()) {
       log.debug("Loading npcs from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         List<NpcDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
+        List<Npc> toSave = new ArrayList<>();
         for (NpcDTO dto : dtos) {
           Npc npc = npcService.findByName(dto.getName());
           if (npc == null) {
@@ -1205,10 +1288,10 @@ public class DataInitializer implements Initializable {
               log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
             }
           }
-          npcService.save(npc);
-          log.debug("Loaded npc: {}", dto.getName());
+          toSave.add(npc);
         }
-        log.debug("Npc loading completed - {} npcs loaded", dtos.size());
+        npcService.saveAll(toSave);
+        log.debug("Npc loading completed - {} npcs processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading npcs from file", e);
       }
@@ -1218,12 +1301,16 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncFactionsFromFile() {
+    if (skipIfNotEmpty && factionService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("factions.json");
     if (resource.exists()) {
       log.debug("Loading factions from file: {}", resource.getPath());
       ObjectMapper mapper = new ObjectMapper();
       try (var is = resource.getInputStream()) {
         List<FactionImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
+        Long universeId = getGlobalUniverseId();
         for (FactionImportDTO dto : dtos) {
           Optional<Wrestler> leaderOpt = wrestlerRepository.findByName(dto.getLeader());
           if (leaderOpt.isPresent()) {
@@ -1231,7 +1318,7 @@ public class DataInitializer implements Initializable {
             if (factionOpt.isEmpty()) {
               factionOpt =
                   factionService.createFaction(
-                      dto.getName(), dto.getDescription(), leaderOpt.get().getId());
+                      dto.getName(), dto.getDescription(), leaderOpt.get().getId(), universeId);
             }
             if (factionOpt.isPresent()) {
               Faction faction = factionOpt.get();
@@ -1252,7 +1339,7 @@ public class DataInitializer implements Initializable {
           }
           log.debug("Loaded faction: {}", dto.getName());
         }
-        log.debug("Faction loading completed - {} factions loaded", dtos.size());
+        log.debug("Faction loading completed - {} factions processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading factions from file", e);
       }
@@ -1262,6 +1349,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncTeamsFromFile() {
+    if (skipIfNotEmpty && teamService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("teams.json");
     if (resource.exists()) {
       log.debug("Loading teams from file: {}", resource.getPath());
@@ -1296,7 +1386,7 @@ public class DataInitializer implements Initializable {
           }
           log.debug("Loaded team: {}", dto.getName());
         }
-        log.debug("Team loading completed - {} teams loaded", dtos.size());
+        log.debug("Team loading completed - {} teams processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading teams from file", e);
       }
@@ -1306,6 +1396,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncLocationsFromFile() {
+    if (skipIfNotEmpty && locationRepository.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("locations.json");
     if (resource.exists()) {
       log.debug("Loading locations from file: {}", resource.getPath());
@@ -1313,31 +1406,43 @@ public class DataInitializer implements Initializable {
         List<LocationImportDTO> locationsFromFile =
             objectMapper.readValue(is, new TypeReference<>() {});
         if (locationsFromFile == null) {
-          log.warn("No locations found in {}", resource.getPath());
           return;
         }
+
+        List<Location> toSave = new ArrayList<>();
         log.debug("Found {} locations in JSON file", locationsFromFile.size());
         for (LocationImportDTO dto : locationsFromFile) {
           Optional<Location> existingLocation = locationRepository.findByName(dto.getName());
           if (existingLocation.isEmpty()) {
-            Location location =
+            toSave.add(
                 Location.builder()
                     .name(dto.getName())
                     .description(dto.getDescription())
                     .imageUrl(dto.getImageUrl())
                     .culturalTags(dto.getCulturalTags())
-                    .build();
-            locationRepository.save(location);
-            log.debug("Saved new location: {}", location.getName());
+                    .build());
           } else {
             Location existing = existingLocation.get();
-            existing.setDescription(dto.getDescription());
-            existing.setImageUrl(dto.getImageUrl());
-            existing.setCulturalTags(dto.getCulturalTags());
-            locationRepository.save(existing);
-            log.debug("Updated existing location: {}", existing.getName());
+            boolean changed = false;
+            if (!dto.getDescription().equals(existing.getDescription())) {
+              existing.setDescription(dto.getDescription());
+              changed = true;
+            }
+            if (dto.getImageUrl() != null && !dto.getImageUrl().equals(existing.getImageUrl())) {
+              existing.setImageUrl(dto.getImageUrl());
+              changed = true;
+            }
+            if (dto.getCulturalTags() != null
+                && !dto.getCulturalTags().equals(existing.getCulturalTags())) {
+              existing.setCulturalTags(dto.getCulturalTags());
+              changed = true;
+            }
+            if (changed) {
+              toSave.add(existing);
+            }
           }
         }
+        locationRepository.saveAll(toSave);
         locationRepository.flush();
         log.debug("Location loading completed - {} locations processed", locationsFromFile.size());
 
@@ -1350,22 +1455,26 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncArenasFromFile() {
+    if (skipIfNotEmpty && arenaRepository.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("arenas.json");
     if (resource.exists()) {
       log.debug("Loading arenas from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
         List<ArenaImportDTO> arenasFromFile = objectMapper.readValue(is, new TypeReference<>() {});
         if (arenasFromFile == null) {
-          log.warn("No arenas found in {}", resource.getPath());
           return;
         }
+
+        List<Arena> toSave = new ArrayList<>();
         log.debug("Found {} arenas in JSON file", arenasFromFile.size());
         for (ArenaImportDTO dto : arenasFromFile) {
           Optional<Arena> existingArena = arenaRepository.findByName(dto.getName());
           if (existingArena.isEmpty()) {
             Optional<Location> location = locationRepository.findByName(dto.getLocation());
             if (location.isPresent()) {
-              Arena arena =
+              toSave.add(
                   Arena.builder()
                       .name(dto.getName())
                       .description(dto.getDescription())
@@ -1374,34 +1483,42 @@ public class DataInitializer implements Initializable {
                       .alignmentBias(dto.getAlignmentBias())
                       .imageUrl(dto.getImageUrl())
                       .environmentalTraits(dto.getEnvironmentalTraits())
-                      .build();
-              arenaRepository.save(arena);
-              log.debug("Saved new arena: {}", arena.getName());
-            } else {
-              log.warn(
-                  "Location '{}' not found for arena '{}'. Skipping arena.",
-                  dto.getLocation(),
-                  dto.getName());
+                      .build());
             }
           } else {
             Arena existing = existingArena.get();
-            existing.setDescription(dto.getDescription());
-            existing.setCapacity(dto.getCapacity());
-            existing.setAlignmentBias(dto.getAlignmentBias());
-            existing.setImageUrl(dto.getImageUrl());
-            existing.setEnvironmentalTraits(dto.getEnvironmentalTraits());
-            Optional<Location> location = locationRepository.findByName(dto.getLocation());
-            location.ifPresentOrElse(
-                existing::setLocation,
-                () ->
-                    log.warn(
-                        "Location '{}' not found for existing arena '{}'. Location not updated.",
-                        dto.getLocation(),
-                        dto.getName()));
-            arenaRepository.save(existing);
-            log.debug("Updated existing arena: {}", existing.getName());
+            boolean changed = false;
+            if (!Objects.equals(dto.getDescription(), existing.getDescription())) {
+              existing.setDescription(dto.getDescription());
+              changed = true;
+            }
+            if (dto.getCapacity() != existing.getCapacity()) {
+              existing.setCapacity(dto.getCapacity());
+              changed = true;
+            }
+            if (dto.getAlignmentBias() != existing.getAlignmentBias()) {
+              existing.setAlignmentBias(dto.getAlignmentBias());
+              changed = true;
+            }
+            if (!Objects.equals(dto.getImageUrl(), existing.getImageUrl())) {
+              existing.setImageUrl(dto.getImageUrl());
+              changed = true;
+            }
+            if (!Objects.equals(dto.getEnvironmentalTraits(), existing.getEnvironmentalTraits())) {
+              existing.setEnvironmentalTraits(dto.getEnvironmentalTraits());
+              changed = true;
+            }
+            Optional<Location> locationOpt = locationRepository.findByName(dto.getLocation());
+            if (locationOpt.isPresent() && !locationOpt.get().equals(existing.getLocation())) {
+              existing.setLocation(locationOpt.get());
+              changed = true;
+            }
+            if (changed) {
+              toSave.add(existing);
+            }
           }
         }
+        arenaRepository.saveAll(toSave);
         log.debug("Arena loading completed - {} arenas processed", arenasFromFile.size());
       } catch (IOException e) {
         log.error("Error loading arenas from file", e);
@@ -1412,6 +1529,9 @@ public class DataInitializer implements Initializable {
   }
 
   private void syncRelationshipsFromFile() {
+    if (skipIfNotEmpty && relationshipService.count() > 0) {
+      return;
+    }
     ClassPathResource resource = new ClassPathResource("relationships.json");
     if (resource.exists()) {
       log.debug("Loading relationships from file: {}", resource.getPath());
@@ -1431,19 +1551,6 @@ public class DataInitializer implements Initializable {
                 dto.getLevel(),
                 dto.getIsStoryline(),
                 dto.getNotes());
-            log.debug(
-                "Loaded relationship: {} {} {} (Level: {})",
-                dto.getWrestler1(),
-                dto.getType(),
-                dto.getWrestler2(),
-                dto.getLevel());
-          } else {
-            if (w1.isEmpty()) {
-              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler1());
-            }
-            if (w2.isEmpty()) {
-              log.warn("Wrestler '{}' not found for relationship. Skipping.", dto.getWrestler2());
-            }
           }
         }
         log.debug("Relationship loading completed - {} relationships processed", dtos.size());

@@ -60,7 +60,8 @@ public class SegmentTypeListView extends Main {
   private Binder<SegmentType> binder;
 
   public SegmentTypeListView(
-      @NonNull SegmentTypeService segmentTypeService, @NonNull SecurityUtils securityUtils) {
+      @NonNull final SegmentTypeService segmentTypeService,
+      @NonNull final SecurityUtils securityUtils) {
     this.segmentTypeService = segmentTypeService;
     this.securityUtils = securityUtils;
     initializeUI();
@@ -106,7 +107,7 @@ public class SegmentTypeListView extends Main {
     refreshGrid();
   }
 
-  private HorizontalLayout createActionsColumn(SegmentType segmentType) {
+  private HorizontalLayout createActionsColumn(final SegmentType segmentType) {
     Button editButton = new Button(new Icon(VaadinIcon.EDIT));
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.setTooltipText("Edit Segment Type");
@@ -135,14 +136,14 @@ public class SegmentTypeListView extends Main {
     editDialog.open();
   }
 
-  private void openEditDialog(SegmentType segmentType) {
+  private void openEditDialog(final SegmentType segmentType) {
     editingSegmentType = segmentType;
     setupEditDialog("Edit Segment Type");
     binder.readBean(editingSegmentType);
     editDialog.open();
   }
 
-  private void setupEditDialog(String headerTitle) {
+  private void setupEditDialog(final String headerTitle) {
     editDialog = new Dialog();
     editDialog.setHeaderTitle(headerTitle);
     editDialog.setWidth("500px");
@@ -198,7 +199,7 @@ public class SegmentTypeListView extends Main {
     }
   }
 
-  private void confirmDelete(SegmentType segmentType) {
+  private void confirmDelete(final SegmentType segmentType) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setHeaderTitle("Confirm Delete");
     confirmDialog.add(
@@ -216,7 +217,7 @@ public class SegmentTypeListView extends Main {
     confirmDialog.open();
   }
 
-  private void deleteSegmentType(SegmentType segmentType, Dialog confirmDialog) {
+  private void deleteSegmentType(final SegmentType segmentType, final Dialog confirmDialog) {
     try {
       segmentTypeService.deleteSegmentType(segmentType.getId());
       Notification.show(

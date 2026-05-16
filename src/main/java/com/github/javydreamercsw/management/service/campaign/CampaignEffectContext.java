@@ -32,77 +32,77 @@ public class CampaignEffectContext {
 
   // ==================== Resource Management ====================
 
-  public void spendStamina(int amount) {
+  public void spendStamina(final int amount) {
     // TODO: Integrate with Match Engine to reduce current stamina
-    log.info("[Script] Spending {} Stamina", amount);
+    log.debug("[Script] Spending {} Stamina", amount);
   }
 
-  public void gainStamina(int amount) {
+  public void gainStamina(final int amount) {
     // TODO: Integrate with Match Engine to increase current stamina
-    log.info("[Script] Gaining {} Stamina", amount);
+    log.debug("[Script] Gaining {} Stamina", amount);
   }
 
-  public void gainHitPoints(int amount) {
+  public void gainHitPoints(final int amount) {
     // TODO: Integrate with Match Engine to heal
-    log.info("[Script] Gaining {} HP", amount);
+    log.debug("[Script] Gaining {} HP", amount);
   }
 
-  public void damage(int amount) {
+  public void damage(final int amount) {
     // TODO: Integrate with Match Engine to damage opponent
-    log.info("[Script] Dealing {} Damage to opponent", amount);
+    log.debug("[Script] Dealing {} Damage to opponent", amount);
   }
 
-  public void gainMomentum(int amount) {
+  public void gainMomentum(final int amount) {
     // TODO: Integrate with Match Engine momentum tracker
-    log.info("[Script] Gaining {} Momentum", amount);
+    log.debug("[Script] Gaining {} Momentum", amount);
   }
 
-  public void drawCard(int amount) {
+  public void drawCard(final int amount) {
     // TODO: Integrate with Deck/Hand management
-    log.info("[Script] Drawing {} cards", amount);
+    log.debug("[Script] Drawing {} cards", amount);
   }
 
   // ==================== Match Flow Control ====================
 
   public void gainInitiative() {
     // TODO: Set initiative to player
-    log.info("[Script] Gaining Initiative");
+    log.debug("[Script] Gaining Initiative");
   }
 
   public void pin() {
     // TODO: Attempt pinfall
-    log.info("[Script] Attempting Pin");
+    log.debug("[Script] Attempting Pin");
   }
 
   public void breakPin() {
     // TODO: Force pin break
-    log.info("[Script] Breaking Pin");
+    log.debug("[Script] Breaking Pin");
   }
 
   public void negateAttack() {
     // TODO: Cancel incoming attack
-    log.info("[Script] Negating Attack");
+    log.debug("[Script] Negating Attack");
   }
 
   // ==================== Modifiers ====================
 
-  public void modifyOpponentRoll(int modifier) {
+  public void modifyOpponentRoll(final int modifier) {
     // TODO: Add temporary modifier to opponent's next roll
-    log.info("[Script] Modifying Opponent Roll by {}", modifier);
+    log.debug("[Script] Modifying Opponent Roll by {}", modifier);
   }
 
-  public void modifyRoll(int modifier) {
+  public void modifyRoll(final int modifier) {
     // TODO: Add temporary modifier to player's roll
-    log.info("[Script] Modifying Player Roll by {}", modifier);
+    log.debug("[Script] Modifying Player Roll by {}", modifier);
   }
 
-  public void modifyBackstageDice(int amount) {
+  public void modifyBackstageDice(final int amount) {
     // TODO: Add bonus dice for backstage checks
-    log.info("[Script] Adding {} dice to Backstage Check", amount);
+    log.debug("[Script] Adding {} dice to Backstage Check", amount);
   }
 
-  public void modifyAttribute(String attribute, int amount) {
+  public void modifyAttribute(final String attribute, final int amount) {
     // TODO: Temporary or permanent attribute buff
-    log.info("[Script] Modifying attribute {} by {}", attribute, amount);
+    log.debug("[Script] Modifying attribute {} by {}", attribute, amount);
   }
 }

@@ -56,7 +56,7 @@ public class PermissionService {
    * @param targetDomainObject The object to check ownership for.
    * @return True if the user is the owner, false otherwise.
    */
-  public boolean isOwner(@NonNull Object targetDomainObject) {
+  public boolean isOwner(@NonNull final Object targetDomainObject) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null) {
       log.warn("isOwner: Authentication is null");
@@ -148,16 +148,16 @@ public class PermissionService {
    * @param targetType The type of the object (e.g., "Wrestler", "Deck").
    * @return True if the user is the owner, false otherwise.
    */
-  public boolean isOwner(Long targetId, String targetType) {
+  public boolean isOwner(final Long targetId, final String targetType) {
     if (targetId == null || targetType == null) {
       return false;
     }
 
-    if (targetType.equals("Wrestler")) {
+    if ("Wrestler".equals(targetType)) {
       return wrestlerRepository.findById(targetId).map(this::isOwner).orElse(false);
     }
 
-    if (targetType.equals("Deck")) {
+    if ("Deck".equals(targetType)) {
       return deckRepository.findById(targetId).map(this::isOwner).orElse(false);
     }
 

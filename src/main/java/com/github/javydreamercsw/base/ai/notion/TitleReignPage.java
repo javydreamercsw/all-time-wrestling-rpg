@@ -55,7 +55,7 @@ public class TitleReignPage extends NotionPage {
     return extractPropertyAsString("Notes");
   }
 
-  private String extractPropertyAsString(String name) {
+  private String extractPropertyAsString(final String name) {
     if (getRawProperties() != null && getRawProperties().containsKey(name)) {
       Object prop = getRawProperties().get(name);
       if (prop instanceof String) {
@@ -65,12 +65,12 @@ public class TitleReignPage extends NotionPage {
     return null;
   }
 
-  private String extractRelationId(String name) {
+  private String extractRelationId(final String name) {
     List<String> ids = extractRelationIds(name);
     return ids.isEmpty() ? null : ids.get(0);
   }
 
-  private List<String> extractRelationIds(String name) {
+  private List<String> extractRelationIds(final String name) {
     List<String> ids = new ArrayList<>();
     if (getRawProperties() != null && getRawProperties().containsKey(name)) {
       Object prop = getRawProperties().get(name);

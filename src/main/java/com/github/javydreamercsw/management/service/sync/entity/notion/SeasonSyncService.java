@@ -44,10 +44,10 @@ public class SeasonSyncService extends BaseSyncService {
   @Autowired @Lazy private SeasonSyncService self;
 
   public SeasonSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      SeasonService seasonService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final SeasonService seasonService,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.seasonService = seasonService;
     this.self = this;
@@ -59,7 +59,7 @@ public class SeasonSyncService extends BaseSyncService {
    * @param operationId Operation ID for progress tracking
    * @return SyncResult indicating success or failure with details
    */
-  public SyncResult syncSeasons(@NonNull String operationId) {
+  public SyncResult syncSeasons(@NonNull final String operationId) {
     // Check if already synced in current session
     if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("seasons")) {
       return SyncResult.success("Seasons", 0, 0, 0);
@@ -80,7 +80,7 @@ public class SeasonSyncService extends BaseSyncService {
     }
   }
 
-  private SyncResult performSeasonsSync(@NonNull String operationId, long startTime) {
+  private SyncResult performSeasonsSync(@NonNull final String operationId, final long startTime) {
     try {
       // Check if NOTION_TOKEN is available
       if (!EnvironmentVariableUtil.isNotionTokenAvailable()) {
@@ -157,7 +157,7 @@ public class SeasonSyncService extends BaseSyncService {
   }
 
   private List<SeasonDTO> convertSeasonPagesToDTO(
-      @NonNull List<SeasonPage> seasonPages, String operationId) {
+      @NonNull final List<SeasonPage> seasonPages, final String operationId) {
     return processWithControlledParallelism(
         seasonPages,
         this::convertSeasonPageToDTO,
@@ -167,7 +167,7 @@ public class SeasonSyncService extends BaseSyncService {
         "Converted %d/%d seasons");
   }
 
-  private SeasonDTO convertSeasonPageToDTO(@NonNull SeasonPage seasonPage) {
+  private SeasonDTO convertSeasonPageToDTO(@NonNull final SeasonPage seasonPage) {
     try {
       SeasonDTO dto = new SeasonDTO();
 
@@ -202,7 +202,7 @@ public class SeasonSyncService extends BaseSyncService {
   }
 
   /** Saves season DTOs to the database. */
-  private int saveSeasonsToDB(@NonNull List<SeasonDTO> seasonDTOs) {
+  private int saveSeasonsToDB(@NonNull final List<SeasonDTO> seasonDTOs) {
     int savedCount = 0;
     int updatedCount = 0;
     int skippedCount = 0;
@@ -232,7 +232,7 @@ public class SeasonSyncService extends BaseSyncService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public Boolean processSingleSeason(SeasonDTO seasonDTO) {
+  public Boolean processSingleSeason(final SeasonDTO seasonDTO) {
     try {
       Season existingSeason = null;
 

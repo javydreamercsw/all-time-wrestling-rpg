@@ -42,7 +42,8 @@ public class ShowPlanningController {
   private final ShowService showService;
 
   @GetMapping("/context/{showId}")
-  public ResponseEntity<ShowPlanningContextDTO> getShowPlanningContext(@PathVariable Long showId) {
+  public ResponseEntity<ShowPlanningContextDTO> getShowPlanningContext(
+      @PathVariable final Long showId) {
     return showService
         .getShowById(showId)
         .map(show -> ResponseEntity.ok(showPlanningService.getShowPlanningContext(show)))
@@ -50,13 +51,13 @@ public class ShowPlanningController {
   }
 
   @PostMapping("/plan")
-  public ResponseEntity<ProposedShow> planShow(@RequestBody ShowPlanningContextDTO context) {
+  public ResponseEntity<ProposedShow> planShow(@RequestBody final ShowPlanningContextDTO context) {
     return ResponseEntity.ok(showPlanningAiService.planShow(context));
   }
 
   @PostMapping("/approve/{showId}")
   public ResponseEntity<Void> approveSegments(
-      @PathVariable Long showId, @RequestBody List<ProposedSegment> segments) {
+      @PathVariable final Long showId, @RequestBody final List<ProposedSegment> segments) {
     showService
         .getShowById(showId)
         .ifPresent(show -> showPlanningService.approveSegments(show, segments));

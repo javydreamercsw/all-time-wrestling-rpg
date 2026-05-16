@@ -45,13 +45,13 @@ public class RankingController {
 
   @GetMapping("/championships/{id}/contenders")
   @Operation(summary = "Get ranked contenders for a championship")
-  public List<?> getRankedContenders(@PathVariable Long id) {
+  public List<?> getRankedContenders(@PathVariable final Long id) {
     return rankingService.getRankedContenders(id);
   }
 
   @GetMapping("/championships/{id}/champion")
   @Operation(summary = "Get current champion for a championship")
-  public ResponseEntity<List<ChampionDTO>> getCurrentChampions(@PathVariable Long id) {
+  public ResponseEntity<List<ChampionDTO>> getCurrentChampions(@PathVariable final Long id) {
     List<ChampionDTO> champions = rankingService.getCurrentChampions(id);
     return champions.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(champions);
   }

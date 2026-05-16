@@ -29,8 +29,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureAdminToolsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     // Default tab is Admin Tools
     waitForText("Recalculate Wrestler Tiers");
@@ -38,16 +37,16 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Admin",
         "Admin Tools",
-        "Perform critical maintenance tasks such as manual tier recalculation and account"
-            + " management.",
+        """
+        Perform critical maintenance tasks such as manual tier recalculation and account\
+         management.\
+        """,
         "admin-tools");
   }
 
   @Test
   void testCaptureAiSettingsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     // Click the AI Settings tab more robustly
     WebElement tab =
@@ -67,9 +66,11 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Admin",
         "AI Configuration",
-        "Configure the Artificial Intelligence providers used for match narration, image"
-            + " generation, and creative assistance. You can switch between different LLM providers"
-            + " (OpenAI, Anthropic, Gemini) and configure their specific settings.",
+        """
+        Configure the Artificial Intelligence providers used for match narration, image\
+         generation, and creative assistance. You can switch between different LLM providers\
+         (OpenAI, Anthropic, Gemini) and configure their specific settings.\
+        """,
         "admin-ai-settings");
   }
 
@@ -95,53 +96,54 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
       injuryTypeRepository.save(kneeInjury);
     }
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/injury-types");
-
-    waitForVaadinClientToLoad();
+    navigateTo("injury-types");
 
     waitForText("Injury Types");
 
     documentFeature(
         "Admin",
         "Injury Management",
-        "Define different types of injuries, their severity, and recovery times. These are used"
-            + " to dynamically affect wrestler performance and availability in the campaign and"
-            + " booking modes.",
+        """
+        Define different types of injuries, their severity, and recovery times. These are used\
+         to dynamically affect wrestler performance and availability in the campaign and\
+         booking modes.\
+        """,
         "admin-injury-types");
   }
 
   @Test
   void testCaptureWrestlerListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    waitForVaadinClientToLoad();
+    navigateTo("wrestler-list");
     waitForText("Wrestlers");
 
     documentFeature(
         "Admin",
         "Wrestler Management",
-        "Manage the entire roster of wrestlers. Add new talent, edit existing stats, assign images,"
-            + " and manage contract details from this centralized view.",
+        """
+        Manage the entire roster of wrestlers. Add new talent, edit existing stats, assign images,\
+         and manage contract details from this centralized view.\
+        """,
         "admin-wrestler-list");
   }
 
   @Test
   void testCaptureBackstageActionsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-template-list");
-    waitForVaadinClientToLoad();
+    navigateTo("show-template-list");
     waitForText("Show Templates");
 
     documentFeature(
         "Admin",
         "Show Templates",
-        "Define reusable templates for your shows. Set up standard segments, match orders, and"
-            + " branding to quickly book consistent weekly episodes or pay-per-views.",
+        """
+        Define reusable templates for your shows. Set up standard segments, match orders, and\
+         branding to quickly book consistent weekly episodes or pay-per-views.\
+        """,
         "admin-show-templates");
   }
 
   @Test
   void testCaptureExpansionManagementView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     WebElement tab =
         waitForVaadinElement(
@@ -157,12 +159,14 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Admin",
         "Expansion Management",
-        "Group and toggle themed content sets. Enable or disable entire collections of wrestlers,"
-            + " teams, and factions to customize the available roster for matches and leagues.",
+        """
+        Group and toggle themed content sets. Enable or disable entire collections of wrestlers,\
+         teams, and factions to customize the available roster for matches and leagues.\
+        """,
         "admin-expansion-management");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

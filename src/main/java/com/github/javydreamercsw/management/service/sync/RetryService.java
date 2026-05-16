@@ -36,7 +36,7 @@ public class RetryService {
       Pattern.compile("retry-after[:\\s]+([0-9]+)", Pattern.CASE_INSENSITIVE);
 
   @Autowired
-  public RetryService(RetryConfig config) {
+  public RetryService(final RetryConfig config) {
     this.config = config;
   }
 
@@ -45,7 +45,8 @@ public class RetryService {
     T call(int attemptNumber) throws Exception;
   }
 
-  public <T> T executeWithRetry(String entityType, AttemptCallable<T> callable) throws Exception {
+  public <T> T executeWithRetry(final String entityType, final AttemptCallable<T> callable)
+      throws Exception {
     int maxAttempts = config.getMaxAttempts(entityType);
     long delay = config.getInitialDelayMs(entityType);
     double backoff = config.getBackoffMultiplier();
@@ -79,8 +80,10 @@ public class RetryService {
           long retryAfterMs = extractRetryAfterDelay(e);
           if (retryAfterMs > 0) {
             log.warn(
-                "Attempt {}/{} failed for {} due to rate limiting (429), respecting Retry-After:"
-                    + " {}ms",
+                """
+                Attempt {}/{} failed for {} due to rate limiting (429), respecting Retry-After:\
+                 {}ms\
+                """,
                 attempt,
                 maxAttempts,
                 entityType,
@@ -127,7 +130,7 @@ public class RetryService {
   }
 
   /** Check if the error is a rate limiting error (HTTP 429) */
-  private boolean isRateLimitError(@NonNull NotionAPIError error) {
+  private boolean isRateLimitError(@NonNull final NotionAPIError error) {
     String message = error.getMessage().toLowerCase();
     return message.contains("429")
         || message.contains("rate limit")
@@ -138,7 +141,7 @@ public class RetryService {
    * Extract the Retry-After delay from the error message or headers Returns delay in milliseconds,
    * or 0 if not found
    */
-  private long extractRetryAfterDelay(@NonNull NotionAPIError error) {
+  private long extractRetryAfterDelay(@NonNull final NotionAPIError error) {
     String message = error.getMessage();
 
     Matcher matcher = RETRY_AFTER_PATTERN.matcher(message);
@@ -151,14 +154,17 @@ public class RetryService {
       }
     }
     log.warn(
-        "Could not extract numeric Retry-After value from rate limit error. "
-            + "This might indicate an unsupported format (e.g., HTTP-date). "
-            + "Error message: {}",
+        """
+        Could not extract numeric Retry-After value from rate limit error. \
+        This might indicate an unsupported format (e.g., HTTP-date). \
+        Error message: {}\
+        """,
         message);
     return 10_000L;
   }
 
-  public RetryContext createContext(@NonNull String entityType, @NonNull String operationName) {
+  public RetryContext createContext(
+      @NonNull final String entityType, @NonNull final String operationName) {
     int maxAttempts = config.getMaxAttempts(entityType);
     return new RetryContext(entityType, operationName, maxAttempts);
   }
@@ -174,7 +180,9 @@ public class RetryService {
     private final long startTime = System.currentTimeMillis();
 
     public RetryContext(
-        @NonNull String entityType, @NonNull String operationName, int maxAttempts) {
+        @NonNull final String entityType,
+        @NonNull final String operationName,
+        final int maxAttempts) {
       this.entityType = entityType;
       this.operationName = operationName;
       this.maxAttempts = maxAttempts;
@@ -184,7 +192,7 @@ public class RetryService {
       return System.currentTimeMillis() - startTime;
     }
 
-    public void recordAttempt(int attempt, Exception e) {
+    public void recordAttempt(final int attempt, final Exception e) {
       this.currentAttempt = attempt;
       this.lastException = e;
     }

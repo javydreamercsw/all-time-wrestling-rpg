@@ -47,7 +47,7 @@ class WorldUIIT extends ManagementIntegrationTest {
   @Autowired private LocationRepository locationRepository;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     arenaRepository.deleteAllInBatch();
     locationRepository.deleteAllInBatch();
   }

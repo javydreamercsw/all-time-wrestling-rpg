@@ -21,14 +21,16 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,13 +43,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TierRecalculationService implements RankingService {
 
-  private final WrestlerRepository wrestlerRepository;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private final TierBoundaryService tierBoundaryService;
+  private final UniverseContextService universeContextService;
 
   @Override
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void recalculateRanking(List<WrestlerData> wrestlersData) {
-    log.info("Starting tier recalculation...");
+  public void recalculateRanking(final List<WrestlerData> wrestlersData) {
+    log.debug("Starting tier recalculation...");
 
     Map<Gender, List<WrestlerData>> wrestlersByGender =
         wrestlersData.stream().collect(Collectors.groupingBy(WrestlerData::getGender));
@@ -74,7 +76,7 @@ public class TierRecalculationService implements RankingService {
         genderWrestlers.sort((w1, w2) -> w2.getFans().compareTo(w1.getFans()));
         int totalWrestlers = genderWrestlers.size();
         if (totalWrestlers == 0) {
-          log.info("No wrestlers found for gender {} to recalculate tiers.", gender);
+          log.warn("No wrestlers found for gender {} to recalculate tiers.", gender);
           continue;
         }
 
@@ -163,39 +165,42 @@ public class TierRecalculationService implements RankingService {
       for (WrestlerData wrestlerData : genderWrestlers) {
         WrestlerTier newTier = calculateTier(wrestlerData.getFans(), wrestlerData.getGender());
         if (newTier != null) {
-          if (wrestlerData.getTier() != newTier) {
-            log.info(
-                "Updating {}'s tier from {} to {}",
+          if (wrestlerData instanceof WrestlerState state && state.getTier() != newTier) {
+            log.debug(
+                "Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
+            state.setTier(newTier);
+            wrestlerStateRepository.save(state);
+          } else {
+            log.warn(
+                "Wrestler {} with {} fans does not match any tier!",
                 wrestlerData.getName(),
-                wrestlerData.getTier(),
-                newTier);
-            wrestlerData.setTier(newTier);
-            wrestlerRepository.save(
-                (Wrestler) wrestlerData); // Cast back to Wrestler for repository
+                wrestlerData.getFans());
           }
-        } else {
-          log.warn(
-              "Wrestler {} with {} fans does not match any tier!",
-              wrestlerData.getName(),
-              wrestlerData.getFans());
         }
       }
     }
-    log.info("Tier recalculation finished.");
+    log.debug("Tier recalculation finished.");
+  }
+
+  public void recalculateAllTiers() {
+    Long universeId = universeContextService.getCurrentUniverseId();
+    List<WrestlerState> states = wrestlerStateRepository.findByUniverseId(universeId);
+    recalculateRanking(new ArrayList<>(states));
   }
 
   @Transactional
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void recalculateTier(Wrestler wrestler) {
-    long fans = wrestler.getFans() != null ? wrestler.getFans() : 0L;
-    WrestlerTier newTier = calculateTier(fans, wrestler.getGender());
-    if (wrestler.getTier() != newTier) {
-      log.info("Updating {}'s tier from {} to {}", wrestler.getName(), wrestler.getTier(), newTier);
-      wrestler.setTier(newTier);
+  public void recalculateTier(final WrestlerData wrestlerData) {
+    long fans = wrestlerData.getFans();
+    WrestlerTier newTier = calculateTier(fans, wrestlerData.getGender());
+    if (wrestlerData instanceof WrestlerState state && state.getTier() != newTier) {
+      log.debug("Updating {}'s tier from {} to {}", state.getName(), state.getTier(), newTier);
+      state.setTier(newTier);
+      wrestlerStateRepository.save(state);
     }
   }
 
-  private WrestlerTier calculateTier(long fans, Gender gender) {
+  private WrestlerTier calculateTier(final long fans, @NonNull final Gender gender) {
     List<TierBoundary> boundaries = new ArrayList<>(tierBoundaryService.findAllByGender(gender));
     // Sort by prestige (ICON first)
     boundaries.sort(Comparator.comparingInt(b -> b.getTier().ordinal()));

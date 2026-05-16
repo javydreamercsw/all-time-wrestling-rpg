@@ -32,13 +32,13 @@ public class MatchFulfillmentService {
   private final MatchFulfillmentRepository matchFulfillmentRepository;
 
   @Transactional(readOnly = true)
-  public Optional<MatchFulfillment> getFulfillmentWithDetails(Long id) {
+  public Optional<MatchFulfillment> getFulfillmentWithDetails(final Long id) {
     return matchFulfillmentRepository.findByIdWithDetails(id);
   }
 
   @Transactional
   public MatchFulfillment submitResult(
-      MatchFulfillment fulfillment, Wrestler winner, Account user) {
+      final MatchFulfillment fulfillment, final Wrestler winner, final Account user) {
     if (fulfillment.getStatus() == MatchFulfillment.FulfillmentStatus.FINALIZED) {
       throw new IllegalStateException("Match result is already finalized.");
     }

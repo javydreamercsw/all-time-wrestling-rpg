@@ -27,7 +27,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -60,8 +59,4 @@ public class TierBoundary {
 
   @Column(name = "contender_entry_fee", nullable = false)
   private Long contenderEntryFee;
-
-  public @Nullable Long getId() {
-    return id;
-  }
 }

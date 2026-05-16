@@ -16,14 +16,13 @@
 */
 package com.github.javydreamercsw.base.domain.account;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -32,7 +31,7 @@ import org.jspecify.annotations.Nullable;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Achievement extends AbstractEntity<Long> {
+public class Achievement extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,9 +56,4 @@ public class Achievement extends AbstractEntity<Long> {
 
   @Column(name = "icon_url")
   @Size(max = 512) private String iconUrl;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

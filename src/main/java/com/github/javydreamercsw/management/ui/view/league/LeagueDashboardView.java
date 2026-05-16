@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueMembershipReposi
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -70,7 +71,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
   private Div tabsContent;
 
   @Override
-  public void setParameter(BeforeEvent event, Long leagueId) {
+  public void setParameter(final BeforeEvent event, final Long leagueId) {
     Optional<League> leagueOpt = leagueService.getLeagueById(leagueId);
     if (leagueOpt.isPresent()) {
       this.league = leagueOpt.get();
@@ -152,7 +153,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
     standingsGrid.addColumn(r -> r.getOwner().getUsername()).setHeader("Player");
     standingsGrid.addColumn(r -> r.getWrestler().getName()).setHeader("Wrestler");
     standingsGrid
-        .addColumn(r -> String.format("%d - %d - %d", r.getWins(), r.getLosses(), r.getDraws()))
+        .addColumn(r -> "%d - %d - %d".formatted(r.getWins(), r.getLosses(), r.getDraws()))
         .setHeader("Record");
 
     List<LeagueRoster> rosters = leagueRosterRepository.findByLeague(league);
@@ -171,7 +172,10 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
     Grid<LeagueRoster> rosterGrid = new Grid<>(LeagueRoster.class, false);
     rosterGrid.addColumn(r -> r.getOwner().getUsername()).setHeader("Owner").setSortable(true);
     rosterGrid.addColumn(r -> r.getWrestler().getName()).setHeader("Wrestler").setSortable(true);
-    rosterGrid.addColumn(r -> r.getWrestler().getTier()).setHeader("Tier").setSortable(true);
+    rosterGrid
+        .addColumn(r -> r.getWrestler().getDefaultState().map(WrestlerState::getTier).orElse(null))
+        .setHeader("Tier")
+        .setSortable(true);
     rosterGrid.addColumn(r -> r.getWrestler().getFans()).setHeader("Fans").setSortable(true);
 
     List<LeagueRoster> rosters = leagueRosterRepository.findByLeague(league);
@@ -209,8 +213,16 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
             })
         .setHeader("Actions");
 
-    // Fetch shows for this league
-    List<Show> leagueShows = showService.getShowsByLeague(league);
+    // Fetch shows associated with this league directly, then supplement with universe shows
+    List<Show> leagueShows = new java.util.ArrayList<>(showService.getShowsByLeague(league));
+    if (league.getUniverse() != null) {
+      List<Show> universeShows = showService.getShowsByUniverse(league.getUniverse());
+      for (Show s : universeShows) {
+        if (leagueShows.stream().noneMatch(existing -> existing.getId().equals(s.getId()))) {
+          leagueShows.add(s);
+        }
+      }
+    }
     showGrid.setItems(leagueShows);
     showGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 

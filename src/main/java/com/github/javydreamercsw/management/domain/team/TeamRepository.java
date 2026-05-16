@@ -53,22 +53,28 @@ public interface TeamRepository extends JpaRepository<Team, Long>, JpaSpecificat
 
   /** Find active teams where a specific wrestler is a member. */
   @Query(
-      "SELECT t FROM Team t WHERE (t.wrestler1 = :wrestler OR t.wrestler2 = :wrestler) AND t.status"
-          + " = :status")
+      """
+      SELECT t FROM Team t WHERE (t.wrestler1 = :wrestler OR t.wrestler2 = :wrestler) AND t.status\
+       = :status\
+      """)
   List<Team> findByWrestlerAndStatus(
       @Param("wrestler") Wrestler wrestler, @Param("status") TeamStatus status);
 
   /** Find team by both wrestlers (regardless of order). */
   @Query(
-      "SELECT t FROM Team t WHERE (t.wrestler1 = :wrestler1 AND t.wrestler2 = :wrestler2) OR"
-          + " (t.wrestler1 = :wrestler2 AND t.wrestler2 = :wrestler1)")
+      """
+      SELECT t FROM Team t WHERE (t.wrestler1 = :wrestler1 AND t.wrestler2 = :wrestler2) OR\
+       (t.wrestler1 = :wrestler2 AND t.wrestler2 = :wrestler1)\
+      """)
   Optional<Team> findByBothWrestlers(
       @Param("wrestler1") Wrestler wrestler1, @Param("wrestler2") Wrestler wrestler2);
 
   /** Find active team by both wrestlers (regardless of order). */
   @Query(
-      "SELECT t FROM Team t WHERE ((t.wrestler1 = :wrestler1 AND t.wrestler2 = :wrestler2) OR"
-          + " (t.wrestler1 = :wrestler2 AND t.wrestler2 = :wrestler1)) AND t.status = 'ACTIVE'")
+      """
+      SELECT t FROM Team t WHERE ((t.wrestler1 = :wrestler1 AND t.wrestler2 = :wrestler2) OR\
+       (t.wrestler1 = :wrestler2 AND t.wrestler2 = :wrestler1)) AND t.status = 'ACTIVE'\
+      """)
   Optional<Team> findActiveTeamByBothWrestlers(
       @Param("wrestler1") Wrestler wrestler1, @Param("wrestler2") Wrestler wrestler2);
 
@@ -80,19 +86,23 @@ public interface TeamRepository extends JpaRepository<Team, Long>, JpaSpecificat
 
   @Query(
       value =
-          "SELECT t FROM Team t"
-              + " LEFT JOIN FETCH t.wrestler1"
-              + " LEFT JOIN FETCH t.wrestler2"
-              + " LEFT JOIN FETCH t.faction",
+          """
+          SELECT t FROM Team t\
+           LEFT JOIN FETCH t.wrestler1\
+           LEFT JOIN FETCH t.wrestler2\
+           LEFT JOIN FETCH t.faction\
+          """,
       countQuery = "SELECT count(t) FROM Team t")
   @Override
   Page<Team> findAll(Pageable pageable);
 
   @Query(
-      "SELECT t FROM Team t"
-          + " LEFT JOIN FETCH t.wrestler1"
-          + " LEFT JOIN FETCH t.wrestler2"
-          + " LEFT JOIN FETCH t.faction")
+      """
+      SELECT t FROM Team t\
+       LEFT JOIN FETCH t.wrestler1\
+       LEFT JOIN FETCH t.wrestler2\
+       LEFT JOIN FETCH t.faction\
+      """)
   @Override
   List<Team> findAll();
 }

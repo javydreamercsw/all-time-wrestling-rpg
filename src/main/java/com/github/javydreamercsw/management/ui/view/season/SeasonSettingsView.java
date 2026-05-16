@@ -16,28 +16,30 @@
 */
 package com.github.javydreamercsw.management.ui.view.season;
 
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowSchedulerService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @PageTitle("Season Settings")
-@RolesAllowed({"ROLE_ADMIN"}) // Only admin should do this
+@RolesAllowed(RoleName.ADMIN_ROLE) // Only admin should do this
 @Slf4j
 @Component
 @Lazy
@@ -47,16 +49,23 @@ public class SeasonSettingsView extends VerticalLayout {
   private final TierBoundaryService tierBoundaryService;
   private final ShowSchedulerService showSchedulerService;
   private final SeasonService seasonService;
+  private final UniverseContextService universeContextService;
+  private final NotificationService notificationService;
 
+  @Autowired
   public SeasonSettingsView(
-      WrestlerService wrestlerService,
-      TierBoundaryService tierBoundaryService,
-      ShowSchedulerService showSchedulerService,
-      SeasonService seasonService) {
+      final WrestlerService wrestlerService,
+      final TierBoundaryService tierBoundaryService,
+      final ShowSchedulerService showSchedulerService,
+      final SeasonService seasonService,
+      final UniverseContextService universeContextService,
+      final NotificationService notificationService) {
     this.wrestlerService = wrestlerService;
     this.tierBoundaryService = tierBoundaryService;
     this.showSchedulerService = showSchedulerService;
     this.seasonService = seasonService;
+    this.universeContextService = universeContextService;
+    this.notificationService = notificationService;
     log.info("Creating SeasonSettingsView");
     add(new H2("Season Management"));
 
@@ -68,15 +77,17 @@ public class SeasonSettingsView extends VerticalLayout {
               dialog.setHeaderTitle("Confirm Reset");
               dialog.add(
                   new Paragraph(
-                      "Are you sure you want to reset all tier boundaries to their default values?"
-                          + " This might affect wrestler's tiers."));
+                      """
+                      Are you sure you want to reset all tier boundaries to their default values?\
+                       This might affect wrestler's tiers.\
+                      """));
 
               Button confirmButton =
                   new Button(
                       "Confirm",
                       event -> {
                         resetTiers();
-                        Notification.show("Tier boundaries reset successfully.");
+                        notificationService.showSuccess("Tier boundaries reset successfully.");
                         dialog.close();
                       });
               confirmButton.setId("confirm-reset-boundaries-button");
@@ -97,21 +108,23 @@ public class SeasonSettingsView extends VerticalLayout {
               dialog.setHeaderTitle("Confirm Fan Count Recalibration");
               dialog.add(
                   new Paragraph(
-                      "'Recalibration' means wrestler fan counts will be reset to the minimum of"
-                          + " their current tier. Any Icon tiered wrestler will be downgraded to"
-                          + " Main Eventer."));
-              dialog.add(new Paragraph("This will also trigger a Tier boundary reset."));
-              dialog.add(
-                  new Paragraph(
-                      "Are you sure you want to recalibrate all wrestler fan counts to their tier's"
-                          + " minimum? This action cannot be undone."));
+                      """
+                      'Recalibration' means wrestler fan counts will be reset to the minimum of\
+                       their current tier. This cannot be undone. Are you sure?\
+                      """));
 
               Button confirmButton =
                   new Button(
-                      "Confirm",
+                      "Recalibrate",
                       event -> {
-                        recalibrateFans();
-                        resetTiers();
+                        try {
+                          wrestlerService.recalibrateFanCounts(
+                              universeContextService.getCurrentUniverseId());
+                          notificationService.showSuccess("Fan counts recalibrated successfully.");
+                        } catch (Exception e) {
+                          notificationService.showError(
+                              "Error during recalibration: " + e.getMessage());
+                        }
                         dialog.close();
                       });
               confirmButton.setId("confirm-recalibrate-fans-button");
@@ -124,73 +137,69 @@ public class SeasonSettingsView extends VerticalLayout {
             });
     recalibrateFansButton.setId("recalibrate-fans-button");
 
-    Button fullResetButton =
+    Button resetFansButton =
         new Button(
-            "Full Fan Count Reset",
+            "Reset All Fan Counts",
             click -> {
               Dialog dialog = new Dialog();
-              dialog.setHeaderTitle("Confirm Full Fan Count Reset");
+              dialog.setHeaderTitle("Confirm Reset All Fan Counts");
               dialog.add(
                   new Paragraph(
-                      "This will reset all wrestler fan counts to 0 and their tier to ROOKIE."
-                          + " This action cannot be undone."));
-              dialog.add(new Paragraph("This will also trigger a Tier boundary reset."));
+                      """
+                      This will reset ALL wrestlers in this universe to 0 fans and ROOKIE tier.\
+                       THIS CANNOT BE UNDONE.\
+                      """));
 
               Button confirmButton =
                   new Button(
-                      "Confirm",
+                      "Reset Everything",
                       event -> {
-                        wrestlerService.resetAllFanCountsToZero();
-                        Notification.show(
-                                "All wrestler fan counts have been reset to 0.",
-                                3000,
-                                Notification.Position.BOTTOM_START)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                        resetTiers();
+                        try {
+                          wrestlerService.resetAllFanCountsToZero(
+                              universeContextService.getCurrentUniverseId());
+                          notificationService.showSuccess(
+                              "All wrestler fan counts have been reset to 0.");
+                        } catch (Exception e) {
+                          notificationService.showError("Error during reset: " + e.getMessage());
+                        }
                         dialog.close();
                       });
               confirmButton.setId("confirm-full-reset-button");
 
               Button cancelButton = new Button("Cancel", event -> dialog.close());
-              cancelButton.setId("cancel-full-reset-button");
+              cancelButton.setId("cancel-reset-fans-button");
 
               dialog.getFooter().add(cancelButton, confirmButton);
               dialog.open();
             });
-    fullResetButton.setId("full-reset-button");
+    resetFansButton.setId("full-reset-button");
 
-    Button generateScheduleButton =
+    Button scheduleShowButton =
         new Button(
             "Generate Season Schedule",
             click -> {
-              Optional<Season> activeSeason = seasonService.getActiveSeason();
-              if (activeSeason.isEmpty()) {
-                Notification.show(
-                        "No active season found to generate schedule for.",
-                        3000,
-                        Notification.Position.BOTTOM_START)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                return;
-              }
-
               Dialog dialog = new Dialog();
               dialog.setHeaderTitle("Confirm Schedule Generation");
               dialog.add(
                   new Paragraph(
-                      "This will generate empty shows for the entire active season ('"
-                          + activeSeason.get().getName()
-                          + "') based on show templates."));
+                      """
+                      This will generate shows for the entire active season based on configured\
+                       templates. Are you sure?\
+                      """));
 
               Button confirmButton =
                   new Button(
-                      "Confirm",
+                      "Generate",
                       event -> {
-                        showSchedulerService.generateShowsForSeason(activeSeason.get());
-                        Notification.show(
-                                "Season schedule generated successfully.",
-                                3000,
-                                Notification.Position.BOTTOM_START)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        Optional<Season> currentSeason = seasonService.getActiveSeason();
+                        if (currentSeason.isPresent()) {
+                          showSchedulerService.generateShowsForSeason(currentSeason.get());
+                          notificationService.showSuccess(
+                              "Season schedule generated successfully.");
+                        } else {
+                          notificationService.showError(
+                              "No active season found to schedule shows for.");
+                        }
                         dialog.close();
                       });
               confirmButton.setId("confirm-generate-schedule-button");
@@ -201,22 +210,12 @@ public class SeasonSettingsView extends VerticalLayout {
               dialog.getFooter().add(cancelButton, confirmButton);
               dialog.open();
             });
-    generateScheduleButton.setId("generate-schedule-button");
+    scheduleShowButton.setId("generate-schedule-button");
 
-    add(generateScheduleButton, recalibrateFansButton, resetBoundariesButton, fullResetButton);
-  }
-
-  private void recalibrateFans() {
-    wrestlerService.recalibrateFanCounts();
-    Notification.show(
-            "Fan counts recalibrated successfully.", 3000, Notification.Position.BOTTOM_START)
-        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    add(resetBoundariesButton, recalibrateFansButton, resetFansButton, scheduleShowButton);
   }
 
   private void resetTiers() {
     tierBoundaryService.resetTierBoundaries();
-    Notification.show(
-            "Tier boundaries reset successfully.", 3000, Notification.Position.BOTTOM_START)
-        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 }

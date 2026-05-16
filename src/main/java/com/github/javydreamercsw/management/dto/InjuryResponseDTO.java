@@ -20,8 +20,10 @@ import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import java.time.Instant;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class InjuryResponseDTO {
   private Long id;
   private String name;
@@ -32,7 +34,7 @@ public class InjuryResponseDTO {
   private String injuryNotes;
   private WrestlerResponseDTO wrestler;
 
-  public InjuryResponseDTO(Injury injury) {
+  public InjuryResponseDTO(final Injury injury) {
     this.id = injury.getId();
     this.name = injury.getName();
     this.description = injury.getDescription();
@@ -48,6 +50,4 @@ public class InjuryResponseDTO {
       this.wrestler = wrestlerDTO;
     }
   }
-
-  public InjuryResponseDTO() {}
 }

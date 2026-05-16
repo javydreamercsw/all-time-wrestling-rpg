@@ -75,12 +75,12 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
   @Autowired
   public PromoView(
-      SmartPromoService smartPromoService,
-      CampaignRepository campaignRepository,
-      WrestlerRepository wrestlerRepository,
-      SecurityUtils securityUtils,
-      SegmentService segmentService,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final SmartPromoService smartPromoService,
+      final CampaignRepository campaignRepository,
+      final WrestlerRepository wrestlerRepository,
+      final SecurityUtils securityUtils,
+      final SegmentService segmentService,
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.smartPromoService = smartPromoService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
@@ -96,7 +96,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   @Override
-  public void setParameter(BeforeEvent event, @OptionalParameter Long parameter) {
+  public void setParameter(final BeforeEvent event, @OptionalParameter final Long parameter) {
     if (parameter != null) {
       wrestlerRepository.findById(parameter).ifPresent(w -> opponent = w);
     }
@@ -166,7 +166,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   @Override
-  protected void onAttach(AttachEvent attachEvent) {
+  protected void onAttach(final AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     if (playerWrestler != null && narrativeContainer.getComponentCount() == 0) {
       startPromo();
@@ -195,7 +195,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
         });
   }
 
-  private void displayPromoContext(@NonNull SmartPromoResponseDTO context) {
+  private void displayPromoContext(@NonNull final SmartPromoResponseDTO context) {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 
@@ -213,7 +213,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     }
   }
 
-  private void handleHookChoice(@NonNull PromoHookDTO hook) {
+  private void handleHookChoice(@NonNull final PromoHookDTO hook) {
     log.info("Hook chosen: {}", hook.getLabel());
     showLoading(true);
     choicesContainer.removeAll();
@@ -236,7 +236,8 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
         });
   }
 
-  private void displayOutcome(@NonNull PromoHookDTO hook, @NonNull PromoOutcomeDTO outcome) {
+  private void displayOutcome(
+      @NonNull final PromoHookDTO hook, @NonNull final PromoOutcomeDTO outcome) {
     log.info("Displaying outcome. Success: {}, SegmentID: {}", outcome.isSuccess(), segmentId);
 
     // Clear containers to ensure a clean state for the outcome
@@ -310,7 +311,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     log.info("Outcome display complete");
   }
 
-  private void showLoading(boolean loading) {
+  private void showLoading(final boolean loading) {
     progressBar.setVisible(loading);
     choicesContainer.setVisible(!loading);
   }

@@ -16,21 +16,11 @@
 */
 package com.github.javydreamercsw.management.test;
 
-import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.Role;
-import com.github.javydreamercsw.base.security.CustomUserDetails;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
 
 @DirtiesContext
@@ -45,24 +35,5 @@ public abstract class AbstractMockUserIntegrationTest extends AbstractIntegratio
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
       accountRepository.findByUsername("admin").ifPresent(this::login);
     }
-  }
-
-  protected void login(Account account) {
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-    Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
-    CustomUserDetails principal = new CustomUserDetails(account, wrestler);
-
-    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-    for (Role role : account.getRoles()) {
-      String roleName = role.getName().name();
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
-      authorities.add(new SimpleGrantedAuthority(roleName));
-    }
-
-    Authentication authentication =
-        new UsernamePasswordAuthenticationToken(principal, account.getPassword(), authorities);
-
-    SecurityContextHolder.getContext().setAuthentication(authentication);
-    TestSecurityContextHolder.setAuthentication(authentication);
   }
 }

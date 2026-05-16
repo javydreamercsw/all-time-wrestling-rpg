@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,13 @@
 */
 package com.github.javydreamercsw;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
-import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
-import com.github.javydreamercsw.management.util.docs.DocEntry;
-import com.github.javydreamercsw.management.util.docs.DocumentationManifest;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import java.io.File;
 import java.io.IOException;
@@ -31,12 +32,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -56,52 +57,39 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-@ExtendWith(UITestWatcher.class)
-@Slf4j
 @SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    classes = Application.class)
+    classes = Application.class,
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(value = "e2e", inheritProfiles = false)
-@Import({TestE2ESecurityConfig.class, TestNotionConfiguration.class})
+@Import(TestE2ESecurityConfig.class)
+@Slf4j
 @WithCustomMockUser(roles = {"ADMIN"})
+@ExtendWith(UITestWatcher.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
+
+  @Autowired protected ObjectMapper objectMapper;
 
   protected static WebDriver driver;
   private static boolean appReady = false;
   private static String lastLoggedInUser = null;
-  @LocalServerPort protected int serverPort;
 
-  @Value("${server.servlet.context-path}")
-  @Getter
-  private String contextPath;
+  @LocalServerPort protected int serverPort;
 
   private int screenshotCounter = 0;
   protected Path testArtifactsDir;
 
-  private static final AtomicInteger docOrder = new AtomicInteger(0);
-
   static {
-    // Shutdown hook to write documentation manifest and clean up WebDriver
+    // Register shutdown hook to close the shared driver
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
                 () -> {
-                  if (Boolean.getBoolean("generate.docs")) {
-                    try {
-                      Path manifestPath = Paths.get("docs", "manifest.json");
-                      log.info(
-                          "Writing documentation manifest to: {}", manifestPath.toAbsolutePath());
-                      DocumentationManifest.write(manifestPath);
-                    } catch (IOException e) {
-                      log.error("Failed to write documentation manifest", e);
-                    }
-                  }
                   if (driver != null) {
                     log.info("Closing shared WebDriver...");
                     try {
@@ -113,25 +101,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 }));
   }
 
-  protected String getUsername() {
-    return "admin";
-  }
-
-  protected String getPassword() {
-    return "admin123";
-  }
-
   @BeforeEach
-  public void setup(TestInfo testInfo) {
-    // Clear all caches
+  public void setup(final TestInfo testInfo) throws Exception {
     if (cacheManager != null) {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
-
-    // Only clean up leagues in the base class if we want it for every test.
-    // Given the performance issues, we might want to be more selective,
-    // but for now, let's keep it consistent with previous behavior but faster if possible.
-    cleanupLeagues();
 
     if (!appReady) {
       WebDriverManager.chromedriver().setup();
@@ -182,6 +156,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.setExperimentalOption("excludeSwitches", new String[] {"enable-automation"});
 
       driver = new ChromeDriver(options);
+      driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
     }
 
     // Only login if needed
@@ -215,43 +190,131 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  protected void documentFeature(
-      @NonNull String category,
-      @NonNull String title,
-      @NonNull String description,
-      @NonNull String screenshotName) {
-    if (Boolean.getBoolean("generate.docs")) {
-      takeDocScreenshot(screenshotName);
-      String id = category.toLowerCase().replace(" ", "-") + "-" + screenshotName;
-      String relativeImagePath =
-          "screenshots/"
-              + (screenshotName.endsWith(".png") ? screenshotName : screenshotName + ".png");
-
-      DocumentationManifest.addEntry(
-          new DocEntry(
-              id,
-              category,
-              title,
-              description,
-              relativeImagePath,
-              docOrder.getAndIncrement() * 10));
+  /** Waits for the server to respond with 200 OK on the root URL. */
+  protected void waitForServerToBeReady() {
+    int maxAttempts = 300;
+    int attempt = 0;
+    while (attempt < maxAttempts) {
+      try {
+        java.net.URL url =
+            new java.net.URL("http://localhost:" + serverPort + getContextPath() + "/health");
+        java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(1000);
+        connection.setReadTimeout(1000);
+        int responseCode = connection.getResponseCode();
+        log.info("Server readiness check (attempt {}): HTTP {}", attempt + 1, responseCode);
+        if (responseCode == 200) {
+          return;
+        }
+      } catch (Exception e) {
+        log.info("Server readiness check (attempt {}): {}", attempt + 1, e.getMessage());
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException ignored) {
+      }
+      attempt++;
     }
+    throw new RuntimeException(
+        "Server did not start within timeout. "
+            + "Please check if the server is running on port "
+            + serverPort);
   }
 
-  protected void takeDocScreenshot(@NonNull String fileName) {
+  protected String getContextPath() {
+    return "/atw-rpg";
+  }
+
+  protected void takeDocScreenshot(@NonNull final String fileName) {
     if (Boolean.getBoolean("generate.docs")) {
       try {
         Path docsDir = Paths.get("docs", "screenshots");
         if (!Files.exists(docsDir)) {
           Files.createDirectories(docsDir);
         }
-        String screenshotName = fileName.endsWith(".png") ? fileName : fileName + ".png";
-        Path destFile = docsDir.resolve(screenshotName);
-        takeScreenshot(destFile.toString());
-        log.info("Documentation screenshot saved: {}", destFile);
+        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        String finalName = fileName.endsWith(".png") ? fileName : fileName + ".png";
+        FileUtils.copyFile(screenshot, docsDir.resolve(finalName).toFile());
       } catch (IOException e) {
-        log.error("Failed to save documentation screenshot", e);
+        log.error("Failed to take documentation screenshot", e);
       }
+    }
+  }
+
+  protected void documentFeature(
+      @NonNull final String category,
+      @NonNull final String title,
+      @NonNull final String description,
+      @NonNull final String screenshotName) {
+    if (Boolean.getBoolean("generate.docs")) {
+      takeDocScreenshot(screenshotName);
+      updateManifest(category, title, description, screenshotName);
+    }
+  }
+
+  /**
+   * Updates the documentation manifest with feature metadata.
+   *
+   * @param category Feature category
+   * @param title Feature title
+   * @param description Feature description
+   * @param screenshotName Screenshot name (without path or extension)
+   */
+  @SuppressWarnings("unchecked")
+  protected synchronized void updateManifest(
+      final String category,
+      final String title,
+      final String description,
+      final String screenshotName) {
+    try {
+      // Use relative path from the project root
+      Path manifestPath = Paths.get("docs", "manifest.json");
+      if (!Files.exists(manifestPath)) {
+        log.warn("Manifest file not found at: {}", manifestPath.toAbsolutePath());
+        return;
+      }
+
+      Map<String, Object> manifest =
+          objectMapper.readValue(manifestPath.toFile(), new TypeReference<>() {});
+      List<Map<String, Object>> features = (List<Map<String, Object>>) manifest.get("features");
+      if (features == null) {
+        features = new ArrayList<>();
+        manifest.put("features", features);
+      }
+
+      String fileName = screenshotName.endsWith(".png") ? screenshotName : screenshotName + ".png";
+      String imagePath = "screenshots/" + fileName;
+      String id = category.toLowerCase().replace(" ", "-") + "-" + fileName.replace(".png", "");
+
+      boolean found = false;
+      for (Map<String, Object> feature : features) {
+        if (id.equals(feature.get("id")) || imagePath.equals(feature.get("imagePath"))) {
+          feature.put("category", category);
+          feature.put("title", title);
+          feature.put("description", description);
+          feature.put("imagePath", imagePath);
+          found = true;
+          log.debug("Updated existing feature in manifest: {}", id);
+          break;
+        }
+      }
+
+      if (!found) {
+        Map<String, Object> newFeature = new LinkedHashMap<>();
+        newFeature.put("id", id);
+        newFeature.put("category", category);
+        newFeature.put("title", title);
+        newFeature.put("description", description);
+        newFeature.put("imagePath", imagePath);
+        newFeature.put("order", 0);
+        features.add(newFeature);
+        log.info("Added new feature to manifest: {}", id);
+      }
+
+      objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), manifest);
+    } catch (IOException e) {
+      log.error("Failed to update documentation manifest", e);
     }
   }
 
@@ -259,57 +322,66 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     login(getUsername(), getPassword());
   }
 
-  protected void login(@NonNull String username, @NonNull String password) {
-    log.info("Attempting login for user: {}", username);
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
-    waitForAppToBeReady();
-    takeSequencedScreenshot("on-login-page");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    WebElement loginFormHost =
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
-
-    WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
-    WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
-
-    // Determine the correct modifier key for the current OS
-    String os = System.getProperty("os.name").toLowerCase();
-    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
-
-    // Use sendKeys which is more reliable for Vaadin components than setting .value via JS
-    usernameField.click();
-    usernameField.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
-    usernameField.sendKeys(username);
-
-    passwordField.click();
-    passwordField.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
-    passwordField.sendKeys(password);
-
-    takeSequencedScreenshot("after-filling-credentials");
-    WebElement signInButton =
-        loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
-    clickElement(signInButton);
-    waitForAppToBeReady();
-    try {
-      // Reduced timeout from 2 minutes to 30 seconds to fail fast and prevent pipeline stalls
-      WebDriverWait loginWait = new WebDriverWait(driver, Duration.ofSeconds(30));
-      loginWait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
-      log.info("Login successful for user: {}", username);
-      lastLoggedInUser = username;
-      takeSequencedScreenshot("after-successful-login");
-    } catch (Exception e) {
-      lastLoggedInUser = null;
-      log.error("Login failed for user: {}", username);
-      log.error("Current URL: {}", driver.getCurrentUrl());
-      takeSequencedScreenshot("on-login-failure");
+  protected void login(@NonNull final String username, @NonNull final String password) {
+    int maxRetries = 1;
+    int attempt = 0;
+    while (attempt++ < maxRetries) {
       try {
-        WebElement error = loginFormHost.findElement(By.cssSelector("div[part='error-message']"));
-        if (error.isDisplayed()) {
-          log.error("Login error message: {}", error.getText());
+        log.debug("Login attempt {} for user: {}", attempt, username);
+        driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
+        waitForVaadinClientToLoad();
+        takeSequencedScreenshot("on-login-page");
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
+        WebElement loginFormHost;
+        try {
+          loginFormHost =
+              wait.until(
+                  ExpectedConditions.presenceOfElementLocated(By.id("vaadinLoginFormWrapper")));
+        } catch (Exception e) {
+          log.error("Login form not found at URL: {}", driver.getCurrentUrl());
+          log.error("Page source: {}", driver.getPageSource());
+          throw e;
         }
-      } catch (Exception ignored) {
-        log.error("Could not find error message element.");
+
+        WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
+        WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
+
+        // Determine the correct modifier key for the current OS
+        String os = System.getProperty("os.name").toLowerCase();
+        Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
+
+        // Use sendKeys which is more reliable for Vaadin components
+        usernameField.click();
+        usernameField.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
+        usernameField.sendKeys(username);
+
+        passwordField.click();
+        passwordField.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
+        passwordField.sendKeys(password);
+
+        takeSequencedScreenshot("after-filling-credentials");
+        WebElement signInButton =
+            loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
+        clickElement(signInButton);
+
+        // Wait for successful login (logout button appears)
+        WebDriverWait loginWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        loginWait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
+
+        takeSequencedScreenshot("after-successful-login");
+        log.info("Login successful for user: {}", username);
+        lastLoggedInUser = username;
+        return; // Success!
+      } catch (Exception e) {
+        attempt++;
+        log.warn("Login attempt {} failed: {}", attempt, e.getMessage());
+        if (attempt >= maxRetries) {
+          log.error("All login attempts failed for user: {}", username);
+          takeSequencedScreenshot("on-login-final-failure");
+          throw e;
+        }
       }
-      throw e;
     }
   }
 
@@ -324,10 +396,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         // Ensure no leftover dialogs are open
         ((JavascriptExecutor) driver)
             .executeScript(
-                "const overlays = document.querySelectorAll('vaadin-dialog-overlay,"
-                    + " vaadin-context-menu-overlay, vaadin-select-overlay,"
-                    + " vaadin-combo-box-overlay');overlays.forEach(o => { try { o.opened = false;"
-                    + " o.remove(); } catch(e){} });");
+                """
+                const overlays = document.querySelectorAll('vaadin-dialog-overlay,\
+                 vaadin-context-menu-overlay, vaadin-select-overlay,\
+                 vaadin-combo-box-overlay');overlays.forEach(o => { try { o.opened = false;\
+                 o.remove(); } catch(e){} });\
+                """);
       } catch (Exception e) {
         log.warn("Error during browser reset in teardown: {}", e.getMessage());
         // If the driver is in a really bad state, force it to be recreated next time
@@ -339,7 +413,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       }
     }
 
-    // Clear the system property after each test to ensure isolation
     System.clearProperty("simulateFailure");
   }
 
@@ -348,16 +421,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     String headlessEnv = System.getenv("HEADLESS");
     String githubActions = System.getenv("GITHUB_ACTIONS");
     if (headlessProp != null) {
-      return headlessProp.equalsIgnoreCase("true");
+      return "true".equalsIgnoreCase(headlessProp);
     }
     if (headlessEnv != null) {
-      return headlessEnv.equalsIgnoreCase("true");
+      return "true".equalsIgnoreCase(headlessEnv);
     }
-    // Default to headless in CI
     return "true".equalsIgnoreCase(githubActions);
   }
 
-  /** Waits for the application to be ready by polling the root URL. */
   protected void waitForAppToBeReady() {
     int maxAttempts = 300; // Increased from 60 to handle slow production builds
     int attempt = 0;
@@ -401,13 +472,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
-  protected WebElement waitForVaadinElementVisible(@NonNull By selector) {
+  protected WebElement waitForVaadinElementVisible(@NonNull final By selector) {
     waitForVaadinClientToLoad();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
   }
 
-  protected void waitForGridToPopulate(@NonNull String gridId) {
+  protected void waitForGridToPopulate(@NonNull final String gridId) {
     // Delegate to the more robust 'settled' wait.
     waitForGridToSettle(gridId, Duration.ofSeconds(30));
 
@@ -417,135 +488,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         d -> {
           try {
             WebElement grid = d.findElement(By.id(gridId));
-            return getGridSize(grid) > 0;
+            List<WebElement> rows = grid.findElements(By.tagName("vaadin-grid-cell-content"));
+            return !rows.isEmpty();
           } catch (Exception e) {
             return false;
           }
         });
   }
 
-  /**
-   * Waits for a Vaadin Grid to finish its (client-side) loading cycle and for its rendered DOM rows
-   * to become stable. This reduces flakiness with virtualized grids and async data-provider
-   * refreshes.
-   */
-  protected void waitForGridToSettle(@NonNull String gridId, @NonNull Duration timeout) {
-    WebDriverWait wait = new WebDriverWait(driver, timeout);
-
-    // 1) Wait until the element is present.
-    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
-
-    // 2) Wait until the grid is not in a 'loading' state (best-effort; property exists on Vaadin
-    // Grid).
-    wait.until(
-        d -> {
-          try {
-            Object loading =
-                ((JavascriptExecutor) d)
-                    .executeScript(
-                        "const g = arguments[0];"
-                            + "try { return !!g.loading; } catch(e) { return false; }",
-                        grid);
-            return loading instanceof Boolean && !(Boolean) loading;
-          } catch (Exception e) {
-            return true; // If we can't read the property, don't block.
-          }
-        });
-
-    // 3) Wait for the rendered content to stop changing for a short window.
-    // Using light-DOM vaadin-grid-cell-content is more robust across Vaadin versions.
-    wait.until(
-        d -> {
-          try {
-            String snap1 =
-                (String)
-                    ((JavascriptExecutor) d)
-                        .executeScript(
-                            "const g = arguments[0];return"
-                                + " Array.from(g.querySelectorAll('vaadin-grid-cell-content')).map(e"
-                                + " => (e.textContent || '').trim()).join('\\n"
-                                + "');",
-                            grid);
-            // Small sleep to detect stability. (WebDriverWait polling is 500ms by default; we still
-            // want an immediate back-to-back snapshot.)
-            try {
-              Thread.sleep(200);
-            } catch (InterruptedException ignored) {
-            }
-            String snap2 =
-                (String)
-                    ((JavascriptExecutor) d)
-                        .executeScript(
-                            "const g = arguments[0];return"
-                                + " Array.from(g.querySelectorAll('vaadin-grid-cell-content')).map(e"
-                                + " => (e.textContent || '').trim()).join('\\n"
-                                + "');",
-                            grid);
-            return Objects.equals(snap1, snap2);
-          } catch (Exception e) {
-            return false;
-          }
-        });
-  }
-
-  protected void assertGridContains(@NonNull String gridId, @NonNull String expectedText) {
-    // Ensure the grid has finished refreshing before we scan it.
-    waitForGridToSettle(gridId, Duration.ofSeconds(30));
-
-    try {
-      new WebDriverWait(driver, Duration.ofSeconds(30))
-          .until(
-              d -> {
-                try {
-                  Boolean found =
-                      (Boolean)
-                          ((JavascriptExecutor) d)
-                              .executeScript(
-                                  "const grid = document.getElementById(arguments[0]);const text ="
-                                      + " arguments[1];if (!grid) return false;const cells ="
-                                      + " Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));return"
-                                      + " cells.some(c => c.textContent.includes(text));",
-                                  gridId,
-                                  expectedText);
-                  return Boolean.TRUE.equals(found);
-                } catch (Exception ignored) {
-                  // Allow retry.
-                }
-                return false;
-              });
-    } catch (org.openqa.selenium.TimeoutException e) {
-      // On failure, log what was actually found in the grid to help debugging.
-      String gridContent =
-          (String)
-              ((JavascriptExecutor) driver)
-                  .executeScript(
-                      "const grid = document.getElementById(arguments[0]);if (!grid) return 'Grid"
-                          + " not found';return"
-                          + " Array.from(grid.querySelectorAll('vaadin-grid-cell-content')).map(c"
-                          + " => c.textContent.trim()).join('|');",
-                      gridId);
-      log.error(
-          "Grid '{}' did not contain '{}'. Current content: {}", gridId, expectedText, gridContent);
-      takeSequencedScreenshot("assert-grid-contains-failed-" + gridId);
-      throw e;
-    }
-  }
-
-  protected void waitForNotification(@NonNull String text) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(
-        d -> {
-          return (Boolean)
-              ((JavascriptExecutor) d)
-                  .executeScript(
-                      "const text = arguments[0];const notifications ="
-                          + " Array.from(document.querySelectorAll('vaadin-notification-card'));return"
-                          + " notifications.some(n => n.textContent.includes(text));",
-                      text);
-        });
-  }
-
-  /** Waits for the Vaadin client-side application to fully load and become idle. */
   protected void waitForVaadinClientToLoad() {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
@@ -563,10 +513,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             return (Boolean)
                 ((JavascriptExecutor) webDriver)
                     .executeScript(
-                        "return !!(window.Vaadin && window.Vaadin.Flow &&"
-                            + " window.Vaadin.Flow.clients &&"
-                            + " Object.values(window.Vaadin.Flow.clients).every(client =>"
-                            + " !client.isActive()));");
+                        """
+                        return !!(window.Vaadin && window.Vaadin.Flow &&\
+                         window.Vaadin.Flow.clients &&\
+                         Object.values(window.Vaadin.Flow.clients).every(client =>\
+                         !client.isActive()));\
+                        """);
           } catch (Exception e) {
             return false;
           }
@@ -580,41 +532,66 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  protected void toggleVaadinCheckbox(@NonNull By selector) {
-    toggleVaadinCheckbox(driver.findElement(selector));
+  protected void waitForVaadin(@NonNull final Duration timeout) {
+    new WebDriverWait(driver, timeout)
+        .until(
+            d ->
+                (Boolean)
+                    ((JavascriptExecutor) d)
+                        .executeScript("return window.Vaadin.Flow.clients.isActive() === false;"));
   }
 
-  protected void toggleVaadinCheckbox(@NonNull WebElement checkbox) {
-    scrollIntoView(checkbox);
-    takeSequencedScreenshot("before-toggle-checkbox");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(ExpectedConditions.visibilityOf(checkbox));
+  protected String getUsername() {
+    return "admin";
+  }
 
-    ((JavascriptExecutor) driver)
-        .executeScript(
-            "arguments[0].checked = !arguments[0].checked; arguments[0].dispatchEvent(new"
-                + " CustomEvent('change', { bubbles: true }));",
-            checkbox);
-    takeSequencedScreenshot("after-toggle-checkbox");
+  protected String getPassword() {
+    return "admin123";
+  }
+
+  protected void click(@NonNull final String tagName, @NonNull final String text) {
+    try {
+      WebElement element =
+          waitForVaadinElement(driver, By.xpath("//" + tagName + "[text()='" + text + "']"));
+      clickElement(element);
+    } catch (Exception e) {
+      WebElement element =
+          waitForVaadinElement(driver, By.xpath("//div[@role='tab'][text()='" + text + "']"));
+      clickElement(element);
+    }
+  }
+
+  protected void clickButtonByText(@NonNull final String text) {
+    WebElement element =
+        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='" + text + "']"));
+    clickElement(element);
   }
 
   /**
    * Scrolls the given WebElement into view and clicks it using JavaScript.
    *
-   * @param selector the WebElement to scroll into view and click
+   * @param element the WebElement to scroll into view and click
    */
-  protected void clickElement(@NonNull By selector) {
-    clickElement(driver.findElement(selector));
-  }
-
-  protected void clickElement(@NonNull WebElement element) {
+  protected void clickElement(@NonNull final WebElement element) {
     scrollIntoView(element);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("before-click");
-    // First, wait for the element to be visible.
+    // Wait for the element to become visible (short window — elements inside vaadin-details or
+    // animated containers may be present but hidden; fall through to JS click in that case).
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(ExpectedConditions.visibilityOf(element));
-    wait.until(ExpectedConditions.elementToBeClickable(element));
+    boolean visible;
+    try {
+      new WebDriverWait(driver, Duration.ofSeconds(5))
+          .until(ExpectedConditions.visibilityOf(element));
+      visible = true;
+    } catch (org.openqa.selenium.TimeoutException ignored) {
+      visible = false;
+    } catch (org.openqa.selenium.StaleElementReferenceException ignored) {
+      visible = false;
+    }
+    if (visible) {
+      wait.until(ExpectedConditions.elementToBeClickable(element));
+    }
 
     // Ensure the drawer is closed if it might intercept clicks
     try {
@@ -622,11 +599,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           (Boolean)
               ((JavascriptExecutor) driver)
                   .executeScript(
-                      "const layout = document.querySelector('vaadin-app-layout');"
-                          + "if (layout && layout.drawerOpened) { "
-                          + "  layout.drawerOpened = false; "
-                          + "  return true; "
-                          + "} return false;");
+                      """
+                      const layout = document.querySelector('vaadin-app-layout');\
+                      if (layout && layout.drawerOpened) { \
+                        layout.drawerOpened = false; \
+                        return true; \
+                      } return false;\
+                      """);
       if (Boolean.TRUE.equals(drawerWasOpened)) {
         // Give drawer time to close only if it was actually opened
         Thread.sleep(300);
@@ -649,245 +628,356 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         // Last resort: dispatch events
         ((JavascriptExecutor) driver)
             .executeScript(
-                "const el = arguments[0];"
-                    + "const opts = {view: window, bubbles: true, cancelable: true};"
-                    + "el.dispatchEvent(new MouseEvent('mousedown', opts));"
-                    + "el.dispatchEvent(new MouseEvent('mouseup', opts));"
-                    + "el.dispatchEvent(new MouseEvent('click', opts));",
+                """
+                const el = arguments[0];\
+                const opts = {view: window, bubbles: true, cancelable: true};\
+                el.dispatchEvent(new MouseEvent('mousedown', opts));\
+                el.dispatchEvent(new MouseEvent('mouseup', opts));\
+                el.dispatchEvent(new MouseEvent('click', opts));\
+                """,
                 element);
       }
     }
     takeSequencedScreenshot("after-click");
   }
 
-  protected void click(@NonNull String tagName, @NonNull String text) {
-    try {
-      WebElement element =
-          waitForVaadinElement(driver, By.xpath("//" + tagName + "[text()='" + text + "']"));
-      clickElement(element);
-    } catch (Exception e) {
-      WebElement element =
-          waitForVaadinElement(driver, By.xpath("//div[@role='tab'][text()='" + text + "']"));
-      clickElement(element);
+  protected void clickElement(@NonNull final By locator) {
+    int maxRetries = 3;
+    for (int attempt = 1; attempt < maxRetries + 1; attempt++) {
+      try {
+        WebElement element = waitForVaadinElement(driver, locator);
+        clickElement(element);
+        return;
+      } catch (org.openqa.selenium.StaleElementReferenceException e) {
+        if (attempt == maxRetries) {
+          throw e;
+        }
+        log.warn(
+            "StaleElementReferenceException in clickElement(By), retry {}/{}", attempt, maxRetries);
+      }
     }
   }
 
-  protected void clickButtonByText(@NonNull String text) {
-    WebElement element =
-        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='" + text + "']"));
-    clickElement(element);
-  }
-
-  /**
-   * Scrolls the given WebElement into view using JavaScript.
-   *
-   * @param element the WebElement to scroll into view
-   */
-  protected void scrollIntoView(@NonNull WebElement element) {
-    ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
-  }
-
-  /**
-   * Selects an item from a Vaadin ComboBox by clicking it and selecting the item from the overlay.
-   *
-   * @param comboBox the Vaadin ComboBox WebElement
-   * @param itemText the text of the item to select
-   */
-  protected void selectFromVaadinComboBox(@NonNull WebElement comboBox, @NonNull String itemText) {
-    log.info("Selecting item '{}' from ComboBox", itemText);
-
-    // Target the internal input element for typing
-    WebElement input =
-        (WebElement)
-            ((JavascriptExecutor) driver)
-                .executeScript(
-                    "return arguments[0].querySelector('input') ||"
-                        + " arguments[0].shadowRoot.querySelector('input');",
-                    comboBox);
-
-    if (input == null) {
-      log.warn("Could not find internal input for ComboBox, falling back to direct sendKeys");
-      input = comboBox;
-    }
-
-    // Determine the correct modifier key for the current OS
-    String os = System.getProperty("os.name").toLowerCase();
-    Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
-
-    // Clear and type
-    input.click();
-    input.sendKeys(Keys.chord(modifier, "a"), Keys.BACK_SPACE);
-    input.sendKeys(itemText);
-
-    // Wait for the overlay to appear and the item to be clickable
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    try {
-      wait.until(
-          d ->
-              (Boolean)
-                  ((JavascriptExecutor) d)
-                      .executeScript(
-                          "const text = arguments[0];const items ="
-                              + " Array.from(document.querySelectorAll('vaadin-combo-box-item,"
-                              + " vaadin-item'));const item = items.find(i => i.textContent.trim()"
-                              + " === text || i.textContent.trim().includes(text));if (item) {"
-                              + " item.click(); return true; }return false;",
-                          itemText));
-    } catch (Exception e) {
-      log.error("Failed to select '{}' via overlay, attempting ENTER key", itemText);
-      input.sendKeys(Keys.ENTER);
-    }
-
-    takeSequencedScreenshot("after-select");
-  }
-
-  protected void selectFromVaadinComboBox(@NonNull String comboBoxId, @NonNull String itemText) {
-    WebElement comboBox = waitForVaadinElement(driver, By.id(comboBoxId));
+  protected void selectFromVaadinComboBox(
+      @NonNull final String id, @NonNull final String itemText) {
+    WebElement comboBox = waitForVaadinElement(driver, By.id(id));
     selectFromVaadinComboBox(comboBox, itemText);
   }
 
-  /**
-   * Returns all the data from a specific column in a Vaadin grid.
-   *
-   * @param grid the Vaadin grid WebElement
-   * @param columnIndex the index of the column (0-based)
-   * @return List of Strings representing the data in the specified column
-   */
-  protected List<String> getColumnData(@NonNull WebElement grid, int columnIndex) {
-    // This is more complex in Vaadin 24/25 because cells are in the light DOM
-    // and rows are managed via slots.
-    // We can try to group cell-content by their slot index or use the _index property if available.
+  protected void selectFromVaadinComboBox(
+      @NonNull final WebElement comboBox, @NonNull final String itemText) {
+    scrollIntoView(comboBox);
+    waitForVaadinClientToLoad();
+
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+
+    // Click the shadow-root input to trigger Vaadin's overlay lifecycle, then filter
+    js.executeScript(
+        """
+        const el = arguments[0];
+        const input = el.shadowRoot && el.shadowRoot.querySelector('input');
+        if (input) { input.focus(); input.click(); }
+        el.opened = true;
+        el.filter = arguments[1];
+        """,
+        comboBox,
+        itemText);
+
+    // Wait for a visible combo-box item whose text matches.
+    // If no items appear, retry opening (handles lazy data providers or slow Vaadin push).
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebElement item =
+        wait.until(
+            d -> {
+              Object found =
+                  js.executeScript(
+                      """
+                      const items = Array.from(document.querySelectorAll(\
+                      'vaadin-combo-box-item'));\
+                      const visible = items.filter(el => {\
+                        const r = el.getBoundingClientRect();\
+                        return r.width > 0 && r.height > 0;\
+                      });\
+                      if (visible.length === 0) {\
+                        const cb = arguments[1];\
+                        const inp = cb.shadowRoot && cb.shadowRoot.querySelector('input');\
+                        if (inp) { inp.click(); }\
+                        cb.opened = true;\
+                      }\
+                      return visible.find(\
+                        el => (el.innerText || el.textContent).trim().includes(arguments[0])\
+                      ) || null;\
+                      """,
+                      itemText,
+                      comboBox);
+              return found instanceof WebElement ? (WebElement) found : null;
+            });
+
+    scrollIntoView(item);
+    item.click();
+  }
+
+  protected void selectFromVaadinMultiSelectComboBox(
+      @NonNull final WebElement comboBox, @NonNull final String itemText) {
+    log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+
+    // Open the dropdown via JS property
+    js.executeScript("arguments[0].opened = true;", comboBox);
+
+    // Wait for an item that is both present AND visible (non-zero bounding box).
+    // Checking visibility avoids matching items in previously-closed overlays
+    // that are still in the DOM but hidden.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebElement item =
+        wait.until(
+            d -> {
+              Object found =
+                  js.executeScript(
+                      """
+                      const items=Array.from(document.querySelectorAll(\
+                      'vaadin-multi-select-combo-box-item'));\
+                      return items.find(el=>{\
+                      const r=el.getBoundingClientRect();\
+                      return r.width>0&&r.height>0\
+                      &&(el.innerText||el.textContent).trim().includes(arguments[0]);\
+                      })||null;\
+                      """,
+                      itemText);
+              return found instanceof WebElement ? (WebElement) found : null;
+            });
+
+    // Use native Selenium click so Vaadin's event handlers fire properly
+    scrollIntoView(item);
+    item.click();
+
+    // Close the overlay
+    js.executeScript("arguments[0].opened = false;", comboBox);
+  }
+
+  protected void selectFromVaadinMenuBar(
+      @NonNull final WebElement menuBar, @NonNull final String itemText) {
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    // In Vaadin 25, vaadin-menu-bar has vaadin-menu-bar-button in its light DOM.
+    // Click the first one (the "Actions" trigger) to open the submenu.
+    js.executeScript(
+        """
+        const bar=arguments[0];\
+        const btn=bar.querySelector('vaadin-menu-bar-button')||bar;\
+        btn.click();\
+        """,
+        menuBar);
+
+    // After click, the open vaadin-menu-bar-submenu contains a DIV with a
+    // vaadin-menu-bar-list-box whose children are the clickable menu items.
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebElement item =
+        wait.until(
+            d -> {
+              Object found =
+                  js.executeScript(
+                      """
+                      const\
+                       openSub=Array.from(document.querySelectorAll('vaadin-menu-bar-submenu')).find(s=>s.opened);if(!openSub)return\
+                       null;const\
+                       listBox=openSub.querySelector('vaadin-menu-bar-list-box');if(!listBox)return\
+                       null;return\
+                       Array.from(listBox.children).find(el=>el.textContent.trim().includes(arguments[0]))||null;\
+                      """,
+                      itemText);
+              return found instanceof WebElement ? (WebElement) found : null;
+            });
+    js.executeScript("arguments[0].click();", item);
+  }
+
+  protected void toggleVaadinCheckbox(@NonNull final By locator) {
+    WebElement checkbox = waitForVaadinElement(driver, locator);
+    scrollIntoView(checkbox);
+    waitForVaadinClientToLoad();
+    // Click the shadow DOM <input> directly; outer-element clicks don't always reach it in
+    // headless Chrome when the vaadin-checkbox shadow root intercepts the event.
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            """
+            const cb = arguments[0];
+            const input = cb.shadowRoot ? cb.shadowRoot.querySelector('input') : null;
+            if (input) { input.click(); } else { cb.click(); }
+            """,
+            checkbox);
+  }
+
+  protected void assertGridContains(@NonNull final String gridId, @NonNull final String text) {
+    WebElement grid = driver.findElement(By.id(gridId));
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    // Scroll grid to end so Vaadin virtualizes all rows into the DOM, then scan cell text.
+    js.executeScript(
+        "arguments[0].scrollToIndex(arguments[0].items ? arguments[0].items.length - 1 : 9999);",
+        grid);
+    waitForVaadinClientToLoad();
+    Boolean found =
+        (Boolean)
+            js.executeScript(
+                """
+                const grid=arguments[0];const needle=arguments[1];
+                return Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))
+                  .some(c=>c.innerText&&c.innerText.includes(needle));
+                """,
+                grid,
+                text);
+    assertEquals(Boolean.TRUE, found, "Grid " + gridId + " should contain text: " + text);
+  }
+
+  protected List<WebElement> getGridRows(@NonNull final String gridId) {
+    WebElement grid = driver.findElement(By.id(gridId));
+    return grid.findElements(By.cssSelector("vaadin-grid-cell-content"));
+  }
+
+  protected String getColumnData(@NonNull final WebElement row, final int colIndex) {
+    List<WebElement> cells = row.findElements(By.tagName("vaadin-grid-cell-content"));
+    if (colIndex < cells.size()) {
+      return cells.get(colIndex).getText();
+    }
+    return "";
+  }
+
+  @SuppressWarnings("unchecked")
+  protected List<String> getGridColumnData(@NonNull final WebElement grid, final int colIndex) {
     return (List<String>)
         ((JavascriptExecutor) driver)
             .executeScript(
-                "const grid = arguments[0];"
-                    + "const colIndex = arguments[1];"
-                    + "const cols = Array.from(grid.querySelectorAll('vaadin-grid-column'));"
-                    + "if (colIndex >= cols.length) return [];"
-                    + "const targetCol = cols[colIndex];"
-                    + "return Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))"
-                    + ".filter(c => c._column === targetCol)"
-                    + ".map(c => c.textContent.trim());",
+                """
+                const grid=arguments[0];const colIndex=arguments[1];const\
+                 allCells=Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));const\
+                 rowCellMap=new Map();for(const cell of allCells){const\
+                 slot=cell.assignedSlot;if(!slot)continue;const\
+                 gridCell=slot.parentElement;if(!gridCell)continue;const\
+                 part=gridCell.getAttribute('part')||'';\
+                if(!part.includes('body-cell'))continue;const\
+                 row=gridCell.parentElement;if(!row)continue;const\
+                 ci=Array.from(row.children).indexOf(gridCell);\
+                if(!rowCellMap.has(row))rowCellMap.set(row,{});\
+                rowCellMap.get(row)[ci]=cell.innerText.trim();}const\
+                 result=[];for(const[row,cells]of rowCellMap){const\
+                 hasContent=Object.values(cells).some(v=>v!=='');if(hasContent&&colIndex in\
+                 cells)result.push(cells[colIndex]);}return result;\
+                """,
                 grid,
-                columnIndex);
+                colIndex);
   }
 
-  /**
-   * Returns the number of items in the grid.
-   *
-   * @param grid the Vaadin grid WebElement
-   * @return the number of items
-   */
-  protected int getGridSize(@NonNull WebElement grid) {
-    Object size =
-        ((JavascriptExecutor) driver).executeScript("return arguments[0].size || 0;", grid);
-    if (size instanceof Long) {
-      return ((Long) size).intValue();
-    }
-    if (size instanceof Integer) {
-      return (Integer) size;
-    }
-    return 0;
-  }
-
-  /**
-   * Returns all the row elements of a Vaadin grid.
-   *
-   * @param grid the Vaadin grid WebElement
-   * @return List of WebElements, each representing a row
-   */
-  protected List<WebElement> getGridRows(@NonNull WebElement grid) {
-    return (List<WebElement>)
-        ((JavascriptExecutor) driver)
-            .executeScript(
-                "const g = arguments[0];const items = g.shadowRoot.querySelector('#items') ||      "
-                    + "        g.shadowRoot.querySelector('tbody') ||             "
-                    + " g.shadowRoot.querySelector('[part~=\"items-container\"]');return items ?"
-                    + " Array.from(items.querySelectorAll('tr[part~=\"row\"], vaadin-grid-row')) :"
-                    + " [];",
-                grid);
-  }
-
-  protected List<WebElement> getGridRows(@NonNull String gridId) {
-    WebElement grid = waitForVaadinElement(driver, By.id(gridId));
-    return getGridRows(grid);
-  }
-
-  /**
-   * Finds a button within a specific grid row that matches the given text.
-   *
-   * @param gridId The ID of the vaadin-grid
-   * @param rowMatchText The text to identify the row
-   * @param buttonSelector The selector for the button within the row's cell content
-   * @return The found WebElement for the button
-   */
   protected WebElement findButtonInGridRow(
-      @NonNull String gridId, @NonNull String rowMatchText, @NonNull By buttonSelector) {
-    waitForGridToSettle(gridId, Duration.ofSeconds(30));
+      @NonNull final String gridId,
+      @NonNull final String rowText,
+      @NonNull final By buttonLocator) {
+    WebElement grid = driver.findElement(By.id(gridId));
+    JavascriptExecutor js = (JavascriptExecutor) driver;
 
-    // Convert button selector to a CSS selector string if possible, or use a known one.
-    // In this project, we mostly use id^= or similar.
-    String cssSelector = buttonSelector.toString().replace("By.cssSelector: ", "");
+    // Scroll grid to end so all rows are virtualized into the DOM
+    js.executeScript(
+        "arguments[0].scrollToIndex(arguments[0].items ? arguments[0].items.length - 1 : 9999);",
+        grid);
+    waitForVaadinClientToLoad();
 
-    return new WebDriverWait(driver, Duration.ofSeconds(30))
+    // Vaadin Grid uses slot-based rendering: vaadin-grid-cell-content elements in the light
+    // DOM carry a slot attribute like "vaadin-grid-cell-content-{rowIdx}-{colIdx}". Extract
+    // the row prefix from the matching cell and then check all sibling cells (same row) for
+    // the target button — no shadow DOM traversal needed.
+    String buttonCss = buttonLocator.toString().replace("By.cssSelector: ", "");
+    Object raw =
+        js.executeScript(
+            """
+            const grid = arguments[0];
+            const needle = arguments[1];
+            const css = arguments[2];
+            const cells = Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));
+            const matchCell = cells.find(c => (c.innerText || c.textContent || '').includes(needle));
+            if (!matchCell) return 'ERR:no_cell';
+            const slotName = matchCell.getAttribute('slot') || '';
+            // slot name format: vaadin-grid-cell-content-<rowIdx>-<colIdx>
+            const parts = slotName.split('-');
+            // last two parts are colIdx and rowIdx; row prefix is everything except last segment
+            if (parts.length < 2) return 'ERR:bad_slot:' + slotName;
+            const rowPrefix = parts.slice(0, parts.length - 1).join('-');
+            // Find all sibling cells in the same row
+            const rowCells = cells.filter(c => {
+              const s = c.getAttribute('slot') || '';
+              return s.startsWith(rowPrefix + '-');
+            });
+            for (const cell of rowCells) {
+              const found = cell.querySelector(css);
+              if (found) return found;
+            }
+            return 'ERR:no_button_in_row:' + rowPrefix + ':cells=' + rowCells.length;
+            """,
+            grid,
+            rowText,
+            buttonCss);
+
+    if (!(raw instanceof WebElement button)) {
+      Object debugResult =
+          js.executeScript(
+              """
+              const grid = arguments[0];
+              const cells = Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));
+              return cells.map(c => (c.getAttribute('slot') || '') + '|' + (c.innerText || c.textContent || '').substring(0, 60)).join('\\n');
+              """,
+              grid);
+      throw new RuntimeException(
+          "Could not find row with text: "
+              + rowText
+              + " | debug="
+              + raw
+              + " | cells="
+              + debugResult);
+    }
+    return button;
+  }
+
+  protected void waitForGridToSettle(
+      @NonNull final String gridId, @NonNull final Duration timeout) {
+    new WebDriverWait(driver, timeout)
         .until(
             d -> {
-              Object result =
-                  ((JavascriptExecutor) d)
-                      .executeScript(
-                          "const grid = document.getElementById(arguments[0]);const rowText ="
-                              + " arguments[1];const btnSelector = arguments[2];const log = [];if"
-                              + " (!grid) return { found: false, log: 'Grid not found: ' +"
-                              + " arguments[0] };const sr = grid.shadowRoot;if (!sr) return {"
-                              + " found: false, log: 'No shadow root' };const items ="
-                              + " sr.querySelector('#items');if (!items) return { found: false,"
-                              + " log: 'No #items container in shadow DOM' };const rows ="
-                              + " Array.from(items.children).filter(el =>"
-                              + " !el.hidden);log.push('Visible rows in shadow DOM: ' +"
-                              + " rows.length);for (let i = 0; i < rows.length; i++) {  const row ="
-                              + " rows[i];  const cells = Array.from(row.children);  const"
-                              + " lightCells = [];  cells.forEach(c => {    const slot ="
-                              + " c.querySelector('slot');    if (slot) {      const name ="
-                              + " slot.getAttribute('name');      const lightCell ="
-                              + " grid.querySelector(`[slot=\"${name}\"]`);      if (lightCell)"
-                              + " lightCells.push(lightCell);    }  });  const match ="
-                              + " lightCells.some(lc => lc.textContent.includes(rowText));  if"
-                              + " (match) {    log.push('Match found in row ' + i);    for (const"
-                              + " lc of lightCells) {      const btn ="
-                              + " lc.querySelector(btnSelector);      if (btn) return { found:"
-                              + " true, element: btn };    }    log.push('Row matched but button"
-                              + " not found. Cells: ' + lightCells.length);   "
-                              + " lightCells.forEach(lc => log.push('Cell HTML: ' + lc.innerHTML));"
-                              + "  }}return { found: false, log: log.join('; ') };",
-                          gridId,
-                          rowMatchText,
-                          cssSelector);
-
-              if (result instanceof Map<?, ?> map) {
-                if (Boolean.TRUE.equals(map.get("found"))) {
-                  return (WebElement) map.get("element");
-                } else {
-                  String logMsg = (String) map.get("log");
-                  // Only log occasionally or on last attempt?
-                  // For now log every failure to debug
-                  System.out.println("findButtonInGridRow retry: " + logMsg);
-                  return null;
-                }
+              try {
+                WebElement grid = d.findElement(By.id(gridId));
+                Object result =
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "return !!(arguments[0].loading || arguments[0].pending);", grid);
+                return result == null || !(Boolean) result;
+              } catch (org.openqa.selenium.NoSuchElementException e) {
+                return false;
               }
-              return null;
             });
   }
 
-  protected void takeSequencedScreenshot(@NonNull String context) {
+  protected void waitForNotification(@NonNull final String text) {
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    wait.until(
+        ExpectedConditions.presenceOfElementLocated(
+            By.xpath("//vaadin-notification-card[contains(text(), '" + text + "')]")));
+  }
+
+  protected void scrollIntoView(@NonNull final WebElement element) {
+    try {
+      ((JavascriptExecutor) driver)
+          .executeScript(
+              "arguments[0].scrollIntoView({behavior:'instant',block:'center'});", element);
+    } catch (org.openqa.selenium.StaleElementReferenceException e) {
+      log.warn("StaleElementReferenceException in scrollIntoView — element was re-rendered");
+    }
+  }
+
+  protected void takeSequencedScreenshot(@NonNull final String context) {
     if (Boolean.getBoolean("enable.screenshots") && driver != null && testArtifactsDir != null) {
       screenshotCounter++;
-      String screenshotName = String.format("%03d-%s.png", screenshotCounter, context);
+      String screenshotName = "%03d-%s.png".formatted(screenshotCounter, context);
       Path destFile = testArtifactsDir.resolve(screenshotName);
       takeScreenshot(destFile.toString());
     }
   }
 
-  protected void takeScreenshot(@NonNull String filePath) {
+  protected void takeScreenshot(@NonNull final String filePath) {
     if (driver == null) {
       log.warn("Cannot take screenshot: WebDriver is null");
       return;
@@ -898,15 +988,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       log.debug("Screenshot saved to: {}", filePath);
     } catch (org.openqa.selenium.WebDriverException e) {
       log.warn(
-          "WebDriverException while taking screenshot: {}. This might happen during page"
-              + " navigation.",
+          """
+          WebDriverException while taking screenshot: {}. This might happen during page\
+           navigation.\
+          """,
           e.getMessage());
     } catch (IOException e) {
       log.error("Failed to save screenshot to: {}", filePath, e);
     }
   }
 
-  protected void takeElementScreenshot(@NonNull WebElement element, @NonNull String filePath) {
+  protected void takeElementScreenshot(
+      @NonNull final WebElement element, @NonNull final String filePath) {
     File scrFile = element.getScreenshotAs(OutputType.FILE);
     try {
       FileUtils.copyFile(scrFile, new File(filePath));
@@ -916,7 +1009,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  protected void savePageSource(@NonNull String filePath) {
+  protected void savePageSource(@NonNull final String filePath) {
     try {
       FileUtils.writeStringToFile(new File(filePath), driver.getPageSource(), "UTF-8");
       log.info("Page source saved to: {}", filePath);
@@ -925,105 +1018,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  /**
-   * Selects an item from a Vaadin MultiSelectComboBox by opening it and scrolling through the
-   * items.
-   *
-   * @param comboBox the Vaadin MultiSelectComboBox WebElement
-   * @param itemText the text of the item to select
-   */
-  protected void selectFromVaadinMultiSelectComboBox(
-      @NonNull WebElement comboBox, @NonNull String itemText) {
-    log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
-
-    // 1. Target the internal input element for typing to filter
-    WebElement input =
-        (WebElement)
-            ((JavascriptExecutor) driver)
-                .executeScript(
-                    "return arguments[0].querySelector('input') ||"
-                        + " arguments[0].shadowRoot.querySelector('input');",
-                    comboBox);
-
-    if (input != null) {
-      input.click();
-      input.sendKeys(itemText);
-    } else {
-      // Fallback: just open it
-      ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
-    }
-
-    // 2. Wait for the item to appear and click it via JS.
-    // Items live in the combo box's light DOM (slotted into the overlay), so scoping the
-    // querySelectorAll to the combo box element avoids matching items from other open combos.
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    try {
-      wait.until(
-          d -> {
-            return (Boolean)
-                ((JavascriptExecutor) d)
-                    .executeScript(
-                        "const cb = arguments[0]; const text = arguments[1];"
-                            + " const items = Array.from(cb.querySelectorAll("
-                            + " 'vaadin-multi-select-combo-box-item, vaadin-combo-box-item,"
-                            + " vaadin-item'));"
-                            + " const item = items.find(i => i.offsetParent !== null"
-                            + " && (i.textContent.trim() === text"
-                            + " || i.textContent.trim().includes(text)));"
-                            + " if (item) { item.click(); return true; } return false;",
-                        comboBox,
-                        itemText);
-          });
-
-      // Close the dropdown so it doesn't overlap subsequent interactions
-      ((JavascriptExecutor) driver).executeScript("arguments[0].opened = false;", comboBox);
-      try {
-        Thread.sleep(300);
-      } catch (InterruptedException ignored) {
-      }
-    } catch (Exception e) {
-      log.error("Failed to find or click item '{}' in MultiSelectComboBox", itemText, e);
-      takeSequencedScreenshot("failed-to-select-multi-item");
-      throw e;
-    }
-    takeSequencedScreenshot("after-multi-select");
-  }
-
-  /**
-   * Selects an item from a Vaadin MenuBar by clicking the main button and selecting the item from
-   * the overlay.
-   *
-   * @param menuBar the Vaadin MenuBar WebElement
-   * @param itemText the text of the item to select
-   */
-  protected void selectFromVaadinMenuBar(@NonNull WebElement menuBar, @NonNull String itemText) {
-    log.info("Selecting item '{}' from MenuBar", itemText);
-    // 1. Find and click the main button of the MenuBar
-    WebElement mainButton = menuBar.findElement(By.tagName("vaadin-menu-bar-button"));
-    clickElement(mainButton);
-
-    // 2. Wait and find the item by text in the DOM and click it via JS
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    try {
-      wait.until(
-          d -> {
-            return (Boolean)
-                ((JavascriptExecutor) d)
-                    .executeScript(
-                        "const text = arguments[0];const item ="
-                            + " Array.from(document.querySelectorAll('vaadin-context-menu-item,"
-                            + " vaadin-menu-bar-item, vaadin-item')).find(item =>"
-                            + " item.textContent.trim() === text ||"
-                            + " item.textContent.trim().includes(text));if (item) { item.click();"
-                            + " return true; }return false;",
-                        itemText);
-          });
-    } catch (Exception e) {
-      log.error("Failed to find or click item '{}' in MenuBar", itemText, e);
-      takeSequencedScreenshot("failed-to-select-menu-item");
-      throw e;
-    }
-    takeSequencedScreenshot("after-menu-select");
+  protected void navigateTo(@NonNull final String route) {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
+    waitForVaadinClientToLoad();
   }
 
   protected void logout() {
@@ -1031,23 +1028,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     waitForVaadinElement(driver, By.id("logout-button"));
     WebElement logoutButton = driver.findElement(By.id("logout-button"));
     clickElement(logoutButton);
+    // Vaadin logout may not redirect in E2E mode (anyRequest().permitAll()), so navigate directly
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
+    lastLoggedInUser = null;
   }
 
-  protected void clearField(@NonNull WebElement field) {
+  protected void clearField(@NonNull final WebElement field) {
     takeSequencedScreenshot("before-clear");
-
-    // Determine the correct modifier key for the current OS
     String os = System.getProperty("os.name").toLowerCase();
     Keys modifier = os.contains("mac") ? Keys.COMMAND : Keys.CONTROL;
-
-    // Use keyboard shortcuts to clear the field, as .clear() is unreliable with Vaadin
     String selectAll = Keys.chord(modifier, "a");
     field.sendKeys(selectAll);
     field.sendKeys(Keys.BACK_SPACE);
     takeSequencedScreenshot("after-clear");
   }
 
-  protected String getVaadinTextFieldErrorMessage(@NonNull String textFieldId) {
+  protected String getVaadinTextFieldErrorMessage(@NonNull final String textFieldId) {
     WebElement textFieldElement = driver.findElement(By.id(textFieldId));
 
     // Check if the field is invalid
@@ -1074,7 +1070,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return null; // Or throw an exception if the field is not invalid
   }
 
-  protected void waitForPageSourceToContain(@NonNull String text) {
+  protected void waitForPageSourceToContain(@NonNull final String text) {
     new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }

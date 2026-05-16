@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.domain.season;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a wrestling season in the ATW RPG system. A season is composed of shows and
@@ -41,7 +40,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "season", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class Season extends AbstractEntity<Long> {
+public class Season extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "season_id")
@@ -119,13 +118,13 @@ public class Season extends AbstractEntity<Long> {
   }
 
   /** Add a show to this season. */
-  public void addShow(Show show) {
+  public void addShow(final Show show) {
     shows.add(show);
     show.setSeason(this);
   }
 
   /** Remove a show from this season. */
-  public void removeShow(Show show) {
+  public void removeShow(final Show show) {
     shows.remove(show);
     show.setSeason(null);
   }
@@ -139,11 +138,6 @@ public class Season extends AbstractEntity<Long> {
   public long getDurationDays() {
     Instant end = endDate != null ? endDate : Instant.now();
     return java.time.Duration.between(startDate, end).toDays();
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
   }
 
   @PrePersist

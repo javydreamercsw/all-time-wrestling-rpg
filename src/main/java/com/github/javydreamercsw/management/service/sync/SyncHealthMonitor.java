@@ -113,7 +113,7 @@ public class SyncHealthMonitor implements HealthIndicator, ISyncHealthMonitor {
   }
 
   /** Record a successful sync operation. */
-  public void recordSuccess(String entityType, long durationMs, int itemCount) {
+  public void recordSuccess(final String entityType, final long durationMs, final int itemCount) {
     successfulSyncs.incrementAndGet();
     totalSyncTime.addAndGet(durationMs);
     consecutiveFailures.set(0);
@@ -133,7 +133,7 @@ public class SyncHealthMonitor implements HealthIndicator, ISyncHealthMonitor {
   }
 
   /** Record a failed sync operation. */
-  public void recordFailure(String entityType, String errorMessage) {
+  public void recordFailure(final String entityType, final String errorMessage) {
     failedSyncs.incrementAndGet();
     consecutiveFailures.incrementAndGet();
     lastFailedSync = LocalDateTime.now();
@@ -266,7 +266,11 @@ public class SyncHealthMonitor implements HealthIndicator, ISyncHealthMonitor {
       String errorMessage,
       LocalDateTime timestamp) {
     public SyncMetric(
-        String entityType, boolean success, long durationMs, int itemCount, String errorMessage) {
+        final String entityType,
+        final boolean success,
+        final long durationMs,
+        final int itemCount,
+        final String errorMessage) {
       this(entityType, success, durationMs, itemCount, errorMessage, LocalDateTime.now());
     }
   }

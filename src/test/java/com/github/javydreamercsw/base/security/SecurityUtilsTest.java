@@ -18,27 +18,39 @@ package com.github.javydreamercsw.base.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import java.util.Collections;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 class SecurityUtilsTest {
 
-  private AuthenticationContext authenticationContext;
   private PermissionService permissionService;
+  private AuthenticationContext authenticationContext;
   private SecurityUtils securityUtils;
+  private SecurityContext originalContext;
 
   @BeforeEach
   void setUp() {
-    authenticationContext = mock(AuthenticationContext.class);
+    originalContext = SecurityContextHolder.getContext();
+    SecurityContextHolder.clearContext();
     permissionService = mock(PermissionService.class);
-    securityUtils = new SecurityUtils(authenticationContext, permissionService);
+    authenticationContext = mock(AuthenticationContext.class);
+    securityUtils = new SecurityUtils(permissionService, authenticationContext);
+  }
+
+  @AfterEach
+  void tearDown() {
+    SecurityContextHolder.setContext(originalContext);
   }
 
   @Test
@@ -108,9 +120,11 @@ class SecurityUtilsTest {
 
     assertThat(securityUtils.canCreate()).isTrue();
 
-    when(user.getAuthorities())
+    CustomUserDetails user2 = mock(CustomUserDetails.class);
+    when(user2.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_VIEWER")));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user2));
     assertThat(securityUtils.canCreate()).isFalse();
   }
 
@@ -124,14 +138,18 @@ class SecurityUtilsTest {
 
     assertThat(securityUtils.canEdit()).isTrue();
 
-    when(user.getAuthorities())
+    CustomUserDetails user2 = mock(CustomUserDetails.class);
+    when(user2.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user2));
     assertThat(securityUtils.canEdit()).isTrue();
 
-    when(user.getAuthorities())
+    CustomUserDetails user3 = mock(CustomUserDetails.class);
+    when(user3.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_VIEWER")));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user3));
     assertThat(securityUtils.canEdit()).isFalse();
   }
 
@@ -145,9 +163,11 @@ class SecurityUtilsTest {
 
     assertThat(securityUtils.canDelete()).isTrue();
 
-    when(user.getAuthorities())
+    CustomUserDetails user2 = mock(CustomUserDetails.class);
+    when(user2.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user2));
     assertThat(securityUtils.canDelete()).isFalse();
   }
 
@@ -172,9 +192,11 @@ class SecurityUtilsTest {
     Object target = new Object();
     assertThat(securityUtils.canEdit(target)).isTrue();
 
-    when(user.getAuthorities())
+    CustomUserDetails user2 = mock(CustomUserDetails.class);
+    when(user2.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user2));
     when(permissionService.isOwner(target)).thenReturn(true);
     assertThat(securityUtils.canEdit(target)).isTrue();
 
@@ -193,9 +215,11 @@ class SecurityUtilsTest {
     Object target = new Object();
     assertThat(securityUtils.canDelete(target)).isTrue();
 
-    when(user.getAuthorities())
+    CustomUserDetails user2 = mock(CustomUserDetails.class);
+    when(user2.getAuthorities())
         .thenAnswer(
             invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(user2));
     assertThat(securityUtils.canDelete(target)).isFalse();
   }
 
@@ -213,6 +237,6 @@ class SecurityUtilsTest {
   @Test
   void testLogout() {
     securityUtils.logout();
-    org.mockito.Mockito.verify(authenticationContext).logout();
+    verify(authenticationContext).logout();
   }
 }

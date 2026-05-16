@@ -18,43 +18,37 @@ package com.github.javydreamercsw.management.ui.view.news;
 
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 class NewsFeedDocsE2ETest extends AbstractDocsE2ETest {
-
-  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
-
-  @org.junit.jupiter.api.BeforeEach
-  void setup() {
-    dataInitializer.init();
-  }
 
   @Test
   void testCaptureNewsAndSocialFeed() {
     // 1. Navigate to News & Rumors (Admin view has synthesis button)
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/news");
-    waitForVaadinClientToLoad();
+    navigateTo("news");
 
     // 2. Capture News Grid & Synthesis Button
     documentFeature(
         "News",
         "News & Rumors",
-        "Keep track of everything happening in the wrestling world. Review match results, "
-            + "injuries, and contract updates in a structured grid. Authorized users can trigger a "
-            + "comprehensive Monthly Synthesis to wrap up major story arcs.",
+        """
+        Keep track of everything happening in the wrestling world. Review match results, \
+        injuries, and contract updates in a structured grid. Authorized users can trigger a \
+        comprehensive Monthly Synthesis to wrap up major story arcs.\
+        """,
         "news-grid");
 
     // 3. Navigate to Social Feed
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/news/feed");
-    waitForVaadinClientToLoad();
+    navigateTo("news/feed");
 
     // 4. Capture Social Feed
     documentFeature(
         "News",
         "Wrestling World Feed",
-        "Immerse yourself in the narrative with the Social Feed. See real-time reactions from"
-            + " wrestlers and commentators, and download the monthly Newsletter for a deep-dive"
-            + " analytical summary of the latest events.",
+        """
+        Immerse yourself in the narrative with the Social Feed. See real-time reactions from\
+         wrestlers and commentators, and download the monthly Newsletter for a deep-dive\
+         analytical summary of the latest events.\
+        """,
         "news-social-feed");
   }
 }

@@ -180,7 +180,8 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
             LocalDate.now(),
             null,
             null,
-            league.getId(),
+            defaultUniverse.getId(),
+            null,
             null,
             null);
     show = showRepository.saveAndFlush(show);
@@ -271,7 +272,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
     assertThat(leagueService.getLeagueById(leagueId)).isEmpty();
   }
 
-  private Account createLeagueTestAccount(String username, RoleName role) {
+  private Account createLeagueTestAccount(final String username, final RoleName role) {
     return accountRepository
         .findByUsername(username)
         .orElseGet(
@@ -282,7 +283,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
             });
   }
 
-  private Wrestler createWrestler(String name) {
+  private Wrestler createWrestler(final String name) {
     return wrestlerService.createWrestler(
         name,
         false,

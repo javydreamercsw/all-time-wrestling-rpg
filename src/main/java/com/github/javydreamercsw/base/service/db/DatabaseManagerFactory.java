@@ -18,16 +18,15 @@ package com.github.javydreamercsw.base.service.db;
 
 import java.util.HashMap;
 import java.util.Map;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatabaseManagerFactory {
 
   private static final Map<String, DatabaseManager> overrides = new HashMap<>();
 
-  private DatabaseManagerFactory() {
-    // Private constructor to prevent instantiation
-  }
-
-  public static void overrideDatabaseManager(String dbType, DatabaseManager manager) {
+  public static void overrideDatabaseManager(final String dbType, final DatabaseManager manager) {
     overrides.put(dbType.toUpperCase(), manager);
   }
 
@@ -36,7 +35,12 @@ public class DatabaseManagerFactory {
   }
 
   public static DatabaseManager getDatabaseManager(
-      String dbType, String host, Integer port, String database, String user, String password) {
+      final String dbType,
+      final String host,
+      final Integer port,
+      final String database,
+      final String user,
+      final String password) {
     String url;
     if ("H2".equalsIgnoreCase(dbType)) {
       url =

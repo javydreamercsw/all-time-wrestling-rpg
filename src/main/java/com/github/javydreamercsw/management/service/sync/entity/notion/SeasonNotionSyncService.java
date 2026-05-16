@@ -32,14 +32,14 @@ import org.springframework.stereotype.Service;
 public class SeasonNotionSyncService extends BaseNotionSyncService<Season> {
 
   public SeasonNotionSyncService(
-      SeasonRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final SeasonRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull Season entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final Season entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 

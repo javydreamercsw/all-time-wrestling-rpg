@@ -37,10 +37,10 @@ public class FactionHeatChangeInboxListener implements ApplicationListener<Facti
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public FactionHeatChangeInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("factionHeatChange") InboxEventType factionHeatChange,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("factionHeatChange") final InboxEventType factionHeatChange,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.factionHeatChange = factionHeatChange;
     this.eventPublisher = eventPublisher;
@@ -48,18 +48,18 @@ public class FactionHeatChangeInboxListener implements ApplicationListener<Facti
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FactionHeatChangeEvent event) {
+  public void onApplicationEvent(@NonNull final FactionHeatChangeEvent event) {
     log.info("Received FactionHeatChangeEvent for rivalry ID: {}", event.getFactionRivalryId());
 
     String message =
-        String.format(
-            "Faction rivalry between %s and %s %s %d heat. New total: %d. Reason: %s",
-            event.getFaction1Name(),
-            event.getFaction2Name(),
-            (event.getNewHeat() - event.getOldHeat()) > 0 ? "gained" : "lost",
-            Math.abs(event.getNewHeat() - event.getOldHeat()),
-            event.getNewHeat(),
-            event.getReason());
+        "Faction rivalry between %s and %s %s %d heat. New total: %d. Reason: %s"
+            .formatted(
+                event.getFaction1Name(),
+                event.getFaction2Name(),
+                (event.getNewHeat() - event.getOldHeat()) > 0 ? "gained" : "lost",
+                Math.abs(event.getNewHeat() - event.getOldHeat()),
+                event.getNewHeat(),
+                event.getReason());
 
     inboxService.createInboxItem(
         factionHeatChange,

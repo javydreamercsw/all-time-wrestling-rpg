@@ -61,7 +61,7 @@ public class PasswordResetServiceIT {
   private Account testAccount;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     testAccount =
         accountService.createAccount(
             "resetuser", "ResetPass123!", "reset@test.com", RoleName.PLAYER);

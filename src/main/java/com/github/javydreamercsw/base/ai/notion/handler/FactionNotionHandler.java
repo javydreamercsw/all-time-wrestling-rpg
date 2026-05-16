@@ -30,12 +30,12 @@ public class FactionNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public FactionNotionHandler(NotionHandler notionHandler) {
+  public FactionNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
   /** Loads a faction from the Notion database by name. */
-  public Optional<FactionPage> loadFaction(@NonNull String factionName) {
+  public Optional<FactionPage> loadFaction(@NonNull final String factionName) {
     log.debug("Loading faction: '{}'", factionName);
 
     String factionDbId = notionHandler.getDatabaseId("Factions");
@@ -93,7 +93,8 @@ public class FactionNotionHandler {
   }
 
   /** Maps a Notion page to a FactionPage object. */
-  private FactionPage mapPageToFactionPage(@NonNull Page pageData, @NonNull String factionName) {
+  private FactionPage mapPageToFactionPage(
+      @NonNull final Page pageData, @NonNull final String factionName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, factionName, "Faction", FactionPage::new, FactionPage.NotionParent::new);
   }

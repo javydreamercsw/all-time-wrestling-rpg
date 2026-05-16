@@ -33,7 +33,6 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -55,11 +54,6 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
-
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
 
   @Test
   void testSyncToNotion() {
@@ -88,7 +82,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
     titleRepository.save(title);
 
     // Sync to Notion for the first time
-    titleNotionSyncService.syncToNotion("test-op-1");
+    titleNotionSyncService.syncToNotion("test-op-1", java.util.List.of(title.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(title.getId());
@@ -107,7 +101,7 @@ class TitleNotionSyncServiceIT extends ManagementIntegrationTest {
     // Sync to Notion again with updates
     updatedTitle.setName("Test Title Updated " + UUID.randomUUID());
     titleRepository.save(updatedTitle);
-    titleNotionSyncService.syncToNotion("test-op-2");
+    titleNotionSyncService.syncToNotion("test-op-2", java.util.List.of(title.getId()));
     Title updatedTitle2 = titleRepository.findById(title.getId()).get();
     assertTrue(updatedTitle2.getLastSync().isAfter(updatedTitle.getLastSync()));
 

@@ -42,7 +42,7 @@ class TitleReignSyncServiceTest extends AbstractSyncTest {
 
   @BeforeEach
   @Override
-  protected void setUp() {
+  public void setUp() {
     super.setUp(); // Call parent setup first
     service =
         new TitleReignSyncService(

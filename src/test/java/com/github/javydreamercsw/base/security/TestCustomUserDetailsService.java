@@ -51,7 +51,8 @@ public class TestCustomUserDetailsService implements UserDetailsService {
   @Autowired private Clock clock;
 
   @Override
-  public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(@NonNull final String username)
+      throws UsernameNotFoundException {
     return accountRepository
         .findByUsername(username)
         .map(
@@ -109,7 +110,7 @@ public class TestCustomUserDetailsService implements UserDetailsService {
               // Create default accounts if they don't exist
               Account account = new Account();
               account.setUsername(username);
-              account.setPassword(passwordEncoder.encode("password")); // Default password for tests
+              account.setPassword(passwordEncoder.encode("admin123")); // Default password for tests
               account.setRoles(rolesToAssign);
               account.setEmail(username + "@test.com");
               accountRepository.save(account);
@@ -120,7 +121,7 @@ public class TestCustomUserDetailsService implements UserDetailsService {
             });
   }
 
-  private Wrestler findOrCreateWrestlerForAccount(@NonNull Account account) {
+  private Wrestler findOrCreateWrestlerForAccount(@NonNull final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
@@ -143,7 +144,7 @@ public class TestCustomUserDetailsService implements UserDetailsService {
   }
 
   private static class TestCustomUserDetails extends CustomUserDetails {
-    public TestCustomUserDetails(Account account, Wrestler wrestler) {
+    public TestCustomUserDetails(final Account account, final Wrestler wrestler) {
       super(account, wrestler);
     }
 

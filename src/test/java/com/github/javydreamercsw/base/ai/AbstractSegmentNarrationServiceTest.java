@@ -31,7 +31,7 @@ class AbstractSegmentNarrationServiceTest {
   private final AbstractSegmentNarrationService service =
       new AbstractSegmentNarrationService() {
         @Override
-        protected String callAIProvider(@NonNull String prompt) {
+        protected String callAIProvider(@NonNull final String prompt) {
           return "Mock response";
         }
 

@@ -31,8 +31,10 @@ class NewsDocsE2ETest extends AbstractE2ETest {
     // 1. Setup - Ensure some news exists
     newsService.createNewsItem(
         "Breaking: Major Championship Change!",
-        "In a shocking turn of events, the ATW World Championship has changed hands in a surprise"
-            + " match.",
+        """
+        In a shocking turn of events, the ATW World Championship has changed hands in a surprise\
+         match.\
+        """,
         NewsCategory.BREAKING,
         false,
         5);
@@ -45,8 +47,7 @@ class NewsDocsE2ETest extends AbstractE2ETest {
         3);
 
     // 2. Capture News & Rumors View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/news");
-    waitForVaadinClientToLoad();
+    navigateTo("news");
     documentFeature(
         "Dashboards",
         "News & Rumors Feed",
@@ -54,8 +55,7 @@ class NewsDocsE2ETest extends AbstractE2ETest {
         "dashboards-news-feed");
 
     // 3. Capture News Ticker on Booker Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/booker");
-    waitForVaadinClientToLoad();
+    navigateTo("booker");
     documentFeature(
         "Booker",
         "Dashboard with News Ticker",

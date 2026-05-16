@@ -33,7 +33,7 @@ public class FileSystemImageSource implements ImageSource {
   private final StorageProperties storageProperties;
 
   @Override
-  public Optional<String> resolveImage(String name, ImageCategory category) {
+  public Optional<String> resolveImage(final String name, final ImageCategory category) {
     Path baseDir = storageProperties.getResolvedDefaultImageDir();
     String subDir = category.getDirectoryName();
     String filename = category.formatName(name) + ".png";

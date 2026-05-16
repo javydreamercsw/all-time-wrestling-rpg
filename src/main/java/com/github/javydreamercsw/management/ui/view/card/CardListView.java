@@ -61,9 +61,9 @@ public class CardListView extends Main {
   final Grid<Card> cardGrid;
 
   public CardListView(
-      @NonNull CardService cardService,
-      @NonNull CardSetService cardSetService,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull final CardService cardService,
+      @NonNull final CardSetService cardSetService,
+      @NonNull final SecurityUtils securityUtils) {
     this.cardService = cardService;
 
     name = new TextField();
@@ -269,7 +269,7 @@ public class CardListView extends Main {
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void deleteCard(@NonNull Card card) {
+  private void deleteCard(@NonNull final Card card) {
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Delete Card?");
     dialog.setText("Are you sure you want to delete this card?");

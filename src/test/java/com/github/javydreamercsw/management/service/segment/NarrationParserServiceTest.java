@@ -30,8 +30,10 @@ class NarrationParserServiceTest {
   @Test
   void testParseDialogue() {
     String raw =
-        "Dara Hoshiko: Welcome to the show!\n"
-            + "Lord Bastian Von Crowe: It's a dreadful night for some, Dara.";
+        """
+        Dara Hoshiko: Welcome to the show!
+        Lord Bastian Von Crowe: It's a dreadful night for some, Dara.\
+        """;
 
     List<NarrationLineDTO> result = parser.parse(raw);
 

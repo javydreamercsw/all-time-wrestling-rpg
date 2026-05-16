@@ -27,9 +27,13 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRep
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +42,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -49,12 +52,15 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
   @Autowired private TierRecalculationService tierRecalculationService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private TitleRepository titleRepository;
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
+  @Autowired private WrestlerService wrestlerService;
 
   private Wrestler maleWrestler;
   private Wrestler femaleWrestler;
@@ -67,63 +73,67 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
-    wrestlerAlignmentRepository.deleteAllInBatch();
-    campaignStateRepository.deleteAllInBatch();
-    backstageActionHistoryRepository.deleteAllInBatch();
-    campaignEncounterRepository.deleteAllInBatch();
-    campaignRepository.deleteAllInBatch();
-    titleRepository.deleteAll();
-    wrestlerRepository.deleteAll();
-
     maleWrestler = new Wrestler();
     maleWrestler.setName("Male Wrestler");
-    maleWrestler.setFans(WrestlerTier.MIDCARDER.getMaxFans());
     maleWrestler.setGender(Gender.MALE);
-    maleWrestler.setTier(WrestlerTier.MIDCARDER);
     maleWrestler.setDeckSize(15);
     maleWrestler.setStartingHealth(15);
     maleWrestler.setLowHealth(0);
     maleWrestler.setStartingStamina(0);
     maleWrestler.setLowStamina(0);
     maleWrestler.setIsPlayer(false);
-    maleWrestler.setBumps(0);
-    wrestlerRepository.saveAndFlush(maleWrestler);
+    maleWrestler = wrestlerRepository.saveAndFlush(maleWrestler);
+
+    WrestlerState maleState =
+        wrestlerService.getOrCreateState(maleWrestler.getId(), defaultUniverse.getId());
+    maleState.setFans(WrestlerTier.MIDCARDER.getMaxFans());
+    maleState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(maleState);
 
     femaleWrestler = new Wrestler();
     femaleWrestler.setName("Female Wrestler");
-    femaleWrestler.setFans(WrestlerTier.MIDCARDER.getMinFans() + 5000);
     femaleWrestler.setGender(Gender.FEMALE);
-    femaleWrestler.setTier(WrestlerTier.MIDCARDER);
     femaleWrestler.setDeckSize(15);
     femaleWrestler.setStartingHealth(15);
     femaleWrestler.setLowHealth(0);
     femaleWrestler.setStartingStamina(0);
     femaleWrestler.setLowStamina(0);
     femaleWrestler.setIsPlayer(false);
-    femaleWrestler.setBumps(0);
-    wrestlerRepository.saveAndFlush(femaleWrestler);
+    femaleWrestler = wrestlerRepository.saveAndFlush(femaleWrestler);
 
-    womensTitle = new Title();
-    womensTitle.setName("Women's World Championship");
-    womensTitle.setGender(Gender.FEMALE);
-    womensTitle.setTier(WrestlerTier.ROOKIE);
-    womensTitle.setChampionshipType(ChampionshipType.SINGLE);
-    titleRepository.save(womensTitle);
+    WrestlerState femaleState =
+        wrestlerService.getOrCreateState(femaleWrestler.getId(), defaultUniverse.getId());
+    femaleState.setFans(WrestlerTier.MIDCARDER.getMinFans() + 5000);
+    femaleState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.save(femaleState);
 
-    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerRepository.findAll()));
+    womensTitle =
+        titleRepository
+            .findByName("Women World Championship")
+            .orElseGet(
+                () -> {
+                  Title t = new Title();
+                  t.setName("Women World Championship");
+                  t.setGender(Gender.FEMALE);
+                  t.setTier(WrestlerTier.ROOKIE);
+                  t.setChampionshipType(ChampionshipType.SINGLE);
+                  t.setUniverse(defaultUniverse);
+                  return titleRepository.save(t);
+                });
+
+    tierRecalculationService.recalculateRanking(
+        new ArrayList<>(wrestlerStateRepository.findAllWithWrestler()));
   }
 
   @Test
   public void testFemaleGenderFiltering() {
     try {
       // Navigate to the Wrestler Rankings view
-      log.info("Navigating to wrestler rankings");
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-rankings");
+      navigateTo("wrestler-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
       // Verify both wrestlers are displayed initially
-      log.info("Verifying both wrestlers are displayed");
       waitForGridToPopulate("wrestler-rankings-grid");
       assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
       assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
@@ -155,25 +165,21 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   public void testMaleGenderFiltering() {
     try {
       // Navigate to the Wrestler Rankings view
-      log.info("Navigating to wrestler rankings");
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-rankings");
+      navigateTo("wrestler-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
       // Verify both wrestlers are displayed initially
-      log.info("Verifying both wrestlers are displayed");
       assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
       assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
 
       // Select "MALE" from the gender ComboBox
-      log.info("Filtering by MALE");
       WebElement genderComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("gender-selection")));
       Assertions.assertNotNull(genderComboBox);
       selectFromVaadinComboBox(genderComboBox, "MALE");
 
       // Verify only the male wrestler is displayed
-      log.info("Verifying only male wrestler is displayed");
       waitForGridToPopulate("wrestler-rankings-grid");
       assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
 
@@ -192,43 +198,36 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
   public void testChampionshipAndTierBoundaries() {
     try {
       // Navigate to the Championship Rankings view
-      log.info("Navigating to championship rankings");
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/championship-rankings");
+      navigateTo("championship-rankings");
 
       WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
       // Select the women's championship
-      log.info("Selecting women's championship");
       WebElement championshipComboBox =
           wait.until(
-              ExpectedConditions.visibilityOfElementLocated(By.cssSelector("vaadin-combo-box")));
+              ExpectedConditions.visibilityOfElementLocated(By.id("championship-combo-box")));
       Assertions.assertNotNull(championshipComboBox);
-      championshipComboBox.sendKeys(womensTitle.getName(), Keys.TAB);
+      selectFromVaadinComboBox(championshipComboBox, womensTitle.getName());
 
       // Verify the female wrestler is in the contenders list
-      log.info("Verifying female wrestler is a contender");
       waitForGridToPopulate("wrestler-contenders-grid");
       assertGridContains("wrestler-contenders-grid", femaleWrestler.getName());
 
       // Open the "Tier Boundaries" dialog
-      log.info("Opening tier boundaries dialog");
       WebElement showTierBoundariesButton =
           wait.until(ExpectedConditions.elementToBeClickable(By.id("show-tier-boundaries-button")));
       Assertions.assertNotNull(showTierBoundariesButton);
       clickElement(showTierBoundariesButton);
 
       // Wait for the dialog to appear
-      log.info("Waiting for dialog");
       wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
       // Select "FEMALE" in the dialog's gender ComboBox
-      log.info("Filtering tier boundaries by FEMALE");
       WebElement dialogGenderComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("tier-gender-selection")));
       selectFromVaadinComboBox(dialogGenderComboBox, "FEMALE");
 
       // Verify that the female tier boundaries are displayed in the dialog's grid
-      log.info("Verifying female tier boundaries");
       waitForGridToPopulate("tier-boundaries-grid");
       assertGridContains("tier-boundaries-grid", "Midcarder");
     } catch (Exception e) {

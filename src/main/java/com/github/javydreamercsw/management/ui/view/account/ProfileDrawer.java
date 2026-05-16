@@ -42,10 +42,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class ProfileDrawer extends Dialog {
 
   public ProfileDrawer(
-      Account account,
-      AccountService accountService,
-      PasswordEncoder passwordEncoder,
-      ThemeService themeService) {
+      final Account account,
+      final AccountService accountService,
+      final PasswordEncoder passwordEncoder,
+      final ThemeService themeService) {
 
     addClassName("profile-drawer");
     setModality(ModalityMode.STRICT);

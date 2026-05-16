@@ -31,7 +31,7 @@ class MatchDTOTest {
   private SegmentDTO segmentDTO;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     segmentDTO = new SegmentDTO();
   }
 

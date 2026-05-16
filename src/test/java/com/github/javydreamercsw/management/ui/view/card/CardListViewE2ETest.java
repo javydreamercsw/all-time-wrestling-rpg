@@ -57,7 +57,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testCreateCard() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/card-list");
+    navigateTo("card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.pollingEvery(Duration.ofMillis(500));
 
@@ -80,7 +80,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   @Test
   public void testUpdateCard() {
     String cardName = "Card to Update";
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/card-list");
+    navigateTo("card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.pollingEvery(Duration.ofMillis(500));
 
@@ -131,7 +131,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   public void testDeleteCard() {
     String cardName = "Card to Delete";
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/card-list");
+    navigateTo("card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.pollingEvery(Duration.ofMillis(500));
 
@@ -174,7 +174,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     assertTrue(notFound);
   }
 
-  private WebElement findCardInGridWithScrolling(WebDriverWait wait, String cardName) {
+  private WebElement findCardInGridWithScrolling(final WebDriverWait wait, final String cardName) {
     return wait.until(
         d -> {
           WebElement grid = d.findElement(By.tagName("vaadin-grid"));
@@ -193,7 +193,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testSortByName() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/card-list");
+    navigateTo("card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
 
     // Wait for the grid to be present and populated
@@ -211,12 +211,12 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.attributeContains(nameHeader, "direction", "asc"));
     wait.until(
         d -> {
-          List<String> currentOrder = getColumnData(grid, 0);
+          List<String> currentOrder = getGridColumnData(grid, 0);
           List<String> sortedCurrentOrder = new ArrayList<>(currentOrder);
           Collections.sort(sortedCurrentOrder);
           return sortedCurrentOrder.equals(currentOrder);
         });
-    List<String> ascOrder = getColumnData(grid, 0);
+    List<String> ascOrder = getGridColumnData(grid, 0);
     List<String> manuallySortedAsc = new ArrayList<>(ascOrder);
     Collections.sort(manuallySortedAsc);
     assertEquals(manuallySortedAsc, ascOrder); // Assert that the list *is* sorted ascending
@@ -226,12 +226,12 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     wait.until(ExpectedConditions.attributeContains(nameHeader, "direction", "desc"));
     wait.until(
         d -> {
-          List<String> currentOrder = getColumnData(grid, 0);
+          List<String> currentOrder = getGridColumnData(grid, 0);
           List<String> sortedCurrentOrder = new ArrayList<>(currentOrder);
           sortedCurrentOrder.sort(Collections.reverseOrder());
           return sortedCurrentOrder.equals(currentOrder);
         });
-    List<String> descOrder = getColumnData(grid, 0);
+    List<String> descOrder = getGridColumnData(grid, 0);
     List<String> manuallySortedDesc = new ArrayList<>(descOrder);
     manuallySortedDesc.sort(Collections.reverseOrder());
     assertEquals(manuallySortedDesc, descOrder); // Assert that the list *is* sorted descending

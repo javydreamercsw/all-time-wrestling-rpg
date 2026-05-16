@@ -38,7 +38,7 @@ public class RivalryDTO implements Serializable {
    * @param wrestler The participant to exclude
    * @return The opponent
    */
-  public WrestlerDTO getOpponent(WrestlerDTO wrestler) {
+  public WrestlerDTO getOpponent(final WrestlerDTO wrestler) {
     if (wrestler1 != null && wrestler1.getId().equals(wrestler.getId())) {
       return wrestler2;
     } else if (wrestler2 != null && wrestler2.getId().equals(wrestler.getId())) {

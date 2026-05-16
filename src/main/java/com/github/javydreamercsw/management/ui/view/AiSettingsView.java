@@ -72,9 +72,9 @@ public class AiSettingsView extends VerticalLayout {
 
   @Autowired
   public AiSettingsView(
-      AiSettingsService aiSettingsService,
-      GameSettingService gameSettingService,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final AiSettingsService aiSettingsService,
+      final GameSettingService gameSettingService,
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
     this.notificationService = notificationService;
@@ -273,7 +273,7 @@ public class AiSettingsView extends VerticalLayout {
     add(pollinationsSettingsLayout);
   }
 
-  private void saveSetting(String key, String value) {
+  private void saveSetting(final String key, final String value) {
     if (value == null) {
       return;
     }

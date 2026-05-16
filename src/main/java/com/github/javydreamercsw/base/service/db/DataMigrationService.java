@@ -42,19 +42,19 @@ public class DataMigrationService {
   private final DataSource dataSource;
 
   @Autowired
-  public DataMigrationService(Environment env, DataSource dataSource) {
+  public DataMigrationService(final Environment env, final DataSource dataSource) {
     this.env = env;
     this.dataSource = dataSource;
   }
 
   public void migrateData(
-      String sourceDbType,
-      String targetDbType,
-      String host,
-      Integer port,
-      String database,
-      String user,
-      String password)
+      final String sourceDbType,
+      final String targetDbType,
+      final String host,
+      final Integer port,
+      final String database,
+      final String user,
+      final String password)
       throws SQLException {
     DatabaseManager sourceManager =
         new DatabaseManager() {
@@ -68,7 +68,7 @@ public class DataMigrationService {
           }
 
           @Override
-          public Connection getConnection(@NonNull String password) throws SQLException {
+          public Connection getConnection(@NonNull final String password) throws SQLException {
             return dataSource.getConnection();
           }
 
@@ -100,16 +100,16 @@ public class DataMigrationService {
   }
 
   public void migrateData(
-      String sourceDbType,
-      String sourceUrl,
-      String sourceUser,
-      String sourcePassword,
-      String targetDbType,
-      String host,
-      Integer port,
-      String database,
-      String user,
-      String password)
+      final String sourceDbType,
+      final String sourceUrl,
+      final String sourceUser,
+      final String sourcePassword,
+      final String targetDbType,
+      final String host,
+      final Integer port,
+      final String database,
+      final String user,
+      final String password)
       throws SQLException {
     DatabaseManager sourceManager =
         DatabaseManagerFactory.getDatabaseManager(
@@ -120,11 +120,30 @@ public class DataMigrationService {
     migrateDataInternal(sourceManager, targetManager, password);
   }
 
+  public void migrateData(
+      final String sourceDbType,
+      final String sourceUrl,
+      final String sourceUser,
+      final String sourcePassword,
+      final String targetDbType,
+      final String targetUrl,
+      final String targetUser,
+      final String targetPassword)
+      throws SQLException {
+    DatabaseManager sourceManager =
+        DatabaseManagerFactory.getDatabaseManager(
+            sourceDbType, sourceUrl, sourceUser, sourcePassword);
+    DatabaseManager targetManager =
+        DatabaseManagerFactory.getDatabaseManager(
+            targetDbType, targetUrl, targetUser, targetPassword);
+    migrateDataInternal(sourceManager, targetManager, targetPassword);
+  }
+
   public void setTargetFlywayMigration(
-      @NonNull String url,
-      @NonNull String user,
-      @NonNull String password,
-      @NonNull String migrationPath) {
+      @NonNull final String url,
+      @NonNull final String user,
+      @NonNull final String password,
+      @NonNull final String migrationPath) {
     String location = "";
     // Try to resolve filesystem path for exploded WARs
     try {
@@ -167,9 +186,9 @@ public class DataMigrationService {
   }
 
   private void migrateDataInternal(
-      @NonNull DatabaseManager sourceManager,
-      @NonNull DatabaseManager targetManager,
-      @NonNull String password)
+      @NonNull final DatabaseManager sourceManager,
+      @NonNull final DatabaseManager targetManager,
+      @NonNull final String password)
       throws SQLException {
 
     // Perform Flyway migration for the target database before opening data transfer connections
@@ -197,11 +216,13 @@ public class DataMigrationService {
         migrateFactions(sourceConnection, targetConnection);
         migrateInjuryTypes(sourceConnection, targetConnection);
         migrateCardSets(sourceConnection, targetConnection);
+        migrateUniverse(sourceConnection, targetConnection);
 
         // Dependent tables
         migrateAccounts(sourceConnection, targetConnection);
         migrateAccountRoles(sourceConnection, targetConnection);
         migrateWrestlers(sourceConnection, targetConnection);
+        migrateWrestlerStates(sourceConnection, targetConnection);
         migrateInjuries(sourceConnection, targetConnection);
         migrateTeams(sourceConnection, targetConnection);
         migrateCards(sourceConnection, targetConnection);
@@ -255,17 +276,21 @@ public class DataMigrationService {
   }
 
   private void migrateFeudHeatEvents(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO feud_heat_event (feud_heat_event_id, feud_id, "
-            + "heat_change, heat_after_event, reason, event_date, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO feud_heat_event (feud_heat_event_id, feud_id, \
+        heat_change, heat_after_event, reason, event_date, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT feud_heat_event_id, feud_id, heat_change, "
-                    + "heat_after_event, reason, event_date, creation_date FROM feud_heat_event");
+                """
+                SELECT feud_heat_event_id, feud_id, heat_change, \
+                heat_after_event, reason, event_date, creation_date FROM feud_heat_event\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -291,17 +316,21 @@ public class DataMigrationService {
   }
 
   private void migrateFeudParticipants(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO feud_participant (feud_participant_id, feud_id, wrestler_id, "
-            + "role, is_active, joined_date, left_date, left_reason, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO feud_participant (feud_participant_id, feud_id, wrestler_id, \
+        role, is_active, joined_date, left_date, left_reason, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT feud_participant_id, feud_id, wrestler_id, role, is_active, "
-                    + "joined_date, left_date, left_reason, creation_date FROM feud_participant");
+                """
+                SELECT feud_participant_id, feud_id, wrestler_id, role, is_active, \
+                joined_date, left_date, left_reason, creation_date FROM feud_participant\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -329,17 +358,21 @@ public class DataMigrationService {
   }
 
   private void migrateMultiWrestlerFeuds(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO multi_wrestler_feud (multi_wrestler_feud_id, name, description, "
-            + "heat, is_active, started_date, ended_date, storyline_notes, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO multi_wrestler_feud (multi_wrestler_feud_id, name, description, \
+        heat, is_active, started_date, ended_date, storyline_notes, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT multi_wrestler_feud_id, name, description, heat, is_active, started_date,"
-                    + " ended_date, storyline_notes, creation_date FROM multi_wrestler_feud");
+                """
+                SELECT multi_wrestler_feud_id, name, description, heat, is_active, started_date,\
+                 ended_date, storyline_notes, creation_date FROM multi_wrestler_feud\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -367,21 +400,25 @@ public class DataMigrationService {
   }
 
   private void migrateDramaEvents(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO drama_event (drama_event_id, title, description, event_type, "
-            + "severity, event_date, creation_date, heat_impact, fan_impact, "
-            + "injury_caused, rivalry_created, rivalry_ended, is_processed, "
-            + "processed_date, processing_notes, primary_wrestler_id, secondary_wrestler_id) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO drama_event (drama_event_id, title, description, event_type, \
+        severity, event_date, creation_date, heat_impact, fan_impact, \
+        injury_caused, rivalry_created, rivalry_ended, is_processed, \
+        processed_date, processing_notes, primary_wrestler_id, secondary_wrestler_id) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT drama_event_id, title, description, event_type, severity, event_date,"
-                    + " creation_date, heat_impact, fan_impact, injury_caused, rivalry_created,"
-                    + " rivalry_ended, is_processed, processed_date, processing_notes,"
-                    + " primary_wrestler_id, secondary_wrestler_id FROM drama_event");
+                """
+                SELECT drama_event_id, title, description, event_type, severity, event_date,\
+                 creation_date, heat_impact, fan_impact, injury_caused, rivalry_created,\
+                 rivalry_ended, is_processed, processed_date, processing_notes,\
+                 primary_wrestler_id, secondary_wrestler_id FROM drama_event\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -433,7 +470,7 @@ public class DataMigrationService {
   }
 
   private void migrateTitleContenders(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql = "INSERT INTO title_contender (title_id, wrestler_id) VALUES (?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
@@ -459,17 +496,21 @@ public class DataMigrationService {
   }
 
   private void migrateHolidays(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO holiday (id, description, theme, decorations, day_of_month, "
-            + "holiday_month, day_of_week, week_of_month, type, creation_date, external_id) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO holiday (id, description, theme, decorations, day_of_month, \
+        holiday_month, day_of_week, week_of_month, type, creation_date, external_id) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT id, description, theme, decorations, day_of_month, holiday_month,"
-                    + " day_of_week, week_of_month, type, creation_date, external_id FROM holiday");
+                """
+                SELECT id, description, theme, decorations, day_of_month, holiday_month,\
+                 day_of_week, week_of_month, type, creation_date, external_id FROM holiday\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -507,11 +548,13 @@ public class DataMigrationService {
   }
 
   private void migratePasswordResetTokens(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO password_reset_token (id, token, account_id, expiry_date) "
-            + "VALUES (?, ?, ?, ?)";
+        """
+        INSERT INTO password_reset_token (id, token, account_id, expiry_date) \
+        VALUES (?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
@@ -538,7 +581,7 @@ public class DataMigrationService {
   }
 
   private void migrateGameSettings(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql = "INSERT INTO game_setting (setting_key, setting_value) VALUES (?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
@@ -564,16 +607,20 @@ public class DataMigrationService {
   }
 
   private void migrateInboxItemTargets(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO inbox_item_target (inbox_item_target_id, inbox_item_id, "
-            + "target_id, external_id) VALUES (?, ?, ?, ?)";
+        """
+        INSERT INTO inbox_item_target (inbox_item_target_id, inbox_item_id, \
+        target_id, external_id) VALUES (?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT inbox_item_target_id, inbox_item_id, target_id, "
-                    + "external_id FROM inbox_item_target");
+                """
+                SELECT inbox_item_target_id, inbox_item_id, target_id, \
+                external_id FROM inbox_item_target\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -600,16 +647,20 @@ public class DataMigrationService {
   }
 
   private void migrateTierBoundaries(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO tier_boundary (id, tier, gender, min_fans, max_fans, "
-            + "challenge_cost, contender_entry_fee) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO tier_boundary (id, tier, gender, min_fans, max_fans, \
+        challenge_cost, contender_entry_fee) VALUES (?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT id, tier, gender, min_fans, max_fans, challenge_cost, "
-                    + "contender_entry_fee FROM tier_boundary");
+                """
+                SELECT id, tier, gender, min_fans, max_fans, challenge_cost, \
+                contender_entry_fee FROM tier_boundary\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -635,16 +686,20 @@ public class DataMigrationService {
   }
 
   private void migrateInboxItems(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO inbox_item (inbox_item_id, event_type, description, "
-            + "event_timestamp, is_read, external_id) VALUES (?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO inbox_item (inbox_item_id, event_type, description, \
+        event_timestamp, is_read, external_id) VALUES (?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT inbox_item_id, event_type, description, event_timestamp, "
-                    + "is_read, external_id FROM inbox_item");
+                """
+                SELECT inbox_item_id, event_type, description, event_timestamp, \
+                is_read, external_id FROM inbox_item\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -669,17 +724,21 @@ public class DataMigrationService {
   }
 
   private void migrateFactionHeatEvents(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO faction_heat_event (faction_heat_event_id, faction_rivalry_id, "
-            + "heat_change, heat_after_event, reason, event_date, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO faction_heat_event (faction_heat_event_id, faction_rivalry_id, \
+        heat_change, heat_after_event, reason, event_date, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT faction_heat_event_id, faction_rivalry_id, heat_change, heat_after_event,"
-                    + " reason, event_date, creation_date FROM faction_heat_event");
+                """
+                SELECT faction_heat_event_id, faction_rivalry_id, heat_change, heat_after_event,\
+                 reason, event_date, creation_date FROM faction_heat_event\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -705,18 +764,22 @@ public class DataMigrationService {
   }
 
   private void migrateFactionRivalries(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO faction_rivalry (faction_rivalry_id, faction1_id, faction2_id, "
-            + "heat, is_active, started_date, ended_date, storyline_notes, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO faction_rivalry (faction_rivalry_id, faction1_id, faction2_id, \
+        heat, is_active, started_date, ended_date, storyline_notes, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT faction_rivalry_id, faction1_id, faction2_id, heat, is_active,"
-                    + " started_date, ended_date, storyline_notes, creation_date FROM"
-                    + " faction_rivalry");
+                """
+                SELECT faction_rivalry_id, faction1_id, faction2_id, heat, is_active,\
+                 started_date, ended_date, storyline_notes, creation_date FROM\
+                 faction_rivalry\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -744,17 +807,21 @@ public class DataMigrationService {
   }
 
   private void migrateHeatEvents(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO heat_event (heat_event_id, rivalry_id, heat_change, "
-            + "heat_after_event, reason, event_date, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO heat_event (heat_event_id, rivalry_id, heat_change, \
+        heat_after_event, reason, event_date, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT heat_event_id, rivalry_id, heat_change, "
-                    + "heat_after_event, reason, event_date, creation_date FROM heat_event");
+                """
+                SELECT heat_event_id, rivalry_id, heat_change, \
+                heat_after_event, reason, event_date, creation_date FROM heat_event\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -780,17 +847,21 @@ public class DataMigrationService {
   }
 
   private void migrateRivalries(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO rivalry (rivalry_id, wrestler1_id, wrestler2_id, heat, is_active, "
-            + "started_date, ended_date, storyline_notes, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO rivalry (rivalry_id, wrestler1_id, wrestler2_id, heat, is_active, \
+        started_date, ended_date, storyline_notes, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT rivalry_id, wrestler1_id, wrestler2_id, heat, is_active, "
-                    + "started_date, ended_date, storyline_notes, creation_date FROM rivalry");
+                """
+                SELECT rivalry_id, wrestler1_id, wrestler2_id, heat, is_active, \
+                started_date, ended_date, storyline_notes, creation_date FROM rivalry\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -818,7 +889,7 @@ public class DataMigrationService {
   }
 
   private void migrateTitleReignChampions(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql = "INSERT INTO title_reign_champion (title_reign_id, wrestler_id) VALUES (?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
@@ -845,16 +916,20 @@ public class DataMigrationService {
   }
 
   private void migrateTitleReigns(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO title_reign (title_reign_id, external_id, title_id, start_date, "
-            + "end_date, reign_number, notes, creation_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO title_reign (title_reign_id, external_id, title_id, start_date, \
+        end_date, reign_number, notes, creation_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT title_reign_id, external_id, title_id, start_date, "
-                    + "end_date, reign_number, notes, creation_date FROM title_reign");
+                """
+                SELECT title_reign_id, external_id, title_id, start_date, \
+                end_date, reign_number, notes, creation_date FROM title_reign\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -881,7 +956,7 @@ public class DataMigrationService {
   }
 
   private void migrateTitleChampions(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql = "INSERT INTO title_champion (title_id, wrestler_id) VALUES (?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
@@ -907,7 +982,7 @@ public class DataMigrationService {
   }
 
   private void migrateSegmentTitles(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql = "INSERT INTO segment_title (segment_id, title_id) VALUES (?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
@@ -933,16 +1008,20 @@ public class DataMigrationService {
   }
 
   private void migrateTitles(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO title (title_id, name, description, tier, gender, is_active, "
-            + "creation_date, external_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO title (title_id, name, description, tier, gender, is_active, \
+        creation_date, external_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT title_id, name, description, tier, gender, is_active, "
-                    + "creation_date, external_id FROM title");
+                """
+                SELECT title_id, name, description, tier, gender, is_active, \
+                creation_date, external_id FROM title\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -969,7 +1048,7 @@ public class DataMigrationService {
   }
 
   private void migrateSegmentSegmentRules(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql = "INSERT INTO segment_segment_rule (segment_id, segment_rule_id) VALUES (?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
@@ -996,16 +1075,20 @@ public class DataMigrationService {
   }
 
   private void migrateSegmentParticipants(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO segment_participant (segment_participant_id, segment_id, "
-            + "wrestler_id, is_winner) VALUES (?, ?, ?, ?)";
+        """
+        INSERT INTO segment_participant (segment_participant_id, segment_id, \
+        wrestler_id, is_winner) VALUES (?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT segment_participant_id, segment_id, wrestler_id, "
-                    + "is_winner FROM segment_participant");
+                """
+                SELECT segment_participant_id, segment_id, wrestler_id, \
+                is_winner FROM segment_participant\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1028,19 +1111,23 @@ public class DataMigrationService {
   }
 
   private void migrateSegments(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO segment (segment_id, show_id, segment_type_id, winner_id, "
-            + "segment_date, duration_minutes, segment_rating, status, narration, "
-            + "summary, is_title_segment, is_npc_generated, external_id, LAST_SYNC) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO segment (segment_id, show_id, segment_type_id, winner_id, \
+        segment_date, duration_minutes, segment_rating, status, narration, \
+        summary, is_title_segment, is_npc_generated, external_id, LAST_SYNC) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT segment_id, show_id, segment_type_id, winner_id, segment_date,"
-                    + " duration_minutes, segment_rating, status, narration, summary,"
-                    + " is_title_segment, is_npc_generated, external_id, LAST_SYNC FROM segment");
+                """
+                SELECT segment_id, show_id, segment_type_id, winner_id, segment_date,\
+                 duration_minutes, segment_rating, status, narration, summary,\
+                 is_title_segment, is_npc_generated, external_id, LAST_SYNC FROM segment\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1085,16 +1172,20 @@ public class DataMigrationService {
   }
 
   private void migrateSegmentRules(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO segment_rule (segment_rule_id, name, description, "
-            + "requires_high_heat, creation_date) VALUES (?, ?, ?, ?, ?)";
+        """
+        INSERT INTO segment_rule (segment_rule_id, name, description, \
+        requires_high_heat, creation_date) VALUES (?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT segment_rule_id, name, description, "
-                    + "requires_high_heat, creation_date FROM segment_rule");
+                """
+                SELECT segment_rule_id, name, description, \
+                requires_high_heat, creation_date FROM segment_rule\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1118,11 +1209,13 @@ public class DataMigrationService {
   }
 
   private void migrateSegmentTypes(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO segment_type (segment_type_id, name, description, creation_date) "
-            + "VALUES (?, ?, ?, ?)";
+        """
+        INSERT INTO segment_type (segment_type_id, name, description, creation_date) \
+        VALUES (?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
@@ -1149,17 +1242,21 @@ public class DataMigrationService {
   }
 
   private void migrateShows(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO wrestling_show (show_id, name, description, show_date, show_type_id, "
-            + "season_id, template_id, external_id, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO wrestling_show (show_id, name, description, show_date, show_type_id, \
+        season_id, template_id, external_id, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT show_id, name, description, show_date, show_type_id, "
-                    + "season_id, template_id, external_id, creation_date FROM wrestling_show");
+                """
+                SELECT show_id, name, description, show_date, show_type_id, \
+                season_id, template_id, external_id, creation_date FROM wrestling_show\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1195,16 +1292,20 @@ public class DataMigrationService {
   }
 
   private void migrateShowTemplates(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO show_template (template_id, name, description, show_type_id, "
-            + "notion_url, external_id, creation_date, LAST_SYNC) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO show_template (template_id, name, description, show_type_id, \
+        notion_url, external_id, creation_date, LAST_SYNC) VALUES (?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT template_id, name, description, show_type_id, "
-                    + "notion_url, external_id, creation_date, LAST_SYNC FROM show_template");
+                """
+                SELECT template_id, name, description, show_type_id, \
+                notion_url, external_id, creation_date, LAST_SYNC FROM show_template\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1231,11 +1332,13 @@ public class DataMigrationService {
   }
 
   private void migrateShowTypes(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO show_type (show_type_id, name, description, is_ppv, creation_date) "
-            + "VALUES (?, ?, ?, ?, ?)";
+        """
+        INSERT INTO show_type (show_type_id, name, description, is_ppv, creation_date) \
+        VALUES (?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
@@ -1263,17 +1366,21 @@ public class DataMigrationService {
   }
 
   private void migrateSeasons(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO season (season_id, name, description, start_date, end_date, is_active, "
-            + "creation_date, notion_id, shows_per_ppv) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO season (season_id, name, description, start_date, end_date, is_active, \
+        creation_date, notion_id, shows_per_ppv) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT season_id, name, description, start_date, end_date, is_active, "
-                    + "creation_date, notion_id, shows_per_ppv FROM season");
+                """
+                SELECT season_id, name, description, start_date, end_date, is_active, \
+                creation_date, notion_id, shows_per_ppv FROM season\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1300,7 +1407,7 @@ public class DataMigrationService {
     }
   }
 
-  private void truncateAllTables(@NonNull Connection connection) throws SQLException {
+  private void truncateAllTables(@NonNull final Connection connection) throws SQLException {
     try (Statement showTablesStatement = connection.createStatement();
         Statement truncateStatement = connection.createStatement()) {
       log.info("Truncating All Tables");
@@ -1322,7 +1429,7 @@ public class DataMigrationService {
   }
 
   private void migrateRoles(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql = "INSERT INTO role (ID, NAME, DESCRIPTION) VALUES (?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
@@ -1348,19 +1455,23 @@ public class DataMigrationService {
     }
   }
 
-  private void migrateAccounts(Connection sourceConnection, Connection targetConnection)
+  private void migrateAccounts(final Connection sourceConnection, final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO account (ID, USERNAME, PASSWORD, EMAIL, ENABLED, "
-            + "ACCOUNT_NON_EXPIRED, ACCOUNT_NON_LOCKED, CREDENTIALS_NON_EXPIRED, "
-            + "FAILED_LOGIN_ATTEMPTS, LOCKED_UNTIL, LAST_LOGIN, CREATED_DATE, "
-            + "UPDATED_DATE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO account (ID, USERNAME, PASSWORD, EMAIL, ENABLED, \
+        ACCOUNT_NON_EXPIRED, ACCOUNT_NON_LOCKED, CREDENTIALS_NON_EXPIRED, \
+        FAILED_LOGIN_ATTEMPTS, LOCKED_UNTIL, LAST_LOGIN, CREATED_DATE, \
+        UPDATED_DATE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT ID, USERNAME, PASSWORD, EMAIL, ENABLED, ACCOUNT_NON_EXPIRED,"
-                    + " ACCOUNT_NON_LOCKED, CREDENTIALS_NON_EXPIRED, FAILED_LOGIN_ATTEMPTS,"
-                    + " LOCKED_UNTIL, LAST_LOGIN, CREATED_DATE, UPDATED_DATE FROM account");
+                """
+                SELECT ID, USERNAME, PASSWORD, EMAIL, ENABLED, ACCOUNT_NON_EXPIRED,\
+                 ACCOUNT_NON_LOCKED, CREDENTIALS_NON_EXPIRED, FAILED_LOGIN_ATTEMPTS,\
+                 LOCKED_UNTIL, LAST_LOGIN, CREATED_DATE, UPDATED_DATE FROM account\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1391,8 +1502,8 @@ public class DataMigrationService {
     }
   }
 
-  private void migrateAccountRoles(Connection sourceConnection, Connection targetConnection)
-      throws SQLException {
+  private void migrateAccountRoles(
+      final Connection sourceConnection, final Connection targetConnection) throws SQLException {
     String sql = "INSERT INTO account_roles (ACCOUNT_ID, ROLE_ID) VALUES (?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
@@ -1417,11 +1528,13 @@ public class DataMigrationService {
   }
 
   private void migrateNpcs(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO npc (ID, NAME, NPC_TYPE, EXTERNAL_ID, DESCRIPTION, LAST_SYNC) "
-            + "VALUES (?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO npc (ID, NAME, NPC_TYPE, EXTERNAL_ID, DESCRIPTION, LAST_SYNC) \
+        VALUES (?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
@@ -1450,18 +1563,23 @@ public class DataMigrationService {
   }
 
   private void migrateFactions(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO faction (FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, "
-            + "FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO faction (FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, \
+        FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, \
+        AFFINITY, UNIVERSE_ID) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, FORMED_DATE,"
-                    + " DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY FROM"
-                    + " faction");
+                """
+                SELECT FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, FORMED_DATE,\
+                 DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY, \
+                 UNIVERSE_ID FROM faction\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1485,6 +1603,11 @@ public class DataMigrationService {
           targetStatement.setObject(10, null);
         }
         targetStatement.setInt(11, resultSet.getInt("AFFINITY"));
+        if (resultSet.getObject("UNIVERSE_ID") != null) {
+          targetStatement.setLong(12, resultSet.getLong("UNIVERSE_ID"));
+        } else {
+          targetStatement.setObject(12, null);
+        }
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1499,21 +1622,25 @@ public class DataMigrationService {
   }
 
   private void migrateWrestlers(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, "
-            + "STARTING_HEALTH, LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, "
-            + "FANS, TIER, BUMPS, CURRENT_HEALTH, IS_PLAYER, GENDER, DESCRIPTION, FACTION_ID, "
-            + "IMAGE_URL, ACTIVE, ACCOUNT_ID, MANAGER_ID, LAST_SYNC) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, \
+        STARTING_HEALTH, LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, \
+        IS_PLAYER, GENDER, DESCRIPTION, \
+        IMAGE_URL, ACTIVE, ACCOUNT_ID, LAST_SYNC, UPDATED_AT) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,"
-                    + " LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, FANS, TIER, BUMPS,"
-                    + " CURRENT_HEALTH, IS_PLAYER, GENDER, DESCRIPTION, FACTION_ID, IMAGE_URL,"
-                    + " ACTIVE, ACCOUNT_ID, MANAGER_ID, LAST_SYNC FROM wrestler");
+                """
+                SELECT wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,\
+                 LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, \
+                 IS_PLAYER, GENDER, DESCRIPTION, IMAGE_URL,\
+                 ACTIVE, ACCOUNT_ID, LAST_SYNC, UPDATED_AT FROM wrestler\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1527,39 +1654,18 @@ public class DataMigrationService {
         targetStatement.setInt(7, resultSet.getInt("DECK_SIZE"));
         targetStatement.setTimestamp(8, resultSet.getTimestamp("CREATION_DATE"));
         targetStatement.setString(9, resultSet.getString("EXTERNAL_ID"));
-        targetStatement.setLong(10, resultSet.getLong("FANS"));
-        targetStatement.setString(11, resultSet.getString("TIER"));
-        if (resultSet.getObject("BUMPS") != null) {
-          targetStatement.setInt(12, resultSet.getInt("BUMPS"));
-        } else {
-          targetStatement.setObject(12, null);
-        }
-        if (resultSet.getObject("CURRENT_HEALTH") != null) {
-          targetStatement.setInt(13, resultSet.getInt("CURRENT_HEALTH"));
-        } else {
-          targetStatement.setObject(13, null);
-        }
-        targetStatement.setBoolean(14, resultSet.getBoolean("IS_PLAYER"));
-        targetStatement.setString(15, resultSet.getString("GENDER"));
-        targetStatement.setString(16, resultSet.getString("DESCRIPTION"));
-        if (resultSet.getObject("FACTION_ID") != null) {
-          targetStatement.setLong(17, resultSet.getLong("FACTION_ID"));
-        } else {
-          targetStatement.setObject(17, null);
-        }
-        targetStatement.setString(18, resultSet.getString("IMAGE_URL"));
-        targetStatement.setBoolean(19, resultSet.getBoolean("ACTIVE"));
+        targetStatement.setBoolean(10, resultSet.getBoolean("IS_PLAYER"));
+        targetStatement.setString(11, resultSet.getString("GENDER"));
+        targetStatement.setString(12, resultSet.getString("DESCRIPTION"));
+        targetStatement.setString(13, resultSet.getString("IMAGE_URL"));
+        targetStatement.setBoolean(14, resultSet.getBoolean("ACTIVE"));
         if (resultSet.getObject("ACCOUNT_ID") != null) {
-          targetStatement.setLong(20, resultSet.getLong("ACCOUNT_ID"));
+          targetStatement.setLong(15, resultSet.getLong("ACCOUNT_ID"));
         } else {
-          targetStatement.setObject(20, null);
+          targetStatement.setObject(15, null);
         }
-        if (resultSet.getObject("MANAGER_ID") != null) {
-          targetStatement.setLong(21, resultSet.getLong("MANAGER_ID"));
-        } else {
-          targetStatement.setObject(21, null);
-        }
-        targetStatement.setTimestamp(22, resultSet.getTimestamp("LAST_SYNC"));
+        targetStatement.setTimestamp(16, resultSet.getTimestamp("LAST_SYNC"));
+        targetStatement.setTimestamp(17, resultSet.getTimestamp("UPDATED_AT"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1573,18 +1679,91 @@ public class DataMigrationService {
     }
   }
 
-  private void migrateInjuryTypes(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+  private void migrateUniverse(
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
+      throws SQLException {
+    String sql = "INSERT INTO universe (id, name, type, creation_date) VALUES (?, ?, ?, ?)";
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet = sourceStatement.executeQuery("SELECT * FROM universe");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("id"));
+        targetStatement.setString(2, resultSet.getString("name"));
+        targetStatement.setString(3, resultSet.getString("type"));
+        targetStatement.setTimestamp(4, resultSet.getTimestamp("creation_date"));
+        targetStatement.addBatch();
+        count++;
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Universes", count);
+      }
+    }
+  }
+
+  private void migrateWrestlerStates(
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO injury_type (INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, "
-            + "STAMINA_EFFECT, CARD_EFFECT, SPECIAL_EFFECTS, EXTERNAL_ID) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO wrestler_state (id, wrestler_id, universe_id, fans, tier, bumps,\
+         current_health, physical_condition, morale, management_stamina, faction_id,\
+         manager_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet = sourceStatement.executeQuery("SELECT * FROM wrestler_state");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("id"));
+        targetStatement.setLong(2, resultSet.getLong("wrestler_id"));
+        targetStatement.setLong(3, resultSet.getLong("universe_id"));
+        targetStatement.setLong(4, resultSet.getLong("fans"));
+        targetStatement.setString(5, resultSet.getString("tier"));
+        targetStatement.setInt(6, resultSet.getInt("bumps"));
+        targetStatement.setInt(7, resultSet.getInt("current_health"));
+        targetStatement.setInt(8, resultSet.getInt("physical_condition"));
+        targetStatement.setInt(9, resultSet.getInt("morale"));
+        targetStatement.setInt(10, resultSet.getInt("management_stamina"));
+        if (resultSet.getObject("faction_id") != null) {
+          targetStatement.setLong(11, resultSet.getLong("faction_id"));
+        } else {
+          targetStatement.setObject(11, null);
+        }
+        if (resultSet.getObject("manager_id") != null) {
+          targetStatement.setLong(12, resultSet.getLong("manager_id"));
+        } else {
+          targetStatement.setObject(12, null);
+        }
+        targetStatement.addBatch();
+        count++;
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Wrestler States", count);
+      }
+    }
+  }
+
+  private void migrateInjuryTypes(
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
+      throws SQLException {
+    String sql =
+        """
+        INSERT INTO injury_type (INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, \
+        STAMINA_EFFECT, CARD_EFFECT, SPECIAL_EFFECTS, EXTERNAL_ID) \
+        VALUES (?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, STAMINA_EFFECT, CARD_EFFECT,"
-                    + " SPECIAL_EFFECTS, EXTERNAL_ID FROM injury_type");
+                """
+                SELECT INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, STAMINA_EFFECT, CARD_EFFECT,\
+                 SPECIAL_EFFECTS, EXTERNAL_ID FROM injury_type\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1622,19 +1801,23 @@ public class DataMigrationService {
   }
 
   private void migrateInjuries(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO injury (INJURY_ID, WRESTLER_ID, NAME, DESCRIPTION, SEVERITY, "
-            + "HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, "
-            + "INJURY_NOTES, CREATION_DATE, EXTERNAL_ID) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO injury (INJURY_ID, WRESTLER_ID, NAME, DESCRIPTION, SEVERITY, \
+        HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, \
+        INJURY_NOTES, CREATION_DATE, EXTERNAL_ID, UNIVERSE_ID) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT INJURY_ID, WRESTLER_ID, NAME, DESCRIPTION, SEVERITY, HEALTH_PENALTY,"
-                    + " IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, INJURY_NOTES,"
-                    + " CREATION_DATE, EXTERNAL_ID FROM injury");
+                """
+                SELECT INJURY_ID, WRESTLER_ID, NAME, DESCRIPTION, SEVERITY, HEALTH_PENALTY,\
+                 IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, INJURY_NOTES,\
+                 CREATION_DATE, EXTERNAL_ID, UNIVERSE_ID FROM injury\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1652,6 +1835,11 @@ public class DataMigrationService {
         targetStatement.setString(11, resultSet.getString("INJURY_NOTES"));
         targetStatement.setTimestamp(12, resultSet.getTimestamp("CREATION_DATE"));
         targetStatement.setString(13, resultSet.getString("EXTERNAL_ID"));
+        if (resultSet.getObject("UNIVERSE_ID") != null) {
+          targetStatement.setLong(14, resultSet.getLong("UNIVERSE_ID"));
+        } else {
+          targetStatement.setObject(14, null);
+        }
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1666,17 +1854,21 @@ public class DataMigrationService {
   }
 
   private void migrateTeams(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID,"
-            + " STATUS, FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID, MANAGER_ID, LAST_SYNC) VALUES (?,"
-            + " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID,\
+         STATUS, FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID, MANAGER_ID, LAST_SYNC) VALUES (?,\
+         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID, STATUS,"
-                    + " FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID, MANAGER_ID, LAST_SYNC FROM team");
+                """
+                SELECT TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID, STATUS,\
+                 FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID, MANAGER_ID, LAST_SYNC FROM team\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1715,16 +1907,20 @@ public class DataMigrationService {
   }
 
   private void migrateCardSets(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO card_set (SET_ID, SET_CODE, NAME, DESCRIPTION, RELEASE_DATE, CREATION_DATE) "
-            + "VALUES (?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO card_set (SET_ID, SET_CODE, NAME, DESCRIPTION, RELEASE_DATE, CREATION_DATE) \
+        VALUES (?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT SET_ID, SET_CODE, NAME, DESCRIPTION, RELEASE_DATE, CREATION_DATE FROM"
-                    + " card_set");
+                """
+                SELECT SET_ID, SET_CODE, NAME, DESCRIPTION, RELEASE_DATE, CREATION_DATE FROM\
+                 card_set\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1749,17 +1945,21 @@ public class DataMigrationService {
   }
 
   private void migrateCards(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO card (CARD_ID, NAME, TYPE, DAMAGE, STAMINA, MOMENTUM, TARGET, "
-            + "NUMBER, FINISHER, SIGNATURE, PIN, TAUNT, RECOVER, CREATION_DATE, SET_ID) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO card (CARD_ID, NAME, TYPE, DAMAGE, STAMINA, MOMENTUM, TARGET, \
+        NUMBER, FINISHER, SIGNATURE, PIN, TAUNT, RECOVER, CREATION_DATE, SET_ID) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT CARD_ID, NAME, TYPE, DAMAGE, STAMINA, MOMENTUM, TARGET, NUMBER,"
-                    + " FINISHER, SIGNATURE, PIN, TAUNT, RECOVER, CREATION_DATE, SET_ID FROM card");
+                """
+                SELECT CARD_ID, NAME, TYPE, DAMAGE, STAMINA, MOMENTUM, TARGET, NUMBER,\
+                 FINISHER, SIGNATURE, PIN, TAUNT, RECOVER, CREATION_DATE, SET_ID FROM card\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1793,7 +1993,7 @@ public class DataMigrationService {
   }
 
   private void migrateDecks(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql = "INSERT INTO deck (DECK_ID, WRESTLER_ID, CREATION_DATE) VALUES (?, ?, ?)";
     try (Statement sourceStatement = sourceConnection.createStatement();
@@ -1820,16 +2020,20 @@ public class DataMigrationService {
   }
 
   private void migrateDeckCards(
-      @NonNull Connection sourceConnection, @NonNull Connection targetConnection)
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
     String sql =
-        "INSERT INTO deck_card (ID, DECK_ID, CARD_ID, AMOUNT, CREATION_DATE, SET_ID) "
-            + "VALUES (?, ?, ?, ?, ?, ?)";
+        """
+        INSERT INTO deck_card (ID, DECK_ID, CARD_ID, AMOUNT, CREATION_DATE, SET_ID) \
+        VALUES (?, ?, ?, ?, ?, ?)\
+        """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT d.ID, d.DECK_ID, d.CARD_ID, d.AMOUNT, d.CREATION_DATE, c.SET_ID FROM"
-                    + " deck_card d JOIN card c ON d.CARD_ID = c.CARD_ID");
+                """
+                SELECT d.ID, d.DECK_ID, d.CARD_ID, d.AMOUNT, d.CREATION_DATE, c.SET_ID FROM\
+                 deck_card d JOIN card c ON d.CARD_ID = c.CARD_ID\
+                """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;

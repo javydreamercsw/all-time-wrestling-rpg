@@ -38,6 +38,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
@@ -50,6 +51,7 @@ public class EditSegmentDialog extends Dialog {
   private final SegmentTypeRepository segmentTypeRepository;
   private final SegmentRuleRepository segmentRuleRepository;
   private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
+  private final Long universeId;
   private final Runnable onSave;
   @Getter private final TextArea narrationArea;
   @Getter private final TextArea notesArea;
@@ -73,15 +75,16 @@ public class EditSegmentDialog extends Dialog {
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
 
   public EditSegmentDialog(
-      ProposedSegment segment,
-      WrestlerRepository wrestlerRepository,
-      WrestlerService wrestlerService,
-      TitleService titleService,
-      SegmentTypeRepository segmentTypeRepository,
-      SegmentRuleRepository segmentRuleRepository,
-      com.github.javydreamercsw.management.service.npc.NpcService npcService,
-      Gender defaultGenderConstraint,
-      Runnable onSave) {
+      final ProposedSegment segment,
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final TitleService titleService,
+      final SegmentTypeRepository segmentTypeRepository,
+      final SegmentRuleRepository segmentRuleRepository,
+      final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+      final Gender defaultGenderConstraint,
+      final Long universeId,
+      final Runnable onSave) {
     this.segment = segment;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
@@ -89,6 +92,7 @@ public class EditSegmentDialog extends Dialog {
     this.segmentTypeRepository = segmentTypeRepository;
     this.segmentRuleRepository = segmentRuleRepository;
     this.npcService = npcService;
+    this.universeId = universeId;
     this.onSave = onSave;
 
     setHeaderTitle("Edit Segment");
@@ -270,6 +274,7 @@ public class EditSegmentDialog extends Dialog {
         notesArea,
         narrationArea);
 
+    // Buttons
     saveButton = new Button("Save", e -> save());
     cancelButton = new Button("Cancel", e -> close());
 
@@ -277,7 +282,7 @@ public class EditSegmentDialog extends Dialog {
     add(new VerticalLayout(formLayout));
   }
 
-  private void updateSynergyBonus(java.util.Collection<Wrestler> wrestlers) {
+  private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {
     int totalBonus = 0;
     java.util.Map<Long, Integer> factionCounts = new java.util.HashMap<>();
     java.util.Map<Long, Integer> factionAffinity = new java.util.HashMap<>();
@@ -302,15 +307,14 @@ public class EditSegmentDialog extends Dialog {
     synergyBonusLabel.setVisible(totalBonus > 0);
   }
 
-  private void refreshParticipantsList(java.util.Set<Wrestler> selectedWrestlers) {
+  private void refreshParticipantsList(final Set<Wrestler> selectedWrestlers) {
 
     AlignmentType alignment = alignmentFilter.getValue();
 
     Gender gender = genderFilter.getValue();
 
     List<Wrestler> filteredWrestlers =
-        wrestlerService.findAllFiltered(alignment, gender, selectedWrestlers);
-
+        wrestlerService.findAllFiltered(alignment, gender, universeId, selectedWrestlers);
     participantsCombo.setItems(filteredWrestlers);
   }
 

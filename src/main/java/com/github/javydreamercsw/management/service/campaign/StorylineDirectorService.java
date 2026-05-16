@@ -48,14 +48,14 @@ public class StorylineDirectorService {
   private final ObjectMapper objectMapper;
 
   public StorylineDirectorService(
-      SegmentNarrationServiceFactory aiFactory,
-      CampaignStorylineRepository storylineRepository,
-      StorylineMilestoneRepository milestoneRepository,
-      CampaignStateRepository stateRepository,
-      CampaignChapterService chapterService,
-      @org.springframework.context.annotation.Lazy CampaignService campaignService,
-      WrestlerStatusService wrestlerStatusService,
-      ObjectMapper objectMapper) {
+      final SegmentNarrationServiceFactory aiFactory,
+      final CampaignStorylineRepository storylineRepository,
+      final StorylineMilestoneRepository milestoneRepository,
+      final CampaignStateRepository stateRepository,
+      final CampaignChapterService chapterService,
+      @org.springframework.context.annotation.Lazy final CampaignService campaignService,
+      final WrestlerStatusService wrestlerStatusService,
+      final ObjectMapper objectMapper) {
     this.aiFactory = aiFactory;
     this.storylineRepository = storylineRepository;
     this.milestoneRepository = milestoneRepository;
@@ -101,7 +101,7 @@ public class StorylineDirectorService {
 
   @Transactional
   public CampaignStoryline initializeStoryline(
-      Campaign campaign, CampaignChapterDTO contextChapter) {
+      final Campaign campaign, final CampaignChapterDTO contextChapter) {
     log.info("Initializing new storyline arc for campaign: {}", campaign.getId());
     CampaignState state = campaign.getState();
 
@@ -110,13 +110,13 @@ public class StorylineDirectorService {
         contextChapter != null ? contextChapter.getIntroText() : "The journey continues.";
 
     String prompt =
-        String.format(
-            "Generate a storyline arc for Chapter: %s. Player Alignment: %s. Chapter Intro: %s",
-            chapterTitle,
-            campaign.getWrestler().getAlignment() != null
-                ? campaign.getWrestler().getAlignment().getAlignmentType()
-                : "NEUTRAL",
-            chapterIntro);
+        "Generate a storyline arc for Chapter: %s. Player Alignment: %s. Chapter Intro: %s"
+            .formatted(
+                chapterTitle,
+                campaign.getWrestler().getAlignment() != null
+                    ? campaign.getWrestler().getAlignment().getAlignmentType()
+                    : "NEUTRAL",
+                chapterIntro);
 
     try {
       String aiResponse = aiFactory.generateText(STORYLINE_SYSTEM_PROMPT + "\n\n" + prompt);
@@ -186,7 +186,7 @@ public class StorylineDirectorService {
   }
 
   @Transactional
-  public void evaluateProgress(Campaign campaign, boolean success) {
+  public void evaluateProgress(final Campaign campaign, final boolean success) {
     CampaignState state = campaign.getState();
     CampaignStoryline storyline = state.getActiveStoryline();
 
@@ -199,7 +199,7 @@ public class StorylineDirectorService {
       return;
     }
 
-    log.info(
+    log.debug(
         "Evaluating progress for storyline: {}. Milestone: {}. Success: {}",
         storyline.getTitle(),
         current.getTitle(),
@@ -223,12 +223,12 @@ public class StorylineDirectorService {
     if (next != null) {
       next.setStatus(StorylineMilestone.MilestoneStatus.ACTIVE);
       storyline.setCurrentMilestone(next);
-      log.info("Advanced to next milestone: {}", next.getTitle());
+      log.debug("Advanced to next milestone: {}", next.getTitle());
     } else {
       storyline.setStatus(CampaignStoryline.StorylineStatus.COMPLETED);
       storyline.setEndedAt(LocalDateTime.now());
       state.setActiveStoryline(null);
-      log.info("Storyline arc completed: {}", storyline.getTitle());
+      log.debug("Storyline arc completed: {}", storyline.getTitle());
     }
 
     storylineRepository.save(storyline);
@@ -256,7 +256,7 @@ public class StorylineDirectorService {
     }
   }
 
-  private <T> T parseJsonResponse(String aiResponse, Class<T> clazz) throws Exception {
+  private <T> T parseJsonResponse(final String aiResponse, final Class<T> clazz) throws Exception {
     int start = aiResponse.indexOf('{');
     int end = aiResponse.lastIndexOf('}');
     if (start == -1 || end == -1) {
@@ -266,7 +266,7 @@ public class StorylineDirectorService {
     return objectMapper.readValue(json, clazz);
   }
 
-  private CampaignStoryline createFallbackStoryline(Campaign campaign) {
+  private CampaignStoryline createFallbackStoryline(final Campaign campaign) {
     log.warn("Using fallback storyline for campaign: {}", campaign.getId());
     CampaignStoryline storyline =
         CampaignStoryline.builder()

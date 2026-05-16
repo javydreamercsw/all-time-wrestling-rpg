@@ -53,12 +53,13 @@ public class InjuryTypeController {
       description = "Retrieve all injury types with pagination")
   @GetMapping
   public ResponseEntity<Page<InjuryType>> getAllInjuryTypes(
-      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0")
+          final int page,
+      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") final int size,
       @Parameter(description = "Sort field") @RequestParam(defaultValue = "injuryName")
-          String sortBy,
+          final String sortBy,
       @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc")
-          String sortDir) {
+          final String sortDir) {
 
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(page, size, sort);
@@ -70,7 +71,7 @@ public class InjuryTypeController {
       summary = "Get injury type by ID",
       description = "Retrieve a specific injury type by its ID")
   @GetMapping("/{id}")
-  public ResponseEntity<InjuryType> getInjuryTypeById(@PathVariable Long id) {
+  public ResponseEntity<InjuryType> getInjuryTypeById(@PathVariable final Long id) {
     Optional<InjuryType> injuryType = injuryTypeService.getInjuryTypeById(id);
     return injuryType.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -79,7 +80,7 @@ public class InjuryTypeController {
       summary = "Get injury type by name",
       description = "Retrieve a specific injury type by its name")
   @GetMapping("/by-name/{name}")
-  public ResponseEntity<InjuryType> getInjuryTypeByName(@PathVariable String name) {
+  public ResponseEntity<InjuryType> getInjuryTypeByName(@PathVariable final String name) {
     Optional<InjuryType> injuryType = injuryTypeService.findByName(name);
     return injuryType.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -113,7 +114,7 @@ public class InjuryTypeController {
       })
   @PostMapping
   public ResponseEntity<Object> createInjuryType(
-      @Valid @RequestBody CreateInjuryTypeRequest request) {
+      @Valid @RequestBody final CreateInjuryTypeRequest request) {
     try {
       InjuryType injuryType =
           injuryTypeService.createInjuryType(
@@ -137,7 +138,7 @@ public class InjuryTypeController {
       })
   @PutMapping("/{id}")
   public ResponseEntity<Object> updateInjuryType(
-      @PathVariable Long id, @Valid @RequestBody UpdateInjuryTypeRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final UpdateInjuryTypeRequest request) {
     try {
       Optional<InjuryType> updatedInjuryType =
           injuryTypeService.updateInjuryType(
@@ -168,7 +169,7 @@ public class InjuryTypeController {
             description = "Cannot delete injury type (may be in use)")
       })
   @DeleteMapping("/{id}")
-  public ResponseEntity<Object> deleteInjuryType(@PathVariable Long id) {
+  public ResponseEntity<Object> deleteInjuryType(@PathVariable final Long id) {
     try {
       boolean deleted = injuryTypeService.deleteInjuryType(id);
       if (deleted) {

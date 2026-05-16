@@ -37,7 +37,7 @@ public class ReignCardComponent extends Composite<Div> {
           .withLocale(Locale.US)
           .withZone(ZoneId.systemDefault());
 
-  public ReignCardComponent(@NonNull TitleReignDTO reign) {
+  public ReignCardComponent(@NonNull final TitleReignDTO reign) {
     getContent()
         .addClassNames(
             Display.FLEX,
@@ -65,7 +65,7 @@ public class ReignCardComponent extends Composite<Div> {
     champions.addClassNames(FontWeight.MEDIUM);
 
     Span duration =
-        new Span(String.format("%s (%d days)", formatPeriod(reign), reign.getDurationDays()));
+        new Span("%s (%d days)".formatted(formatPeriod(reign), reign.getDurationDays()));
     duration.addClassNames(FontSize.SMALL);
 
     getContent().add(title, tier, champions, duration);
@@ -83,7 +83,7 @@ public class ReignCardComponent extends Composite<Div> {
     }
   }
 
-  private String formatPeriod(@NonNull TitleReignDTO reign) {
+  private String formatPeriod(@NonNull final TitleReignDTO reign) {
     String start = DATE_FORMATTER.format(reign.getStartDate());
     String end = reign.getEndDate() != null ? DATE_FORMATTER.format(reign.getEndDate()) : "Present";
     return start + " - " + end;

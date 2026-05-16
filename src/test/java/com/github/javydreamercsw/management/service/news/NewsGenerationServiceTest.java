@@ -59,7 +59,7 @@ class NewsGenerationServiceTest {
   private NpcRepository npcRepository;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     newsService = mock(NewsService.class);
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     aiService = mock(SegmentNarrationService.class);
@@ -98,8 +98,10 @@ class NewsGenerationServiceTest {
     when(npcRepository.findAll()).thenReturn(List.of(n1));
 
     String aiResponse =
-        "{\"headline\": \"Rumor\", \"content\": \"Content\", \"category\": \"RUMOR\", \"isRumor\":"
-            + " true, \"importance\": 2}";
+        """
+        {"headline": "Rumor", "content": "Content", "category": "RUMOR", "isRumor":\
+         true, "importance": 2}\
+        """;
     when(aiService.generateText(anyString())).thenReturn(aiResponse);
 
     newsGenerationService.rollForRumor();
@@ -126,8 +128,10 @@ class NewsGenerationServiceTest {
     when(npcRepository.findAll()).thenReturn(List.of());
 
     String aiResponse =
-        "{\"headline\": \"Rumor\", \"content\": \"Content\", \"category\": \"RUMOR\", \"isRumor\":"
-            + " true, \"importance\": 2}";
+        """
+        {"headline": "Rumor", "content": "Content", "category": "RUMOR", "isRumor":\
+         true, "importance": 2}\
+        """;
     when(aiService.generateText(anyString())).thenReturn(aiResponse);
 
     newsGenerationService.rollForRumor();
@@ -158,8 +162,10 @@ class NewsGenerationServiceTest {
     segment.setIsTitleSegment(false);
 
     String aiResponse =
-        "{\"headline\": \"Winner Defeats Loser!\", \"content\": \"What a match.\", \"category\":"
-            + " \"BREAKING\", \"isRumor\": false, \"importance\": 3}";
+        """
+        {"headline": "Winner Defeats Loser!", "content": "What a match.", "category":\
+         "BREAKING", "isRumor": false, "importance": 3}\
+        """;
     when(aiService.generateText(anyString())).thenReturn(aiResponse);
 
     newsGenerationService.generateNewsForSegment(segment);
@@ -229,8 +235,10 @@ class NewsGenerationServiceTest {
     when(gameSettingService.getNewsRumorChance()).thenReturn(100); // 100% chance
 
     String aiResponse =
-        "{\"headline\": \"Backstage Gossip\", \"content\": \"Someone was seen talking to someone"
-            + " else.\", \"category\": \"RUMOR\", \"isRumor\": true, \"importance\": 2}";
+        """
+        {"headline": "Backstage Gossip", "content": "Someone was seen talking to someone\
+         else.", "category": "RUMOR", "isRumor": true, "importance": 2}\
+        """;
     when(aiService.generateText(anyString())).thenReturn(aiResponse);
 
     newsGenerationService.rollForRumor();

@@ -43,7 +43,11 @@ class TitleServiceIT extends ManagementIntegrationTest {
 
     // Create a new title, should evict the cache
     titleService.createTitle(
-        "Test Title", "Test Description", WrestlerTier.ROOKIE, ChampionshipType.SINGLE);
+        "Test Title",
+        "Test Description",
+        WrestlerTier.ROOKIE,
+        ChampionshipType.SINGLE,
+        defaultUniverse.getId());
 
     // Second call, should hit the repository again
     titleService.findAll();

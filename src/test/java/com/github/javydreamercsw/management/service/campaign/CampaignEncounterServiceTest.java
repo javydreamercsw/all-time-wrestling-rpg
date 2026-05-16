@@ -69,7 +69,7 @@ class CampaignEncounterServiceTest {
   private CampaignChapterDTO chapter;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     encounterService =
         new CampaignEncounterService(
             aiFactory,
@@ -114,9 +114,11 @@ class CampaignEncounterServiceTest {
         .thenReturn(new ArrayList<>());
 
     String aiJsonResponse =
-        "{\"narrative\": \"Story\", \"choices\": [{\"text\": \"Choice 1\", \"label\": \"BTN\","
-            + " \"alignmentShift\": 1, \"vpReward\": 0, \"nextPhase\": \"MATCH\", \"matchType\":"
-            + " \"One on One\"}]}";
+        """
+        {"narrative": "Story", "choices": [{"text": "Choice 1", "label": "BTN",\
+         "alignmentShift": 1, "vpReward": 0, "nextPhase": "MATCH", "matchType":\
+         "One on One"}]}\
+        """;
     when(aiFactory.generateText(anyString())).thenReturn(aiJsonResponse);
 
     CampaignEncounterResponseDTO response = encounterService.generateEncounter(campaign);

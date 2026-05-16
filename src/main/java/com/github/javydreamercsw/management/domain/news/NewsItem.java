@@ -36,7 +36,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "news_item")
@@ -71,11 +70,6 @@ public class NewsItem extends AbstractEntity<Long> {
   @Min(1) @Max(5) @Builder.Default
   @Column(name = "importance", nullable = false)
   private Integer importance = 3;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

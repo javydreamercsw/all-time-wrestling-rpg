@@ -19,10 +19,11 @@ package com.github.javydreamercsw.management.domain.title;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -41,9 +42,10 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "title", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class Title extends AbstractEntity<Long> {
+public class Title extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "title_id")
   private Long id;
 
@@ -83,6 +85,11 @@ public class Title extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  @JsonIgnore
+  private Universe universe;
+
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "title_contender",
@@ -108,14 +115,15 @@ public class Title extends AbstractEntity<Long> {
   @ManyToMany(mappedBy = "titles", fetch = FetchType.EAGER)
   private List<Segment> segments = new ArrayList<>();
 
-  public void awardTitleTo(@NonNull List<Wrestler> newChampions, @NonNull Instant awardDate) {
+  public void awardTitleTo(
+      @NonNull final List<Wrestler> newChampions, @NonNull final Instant awardDate) {
     awardTitleTo(newChampions, awardDate, null);
   }
 
   public void awardTitleTo(
-      @NonNull List<Wrestler> newChampions,
-      @NonNull Instant awardDate,
-      @Nullable Segment wonAtSegment) {
+      @NonNull final List<Wrestler> newChampions,
+      @NonNull final Instant awardDate,
+      @Nullable final Segment wonAtSegment) {
     // End the current reign if one exists.
     getCurrentReign().ifPresent(reign -> reign.endReign(awardDate));
 
@@ -130,7 +138,7 @@ public class Title extends AbstractEntity<Long> {
     this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
   }
 
-  public void vacateTitle(Instant now) {
+  public void vacateTitle(final Instant now) {
     getCurrentReign().ifPresent(reign -> reign.endReign(now));
     this.champion.clear();
   }
@@ -145,7 +153,7 @@ public class Title extends AbstractEntity<Long> {
     return champion;
   }
 
-  public long getCurrentReignDays(Instant now) {
+  public long getCurrentReignDays(final Instant now) {
     return getCurrentReign().map(reign -> reign.getReignLengthDays(now)).orElse(0L);
   }
 
@@ -182,11 +190,6 @@ public class Title extends AbstractEntity<Long> {
     return "👑";
   }
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
   @PrePersist
   protected void onCreate() {
     if (creationDate == null) {
@@ -204,7 +207,7 @@ public class Title extends AbstractEntity<Long> {
    *
    * @param wrestler Wrestler to add as a challenger.
    */
-  public void addChallenger(@NonNull Wrestler wrestler) {
+  public void addChallenger(@NonNull final Wrestler wrestler) {
     if (!this.challengers.contains(wrestler)) {
       this.challengers.add(wrestler);
     }

@@ -38,10 +38,10 @@ public class AdjudicationCompletedInboxListener
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public AdjudicationCompletedInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("adjudicationCompleted") InboxEventType adjudicationCompleted,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("adjudicationCompleted") final InboxEventType adjudicationCompleted,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.adjudicationCompleted = adjudicationCompleted;
     this.eventPublisher = eventPublisher;
@@ -49,11 +49,11 @@ public class AdjudicationCompletedInboxListener
   }
 
   @Override
-  public void onApplicationEvent(@NonNull AdjudicationCompletedEvent event) {
+  public void onApplicationEvent(@NonNull final AdjudicationCompletedEvent event) {
     log.info("Received AdjudicationCompletedEvent for show: {}", event.getShow().getName());
     inboxService.createInboxItem(
         adjudicationCompleted,
-        String.format("Adjudication completed for show: %s", event.getShow().getName()),
+        "Adjudication completed for show: %s".formatted(event.getShow().getName()),
         event.getShow().getId().toString(),
         InboxItemTarget.TargetType.SHOW);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));

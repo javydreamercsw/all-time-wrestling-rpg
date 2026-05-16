@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.Arrays;
@@ -46,6 +47,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
     username = "admin",
     roles = {"ADMIN"})
 @DisplayName("TeamService Integration Tests")
+@org.springframework.test.context.TestPropertySource(
+    properties = {"data.initializer.enabled=false"})
 class TeamServiceTest extends ManagementIntegrationTest {
 
   @MockitoSpyBean private ExpansionService expansionService;
@@ -56,20 +59,34 @@ class TeamServiceTest extends ManagementIntegrationTest {
 
   @BeforeEach
   public void setUp() {
-    clearAllRepositories();
-    wrestler1 = createTestWrestler("Wrestler 1");
+    clearRepositoriesOnly();
+
+    // 1. Create a single managed universe first
+    Universe universe =
+        universeRepository.findAll().stream()
+            .findFirst()
+            .orElseGet(
+                () ->
+                    universeRepository.saveAndFlush(
+                        Universe.builder()
+                            .name("Default Universe")
+                            .type(Universe.UniverseType.GLOBAL)
+                            .build()));
+
+    // 2. Use it for all creations
+    wrestler1 = com.github.javydreamercsw.TestUtils.createWrestler("Wrestler 1", 0L, universe);
     wrestler1.setExpansionCode("BASE_GAME");
     wrestler1 = wrestlerRepository.save(wrestler1);
 
-    wrestler2 = createTestWrestler("Wrestler 2");
+    wrestler2 = com.github.javydreamercsw.TestUtils.createWrestler("Wrestler 2", 0L, universe);
     wrestler2.setExpansionCode("BASE_GAME");
     wrestler2 = wrestlerRepository.save(wrestler2);
 
-    wrestler3 = createTestWrestler("Wrestler 3");
+    wrestler3 = com.github.javydreamercsw.TestUtils.createWrestler("Wrestler 3", 0L, universe);
     wrestler3.setExpansionCode("BASE_GAME");
     wrestler3 = wrestlerRepository.save(wrestler3);
 
-    faction = Faction.builder().build();
+    faction = Faction.builder().universe(universe).build();
     faction.setName("Test Faction");
     faction = factionRepository.save(faction);
 

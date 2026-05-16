@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.drama;
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,7 +40,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a drama event in the ATW RPG system. Drama events are random occurrences that can
@@ -85,6 +85,10 @@ public class DramaEvent extends AbstractEntity<Long> {
   @OnDelete(action = OnDeleteAction.CASCADE)
   private Wrestler secondaryWrestler;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
+
   @Column(name = "event_date", nullable = false)
   private Instant eventDate;
 
@@ -117,11 +121,6 @@ public class DramaEvent extends AbstractEntity<Long> {
   @Lob
   @Column(name = "processing_notes")
   private String processingNotes;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   /** Check if this event involves multiple wrestlers. */
   public boolean isMultiWrestlerEvent() {
@@ -216,7 +215,7 @@ public class DramaEvent extends AbstractEntity<Long> {
   }
 
   /** Mark the event as processed. */
-  public void markAsProcessed(String notes) {
+  public void markAsProcessed(final String notes) {
     this.isProcessed = true;
     this.processedDate = Instant.now();
     this.processingNotes = notes;

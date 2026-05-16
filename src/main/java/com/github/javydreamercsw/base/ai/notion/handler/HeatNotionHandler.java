@@ -28,12 +28,12 @@ public class HeatNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public HeatNotionHandler(NotionHandler notionHandler) {
+  public HeatNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
   /** Loads a heat entry from the Notion database by name. */
-  public Optional<HeatPage> loadHeat(@NonNull String heatName) {
+  public Optional<HeatPage> loadHeat(@NonNull final String heatName) {
     log.debug("Loading heat: '{}'", heatName);
 
     String heatDbId = notionHandler.getDatabaseId("Heat");
@@ -57,7 +57,7 @@ public class HeatNotionHandler {
   }
 
   /** Maps a Notion page to a HeatPage object. */
-  private HeatPage mapPageToHeatPage(@NonNull Page pageData, @NonNull String heatName) {
+  private HeatPage mapPageToHeatPage(@NonNull final Page pageData, @NonNull final String heatName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, heatName, "Heat", HeatPage::new, HeatPage.NotionParent::new);
   }

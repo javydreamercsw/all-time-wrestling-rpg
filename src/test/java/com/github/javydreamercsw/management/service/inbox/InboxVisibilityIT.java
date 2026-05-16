@@ -151,6 +151,6 @@ class InboxVisibilityIT extends ManagementIntegrationTest {
         inboxService.search(Collections.emptySet(), "All", "All", false, null);
 
     Assertions.assertTrue(
-        results.stream().anyMatch(item -> item.getDescription().equals("Secret Message")));
+        results.stream().anyMatch(item -> "Secret Message".equals(item.getDescription())));
   }
 }

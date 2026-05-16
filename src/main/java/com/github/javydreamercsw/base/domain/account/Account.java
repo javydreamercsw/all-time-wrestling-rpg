@@ -107,7 +107,7 @@ public class Account {
   @Column(nullable = false)
   private LocalDateTime updatedDate;
 
-  public Account(String username, String password, String email) {
+  public Account(final String username, final String password, final String email) {
     this.username = username;
     this.password = password;
     this.email = email;
@@ -118,7 +118,7 @@ public class Account {
    *
    * @param role the role to add
    */
-  public void addRole(Role role) {
+  public void addRole(final Role role) {
     roles.add(role);
   }
 
@@ -127,7 +127,7 @@ public class Account {
    *
    * @param role the role to remove
    */
-  public void removeRole(Role role) {
+  public void removeRole(final Role role) {
     roles.remove(role);
   }
 
@@ -137,7 +137,7 @@ public class Account {
    * @param roleName the role name to check
    * @return true if the account has the role
    */
-  public boolean hasRole(RoleName roleName) {
+  public boolean hasRole(final RoleName roleName) {
     return roles.stream().anyMatch(role -> role.getName() == roleName);
   }
 
@@ -158,7 +158,7 @@ public class Account {
    *
    * @param until the time until which the account is locked
    */
-  public void lockUntil(LocalDateTime until) {
+  public void lockUntil(final LocalDateTime until) {
     this.accountNonLocked = false;
     this.lockedUntil = until;
   }
@@ -176,14 +176,13 @@ public class Account {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof Account)) {
+    if (!(o instanceof Account account)) {
       return false;
     }
-    Account account = (Account) o;
     return Objects.equals(username, account.username);
   }
 

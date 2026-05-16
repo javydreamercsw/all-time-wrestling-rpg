@@ -16,8 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.drama;
 
-import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
-
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import java.time.temporal.ChronoUnit;
@@ -29,9 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -60,7 +56,7 @@ public class DramaEventScheduler {
    * @param event The game date changed event
    */
   @EventListener
-  public void onGameDateChanged(GameDateChangedEvent event) {
+  public void onGameDateChanged(final GameDateChangedEvent event) {
     long daysPassed = ChronoUnit.DAYS.between(event.getOldDate(), event.getNewDate());
 
     if (daysPassed <= 0) {
@@ -87,47 +83,49 @@ public class DramaEventScheduler {
    * events that can affect rivalries, fan counts, and wrestler development.
    */
   public void generateRandomDramaEvents() {
-    try {
-      setSystemAuthentication();
-      log.debug("Starting scheduled drama event generation...");
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          try {
+            log.debug("Starting scheduled drama event generation...");
 
-      List<Long> wrestlerIds = wrestlerRepository.findAllIds();
+            List<Long> wrestlerIds = wrestlerRepository.findAllIds();
 
-      if (wrestlerIds.isEmpty()) {
-        log.debug("No wrestlers found, skipping drama event generation");
-        return;
-      }
+            if (wrestlerIds.isEmpty()) {
+              log.debug("No wrestlers found, skipping drama event generation");
+              return;
+            }
 
-      // Generate 0-3 drama events per run
-      int eventsToGenerate = getRandomEventCount();
+            // Generate 0-3 drama events per run
+            int eventsToGenerate = getRandomEventCount();
 
-      if (eventsToGenerate == 0) {
-        log.debug("No drama events scheduled for this run");
-        return;
-      }
+            if (eventsToGenerate == 0) {
+              log.debug("No drama events scheduled for this run");
+              return;
+            }
 
-      log.info("Generating {} random drama events", eventsToGenerate);
+            log.info("Generating {} random drama events", eventsToGenerate);
 
-      for (int i = 0; i < eventsToGenerate; i++) {
-        Long randomWrestlerId = wrestlerIds.get(random.nextInt(wrestlerIds.size()));
+            for (int i = 0; i < eventsToGenerate; i++) {
+              Long randomWrestlerId = wrestlerIds.get(random.nextInt(wrestlerIds.size()));
 
-        // Safety check: skip if this wrestler already has too many active injuries (max 3)
-        // This helps prevent injury accumulation if the scheduler runs too frequently.
-        if (dramaEventService.getActiveInjuryCount(randomWrestlerId) < 3) {
-          generateSingleRandomEvent(randomWrestlerId);
-        } else {
-          log.debug(
-              "Skipping drama event for wrestler {} - too many active injuries", randomWrestlerId);
-        }
-      }
+              // Safety check: skip if this wrestler already has too many active injuries (max 3)
+              // This helps prevent injury accumulation if the scheduler runs too frequently.
+              // Default to universe 1 for now.
+              if (dramaEventService.getActiveInjuryCount(randomWrestlerId, 1L) < 3) {
+                generateSingleRandomEvent(randomWrestlerId);
+              } else {
+                log.debug(
+                    "Skipping drama event for wrestler {} - too many active injuries",
+                    randomWrestlerId);
+              }
+            }
 
-      log.info("Completed scheduled drama event generation");
+            log.info("Completed scheduled drama event generation");
 
-    } catch (Exception e) {
-      log.error("Error during scheduled drama event generation", e);
-    } finally {
-      SecurityContextHolder.clearContext();
-    }
+          } catch (Exception e) {
+            log.error("Error during scheduled drama event generation", e);
+          }
+        });
   }
 
   /**
@@ -136,92 +134,78 @@ public class DramaEventScheduler {
    */
   @Scheduled(fixedRate = 1_800_000) // Every 30 minutes (1,800,000 milliseconds)
   public void processUnprocessedEvents() {
-    try {
-      setSystemAuthentication();
-      log.debug("Starting scheduled drama event processing...");
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          try {
+            log.debug("Starting scheduled drama event processing...");
 
-      int processedCount = dramaEventService.processUnprocessedEvents();
+            dramaEventService.processUnprocessedEvents();
 
-      if (processedCount > 0) {
-        log.info("Processed {} drama events during scheduled run", processedCount);
-      } else {
-        log.debug("No unprocessed drama events found");
-      }
-
-    } catch (Exception e) {
-      log.error("Error during scheduled drama event processing", e);
-    } finally {
-      SecurityContextHolder.clearContext();
-    }
+          } catch (Exception e) {
+            log.error("Error during scheduled drama event processing", e);
+          }
+        });
   }
 
   /** Weekly drama event summary - logs statistics about drama events from the past week. */
   @Scheduled(cron = "0 0 9 * * MON") // Every Monday at 9 AM
   public void weeklyDramaEventSummary() {
-    try {
-      setSystemAuthentication();
-      log.info("=== WEEKLY DRAMA EVENTS SUMMARY ===");
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          try {
+            log.info("=== WEEKLY DRAMA EVENTS SUMMARY ===");
 
-      List<com.github.javydreamercsw.management.domain.drama.DramaEvent> recentEvents =
-          dramaEventService.getRecentEvents();
+            List<com.github.javydreamercsw.management.domain.drama.DramaEvent> recentEvents =
+                dramaEventService.getRecentEvents();
 
-      if (recentEvents.isEmpty()) {
-        log.info("No drama events occurred in the past week");
-        return;
-      }
+            if (recentEvents.isEmpty()) {
+              log.info("No drama events occurred in the past week");
+              return;
+            }
 
-      // Count events by type
-      var eventTypeCounts =
-          recentEvents.stream()
-              .collect(
-                  java.util.stream.Collectors.groupingBy(
-                      com.github.javydreamercsw.management.domain.drama.DramaEvent::getEventType,
-                      java.util.stream.Collectors.counting()));
+            // Count events by type
+            var eventTypeCounts =
+                recentEvents.stream()
+                    .collect(
+                        java.util.stream.Collectors.groupingBy(
+                            com.github.javydreamercsw.management.domain.drama.DramaEvent
+                                ::getEventType,
+                            java.util.stream.Collectors.counting()));
 
-      // Count events by severity
-      var severityCounts =
-          recentEvents.stream()
-              .collect(
-                  java.util.stream.Collectors.groupingBy(
-                      com.github.javydreamercsw.management.domain.drama.DramaEvent::getSeverity,
-                      java.util.stream.Collectors.counting()));
+            // Count events by severity
+            var severityCounts =
+                recentEvents.stream()
+                    .collect(
+                        java.util.stream.Collectors.groupingBy(
+                            com.github.javydreamercsw.management.domain.drama.DramaEvent
+                                ::getSeverity,
+                            java.util.stream.Collectors.counting()));
 
-      log.info("Total drama events this week: {}", recentEvents.size());
-      log.info("Events by type: {}", eventTypeCounts);
-      log.info("Events by severity: {}", severityCounts);
+            log.info("Total drama events this week: {}", recentEvents.size());
+            log.info("Events by type: {}", eventTypeCounts);
+            log.info("Events by severity: {}", severityCounts);
 
-      // Count events that created rivalries or caused injuries
-      long rivalriesCreated =
-          recentEvents.stream().mapToLong(e -> e.getRivalryCreated() ? 1 : 0).sum();
+            // Count events that created rivalries or caused injuries
+            long rivalriesCreated =
+                recentEvents.stream().mapToLong(e -> e.getRivalryCreated() ? 1 : 0).sum();
 
-      long injuriesCaused = recentEvents.stream().mapToLong(e -> e.getInjuryCaused() ? 1 : 0).sum();
+            long injuriesCaused =
+                recentEvents.stream().mapToLong(e -> e.getInjuryCaused() ? 1 : 0).sum();
 
-      if (rivalriesCreated > 0) {
-        log.info("New rivalries created: {}", rivalriesCreated);
-      }
+            if (rivalriesCreated > 0) {
+              log.info("New rivalries created: {}", rivalriesCreated);
+            }
 
-      if (injuriesCaused > 0) {
-        log.info("Injuries caused by drama: {}", injuriesCaused);
-      }
+            if (injuriesCaused > 0) {
+              log.info("Injuries caused by drama: {}", injuriesCaused);
+            }
 
-      log.info("=== END WEEKLY SUMMARY ===");
+            log.info("=== END WEEKLY SUMMARY ===");
 
-    } catch (Exception e) {
-      log.error("Error generating weekly drama event summary", e);
-    } finally {
-      SecurityContextHolder.clearContext();
-    }
-  }
-
-  private void setSystemAuthentication() {
-    var auth =
-        new UsernamePasswordAuthenticationToken(
-            "system",
-            null,
-            List.of(
-                new SimpleGrantedAuthority("ROLE_" + ADMIN_ROLE),
-                new SimpleGrantedAuthority("ADMIN")));
-    SecurityContextHolder.getContext().setAuthentication(auth);
+          } catch (Exception e) {
+            log.error("Error generating weekly drama event summary", e);
+          }
+        });
   }
 
   // ==================== PRIVATE HELPER METHODS ====================
@@ -250,10 +234,10 @@ public class DramaEventScheduler {
   }
 
   /** Generate a single random drama event. */
-  private void generateSingleRandomEvent(@NonNull Long wrestlerId) {
+  private void generateSingleRandomEvent(@NonNull final Long wrestlerId) {
     try {
-      // Generate the event
-      var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId);
+      // Generate the event - default to universe 1 for now.
+      var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId, 1L);
 
       if (eventOpt.isPresent()) {
         var event = eventOpt.get();

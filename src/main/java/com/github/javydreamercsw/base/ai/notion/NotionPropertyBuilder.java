@@ -31,21 +31,21 @@ public class NotionPropertyBuilder {
 
   private static final int MAX_TEXT_LENGTH = 2000;
 
-  public static PageProperty createTitleProperty(@NonNull String content) {
+  public static PageProperty createTitleProperty(@NonNull final String content) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.Title);
     property.setTitle(createRichTextList(content));
     return property;
   }
 
-  public static PageProperty createRichTextProperty(@NonNull String content) {
+  public static PageProperty createRichTextProperty(@NonNull final String content) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.RichText);
     property.setRichText(createRichTextList(content));
     return property;
   }
 
-  private static List<PageProperty.RichText> createRichTextList(@NonNull String content) {
+  private static List<PageProperty.RichText> createRichTextList(@NonNull final String content) {
     if (content.isEmpty()) {
       return Collections.singletonList(
           new PageProperty.RichText(
@@ -72,25 +72,25 @@ public class NotionPropertyBuilder {
     return list;
   }
 
-  public static PageProperty createNumberProperty(@NonNull Double value) {
+  public static PageProperty createNumberProperty(@NonNull final Double value) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.Number);
     property.setNumber(value);
     return property;
   }
 
-  public static PageProperty createSelectProperty(@NonNull String name) {
+  public static PageProperty createSelectProperty(@NonNull final String name) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.Select);
     property.setSelect(new DatabaseProperty.Select.Option(null, name, null, null));
     return property;
   }
 
-  public static PageProperty createRelationProperty(@NonNull String externalId) {
+  public static PageProperty createRelationProperty(@NonNull final String externalId) {
     return createRelationProperty(Collections.singletonList(externalId));
   }
 
-  public static PageProperty createRelationProperty(@NonNull List<String> externalIds) {
+  public static PageProperty createRelationProperty(@NonNull final List<String> externalIds) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.Relation);
     property.setRelation(
@@ -98,21 +98,21 @@ public class NotionPropertyBuilder {
     return property;
   }
 
-  public static PageProperty createCheckboxProperty(@NonNull Boolean value) {
+  public static PageProperty createCheckboxProperty(@NonNull final Boolean value) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.Checkbox);
     property.setCheckbox(value);
     return property;
   }
 
-  public static PageProperty createDateProperty(@NonNull String dateString) {
+  public static PageProperty createDateProperty(@NonNull final String dateString) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.Date);
     property.setDate(new PageProperty.Date(dateString, null));
     return property;
   }
 
-  public static PageProperty createUrlProperty(@NonNull String urlString) {
+  public static PageProperty createUrlProperty(@NonNull final String urlString) {
     PageProperty property = new PageProperty();
     property.setType(PropertyType.Url);
     property.setUrl(urlString);

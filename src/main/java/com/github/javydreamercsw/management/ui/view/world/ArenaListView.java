@@ -56,10 +56,10 @@ public class ArenaListView extends Main {
   private final Grid<Arena> grid = new Grid<>();
 
   public ArenaListView(
-      ArenaService arenaService,
-      LocationService locationService,
-      SecurityUtils securityUtils,
-      ImageStorageService storageService) {
+      final ArenaService arenaService,
+      final LocationService locationService,
+      final SecurityUtils securityUtils,
+      final ImageStorageService storageService) {
     this.arenaService = arenaService;
     this.locationService = locationService;
     this.securityUtils = securityUtils;
@@ -120,7 +120,7 @@ public class ArenaListView extends Main {
     return grid;
   }
 
-  private Component createActionButtons(Arena arena) {
+  private Component createActionButtons(final Arena arena) {
     Button editButton = new Button(new Icon(VaadinIcon.EDIT));
     editButton.setId("edit-arena-" + arena.getId());
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -134,7 +134,7 @@ public class ArenaListView extends Main {
     return new HorizontalLayout(editButton, deleteButton);
   }
 
-  private void deleteItem(Arena arena) {
+  private void deleteItem(final Arena arena) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setId("delete-arena-dialog");
     confirmDialog.setHeaderTitle("Delete Arena");
@@ -193,7 +193,7 @@ public class ArenaListView extends Main {
     dialog.open();
   }
 
-  private void editItem(Arena item) {
+  private void editItem(final Arena item) {
     if (item == null) {
       return;
     }

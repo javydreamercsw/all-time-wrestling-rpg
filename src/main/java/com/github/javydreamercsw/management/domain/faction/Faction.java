@@ -19,10 +19,12 @@ package com.github.javydreamercsw.management.domain.faction;
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -33,6 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -53,9 +56,10 @@ import org.jspecify.annotations.Nullable;
 @Setter
 @ToString
 @Table(name = "faction")
-public class Faction extends AbstractEntity<Long> {
+public class Faction extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "faction_id")
   private Long id;
 
@@ -65,6 +69,10 @@ public class Faction extends AbstractEntity<Long> {
   @Lob
   @Column(name = "description")
   private String description;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "leader_id")
@@ -99,6 +107,12 @@ public class Faction extends AbstractEntity<Long> {
   @Builder.Default
   private int affinity = 0;
 
+  // Computed count of members — avoids lazy-init when rendering grid columns detached
+  @org.hibernate.annotations.Formula(
+      "(SELECT COUNT(*) FROM wrestler_state ws WHERE ws.faction_id = faction_id)")
+  @Getter(AccessLevel.NONE)
+  private Integer memberCountComputed;
+
   // Faction members
   @OneToMany(
       mappedBy = "faction",
@@ -107,7 +121,7 @@ public class Faction extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"faction", "rivalries", "injuries", "deck", "titleReigns"})
   @Builder.Default
   @ToString.Exclude
-  private Set<Wrestler> members = new HashSet<>();
+  private Set<WrestlerState> members = new HashSet<>();
 
   // Teams associated with this faction
   @OneToMany(mappedBy = "faction", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -130,11 +144,6 @@ public class Faction extends AbstractEntity<Long> {
   @ToString.Exclude
   private Set<FactionRivalry> rivalriesAsFaction2 = new HashSet<>();
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
   @PrePersist
   protected void onCreate() {
     if (creationDate == null) {
@@ -148,34 +157,39 @@ public class Faction extends AbstractEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add a member to the faction. */
-  public void addMember(Wrestler wrestler) {
-    if (wrestler != null && !hasMember(wrestler)) {
-      members.add(wrestler);
-      wrestler.setFaction(this);
+  public void addMember(
+      final com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+    if (state != null && !members.contains(state)) {
+      members.add(state);
+      state.setFaction(this);
     }
   }
 
   /** Remove a member from the faction. */
-  public void removeMember(Wrestler wrestler) {
-    if (wrestler != null && wrestler.getId() != null) {
-      members.removeIf(m -> wrestler.getId().equals(m.getId()));
-      if (wrestler.getFaction() != null && wrestler.getFaction().equals(this)) {
-        wrestler.setFaction(null);
+  public void removeMember(
+      final com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+    if (state != null) {
+      members.remove(state);
+      if (state.getFaction() != null && state.getFaction().equals(this)) {
+        state.setFaction(null);
       }
     }
   }
 
   /** Check if a wrestler is a member of this faction. */
-  public boolean hasMember(Wrestler wrestler) {
+  public boolean hasMember(final Wrestler wrestler) {
     if (wrestler == null || wrestler.getId() == null) {
       return false;
     }
-    return members.stream().anyMatch(m -> wrestler.getId().equals(m.getId()));
+    return members.stream()
+        .anyMatch(m -> m.getWrestler() != null && wrestler.getId().equals(m.getWrestler().getId()));
   }
 
   /** Get the number of active members. */
   public int getMemberCount() {
-    return members.size();
+    // Use the DB-computed count when available (avoids lazy-init on detached entities).
+    // Falls back to the in-memory collection for transient/builder-constructed instances.
+    return memberCountComputed != null ? memberCountComputed : members.size();
   }
 
   /** Check if this faction is a singles faction (1 member). */
@@ -194,12 +208,13 @@ public class Faction extends AbstractEntity<Long> {
   }
 
   /** Disband the faction. */
-  public void disband(String reason) {
+  public void disband(final String reason) {
     this.isActive = false;
     this.disbandedDate = Instant.now();
 
     // Remove all members from faction
-    for (Wrestler member : new ArrayList<>(members)) {
+    for (com.github.javydreamercsw.management.domain.wrestler.WrestlerState member :
+        new ArrayList<>(members)) {
       removeMember(member);
     }
   }
@@ -212,7 +227,7 @@ public class Faction extends AbstractEntity<Long> {
   }
 
   /** Get the opposing faction in a rivalry. */
-  public Faction getOpposingFaction(FactionRivalry rivalry) {
+  public Faction getOpposingFaction(final FactionRivalry rivalry) {
     if (rivalry.getFaction1().equals(this)) {
       return rivalry.getFaction2();
     } else if (rivalry.getFaction2().equals(this)) {
@@ -222,7 +237,7 @@ public class Faction extends AbstractEntity<Long> {
   }
 
   /** Check if this faction has a rivalry with another faction. */
-  public boolean hasRivalryWith(Faction otherFaction) {
+  public boolean hasRivalryWith(final Faction otherFaction) {
     return getActiveRivalries().stream()
         .anyMatch(
             rivalry ->
@@ -250,7 +265,7 @@ public class Faction extends AbstractEntity<Long> {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

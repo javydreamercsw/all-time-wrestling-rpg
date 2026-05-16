@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -66,9 +66,10 @@ import org.jspecify.annotations.Nullable;
 @Setter
 @ToString
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public class Segment extends AbstractEntity<Long> {
+public class Segment extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "segment_id")
   private Long id;
 
@@ -157,12 +158,7 @@ public class Segment extends AbstractEntity<Long> {
   private com.github.javydreamercsw.management.domain.npc.Npc referee;
 
   @Column(name = "referee_awareness_level", nullable = false)
-  private int refereeAwarenessLevel = 0; // The "Detection Meter" (0-100)
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
+  private int refereeAwarenessLevel = 0;
 
   /** Ensure default values before persisting. */
   @PrePersist
@@ -185,12 +181,12 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   /** Add a participant to the segment. */
-  public void addParticipant(@NonNull Wrestler wrestler) {
+  public void addParticipant(@NonNull final Wrestler wrestler) {
     addParticipant(wrestler, 1);
   }
 
   /** Add a participant to the segment with an explicit team number. */
-  public void addParticipant(@NonNull Wrestler wrestler, int teamNumber) {
+  public void addParticipant(@NonNull final Wrestler wrestler, final int teamNumber) {
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(this);
     participant.setWrestler(wrestler);
@@ -243,7 +239,7 @@ public class Segment extends AbstractEntity<Long> {
     return titles;
   }
 
-  public void setWinners(List<Wrestler> winners) {
+  public void setWinners(final List<Wrestler> winners) {
     if (participants == null) {
       participants = new HashSet<>();
     }
@@ -259,7 +255,7 @@ public class Segment extends AbstractEntity<Long> {
     this.status = SegmentStatus.COMPLETED;
   }
 
-  public void syncParticipants(List<Wrestler> newParticipantWrestlers) {
+  public void syncParticipants(final List<Wrestler> newParticipantWrestlers) {
     // Remove participants that are no longer in the new list
     participants.removeIf(
         existingParticipant ->
@@ -280,7 +276,7 @@ public class Segment extends AbstractEntity<Long> {
   /**
    * Sync participants with explicit team assignments. teamWrestlers maps teamNumber → wrestlers.
    */
-  public void syncParticipants(java.util.Map<Integer, List<Wrestler>> teamWrestlers) {
+  public void syncParticipants(final java.util.Map<Integer, List<Wrestler>> teamWrestlers) {
     List<Wrestler> allWrestlers =
         teamWrestlers.values().stream()
             .flatMap(List::stream)
@@ -319,13 +315,13 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   /** Add a segment rule to this segment. */
-  public void addSegmentRule(@NonNull SegmentRule segmentRule) {
+  public void addSegmentRule(@NonNull final SegmentRule segmentRule) {
     if (!segmentRules.contains(segmentRule)) {
       segmentRules.add(segmentRule);
     }
   }
 
-  public void syncSegmentRules(List<SegmentRule> newSegmentRules) {
+  public void syncSegmentRules(final List<SegmentRule> newSegmentRules) {
     // Remove rules that are no longer in the new list
     segmentRules.removeIf(existingRule -> !newSegmentRules.contains(existingRule));
 

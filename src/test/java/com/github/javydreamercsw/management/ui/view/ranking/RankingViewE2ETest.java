@@ -67,7 +67,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
   private com.github.javydreamercsw.management.service.show.type.ShowTypeService showTypeService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     cleanupLeagues();
     if (cacheManager != null) {
 
@@ -109,7 +109,8 @@ class RankingViewE2ETest extends AbstractE2ETest {
             "Legacy Title",
             "The historic title",
             WrestlerTier.MAIN_EVENTER,
-            ChampionshipType.SINGLE);
+            ChampionshipType.SINGLE,
+            1L);
 
     Season season = seasonService.createSeason("Legacy Season", "Season for legacy", 10);
     Show show =
@@ -119,6 +120,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
             showTypeRepository.findByName("Weekly").get().getId(),
             null,
             season.getId(),
+            null,
             null,
             null,
             null,
@@ -136,7 +138,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
     titleRepository.saveAndFlush(title);
 
     // When
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/championship-rankings");
+    navigateTo("championship-rankings");
 
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -154,13 +156,12 @@ class RankingViewE2ETest extends AbstractE2ETest {
     // Verify card presence
     assertNotNull(waitForVaadinElement(driver, By.xpath("//span[text()='Legacy Champ']")));
 
-    // Verify match link
-    WebElement link =
-        waitForVaadinElement(driver, By.xpath("//a[contains(text(), 'Won at: Historic Event')]"));
-    assertNotNull(link);
+    // Verify match link is present, then click with a fresh lookup to avoid stale references
+    By linkLocator = By.xpath("//a[contains(text(), 'Won at: Historic Event')]");
+    assertNotNull(waitForVaadinElement(driver, linkLocator));
 
     // Click and verify navigation
-    clickElement(link);
+    clickElement(linkLocator);
     wait.until(ExpectedConditions.urlContains("show-detail/" + show.getId()));
   }
 }

@@ -43,7 +43,7 @@ public class OpenAIImageGenerationService implements ImageGenerationService {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
-  public String generateImage(@NonNull ImageRequest request) {
+  public String generateImage(@NonNull final ImageRequest request) {
     if (!isAvailable()) {
       throw new AIServiceException(
           503, "Service Unavailable", getProviderName(), "OpenAI image service is not available.");
@@ -109,7 +109,8 @@ public class OpenAIImageGenerationService implements ImageGenerationService {
     return aiSettings.isOpenAIEnabled() && !aiSettings.getOpenAIApiKey().isEmpty();
   }
 
-  private String extractImageFromResponse(String responseBody, String format) throws Exception {
+  private String extractImageFromResponse(final String responseBody, final String format)
+      throws Exception {
     Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
     List<Map<String, Object>> data = (List<Map<String, Object>>) responseMap.get("data");
     if (data != null && !data.isEmpty()) {

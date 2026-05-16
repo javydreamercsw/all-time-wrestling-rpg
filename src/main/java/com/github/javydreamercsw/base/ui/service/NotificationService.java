@@ -39,7 +39,7 @@ public class NotificationService {
    *
    * @param message The message to display.
    */
-  public void showSuccess(@NonNull String message) {
+  public void showSuccess(@NonNull final String message) {
     Notification notification = Notification.show(message, 3_000, Notification.Position.BOTTOM_END);
     notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
@@ -49,7 +49,7 @@ public class NotificationService {
    *
    * @param message The message to display.
    */
-  public void showError(@NonNull String message) {
+  public void showError(@NonNull final String message) {
     Notification notification = Notification.show(message, 5_000, Notification.Position.BOTTOM_END);
     notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
   }
@@ -59,7 +59,7 @@ public class NotificationService {
    *
    * @param message The message to display.
    */
-  public void showWarning(@NonNull String message) {
+  public void showWarning(@NonNull final String message) {
     Notification notification = Notification.show(message, 4_000, Notification.Position.BOTTOM_END);
     notification.addThemeVariants(NotificationVariant.LUMO_CONTRAST);
   }
@@ -69,7 +69,7 @@ public class NotificationService {
    *
    * @param t The throwable to analyze.
    */
-  public void showAIServiceError(@NonNull Throwable t) {
+  public void showAIServiceError(@NonNull final Throwable t) {
     AIServiceException aiException = findAIServiceException(t);
 
     if (aiException != null) {
@@ -79,7 +79,7 @@ public class NotificationService {
     }
   }
 
-  private AIServiceException findAIServiceException(Throwable t) {
+  private AIServiceException findAIServiceException(final Throwable t) {
     if (t == null) {
       return null;
     }
@@ -89,7 +89,7 @@ public class NotificationService {
     return findAIServiceException(t.getCause());
   }
 
-  private void showRichAIError(@NonNull AIServiceException ex) {
+  private void showRichAIError(@NonNull final AIServiceException ex) {
     UI ui = UI.getCurrent();
     if (ui == null) {
       return;
@@ -129,7 +129,7 @@ public class NotificationService {
         });
   }
 
-  private String getUserFriendlyMessage(@NonNull AIServiceException ex) {
+  private String getUserFriendlyMessage(@NonNull final AIServiceException ex) {
     String msg = ex.getMessage();
     if (msg == null) {
       return "An unknown error occurred with the AI service.";
@@ -137,8 +137,10 @@ public class NotificationService {
 
     // Simple heuristic: if it looks like Gemini's high demand error
     if (msg.contains("experiencing high demand") || msg.contains("UNAVAILABLE")) {
-      return "The AI model is currently experiencing high demand. Please wait a few moments and"
-          + " try again.";
+      return """
+      The AI model is currently experiencing high demand. Please wait a few moments and\
+       try again.\
+      """;
     }
 
     if (ex.getStatusCode() == 429) {

@@ -30,12 +30,12 @@ public class SeasonNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public SeasonNotionHandler(NotionHandler notionHandler) {
+  public SeasonNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
   /** Loads a season from the Notion database by name. */
-  public Optional<SeasonPage> loadSeason(@NonNull String seasonName) {
+  public Optional<SeasonPage> loadSeason(@NonNull final String seasonName) {
     log.debug("Loading season: '{}'", seasonName);
 
     String seasonDbId = notionHandler.getDatabaseId("Seasons");
@@ -93,7 +93,8 @@ public class SeasonNotionHandler {
   }
 
   /** Maps a Notion page to a SeasonPage object. */
-  private SeasonPage mapPageToSeasonPage(@NonNull Page pageData, @NonNull String seasonName) {
+  private SeasonPage mapPageToSeasonPage(
+      @NonNull final Page pageData, @NonNull final String seasonName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, seasonName, "Season", SeasonPage::new, SeasonPage.NotionParent::new);
   }

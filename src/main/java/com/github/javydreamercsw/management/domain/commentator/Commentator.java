@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.commentator;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,10 +34,11 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "commentator")
 @Getter
 @Setter
-public class Commentator extends AbstractEntity<Long> {
+public class Commentator extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "commentator_id")
   private Long id;
 
@@ -52,10 +53,5 @@ public class Commentator extends AbstractEntity<Long> {
   private String catchphrase;
 
   @Column(name = "persona_description", length = 4000)
-  private String personaDescription; // Extra AI persona details
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
+  private String personaDescription;
 }

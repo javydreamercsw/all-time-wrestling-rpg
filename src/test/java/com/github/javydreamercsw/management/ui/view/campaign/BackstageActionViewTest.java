@@ -28,6 +28,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageActionService;
 import com.github.javydreamercsw.management.service.campaign.BackstageEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -41,16 +43,20 @@ class BackstageActionViewTest {
   private CampaignRepository campaignRepository;
   private WrestlerRepository wrestlerRepository;
   private WrestlerService wrestlerService;
+  private InjuryService injuryService;
+  private UniverseContextService universeContextService;
   private SecurityUtils securityUtils;
   private CampaignService campaignService;
   private BackstageEncounterService backstageEncounterService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     backstageActionService = mock(BackstageActionService.class);
     campaignRepository = mock(CampaignRepository.class);
     wrestlerRepository = mock(WrestlerRepository.class);
     wrestlerService = mock(WrestlerService.class);
+    injuryService = mock(InjuryService.class);
+    universeContextService = mock(UniverseContextService.class);
     securityUtils = mock(SecurityUtils.class);
     campaignService = mock(CampaignService.class);
     backstageEncounterService = mock(BackstageEncounterService.class);
@@ -66,9 +72,10 @@ class BackstageActionViewTest {
     BackstageActionView view =
         new BackstageActionView(
             backstageActionService,
-            campaignRepository,
             wrestlerRepository,
             wrestlerService,
+            injuryService,
+            universeContextService,
             securityUtils,
             campaignService);
 
@@ -77,7 +84,7 @@ class BackstageActionViewTest {
 
     assertThat(
             view.getChildren()
-                .anyMatch(c -> c instanceof H2 && ((H2) c).getText().equals("Backstage Actions")))
+                .anyMatch(c -> c instanceof H2 && "Backstage Actions".equals(((H2) c).getText())))
         .isTrue();
   }
 
@@ -102,9 +109,10 @@ class BackstageActionViewTest {
     BackstageActionView view =
         new BackstageActionView(
             backstageActionService,
-            campaignRepository,
             wrestlerRepository,
             wrestlerService,
+            injuryService,
+            universeContextService,
             securityUtils,
             campaignService);
 

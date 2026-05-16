@@ -29,12 +29,12 @@ public class NotionPageDataExtractor {
 
   private final NotionHandler notionHandler;
 
-  public NotionPageDataExtractor(NotionHandler notionHandler) {
+  public NotionPageDataExtractor(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
   /** Extracts name from any NotionPage type using raw properties. */
-  public String extractNameFromNotionPage(@NonNull NotionPage page) {
+  public String extractNameFromNotionPage(@NonNull final NotionPage page) {
     if (page.getRawProperties() != null) {
       // Try different possible property names for name
       Object name = page.getRawProperties().get("Name");
@@ -55,7 +55,7 @@ public class NotionPageDataExtractor {
   }
 
   /** Extracts description from any NotionPage type using raw properties. */
-  public String extractDescriptionFromNotionPage(@NonNull NotionPage page) {
+  public String extractDescriptionFromNotionPage(@NonNull final NotionPage page) {
     if (page.getRawProperties() != null) {
       Object description = page.getRawProperties().get("Description");
       return description != null ? description.toString() : "";
@@ -64,7 +64,7 @@ public class NotionPageDataExtractor {
   }
 
   /** Extracts text content from a Notion property object. */
-  public String extractTextFromProperty(Object property) {
+  public String extractTextFromProperty(final Object property) {
     if (property == null) {
       return null;
     }
@@ -130,7 +130,8 @@ public class NotionPageDataExtractor {
 
   /** Extracts a property value as a string from raw properties map. */
   public String extractPropertyAsString(
-      @NonNull java.util.Map<String, Object> rawProperties, @NonNull String propertyName) {
+      @NonNull final java.util.Map<String, Object> rawProperties,
+      @NonNull final String propertyName) {
 
     Object property = rawProperties.get(propertyName);
     return extractTextFromProperty(property);
@@ -138,7 +139,7 @@ public class NotionPageDataExtractor {
 
   /** Extracts faction from a team page. */
   public String extractFactionFromNotionPage(
-      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page) {
+      @NonNull final com.github.javydreamercsw.base.ai.notion.NotionPage page) {
     if (page.getRawProperties() != null) {
       // Try different possible property names for faction
       Object faction = page.getRawProperties().get("Faction");
@@ -174,7 +175,7 @@ public class NotionPageDataExtractor {
 
   /** Extracts show type from any NotionPage type using raw properties. */
   public String extractShowTypeFromNotionPage(
-      @NonNull com.github.javydreamercsw.base.ai.notion.NotionPage page) {
+      @NonNull final com.github.javydreamercsw.base.ai.notion.NotionPage page) {
     if (page.getRawProperties() != null) {
       Object showType = page.getRawProperties().get("Show Type");
       if (showType == null) {
@@ -198,7 +199,7 @@ public class NotionPageDataExtractor {
     return null;
   }
 
-  public Integer extractDurationDaysFromNotionPage(@NonNull NotionPage page) {
+  public Integer extractDurationDaysFromNotionPage(@NonNull final NotionPage page) {
     String val = extractPropertyAsString(page.getRawProperties(), "Duration");
     if (val == null) {
       val = extractPropertyAsString(page.getRawProperties(), "Duration Days");
@@ -210,7 +211,7 @@ public class NotionPageDataExtractor {
     }
   }
 
-  public String extractRecurrenceTypeFromNotionPage(@NonNull NotionPage page) {
+  public String extractRecurrenceTypeFromNotionPage(@NonNull final NotionPage page) {
     return extractPropertyAsString(page.getRawProperties(), "Recurrence Type");
   }
 
@@ -221,7 +222,8 @@ public class NotionPageDataExtractor {
    * @param propertyName The property name
    * @return The relation ID or null
    */
-  public String extractRelationId(@NonNull NotionPage page, @NonNull String propertyName) {
+  public String extractRelationId(
+      @NonNull final NotionPage page, @NonNull final String propertyName) {
     String val = extractPropertyAsString(page.getRawProperties(), propertyName);
     if (val != null
         && val.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
@@ -238,7 +240,7 @@ public class NotionPageDataExtractor {
    * @return List of relation IDs
    */
   public java.util.List<String> extractRelationIds(
-      @NonNull NotionPage page, @NonNull String propertyName) {
+      @NonNull final NotionPage page, @NonNull final String propertyName) {
     Object property = page.getRawProperties().get(propertyName);
     if (property == null) {
       return java.util.Collections.emptyList();
@@ -291,11 +293,11 @@ public class NotionPageDataExtractor {
     return ids;
   }
 
-  public String extractDayOfWeekFromNotionPage(@NonNull NotionPage page) {
+  public String extractDayOfWeekFromNotionPage(@NonNull final NotionPage page) {
     return extractPropertyAsString(page.getRawProperties(), "Day of Week");
   }
 
-  public Integer extractDayOfMonthFromNotionPage(@NonNull NotionPage page) {
+  public Integer extractDayOfMonthFromNotionPage(@NonNull final NotionPage page) {
     String val = extractPropertyAsString(page.getRawProperties(), "Day of Month");
     try {
       return val != null ? Integer.parseInt(val) : null;
@@ -304,22 +306,22 @@ public class NotionPageDataExtractor {
     }
   }
 
-  public Integer extractWeekOfMonthFromNotionPage(@NonNull NotionPage page) {
+  public Integer extractWeekOfMonthFromNotionPage(@NonNull final NotionPage page) {
     String val = extractPropertyAsString(page.getRawProperties(), "Week of Month");
     if (val != null) {
-      if (val.equalsIgnoreCase("Last")) {
+      if ("Last".equalsIgnoreCase(val)) {
         return -1;
       }
-      if (val.equalsIgnoreCase("First")) {
+      if ("First".equalsIgnoreCase(val)) {
         return 1;
       }
-      if (val.equalsIgnoreCase("Second")) {
+      if ("Second".equalsIgnoreCase(val)) {
         return 2;
       }
-      if (val.equalsIgnoreCase("Third")) {
+      if ("Third".equalsIgnoreCase(val)) {
         return 3;
       }
-      if (val.equalsIgnoreCase("Fourth")) {
+      if ("Fourth".equalsIgnoreCase(val)) {
         return 4;
       }
       try {
@@ -331,7 +333,7 @@ public class NotionPageDataExtractor {
     return null;
   }
 
-  public String extractMonthFromNotionPage(@NonNull NotionPage page) {
+  public String extractMonthFromNotionPage(@NonNull final NotionPage page) {
     return extractPropertyAsString(page.getRawProperties(), "Month");
   }
 
@@ -341,7 +343,7 @@ public class NotionPageDataExtractor {
    * @param page The Notion page to extract the ID from
    * @return The page ID
    */
-  public String extractIdFromNotionPage(@NonNull NotionPage page) {
+  public String extractIdFromNotionPage(@NonNull final NotionPage page) {
     return page.getId();
   }
 
@@ -351,7 +353,7 @@ public class NotionPageDataExtractor {
    * @param page The Notion page to extract the date from
    * @return The extracted LocalDate or null if not found or invalid
    */
-  public java.time.LocalDate extractDateFromNotionPage(@NonNull NotionPage page) {
+  public java.time.LocalDate extractDateFromNotionPage(@NonNull final NotionPage page) {
     String dateStr = extractPropertyAsString(page.getRawProperties(), "Date");
     if (dateStr != null && !dateStr.trim().isEmpty()) {
       try {

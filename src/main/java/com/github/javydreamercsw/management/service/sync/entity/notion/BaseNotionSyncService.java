@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
@@ -41,7 +41,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
-public abstract class BaseNotionSyncService<T extends AbstractEntity>
+public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
     implements NotionEntitySyncService {
 
   protected final JpaRepository<T, Long> repository;
@@ -50,26 +50,29 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
 
   @Autowired @Lazy private BaseNotionSyncService<T> self;
 
+  protected BaseNotionSyncService<T> getSelf() {
+    return self != null ? self : this;
+  }
+
   protected BaseNotionSyncService(
-      JpaRepository<T, Long> repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final JpaRepository<T, Long> repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     this.repository = repository;
     this.syncServiceDependencies = syncServiceDependencies;
     this.notionApiExecutor = notionApiExecutor;
-    this.self = this;
   }
 
   @Override
   @Transactional
-  public BaseSyncService.SyncResult syncToNotion(@NonNull String operationId) {
+  public BaseSyncService.SyncResult syncToNotion(@NonNull final String operationId) {
     return syncToNotion(operationId, null);
   }
 
   @Override
   @Transactional
   public BaseSyncService.SyncResult syncToNotion(
-      @NonNull String operationId, java.util.Collection<Long> ids) {
+      @NonNull final String operationId, final java.util.Collection<Long> ids) {
     Optional<NotionClient> clientOptional =
         notionApiExecutor.getNotionHandler().createNotionClient();
     if (clientOptional.isPresent()) {
@@ -115,8 +118,10 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
                           .keySet());
         } catch (Exception e) {
           log.warn(
-              "Failed to fetch schema for database '{}', falling back to sending all properties:"
-                  + " {}",
+              """
+              Failed to fetch schema for database '{}', falling back to sending all properties:\
+               {}\
+              """,
               getDatabaseName(),
               e.getMessage());
           validNotionProperties = null;
@@ -133,9 +138,8 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
               .updateProgress(
                   operationId,
                   processedCount,
-                  String.format(
-                      "Saving %s to Notion... (%d/%d processed)",
-                      getEntityName(), processedCount, entities.size()));
+                  "Saving %s to Notion... (%d/%d processed)"
+                      .formatted(getEntityName(), processedCount, entities.size()));
           try {
             String entityDisplayName = getEntityDisplayName(entity);
             syncServiceDependencies
@@ -164,8 +168,10 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
                         "INFO");
               } else {
                 log.warn(
-                    "Found matching Notion page for '{}' but its ID ({}) is already assigned to"
-                        + " another local entity. Skipping auto-match.",
+                    """
+                    Found matching Notion page for '{}' but its ID ({}) is already assigned to\
+                     another local entity. Skipping auto-match.\
+                    """,
                     entityDisplayName,
                     potentialId);
                 syncServiceDependencies
@@ -193,7 +199,7 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
               continue;
             }
 
-            Map<String, PageProperty> allProperties = self.getProperties(entity);
+            Map<String, PageProperty> allProperties = getSelf().getProperties(entity);
             log.info(
                 "📤 Sending {} properties to Notion for {}",
                 allProperties.size(),
@@ -322,9 +328,8 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
             .updateProgress(
                 operationId,
                 processedCount,
-                String.format(
-                    "✅ Completed database save: %d %s saved/updated, %d errors",
-                    created + updated, getEntityName(), errors));
+                "✅ Completed database save: %d %s saved/updated, %d errors"
+                    .formatted(created + updated, getEntityName(), errors));
         if (errors > 0) {
           syncServiceDependencies
               .getProgressTracker()
@@ -355,7 +360,7 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
   }
 
   @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
-  protected void saveEntity(T entity) {
+  protected void saveEntity(final T entity) {
     repository.saveAndFlush(entity);
   }
 
@@ -370,7 +375,7 @@ public abstract class BaseNotionSyncService<T extends AbstractEntity>
 
   protected abstract String getEntityName();
 
-  protected String getEntityDisplayName(T entity) {
+  protected String getEntityDisplayName(final T entity) {
     String name = entity.getName();
     return name != null ? name : entity.toString();
   }

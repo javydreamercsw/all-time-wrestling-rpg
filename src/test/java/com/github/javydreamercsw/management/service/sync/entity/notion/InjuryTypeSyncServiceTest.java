@@ -75,7 +75,7 @@ class InjuryTypeSyncServiceTest extends AbstractSyncTest {
   private InjuryPage notionPage3;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     injuryTypeSyncService =
         new InjuryTypeSyncService(
@@ -352,7 +352,12 @@ class InjuryTypeSyncServiceTest extends AbstractSyncTest {
   }
 
   private InjuryPage createMockInjuryPage(
-      String id, String name, int health, int stamina, int card, String special) {
+      final String id,
+      final String name,
+      final int health,
+      final int stamina,
+      final int card,
+      final String special) {
     InjuryPage page = mock(InjuryPage.class);
     when(page.getId()).thenReturn(id);
 

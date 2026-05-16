@@ -59,7 +59,7 @@ public class NPCSegmentController {
 
   /** Resolve a team-based segment (supports singles, tag team, handicap, etc.). */
   @PostMapping("/team")
-  public ResponseEntity<?> resolveTeamSegment(@RequestBody TeamSegmentRequest request) {
+  public ResponseEntity<?> resolveTeamSegment(@RequestBody final TeamSegmentRequest request) {
     try {
       // Validate team 1 wrestlers
       List<Wrestler> team1Wrestlers =
@@ -141,7 +141,7 @@ public class NPCSegmentController {
 
   /** Get segment results for a specific show. */
   @GetMapping("/show/{showId}")
-  public ResponseEntity<?> getSegmentsByShow(@PathVariable Long showId) {
+  public ResponseEntity<?> getSegmentsByShow(@PathVariable final Long showId) {
     try {
       Optional<Show> showOpt = showRepository.findById(showId);
       if (showOpt.isEmpty()) {
@@ -167,7 +167,7 @@ public class NPCSegmentController {
   /** Get segment history for a specific wrestler. */
   @GetMapping("/wrestler/{wrestlerId}/history")
   public ResponseEntity<?> getWrestlerSegmentHistory(
-      @PathVariable Long wrestlerId, @RequestParam(defaultValue = "10") int limit) {
+      @PathVariable final Long wrestlerId, @RequestParam(defaultValue = "10") final int limit) {
     try {
       Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
       if (wrestlerOpt.isEmpty()) {
@@ -218,7 +218,7 @@ public class NPCSegmentController {
   }
 
   /** Helper method to describe segment type based on team sizes. */
-  private String getSegmentTypeDescription(int team1Size, int team2Size) {
+  private String getSegmentTypeDescription(final int team1Size, final int team2Size) {
     if (team1Size == 1 && team2Size == 1) {
       return "Singles Segment";
     } else if (team1Size == 2 && team2Size == 2) {

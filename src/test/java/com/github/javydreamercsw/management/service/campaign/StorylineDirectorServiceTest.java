@@ -55,7 +55,7 @@ class StorylineDirectorServiceTest {
   private ObjectMapper objectMapper;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     aiService = mock(SegmentNarrationService.class);
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);

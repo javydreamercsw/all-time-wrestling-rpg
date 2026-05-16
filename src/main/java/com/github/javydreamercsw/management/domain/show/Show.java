@@ -18,12 +18,13 @@ package com.github.javydreamercsw.management.domain.show;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -33,6 +34,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
@@ -40,6 +42,8 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -48,9 +52,10 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "wrestling_show")
 @Getter
 @Setter
-public class Show extends AbstractEntity<Long> {
+public class Show extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "show_id")
   private Long id;
 
@@ -60,6 +65,10 @@ public class Show extends AbstractEntity<Long> {
   @Lob
   @Column(name = "description", nullable = false)
   private String description;
+
+  @OneToMany(mappedBy = "show", fetch = FetchType.LAZY)
+  private List<com.github.javydreamercsw.management.domain.show.segment.Segment> segments =
+      new ArrayList<>();
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "show_type_id", nullable = false)
@@ -72,6 +81,10 @@ public class Show extends AbstractEntity<Long> {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "league_id")
   private League league;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "template_id")
@@ -96,11 +109,6 @@ public class Show extends AbstractEntity<Long> {
 
   @Column(name = "gate_revenue")
   private BigDecimal gateRevenue = BigDecimal.ZERO;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   /**
    * Check if this show is based on a Premium Live Event template.

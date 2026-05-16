@@ -27,8 +27,7 @@ class SystemObservabilityDocsE2ETest extends AbstractE2ETest {
   @Test
   void testCaptureObservabilityDashboard() {
     // Navigate to Admin View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     // Click System Observability button
     clickElement(By.id("observability-dashboard"));

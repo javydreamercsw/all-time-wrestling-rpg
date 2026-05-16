@@ -38,7 +38,7 @@ public class ThemeService {
     return java.util.List.of("light", "dark", "retro", "high-contrast", "neon");
   }
 
-  public String getEffectiveTheme(Account account) {
+  public String getEffectiveTheme(final Account account) {
     if (account != null
         && account.getThemePreference() != null
         && !account.getThemePreference().isBlank()) {
@@ -51,8 +51,8 @@ public class ThemeService {
     return gameSettingRepository.findById(DEFAULT_THEME_KEY).map(GameSetting::getValue);
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
-  public void updateGlobalDefaultTheme(String theme) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public void updateGlobalDefaultTheme(final String theme) {
     GameSetting setting =
         gameSettingRepository.findById(DEFAULT_THEME_KEY).orElse(new GameSetting());
     setting.setId(DEFAULT_THEME_KEY);

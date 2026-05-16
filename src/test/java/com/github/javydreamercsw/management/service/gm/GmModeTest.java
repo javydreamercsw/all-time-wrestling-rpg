@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,30 +35,37 @@ class GmModeTest {
 
   @Mock private WrestlerContractRepository contractRepository;
   @Mock private SalaryCalculator salaryCalculator;
+  @Mock private WrestlerService wrestlerService;
 
   @Test
   void testSalaryCalculation() {
     SalaryCalculator calc = new SalaryCalculator();
     Wrestler w = new Wrestler();
-    w.setFans(10000L); // 10,000 fans
-    w.setTier(WrestlerTier.MIDCARDER);
+    w.setId(1L);
+
+    WrestlerState state =
+        WrestlerState.builder().wrestler(w).fans(10000L).tier(WrestlerTier.MIDCARDER).build();
 
     // Base 500 + (10000/1000 * 10) = 500 + 100 = 600
     // Midcarder multiplier = 1.2
     // Total = 720.00
-    BigDecimal salary = calc.calculateWeeklySalary(w);
+    BigDecimal salary = calc.calculateWeeklySalary(w, state);
     assertEquals(new BigDecimal("720.00"), salary);
   }
 
   @Test
   void testWrestlerAddBumpWithLowStamina() {
     Wrestler w = new Wrestler();
-    w.setManagementStamina(30); // Low stamina
-    w.setBumps(1);
+    WrestlerState state =
+        WrestlerState.builder()
+            .wrestler(w)
+            .managementStamina(30) // Low stamina
+            .bumps(1)
+            .build();
 
     // With low stamina, threshold is 2. 1 bump + 1 more = injury.
-    boolean injury = w.addBump();
+    boolean injury = state.addBump();
     assertTrue(injury);
-    assertEquals(0, w.getBumps()); // Should reset after injury
+    assertEquals(0, state.getBumps()); // Should reset after injury
   }
 }

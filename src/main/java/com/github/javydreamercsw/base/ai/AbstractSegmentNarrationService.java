@@ -40,23 +40,27 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
   @Getter
   private PerformanceMonitoringService performanceMonitoringService;
 
-  protected String getSystemMessage(@NonNull String prompt) {
+  protected String getSystemMessage(@NonNull final String prompt) {
     if (prompt.contains("Summarize the following segment narration")) {
-      return "You are a wrestling expert. Your task is to provide a concise summary of a wrestling"
-          + " segment narration.";
+      return """
+      You are a wrestling expert. Your task is to provide a concise summary of a wrestling\
+       segment narration.\
+      """;
     } else {
-      return "You are a team of professional wrestling commentators and a match narrator. Your"
-          + " task is to provide a transcript of the match, alternating between vivid"
-          + " descriptions of the action (as 'Narrator') and character-driven commentary from"
-          + " the commentators. Each commentator has a unique voice, alignment (Face/Heel), and"
-          + " style. Commentators MUST show bias based on their alignment and the alignment of the"
-          + " wrestlers they are describing (Face vs Heel dynamics). IMPORTANT: Every line of"
-          + " output MUST follow the format: 'Name: Text'.";
+      return """
+      You are a team of professional wrestling commentators and a match narrator. Your\
+       task is to provide a transcript of the match, alternating between vivid\
+       descriptions of the action (as 'Narrator') and character-driven commentary from\
+       the commentators. Each commentator has a unique voice, alignment (Face/Heel), and\
+       style. Commentators MUST show bias based on their alignment and the alignment of the\
+       wrestlers they are describing (Face vs Heel dynamics). IMPORTANT: Every line of\
+       output MUST follow the format: 'Name: Text'.\
+      """;
     }
   }
 
   protected String buildSegmentNarrationPrompt(
-      @NonNull SegmentNarrationService.SegmentNarrationContext context) {
+      @NonNull final SegmentNarrationService.SegmentNarrationContext context) {
 
     String jsonContext;
     try {
@@ -70,102 +74,152 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     prompt.append("You are a team of professional wrestling commentators.\n");
     prompt.append("You will be provided with a context object in JSON format.\n");
     prompt.append(
-        "Generate a compelling wrestling narration as a DIALOGUE between the commentators provided"
-            + " in the JSON.\n");
+        """
+        Generate a compelling wrestling narration as a DIALOGUE between the commentators provided\
+         in the JSON.
+        """);
     prompt.append("The JSON object contains instructions that you must follow.\n");
     prompt.append(
-        "If commentators are provided, use their names, styles, and alignments to drive the"
-            + " conversation.\n");
+        """
+        If commentators are provided, use their names, styles, and alignments to drive the\
+         conversation.
+        """);
     prompt.append(
         "A 'FACE' commentator should be supportive of rule-abiding wrestlers and optimistic.\n");
     prompt.append(
-        "A 'HEEL' commentator should be snarky, support rule-breakers, and offer critical or"
-            + " controversial takes.\n");
+        """
+        A 'HEEL' commentator should be snarky, support rule-breakers, and offer critical or\
+         controversial takes.
+        """);
     prompt.append("COMMENTARY INTERACTION RULES:\n");
     prompt.append(
-        "- FACE Commentator vs. FACE Wrestler: Enthusiastic support, praise for skill and"
-            + " integrity.\n");
+        """
+        - FACE Commentator vs. FACE Wrestler: Enthusiastic support, praise for skill and\
+         integrity.
+        """);
     prompt.append(
-        "- FACE Commentator vs. HEEL Wrestler: Critical of dirty tactics, focuses on the"
-            + " importance of rules and fair play.\n");
+        """
+        - FACE Commentator vs. HEEL Wrestler: Critical of dirty tactics, focuses on the\
+         importance of rules and fair play.
+        """);
     prompt.append(
-        "- HEEL Commentator vs. FACE Wrestler: Mockery, dismissal of skills as 'boring' or 'just"
-            + " luck', finds their moral high ground annoying.\n");
+        """
+        - HEEL Commentator vs. FACE Wrestler: Mockery, dismissal of skills as 'boring' or 'just\
+         luck', finds their moral high ground annoying.
+        """);
     prompt.append(
-        "- HEEL Commentator vs. HEEL Wrestler: Justifies rule-breaking as 'strategy', praises"
-            + " ruthlessness and 'doing what it takes to win'.\n");
+        """
+        - HEEL Commentator vs. HEEL Wrestler: Justifies rule-breaking as 'strategy', praises\
+         ruthlessness and 'doing what it takes to win'.
+        """);
     prompt.append(
-        "- NEUTRAL (Wrestler or Commentator): Focus strictly on technical execution, stats, and"
-            + " the importance of the match outcome without moral bias.\n\n");
+        """
+        - NEUTRAL (Wrestler or Commentator): Focus strictly on technical execution, stats, and\
+         the importance of the match outcome without moral bias.
+
+        """);
     prompt.append(
         "IMPORTANT: You MUST format the narration as a transcript of dialogue and action.\n");
     prompt.append(
-        "For each sequence of events, start the line with 'Narrator:' followed by a vivid,"
-            + " objective description of the wrestling action and moves performed.\n");
+        """
+        For each sequence of events, start the line with 'Narrator:' followed by a vivid,\
+         objective description of the wrestling action and moves performed.
+        """);
     prompt.append(
-        "Follow the action lines with reactions and analysis from the commentators provided in the"
-            + " JSON.\n");
+        """
+        Follow the action lines with reactions and analysis from the commentators provided in the\
+         JSON.
+        """);
     prompt.append(
-        "Each line MUST start with the speaker's name (either 'Narrator' or a commentator's name)"
-            + " followed immediately by a colon and their text.\n");
+        """
+        Each line MUST start with the speaker's name (either 'Narrator' or a commentator's name)\
+         followed immediately by a colon and their text.
+        """);
     prompt.append(
-        "Example: 'Narrator: Jax Felix scales the ropes and connects with a springboard"
-            + " moonsault!'\n");
+        """
+        Example: 'Narrator: Jax Felix scales the ropes and connects with a springboard\
+         moonsault!'
+        """);
     prompt.append("Example: 'Dara Hoshiko: Incredible athleticism! Jax is taking control!'\n");
     prompt.append(
-        "Example: 'Lord Bastian Von Crowe: A flashy move, but Eddie Guerrero is far from"
-            + " finished. He's just baiting the boy in.'\n");
+        """
+        Example: 'Lord Bastian Von Crowe: A flashy move, but Eddie Guerrero is far from\
+         finished. He's just baiting the boy in.'
+        """);
     prompt.append("DO NOT use square brackets like [SPEAKER:Name] around the names.\n");
     prompt.append("DO NOT include any text that is not a tagged line.\n\n");
     prompt.append(
         "If a segmentChampionship is provided, use it as the title of the segment narration.\n\n");
     prompt.append(
-        "If the segmentType is \"Promo\", narrate a promo segment. Focus on the dialogue,"
-            + " interviews, and interactions between the participants. Do not describe a wrestling"
-            + " match.\n\n");
+        """
+        If the segmentType is "Promo", narrate a promo segment. Focus on the dialogue,\
+         interviews, and interactions between the participants. Do not describe a wrestling\
+         match.
+
+        """);
     prompt.append(
-        "If the match is a championship match, the context will include the current champion. Make"
-            + " sure to acknowledge the current champion in your narration.\n\n");
+        """
+        If the match is a championship match, the context will include the current champion. Make\
+         sure to acknowledge the current champion in your narration.
+
+        """);
     prompt.append(
-        "If campaignContext is present, incorporate the wrestler's alignment (FACE/HEEL), "
-            + "current chapter, and any injuries into the narrative tone. "
-            + "A high HEEL alignment should result in more aggressive behavior. "
-            + "Injuries should be mentioned if they might affect performance.\n\n");
+        """
+        If campaignContext is present, incorporate the wrestler's alignment (FACE/HEEL), \
+        current chapter, and any injuries into the narrative tone. \
+        A high HEEL alignment should result in more aggressive behavior. \
+        Injuries should be mentioned if they might affect performance.
+
+        """);
 
     prompt.append(
-        "Use the 'hailingFrom' information in each wrestler's context to provide authentic"
-            + " introductions. Narrate the ring announcer or commentators specifying where the"
-            + " wrestler is from during their entrance or early in the match.\n\n");
+        """
+        Use the 'hailingFrom' information in each wrestler's context to provide authentic\
+         introductions. Narrate the ring announcer or commentators specifying where the\
+         wrestler is from during their entrance or early in the match.
+
+        """);
 
     prompt.append(
-        "If relationships are present in the wrestler's context, incorporate them into the"
-            + " narration. Acknowledge family ties, marriages, and friendships. For example, if"
-            + " two wrestlers are spouses, the commentators should mention it if they are"
-            + " interacting or if one is at ringside. Use these social bonds to add emotional"
-            + " weight to the storytelling.\n\n");
+        """
+        If relationships are present in the wrestler's context, incorporate them into the\
+         narration. Acknowledge family ties, marriages, and friendships. For example, if\
+         two wrestlers are spouses, the commentators should mention it if they are\
+         interacting or if one is at ringside. Use these social bonds to add emotional\
+         weight to the storytelling.
+
+        """);
 
     prompt.append(
-        "If venue context is present, use the name, description, location, capacity, type,"
-            + " atmosphere, significance, alignmentBias, and environmentalTraits to ground the"
-            + " narration in the specific setting. Incorporate culturalTags to add local flair."
-            + " Describe the unique atmosphere and how it affects the match and audience"
-            + " reactions.\n\n");
+        """
+        If venue context is present, use the name, description, location, capacity, type,\
+         atmosphere, significance, alignmentBias, and environmentalTraits to ground the\
+         narration in the specific setting. Incorporate culturalTags to add local flair.\
+         Describe the unique atmosphere and how it affects the match and audience\
+         reactions.
+
+        """);
 
     prompt.append("Here is the JSON context:\n\n");
     prompt.append(jsonContext);
 
     prompt.append(
-        "\n\nIMPORTANT - EXISTING STORY BEATS: If instructions contain 'Existing Description/Story"
-            + " Beats', you MUST treat them as mandatory plot points that must occur in your"
-            + " narration. Expand upon them with dialogue and action, but DO NOT contradict or"
-            + " ignore them. They represent the established plan for this segment.\n\n");
+        """
+
+
+        IMPORTANT - EXISTING STORY BEATS: If instructions contain 'Existing Description/Story\
+         Beats', you MUST treat them as mandatory plot points that must occur in your\
+         narration. Expand upon them with dialogue and action, but DO NOT contradict or\
+         ignore them. They represent the established plan for this segment.
+
+        """);
 
     log.debug("Generated AI Prompt: {}", prompt);
     return prompt.toString();
   }
 
   @Override
-  public String generateText(@NonNull String prompt) {
+  public String generateText(@NonNull final String prompt) {
     return callAIProvider(prompt);
   }
 
@@ -179,7 +233,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
 
   @Override
   public String narrateSegment(
-      @NonNull SegmentNarrationService.SegmentNarrationContext segmentContext) {
+      @NonNull final SegmentNarrationService.SegmentNarrationContext segmentContext) {
     if (!isAvailable()) {
       throw new AIServiceException(
           503,
@@ -194,7 +248,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
   }
 
   @Override
-  public String summarizeNarration(@NonNull String narration) {
+  public String summarizeNarration(@NonNull final String narration) {
     if (!isAvailable()) {
       throw new RuntimeException(
           getProviderName()
@@ -205,13 +259,16 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     return executeWithRetry(prompt);
   }
 
-  protected String buildSummaryPrompt(@NonNull String narration) {
+  protected String buildSummaryPrompt(@NonNull final String narration) {
     StringBuilder prompt = new StringBuilder();
     prompt.append(
-        "You are a wrestling expert. Summarize the following segment narration in 2-3 sentences,"
-            + " focusing on the key events, turning points, and the final outcome. The summary"
-            + " should be suitable for a show planning context, providing a quick overview of what"
-            + " happened in the segment.\n\n");
+        """
+        You are a wrestling expert. Summarize the following segment narration in 2-3 sentences,\
+         focusing on the key events, turning points, and the final outcome. The summary\
+         should be suitable for a show planning context, providing a quick overview of what\
+         happened in the segment.
+
+        """);
     prompt.append("Narration:\n");
     prompt.append(narration);
     prompt.append("\n\nSummary:");
@@ -239,7 +296,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
    * Determines if an exception should trigger a retry. Can be overridden by implementations for
    * provider-specific logic.
    */
-  protected boolean isRetryableException(@NonNull Exception exception) {
+  protected boolean isRetryableException(@NonNull final Exception exception) {
     // Check for custom AI service exception with retryable status codes
     if (exception instanceof AIServiceException aiException) {
       return Arrays.asList(429, 502, 503, 504).contains(aiException.getStatusCode());
@@ -263,7 +320,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
   }
 
   /** Executes AI provider call with retry logic using the provider's retry policies. */
-  protected String executeWithRetry(@NonNull String prompt) {
+  protected String executeWithRetry(@NonNull final String prompt) {
     List<RetryPolicyConfig> policies = getRetryPolicies();
     Exception lastException = null;
 
@@ -311,7 +368,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
 
   /** Executes the AI provider call with a specific retry policy. */
   private String callAIProviderWithRetry(
-      @NonNull String prompt, @NonNull RetryPolicyConfig policy) {
+      @NonNull final String prompt, @NonNull final RetryPolicyConfig policy) {
     Exception lastException = null;
     Duration currentDelay = policy.getBaseDelay();
 
@@ -363,11 +420,11 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
    * implementations to parse provider-specific retry hints.
    */
   protected Duration calculateRetryDelay(
-      @NonNull Exception exception, @NonNull Duration defaultDelay) {
+      @NonNull final Exception exception, @NonNull final Duration defaultDelay) {
     return defaultDelay;
   }
 
-  protected HttpClient getHttpClient(int timeout) {
+  protected HttpClient getHttpClient(final int timeout) {
     if (httpClient == null) {
       httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(timeout)).build();
     }

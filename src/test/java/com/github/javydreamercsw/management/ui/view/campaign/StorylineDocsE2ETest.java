@@ -86,8 +86,7 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
     campaignRepository.save(campaign);
 
     // 2. Navigate
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // 3. Verify & Capture
     // Find the journal details component and expand it
@@ -102,12 +101,14 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Campaign",
         "Story Journal",
-        "Your AI-generated adventures are preserved in the Story Journal. Here you can review"
-            + " past storyline arcs and download them as JSON chapter files to share or preserve.",
+        """
+        Your AI-generated adventures are preserved in the Story Journal. Here you can review\
+         past storyline arcs and download them as JSON chapter files to share or preserve.\
+        """,
         "campaign-story-journal");
   }
 
-  private Wrestler getOrCreateWrestler(@NonNull Account account) {
+  private Wrestler getOrCreateWrestler(@NonNull final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
@@ -126,14 +127,14 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
     return wrestlerRepository.saveAndFlush(w);
   }
 
-  private Campaign createCampaign(@NonNull Wrestler player) {
+  private Campaign createCampaign(@NonNull final Wrestler player) {
     if (campaignService.hasActiveCampaign(player)) {
       return campaignRepository.findActiveByWrestler(player).get();
     }
     return campaignService.startCampaign(player);
   }
 
-  private void waitForText(@NonNull String text) {
+  private void waitForText(@NonNull final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

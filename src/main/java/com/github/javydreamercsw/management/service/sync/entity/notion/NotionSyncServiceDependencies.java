@@ -32,9 +32,9 @@ public class NotionSyncServiceDependencies {
 
   @Autowired
   public NotionSyncServiceDependencies(
-      NotionHandler notionHandler,
-      NotionRateLimitService notionRateLimitService,
-      NotionSyncProperties notionSyncProperties) {
+      final NotionHandler notionHandler,
+      final NotionRateLimitService notionRateLimitService,
+      final NotionSyncProperties notionSyncProperties) {
     this.notionHandler = notionHandler;
     this.notionRateLimitService = notionRateLimitService;
     this.notionSyncProperties = notionSyncProperties;

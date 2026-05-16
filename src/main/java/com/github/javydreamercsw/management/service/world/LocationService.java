@@ -40,9 +40,12 @@ public class LocationService {
   private final LocationRepository repository;
   private final DefaultImageService imageService;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Location createLocation(
-      String name, String description, String imageUrl, Set<String> culturalTags) {
+      final String name,
+      final String description,
+      final String imageUrl,
+      final Set<String> culturalTags) {
     Location location =
         Location.builder()
             .name(name)
@@ -53,9 +56,13 @@ public class LocationService {
     return repository.save(location);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<Location> updateLocation(
-      Long id, String name, String description, String imageUrl, Set<String> culturalTags) {
+      final Long id,
+      final String name,
+      final String description,
+      final String imageUrl,
+      final Set<String> culturalTags) {
     return repository
         .findById(id)
         .map(
@@ -68,33 +75,32 @@ public class LocationService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Location> findById(Long id) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Optional<Location> findById(final Long id) {
     return repository.findById(id);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<Location> findAll() {
     return repository.findAll();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Page<Location> list(Pageable pageable) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Page<Location> list(final Pageable pageable) {
     return repository.findAll(pageable);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public long count() {
     return repository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void deleteLocation(Long id) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void deleteLocation(final Long id) {
     repository.deleteById(id);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Location> findByName(String name) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Optional<Location> findByName(final String name) {
     return repository.findByName(name);
   }
 
@@ -105,7 +111,7 @@ public class LocationService {
    * @param location The location entity.
    * @return The resolved image URL.
    */
-  public String resolveLocationImage(Location location) {
+  public String resolveLocationImage(final Location location) {
     if (location.getImageUrl() != null && !location.getImageUrl().isBlank()) {
       return location.getImageUrl();
     }

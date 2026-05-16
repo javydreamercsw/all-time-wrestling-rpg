@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service.segment;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +32,9 @@ import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -47,11 +52,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SegmentOutcomeServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private InjuryService injuryService;
   @Mock private Random random; // Mock the Random object
   @InjectMocks private SegmentOutcomeService segmentOutcomeService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     when(random.nextInt(anyInt())).thenReturn(0); // Make random predictable
 
     CardSet testCardSet = new CardSet();
@@ -59,15 +66,18 @@ class SegmentOutcomeServiceTest {
 
     // Rob Van Dam setup
     Wrestler robVanDam = Wrestler.builder().build();
+    robVanDam.setId(1L);
     robVanDam.setName("Rob Van Dam");
-    robVanDam.setFans(100L);
-    robVanDam.setTier(WrestlerTier.ICON);
     robVanDam.setStartingStamina(10);
     robVanDam.setLowStamina(2);
     robVanDam.setStartingHealth(10);
     robVanDam.setLowHealth(2);
     robVanDam.setDeckSize(10);
     robVanDam.setCreationDate(Instant.now());
+
+    WrestlerState rvdState =
+        WrestlerState.builder().wrestler(robVanDam).fans(100L).tier(WrestlerTier.ICON).build();
+    lenient().when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(rvdState);
 
     Card rvdFinisher = new Card();
     rvdFinisher.setName("Five-Star Frog Splash");
@@ -91,19 +101,26 @@ class SegmentOutcomeServiceTest {
     rvdDeckCard.setDeck(rvdDeck);
     rvdDeckCards.add(rvdDeckCard);
     rvdDeck.setCards(rvdDeckCards);
-    robVanDam.setDecks(List.of(rvdDeck));
+    robVanDam.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(rvdDeck)));
 
     // Kurt Angle setup
     Wrestler kurtAngle = Wrestler.builder().build();
+    kurtAngle.setId(2L);
     kurtAngle.setName("Kurt Angle");
-    kurtAngle.setFans(90L);
-    kurtAngle.setTier(WrestlerTier.MAIN_EVENTER);
     kurtAngle.setStartingStamina(10);
     kurtAngle.setLowStamina(2);
     kurtAngle.setStartingHealth(10);
     kurtAngle.setLowHealth(2);
     kurtAngle.setDeckSize(10);
     kurtAngle.setCreationDate(Instant.now());
+
+    WrestlerState angleState =
+        WrestlerState.builder()
+            .wrestler(kurtAngle)
+            .fans(90L)
+            .tier(WrestlerTier.MAIN_EVENTER)
+            .build();
+    lenient().when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(angleState);
 
     Card angleFinisher = new Card();
     angleFinisher.setName("Angle Slam");
@@ -127,19 +144,26 @@ class SegmentOutcomeServiceTest {
     angleDeckCard.setDeck(angleDeck);
     angleDeckCards.add(angleDeckCard);
     angleDeck.setCards(angleDeckCards);
-    kurtAngle.setDecks(List.of(angleDeck));
+    kurtAngle.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(angleDeck)));
 
     // Generic Wrestler setup
     Wrestler genericWrestler = Wrestler.builder().build();
+    genericWrestler.setId(3L);
     genericWrestler.setName("Generic Wrestler");
-    genericWrestler.setFans(50L);
-    genericWrestler.setTier(WrestlerTier.MIDCARDER);
     genericWrestler.setStartingStamina(8);
     genericWrestler.setLowStamina(2);
     genericWrestler.setStartingHealth(8);
     genericWrestler.setLowHealth(2);
     genericWrestler.setDeckSize(10);
     genericWrestler.setCreationDate(Instant.now());
+
+    WrestlerState genericState =
+        WrestlerState.builder()
+            .wrestler(genericWrestler)
+            .fans(50L)
+            .tier(WrestlerTier.MIDCARDER)
+            .build();
+    lenient().when(wrestlerService.getOrCreateState(eq(3L), anyLong())).thenReturn(genericState);
 
     Card genericFinisher = new Card();
     genericFinisher.setName("Generic Finisher");
@@ -163,7 +187,7 @@ class SegmentOutcomeServiceTest {
     genericDeckCard.setDeck(genericDeck);
     genericDeckCards.add(genericDeckCard);
     genericDeck.setCards(genericDeckCards);
-    genericWrestler.setDecks(List.of(genericDeck));
+    genericWrestler.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(genericDeck)));
 
     when(wrestlerRepository.findByName("Rob Van Dam")).thenReturn(Optional.of(robVanDam));
     when(wrestlerRepository.findByName("Kurt Angle")).thenReturn(Optional.of(kurtAngle));
@@ -174,7 +198,6 @@ class SegmentOutcomeServiceTest {
 
   @Test
   void testDetermineTwoWrestlerOutcomeWithSpecificFinisher() {
-    // Fix 2: WrestlerContext constructor
     SegmentNarrationService.WrestlerContext rvdContext =
         new SegmentNarrationService.WrestlerContext();
     rvdContext.setName("Rob Van Dam");
@@ -186,7 +209,6 @@ class SegmentOutcomeServiceTest {
         new SegmentNarrationService.SegmentNarrationContext();
     context.setWrestlers(List.of(rvdContext, angleContext));
 
-    // Fix 3: SegmentType
     SegmentNarrationService.SegmentTypeContext segmentType =
         new SegmentNarrationService.SegmentTypeContext();
     segmentType.setSegmentType("Match");
@@ -207,7 +229,6 @@ class SegmentOutcomeServiceTest {
 
   @Test
   void testDetermineMultiWrestlerOutcomeWithSpecificFinisher() {
-    // Fix 2: WrestlerContext constructor
     SegmentNarrationService.WrestlerContext rvdContext =
         new SegmentNarrationService.WrestlerContext();
     rvdContext.setName("Rob Van Dam");
@@ -222,7 +243,6 @@ class SegmentOutcomeServiceTest {
         new SegmentNarrationService.SegmentNarrationContext();
     context.setWrestlers(List.of(rvdContext, angleContext, genericWrestlerContext));
 
-    // Fix 3: SegmentType
     SegmentNarrationService.SegmentTypeContext segmentType =
         new SegmentNarrationService.SegmentTypeContext();
     segmentType.setSegmentType("Match");

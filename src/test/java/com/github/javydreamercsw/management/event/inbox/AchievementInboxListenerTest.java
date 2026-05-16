@@ -44,7 +44,7 @@ class AchievementInboxListenerTest {
   private AchievementInboxListener listener;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     listener =
         new AchievementInboxListener(
             inboxService, achievementUnlocked, eventPublisher, inboxUpdateBroadcaster);

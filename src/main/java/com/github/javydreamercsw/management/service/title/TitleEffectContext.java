@@ -45,7 +45,7 @@ public class TitleEffectContext {
     log.info("[Title Script] {} gained initiative", champion.getName());
   }
 
-  public void gainHitPoints(int amount) {
+  public void gainHitPoints(final int amount) {
     champion.setHealth(champion.getHealth() + amount);
 
     String instr = segmentContext.getInstructions();
@@ -62,7 +62,7 @@ public class TitleEffectContext {
     log.info("[Title Script] {} gained {} HP", champion.getName(), amount);
   }
 
-  public void modifyRoll(int modifier) {
+  public void modifyRoll(final int modifier) {
     String instr = segmentContext.getInstructions();
     if (instr == null) {
       instr = "";

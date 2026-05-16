@@ -42,9 +42,11 @@ public class CampaignFactionService {
    * @param faction The faction to join.
    * @return The updated faction.
    */
-  public Optional<Faction> joinFaction(@NonNull Campaign campaign, @NonNull Faction faction) {
+  public Optional<Faction> joinFaction(
+      @NonNull final Campaign campaign, @NonNull final Faction faction) {
     Wrestler player = campaign.getWrestler();
-    log.info("Wrestler {} joining faction {} during campaign", player.getName(), faction.getName());
+    log.debug(
+        "Wrestler {} joining faction {} during campaign", player.getName(), faction.getName());
     return factionService.addMemberToFaction(faction.getId(), player.getId());
   }
 
@@ -54,7 +56,7 @@ public class CampaignFactionService {
    * @param campaign The active campaign.
    * @return The updated faction (now without the player).
    */
-  public Optional<Faction> betrayFaction(@NonNull Campaign campaign) {
+  public Optional<Faction> betrayFaction(@NonNull final Campaign campaign) {
     Wrestler player = campaign.getWrestler();
     Faction currentFaction = player.getFaction();
 
@@ -78,7 +80,8 @@ public class CampaignFactionService {
    * @param recruit The wrestler to recruit.
    * @return The updated faction.
    */
-  public Optional<Faction> recruitToFaction(@NonNull Campaign campaign, @NonNull Wrestler recruit) {
+  public Optional<Faction> recruitToFaction(
+      @NonNull final Campaign campaign, @NonNull final Wrestler recruit) {
     Wrestler player = campaign.getWrestler();
     Faction currentFaction = player.getFaction();
 

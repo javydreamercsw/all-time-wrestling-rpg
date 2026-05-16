@@ -44,7 +44,7 @@ public class TestUserInitializer implements CommandLineRunner {
 
   @Override
   @Transactional // Ensure transactions are handled for data persistence
-  public void run(String... args) throws Exception {
+  public void run(final String... args) throws Exception {
     // Create roles if they don't exist
     Role adminRole =
         roleRepository

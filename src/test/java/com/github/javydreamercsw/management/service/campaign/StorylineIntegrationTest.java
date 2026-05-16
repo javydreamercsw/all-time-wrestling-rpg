@@ -93,7 +93,7 @@ class StorylineIntegrationTest {
   private CampaignService campaignService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     campaignService =
         new CampaignService(
             campaignRepository,
@@ -170,7 +170,7 @@ class StorylineIntegrationTest {
   @Test
   void testAdvanceToAiStoryline() {
     Wrestler wrestler = new Wrestler();
-    wrestler.setReigns(new ArrayList<>());
+    wrestler.setReigns(new java.util.LinkedHashSet<>());
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(wrestler);
@@ -205,7 +205,7 @@ class StorylineIntegrationTest {
   @Test
   void testAdvanceToAiStoryline_WithMissingContext() {
     Wrestler wrestler = new Wrestler();
-    wrestler.setReigns(new ArrayList<>());
+    wrestler.setReigns(new java.util.LinkedHashSet<>());
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(wrestler);

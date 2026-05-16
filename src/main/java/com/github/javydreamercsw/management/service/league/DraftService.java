@@ -85,18 +85,18 @@ public class DraftService {
   private final InboxEventType draftStartedEventType;
 
   public DraftService(
-      DraftRepository draftRepository,
-      DraftPickRepository draftPickRepository,
-      LeagueMembershipRepository leagueMembershipRepository,
-      LeagueRosterRepository leagueRosterRepository,
-      LeagueRepository leagueRepository,
-      WrestlerRepository wrestlerRepository,
-      AccountRepository accountRepository,
-      WrestlerContractRepository contractRepository,
-      SalaryCalculator salaryCalculator,
-      DraftBroadcaster draftBroadcaster,
-      InboxService inboxService,
-      @Qualifier("DRAFT_STARTED") InboxEventType draftStartedEventType) {
+      final DraftRepository draftRepository,
+      final DraftPickRepository draftPickRepository,
+      final LeagueMembershipRepository leagueMembershipRepository,
+      final LeagueRosterRepository leagueRosterRepository,
+      final LeagueRepository leagueRepository,
+      final WrestlerRepository wrestlerRepository,
+      final AccountRepository accountRepository,
+      final WrestlerContractRepository contractRepository,
+      final SalaryCalculator salaryCalculator,
+      final DraftBroadcaster draftBroadcaster,
+      final InboxService inboxService,
+      @Qualifier("DRAFT_STARTED") final InboxEventType draftStartedEventType) {
     this.draftRepository = draftRepository;
     this.draftPickRepository = draftPickRepository;
     this.leagueMembershipRepository = leagueMembershipRepository;
@@ -112,7 +112,7 @@ public class DraftService {
   }
 
   @Transactional
-  public Draft startDraft(League league) {
+  public Draft startDraft(final League league) {
     if (draftRepository.findByLeague(league).isPresent()) {
       throw new IllegalStateException("Draft already exists for this league.");
     }
@@ -136,8 +136,11 @@ public class DraftService {
     draft.setCurrentPickNumber(1);
     draft.setDirection(1); // Start going forward
 
-    // Set first player (sorted by ID)
-    players.sort(Comparator.comparing(m -> m.getMember().getId()));
+    // Commissioner-player picks first; within the same role, sort by account ID for stability
+    players.sort(
+        Comparator.<LeagueMembership>comparingInt(
+                m -> m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER_PLAYER ? 0 : 1)
+            .thenComparingLong(m -> m.getMember().getId()));
     draft.setCurrentTurnUser(players.get(0).getMember());
 
     Draft saved = draftRepository.save(draft);
@@ -161,7 +164,7 @@ public class DraftService {
   }
 
   @Transactional
-  public DraftPick makePick(Draft draft, Account user, Wrestler wrestler) {
+  public DraftPick makePick(final Draft draft, final Account user, final Wrestler wrestler) {
     if (draft.getStatus() != Draft.DraftStatus.ACTIVE) {
       throw new IllegalStateException("Draft is not active.");
     }
@@ -189,11 +192,20 @@ public class DraftService {
     // Create Contract
     League league = draft.getLeague();
     int duration = league.getDurationWeeks() != null ? league.getDurationWeeks() : 12;
+    Long universeId = league.getUniverse() != null ? league.getUniverse().getId() : null;
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState salaryState =
+        wrestler
+            .getState(universeId)
+            .or(wrestler::getDefaultState)
+            .orElseGet(
+                () ->
+                    com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
+                        .build());
     com.github.javydreamercsw.management.domain.wrestler.WrestlerContract contract =
         com.github.javydreamercsw.management.domain.wrestler.WrestlerContract.builder()
             .wrestler(wrestler)
             .league(league)
-            .salaryPerShow(salaryCalculator.calculateWeeklySalary(wrestler))
+            .salaryPerShow(salaryCalculator.calculateWeeklySalary(wrestler, salaryState))
             .durationWeeks(duration)
             .isInitialDraft(true)
             .isActive(true)
@@ -228,7 +240,7 @@ public class DraftService {
     return pick;
   }
 
-  private void advanceTurn(Draft draft) {
+  private void advanceTurn(final Draft draft) {
     League league = draft.getLeague();
     List<LeagueMembership> players =
         leagueMembershipRepository.findByLeagueAndRoleIn(
@@ -244,16 +256,18 @@ public class DraftService {
     int totalPicks = draft.getCurrentPickNumber();
     int maxTotalPicks = players.size() * league.getMaxPicksPerPlayer();
 
-    log.info(
+    log.debug(
         "Checking draft progress: Pick {}/{}, Available Wrestlers: {}",
         totalPicks,
         maxTotalPicks,
         availableWrestlers);
 
     if (totalPicks >= maxTotalPicks || availableWrestlers == 0) {
-      log.info(
-          "Draft completing. Reason: totalPicks ({}) >= maxTotalPicks ({}) OR availableWrestlers"
-              + " ({}) == 0",
+      log.debug(
+          """
+          Draft completing. Reason: totalPicks ({}) >= maxTotalPicks ({}) OR availableWrestlers\
+           ({}) == 0\
+          """,
           totalPicks,
           maxTotalPicks,
           availableWrestlers);
@@ -289,7 +303,7 @@ public class DraftService {
     draftRepository.save(draft);
   }
 
-  private void completeDraft(Draft draft) {
+  private void completeDraft(final Draft draft) {
     draft.setStatus(Draft.DraftStatus.COMPLETED);
     draft.setCurrentTurnUser(null);
     draftRepository.save(draft);
@@ -299,7 +313,7 @@ public class DraftService {
     leagueRepository.save(league);
   }
 
-  private long countAvailableWrestlers(League league) {
+  private long countAvailableWrestlers(final League league) {
     Set<Long> draftedWrestlerIds =
         leagueRosterRepository.findByLeague(league).stream()
             .map(r -> r.getWrestler().getId())

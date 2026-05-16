@@ -342,7 +342,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Merge release branch
+      - name: Merge to main
         run: |
           git checkout main
           git fetch origin release/${{ github.event.inputs.version }}

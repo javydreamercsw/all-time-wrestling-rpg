@@ -35,7 +35,7 @@ public class HolidayService {
   private final HolidayRepository repository;
   private static final int PROXIMITY_DAYS = 3;
 
-  public HolidayService(HolidayRepository repository) {
+  public HolidayService(final HolidayRepository repository) {
     this.repository = repository;
   }
 
@@ -43,15 +43,15 @@ public class HolidayService {
     return repository.findAll();
   }
 
-  public Holiday save(Holiday holiday) {
+  public Holiday save(final Holiday holiday) {
     return repository.save(holiday);
   }
 
-  public void delete(Holiday holiday) {
+  public void delete(final Holiday holiday) {
     repository.delete(holiday);
   }
 
-  public Optional<String> getHolidayTheme(Instant date) {
+  public Optional<String> getHolidayTheme(final Instant date) {
     LocalDate localDate = date.atZone(ZoneId.of("UTC")).toLocalDate();
 
     for (Holiday holiday : findAll()) {

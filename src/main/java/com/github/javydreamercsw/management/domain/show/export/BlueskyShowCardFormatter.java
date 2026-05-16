@@ -32,7 +32,7 @@ public class BlueskyShowCardFormatter extends AbstractSocialMediaFormatter {
   }
 
   @Override
-  protected String limitLength(String text) {
+  protected String limitLength(final String text) {
     if (text.length() > 300) {
       return text.substring(0, 297) + "...";
     }

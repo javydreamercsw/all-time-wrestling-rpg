@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
@@ -102,6 +103,11 @@ public abstract class AbstractSyncTest {
   @Mock protected NpcRepository npcRepository;
   @Mock protected SeasonRepository seasonRepository;
   @Mock protected SegmentRepository segmentRepository;
+
+  @Mock
+  protected com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
+
   @Mock protected WrestlerService wrestlerService;
   @Mock protected TierRecalculationService tierRecalculationService;
   @Mock protected WrestlerAlignmentRepository wrestlerAlignmentRepository;
@@ -125,7 +131,7 @@ public abstract class AbstractSyncTest {
   }
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     lenient().when(syncProperties.isEnabled()).thenReturn(true);
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);
     lenient().when(syncProperties.isEntityEnabled(anyString())).thenReturn(true);
@@ -162,6 +168,63 @@ public abstract class AbstractSyncTest {
 
     lenient().when(syncLockService.acquireLock(anyString())).thenReturn(true);
 
+    try {
+      lenient()
+          .when(
+              syncTransactionManager.executeInTransaction(
+                  anyString(),
+                  anyString(),
+                  any(SyncTransactionManager.TransactionalSyncOperation.class)))
+          .thenAnswer(
+              invocation -> {
+                SyncTransactionManager.TransactionalSyncOperation<?> op = invocation.getArgument(2);
+                return op.execute(null);
+              });
+      lenient()
+          .when(
+              syncTransactionManager.executeWithSavepoints(
+                  anyString(),
+                  anyString(),
+                  any(SyncTransactionManager.SavepointSyncOperation.class)))
+          .thenAnswer(
+              invocation -> {
+                SyncTransactionManager.SavepointSyncOperation<?> op = invocation.getArgument(2);
+                return op.execute(null);
+              });
+    } catch (Exception e) {
+      log.error("Failed to stub SyncTransactionManager", e);
+    }
+
+    lenient()
+        .when(wrestlerService.getOrCreateState(any(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+                  new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+              Object wrestlerArg = invocation.getArgument(0);
+              if (wrestlerArg instanceof Long id) {
+                com.github.javydreamercsw.management.domain.wrestler.Wrestler w =
+                    new com.github.javydreamercsw.management.domain.wrestler.Wrestler();
+                w.setId(id);
+                state.setWrestler(w);
+              } else if (wrestlerArg
+                  instanceof com.github.javydreamercsw.management.domain.wrestler.Wrestler w) {
+                state.setWrestler(w);
+              }
+              return state;
+            });
+
+    lenient()
+        .when(
+            wrestlerRepository.save(
+                any(com.github.javydreamercsw.management.domain.wrestler.Wrestler.class)))
+        .thenAnswer(i -> i.getArgument(0));
+    lenient()
+        .when(
+            wrestlerRepository.saveAndFlush(
+                any(com.github.javydreamercsw.management.domain.wrestler.Wrestler.class)))
+        .thenAnswer(i -> i.getArgument(0));
+
     syncServiceDependencies =
         new SyncServiceDependencies(
             progressTracker,
@@ -183,6 +246,7 @@ public abstract class AbstractSyncTest {
             syncLockService,
             factionRepository,
             wrestlerRepository,
+            wrestlerService,
             injuryRepository,
             injuryTypeRepository,
             seasonRepository,

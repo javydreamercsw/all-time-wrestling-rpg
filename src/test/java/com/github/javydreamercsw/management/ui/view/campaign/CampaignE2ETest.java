@@ -55,7 +55,7 @@ class CampaignE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   @Override
-  public void setup(org.junit.jupiter.api.TestInfo testInfo) {
+  public void setup(final org.junit.jupiter.api.TestInfo testInfo) throws Exception {
     super.setup(testInfo);
 
     // Initialize campaign for the admin user if it doesn't exist
@@ -81,8 +81,7 @@ class CampaignE2ETest extends AbstractE2ETest {
   @Test
   void testCampaignFlow() {
     // 1. Navigate to Campaign Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // Verify key elements
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Chapter"));
@@ -141,8 +140,7 @@ class CampaignE2ETest extends AbstractE2ETest {
     campaignRepository.save(campaign);
 
     // 2. Navigate to Campaign Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
     takeSequencedScreenshot("campaign-dashboard-for-upgrades");
 
     // 3. Verify Upgrade section is visible
@@ -165,7 +163,7 @@ class CampaignE2ETest extends AbstractE2ETest {
     // assertFalse(driver.getPageSource().contains("Available Skill Upgrades"));
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
   }
 }

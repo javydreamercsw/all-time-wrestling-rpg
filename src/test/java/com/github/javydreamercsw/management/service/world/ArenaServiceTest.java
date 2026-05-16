@@ -49,7 +49,7 @@ class ArenaServiceTest {
   private List<Arena> testArenas;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     Location loc1 = Location.builder().name("Location1").build();
     Location loc2 = Location.builder().name("Location2").build();
     Location loc3 = Location.builder().name("Location3").build();

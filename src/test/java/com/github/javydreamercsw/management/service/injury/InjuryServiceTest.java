@@ -23,8 +23,12 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import java.time.Clock;
@@ -44,15 +48,24 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 
 /** Unit tests for InjuryService. Tests the ATW RPG injury management functionality. */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("InjuryService Tests")
 class InjuryServiceTest {
 
   @Mock private InjuryRepository injuryRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private UniverseRepository universeRepository;
+  @Mock private WrestlerStateRepository wrestlerStateRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+
   @Mock private Clock clock;
   @Mock private Random random;
   @Mock private ApplicationEventPublisher eventPublisher;
@@ -62,9 +75,12 @@ class InjuryServiceTest {
   private Clock fixedClock;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
     lenient().when(clock.instant()).thenReturn(fixedClock.instant());
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), anyLong()))
+        .thenReturn(new com.github.javydreamercsw.management.domain.wrestler.WrestlerState());
   }
 
   @Test
@@ -72,7 +88,6 @@ class InjuryServiceTest {
   void shouldCreateNewInjuryForWrestler() {
     // Given
     Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
     when(injuryRepository.saveAndFlush(any(Injury.class)))
         .thenAnswer(
             invocation -> {
@@ -85,7 +100,12 @@ class InjuryServiceTest {
     // When
     Optional<Injury> result =
         injuryService.createInjury(
-            1L, "Knee Injury", "Torn ACL", InjurySeverity.SEVERE, "Occurred during segment");
+            wrestler.getId(),
+            1L,
+            "Knee Injury",
+            "Torn ACL",
+            InjurySeverity.SEVERE,
+            "Occurred during segment");
 
     // Then
     assertThat(result).isPresent();
@@ -127,13 +147,18 @@ class InjuryServiceTest {
   })
   @DisplayName("Should create injury from bumps with correct severity based on tier and roll")
   void testCreateInjuryFromBumpsSeverity(
-      WrestlerTier tier, int roll, InjurySeverity expectedSeverity) {
+      final WrestlerTier tier, final int roll, final InjurySeverity expectedSeverity) {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
-    wrestler.setTier(tier);
-    wrestler.setBumps(3);
+    WrestlerState state =
+        WrestlerState.builder().wrestler(wrestler).universe(universe).tier(tier).bumps(3).build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+
     Assertions.assertNotNull(wrestler.getId());
-    when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
     when(random.nextInt(100)).thenReturn(roll - 1); // Control the d100 roll
     when(random.nextInt(4)).thenReturn(0); // For injury name generation
 
@@ -141,7 +166,7 @@ class InjuryServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // When
-    Optional<Injury> result = injuryService.createInjuryFromBumps(wrestler.getId());
+    Optional<Injury> result = injuryService.createInjuryFromBumps(wrestler.getId(), 1L);
 
     // Then
     Assertions.assertTrue(result.isPresent());
@@ -152,9 +177,21 @@ class InjuryServiceTest {
   @DisplayName("Should attempt healing with a random roll")
   void shouldAttemptHealingWithRandomRoll() {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
+    WrestlerState state =
+        WrestlerState.builder().wrestler(wrestler).universe(universe).fans(50_000L).build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+    when(wrestlerStateRepository.findByWrestlerAndUniverse(
+            any(Wrestler.class), any(Universe.class)))
+        .thenReturn(Optional.of(state));
+
     Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
+    when(injuryRepository.saveAndFlush(any(Injury.class))).thenReturn(injury);
     when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(wrestler);
     when(random.nextInt(6)).thenReturn(5); // Roll a 6 (5+1)
 
@@ -170,10 +207,16 @@ class InjuryServiceTest {
   @DisplayName("Should create injury from bumps")
   void shouldCreateInjuryFromBumps() {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
-    wrestler.setBumps(3); // Set bumps to trigger injury creation
+    WrestlerState state =
+        WrestlerState.builder().wrestler(wrestler).universe(universe).bumps(3).build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+
     Assertions.assertNotNull(wrestler.getId());
-    when(wrestlerRepository.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
 
     when(injuryRepository.saveAndFlush(any(Injury.class)))
         .thenAnswer(
@@ -184,14 +227,13 @@ class InjuryServiceTest {
             });
 
     // When
-    Optional<Injury> result = injuryService.createInjuryFromBumps(wrestler.getId());
+    Optional<Injury> result = injuryService.createInjuryFromBumps(wrestler.getId(), 1L);
 
     // Then
     assertThat(result).isNotNull();
     Assertions.assertTrue(result.isPresent());
     assertThat(result.get().getWrestler()).isEqualTo(wrestler);
     assertThat(result.get().getIsActive()).isTrue();
-    assertThat(wrestler.getInjuries()).contains(result.get());
     verify(injuryRepository).saveAndFlush(any(Injury.class));
   }
 
@@ -199,11 +241,21 @@ class InjuryServiceTest {
   @DisplayName("Should successfully heal injury with good dice roll")
   void shouldSuccessfullyHealInjuryWithGoodDiceRoll() {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
+    WrestlerState state =
+        WrestlerState.builder().wrestler(wrestler).universe(universe).fans(50_000L).build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+    when(wrestlerStateRepository.findByWrestlerAndUniverse(
+            any(Wrestler.class), any(Universe.class)))
+        .thenReturn(Optional.of(state));
+
     Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
 
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(wrestler);
     when(injuryRepository.saveAndFlush(any(Injury.class))).thenReturn(injury);
 
     // When - Roll 6 (should succeed for MINOR injury with threshold 3)
@@ -215,8 +267,8 @@ class InjuryServiceTest {
     assertThat(result.diceRoll()).isEqualTo(6);
     assertThat(result.fansSpent()).isTrue();
     assertThat(injury.getIsActive()).isFalse();
-    assertThat(wrestler.getFans()).isEqualTo(45_000L); // 50k - 5k healing cost
-    verify(wrestlerRepository).saveAndFlush(wrestler);
+    assertThat(state.getFans()).isEqualTo(45_000L); // 50k - 5k healing cost
+    verify(wrestlerStateRepository).saveAndFlush(state);
     verify(injuryRepository).saveAndFlush(injury);
   }
 
@@ -224,11 +276,21 @@ class InjuryServiceTest {
   @DisplayName("Should fail to heal injury with bad dice roll")
   void shouldFailToHealInjuryWithBadDiceRoll() {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
+    WrestlerState state =
+        WrestlerState.builder().wrestler(wrestler).universe(universe).fans(50_000L).build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+    when(wrestlerStateRepository.findByWrestlerAndUniverse(
+            any(Wrestler.class), any(Universe.class)))
+        .thenReturn(Optional.of(state));
+
     Injury injury = createInjury(wrestler, InjurySeverity.MINOR);
 
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(wrestler);
 
     // When - Roll 2 (should fail for MINOR injury with threshold 3)
     InjuryService.HealingResult result = injuryService.attemptHealing(1L, 2);
@@ -239,15 +301,26 @@ class InjuryServiceTest {
     assertThat(result.diceRoll()).isEqualTo(2);
     assertThat(result.fansSpent()).isTrue();
     assertThat(injury.getIsActive()).isTrue(); // Still active
-    assertThat(wrestler.getFans()).isEqualTo(45_000L); // Fans still spent
-    verify(wrestlerRepository).saveAndFlush(wrestler);
+    assertThat(state.getFans()).isEqualTo(45_000L); // Fans still spent
+    verify(wrestlerStateRepository).saveAndFlush(state);
   }
 
   @Test
   @DisplayName("Should fail healing when wrestler cannot afford cost")
   void shouldFailHealingWhenWrestlerCannotAffordCost() {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler wrestler = createWrestler("Poor Wrestler", 1_000L); // Only 1k fans
+    WrestlerState state =
+        WrestlerState.builder().wrestler(wrestler).universe(universe).fans(1_000L).build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+    when(wrestlerStateRepository.findByWrestlerAndUniverse(
+            any(Wrestler.class), any(Universe.class)))
+        .thenReturn(Optional.of(state));
+
     Injury injury = createInjury(wrestler, InjurySeverity.MINOR); // Costs 5k to heal
 
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
@@ -265,11 +338,21 @@ class InjuryServiceTest {
   @DisplayName("Should force heal injury as admin")
   void shouldForceHealInjuryAsAdmin() {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
+    WrestlerState state =
+        WrestlerState.builder().wrestler(wrestler).universe(universe).fans(50_000L).build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+    when(wrestlerStateRepository.findByWrestlerAndUniverse(
+            any(Wrestler.class), any(Universe.class)))
+        .thenReturn(Optional.of(state));
+
     Injury injury = createInjury(wrestler, InjurySeverity.CRITICAL); // Requires 6 to heal
 
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(injury));
-    when(wrestlerRepository.saveAndFlush(any(Wrestler.class))).thenReturn(wrestler);
     when(injuryRepository.saveAndFlush(any(Injury.class))).thenReturn(injury);
 
     // When
@@ -281,25 +364,36 @@ class InjuryServiceTest {
     assertThat(result.diceRoll()).isEqualTo(6);
     assertThat(result.fansSpent()).isTrue();
     assertThat(injury.getIsActive()).isFalse();
-    verify(wrestlerRepository).saveAndFlush(wrestler);
+    verify(wrestlerStateRepository).saveAndFlush(state);
     verify(injuryRepository).saveAndFlush(injury);
   }
 
   @Test
   void testCreateInjuryFromBumps_PublishesEvent() {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
-    wrestler.setTier(WrestlerTier.ROOKIE);
+    WrestlerState state =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .universe(universe)
+            .tier(WrestlerTier.ROOKIE)
+            .bumps(3)
+            .build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+
     Injury injury = new Injury();
     injury.setId(1L);
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
     when(injuryRepository.saveAndFlush(any(Injury.class))).thenReturn(injury);
     when(random.nextInt(100))
         .thenReturn(10); // For getRandomInjurySeverityForWrestler to return MINOR
 
     // When
-    injuryService.createInjuryFromBumps(1L);
+    injuryService.createInjuryFromBumps(1L, 1L);
 
     // Then
     ArgumentCaptor<WrestlerInjuryEvent> eventCaptor =
@@ -310,17 +404,30 @@ class InjuryServiceTest {
   @Test
   void testAttemptHealing_PublishesEvent() {
     // Given
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Wrestler mockWrestler = mock(Wrestler.class);
-    when(mockWrestler.canAfford(anyLong())).thenReturn(true);
-    when(mockWrestler.spendFans(anyLong())).thenReturn(true);
+    WrestlerState mockState = mock(WrestlerState.class);
+    when(mockWrestler.getState(anyLong())).thenReturn(Optional.of(mockState));
+    when(mockState.getFans()).thenReturn(1000L); // Add this stub
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(mockState));
+    when(wrestlerStateRepository.findByWrestlerAndUniverse(
+            any(Wrestler.class), any(Universe.class)))
+        .thenReturn(Optional.of(mockState));
+    when(mockState.canAfford(anyLong())).thenReturn(true);
 
     Injury mockInjury = mock(Injury.class);
     InjurySeverity mockInjurySeverity = mock(InjurySeverity.class);
     when(mockInjury.canBeHealed()).thenReturn(true);
     when(mockInjury.getHealingCost()).thenReturn(100L);
-    doReturn(mockWrestler).when(mockInjury).getWrestler(); // Crucial line
+    doReturn(mockWrestler).when(mockInjury).getWrestler();
+    when(mockInjury.getUniverse()).thenReturn(universe);
     when(mockInjury.getSeverity()).thenReturn(mockInjurySeverity);
     when(mockInjurySeverity.isHealingSuccessful(anyInt())).thenReturn(true);
+    when(mockInjurySeverity.getHealingSuccessThreshold())
+        .thenReturn(3); // Consistent return for log message
 
     when(injuryRepository.findById(1L)).thenReturn(Optional.of(mockInjury));
 
@@ -333,21 +440,49 @@ class InjuryServiceTest {
     verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
   }
 
-  private Wrestler createWrestler(@NonNull String name, @NonNull Long fans) {
-    Wrestler wrestler = Wrestler.builder().build();
+  private Wrestler createWrestler(String name, Long fans) {
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
+    Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName(name);
-    wrestler.setFans(fans);
+    WrestlerState state =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .universe(universe) // Add universe to state
+            .fans(fans)
+            .tier(WrestlerTier.fromFanCount(fans))
+            .build();
+    wrestler.setWrestlerStates(
+        new java.util.LinkedHashSet<>(java.util.List.of(state))); // Link state to wrestler
+
+    lenient().when(wrestlerRepository.findById(anyLong())).thenReturn(Optional.of(wrestler));
+    lenient().when(universeRepository.findById(anyLong())).thenReturn(Optional.of(universe));
+    lenient()
+        .when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(state));
+    lenient().when(wrestlerService.getOrCreateState(anyLong(), anyLong())).thenReturn(state);
+    lenient()
+        .when(
+            wrestlerStateRepository.findByWrestlerAndUniverse(
+                any(Wrestler.class), any(Universe.class)))
+        .thenReturn(Optional.of(state));
+
     wrestler.setStartingHealth(15);
     wrestler.setIsPlayer(true);
-    wrestler.setTier(WrestlerTier.fromFanCount(fans));
     return wrestler;
   }
 
-  private Injury createInjury(@NonNull Wrestler wrestler, @NonNull InjurySeverity severity) {
+  private Injury createInjury(
+      @NonNull final Wrestler wrestler, @NonNull final InjurySeverity severity) {
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     Injury injury = new Injury();
     injury.setId(1L);
     injury.setWrestler(wrestler);
+    injury.setUniverse(universe); // Add universe to injury
     injury.setName("Test Injury");
     injury.setDescription("Test injury description");
     injury.setSeverity(severity);

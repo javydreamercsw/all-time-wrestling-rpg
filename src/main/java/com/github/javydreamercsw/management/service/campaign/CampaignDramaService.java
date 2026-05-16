@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -43,6 +44,7 @@ public class CampaignDramaService {
   private final DramaEventService dramaEventService;
   private final WrestlerRepository wrestlerRepository;
   private final CampaignService campaignService;
+  private final UniverseContextService universeContextService;
   private final Random random;
 
   /**
@@ -51,7 +53,7 @@ public class CampaignDramaService {
    * @param campaign The campaign to check.
    * @return Optional triggered event.
    */
-  public Optional<DramaEvent> checkForStoryEvents(@NonNull Campaign campaign) {
+  public Optional<DramaEvent> checkForStoryEvents(@NonNull final Campaign campaign) {
     CampaignState state = campaign.getState();
     Wrestler player = campaign.getWrestler();
 
@@ -93,7 +95,7 @@ public class CampaignDramaService {
    * @param campaign The campaign.
    * @return The created DramaEvent.
    */
-  public Optional<DramaEvent> triggerRivalEvent(@NonNull Campaign campaign) {
+  public Optional<DramaEvent> triggerRivalEvent(@NonNull final Campaign campaign) {
     Wrestler player = campaign.getWrestler();
 
     // Find a suitable rival
@@ -107,13 +109,19 @@ public class CampaignDramaService {
     String description =
         "You encounter your rival " + rival.getName() + " backstage. Tensions are high.";
 
+    Long universeId =
+        campaign.getUniverse() != null
+            ? campaign.getUniverse().getId()
+            : universeContextService.getCurrentUniverseId();
+
     return dramaEventService.createDramaEvent(
         player.getId(),
         rival.getId(),
         DramaEventType.CAMPAIGN_RIVAL,
         DramaEventSeverity.NEGATIVE, // Rivals usually mean trouble
         title,
-        description);
+        description,
+        universeId);
   }
 
   /**
@@ -122,7 +130,7 @@ public class CampaignDramaService {
    * @param campaign The campaign.
    * @return The created DramaEvent.
    */
-  public Optional<DramaEvent> triggerOutsiderEvent(@NonNull Campaign campaign) {
+  public Optional<DramaEvent> triggerOutsiderEvent(@NonNull final Campaign campaign) {
     Wrestler player = campaign.getWrestler();
 
     // Find a suitable outsider (someone not in the same faction, or high tier?)
@@ -136,16 +144,22 @@ public class CampaignDramaService {
     String description =
         "A mysterious outsider, " + outsider.getName() + ", has arrived to challenge you.";
 
+    Long universeId =
+        campaign.getUniverse() != null
+            ? campaign.getUniverse().getId()
+            : universeContextService.getCurrentUniverseId();
+
     return dramaEventService.createDramaEvent(
         player.getId(),
         outsider.getId(),
         DramaEventType.CAMPAIGN_OUTSIDER,
         DramaEventSeverity.MAJOR, // High stakes
         title,
-        description);
+        description,
+        universeId);
   }
 
-  private Wrestler findRival(@NonNull Wrestler player) {
+  private Wrestler findRival(@NonNull final Wrestler player) {
     List<Long> allIds = wrestlerRepository.findAllIds();
     // Filter out player
     List<Long> opponentIds = allIds.stream().filter(id -> !id.equals(player.getId())).toList();

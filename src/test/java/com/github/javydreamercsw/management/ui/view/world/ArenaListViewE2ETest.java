@@ -49,7 +49,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
   @Autowired private LocationRepository locationRepository;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     cleanupLeagues();
     arenaRepository.deleteAll();
     locationRepository.deleteAll();
@@ -59,7 +59,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
   void testCreateArena() {
     Location location = locationService.createLocation("Arena City", "Desc", null, Set.of());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/arena-list");
+    navigateTo("arena-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Get the initial size of the grid
@@ -107,7 +107,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("E2E Test Arena"));
+                .anyMatch(it -> "E2E Test Arena".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -123,7 +123,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         arenaService.createArena(
             "Edit Me Arena", "Desc", location.getId(), 5000, Arena.AlignmentBias.NEUTRAL, Set.of());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/arena-list");
+    navigateTo("arena-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to load
@@ -153,7 +153,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Edit Me Arena Updated"));
+                .anyMatch(it -> "Edit Me Arena Updated".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -161,7 +161,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
 
     assertTrue(
         arenaRepository.findAll().stream()
-            .anyMatch(a -> a.getName().equals("Edit Me Arena Updated")));
+            .anyMatch(a -> "Edit Me Arena Updated".equals(a.getName())));
   }
 
   @Test
@@ -176,7 +176,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
             Arena.AlignmentBias.NEUTRAL,
             Set.of());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/arena-list");
+    navigateTo("arena-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to load
@@ -202,7 +202,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> it.getText().equals("Delete Me Arena"));
+                .noneMatch(it -> "Delete Me Arena".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }

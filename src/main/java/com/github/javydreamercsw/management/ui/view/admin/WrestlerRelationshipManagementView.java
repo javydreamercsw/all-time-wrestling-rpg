@@ -55,9 +55,9 @@ public class WrestlerRelationshipManagementView extends VerticalLayout {
   private final Grid<WrestlerRelationship> grid = new Grid<>(WrestlerRelationship.class, false);
 
   public WrestlerRelationshipManagementView(
-      WrestlerRelationshipService relationshipService,
-      WrestlerRelationshipRepository relationshipRepository,
-      WrestlerService wrestlerService) {
+      final WrestlerRelationshipService relationshipService,
+      final WrestlerRelationshipRepository relationshipRepository,
+      final WrestlerService wrestlerService) {
     this.relationshipService = relationshipService;
     this.relationshipRepository = relationshipRepository;
     this.wrestlerService = wrestlerService;
@@ -97,7 +97,7 @@ public class WrestlerRelationshipManagementView extends VerticalLayout {
     add(grid);
   }
 
-  private HorizontalLayout createActionButtons(WrestlerRelationship relationship) {
+  private HorizontalLayout createActionButtons(final WrestlerRelationship relationship) {
     Button editButton = new Button(new Icon(VaadinIcon.EDIT));
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.addClickListener(e -> openRelationshipDialog(relationship));
@@ -114,7 +114,7 @@ public class WrestlerRelationshipManagementView extends VerticalLayout {
     return new HorizontalLayout(editButton, deleteButton);
   }
 
-  private void openRelationshipDialog(WrestlerRelationship relationship) {
+  private void openRelationshipDialog(final WrestlerRelationship relationship) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle(relationship == null ? "Add Relationship" : "Edit Relationship");
 

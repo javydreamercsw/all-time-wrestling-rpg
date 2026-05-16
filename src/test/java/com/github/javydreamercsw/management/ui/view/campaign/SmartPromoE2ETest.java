@@ -126,8 +126,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
   @Test
   void testSmartPromoFlow() {
     // 1. Navigate to Backstage Actions
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/actions");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/actions");
     takeSequencedScreenshot("smart-promo-actions-initial");
 
     // 2. Click Promo action
@@ -165,7 +164,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
     takeSequencedScreenshot("smart-promo-back-to-actions");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
   }
 }

@@ -41,15 +41,18 @@ public class ApiDocumentationController {
 
   private final BuildProperties buildProperties;
 
-  public ApiDocumentationController(@Autowired(required = false) BuildProperties buildProperties) {
+  public ApiDocumentationController(
+      @Autowired(required = false) final BuildProperties buildProperties) {
     this.buildProperties = buildProperties;
   }
 
   @Operation(
       summary = "Get API information",
       description =
-          "Returns comprehensive information about the API including version, capabilities, and"
-              + " endpoints")
+          """
+          Returns comprehensive information about the API including version, capabilities, and\
+           endpoints\
+          """)
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "API information retrieved successfully")

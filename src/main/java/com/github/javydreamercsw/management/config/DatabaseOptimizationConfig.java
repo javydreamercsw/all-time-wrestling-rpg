@@ -41,13 +41,13 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
   private final DataSource dataSource;
   private final JdbcTemplate jdbcTemplate;
 
-  public DatabaseOptimizationConfig(DataSource dataSource, JdbcTemplate jdbcTemplate) {
+  public DatabaseOptimizationConfig(final DataSource dataSource, final JdbcTemplate jdbcTemplate) {
     this.dataSource = dataSource;
     this.jdbcTemplate = jdbcTemplate;
   }
 
   @Override
-  public void run(ApplicationArguments args) throws Exception {
+  public void run(final ApplicationArguments args) throws Exception {
     // Run all post-startup tasks
     createDatabaseIndexes();
     optimizeConnectionSettings();
@@ -159,8 +159,8 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
 
           if (count != null && count > 1000) {
             String msg =
-                String.format(
-                    "⚡ Large table detected: %s (%d rows) - ensure proper indexing", table, count);
+                "⚡ Large table detected: %s (%d rows) - ensure proper indexing"
+                    .formatted(table, count);
             log.info(msg);
             warnings.add(msg);
           }

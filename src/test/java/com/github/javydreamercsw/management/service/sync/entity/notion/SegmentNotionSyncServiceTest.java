@@ -51,7 +51,7 @@ class SegmentNotionSyncServiceTest extends AbstractSyncTest {
   @Captor private ArgumentCaptor<Segment> segmentCaptor;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     segmentNotionSyncService =
         new SegmentNotionSyncService(segmentRepository, syncServiceDependencies, notionApiExecutor);

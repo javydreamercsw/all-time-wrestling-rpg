@@ -33,6 +33,7 @@ public class InboxItem extends AbstractEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter
   @Column(name = "inbox_item_id")
   private Long id;
 
@@ -56,11 +57,6 @@ public class InboxItem extends AbstractEntity<Long> {
       fetch = FetchType.EAGER)
   private List<InboxItemTarget> targets = new ArrayList<>();
 
-  @Override
-  public Long getId() {
-    return id;
-  }
-
   @PrePersist
   protected void onCreate() {
     if (eventTimestamp == null) {
@@ -68,7 +64,7 @@ public class InboxItem extends AbstractEntity<Long> {
     }
   }
 
-  public void addTarget(String targetId, InboxItemTarget.TargetType type) {
+  public void addTarget(final String targetId, final InboxItemTarget.TargetType type) {
     InboxItemTarget target = new InboxItemTarget();
     target.setInboxItem(this);
     target.setTargetId(targetId);
@@ -76,7 +72,7 @@ public class InboxItem extends AbstractEntity<Long> {
     targets.add(target);
   }
 
-  public void addTarget(String targetId) {
+  public void addTarget(final String targetId) {
     addTarget(targetId, InboxItemTarget.TargetType.ACCOUNT);
   }
 }

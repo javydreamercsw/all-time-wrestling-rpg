@@ -61,6 +61,10 @@ class SegmentSyncIT extends ManagementIntegrationTest {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private TransactionTemplate transactionTemplate;
   @MockitoBean private NotionHandler notionHandler;
+
+  @MockitoBean
+  private com.github.javydreamercsw.base.ai.notion.NotionPageDataExtractor notionPageDataExtractor;
+
   private SegmentPage segmentPage;
 
   private static MockedStatic<EnvironmentVariableUtil> mockedEnvironmentVariableUtil;
@@ -84,7 +88,7 @@ class SegmentSyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     segmentPage = Mockito.mock(SegmentPage.class);
   }
@@ -94,8 +98,10 @@ class SegmentSyncIT extends ManagementIntegrationTest {
   void shouldSyncSegmentsFromNotionToDatabaseSuccessfully() {
     // Given
     Wrestler wrestler1 = createTestWrestler("Wrestler 1");
+    wrestler1.setExternalId(UUID.randomUUID().toString());
     wrestlerRepository.saveAndFlush(wrestler1);
     Wrestler wrestler2 = createTestWrestler("Wrestler 2");
+    wrestler2.setExternalId(UUID.randomUUID().toString());
     wrestlerRepository.saveAndFlush(wrestler2);
 
     Show show = new Show();
@@ -106,13 +112,14 @@ class SegmentSyncIT extends ManagementIntegrationTest {
     ShowType showType = new ShowType();
     showType.setName("Test Show Type");
     showType.setDescription("A test show type");
-    showTypeRepository.save(showType);
+    showTypeRepository.saveAndFlush(showType);
     show.setType(showType);
-    showRepository.save(show);
+    showRepository.saveAndFlush(show);
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("Test Segment Type");
-    segmentTypeRepository.save(segmentType);
+    segmentType.setExternalId("test-segtype-id");
+    segmentTypeRepository.saveAndFlush(segmentType);
 
     String segmentId = UUID.randomUUID().toString();
     when(segmentPage.getId()).thenReturn(segmentId);
@@ -138,12 +145,25 @@ class SegmentSyncIT extends ManagementIntegrationTest {
                 "Winners",
                 wrestler1.getName(),
                 "Segment Type",
-                segmentType.getName(),
+                segmentType.getExternalId(),
                 "Date",
                 LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))));
 
     when(notionHandler.getDatabasePageIds("Segments")).thenReturn(List.of(segmentId));
     when(notionHandler.loadSegmentById(segmentId)).thenReturn(Optional.of(segmentPage));
+    // Mock convenience method used by service to load all segments
+    when(notionHandler.loadAllSegments()).thenReturn(List.of(segmentPage));
+
+    // Mock extractor behavior for relations and participants
+    when(notionPageDataExtractor.extractRelationId(segmentPage, "Shows"))
+        .thenReturn("test-show-id");
+    when(notionPageDataExtractor.extractRelationId(segmentPage, "Segment Type"))
+        .thenReturn(segmentType.getExternalId());
+    when(notionPageDataExtractor.extractRelationIds(segmentPage, "Participants"))
+        .thenReturn(List.of(wrestler1.getExternalId(), wrestler2.getExternalId()));
+    when(notionPageDataExtractor.extractRelationIds(segmentPage, "Winners"))
+        .thenReturn(List.of(wrestler1.getExternalId()));
+    when(notionPageDataExtractor.extractNameFromNotionPage(segmentPage)).thenReturn("Test Segment");
 
     // When
     BaseSyncService.SyncResult result =

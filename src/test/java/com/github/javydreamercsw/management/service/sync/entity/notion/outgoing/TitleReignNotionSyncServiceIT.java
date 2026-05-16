@@ -33,13 +33,11 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignNotionSyncService;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -63,11 +61,6 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
-
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
 
   @Test
   void testSyncToNotion() {
@@ -105,7 +98,7 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
     // Create a Title Reign
     TitleReign reign = new TitleReign();
     reign.setTitle(title);
-    reign.setChampions(List.of(wrestler));
+    reign.setChampions(new java.util.LinkedHashSet<>(java.util.List.of(wrestler)));
     reign.setReignNumber(1);
     reign.setStartDate(Instant.now());
     reign.setNotes("Historical first reign");
@@ -128,8 +121,8 @@ class TitleReignNotionSyncServiceIT extends ManagementIntegrationTest {
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
-        String.format(
-            "%s - Reign #%d (%s)", title.getName(), reign.getReignNumber(), wrestler.getName()),
+        "%s - Reign #%d (%s)"
+            .formatted(title.getName(), reign.getReignNumber(), wrestler.getName()),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
         title.getExternalId(),

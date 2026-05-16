@@ -24,7 +24,7 @@ import org.springframework.context.ApplicationEvent;
 public class DramaEventCreatedEvent extends ApplicationEvent {
   private final DramaEvent dramaEvent;
 
-  public DramaEventCreatedEvent(Object source, DramaEvent dramaEvent) {
+  public DramaEventCreatedEvent(final Object source, final DramaEvent dramaEvent) {
     super(source);
     this.dramaEvent = dramaEvent;
   }

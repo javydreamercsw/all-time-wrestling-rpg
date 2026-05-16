@@ -84,7 +84,7 @@ class InjuryTypeSyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     injuryPage1 = Mockito.mock(InjuryPage.class);
     injuryPage2 = Mockito.mock(InjuryPage.class);
@@ -155,7 +155,7 @@ class InjuryTypeSyncIT extends ManagementIntegrationTest {
 
     InjuryType headInjury =
         allInjuryTypes.stream()
-            .filter(it -> it.getInjuryName().equals("Head Injury"))
+            .filter(it -> "Head Injury".equals(it.getInjuryName()))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Head Injury not found"));
     assertThat(headInjury.getExternalId()).isEqualTo(injury1Id);

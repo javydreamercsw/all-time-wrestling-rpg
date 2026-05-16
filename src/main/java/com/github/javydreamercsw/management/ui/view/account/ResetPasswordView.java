@@ -42,7 +42,7 @@ public class ResetPasswordView extends Main implements BeforeEnterObserver {
   private String token;
 
   @Autowired
-  public ResetPasswordView(PasswordResetService passwordResetService) {
+  public ResetPasswordView(final PasswordResetService passwordResetService) {
     this.passwordResetService = passwordResetService;
     VerticalLayout layout = new VerticalLayout();
     layout.setAlignItems(VerticalLayout.Alignment.CENTER);
@@ -50,7 +50,7 @@ public class ResetPasswordView extends Main implements BeforeEnterObserver {
   }
 
   @Override
-  public void beforeEnter(BeforeEnterEvent event) {
+  public void beforeEnter(final BeforeEnterEvent event) {
     Map<String, List<String>> parameters = event.getLocation().getQueryParameters().getParameters();
     if (parameters.containsKey("token")) {
       token = parameters.get("token").get(0);

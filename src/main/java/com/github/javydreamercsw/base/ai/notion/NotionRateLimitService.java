@@ -70,7 +70,8 @@ public class NotionRateLimitService {
    * @return true if permit was acquired, false if timeout occurred
    * @throws InterruptedException if interrupted while waiting
    */
-  public boolean tryAcquirePermit(long timeout, TimeUnit unit) throws InterruptedException {
+  public boolean tryAcquirePermit(final long timeout, final TimeUnit unit)
+      throws InterruptedException {
     return permits.tryAcquire(timeout, unit);
   }
 
@@ -81,7 +82,7 @@ public class NotionRateLimitService {
    * @param retryAfterSeconds the Retry-After value from the 429 response, or 0 if not available
    * @throws InterruptedException if interrupted while waiting
    */
-  public void handle429Response(int retryAfterSeconds) throws InterruptedException {
+  public void handle429Response(final int retryAfterSeconds) throws InterruptedException {
     long delayMs;
 
     if (retryAfterSeconds > 0) {

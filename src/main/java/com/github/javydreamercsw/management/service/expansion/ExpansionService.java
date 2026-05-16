@@ -55,7 +55,7 @@ public class ExpansionService {
     return expansions;
   }
 
-  public boolean isExpansionEnabled(String expansionCode) {
+  public boolean isExpansionEnabled(final String expansionCode) {
     String key = SET_ENABLED_PREFIX + expansionCode;
     return gameSettingService
         .findById(key)
@@ -63,7 +63,7 @@ public class ExpansionService {
         .orElse(true); // Default to enabled
   }
 
-  public void setExpansionEnabled(String expansionCode, boolean enabled) {
+  public void setExpansionEnabled(final String expansionCode, final boolean enabled) {
     String key = SET_ENABLED_PREFIX + expansionCode;
     gameSettingService.save(key, String.valueOf(enabled));
     eventPublisher.publishEvent(new ExpansionToggledEvent(this, expansionCode, enabled));

@@ -29,7 +29,7 @@ public class RivalryNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public RivalryNotionHandler(NotionHandler notionHandler) {
+  public RivalryNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -68,7 +68,8 @@ public class RivalryNotionHandler {
   }
 
   /** Maps a Notion page to a RivalryPage object. */
-  private RivalryPage mapPageToRivalryPage(@NonNull Page pageData, @NonNull String entityName) {
+  private RivalryPage mapPageToRivalryPage(
+      @NonNull final Page pageData, @NonNull final String entityName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, entityName, "Rivalry", RivalryPage::new, RivalryPage.NotionParent::new);
   }

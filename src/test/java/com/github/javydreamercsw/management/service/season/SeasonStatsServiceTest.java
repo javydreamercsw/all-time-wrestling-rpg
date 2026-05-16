@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.season;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
@@ -32,6 +33,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.SeasonStatsDTO;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ class SeasonStatsServiceTest {
   @Mock private SegmentRepository segmentRepository;
   @Mock private SeasonRepository seasonRepository;
   @Mock private TitleReignRepository titleReignRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
 
   @InjectMocks private SeasonStatsService seasonStatsService;
 
@@ -63,11 +66,25 @@ class SeasonStatsServiceTest {
   private SegmentType promoType;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
-    wrestler.setFans(1000L);
+
+    com.github.javydreamercsw.management.domain.universe.Universe universe =
+        new com.github.javydreamercsw.management.domain.universe.Universe();
+    universe.setId(1L);
+
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    state.setWrestler(wrestler);
+    state.setUniverse(universe);
+    state.setFans(1000L);
+    wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(state)));
+
+    lenient()
+        .when(wrestlerRepository.findByIdWithStates(1L))
+        .thenReturn(java.util.Optional.of(wrestler));
 
     season = new Season();
     season.setId(1L);
@@ -119,7 +136,7 @@ class SeasonStatsServiceTest {
     assertThat(stats.getAccolades()).contains("World Championship");
   }
 
-  private Segment createSegment(Long id, SegmentType type, Boolean isWinner) {
+  private Segment createSegment(final Long id, final SegmentType type, final Boolean isWinner) {
     Segment segment = new Segment();
     segment.setId(id);
     segment.setSegmentType(type);

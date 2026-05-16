@@ -43,7 +43,7 @@ public class ImageStorageService {
   private static final String PUBLIC_PATH = "images/generated/";
 
   @Autowired
-  public ImageStorageService(StorageProperties storageProperties) {
+  public ImageStorageService(final StorageProperties storageProperties) {
     this.storageProperties = storageProperties;
   }
 
@@ -55,7 +55,7 @@ public class ImageStorageService {
    * @return The public path to the saved image (e.g., "images/generated/uuid.png").
    * @throws IOException If saving fails.
    */
-  public String saveImage(String imageData, boolean isBase64) throws IOException {
+  public String saveImage(final String imageData, final boolean isBase64) throws IOException {
     Path sourceDirectory = storageProperties.getResolvedImageDir();
 
     String filename = UUID.randomUUID() + ".png";
@@ -74,7 +74,7 @@ public class ImageStorageService {
     return PUBLIC_PATH + filename;
   }
 
-  private void downloadImage(String url, Path destination) throws IOException {
+  private void downloadImage(final String url, final Path destination) throws IOException {
     if (url == null || url.isBlank()) {
       throw new IOException("Image URL must not be null or blank");
     }
@@ -94,7 +94,7 @@ public class ImageStorageService {
     }
 
     String scheme = uri.getScheme();
-    if (scheme == null || !scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
+    if (scheme == null || !"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
       throw new IOException("Unsupported image URI scheme: " + scheme);
     }
 
@@ -130,7 +130,7 @@ public class ImageStorageService {
    *
    * <p>Format: {@code data:[<mediatype>][;base64],<data>}
    */
-  public static byte[] decodeDataUriToBytes(String dataUri) throws IOException {
+  public static byte[] decodeDataUriToBytes(final String dataUri) throws IOException {
     if (dataUri == null || !dataUri.startsWith("data:")) {
       throw new IOException("Invalid data URI: must start with 'data:'");
     }

@@ -49,7 +49,7 @@ public class GmDashboardView extends VerticalLayout {
   private final Grid<Wrestler> rosterGrid = new Grid<>(Wrestler.class, false);
   private final Span budgetLabel = new Span();
 
-  public GmDashboardView(LeagueService leagueService, SecurityUtils securityUtils) {
+  public GmDashboardView(final LeagueService leagueService, final SecurityUtils securityUtils) {
     this.leagueService = leagueService;
     this.securityUtils = securityUtils;
 
@@ -89,7 +89,10 @@ public class GmDashboardView extends VerticalLayout {
   private void configureRosterGrid() {
     Grid.Column<Wrestler> nameColumn =
         rosterGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
-    rosterGrid.addColumn(w -> w.getTier().getDisplayName()).setHeader("Tier");
+    rosterGrid
+        .addColumn(
+            w -> w.getDefaultState().map(s -> s.getTier().getDisplayName()).orElse("Unknown"))
+        .setHeader("Tier");
 
     rosterGrid
         .addColumn(w -> w.getManagementStamina() + "%")
@@ -101,10 +104,7 @@ public class GmDashboardView extends VerticalLayout {
         .setHeader("Morale")
         .setPartNameGenerator(w -> w.getMorale() < 50 ? "warning" : "");
 
-    rosterGrid
-        .addColumn(w -> String.format("%,d", w.getFans()))
-        .setHeader("Fans")
-        .setSortable(true);
+    rosterGrid.addColumn(w -> "%,d".formatted(w.getFans())).setHeader("Fans").setSortable(true);
 
     rosterGrid.addClassNames(LumoUtility.Border.ALL, LumoUtility.BorderRadius.MEDIUM);
 
@@ -112,7 +112,7 @@ public class GmDashboardView extends VerticalLayout {
     rosterGrid.sort(GridSortOrder.asc(nameColumn).build());
   }
 
-  private VerticalLayout createCard(String title, Span valueSpan) {
+  private VerticalLayout createCard(final String title, final Span valueSpan) {
     VerticalLayout card = new VerticalLayout();
     card.setPadding(true);
     card.setSpacing(false);
@@ -143,13 +143,12 @@ public class GmDashboardView extends VerticalLayout {
             });
   }
 
-  private void updateDashboard(League league) {
+  private void updateDashboard(final League league) {
     if (league == null) {
       return;
     }
 
-    budgetLabel.setText(
-        String.format("$%,.2f", league.getBudget() != null ? league.getBudget() : 0.0));
+    budgetLabel.setText("$%,.2f".formatted(league.getBudget() != null ? league.getBudget() : 0.0));
 
     List<Wrestler> roster =
         leagueService.getRoster(league.getId()).stream()

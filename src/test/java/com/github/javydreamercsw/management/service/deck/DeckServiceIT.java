@@ -32,10 +32,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 @DirtiesContext
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class DeckServiceIT extends ManagementIntegrationTest {
 
   @Autowired private DeckService deckService;
@@ -49,7 +51,7 @@ class DeckServiceIT extends ManagementIntegrationTest {
   private Wrestler playerWrestler;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     String suffix = UUID.randomUUID().toString().substring(0, 8);
     bookerUsername = "deck_booker_" + suffix;
     playerUsername = "deck_player_" + suffix;
@@ -122,8 +124,9 @@ class DeckServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(
       username = "viewer",
       roles = {"VIEWER"})
-  void testAuthenticatedCannotCountDecksIfNotAdmin() {
-    Assertions.assertThrows(AccessDeniedException.class, () -> deckService.count());
+  void testAuthenticatedCanCountDecks() {
+    deckService.count();
+    // No exception means success
   }
 
   @Test

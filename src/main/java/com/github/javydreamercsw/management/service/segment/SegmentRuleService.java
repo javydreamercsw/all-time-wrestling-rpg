@@ -64,7 +64,7 @@ public class SegmentRuleService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       key = "#name")
-  public Optional<SegmentRule> findByName(String name) {
+  public Optional<SegmentRule> findByName(final String name) {
     return segmentRuleRepository.findByName(name);
   }
 
@@ -103,12 +103,15 @@ public class SegmentRuleService {
    * @return The created segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule createRule(
-      @NonNull String name, @NonNull String description, boolean requiresHighHeat) {
+      @NonNull final String name,
+      @NonNull final String description,
+      final boolean requiresHighHeat) {
     if (segmentRuleRepository.existsByName(name)) {
       throw new IllegalArgumentException("Segment rule with name '" + name + "' already exists");
     }
@@ -133,15 +136,16 @@ public class SegmentRuleService {
    * @return The updated segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule updateRule(
-      @NonNull Long id,
-      @NonNull String name,
-      @NonNull String description,
-      @NonNull Boolean requiresHighHeat) {
+      @NonNull final Long id,
+      @NonNull final String name,
+      @NonNull final String description,
+      @NonNull final Boolean requiresHighHeat) {
     SegmentRule rule =
         segmentRuleRepository
             .findById(id)
@@ -171,7 +175,7 @@ public class SegmentRuleService {
    * @return true if a rule with this name exists
    */
   @PreAuthorize("isAuthenticated()")
-  public boolean existsByName(@NonNull String name) {
+  public boolean existsByName(@NonNull final String name) {
     return segmentRuleRepository.existsByName(name);
   }
 
@@ -185,7 +189,7 @@ public class SegmentRuleService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       key = "#id")
-  public Optional<SegmentRule> findById(@NonNull Long id) {
+  public Optional<SegmentRule> findById(@NonNull final Long id) {
     return segmentRuleRepository.findById(id);
   }
 
@@ -211,26 +215,37 @@ public class SegmentRuleService {
    * @return The created or updated segment rule
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule createOrUpdateRule(
-      @NonNull String name,
-      String description,
-      boolean requiresHighHeat,
-      boolean noDq,
-      BumpAddition bumpAddition) {
+      @NonNull final String name,
+      final String description,
+      final boolean requiresHighHeat,
+      final boolean noDq,
+      final BumpAddition bumpAddition) {
     Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
 
-    SegmentRule segmentRule;
     if (existingOpt.isPresent()) {
-      segmentRule = existingOpt.get();
+      SegmentRule sr = existingOpt.get();
+      if (java.util.Objects.equals(sr.getDescription(), description)
+          && sr.getRequiresHighHeat() == requiresHighHeat
+          && sr.getNoDq() == noDq
+          && sr.getBumpAddition() == bumpAddition) {
+        return sr;
+      }
+      sr.setDescription(description);
+      sr.setRequiresHighHeat(requiresHighHeat);
+      sr.setNoDq(noDq);
+      sr.setBumpAddition(bumpAddition);
       log.debug("Updating existing segment rule: {}", name);
-    } else {
-      segmentRule = new SegmentRule();
-      log.debug("Creating new segment rule: {}", name);
+      return segmentRuleRepository.save(sr);
     }
+
+    SegmentRule segmentRule = new SegmentRule();
+    log.debug("Creating new segment rule: {}", name);
 
     segmentRule.setName(name);
     segmentRule.setDescription(description);
@@ -247,5 +262,9 @@ public class SegmentRuleService {
       key = "'all'")
   public List<SegmentRule> findAll() {
     return segmentRuleRepository.findAll();
+  }
+
+  public long count() {
+    return segmentRuleRepository.count();
   }
 }

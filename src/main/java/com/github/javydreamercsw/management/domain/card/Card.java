@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.domain.card;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -30,10 +30,11 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "card", uniqueConstraints = @UniqueConstraint(columnNames = {"set_id", "number"}))
 @Setter
 @Getter
-public class Card extends AbstractEntity<Long> {
+public class Card extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "card_id")
   private Long id;
 
@@ -59,7 +60,7 @@ public class Card extends AbstractEntity<Long> {
   @Column(name = "momentum", nullable = false)
   private Integer momentum;
 
-  @Column(name = "number")
+  @Column(name = "number", nullable = false)
   private Integer number;
 
   @Column(name = "signature", nullable = false)
@@ -79,9 +80,4 @@ public class Card extends AbstractEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

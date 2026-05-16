@@ -60,7 +60,7 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
   private int defaultPort;
 
   @Override
-  public void onApplicationEvent(ApplicationReadyEvent event) {
+  public void onApplicationEvent(final ApplicationReadyEvent event) {
     if (java.awt.GraphicsEnvironment.isHeadless()) {
       log.warn("Desktop integration enabled but environment is headless. Skipping.");
       return;
@@ -85,11 +85,11 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
     if (!contextPath.isEmpty() && !contextPath.startsWith("/")) {
       contextPath = "/" + contextPath;
     }
-    if (contextPath.equals("/")) {
+    if ("/".equals(contextPath)) {
       contextPath = "";
     }
 
-    String url = String.format("http://localhost:%d%s/", port, contextPath);
+    String url = "http://localhost:%d%s/".formatted(port, contextPath);
     log.info("Constructed application URL: {}", url);
 
     // Try to load icon for both Tray and Dock/Taskbar
@@ -117,7 +117,7 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
     }
   }
 
-  private void setupDockIcon(Image image) {
+  private void setupDockIcon(final Image image) {
     if (Taskbar.isTaskbarSupported()) {
       Taskbar taskbar = Taskbar.getTaskbar();
       if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
@@ -127,7 +127,7 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
     }
   }
 
-  private void launchBrowser(String url) {
+  private void launchBrowser(final String url) {
     if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
       try {
         log.info("Launching browser to {}", url);
@@ -140,7 +140,7 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
     }
   }
 
-  private void setupSystemTray(String url, Image image) {
+  private void setupSystemTray(final String url, final Image image) {
     if (!SystemTray.isSupported()) {
       log.warn("System Tray not supported on this platform.");
       return;

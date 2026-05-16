@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show.segment;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -32,9 +32,10 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "ringside_action_type", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class RingsideActionType extends AbstractEntity<Long> {
+public class RingsideActionType extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "ringside_action_type_id")
   private Long id;
 
@@ -49,9 +50,4 @@ public class RingsideActionType extends AbstractEntity<Long> {
 
   @Column(name = "base_risk_multiplier", nullable = false)
   private double baseRiskMultiplier = 1.0;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

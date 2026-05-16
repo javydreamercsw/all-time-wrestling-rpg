@@ -21,10 +21,12 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.button.Button;
@@ -43,6 +45,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -57,31 +60,32 @@ public class WrestlerListView extends Main {
   private final WrestlerService wrestlerService;
   private final InjuryService injuryService;
   private final NpcService npcService;
-  private final WrestlerRepository wrestlerRepository;
+  private final ExpansionService expansionService;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
-  private final CampaignService campaignService;
   private final ImageStorageService imageStorageService;
+  private final UniverseContextService universeContextService;
   private Set<Long> injuredWrestlerIds;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
-      @NonNull WrestlerService wrestlerService,
-      @NonNull InjuryService injuryService,
-      @NonNull NpcService npcService,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull @Qualifier("baseAccountService") AccountService accountService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull CampaignService campaignService,
-      @NonNull ImageStorageService imageStorageService) {
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      @NonNull final NpcService npcService,
+      @NonNull final ExpansionService expansionService,
+      @NonNull @Qualifier("baseAccountService") final AccountService accountService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final CampaignService campaignService,
+      @NonNull final ImageStorageService imageStorageService,
+      @NonNull final UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
     this.npcService = npcService;
-    this.wrestlerRepository = wrestlerRepository;
+    this.expansionService = expansionService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
-    this.campaignService = campaignService;
     this.imageStorageService = imageStorageService;
+    this.universeContextService = universeContextService;
     wrestlerGrid = new Grid<>();
     reloadGrid();
 
@@ -132,12 +136,47 @@ public class WrestlerListView extends Main {
         .setHeader("Starting Stamina")
         .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getLowStamina).setHeader("Low Stamina").setSortable(true);
-    wrestlerGrid.addColumn(Wrestler::getFans).setHeader("Fans").setSortable(true);
-    wrestlerGrid.addColumn(Wrestler::getBumps).setHeader("Bumps").setSortable(true);
+
     wrestlerGrid
-        .addColumn(wrestler -> wrestler.getManager() != null ? wrestler.getManager().getName() : "")
+        .addColumn(
+            wrestler -> {
+              WrestlerState state =
+                  wrestlerService.getOrCreateState(
+                      wrestler.getId(), universeContextService.getCurrentUniverseId());
+              return state.getFans();
+            })
+        .setHeader("Fans")
+        .setSortable(true);
+
+    wrestlerGrid
+        .addColumn(
+            wrestler -> {
+              WrestlerState state =
+                  wrestlerService.getOrCreateState(
+                      wrestler.getId(), universeContextService.getCurrentUniverseId());
+              return state.getBumps();
+            })
+        .setHeader("Bumps")
+        .setSortable(true);
+
+    wrestlerGrid
+        .addColumn(
+            wrestler -> {
+              WrestlerState state =
+                  wrestlerService.getOrCreateState(
+                      wrestler.getId(), universeContextService.getCurrentUniverseId());
+              if (state.getManager() == null) {
+                return "";
+              }
+              String expansionCode = state.getManager().getExpansionCode();
+              if (!expansionService.getEnabledExpansionCodes().contains(expansionCode)) {
+                return "";
+              }
+              return state.getManager().getName();
+            })
         .setHeader("Manager")
         .setSortable(true);
+
     wrestlerGrid.addColumn(Wrestler::getCreationDate).setHeader("Creation Date");
 
     // Default sorting by Name
@@ -157,7 +196,8 @@ public class WrestlerListView extends Main {
                       false,
                       securityUtils,
                       accountService,
-                      imageStorageService);
+                      imageStorageService,
+                      universeContextService);
               wrestlerActionMenu.setId("action-menu-" + wrestler.getId());
               return wrestlerActionMenu;
             })
@@ -196,7 +236,8 @@ public class WrestlerListView extends Main {
                       npcService,
                       imageStorageService,
                       this::reloadGrid,
-                      securityUtils);
+                      securityUtils,
+                      universeContextService);
               dialog.open();
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -206,19 +247,27 @@ public class WrestlerListView extends Main {
   }
 
   private void reloadGrid() {
+    Long universeId = universeContextService.getCurrentUniverseId();
     injuredWrestlerIds =
-        injuryService.getWrestlersWithActiveInjuries().stream()
+        injuryService.getWrestlersWithActiveInjuries(universeId).stream()
             .map(Wrestler::getId)
             .collect(Collectors.toSet());
 
+    Set<String> enabledCodes = new HashSet<>(expansionService.getEnabledExpansionCodes());
     if (securityUtils.isAdmin() || securityUtils.isBooker()) {
-      wrestlerGrid.setItems(wrestlerService.findAllIncludingInactive());
+      wrestlerGrid.setItems(
+          wrestlerService.findAllIncludingInactive().stream()
+              .filter(w -> enabledCodes.contains(w.getExpansionCode()))
+              .toList());
     } else {
       securityUtils
           .getAuthenticatedUser()
           .ifPresent(
               user -> {
-                wrestlerGrid.setItems(wrestlerService.findAllByAccount(user.getAccount()));
+                wrestlerGrid.setItems(
+                    wrestlerService.findAllByAccount(user.getAccount()).stream()
+                        .filter(w -> enabledCodes.contains(w.getExpansionCode()))
+                        .toList());
               });
     }
   }

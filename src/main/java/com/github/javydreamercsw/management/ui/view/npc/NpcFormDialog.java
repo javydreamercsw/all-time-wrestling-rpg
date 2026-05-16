@@ -54,7 +54,10 @@ public class NpcFormDialog extends Dialog {
   private final TextField imageUrlField = new TextField("Image URL");
 
   public NpcFormDialog(
-      NpcService npcService, ImageStorageService storageService, Npc npc, Runnable onSave) {
+      final NpcService npcService,
+      final ImageStorageService storageService,
+      final Npc npc,
+      final Runnable onSave) {
     this.npcService = npcService;
     this.npc = npc;
     this.onSave = onSave;

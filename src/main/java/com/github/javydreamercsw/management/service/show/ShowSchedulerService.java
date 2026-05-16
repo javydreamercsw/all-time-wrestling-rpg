@@ -50,7 +50,7 @@ public class ShowSchedulerService {
    *
    * @param season The season to generate shows for.
    */
-  public void generateShowsForSeason(@NonNull Season season) {
+  public void generateShowsForSeason(@NonNull final Season season) {
     if (season.getStartDate() == null) {
       log.warn("Season {} has missing start date. Skipping show generation.", season.getName());
       return;
@@ -84,8 +84,10 @@ public class ShowSchedulerService {
       Set<LocalDate> targetDates = calculateTargetDates(template, seasonStart, seasonEnd);
       if (targetDates.isEmpty()) {
         log.warn(
-            "No target dates calculated for template '{}' (Recurrence: {}, DayOfWeek: {},"
-                + " DayOfMonth: {}, WeekOfMonth: {}, Month: {}). Missing configuration?",
+            """
+            No target dates calculated for template '{}' (Recurrence: {}, DayOfWeek: {},\
+             DayOfMonth: {}, WeekOfMonth: {}, Month: {}). Missing configuration?\
+            """,
             template.getName(),
             template.getRecurrenceType(),
             template.getDayOfWeek(),
@@ -107,7 +109,7 @@ public class ShowSchedulerService {
           }
 
           if (!showService.existsByNameAndShowDate(showName, actualDate)) {
-            log.info("Creating show '{}' for date {}", showName, actualDate);
+            log.debug("Creating show '{}' for date {}", showName, actualDate);
             showService.createShow(
                 showName,
                 template.getDescription(),
@@ -115,7 +117,8 @@ public class ShowSchedulerService {
                 actualDate,
                 season.getId(),
                 template.getId(),
-                null, // League ID - might need to be passed in
+                null, // universeId
+                null, // leagueId - might need to be passed in
                 template.getCommentaryTeam() != null ? template.getCommentaryTeam().getId() : null,
                 arenaService.assignArenaToShow(template.isPremiumLiveEvent()));
           }

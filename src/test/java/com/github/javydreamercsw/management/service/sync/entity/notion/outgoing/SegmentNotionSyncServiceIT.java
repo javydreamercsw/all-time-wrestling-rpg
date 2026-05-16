@@ -39,9 +39,14 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentNotionSyncService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -49,7 +54,6 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -66,8 +70,11 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private FactionRepository factionRepository;
   @Autowired private SegmentNotionSyncService segmentNotionSyncService;
+  @Autowired private WrestlerService wrestlerService;
 
   @MockitoBean private NotionHandler notionHandler;
 
@@ -76,11 +83,6 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
-
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
 
   @Test
   void testSyncToNotion() {
@@ -100,6 +102,8 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
                   return supplier.get();
                 });
 
+    Universe defaultUniverse = universeRepository.findAll().get(0);
+
     // Create a Show Type
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");
@@ -113,42 +117,48 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     show.setDescription("A test show."); // Added description
     show.setShowDate(LocalDate.now()); // Corrected to LocalDate
     show.setType(showType); // Set the show type
+    show.setUniverse(defaultUniverse);
     show.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     showRepository.save(show);
 
     // Create a Segment Type
     SegmentType segmentType = new SegmentType();
-    segmentType.setName("Match");
+    segmentType.setName("Match " + UUID.randomUUID());
     segmentType.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     segmentTypeRepository.save(segmentType);
 
     // Create a Segment Rule
     SegmentRule segmentRule = new SegmentRule();
-    segmentRule.setName("No DQ");
+    segmentRule.setName("No DQ " + UUID.randomUUID());
     segmentRule.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
     segmentRuleRepository.save(segmentRule);
 
     // Create a Faction (for Wrestler)
     Faction faction = new Faction();
     faction.setName("Test Faction " + UUID.randomUUID());
+    faction.setUniverse(defaultUniverse);
     factionRepository.save(faction);
 
     // Create a Wrestler
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler " + UUID.randomUUID());
     wrestler.setStartingStamina(16);
-    wrestler.setFans(1000L);
-    wrestler.setBumps(1);
     wrestler.setGender(Gender.MALE);
     wrestler.setLowStamina(2);
     wrestler.setStartingHealth(15);
     wrestler.setLowHealth(4);
     wrestler.setDeckSize(15);
-    wrestler.setTier(WrestlerTier.MIDCARDER);
     wrestler.setCreationDate(Instant.now());
-    wrestler.setFaction(faction);
     wrestler.setExternalId(UUID.randomUUID().toString()); // Simulate external ID from prior sync
-    wrestlerRepository.save(wrestler);
+    wrestler = wrestlerRepository.save(wrestler);
+
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setFans(1000L);
+    state.setBumps(1);
+    state.setTier(WrestlerTier.MIDCARDER);
+    state.setFaction(faction);
+    wrestlerStateRepository.save(state);
 
     // Create a new Segment
     Segment segment = new Segment();
@@ -175,7 +185,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Sync to Notion for the first time
 
-    segmentNotionSyncService.syncToNotion("test-op-1");
+    segmentNotionSyncService.syncToNotion("test-op-1", java.util.List.of(segment.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(segment.getId());
@@ -188,7 +198,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     Mockito.verify(notionClient).createPage(createPageRequestCaptor.capture());
     CreatePageRequest capturedRequest = createPageRequestCaptor.getValue();
     assertEquals(
-        String.format("Segment: %s (%s)", segment.getSegmentType().getName(), wrestler.getName()),
+        "Segment: %s (%s)".formatted(segment.getSegmentType().getName(), wrestler.getName()),
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
     assertEquals(
         segment.getShow().getExternalId(),
@@ -228,7 +238,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     // Ensure it's treated as changed
     updatedSegment.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
     segmentRepository.saveAndFlush(updatedSegment);
-    segmentNotionSyncService.syncToNotion("test-op-2");
+    segmentNotionSyncService.syncToNotion("test-op-2", java.util.List.of(segment.getId()));
     Segment updatedSegment2 = segmentRepository.findById(segment.getId()).get();
     assertTrue(updatedSegment2.getLastSync().isAfter(updatedSegment.getLastSync()));
 

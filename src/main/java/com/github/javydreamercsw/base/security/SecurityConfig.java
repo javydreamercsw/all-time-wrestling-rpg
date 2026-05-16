@@ -16,43 +16,66 @@
 */
 package com.github.javydreamercsw.base.security;
 
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 /** Security configuration for the application. */
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
+@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 public class SecurityConfig {
-
-  private final UserDetailsService userDetailsService;
 
   @Bean
   @Profile("!test & !e2e")
-  public SecurityFilterChain vaadinSecurityFilterChain(HttpSecurity http) {
-    // Public access to static resources
+  public SecurityFilterChain vaadinSecurityFilterChain(
+      final HttpSecurity http, final UserDetailsService userDetailsService) {
+    // 1. Apply Vaadin security configurer first
+    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
+
+    // 2. Public access to static resources and specific API endpoints
     http.authorizeHttpRequests(
         auth ->
-            auth.requestMatchers("/images/**", "/icons/**", "/public/**", "/api/**", "/docs/**")
-                .permitAll());
+            auth.requestMatchers(
+                    "/images/**",
+                    "/icons/**",
+                    "/public/**",
+                    "/api/**",
+                    "/docs/**",
+                    "/api/auth/**",
+                    "/login",
+                    "/register",
+                    "/health",
+                    "/api/system/health")
+                .permitAll()
+                .requestMatchers("/api/admin/**")
+                .hasRole(RoleName.ADMIN_ROLE));
 
-    // Disable CSRF for API endpoints
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"));
+    // 3. Use cookie-based CSRF tokens so JavaScript/REST clients can read XSRF-TOKEN and submit it.
+    // The deferred handler avoids the Spring Security 6 double-read issue with Vaadin.
+    CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+    requestHandler.setCsrfRequestAttributeName(null);
+    http.csrf(
+        csrf ->
+            csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(requestHandler)
+                .ignoringRequestMatchers("/api/**", "/h2-console/**"));
 
     // Allow framing for H2 console
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
-
-    // Apply Vaadin security configurer and set the login view
-    http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
 
     // Configure remember-me functionality
     http.rememberMe(
@@ -75,9 +98,6 @@ public class SecurityConfig {
     // Configure form login
     http.formLogin(AbstractAuthenticationFilterConfigurer::permitAll);
 
-    // Enforce HTTPS in production is handled by the deployment environment (e.g. Load Balancer)
-    // and configured via server.forward-headers-strategy=native
-
     // Add security headers
     http.headers(
         headers ->
@@ -88,11 +108,12 @@ public class SecurityConfig {
   }
 
   @Bean
-  @Profile("test")
-  public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/h2-console/**"))
+  @Profile("test & !e2e")
+  @Order(0)
+  public SecurityFilterChain testSecurityFilterChain(final HttpSecurity http) {
+    http.csrf(AbstractHttpConfigurer::disable)
         .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
+        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
 
     return http.build();
   }

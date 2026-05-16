@@ -42,7 +42,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 /** Represents a social relationship between two wrestlers. */
 @Entity
@@ -92,11 +91,6 @@ public class WrestlerRelationship extends AbstractEntity<Long> {
   @Column(name = "notes", length = 1000)
   private String notes;
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
   @PrePersist
   protected void onCreate() {
     if (creationDate == null) {
@@ -114,7 +108,7 @@ public class WrestlerRelationship extends AbstractEntity<Long> {
   }
 
   /** Get the other wrestler in the relationship. */
-  public Wrestler getPartner(Wrestler wrestler) {
+  public Wrestler getPartner(final Wrestler wrestler) {
     if (wrestler.equals(wrestler1)) {
       return wrestler2;
     } else if (wrestler.equals(wrestler2)) {
@@ -124,7 +118,7 @@ public class WrestlerRelationship extends AbstractEntity<Long> {
   }
 
   /** Check if a wrestler is involved in this relationship. */
-  public boolean involvesWrestler(Wrestler wrestler) {
+  public boolean involvesWrestler(final Wrestler wrestler) {
     return wrestler.equals(wrestler1) || wrestler.equals(wrestler2);
   }
 }

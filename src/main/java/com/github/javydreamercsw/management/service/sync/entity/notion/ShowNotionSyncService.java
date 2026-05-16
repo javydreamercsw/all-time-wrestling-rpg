@@ -32,14 +32,14 @@ import org.springframework.stereotype.Service;
 public class ShowNotionSyncService extends BaseNotionSyncService<Show> {
 
   public ShowNotionSyncService(
-      ShowRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final ShowRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull Show entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final Show entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
@@ -86,9 +86,9 @@ public class ShowNotionSyncService extends BaseNotionSyncService<Show> {
   }
 
   @Override
-  protected String getEntityDisplayName(@NonNull Show entity) {
+  protected String getEntityDisplayName(@NonNull final Show entity) {
     if (entity.getShowDate() != null) {
-      return String.format("%s (%s)", entity.getName(), entity.getShowDate());
+      return "%s (%s)".formatted(entity.getName(), entity.getShowDate());
     }
     return super.getEntityDisplayName(entity);
   }

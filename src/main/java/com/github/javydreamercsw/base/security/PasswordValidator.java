@@ -23,12 +23,12 @@ import com.vaadin.flow.data.validator.AbstractValidator;
 /** A custom validator for password strength. */
 public class PasswordValidator extends AbstractValidator<String> {
 
-  public PasswordValidator(String errorMessage) {
+  public PasswordValidator(final String errorMessage) {
     super(errorMessage);
   }
 
   @Override
-  public ValidationResult apply(String value, ValueContext context) {
+  public ValidationResult apply(final String value, final ValueContext context) {
     if (value == null || value.isEmpty()) {
       return ValidationResult.ok(); // Let RequiredValidator handle empty values
     }

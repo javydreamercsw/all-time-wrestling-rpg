@@ -112,7 +112,7 @@ public class RetryConfig {
    * Get effective max attempts for an entity type. Falls back to global config if entity-specific
    * config is not set.
    */
-  public int getMaxAttempts(String entityType) {
+  public int getMaxAttempts(final String entityType) {
     EntityConfig entityConfig = getEntityConfig(entityType);
     return entityConfig.getMaxAttempts() != null ? entityConfig.getMaxAttempts() : maxAttempts;
   }
@@ -121,7 +121,7 @@ public class RetryConfig {
    * Get effective initial delay for an entity type. Falls back to global config if entity-specific
    * config is not set.
    */
-  public long getInitialDelayMs(String entityType) {
+  public long getInitialDelayMs(final String entityType) {
     EntityConfig entityConfig = getEntityConfig(entityType);
     return entityConfig.getInitialDelayMs() != null
         ? entityConfig.getInitialDelayMs()
@@ -132,20 +132,20 @@ public class RetryConfig {
    * Get effective max delay for an entity type. Falls back to global config if entity-specific
    * config is not set.
    */
-  public long getMaxDelayMs(String entityType) {
+  public long getMaxDelayMs(final String entityType) {
     EntityConfig entityConfig = getEntityConfig(entityType);
     return entityConfig.getMaxDelayMs() != null ? entityConfig.getMaxDelayMs() : maxDelayMs;
   }
 
   /** Get entity-specific configuration. */
-  private EntityConfig getEntityConfig(String entityType) {
+  private EntityConfig getEntityConfig(final String entityType) {
     return SyncEntityType.fromKey(entityType)
         .map(this::getEntityConfig)
         .orElseGet(EntityConfig::new);
   }
 
   /** Get entity-specific configuration using SyncEntityType enum. */
-  private EntityConfig getEntityConfig(SyncEntityType entityType) {
+  private EntityConfig getEntityConfig(final SyncEntityType entityType) {
     return switch (entityType) {
       case SHOWS -> entities.getShows();
       case WRESTLERS -> entities.getWrestlers();

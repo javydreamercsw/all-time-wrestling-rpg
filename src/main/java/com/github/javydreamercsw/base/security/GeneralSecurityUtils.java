@@ -19,10 +19,12 @@ package com.github.javydreamercsw.base.security;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import com.vaadin.flow.server.VaadinSession;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -30,130 +32,211 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 /** A utility class for general security-related operations. */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public final class GeneralSecurityUtils {
 
-  private GeneralSecurityUtils() {
-    // private constructor to prevent instantiation
+  /**
+   * Run a task as an admin user.
+   *
+   * @param task The task to run.
+   */
+  public static void runAsAdmin(@NonNull final Runnable task) {
+    runAs(task, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER");
   }
 
   /**
-   * Runs the given {@link Supplier} with the admin role.
+   * Run a task as an admin user.
    *
-   * @param <T> The type of the result.
-   * @param supplier The supplier to run.
-   * @return The result of the supplier.
+   * @param <T> The return type of the task.
+   * @param supplier The task to run.
+   * @return The result of the task.
    */
-  public static <T> T runAsAdmin(@NonNull Supplier<T> supplier) {
-    return runAs(supplier, "admin", "password", "ADMIN");
-  }
-
-  public static void runAsAdmin(@NonNull Runnable runnable) {
-    runAsAdmin(
-        (Supplier<Object>)
-            () -> {
-              runnable.run();
-              return null;
-            });
+  public static <T> T runAsAdmin(@NonNull final Supplier<T> supplier) {
+    return runAs(supplier, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER");
   }
 
   /**
-   * Runs the given {@link Supplier} with the provided {@link SecurityContext}.
+   * Run a task with the given user and roles.
    *
-   * @param <T> The type of the result.
-   * @param context The security context to use.
+   * @param <T> The return type of the supplier.
    * @param supplier The supplier to run.
+   * @param username The username to use.
+   * @param password The password to use.
+   * @param roles The roles to use.
    * @return The result of the supplier.
    */
-  public static <T> T runWithContext(
-      @NonNull SecurityContext context, @NonNull Supplier<T> supplier) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
+  public static <T> T runAs(
+      @NonNull final Supplier<T> supplier,
+      @NonNull final String username,
+      @NonNull final String password,
+      @NonNull final String... roles) {
+    SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
+    SecurityContext originalContext = strategy.getContext();
+    Authentication originalAuth = originalContext.getAuthentication();
+
+    // Re-entrancy check: if already authenticated as the requested user, just run the supplier.
+    if (originalAuth != null
+        && originalAuth.isAuthenticated()
+        && username.equals(originalAuth.getName())) {
+      return supplier.get();
+    }
+
+    // VaadinAwareSecurityContextHolderStrategy reads from VaadinSession's HTTP session
+    // BEFORE the ThreadLocal, so we must update both to make privilege elevation visible.
+    Object originalSessionCtx = null;
+    VaadinSession vaadinSession = null;
     try {
-      SecurityContextHolder.setContext(context);
+      vaadinSession = VaadinSession.getCurrent();
+    } catch (Exception ignored) {
+      // No Vaadin context available
+    }
+    if (vaadinSession != null) {
+      try {
+        originalSessionCtx =
+            vaadinSession
+                .getSession()
+                .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+      } catch (IllegalStateException ignored) {
+        vaadinSession = null;
+      }
+    }
+
+    try {
+      SecurityContext newContext = strategy.createEmptyContext();
+
+      // Create a mock account and roles for the principal
+      Account account = new Account(username, password, username + "@example.com");
+      account.setId(-1L);
+
+      Set<Role> accountRoles = new HashSet<>();
+      Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+
+      for (String role : roles) {
+        String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
+        try {
+          RoleName roleName = RoleName.valueOf(cleanRole);
+          accountRoles.add(new Role(roleName, roleName.name()));
+        } catch (IllegalArgumentException e) {
+          log.trace("Non-enum role provided: {}", role);
+        }
+
+        authorities.add(new SimpleGrantedAuthority(cleanRole));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
+      }
+      account.setRoles(accountRoles);
+
+      CustomUserDetails principal = new CustomUserDetails(account, null);
+      Authentication authentication =
+          new UsernamePasswordAuthenticationToken(principal, password, authorities);
+
+      newContext.setAuthentication(authentication);
+
+      // Establish the new context globally/thread-locally
+      strategy.setContext(newContext);
+      setTestSecurityContext(newContext);
+      if (vaadinSession != null) {
+        try {
+          vaadinSession
+              .getSession()
+              .setAttribute(
+                  HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, newContext);
+        } catch (IllegalStateException ignored) {
+          // Session invalidated between the check and here
+        }
+      }
+
+      log.debug(
+          "Establishing system authority for user '{}' with authorities: {}",
+          username,
+          authorities);
+
       return supplier.get();
     } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
-        SecurityContextHolder.setContext(originalContext);
-      } else {
-        SecurityContextHolder.clearContext();
+      // Restore the original context
+      strategy.setContext(originalContext);
+      setTestSecurityContext(originalContext);
+      if (vaadinSession != null) {
+        try {
+          vaadinSession
+              .getSession()
+              .setAttribute(
+                  HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                  originalSessionCtx);
+        } catch (IllegalStateException ignored) {
+          // Session invalidated
+        }
       }
+
+      log.trace("Restored original SecurityContext");
     }
   }
 
   /**
-   * Runs the given {@link Supplier} with the credentials and roles provided.
+   * Run a task with the given user and roles.
    *
-   * @param <T> The type of the result.
-   * @param supplier The supplier to run.
-   * @return The result of the supplier.
+   * @param task The task to run.
+   * @param username The username to use.
+   * @param password The password to use.
+   * @param roles The roles to use.
    */
-  public static <T> T runAs(
-      @NonNull Supplier<T> supplier,
-      @NonNull String username,
-      @NonNull String password,
-      @NonNull String role) {
-    SecurityContext originalContext = SecurityContextHolder.getContext();
+  public static void runAs(
+      @NonNull final Runnable task,
+      @NonNull final String username,
+      @NonNull final String password,
+      @NonNull final String... roles) {
+    runAs(
+        () -> {
+          task.run();
+          return null;
+        },
+        username,
+        password,
+        roles);
+  }
+
+  /**
+   * Run a task within a specific security context.
+   *
+   * @param <T> The return type.
+   * @param context The security context.
+   * @param supplier The task.
+   * @return The result.
+   */
+  public static <T> T runWithContext(final SecurityContext context, final Supplier<T> supplier) {
+    SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
+    SecurityContext originalContext = strategy.getContext();
     try {
-      SecurityContext context = SecurityContextHolder.createEmptyContext();
-
-      // Create a mock account and role for the principal
-      Account account = new Account(username, password, username + "@example.com");
-      // Set ID to 1L to match WithCustomMockUserSecurityContextFactory
-      account.setId(1L);
-      try {
-        RoleName roleName = RoleName.valueOf(role);
-        Role r = new Role(roleName, roleName.name() + " role");
-        r.setId((long) roleName.ordinal() + 100);
-        account.setRoles(Collections.singleton(r));
-      } catch (IllegalArgumentException e) {
-        log.warn("Invalid role provided: {}", role);
-      }
-
-      CustomUserDetails userDetails = new CustomUserDetails(account, null);
-
-      // Spring Security 6 works best when authorities are consistent with UserDetails
-      List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-      // Add the raw role as well for compatibility with different annotation styles
-      authorities.add(new SimpleGrantedAuthority(role));
-
-      Authentication authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, password, authorities);
-      context.setAuthentication(authentication);
-
-      log.debug(
-          "Setting SecurityContext for user '{}' with role '{}' in thread '{}'",
-          username,
-          role,
-          Thread.currentThread().getName());
-      SecurityContextHolder.setContext(context);
-
-      // Verification log to catch immediate failure
-      Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-      if (currentAuth == null) {
-        log.error(
-            "CRITICAL: Failed to set SecurityContext for user '{}' in thread '{}'",
-            username,
-            Thread.currentThread().getName());
-      } else {
-        log.debug(
-            "SecurityContext successfully set for '{}' with authorities: {}",
-            username,
-            currentAuth.getAuthorities());
-      }
-
+      strategy.setContext(context);
+      setTestSecurityContext(context);
       return supplier.get();
     } finally {
-      if (originalContext != null && originalContext.getAuthentication() != null) {
-        log.debug(
-            "Restoring original SecurityContext to thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.setContext(originalContext);
-      } else {
-        log.debug("Clearing SecurityContext for thread '{}'", Thread.currentThread().getName());
-        SecurityContextHolder.clearContext();
-      }
+      strategy.setContext(originalContext);
+      setTestSecurityContext(originalContext);
+    }
+  }
+
+  /**
+   * Use reflection to set TestSecurityContextHolder if it's available on the classpath (i.e.,
+   * during tests).
+   *
+   * @param context The SecurityContext to set.
+   */
+  private static void setTestSecurityContext(final SecurityContext context) {
+    try {
+      Class<?> testHolderClass =
+          Class.forName("org.springframework.security.test.context.TestSecurityContextHolder");
+      java.lang.reflect.Method setContextMethod =
+          testHolderClass.getMethod("setContext", SecurityContext.class);
+      setContextMethod.invoke(null, context);
+    } catch (ClassNotFoundException e) {
+      // Not on classpath, normal for production
+    } catch (Exception e) {
+      log.warn("Failed to set TestSecurityContextHolder via reflection", e);
     }
   }
 }

@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -41,20 +42,25 @@ public class LeagueService {
   private final LeagueMembershipRepository leagueMembershipRepository;
   private final ShowRepository showRepository;
   private final LeagueRosterRepository leagueRosterRepository;
+  private final UniverseContextService universeContextService;
 
   @Transactional
   public League createLeague(
-      String name,
-      Account commissioner,
-      int maxPicks,
-      Set<Wrestler> excluded,
-      boolean commissionerPlays) {
+      final String name,
+      final Account commissioner,
+      final int maxPicks,
+      final Set<Wrestler> excluded,
+      final boolean commissionerPlays) {
     League league = new League();
     league.setName(name);
     league.setCommissioner(commissioner);
     league.setMaxPicksPerPlayer(maxPicks);
     league.setExcludedWrestlers(excluded);
     league.setStatus(League.LeagueStatus.PRE_DRAFT);
+
+    // Set universe from context if available
+    universeContextService.getCurrentUniverse().ifPresent(league::setUniverse);
+
     league = leagueRepository.save(league);
 
     // Add commissioner
@@ -70,7 +76,11 @@ public class LeagueService {
 
   @Transactional
   public League updateLeague(
-      Long id, String name, int maxPicks, Set<Wrestler> excluded, boolean commissionerPlays) {
+      final Long id,
+      final String name,
+      final int maxPicks,
+      final Set<Wrestler> excluded,
+      final boolean commissionerPlays) {
     League league =
         leagueRepository
             .findById(id)
@@ -97,13 +107,13 @@ public class LeagueService {
   }
 
   @Transactional
-  public void deleteLeague(Long id) {
+  public void deleteLeague(final Long id) {
     League league =
         leagueRepository
             .findById(id)
             .orElseThrow(() -> new IllegalArgumentException("League not found: " + id));
 
-    if (showRepository.existsByLeague(league)) {
+    if (league.getUniverse() != null && showRepository.existsByUniverse(league.getUniverse())) {
       throw new IllegalStateException("Cannot delete league with associated shows.");
     }
 
@@ -160,21 +170,21 @@ public class LeagueService {
             });
   }
 
-  public List<League> getLeaguesForUser(Account user) {
+  public List<League> getLeaguesForUser(final Account user) {
     return leagueMembershipRepository.findByMember(user).stream()
         .map(LeagueMembership::getLeague)
         .collect(Collectors.toList());
   }
 
-  public Optional<League> getLeagueById(Long id) {
+  public Optional<League> getLeagueById(final Long id) {
     return leagueRepository.findById(id);
   }
 
-  public Optional<League> getLeagueWithExcludedWrestlers(Long id) {
+  public Optional<League> getLeagueWithExcludedWrestlers(final Long id) {
     return leagueRepository.findByIdWithExcludedWrestlers(id);
   }
 
-  public List<LeagueRoster> getRoster(Long id) {
+  public List<LeagueRoster> getRoster(final Long id) {
     return leagueRepository
         .findById(id)
         .map(leagueRosterRepository::findByLeague)

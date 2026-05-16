@@ -32,7 +32,7 @@ public class LegacyEventListener {
   private final LegacyService legacyService;
 
   @EventListener
-  public void onChampionshipChange(ChampionshipChangeEvent event) {
+  public void onChampionshipChange(final ChampionshipChangeEvent event) {
     log.debug(
         "LegacyEventListener: Handling ChampionshipChangeEvent for title ID {}",
         event.getTitleId());
@@ -55,7 +55,7 @@ public class LegacyEventListener {
   }
 
   @EventListener
-  public void onChampionshipDefended(ChampionshipDefendedEvent event) {
+  public void onChampionshipDefended(final ChampionshipDefendedEvent event) {
     log.debug(
         "LegacyEventListener: Handling ChampionshipDefendedEvent for {}", event.getTitleName());
     event

@@ -32,14 +32,14 @@ import org.springframework.stereotype.Service;
 public class RivalryNotionSyncService extends BaseNotionSyncService<Rivalry> {
 
   public RivalryNotionSyncService(
-      RivalryRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final RivalryRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull Rivalry entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final Rivalry entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getDisplayName()));
 

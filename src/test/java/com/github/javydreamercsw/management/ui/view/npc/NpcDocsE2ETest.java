@@ -54,36 +54,37 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureNpcListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-list");
-    waitForVaadinClientToLoad();
+    navigateTo("npc-list");
     waitForGridToPopulate("npc-grid");
 
     documentFeature(
         "NPC",
         "NPC List",
-        "View and manage Non-Player Characters (NPCs) such as managers, referees, and announcers."
-            + " You can create new NPCs, edit existing ones, and navigate to their profiles.",
+        """
+        View and manage Non-Player Characters (NPCs) such as managers, referees, and announcers.\
+         You can create new NPCs, edit existing ones, and navigate to their profiles.\
+        """,
         "npc-list");
   }
 
   @Test
   void testCaptureNpcProfileView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-profile/" + npc.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("npc-profile/" + npc.getId());
     waitForText("Docs Gen NPC");
 
     documentFeature(
         "NPC",
         "NPC Profile",
-        "Detailed view of an NPC, displaying their image, type, biography, and stats. From here,"
-            + " you can generate a custom image using AI.",
+        """
+        Detailed view of an NPC, displaying their image, type, biography, and stats. From here,\
+         you can generate a custom image using AI.\
+        """,
         "npc-profile");
   }
 
   @Test
   void testCaptureNpcImageGenerationDialog() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-profile/" + npc.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("npc-profile/" + npc.getId());
     waitForText("Docs Gen NPC");
 
     // Click Generate Image
@@ -104,12 +105,14 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "NPC",
         "Generate NPC Image",
-        "Use the integrated AI tools to generate a unique portrait for your NPC based on their"
-            + " description and type. You can regenerate until you find the perfect look.",
+        """
+        Use the integrated AI tools to generate a unique portrait for your NPC based on their\
+         description and type. You can regenerate until you find the perfect look.\
+        """,
         "npc-image-generation-dialog");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

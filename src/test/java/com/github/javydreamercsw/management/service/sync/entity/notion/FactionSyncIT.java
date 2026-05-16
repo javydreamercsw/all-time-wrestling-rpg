@@ -87,7 +87,7 @@ class FactionSyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     syncSessionManager.clearSyncSession();
     lenient().when(syncProperties.getParallelThreads()).thenReturn(1);

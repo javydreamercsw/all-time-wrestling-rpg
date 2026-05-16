@@ -32,7 +32,7 @@ import lombok.NonNull;
 
 public class NewsDialog extends Dialog {
 
-  public NewsDialog(@NonNull NewsService newsService, @NonNull Runnable onSave) {
+  public NewsDialog(@NonNull final NewsService newsService, @NonNull final Runnable onSave) {
     setWidth("600px");
     setHeaderTitle("Create News Item");
 
@@ -60,8 +60,10 @@ public class NewsDialog extends Dialog {
     importance.setStepButtonsVisible(true);
     Tooltip.forComponent(importance)
         .setText(
-            "Higher importance news items generate more buzz, leading to increased Feud Heat and"
-                + " potential Momentum bonuses for featured wrestlers.");
+            """
+            Higher importance news items generate more buzz, leading to increased Feud Heat and\
+             potential Momentum bonuses for featured wrestlers.\
+            """);
 
     VerticalLayout layout = new VerticalLayout(headline, content, category, isRumor, importance);
     layout.setPadding(false);

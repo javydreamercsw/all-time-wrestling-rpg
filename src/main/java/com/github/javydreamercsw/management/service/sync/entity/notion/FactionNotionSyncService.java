@@ -32,14 +32,14 @@ import org.springframework.stereotype.Service;
 public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
 
   public FactionNotionSyncService(
-      FactionRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final FactionRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull Faction entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final Faction entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
@@ -86,9 +86,7 @@ public class FactionNotionSyncService extends BaseNotionSyncService<Faction> {
             entity.getMembers() == null
                 ? java.util.Collections.emptyList()
                 : entity.getMembers().stream()
-                    .map(
-                        com.github.javydreamercsw.management.domain.wrestler.Wrestler
-                            ::getExternalId)
+                    .map(m -> m.getWrestler().getExternalId())
                     .filter(Objects::nonNull)
                     .toList()));
 

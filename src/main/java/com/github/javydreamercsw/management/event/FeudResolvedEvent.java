@@ -25,7 +25,7 @@ public class FeudResolvedEvent extends ApplicationEvent {
 
   private final MultiWrestlerFeud feud;
 
-  public FeudResolvedEvent(Object source, MultiWrestlerFeud feud) {
+  public FeudResolvedEvent(final Object source, final MultiWrestlerFeud feud) {
     super(source);
     this.feud = feud;
   }

@@ -55,7 +55,7 @@ class ShowPlanningDtoMapperTest {
   @Mock private SegmentRule segmentRule;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     when(segment.getShow()).thenReturn(show);
     when(show.getId()).thenReturn(1L);
     when(show.getName()).thenReturn("Test Show");

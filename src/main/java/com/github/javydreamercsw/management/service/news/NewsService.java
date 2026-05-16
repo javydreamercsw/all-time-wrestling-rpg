@@ -51,7 +51,11 @@ public class NewsService {
 
   @Transactional
   public NewsItem createNewsItem(
-      String headline, String content, NewsCategory category, boolean isRumor, int importance) {
+      final String headline,
+      final String content,
+      final NewsCategory category,
+      final boolean isRumor,
+      final int importance) {
     log.info("Creating news item: {}", headline);
     NewsItem item =
         NewsItem.builder()
@@ -66,7 +70,7 @@ public class NewsService {
   }
 
   @Transactional
-  public void deleteNewsItem(Long id) {
+  public void deleteNewsItem(final Long id) {
     log.info("Deleting news item: {}", id);
     newsRepository.deleteById(id);
   }

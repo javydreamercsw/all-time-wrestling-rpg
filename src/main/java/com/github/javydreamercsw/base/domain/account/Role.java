@@ -42,13 +42,13 @@ public class Role {
   @Column(length = 500)
   private String description;
 
-  public Role(RoleName name, String description) {
+  public Role(final RoleName name, final String description) {
     this.name = name;
     this.description = description;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

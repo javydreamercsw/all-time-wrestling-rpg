@@ -63,11 +63,13 @@ public class ShowController {
       })
   @GetMapping
   public ResponseEntity<Page<Show>> getAllShows(
-      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "Sort field") @RequestParam(defaultValue = "showDate") String sortBy,
+      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0")
+          final int page,
+      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") final int size,
+      @Parameter(description = "Sort field") @RequestParam(defaultValue = "showDate")
+          final String sortBy,
       @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc")
-          String sortDir) {
+          final String sortDir) {
 
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(page, size, sort);
@@ -83,7 +85,7 @@ public class ShowController {
       })
   @GetMapping("/{id}")
   public ResponseEntity<Show> getShowById(
-      @Parameter(description = "Show ID") @PathVariable Long id) {
+      @Parameter(description = "Show ID") @PathVariable final Long id) {
     Optional<Show> show = showService.getShowById(id);
     return show.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -101,11 +103,11 @@ public class ShowController {
       @Parameter(description = "Start date (YYYY-MM-DD)")
           @RequestParam
           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate startDate,
+          final LocalDate startDate,
       @Parameter(description = "End date (YYYY-MM-DD)")
           @RequestParam
           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate endDate) {
+          final LocalDate endDate) {
 
     List<Show> shows = showService.getShowsByDateRange(startDate, endDate);
     return ResponseEntity.ok(shows);
@@ -121,8 +123,8 @@ public class ShowController {
       })
   @GetMapping("/calendar/month")
   public ResponseEntity<List<Show>> getShowsForMonth(
-      @Parameter(description = "Year (e.g., 2024)") @RequestParam int year,
-      @Parameter(description = "Month (1-12)") @RequestParam int month) {
+      @Parameter(description = "Year (e.g., 2024)") @RequestParam final int year,
+      @Parameter(description = "Month (1-12)") @RequestParam final int month) {
 
     List<Show> shows = showService.getShowsForMonth(year, month);
     return ResponseEntity.ok(shows);
@@ -137,7 +139,7 @@ public class ShowController {
   public ResponseEntity<List<Show>> getUpcomingShows(
       @Parameter(description = "Maximum number of shows to return")
           @RequestParam(defaultValue = "10")
-          int limit) {
+          final int limit) {
 
     List<Show> shows = showService.getUpcomingShows(limit);
     return ResponseEntity.ok(shows);
@@ -153,7 +155,7 @@ public class ShowController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
       })
   @PostMapping
-  public ResponseEntity<Show> createShow(@Valid @RequestBody CreateShowRequest request) {
+  public ResponseEntity<Show> createShow(@Valid @RequestBody final CreateShowRequest request) {
     Show show =
         showService.createShow(
             request.name(),
@@ -162,6 +164,7 @@ public class ShowController {
             request.showDate(),
             request.seasonId(),
             request.templateId(),
+            null,
             request.leagueId(),
             request.commentaryTeamId(),
             request.arenaId());
@@ -179,8 +182,8 @@ public class ShowController {
       })
   @PutMapping("/{id}")
   public ResponseEntity<Show> updateShow(
-      @Parameter(description = "Show ID") @PathVariable Long id,
-      @Valid @RequestBody UpdateShowRequest request) {
+      @Parameter(description = "Show ID") @PathVariable final Long id,
+      @Valid @RequestBody final UpdateShowRequest request) {
 
     Optional<Show> updatedShow =
         showService.updateShow(
@@ -206,7 +209,7 @@ public class ShowController {
       })
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteShow(
-      @Parameter(description = "Show ID") @PathVariable Long id) {
+      @Parameter(description = "Show ID") @PathVariable final Long id) {
 
     boolean deleted = showService.deleteShow(id);
     return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
@@ -222,7 +225,7 @@ public class ShowController {
       })
   @PostMapping("/{id}/adjudicate")
   public ResponseEntity<Void> adjudicateShow(
-      @Parameter(description = "Show ID") @PathVariable Long id) {
+      @Parameter(description = "Show ID") @PathVariable final Long id) {
     showService.adjudicateShow(id);
     return ResponseEntity.ok().build();
   }

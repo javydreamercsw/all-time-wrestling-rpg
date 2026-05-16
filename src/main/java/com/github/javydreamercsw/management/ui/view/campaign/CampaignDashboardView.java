@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
@@ -99,18 +100,18 @@ public class CampaignDashboardView extends VerticalLayout {
 
   @Autowired
   public CampaignDashboardView(
-      CampaignRepository campaignRepository,
-      CampaignService campaignService,
-      WrestlerRepository wrestlerRepository,
-      CampaignAbilityCardRepository cardRepository,
-      CampaignUpgradeService upgradeService,
-      SecurityUtils securityUtils,
-      TournamentService tournamentService,
-      com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-      CampaignChapterService chapterService,
-      TitleService titleService,
-      TitleRepository titleRepository,
-      StorylineExportService storylineExportService) {
+      final CampaignRepository campaignRepository,
+      final CampaignService campaignService,
+      final WrestlerRepository wrestlerRepository,
+      final CampaignAbilityCardRepository cardRepository,
+      final CampaignUpgradeService upgradeService,
+      final SecurityUtils securityUtils,
+      final TournamentService tournamentService,
+      final com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+      final CampaignChapterService chapterService,
+      final TitleService titleService,
+      final TitleRepository titleRepository,
+      final StorylineExportService storylineExportService) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
@@ -131,7 +132,7 @@ public class CampaignDashboardView extends VerticalLayout {
     initUI();
   }
 
-  private boolean getFeatureBoolean(@NonNull CampaignState state, @NonNull String key) {
+  private boolean getFeatureBoolean(@NonNull final CampaignState state, @NonNull final String key) {
     if (state.getFeatureData() == null) {
       return false;
     }
@@ -185,8 +186,10 @@ public class CampaignDashboardView extends VerticalLayout {
       add(new H2("Campaign Mode"));
       add(
           new Span(
-              "No active campaign found. To start a campaign, please navigate to the Wrestler"
-                  + " List and use the 'Start Campaign' action on your assigned wrestler."));
+              """
+              No active campaign found. To start a campaign, please navigate to the Wrestler\
+               List and use the 'Start Campaign' action on your assigned wrestler.\
+              """));
       if (!VaadinService.getCurrent().getDeploymentConfiguration().isProductionMode()) {
         // Debug button for E2E tests and quick start
         Button debugStartButton =
@@ -455,7 +458,8 @@ public class CampaignDashboardView extends VerticalLayout {
     }
   }
 
-  private void addStorylineSection(@NonNull CampaignState state, @NonNull VerticalLayout parent) {
+  private void addStorylineSection(
+      @NonNull final CampaignState state, @NonNull final VerticalLayout parent) {
     if (state.getActiveStoryline() == null) {
       return;
     }
@@ -514,7 +518,7 @@ public class CampaignDashboardView extends VerticalLayout {
     parent.add(section);
   }
 
-  private String getMilestoneIcon(StorylineMilestone.MilestoneStatus status) {
+  private String getMilestoneIcon(final StorylineMilestone.MilestoneStatus status) {
     return switch (status) {
       case COMPLETED -> "✅";
       case FAILED -> "❌";
@@ -523,7 +527,8 @@ public class CampaignDashboardView extends VerticalLayout {
     };
   }
 
-  private void addPendingPicksSection(@NonNull Campaign campaign, @NonNull VerticalLayout parent) {
+  private void addPendingPicksSection(
+      @NonNull final Campaign campaign, @NonNull final VerticalLayout parent) {
     CampaignState state = campaign.getState();
     if (state.getPendingL1Picks() <= 0
         && state.getPendingL2Picks() <= 0
@@ -542,8 +547,10 @@ public class CampaignDashboardView extends VerticalLayout {
 
     Span info =
         new Span(
-            "You have earned new ability slots! Choose a card to add to your permanent"
-                + " inventory.");
+            """
+            You have earned new ability slots! Choose a card to add to your permanent\
+             inventory.\
+            """);
     info.addClassNames(LumoUtility.FontSize.SMALL);
     pendingSection.add(info);
 
@@ -577,7 +584,8 @@ public class CampaignDashboardView extends VerticalLayout {
     parent.add(pendingSection);
   }
 
-  private void addSkillUpgradesSection(@NonNull Campaign campaign, @NonNull VerticalLayout parent) {
+  private void addSkillUpgradesSection(
+      @NonNull final Campaign campaign, @NonNull final VerticalLayout parent) {
     CampaignState state = campaign.getState();
     if (state.getSkillTokens() < 8) {
       return;
@@ -625,7 +633,7 @@ public class CampaignDashboardView extends VerticalLayout {
     parent.add(upgradeSection);
   }
 
-  private void addTournamentBracket(@NonNull VerticalLayout parent) {
+  private void addTournamentBracket(@NonNull final VerticalLayout parent) {
     com.github.javydreamercsw.management.dto.campaign.TournamentDTO tournament =
         tournamentService.getTournamentState(currentCampaign);
 
@@ -1074,7 +1082,7 @@ public class CampaignDashboardView extends VerticalLayout {
         new Button(
             "Set Bumps=2",
             e -> {
-              currentCampaign.getWrestler().setBumps(2);
+              currentCampaign.getWrestler().getDefaultState().ifPresent(s -> s.setBumps(2));
               wrestlerRepository.save(currentCampaign.getWrestler());
               refreshUI();
             }));
@@ -1082,14 +1090,13 @@ public class CampaignDashboardView extends VerticalLayout {
         new Button(
             "Heal All",
             e -> {
-              currentCampaign.getWrestler().setBumps(0);
+              currentCampaign.getWrestler().getDefaultState().ifPresent(s -> s.setBumps(0));
               currentCampaign
                   .getWrestler()
-                  .getActiveInjuries()
-                  .forEach(
-                      i -> {
-                        i.heal();
-                      });
+                  .getDefaultState()
+                  .map(WrestlerState::getActiveInjuries)
+                  .orElseGet(java.util.Collections::emptyList)
+                  .forEach(i -> i.heal());
               wrestlerRepository.save(currentCampaign.getWrestler());
               refreshUI();
             }));
@@ -1116,6 +1123,7 @@ public class CampaignDashboardView extends VerticalLayout {
     debugContent.add(new Span("Match Simulation"), matchLayout);
 
     Details debugDetails = new Details("🛠️ Debug / Dev Tools", debugContent);
+    debugDetails.setId("debug-tools-panel");
     debugDetails.setOpened(false);
     debugDetails.addClassNames(
         LumoUtility.Width.FULL,
@@ -1126,7 +1134,7 @@ public class CampaignDashboardView extends VerticalLayout {
     add(debugDetails);
   }
 
-  private void simulateMatch(boolean win) {
+  private void simulateMatch(final boolean win) {
     wrestlerRepository.findAll().stream()
         .filter(w -> !w.equals(currentCampaign.getWrestler()))
         .findFirst()

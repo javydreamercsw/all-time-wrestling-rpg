@@ -26,8 +26,11 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -50,28 +53,38 @@ import org.mockito.quality.Strictness;
 class TierRecalculationServiceTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerStateRepository wrestlerStateRepository;
   @Mock private TierBoundaryService tierBoundaryService;
 
   @InjectMocks private TierRecalculationService tierRecalculationService;
 
   @Captor private ArgumentCaptor<TierBoundary> tierBoundaryCaptor;
-  @Captor private ArgumentCaptor<Wrestler> wrestlerCaptor;
+  @Captor private ArgumentCaptor<WrestlerState> wrestlerStateCaptor;
 
-  private List<Wrestler> wrestlers;
+  private List<WrestlerState> wrestlerStates;
+  private Universe universe;
 
   private Map<Gender, Map<WrestlerTier, TierBoundary>> inMemoryTierBoundaries;
 
   @BeforeEach
-  void setUp() {
-    wrestlers = new ArrayList<>();
+  public void setUp() {
+    universe = Universe.builder().name("Test Universe").build();
+    wrestlerStates = new ArrayList<>();
     // Create 20 wrestlers with varying fan counts (20000, 19000, ..., 1000)
     for (int i = 0; i < 20; i++) {
       Wrestler w = new Wrestler();
       w.setId((long) i);
       w.setName("Wrestler " + i);
       w.setGender(i % 2 == 0 ? Gender.MALE : Gender.FEMALE);
-      w.setFans(1000L * (20 - i)); // Wrestler 0 has 20000, Wrestler 19 has 1000
-      wrestlers.add(w);
+
+      WrestlerState s =
+          WrestlerState.builder()
+              .wrestler(w)
+              .universe(universe)
+              .fans(1000L * (20 - i)) // Wrestler 0 has 20000, Wrestler 19 has 1000
+              .tier(WrestlerTier.ROOKIE)
+              .build();
+      wrestlerStates.add(s);
     }
 
     inMemoryTierBoundaries = new EnumMap<>(Gender.class);
@@ -122,13 +135,13 @@ class TierRecalculationServiceTest {
                   .orElse(null);
             });
 
-    when(wrestlerRepository.save(any(Wrestler.class)))
+    when(wrestlerStateRepository.save(any(WrestlerState.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
   @Test
   void testRecalculateTiersWithNewBoundaries() {
-    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlers));
+    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerStates));
 
     // Male wrestlers (10 wrestlers)
     Map<WrestlerTier, TierBoundary> maleBoundaries = inMemoryTierBoundaries.get(Gender.MALE);
@@ -164,7 +177,7 @@ class TierRecalculationServiceTest {
     TierBoundary femaleMeBoundary = femaleBoundaries.get(WrestlerTier.MAIN_EVENTER);
     assertEquals(15000L, femaleMeBoundary.getMinFans());
 
-    verify(wrestlerRepository, times(14)).save(wrestlerCaptor.capture());
+    verify(wrestlerStateRepository, times(20)).save(wrestlerStateCaptor.capture());
   }
 
   @Test
@@ -180,7 +193,7 @@ class TierRecalculationServiceTest {
       }
     }
 
-    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlers));
+    tierRecalculationService.recalculateRanking(new ArrayList<>(wrestlerStates));
 
     // Verify all tier boundaries were saved
     verify(tierBoundaryService, times(WrestlerTier.values().length * Gender.values().length))
@@ -191,22 +204,29 @@ class TierRecalculationServiceTest {
   void testRecalculateTiersNoWrestlers() {
     tierRecalculationService.recalculateRanking(new ArrayList<>());
     verify(tierBoundaryService, times(0)).save(any(TierBoundary.class));
-    verify(wrestlerRepository, times(0)).save(any(Wrestler.class));
+    verify(wrestlerStateRepository, times(0)).save(any(WrestlerState.class));
   }
 
   @Test
   void testRecalculateTiersWithZeroFans() {
-    List<Wrestler> zeroFanWrestlers = new ArrayList<>();
+    List<WrestlerState> zeroFanWrestlerStates = new ArrayList<>();
     for (int i = 0; i < 5; i++) {
       Wrestler w = new Wrestler();
       w.setId((long) i);
       w.setName("Wrestler " + i);
       w.setGender(i % 2 == 0 ? Gender.MALE : Gender.FEMALE);
-      w.setFans(0L);
-      zeroFanWrestlers.add(w);
+
+      WrestlerState s =
+          WrestlerState.builder()
+              .wrestler(w)
+              .universe(universe)
+              .fans(0L)
+              .tier(WrestlerTier.ROOKIE)
+              .build();
+      zeroFanWrestlerStates.add(s);
     }
 
-    tierRecalculationService.recalculateRanking(new ArrayList<>(zeroFanWrestlers));
+    tierRecalculationService.recalculateRanking(new ArrayList<>(zeroFanWrestlerStates));
 
     Map<WrestlerTier, TierBoundary> maleBoundaries = inMemoryTierBoundaries.get(Gender.MALE);
     assertEquals(
@@ -225,7 +245,7 @@ class TierRecalculationServiceTest {
     assertEquals(
         WrestlerTier.values().length,
         femaleBoundaries.size(),
-        "Should have boundaries for all tiers for males.");
+        "Should have boundaries for all tiers for females.");
 
     for (WrestlerTier tier : WrestlerTier.values()) {
       assertEquals(
@@ -238,14 +258,21 @@ class TierRecalculationServiceTest {
   @Test
   void testRecalculateTiersSmallRoster() {
     // 9 female wrestlers
-    List<Wrestler> smallRoster = new ArrayList<>();
+    List<WrestlerState> smallRoster = new ArrayList<>();
     for (int i = 0; i < 9; i++) {
       Wrestler w = new Wrestler();
       w.setId((long) i);
       w.setName("Female Wrestler " + i);
       w.setGender(Gender.FEMALE);
-      w.setFans(100L * (10 - i)); // 1000, 900, ..., 200
-      smallRoster.add(w);
+
+      WrestlerState s =
+          WrestlerState.builder()
+              .wrestler(w)
+              .universe(universe)
+              .fans(100L * (10 - i)) // 1000, 900, ..., 200
+              .tier(WrestlerTier.ROOKIE)
+              .build();
+      smallRoster.add(s);
     }
 
     tierRecalculationService.recalculateRanking(new ArrayList<>(smallRoster));
@@ -271,10 +298,11 @@ class TierRecalculationServiceTest {
     boundary.setMaxFans(Long.MAX_VALUE);
     inMemoryTierBoundaries.get(Gender.MALE).put(WrestlerTier.ICON, boundary);
 
-    Wrestler wrestler = new Wrestler();
-    wrestler.setGender(Gender.MALE);
-    wrestler.setFans(60000L);
-    wrestler.setTier(WrestlerTier.ROOKIE);
+    Wrestler w = new Wrestler();
+    w.setGender(Gender.MALE);
+
+    WrestlerState wrestler =
+        WrestlerState.builder().wrestler(w).fans(60000L).tier(WrestlerTier.ROOKIE).build();
 
     tierRecalculationService.recalculateTier(wrestler);
 

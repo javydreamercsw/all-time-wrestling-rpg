@@ -25,7 +25,6 @@ import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -37,9 +36,9 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
-import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
@@ -50,6 +49,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
@@ -74,8 +74,6 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -97,13 +95,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 
-/**
- * Detail view for displaying comprehensive information about a specific show. Accessible via URL
- * parameter for direct linking and navigation.
- */
+/** Detail view for displaying comprehensive information about a specific show. */
 @Route("show-detail")
 @PageTitle("Show Details")
 @PermitAll
@@ -115,10 +111,10 @@ public class ShowDetailView extends Main
   private final SegmentService segmentService;
   private final SegmentRepository segmentRepository;
   private final SegmentTypeRepository segmentTypeRepository;
+  private final SegmentRuleRepository segmentRuleRepository;
   private final NpcService npcService;
   private final WrestlerService wrestlerService;
   private final TitleService titleService;
-  private final SegmentRuleRepository segmentRuleRepository;
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
@@ -127,11 +123,13 @@ public class ShowDetailView extends Main
   private final SegmentNarrationController segmentNarrationController;
   private final ShowController showController;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
-  private final LeagueRepository leagueRepository;
+  private final UniverseRepository universeRepository;
+  private final UniverseContextService universeContextService;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final RingsideActionService ringsideActionService;
   private final ArenaService arenaService;
   private final WrestlerRelationshipService relationshipService;
+
   private Button backButton;
   private Registration backButtonListener;
   private H2 showTitle;
@@ -145,38 +143,40 @@ public class ShowDetailView extends Main
   private final NotificationService notificationService;
   private final ShowExportService exportService;
 
+  @Autowired
   public ShowDetailView(
-      ShowService showService,
-      SegmentService segmentService,
-      SegmentRepository segmentRepository,
-      SegmentTypeRepository segmentTypeRepository,
-      NpcService npcService,
-      WrestlerService wrestlerService,
-      TitleService titleService,
-      SegmentRuleRepository segmentRuleRepository,
-      ShowTypeService showTypeService,
-      SeasonService seasonService,
-      ShowTemplateService showTemplateService,
-      RivalryService rivalryService,
-      SegmentNarrationServiceFactory segmentNarrationServiceFactory,
-      SegmentNarrationController segmentNarrationController,
-      ShowController showController,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      LeagueRepository leagueRepository,
-      CommentaryTeamRepository commentaryTeamRepository,
-      RingsideActionService ringsideActionService,
-      ArenaService arenaService,
-      WrestlerRelationshipService relationshipService,
-      NotificationService notificationService,
-      ShowExportService exportService) {
+      final ShowService showService,
+      final SegmentService segmentService,
+      final SegmentRepository segmentRepository,
+      final SegmentTypeRepository segmentTypeRepository,
+      final SegmentRuleRepository segmentRuleRepository,
+      final NpcService npcService,
+      final WrestlerService wrestlerService,
+      final TitleService titleService,
+      final ShowTypeService showTypeService,
+      final SeasonService seasonService,
+      final ShowTemplateService showTemplateService,
+      final RivalryService rivalryService,
+      final SegmentNarrationServiceFactory segmentNarrationServiceFactory,
+      final SegmentNarrationController segmentNarrationController,
+      final ShowController showController,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
+      final UniverseRepository universeRepository,
+      final UniverseContextService universeContextService,
+      final CommentaryTeamRepository commentaryTeamRepository,
+      final RingsideActionService ringsideActionService,
+      final ArenaService arenaService,
+      final WrestlerRelationshipService relationshipService,
+      final NotificationService notificationService,
+      final ShowExportService exportService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
     this.segmentTypeRepository = segmentTypeRepository;
+    this.segmentRuleRepository = segmentRuleRepository;
     this.npcService = npcService;
     this.wrestlerService = wrestlerService;
     this.titleService = titleService;
-    this.segmentRuleRepository = segmentRuleRepository;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
@@ -185,7 +185,8 @@ public class ShowDetailView extends Main
     this.segmentNarrationController = segmentNarrationController;
     this.showController = showController;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
-    this.leagueRepository = leagueRepository;
+    this.universeRepository = universeRepository;
+    this.universeContextService = universeContextService;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.ringsideActionService = ringsideActionService;
     this.arenaService = arenaService;
@@ -197,7 +198,6 @@ public class ShowDetailView extends Main
 
   private void initializeComponents() {
     setSizeFull();
-
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -205,7 +205,6 @@ public class ShowDetailView extends Main
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.MEDIUM);
 
-    // Context-aware back button
     backButton = new Button("Back", new Icon(VaadinIcon.ARROW_LEFT));
     backButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
@@ -226,18 +225,17 @@ public class ShowDetailView extends Main
   }
 
   @Override
-  public void setParameter(BeforeEvent event, Long showId) {
-    // Detect referrer from query parameters or referer header
+  public void setParameter(final BeforeEvent event, final Long showId) {
     String referrer =
         event
             .getLocation()
             .getQueryParameters()
             .getParameters()
             .getOrDefault("ref", List.of("shows"))
-            .getFirst();
+            .get(0);
 
     updateBackButton(referrer);
-    this.currentShowId = showId; // Store the showId
+    this.currentShowId = showId;
     if (showId != null) {
       loadShow(showId);
     } else {
@@ -245,34 +243,23 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void updateBackButton(@NonNull String referrer) {
-    String buttonText;
+  private void updateBackButton(@NonNull final String referrer) {
     String navigationTarget =
         switch (referrer) {
-          case "calendar" -> {
-            buttonText = "Back to Calendar";
-            yield "show-calendar";
-          }
-          case "booker" -> {
-            buttonText = "Back to Booker View";
-            yield "booker";
-          }
-          default -> {
-            buttonText = "Back to Shows";
-            yield "show-list";
-          }
+          case "calendar" -> "show-calendar";
+          case "booker" -> "booker";
+          default -> "show-list";
         };
 
-    backButton.setText(buttonText);
+    backButton.setText("Back to " + referrer);
     if (backButtonListener != null) {
       backButtonListener.remove();
     }
-
     backButtonListener =
         backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(navigationTarget)));
   }
 
-  private void loadShow(@NonNull Long showId) {
+  private void loadShow(@NonNull final Long showId) {
     Optional<Show> showOpt = showService.getShowById(showId);
     if (showOpt.isPresent()) {
       currentShow = showOpt.get();
@@ -283,7 +270,7 @@ public class ShowDetailView extends Main
     refreshSegmentsGrid();
   }
 
-  private void displayShow(@NonNull Show show) {
+  private void displayShow(@NonNull final Show show) {
     contentLayout.removeAll();
     showTitle.setText(show.getName());
 
@@ -323,7 +310,7 @@ public class ShowDetailView extends Main
     contentLayout.setFlexGrow(1, segmentsCard);
   }
 
-  private Div createHeaderCard(@NonNull Show show) {
+  private Div createHeaderCard(@NonNull final Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -337,19 +324,8 @@ public class ShowDetailView extends Main
     Button editNameButton = new Button(new Icon(VaadinIcon.EDIT));
     editNameButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editNameButton.setTooltipText("Edit Show Name");
-    editNameButton.addClickListener(
-        e -> {
-          EditShowNameDialog dialog = new EditShowNameDialog(showService, show);
-          dialog.addOpenedChangeListener(
-              event -> {
-                if (!event.isOpened()) {
-                  loadShow(currentShowId);
-                }
-              });
-          dialog.open();
-        });
+    editNameButton.addClickListener(e -> new EditShowNameDialog(showService, show).open());
 
-    // Show type badge
     Span typeBadge = new Span(show.getType().getName());
     typeBadge.addClassNames(
         LumoUtility.Padding.Horizontal.SMALL,
@@ -358,21 +334,9 @@ public class ShowDetailView extends Main
         LumoUtility.FontSize.SMALL,
         LumoUtility.FontWeight.SEMIBOLD);
 
-    if (show.isPremiumLiveEvent()) {
-      typeBadge.addClassNames(LumoUtility.Background.ERROR, LumoUtility.TextColor.ERROR_CONTRAST);
-    } else if (show.isWeeklyShow()) {
-      typeBadge.addClassNames(
-          LumoUtility.Background.PRIMARY, LumoUtility.TextColor.PRIMARY_CONTRAST);
-    } else {
-      typeBadge.addClassNames(
-          LumoUtility.Background.SUCCESS, LumoUtility.TextColor.SUCCESS_CONTRAST);
-    }
-
     Image showImage = new Image();
     if (show.getTemplate() != null) {
       showImage.setSrc(showTemplateService.resolveShowTemplateImage(show.getTemplate()));
-    } else if (show.getArena() != null) {
-      showImage.setSrc(arenaService.resolveArenaImage(show.getArena()));
     } else {
       showImage.setSrc("images/generic-show.png");
     }
@@ -392,7 +356,7 @@ public class ShowDetailView extends Main
     return card;
   }
 
-  private Div createDetailsCard(@NonNull Show show) {
+  private Div createDetailsCard(@NonNull final Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
@@ -407,47 +371,23 @@ public class ShowDetailView extends Main
     detailsLayout.setSpacing(false);
     detailsLayout.setPadding(false);
 
-    // Show date
-    if (show.getShowDate() != null) {
-      HorizontalLayout dateLayout =
-          createDetailRow(
-              "Show Date:",
-              show.getShowDate().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy")));
-      detailsLayout.add(dateLayout);
-    } else {
-      HorizontalLayout dateLayout = createDetailRow("Show Date:", "Not scheduled");
-      detailsLayout.add(dateLayout);
-    }
-
-    // Show type
-    HorizontalLayout typeLayout =
+    detailsLayout.add(
         createDetailRow(
-            "Type:", show.getType() != null ? show.getType().getName() : "No type assigned");
-    detailsLayout.add(typeLayout);
-
-    // Season
-    HorizontalLayout seasonLayout =
+            "Show Date:",
+            show.getShowDate() != null
+                ? show.getShowDate().format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy"))
+                : "Not scheduled"));
+    detailsLayout.add(
+        createDetailRow(
+            "Type:", show.getType() != null ? show.getType().getName() : "No type assigned"));
+    detailsLayout.add(
         createDetailRow(
             "Season:",
-            show.getSeason() != null ? show.getSeason().getName() : "No season assigned");
-    detailsLayout.add(seasonLayout);
-
-    // Template
-    HorizontalLayout templateLayout =
+            show.getSeason() != null ? show.getSeason().getName() : "No season assigned"));
+    detailsLayout.add(
         createDetailRow(
-            "Template:",
-            show.getTemplate() != null ? show.getTemplate().getName() : "No template assigned");
-    detailsLayout.add(templateLayout);
-
-    // Commentary Team
-    HorizontalLayout commentaryLayout =
-        createDetailRow(
-            "Commentary Team:",
-            show.getCommentaryTeam() != null
-                ? show.getCommentaryTeam().getName()
-                : "No commentary team assigned");
-    detailsLayout.add(commentaryLayout);
-
+            "Universe:",
+            show.getUniverse() != null ? show.getUniverse().getName() : "No universe assigned"));
     // Arena
     HorizontalLayout arenaLayout =
         createDetailRow(
@@ -466,15 +406,15 @@ public class ShowDetailView extends Main
 
     // Event Results (only shown once show is finalized)
     if (show.getAttendance() != null && show.getAttendance() > 0) {
-      String attendanceText = String.format("%,d", show.getAttendance());
+      String attendanceText = "%,d".formatted(show.getAttendance());
       if (show.getArena() != null && show.getArena().getCapacity() != null) {
         int fillPct = (int) ((double) show.getAttendance() / show.getArena().getCapacity() * 100);
-        attendanceText += String.format(" / %,d (%d%%)", show.getArena().getCapacity(), fillPct);
+        attendanceText += " / %,d (%d%%)".formatted(show.getArena().getCapacity(), fillPct);
       }
       detailsLayout.add(createDetailRow("Attendance:", attendanceText));
       if (show.getGateRevenue() != null) {
         detailsLayout.add(
-            createDetailRow("Gate Revenue:", "$" + String.format("%,.2f", show.getGateRevenue())));
+            createDetailRow("Gate Revenue:", "$" + "%,.2f".formatted(show.getGateRevenue())));
       }
     }
 
@@ -515,29 +455,21 @@ public class ShowDetailView extends Main
     planShowButton.addClickListener(
         e -> getUI().ifPresent(ui -> ui.navigate(ShowPlanningView.class, show.getId())));
 
-    Button editDetailsButton = new Button(new Icon(VaadinIcon.EDIT));
+    Button editDetailsButton =
+        new Button(
+            new Icon(VaadinIcon.EDIT),
+            e ->
+                new EditShowDetailsDialog(
+                        showService,
+                        showTypeService,
+                        seasonService,
+                        showTemplateService,
+                        universeRepository,
+                        commentaryTeamRepository,
+                        arenaService,
+                        show)
+                    .open());
     editDetailsButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
-    editDetailsButton.setTooltipText("Edit Show Details");
-    editDetailsButton.addClickListener(
-        e -> {
-          EditShowDetailsDialog dialog =
-              new EditShowDetailsDialog(
-                  showService,
-                  showTypeService,
-                  seasonService,
-                  showTemplateService,
-                  leagueRepository,
-                  commentaryTeamRepository,
-                  arenaService,
-                  show);
-          dialog.addOpenedChangeListener(
-              event -> {
-                if (!event.isOpened()) {
-                  loadShow(currentShowId);
-                }
-              });
-          dialog.open();
-        });
 
     Button exportCardButton = new Button("Export Card", new Icon(VaadinIcon.DOWNLOAD));
     exportCardButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -546,95 +478,49 @@ public class ShowDetailView extends Main
     exportCardButton.addClickListener(
         e -> new ShowExportDialog(exportService, notificationService, show).open());
 
-    HorizontalLayout buttonGroup =
-        new HorizontalLayout(planShowButton, exportCardButton, editDetailsButton);
-    detailsHeader.add(buttonGroup);
+    HorizontalLayout header =
+        new HorizontalLayout(detailsTitle, planShowButton, exportCardButton, editDetailsButton);
+    header.setWidthFull();
+    header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
-    card.add(detailsHeader, detailsLayout);
+    card.add(header, detailsLayout);
     return card;
   }
 
-  private HorizontalLayout createDetailRow(@NonNull String label, @NonNull String value) {
+  private HorizontalLayout createDetailRow(
+      @NonNull final String label, @NonNull final String value) {
     Span labelSpan = new Span(label);
     labelSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.TextColor.SECONDARY);
-
     Span valueSpan = new Span(value);
-    valueSpan.addClassNames(LumoUtility.TextColor.BODY);
-
     HorizontalLayout layout = new HorizontalLayout(labelSpan, valueSpan);
     layout.setSpacing(true);
-    layout.addClassNames(LumoUtility.Padding.Vertical.SMALL);
-
     return layout;
   }
 
-  private Div createDescriptionCard(@NonNull Show show) {
+  private Div createDescriptionCard(@NonNull final Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
         LumoUtility.Border.ALL,
         LumoUtility.BorderRadius.MEDIUM,
         LumoUtility.Background.BASE);
-
-    H3 descriptionTitle = new H3("Description");
-    descriptionTitle.addClassNames(LumoUtility.Margin.Bottom.MEDIUM);
-
-    Div descriptionContent = new Div();
-    descriptionContent
-        .getElement()
-        .setProperty("innerHTML", show.getDescription().replace("\n", "<br>"));
-    descriptionContent.addClassNames(LumoUtility.TextColor.BODY);
-
-    card.add(descriptionTitle, descriptionContent);
+    H3 title = new H3("Description");
+    card.add(title, new Paragraph(show.getDescription()));
     return card;
   }
 
   private void showNotFound() {
     contentLayout.removeAll();
-    showTitle.setText("Show Not Found");
-
-    Div notFoundCard = new Div();
-    notFoundCard.addClassNames(
-        LumoUtility.Padding.LARGE,
-        LumoUtility.Border.ALL,
-        LumoUtility.BorderRadius.MEDIUM,
-        LumoUtility.Background.ERROR_10,
-        LumoUtility.TextAlignment.CENTER);
-
-    Icon errorIcon = new Icon(VaadinIcon.EXCLAMATION_CIRCLE);
-    errorIcon.addClassNames(LumoUtility.TextColor.ERROR);
-    errorIcon.setSize("48px");
-
-    H3 errorTitle = new H3("Show Not Found");
-    errorTitle.addClassNames(LumoUtility.TextColor.ERROR, LumoUtility.Margin.NONE);
-
-    Paragraph errorMessage =
-        new Paragraph(
-            "The requested show could not be found. It may have been deleted or the URL is"
-                + " incorrect.");
-    errorMessage.addClassNames(LumoUtility.TextColor.SECONDARY);
-
-    Button backButton = new Button("Back to Calendar", new Icon(VaadinIcon.CALENDAR));
-    backButton.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate("show-calendar")));
-    backButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-    VerticalLayout errorLayout =
-        new VerticalLayout(errorIcon, errorTitle, errorMessage, backButton);
-    errorLayout.setAlignItems(VerticalLayout.Alignment.CENTER);
-    errorLayout.setSpacing(true);
-
-    notFoundCard.add(errorLayout);
-    contentLayout.add(notFoundCard);
+    contentLayout.add(new H3("Show Not Found"));
   }
 
-  private Div createSegmentsCard(@NonNull Show show) {
+  private Div createSegmentsCard(@NonNull final Show show) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.LARGE,
         LumoUtility.Border.ALL,
         LumoUtility.BorderRadius.MEDIUM,
-        LumoUtility.Background.BASE,
-        LumoUtility.Width.FULL);
+        LumoUtility.Background.BASE);
     card.setSizeFull();
 
     // Header with title and add button
@@ -660,12 +546,12 @@ public class ShowDetailView extends Main
                         == com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
     adjudicateButton.setEnabled(hasPendingSegments);
 
-    Button addSegmentBtn = new Button("Add Segment", new Icon(VaadinIcon.PLUS));
+    Button addSegmentBtn =
+        new Button("Add Segment", new Icon(VaadinIcon.PLUS), e -> openAddSegmentDialog(show));
     addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     addSegmentBtn.setId("add-segment-btn");
-    addSegmentBtn.addClickListener(e -> openAddSegmentDialog(show));
 
-    header.add(segmentsTitle, adjudicateButton, addSegmentBtn);
+    header.add(segmentsTitle, new HorizontalLayout(adjudicateButton, addSegmentBtn));
 
     // Get segments for this show
     List<Segment> segments = segmentRepository.findByShow(show);
@@ -708,7 +594,7 @@ public class ShowDetailView extends Main
     return card;
   }
 
-  private Grid<Segment> createSegmentsGrid(@NonNull List<Segment> segments) {
+  private Grid<Segment> createSegmentsGrid(@NonNull final List<Segment> segments) {
     Grid<Segment> grid = new Grid<>(Segment.class, false);
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(segments);
@@ -750,7 +636,7 @@ public class ShowDetailView extends Main
     // Summary column
     grid.addColumn(Segment::getSummary).setHeader("Summary").setSortable(true).setFlexGrow(3);
 
-    // Segment type column
+    // Narration column
     grid.addColumn(Segment::getNarration).setHeader("Narration").setSortable(true).setFlexGrow(6);
 
     // Participants column
@@ -885,6 +771,7 @@ public class ShowDetailView extends Main
                   segmentNarrationServiceFactory,
                   ringsideActionService,
                   relationshipService,
+                  universeContextService,
                   notificationService);
           dialog.open();
         });
@@ -932,7 +819,7 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void openAddSegmentDialog(@NonNull Show show) {
+  private void openAddSegmentDialog(@NonNull final Show show) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Add Segment to " + show.getName());
     dialog.setWidth("600px");
@@ -1031,7 +918,10 @@ public class ShowDetailView extends Main
           teamCombo.setId("add-team-combo-" + teamNumber);
           teamCombo.setItems(
               wrestlerService.findAllFiltered(
-                  alignmentFilter.getValue(), genderFilter.getValue(), initialWrestlers));
+                  alignmentFilter.getValue(),
+                  genderFilter.getValue(),
+                  universeContextService.getCurrentUniverseId(),
+                  initialWrestlers));
           if (!initialWrestlers.isEmpty()) {
             teamCombo.setValue(initialWrestlers);
           }
@@ -1068,7 +958,11 @@ public class ShowDetailView extends Main
           for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
             Set<Wrestler> current = combo.getValue();
             combo.setItems(
-                wrestlerService.findAllFiltered(e.getValue(), genderFilter.getValue(), current));
+                wrestlerService.findAllFiltered(
+                    e.getValue(),
+                    genderFilter.getValue(),
+                    universeContextService.getCurrentUniverseId(),
+                    current));
             combo.setValue(current);
           }
         });
@@ -1077,7 +971,11 @@ public class ShowDetailView extends Main
           for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
             Set<Wrestler> current = combo.getValue();
             combo.setItems(
-                wrestlerService.findAllFiltered(alignmentFilter.getValue(), e.getValue(), current));
+                wrestlerService.findAllFiltered(
+                    alignmentFilter.getValue(),
+                    e.getValue(),
+                    universeContextService.getCurrentUniverseId(),
+                    current));
             combo.setValue(current);
           }
         });
@@ -1309,7 +1207,10 @@ public class ShowDetailView extends Main
           teamCombo.setWidthFull();
           teamCombo.setItems(
               wrestlerService.findAllFiltered(
-                  alignmentFilter.getValue(), genderFilter.getValue(), initialWrestlers));
+                  alignmentFilter.getValue(),
+                  genderFilter.getValue(),
+                  universeContextService.getCurrentUniverseId(),
+                  initialWrestlers));
           if (!initialWrestlers.isEmpty()) {
             teamCombo.setValue(initialWrestlers);
           }
@@ -1352,7 +1253,11 @@ public class ShowDetailView extends Main
           for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
             Set<Wrestler> current = combo.getValue();
             combo.setItems(
-                wrestlerService.findAllFiltered(e.getValue(), genderFilter.getValue(), current));
+                wrestlerService.findAllFiltered(
+                    e.getValue(),
+                    genderFilter.getValue(),
+                    universeContextService.getCurrentUniverseId(),
+                    current));
             combo.setValue(current);
           }
         });
@@ -1361,7 +1266,11 @@ public class ShowDetailView extends Main
           for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
             Set<Wrestler> current = combo.getValue();
             combo.setItems(
-                wrestlerService.findAllFiltered(alignmentFilter.getValue(), e.getValue(), current));
+                wrestlerService.findAllFiltered(
+                    alignmentFilter.getValue(),
+                    e.getValue(),
+                    universeContextService.getCurrentUniverseId(),
+                    current));
             combo.setValue(current);
           }
         });
@@ -1515,12 +1424,12 @@ public class ShowDetailView extends Main
   }
 
   private boolean validateAndSaveSegment(
-      @NonNull Show show,
-      SegmentType segmentType,
-      java.util.Map<Integer, List<Wrestler>> teamWrestlers,
-      Set<Wrestler> winners,
-      Set<SegmentRule> rules,
-      Segment segmentToUpdate) {
+      @NonNull final Show show,
+      final SegmentType segmentType,
+      final java.util.Map<Integer, List<Wrestler>> teamWrestlers,
+      final Set<Wrestler> winners,
+      final Set<SegmentRule> rules,
+      final Segment segmentToUpdate) {
     Set<Wrestler> wrestlers =
         teamWrestlers.values().stream().flatMap(List::stream).collect(Collectors.toSet());
     log.info("Validating and saving segment: {}", segmentToUpdate);
@@ -1608,10 +1517,9 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void adjudicateShow(@NonNull Show show) {
+  private void adjudicateShow(@NonNull final Show show) {
     showController.adjudicateShow(show.getId());
-    Notification.show("Fan adjudication completed!", 3000, Notification.Position.BOTTOM_START)
-        .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    notificationService.showSuccess("Fan adjudication completed!");
     refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
   }
 
@@ -1639,19 +1547,10 @@ public class ShowDetailView extends Main
   }
 
   @Override
-  public void onApplicationEvent(@NonNull ApplicationEvent event) {
-    if (event instanceof AdjudicationCompletedEvent adjudicationCompletedEvent) {
-      // Check if the completed show is the one currently being viewed
-      assert adjudicationCompletedEvent.getShow().getId() != null;
-      if (adjudicationCompletedEvent.getShow().getId().equals(currentShowId)) {
-        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid));
-      }
-    } else if (event instanceof SegmentsApprovedEvent segmentsApprovedEvent) {
-      // Check if the completed show is the one currently being viewed
-      assert segmentsApprovedEvent.getShow().getId() != null;
-      if (segmentsApprovedEvent.getShow().getId().equals(currentShowId)) {
-        getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid));
-      }
+  public void onApplicationEvent(@NonNull final ApplicationEvent event) {
+    if (event instanceof AdjudicationCompletedEvent e
+        && e.getShow().getId().equals(currentShowId)) {
+      getUI().ifPresent(ui -> ui.access(this::refreshSegmentsGrid));
     }
   }
 }

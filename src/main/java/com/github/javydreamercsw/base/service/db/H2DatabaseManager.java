@@ -30,7 +30,9 @@ public class H2DatabaseManager implements DatabaseManager {
   @NonNull private final String password;
 
   public H2DatabaseManager(
-      @NonNull String dbFilePath, @NonNull String user, @NonNull String password) {
+      @NonNull final String dbFilePath,
+      @NonNull final String user,
+      @NonNull final String password) {
     this.dbFilePath = dbFilePath;
     this.user = user;
     this.password = password;
@@ -53,7 +55,7 @@ public class H2DatabaseManager implements DatabaseManager {
   }
 
   @Override
-  public Connection getConnection(String password) throws SQLException {
+  public Connection getConnection(final String password) throws SQLException {
     return DriverManager.getConnection(getURL(), user, password);
   }
 }

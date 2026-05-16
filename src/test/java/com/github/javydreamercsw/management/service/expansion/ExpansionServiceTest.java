@@ -47,7 +47,7 @@ public class ExpansionServiceTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     expansionService = new ExpansionService(gameSettingService, objectMapper, eventPublisher);
   }
 
@@ -58,7 +58,7 @@ public class ExpansionServiceTest {
     List<Expansion> expansions = expansionService.getExpansions();
 
     assertFalse(expansions.isEmpty());
-    assertTrue(expansions.stream().anyMatch(e -> e.getCode().equals("BASE_GAME")));
+    assertTrue(expansions.stream().anyMatch(e -> "BASE_GAME".equals(e.getCode())));
     // Default should be enabled
     assertTrue(expansions.get(0).isEnabled());
   }

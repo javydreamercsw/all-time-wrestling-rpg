@@ -35,8 +35,10 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -48,6 +50,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private InjuryRepository injuryRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
@@ -69,12 +72,16 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     wrestler = wrestlerRepository.saveAndFlush(wrestler);
 
     // Add some bumps
-    wrestler.setBumps(2);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setBumps(2);
+    wrestlerStateRepository.saveAndFlush(state);
     wrestler = wrestlerRepository.saveAndFlush(wrestler);
 
     // Add an active injury
     Injury activeInjury = new Injury();
     activeInjury.setWrestler(wrestler);
+    activeInjury.setUniverse(defaultUniverse);
     activeInjury.setName("Broken Arm");
     activeInjury.setSeverity(InjurySeverity.SEVERE);
     activeInjury.setHealthPenalty(20);
@@ -85,6 +92,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     // Add a healed injury
     Injury healedInjury = new Injury();
     healedInjury.setWrestler(wrestler);
+    healedInjury.setUniverse(defaultUniverse);
     healedInjury.setName("Twisted Ankle");
     healedInjury.setSeverity(InjurySeverity.MINOR);
     healedInjury.setHealthPenalty(5);
@@ -115,8 +123,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     segment = segmentRepository.saveAndFlush(segment);
 
     // 2. Navigate to Match View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("match/" + segment.getId());
     takeSequencedScreenshot("match-view-injuries");
 
     // 3. Verify active injury and bumps are visible
@@ -142,8 +149,10 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     // Try to click the summary part specifically
     ((org.openqa.selenium.JavascriptExecutor) driver)
         .executeScript(
-            "const summary = arguments[0].shadowRoot.querySelector('[part=\"summary\"]');"
-                + "if (summary) { summary.click(); } else { arguments[0].click(); }",
+            """
+            const summary = arguments[0].shadowRoot.querySelector('[part="summary"]');\
+            if (summary) { summary.click(); } else { arguments[0].click(); }\
+            """,
             healedDetails);
 
     // Wait for the property to change
@@ -167,7 +176,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     assertTrue(Boolean.TRUE.equals(isOpened));
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
         .until(d -> d.getPageSource().contains(text));
   }

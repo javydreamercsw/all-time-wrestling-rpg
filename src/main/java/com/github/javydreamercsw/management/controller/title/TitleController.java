@@ -56,7 +56,8 @@ public class TitleController {
   private final TitleService titleService;
   private final WrestlerRepository wrestlerRepository;
 
-  public TitleController(TitleService titleService, WrestlerRepository wrestlerRepository) {
+  public TitleController(
+      final TitleService titleService, final WrestlerRepository wrestlerRepository) {
     this.titleService = titleService;
     this.wrestlerRepository = wrestlerRepository;
   }
@@ -69,7 +70,7 @@ public class TitleController {
         @ApiResponse(responseCode = "409", description = "Title name already exists")
       })
   @PostMapping
-  public ResponseEntity<Object> createTitle(@Valid @RequestBody CreateTitleRequest request) {
+  public ResponseEntity<Object> createTitle(@Valid @RequestBody final CreateTitleRequest request) {
     // Check if title name already exists
     if (titleService.titleNameExists(request.name())) {
       return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -78,18 +79,25 @@ public class TitleController {
 
     Title title =
         titleService.createTitle(
-            request.name(), request.description(), request.tier(), request.type, request.gender());
+            request.name(),
+            request.description(),
+            request.tier(),
+            request.type(),
+            request.gender(),
+            request.leagueId());
     return ResponseEntity.status(HttpStatus.CREATED).body(title);
   }
 
   @Operation(summary = "Get all titles", description = "Retrieves all titles with pagination")
   @GetMapping
   public ResponseEntity<Page<Title>> getAllTitles(
-      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "Sort field") @RequestParam(defaultValue = "name") String sortBy,
+      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0")
+          final int page,
+      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") final int size,
+      @Parameter(description = "Sort field") @RequestParam(defaultValue = "name")
+          final String sortBy,
       @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc")
-          String sortDir) {
+          final String sortDir) {
 
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(page, size, sort);
@@ -99,7 +107,7 @@ public class TitleController {
 
   @Operation(summary = "Get title by ID", description = "Retrieves a specific title by its ID")
   @GetMapping("/{id}")
-  public ResponseEntity<Title> getTitleById(@PathVariable Long id) {
+  public ResponseEntity<Title> getTitleById(@PathVariable final Long id) {
     Optional<Title> title = titleService.getTitleById(id);
     return title.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -122,7 +130,7 @@ public class TitleController {
       summary = "Get titles by tier",
       description = "Retrieves all active titles of a specific tier")
   @GetMapping("/tier/{tier}")
-  public ResponseEntity<List<Title>> getTitlesByTier(@PathVariable WrestlerTier tier) {
+  public ResponseEntity<List<Title>> getTitlesByTier(@PathVariable final WrestlerTier tier) {
     List<Title> titles = titleService.getTitlesByTier(tier);
     return ResponseEntity.ok(titles);
   }
@@ -136,7 +144,7 @@ public class TitleController {
       })
   @PostMapping("/{titleId}/award")
   public ResponseEntity<Object> awardTitle(
-      @PathVariable Long titleId, @RequestBody List<Long> wrestlerIds) {
+      @PathVariable final Long titleId, @RequestBody final List<Long> wrestlerIds) {
     Optional<Title> titleOpt = titleService.getTitleById(titleId);
     if (titleOpt.isEmpty()) {
       return ResponseEntity.notFound().build();
@@ -156,7 +164,7 @@ public class TitleController {
 
   @Operation(summary = "Vacate title", description = "Vacates a title (removes current champion)")
   @PostMapping("/{id}/vacate")
-  public ResponseEntity<Title> vacateTitle(@PathVariable Long id) {
+  public ResponseEntity<Title> vacateTitle(@PathVariable final Long id) {
     Optional<Title> title = titleService.vacateTitle(id);
     return title.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -172,7 +180,7 @@ public class TitleController {
       })
   @PostMapping("/{titleId}/challenger/{wrestlerId}")
   public ResponseEntity<TitleService.ChallengeResult> addChallengerToTitle(
-      @PathVariable Long titleId, @PathVariable Long wrestlerId) {
+      @PathVariable final Long titleId, @PathVariable final Long wrestlerId) {
     TitleService.ChallengeResult result = titleService.addChallengerToTitle(titleId, wrestlerId);
 
     if (result.success()) {
@@ -195,7 +203,7 @@ public class TitleController {
       })
   @DeleteMapping("/{titleId}/challenger/{wrestlerId}")
   public ResponseEntity<TitleService.ChallengeResult> removeChallengerFromTitle(
-      @PathVariable Long titleId, @PathVariable Long wrestlerId) {
+      @PathVariable final Long titleId, @PathVariable final Long wrestlerId) {
     TitleService.ChallengeResult result =
         titleService.removeChallengerFromTitle(titleId, wrestlerId);
     if (result.success()) {
@@ -209,7 +217,7 @@ public class TitleController {
       summary = "Get eligible challengers",
       description = "Gets wrestlers eligible to challenge for a title")
   @GetMapping("/{id}/eligible-challengers")
-  public ResponseEntity<List<Wrestler>> getEligibleChallengers(@PathVariable Long id) {
+  public ResponseEntity<List<Wrestler>> getEligibleChallengers(@PathVariable final Long id) {
     List<Wrestler> challengers = titleService.getEligibleChallengers(id);
     return ResponseEntity.ok(challengers);
   }
@@ -218,7 +226,7 @@ public class TitleController {
       summary = "Get titles held by wrestler",
       description = "Gets all titles currently held by a wrestler")
   @GetMapping("/wrestler/{wrestlerId}")
-  public ResponseEntity<List<Title>> getTitlesHeldBy(@PathVariable Long wrestlerId) {
+  public ResponseEntity<List<Title>> getTitlesHeldBy(@PathVariable final Long wrestlerId) {
     List<Title> titles = titleService.getTitlesHeldBy(wrestlerId);
     return ResponseEntity.ok(titles);
   }
@@ -226,7 +234,7 @@ public class TitleController {
   @Operation(summary = "Update title", description = "Updates title information")
   @PutMapping("/{id}")
   public ResponseEntity<Title> updateTitle(
-      @PathVariable Long id, @Valid @RequestBody UpdateTitleRequest request) {
+      @PathVariable final Long id, @Valid @RequestBody final UpdateTitleRequest request) {
     Optional<Title> title =
         titleService.updateTitle(
             id, request.name(), request.description(), request.isActive(), request.gender());
@@ -237,7 +245,7 @@ public class TitleController {
       summary = "Delete title",
       description = "Deletes a title (only if inactive and vacant)")
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteTitle(@PathVariable Long id) {
+  public ResponseEntity<Void> deleteTitle(@PathVariable final Long id) {
     boolean deleted = titleService.deleteTitle(id);
     if (deleted) {
       return ResponseEntity.noContent().build();
@@ -250,7 +258,7 @@ public class TitleController {
       summary = "Get title statistics",
       description = "Retrieves comprehensive statistics for a title")
   @GetMapping("/{id}/stats")
-  public ResponseEntity<TitleService.TitleStats> getTitleStats(@PathVariable Long id) {
+  public ResponseEntity<TitleService.TitleStats> getTitleStats(@PathVariable final Long id) {
     TitleService.TitleStats stats = titleService.getTitleStats(id);
     if (stats != null) {
       return ResponseEntity.ok(stats);
@@ -266,7 +274,8 @@ public class TitleController {
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
       @NotNull(message = "Title tier is required") WrestlerTier tier,
       @NotNull(message = "Title type is required") ChampionshipType type,
-      com.github.javydreamercsw.base.domain.wrestler.Gender gender) {}
+      com.github.javydreamercsw.base.domain.wrestler.Gender gender,
+      @NotNull(message = "League ID is required") Long leagueId) {}
 
   public record UpdateTitleRequest(
       @Size(max = 255, message = "Title name must not exceed 255 characters") String name,

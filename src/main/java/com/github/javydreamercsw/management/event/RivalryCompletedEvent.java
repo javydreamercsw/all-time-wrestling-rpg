@@ -24,7 +24,7 @@ import org.springframework.context.ApplicationEvent;
 public class RivalryCompletedEvent extends ApplicationEvent {
   private final Rivalry rivalry;
 
-  public RivalryCompletedEvent(Object source, Rivalry rivalry) {
+  public RivalryCompletedEvent(final Object source, final Rivalry rivalry) {
     super(source);
     this.rivalry = rivalry;
   }

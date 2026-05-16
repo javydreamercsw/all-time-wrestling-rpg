@@ -17,186 +17,227 @@
 package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.AccountInitializer;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Automatically discovers and clears all JPA repositories in the correct dependency order. Uses
- * EntityDependencyAnalyzer to determine the safe deletion order based on entity relationships.
+ * Implementation of DatabaseCleanup using Spring's ApplicationContext to find all repositories and
+ * clear them in the correct order.
  */
-@Service
+@Component
 @Slf4j
+@RequiredArgsConstructor
 public class DatabaseCleaner implements DatabaseCleanup {
 
-  @Autowired private ApplicationContext applicationContext;
-  @Autowired private EntityDependencyAnalyzer dependencyAnalyzer;
-  @Autowired private EntityManager entityManager;
-  @Autowired private AccountInitializer accountInitializer;
-  @Autowired private TransactionTemplate transactionTemplate;
-  @Autowired private Environment environment;
+  private final ApplicationContext applicationContext;
+  private final AccountInitializer accountInitializer;
+  private final EntityDependencyAnalyzer dependencyAnalyzer;
+  private final JdbcTemplate jdbcTemplate;
+  private final TransactionTemplate transactionTemplate;
+  private final Environment environment;
+
+  @PersistenceContext private EntityManager entityManager;
 
   private Map<String, JpaRepository<?, ?>> cachedRepositories;
   private List<String> cachedSyncOrder;
   private Set<Class<?>> cachedEntityClasses;
 
-  /**
-   * Clears all repositories in the correct dependency order. Automatically discovers all
-   * JpaRepository beans and deletes their data in reverse dependency order (children before
-   * parents).
-   */
   @Override
   public void clearRepositories() {
     log.debug("🧹 Starting database cleanup...");
 
-    // Detach all managed entities to prevent dirty state from interfering with cleanup.
-    entityManager.clear();
+    // Ensure we have admin privileges for this manual execution
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          // 1. First break known circular dependencies and clear tables with many-to-many
+          // relationships
+          log.debug("💔 Breaking circular dependencies...");
+          breakCircularDependencies();
 
-    // Break circular dependencies first
-    breakCircularDependencies();
+          // 2. Clear join tables (defined via @JoinTable)
+          log.debug("🔗 Clearing join tables...");
+          clearJoinTables();
 
-    // Clear join tables
-    clearJoinTables();
-
-    // Discover all repositories (with caching)
-    if (cachedRepositories == null) {
-      cachedRepositories = discoverRepositories();
-      log.debug("📦 Discovered and cached {} repositories", cachedRepositories.size());
-    }
-
-    // Get entity classes and determine deletion order (with caching)
-    if (cachedSyncOrder == null) {
-      cachedEntityClasses = getEntityClasses();
-      cachedSyncOrder = dependencyAnalyzer.determineSyncOrder(cachedEntityClasses);
-      // Reverse the order for deletion (delete children before parents)
-      List<String> reverseOrder = new ArrayList<>(cachedSyncOrder);
-      Collections.reverse(reverseOrder);
-      cachedSyncOrder = reverseOrder;
-      log.debug("🔄 Calculated and cached deletion order: {}", cachedSyncOrder);
-    }
-
-    // Entities that should NOT be cleared as they contain static configuration data
-    // loaded by DataInitializer and needed by many views.
-    Set<String> protectedEntities =
-        new HashSet<>(
-            Arrays.asList(
-                "showtype",
-                "segmenttype",
-                "segmentrule",
-                "cardset",
-                "card",
-                "campaignabilitycard",
-                "campaignupgrade",
-                "holiday",
-                "injurytype",
-                "location",
-                "arena",
-                "npc",
-                "faction",
-                "title",
-                "achievement",
-                "ringsideaction",
-                "ringsideactiontype",
-                "commentator",
-                "commentaryteam",
-                "statuscard"));
-
-    // Determine if we should use surgical cleanup (optimized for E2E)
-    // or full cleanup (safer for Integration Tests)
-    boolean isE2E = Arrays.asList(environment.getActiveProfiles()).contains("e2e");
-    log.debug("🧹 Cleanup mode: {}", isE2E ? "SURGICAL (E2E)" : "FULL (Integration)");
-
-    // Delete data in the correct order
-    int deletedCount = 0;
-    for (String entityName : cachedSyncOrder) {
-      if (protectedEntities.contains(entityName.toLowerCase())) {
-        log.debug("🛡️ Skipping protected entity: {}", entityName);
-        continue;
-      }
-
-      // Special handling for Entities that might have both master data and test data:
-      // we want to keep the master data (with externalId) but remove test data (without
-      // externalId).
-      // ONLY apply this optimization in E2E tests to avoid state leakage in ITs.
-      if (isE2E
-          && ("wrestler".equalsIgnoreCase(entityName)
-              || "team".equalsIgnoreCase(entityName)
-              || "faction".equalsIgnoreCase(entityName)
-              || "npc".equalsIgnoreCase(entityName)
-              || "arena".equalsIgnoreCase(entityName)
-              || "location".equalsIgnoreCase(entityName))) {
-        log.debug("🧹 Surgical cleanup for {}...", entityName);
-        int deleted =
-            executeNativeUpdate(
-                "DELETE FROM "
-                    + entityName.toLowerCase()
-                    + " WHERE external_id IS NULL OR external_id = ''");
-        if (deleted >= 0) {
-          log.debug("✅ Deleted {} test {}", deleted, entityName);
-          deletedCount++;
-          continue; // Skip the full repository deletion below
-        }
-      }
-
-      JpaRepository<?, ?> repository = cachedRepositories.get(entityName.toLowerCase());
-      if (repository != null) {
-        try {
-          if (repository.count() > 0) {
-            repository.deleteAllInBatch();
-            deletedCount++;
+          // 3. Discover all JPA repositories (with caching)
+          if (cachedRepositories == null) {
+            log.debug("📦 Discovering JPA repositories...");
+            cachedRepositories = discoverRepositories();
+            log.debug("✅ Discovered {} repositories", cachedRepositories.size());
           }
-        } catch (Exception e) {
-          log.warn("Failed to clear repository for {}: {}", entityName, e.getMessage());
-        }
-      }
-    }
 
-    // Clean up any remaining repositories not in the entity list
-    for (Map.Entry<String, JpaRepository<?, ?>> entry : cachedRepositories.entrySet()) {
-      if (!cachedSyncOrder.contains(entry.getKey())
-          && !protectedEntities.contains(entry.getKey())) {
-        try {
-          if (entry.getValue().count() > 0) {
-            entry.getValue().deleteAllInBatch();
-            deletedCount++;
+          // 4. Get the correct synchronization/deletion order (with caching)
+          if (cachedSyncOrder == null) {
+            log.debug("🔄 Calculating deletion order...");
+            cachedEntityClasses = getEntityClasses();
+            cachedSyncOrder = dependencyAnalyzer.determineSyncOrder(cachedEntityClasses);
+            // Reverse the order for deletion (delete children before parents)
+            List<String> reverseOrder = new ArrayList<>(cachedSyncOrder);
+            Collections.reverse(reverseOrder);
+            cachedSyncOrder = reverseOrder;
+            log.debug("✅ Deletion order calculated ({} entities)", cachedSyncOrder.size());
           }
-        } catch (Exception e) {
-          log.warn("Failed to clear remaining repository {}: {}", entry.getKey(), e.getMessage());
-        }
-      }
-    }
 
-    accountInitializer.init();
-    log.debug("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+          // Entities that should not be cleared (static config, core roles, etc.)
+          Set<String> protectedEntities =
+              new HashSet<>(
+                  Arrays.asList(
+                      "showtype",
+                      "segmenttype",
+                      "segmentrule",
+                      "cardset",
+                      "card",
+                      "campaignabilitycard",
+                      "campaignupgrade",
+                      "holiday",
+                      "injurytype",
+                      "location",
+                      "arena",
+                      "npc",
+                      "faction",
+                      "title",
+                      "achievement",
+                      "ringsideaction",
+                      "ringsideactiontype",
+                      "commentator",
+                      "commentaryteam",
+                      "statuscard",
+                      "role"));
+
+          // Determine if we should use surgical cleanup (optimized for E2E)
+          // or full cleanup (safer for Integration Tests)
+          boolean isE2E = Arrays.asList(environment.getActiveProfiles()).contains("e2e");
+          log.debug("🧹 Cleanup mode: {}", isE2E ? "SURGICAL (E2E)" : "FULL (Integration)");
+
+          // Delete data in the correct order
+          int deletedCount = 0;
+          for (String entityName : cachedSyncOrder) {
+            if (protectedEntities.contains(entityName.toLowerCase())) {
+              log.debug("🛡️ Skipping protected entity: {}", entityName);
+              continue;
+            }
+
+            log.debug("🗑️ Clearing entity: {}", entityName);
+
+            // Special handling for Entities that might have both master data and test data:
+            // we want to keep the master data (with externalId) but remove test data (without
+            // externalId).
+            // ONLY apply this optimization in E2E tests to avoid state leakage in ITs.
+            if (isE2E
+                && ("wrestler".equalsIgnoreCase(entityName)
+                    || "team".equalsIgnoreCase(entityName)
+                    || "faction".equalsIgnoreCase(entityName)
+                    || "npc".equalsIgnoreCase(entityName)
+                    || "arena".equalsIgnoreCase(entityName)
+                    || "location".equalsIgnoreCase(entityName))) {
+              // Use jdbcTemplate directly (same transaction) to avoid deadlock with the
+              // PROPAGATION_REQUIRES_NEW connection that executeNativeUpdate creates, which
+              // would compete for row locks held by breakCircularDependencies() above.
+              try {
+                int deleted =
+                    jdbcTemplate.update(
+                        "DELETE FROM "
+                            + entityName.toLowerCase()
+                            + " WHERE external_id IS NULL OR external_id = ''");
+                log.debug("✅ Deleted {} test records from {}", deleted, entityName);
+                deletedCount++;
+                continue; // Skip the full repository deletion below
+              } catch (Exception e) {
+                log.warn("Surgical delete failed for {}: {}", entityName, e.getMessage());
+              }
+            }
+
+            JpaRepository<?, ?> repository = cachedRepositories.get(entityName.toLowerCase());
+            if (repository != null) {
+              try {
+                if (repository.count() > 0) {
+                  repository.deleteAllInBatch();
+                  resetSequence(entityName);
+                  deletedCount++;
+                  log.debug("✅ Cleared repository: {}", entityName);
+                }
+              } catch (Exception e) {
+                log.warn("Could not clear repository {}: {}", entityName, e.getMessage());
+                // Fallback to manual DELETE for critical tables if repository fails
+                try {
+                  jdbcTemplate.execute("DELETE FROM " + entityName.toUpperCase(Locale.ROOT));
+                  resetSequence(entityName);
+                  deletedCount++;
+                  log.debug("✅ Manually cleared table: {}", entityName);
+                } catch (Exception ex) {
+                  log.trace("Manual delete also failed for {}: {}", entityName, ex.getMessage());
+                }
+              }
+            }
+          }
+
+          // Clean up any remaining repositories not in the entity list
+          for (Map.Entry<String, JpaRepository<?, ?>> entry : cachedRepositories.entrySet()) {
+            if (!cachedSyncOrder.contains(entry.getKey())
+                && !protectedEntities.contains(entry.getKey().toLowerCase())) {
+              try {
+                if (entry.getValue().count() > 0) {
+                  entry.getValue().deleteAllInBatch();
+                  resetSequence(entry.getKey());
+                  deletedCount++;
+                  log.debug("✅ Cleared remaining repository: {}", entry.getKey());
+                }
+              } catch (Exception e) {
+                log.trace(
+                    "Could not clear remaining repository {}: {}", entry.getKey(), e.getMessage());
+              }
+            }
+          }
+
+          // Re-initialize accounts to ensure admin, booker, etc. are available
+          log.debug("👤 Re-initializing accounts...");
+          accountInitializer.init();
+          // No flush — clearRepositories() runs without an outer transaction
+          // (PROPAGATION_NOT_SUPPORTED),
+          // so flushing would throw TransactionRequiredException. Clear the first-level cache only.
+          entityManager.clear();
+          log.debug("✨ Database cleanup completed. Cleared {} repositories", deletedCount);
+        });
   }
 
   protected int executeNativeUpdate(String sql) {
     try {
+      transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
       return transactionTemplate.execute(
           status -> {
             try {
               return entityManager.createNativeQuery(sql).executeUpdate();
             } catch (Exception e) {
-              log.warn("Native update execution failed: {} - {}", sql, e.getMessage());
-              status.setRollbackOnly();
+              log.warn("Native update failed: {} - {}", sql, e.getMessage());
               return -1;
             }
           });
     } catch (Exception e) {
-      log.warn("Transaction failed for native update: {} - {}", sql, e.getMessage());
+      log.warn("Transaction for native update failed: {} - {}", sql, e.getMessage());
       return -1;
     }
   }
@@ -206,20 +247,51 @@ public class DatabaseCleaner implements DatabaseCleanup {
    * before batch deletion to avoid constraint violations.
    */
   private void breakCircularDependencies() {
-    log.debug("💔 Breaking circular dependencies...");
-    executeNativeUpdate("DELETE FROM heat_event");
-    executeNativeUpdate("UPDATE wrestler SET faction_id = NULL");
-    executeNativeUpdate("UPDATE faction SET leader_id = NULL");
-    executeNativeUpdate("UPDATE wrestler SET account_id = NULL");
-    executeNativeUpdate("UPDATE campaign_storyline SET current_milestone_id = NULL");
-    executeNativeUpdate(
-        "UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id = NULL");
-    executeNativeUpdate("UPDATE campaign_state SET active_storyline_id = NULL");
-    executeNativeUpdate("UPDATE account SET failed_login_attempts = 0, locked_until = NULL");
+    // Order matters here to handle foreign key constraints correctly
+    String[] manualTables = {
+      "campaign_state",
+      "storyline_milestone",
+      "campaign_storyline",
+      "wrestler_relationship",
+      "wrestler_state",
+      "league_roster",
+      "league_membership",
+      "team_members",
+      "team",
+      "faction_members",
+      "faction",
+      "account_roles",
+      "wrestler",
+      "account"
+    };
 
-    // Clear storyline and milestone explicitly as they often cause issues
-    executeNativeUpdate("DELETE FROM storyline_milestone");
-    executeNativeUpdate("DELETE FROM campaign_storyline");
+    for (String table : manualTables) {
+      try {
+        switch (table) {
+          case "campaign_state" ->
+              jdbcTemplate.execute(
+                  "UPDATE campaign_state SET active_storyline_id = NULL, current_match_id = NULL");
+          case "campaign_storyline" ->
+              jdbcTemplate.execute("UPDATE campaign_storyline SET current_milestone_id = NULL");
+          case "storyline_milestone" ->
+              jdbcTemplate.execute(
+                  """
+                  UPDATE storyline_milestone SET next_on_success_id = NULL, next_on_failure_id =\
+                   NULL, storyline_id = NULL\
+                  """);
+          case "faction" ->
+              jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
+          case "account" ->
+              // Break link from wrestler back to account
+              jdbcTemplate.execute("UPDATE wrestler SET account_id = NULL");
+        }
+
+        jdbcTemplate.execute("DELETE FROM " + table);
+        log.debug("🗑️ Manually cleared table: {}", table);
+      } catch (Exception e) {
+        log.trace("Could not manually clear table {}: {}", table, e.getMessage());
+      }
+    }
   }
 
   /**
@@ -251,9 +323,46 @@ public class DatabaseCleaner implements DatabaseCleanup {
     if (!joinTableNames.isEmpty()) {
       log.debug("🧹 Clearing {} join tables...", joinTableNames.size());
       for (String tableName : joinTableNames) {
-        executeNativeUpdate("DELETE FROM " + tableName.toUpperCase(Locale.ROOT));
+        try {
+          log.debug("Deleting all records from join table {}", tableName);
+          // Use jdbcTemplate (same connection as outer transaction) to avoid creating a competing
+          // PROPAGATION_REQUIRES_NEW transaction that would deadlock on table locks held by the
+          // outer tx. JDBC exceptions caught here do not mark the JPA transaction rollback-only.
+          jdbcTemplate.update("DELETE FROM " + tableName.toUpperCase(Locale.ROOT));
+          log.debug("✅ Deleted all records from join table {}", tableName);
+        } catch (Exception e) {
+          log.warn("⚠️ Could not clear join table {}: {}", tableName, e.getMessage());
+        }
       }
     }
+  }
+
+  private void resetSequence(final String tableName) {
+    try {
+      String sql = "ALTER TABLE " + tableName + " ALTER COLUMN id RESTART WITH 1";
+      if ("wrestler".equalsIgnoreCase(tableName)) {
+        sql = "ALTER TABLE wrestler ALTER COLUMN wrestler_id RESTART WITH 1";
+      } else if ("show".equalsIgnoreCase(tableName)) {
+        sql = "ALTER TABLE show ALTER COLUMN show_id RESTART WITH 1";
+      }
+
+      jdbcTemplate.execute(sql);
+      log.trace("✅ Reset sequence for table: {}", tableName);
+    } catch (Exception e) {
+      log.trace("Could not reset sequence for table {}: {}", tableName, e.getMessage());
+    }
+  }
+
+  private Set<Class<?>> getEntityClasses() {
+    Set<Class<?>> entityClasses = new HashSet<>();
+    Set<jakarta.persistence.metamodel.EntityType<?>> entities =
+        entityManager.getMetamodel().getEntities();
+
+    for (jakarta.persistence.metamodel.EntityType<?> entity : entities) {
+      entityClasses.add(entity.getJavaType());
+    }
+
+    return entityClasses;
   }
 
   /**
@@ -265,8 +374,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
     String[] beanNames = applicationContext.getBeanNamesForType(JpaRepository.class);
 
     for (String beanName : beanNames) {
-      // Skip account and role repositories to avoid deleting test users
-      if (beanName.equals("accountRepository") || beanName.equals("roleRepository")) {
+      // Skip role repository to avoid deleting core roles
+      if ("roleRepository".equals(beanName)) {
         continue;
       }
       try {
@@ -290,36 +399,13 @@ public class DatabaseCleaner implements DatabaseCleanup {
    * Extracts the entity name from a repository bean. Tries multiple strategies: bean name pattern,
    * repository interface generics.
    */
-  private String extractEntityName(JpaRepository<?, ?> repository, String beanName) {
+  private String extractEntityName(final JpaRepository<?, ?> repository, final String beanName) {
     // Strategy 1: Bean name pattern (e.g., "cardRepository" -> "card")
     if (beanName.endsWith("Repository")) {
       return beanName.substring(0, beanName.length() - "Repository".length());
     }
 
-    // Strategy 2: Try to find the entity class from repository methods
-    try {
-      Method findAllMethod = repository.getClass().getMethod("findAll");
-      Class<?> returnType = findAllMethod.getReturnType();
-      if (returnType != null) {
-        // This is a fallback, might not always work perfectly
-        return returnType.getSimpleName().toLowerCase();
-      }
-    } catch (Exception e) {
-      // Ignore
-    }
-
-    return null;
-  }
-
-  /** Gets all entity classes registered with the EntityManager. */
-  private Set<Class<?>> getEntityClasses() {
-    Set<Class<?>> entityClasses = new HashSet<>();
-    Set<EntityType<?>> entities = entityManager.getMetamodel().getEntities();
-
-    for (EntityType<?> entity : entities) {
-      entityClasses.add(entity.getJavaType());
-    }
-
-    return entityClasses;
+    // Strategy 2: Fallback to manual replacement if strategy 1 fails for some reason
+    return beanName.replace("Repository", "").toLowerCase();
   }
 }

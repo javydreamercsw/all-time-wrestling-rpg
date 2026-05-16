@@ -40,8 +40,10 @@ public interface RivalryRepository
 
   /** Find active rivalries. */
   @Query(
-      "SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2 WHERE r.isActive ="
-          + " true")
+      """
+      SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2 WHERE r.isActive =\
+       true\
+      """)
   List<Rivalry> findByIsActiveTrue();
 
   /** Find ended rivalries. */

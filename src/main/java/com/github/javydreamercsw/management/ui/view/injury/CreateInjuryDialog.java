@@ -39,10 +39,11 @@ public class CreateInjuryDialog extends Dialog {
   private final SecurityUtils securityUtils;
 
   public CreateInjuryDialog(
-      @NonNull Wrestler wrestler,
-      @NonNull InjuryService injuryService,
-      @NonNull Runnable onSave,
-      @NonNull SecurityUtils securityUtils) {
+      @NonNull final Wrestler wrestler,
+      @NonNull final Long universeId,
+      @NonNull final InjuryService injuryService,
+      @NonNull final Runnable onSave,
+      @NonNull final SecurityUtils securityUtils) {
     this.securityUtils = securityUtils;
     setHeaderTitle("Create Injury for " + wrestler.getName());
     setId("create-injury-dialog");
@@ -82,6 +83,7 @@ public class CreateInjuryDialog extends Dialog {
               if (binder.writeBeanIfValid(injury)) {
                 injuryService.createInjury(
                     wrestler.getId(),
+                    universeId,
                     injury.getName(),
                     injury.getDescription(),
                     injury.getSeverity(),

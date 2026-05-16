@@ -19,9 +19,16 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.SegmentPage;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SegmentDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -31,10 +38,16 @@ import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,43 +56,63 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Service responsible for synchronizing segments from Notion to the database. */
 @Service
 @Slf4j
 public class SegmentSyncService extends BaseSyncService {
 
+  private final SegmentRepository segmentRepository;
   private final SegmentService segmentService;
   private final ShowService showService;
-  private final WrestlerService wrestlerService;
   private final SegmentTypeService segmentTypeService;
-  private final ShowSyncService showSyncService;
+  private final SegmentRuleRepository segmentRuleRepository;
+  private final WrestlerService wrestlerService;
+  private final TitleRepository titleRepository;
 
-  @Autowired @Lazy private SegmentSyncService self;
+  @Autowired @Lazy protected SegmentSyncService self;
+  @Autowired @Lazy protected ShowSyncService showSyncService;
+
+  protected SegmentSyncService getSelf() {
+    return self != null ? self : this;
+  }
 
   public SegmentSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      SegmentService segmentService,
-      ShowService showService,
-      WrestlerService wrestlerService,
-      SegmentTypeService segmentTypeService,
-      ShowSyncService showSyncService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor,
+      final SegmentRepository segmentRepository,
+      final SegmentService segmentService,
+      final ShowService showService,
+      final SegmentTypeService segmentTypeService,
+      final SegmentRuleRepository segmentRuleRepository,
+      final WrestlerService wrestlerService,
+      final TitleRepository titleRepository) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
+    this.segmentRepository = segmentRepository;
     this.segmentService = segmentService;
     this.showService = showService;
-    this.wrestlerService = wrestlerService;
     this.segmentTypeService = segmentTypeService;
-    this.showSyncService = showSyncService;
+    this.segmentRuleRepository = segmentRuleRepository;
+    this.wrestlerService = wrestlerService;
+    this.titleRepository = titleRepository;
     this.self = this;
   }
 
-  public SyncResult syncSegments(@NonNull String operationId) {
-    log.info("🤼 Starting segments synchronization from Notion with operation ID: {}", operationId);
+  public SyncResult syncSegments(@NonNull final String operationId) {
+    log.info(
+        "🎞️ Starting segments synchronization from Notion with operation ID: {}", operationId);
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Segments Sync", 4);
+
+    if (!syncServiceDependencies.getNotionSyncProperties().isEnabled()
+        || !syncServiceDependencies.getNotionSyncProperties().isEntityEnabled("segments")) {
+      log.debug("Segments synchronization is disabled, skipping.");
+      return SyncResult.success("Segments", 0, 0, 0);
+    }
+
     return performSegmentSyncInternal(operationId);
   }
 
-  private SyncResult performSegmentSyncInternal(@NonNull String operationId) {
+  private SyncResult performSegmentSyncInternal(@NonNull final String operationId) {
     final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
     // 1. Get all local external IDs
     syncServiceDependencies
@@ -88,20 +121,18 @@ public class SegmentSyncService extends BaseSyncService {
     List<String> localExternalIds = segmentService.getAllExternalIds();
     log.info("Found {} segments in the local database.", localExternalIds.size());
 
-    // 2. Get all Notion page IDs
+    // 2. Get all segment IDs from Notion
     syncServiceDependencies
         .getProgressTracker()
-        .updateProgress(operationId, 2, "Fetching Notion segment IDs");
-    List<String> notionSegmentIds =
-        executeWithRateLimit(
-            () -> syncServiceDependencies.getNotionHandler().getDatabasePageIds("Segments"));
+        .updateProgress(operationId, 2, "Fetching segment IDs from Notion");
+    List<String> notionSegmentIds = getSegmentIds();
     log.info("Found {} segments in Notion.", notionSegmentIds.size());
 
-    // 3. Calculate the difference
+    // 3. Identify new segments (delta sync)
     List<String> newSegmentIds =
         notionSegmentIds.stream()
             .filter(id -> !localExternalIds.contains(id))
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
 
     if (newSegmentIds.isEmpty()) {
       log.info("No new segments to sync from Notion.");
@@ -168,7 +199,9 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   private List<SegmentDTO> convertSegmentsWithRateLimit(
-      List<SegmentPage> notionSegments, String operationId, Consumer<String> messageConsumer) {
+      final List<SegmentPage> notionSegments,
+      final String operationId,
+      final Consumer<String> messageConsumer) {
     return processWithControlledParallelism(
         notionSegments,
         segmentPage -> convertNotionPageToDTO(segmentPage, messageConsumer),
@@ -180,7 +213,7 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   private SegmentDTO convertNotionPageToDTO(
-      @NonNull SegmentPage segmentPage, Consumer<String> messageConsumer) {
+      @NonNull final SegmentPage segmentPage, final Consumer<String> messageConsumer) {
     SegmentDTO segmentDTO = new SegmentDTO();
     segmentDTO.setExternalId(segmentPage.getId());
     segmentDTO.setName(
@@ -188,48 +221,49 @@ public class SegmentSyncService extends BaseSyncService {
             .getNotionPageDataExtractor()
             .extractNameFromNotionPage(segmentPage));
 
-    if (segmentPage.getProperties().getShows() != null
-        && !segmentPage.getProperties().getShows().getRelation().isEmpty()) {
-      segmentDTO.setShowExternalId(
-          segmentPage.getProperties().getShows().getRelation().get(0).getId());
+    Map<String, Object> rawProperties = segmentPage.getRawProperties();
+
+    String showExternalId =
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractRelationId(segmentPage, "Shows");
+    if (showExternalId != null && !showExternalId.isEmpty()) {
+      segmentDTO.setShowExternalId(showExternalId);
     }
 
-    Object participantsProperty = segmentPage.getRawProperties().get("Participants");
+    Object participantsProperty = rawProperties.get("Participants");
     if (participantsProperty instanceof String && !((String) participantsProperty).isEmpty()) {
       segmentDTO.setParticipantNames(
-          java.util.stream.Stream.of(((String) participantsProperty).split(","))
+          Stream.of(((String) participantsProperty).split(","))
               .map(String::trim)
-              .collect(java.util.stream.Collectors.toList()));
+              .collect(Collectors.toList()));
     } else {
-      segmentDTO.setParticipantNames(new java.util.ArrayList<>());
+      segmentDTO.setParticipantNames(new ArrayList<>());
     }
 
-    Object winnersProperty = segmentPage.getRawProperties().get("Winners");
+    Object winnersProperty = rawProperties.get("Winners");
     if (winnersProperty instanceof String && !((String) winnersProperty).isEmpty()) {
       segmentDTO.setWinnerNames(
-          java.util.stream.Stream.of(((String) winnersProperty).split(","))
+          Stream.of(((String) winnersProperty).split(","))
               .map(String::trim)
-              .collect(java.util.stream.Collectors.toList()));
+              .collect(Collectors.toList()));
     } else {
-      segmentDTO.setWinnerNames(new java.util.ArrayList<>());
+      segmentDTO.setWinnerNames(new ArrayList<>());
     }
 
-    Object segmentTypeProperty = segmentPage.getRawProperties().get("Segment Type");
-    if (segmentTypeProperty instanceof String && !((String) segmentTypeProperty).isEmpty()) {
-      segmentDTO.setSegmentTypeName((String) segmentTypeProperty);
+    String segmentTypeExternalId =
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractRelationId(segmentPage, "Segment Type");
+    if (segmentTypeExternalId != null && !segmentTypeExternalId.isEmpty()) {
+      segmentDTO.setSegmentTypeExternalId(segmentTypeExternalId);
     } else {
-      String msg =
-          String.format(
-              "Segment type property for segment %s is not a string or is empty. Actual type: %s,"
-                  + " Value: %s",
-              segmentPage.getId(),
-              segmentTypeProperty != null ? segmentTypeProperty.getClass().getName() : "null",
-              segmentTypeProperty);
+      String msg = "Segment type relation not found for segment %s.".formatted(segmentPage.getId());
       log.warn(msg);
       messageConsumer.accept(msg);
     }
 
-    Object dateProperty = segmentPage.getRawProperties().get("Date");
+    Object dateProperty = rawProperties.get("Date");
     if (dateProperty instanceof String dateString && !((String) dateProperty).isEmpty()) {
       if (dateString.startsWith("@")) {
         dateString = dateString.substring(1);
@@ -242,51 +276,99 @@ public class SegmentSyncService extends BaseSyncService {
         segmentDTO.setSegmentDate(localDate.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
       } catch (java.time.format.DateTimeParseException e) {
         String msg =
-            String.format(
-                "Could not parse date '%s' for segment %s: %s",
-                dateProperty, segmentPage.getId(), e.getMessage());
+            "Could not parse date '%s' for segment %s: %s"
+                .formatted(dateProperty, segmentPage.getId(), e.getMessage());
         log.warn(msg);
         messageConsumer.accept(msg);
         segmentDTO.setSegmentDate(null);
       }
     }
 
-    segmentDTO.setNarration(
-        syncServiceDependencies.getNotionHandler().getPageContentPlainText(segmentPage.getId()));
+    // Get full narration content from page blocks
+    try {
+      segmentDTO.setNarration(
+          syncServiceDependencies.getNotionHandler().getPageContentPlainText(segmentPage.getId()));
+    } catch (Exception e) {
+      log.warn(
+          "Could not load narration content for segment {}: {}",
+          segmentPage.getId(),
+          e.getMessage());
+      segmentDTO.setNarration(
+          syncServiceDependencies
+              .getNotionPageDataExtractor()
+              .extractDescriptionFromNotionPage(segmentPage));
+    }
 
-    Object notesProperty = segmentPage.getRawProperties().get("Notes");
+    Object summaryObj = rawProperties.get("Summary");
+    if (summaryObj instanceof String) {
+      segmentDTO.setSummary((String) summaryObj);
+    }
+
+    Object notesProperty = rawProperties.get("Notes");
     if (notesProperty instanceof String && !((String) notesProperty).isEmpty()) {
       segmentDTO.setNotes((String) notesProperty);
     }
+
+    Object orderObj = rawProperties.get("Order");
+    if (orderObj instanceof Number) {
+      segmentDTO.setSegmentOrder(((Number) orderObj).intValue());
+    }
+
+    Object mainEventObj = rawProperties.get("Main Event");
+    segmentDTO.setMainEvent(Boolean.TRUE.equals(mainEventObj));
+
+    Object isTitleSegmentObj = rawProperties.get("Is Title Segment");
+    segmentDTO.setTitleSegment(Boolean.TRUE.equals(isTitleSegmentObj));
+
+    Object statusObj = rawProperties.get("Status");
+    if (statusObj instanceof String) {
+      segmentDTO.setStatus((String) statusObj);
+    }
+
+    Object adjudicationStatusObj = rawProperties.get("Adjudication Status");
+    if (adjudicationStatusObj instanceof String) {
+      segmentDTO.setAdjudicationStatus((String) adjudicationStatusObj);
+    }
+
+    // Extract Relation IDs for advanced processing
+    segmentDTO.setRuleExternalIds(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractRelationIds(segmentPage, "Rules"));
+
+    segmentDTO.setTitleExternalIds(
+        syncServiceDependencies
+            .getNotionPageDataExtractor()
+            .extractRelationIds(segmentPage, "Titles"));
 
     return segmentDTO;
   }
 
   private int saveSegmentsToDatabase(
-      @NonNull List<SegmentDTO> segmentDTOs, Consumer<String> messageConsumer) {
+      @NonNull final List<SegmentDTO> segmentDTOs, final Consumer<String> messageConsumer) {
     int savedCount = 0;
     for (SegmentDTO segmentDTO : segmentDTOs) {
-      if (self.processSingleSegment(segmentDTO, messageConsumer)) {
+      if (getSelf().processSingleSegment(segmentDTO, messageConsumer)) {
         savedCount++;
       }
     }
     return savedCount;
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public boolean processSingleSegment(@NonNull SegmentDTO segmentDTO) {
+  public boolean processSingleSegment(@NonNull final SegmentDTO segmentDTO) {
     return self.processSingleSegment(segmentDTO, msg -> {});
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public boolean processSingleSegment(
-      @NonNull SegmentDTO segmentDTO, Consumer<String> messageConsumer) {
+      @NonNull final SegmentDTO segmentDTO, final Consumer<String> messageConsumer) {
     Optional<Segment> existingSegmentOpt =
         Optional.ofNullable(segmentDTO.getExternalId()).flatMap(segmentService::findByExternalId);
 
     Segment segment = existingSegmentOpt.orElseGet(Segment::new);
+    boolean isNew = segment.getId() == null;
 
-    if (segment.getId() == null) {
+    if (isNew) {
       log.debug(
           "Creating new segment: {} (External ID: {})",
           segmentDTO.getName(),
@@ -296,33 +378,25 @@ public class SegmentSyncService extends BaseSyncService {
       log.debug("Updating existing segment: {} (ID: {})", segmentDTO.getName(), segment.getId());
     }
 
+    // Resolve Show
     Optional<Show> showOpt = showService.findByExternalId(segmentDTO.getShowExternalId());
     if (showOpt.isEmpty()) {
       String msg =
-          String.format(
-              "Show '%s' for segment %s was not found locally. Attempting to sync it.",
-              segmentDTO.getShowName(), segmentDTO.getName());
+          "Show for segment %s was not found locally. Attempting to sync it."
+              .formatted(segmentDTO.getName());
       log.warn(msg);
       messageConsumer.accept(msg);
       // Attempt to sync the missing show
       SyncResult showSyncResult = showSyncService.syncShow(segmentDTO.getShowExternalId());
       if (showSyncResult.isSuccess()) {
-        log.info("Successfully synced show '{}'. Retrying lookup.", segmentDTO.getShowName());
+        log.info("Successfully synced show. Retrying lookup.");
         showOpt = showService.findByExternalId(segmentDTO.getShowExternalId());
-      } else {
-        String errorMsg =
-            String.format(
-                "Failed to sync show '%s' for segment %s: %s",
-                segmentDTO.getShowName(), segmentDTO.getName(), showSyncResult.getErrorMessage());
-        log.error(errorMsg);
-        messageConsumer.accept(errorMsg);
       }
 
       if (showOpt.isEmpty()) {
         String errorMsg =
-            String.format(
-                "Skipping segment %s as show '%s' could not be found or synced.",
-                segmentDTO.getName(), segmentDTO.getShowName());
+            "Skipping segment %s as show could not be found or synced."
+                .formatted(segmentDTO.getName());
         log.warn(errorMsg);
         messageConsumer.accept(errorMsg);
         return false;
@@ -330,35 +404,27 @@ public class SegmentSyncService extends BaseSyncService {
     }
     segment.setShow(showOpt.get());
 
-    String segmentTypeName = segmentDTO.getSegmentTypeName();
-    if (segmentTypeName == null || segmentTypeName.trim().isEmpty()) {
-      String msg =
-          String.format(
-              "Skipping segment %s as segment type name is null or empty in Notion data.",
-              segmentDTO.getName());
-      log.warn(msg);
-      messageConsumer.accept(msg);
-      return false;
+    // Resolve Segment Type by external ID
+    String segmentTypeExternalId = segmentDTO.getSegmentTypeExternalId();
+    if (segmentTypeExternalId != null && !segmentTypeExternalId.trim().isEmpty()) {
+      Optional<SegmentType> segmentTypeOpt =
+          segmentTypeService.findByExternalId(segmentTypeExternalId);
+      if (segmentTypeOpt.isEmpty()) {
+        log.warn(
+            "Segment type with external ID '{}' not found in local database.",
+            segmentTypeExternalId);
+      } else {
+        segment.setSegmentType(segmentTypeOpt.get());
+      }
     }
 
-    Optional<SegmentType> segmentTypeOpt = segmentTypeService.findByName(segmentTypeName);
-    if (segmentTypeOpt.isEmpty()) {
-      String msg =
-          String.format(
-              "Skipping segment %s as segment type '%s' was not found in local database.",
-              segmentDTO.getName(), segmentTypeName);
-      log.warn(msg);
-      messageConsumer.accept(msg);
-      return false;
-    }
-    segment.setSegmentType(segmentTypeOpt.get());
-
-    List<Wrestler> participants = new java.util.ArrayList<>();
+    // Resolve Participants and Winners
+    List<Wrestler> participants = new ArrayList<>();
     for (String participantName : segmentDTO.getParticipantNames()) {
       wrestlerService.findByName(participantName).ifPresent(participants::add);
     }
 
-    List<Wrestler> winners = new java.util.ArrayList<>();
+    List<Wrestler> winners = new ArrayList<>();
     for (String winnerName : segmentDTO.getWinnerNames()) {
       wrestlerService.findByName(winnerName).ifPresent(winners::add);
     }
@@ -366,24 +432,67 @@ public class SegmentSyncService extends BaseSyncService {
     segment.syncParticipants(participants);
 
     if (!winners.isEmpty()) {
-      List<Wrestler> currentWinners = segment.getWinners();
-      if (!new java.util.HashSet<>(currentWinners).equals(new java.util.HashSet<>(winners))) {
-        segment.setWinners(winners);
-      }
+      segment.setWinners(winners);
     }
 
-    if (segmentDTO.getSegmentDate() != null
-        && !segmentDTO.getSegmentDate().equals(segment.getSegmentDate())) {
+    // Set other properties
+    if (segmentDTO.getSegmentDate() != null) {
       segment.setSegmentDate(segmentDTO.getSegmentDate());
     }
 
-    if (segmentDTO.getNarration() != null
-        && !segmentDTO.getNarration().equals(segment.getNarration())) {
+    if (segmentDTO.getNarration() != null) {
       segment.setNarration(segmentDTO.getNarration());
     }
 
-    if (segmentDTO.getNotes() != null && !segmentDTO.getNotes().equals(segment.getNotes())) {
+    if (segmentDTO.getSummary() != null) {
+      segment.setSummary(segmentDTO.getSummary());
+    }
+
+    if (segmentDTO.getNotes() != null) {
       segment.setNotes(segmentDTO.getNotes());
+    }
+
+    segment.setSegmentOrder(segmentDTO.getSegmentOrder());
+    segment.setMainEvent(segmentDTO.isMainEvent());
+    segment.setIsTitleSegment(segmentDTO.isTitleSegment());
+
+    // Handle Status
+    if (segmentDTO.getStatus() != null) {
+      try {
+        segment.setStatus(SegmentStatus.valueOf(segmentDTO.getStatus().toUpperCase()));
+      } catch (Exception e) {
+        log.warn("Invalid status value: {}", segmentDTO.getStatus());
+      }
+    }
+
+    // Handle Adjudication Status
+    if (segmentDTO.getAdjudicationStatus() != null) {
+      try {
+        segment.setAdjudicationStatus(
+            AdjudicationStatus.valueOf(segmentDTO.getAdjudicationStatus().toUpperCase()));
+      } catch (Exception e) {
+        log.warn("Invalid adjudication status value: {}", segmentDTO.getAdjudicationStatus());
+      }
+    }
+
+    // Resolve Rules
+    if (segmentDTO.getRuleExternalIds() != null) {
+      Set<SegmentRule> rules = new HashSet<>();
+      for (String extId : segmentDTO.getRuleExternalIds()) {
+        segmentRuleRepository.findByExternalId(extId).ifPresent(rules::add);
+      }
+      segment.getSegmentRules().clear();
+      segment.getSegmentRules().addAll(rules);
+    }
+
+    // Resolve Titles
+    if (segmentDTO.getTitleExternalIds() != null) {
+      Set<Title> titles = new HashSet<>();
+      for (String extId : segmentDTO.getTitleExternalIds()) {
+        titleRepository.findByExternalId(extId).ifPresent(titles::add);
+      }
+      segment.getTitles().clear();
+      segment.getTitles().addAll(titles);
     }
 
     segmentService.updateSegment(segment);
@@ -396,7 +505,7 @@ public class SegmentSyncService extends BaseSyncService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public SyncResult syncSegment(@NonNull String segmentId) {
+  public SyncResult syncSegment(@NonNull final String segmentId) {
     log.info("🤼 Starting segment synchronization from Notion for ID: {}", segmentId);
     String operationId = "segment-sync-" + segmentId;
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Segment Sync", 4);

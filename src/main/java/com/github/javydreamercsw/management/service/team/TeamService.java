@@ -58,7 +58,7 @@ public class TeamService {
   /** Get all teams with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public org.springframework.data.domain.Page<Team> getAllTeams(@NonNull Pageable pageable) {
+  public org.springframework.data.domain.Page<Team> getAllTeams(@NonNull final Pageable pageable) {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
 
     // Fetch all since we need to filter based on member properties not in the Team table directly
@@ -109,36 +109,43 @@ public class TeamService {
         .count();
   }
 
+  /** Count all teams. */
+  @Transactional(readOnly = true)
+  public long count() {
+    return teamRepository.count();
+  }
+
   /** Get team by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Team> getTeamById(Long id) {
+  public Optional<Team> getTeamById(final Long id) {
     return teamRepository.findById(id);
   }
 
   /** Get team by name. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Team> getTeamByName(String name) {
+  public Optional<Team> getTeamByName(final String name) {
     return teamRepository.findByName(name);
   }
 
   /** Get team by external ID (for Notion sync). */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Team> getTeamByExternalId(String externalId) {
+  public Optional<Team> getTeamByExternalId(final String externalId) {
     return teamRepository.findByExternalId(externalId);
   }
 
   /** Create a new team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Team> createTeam(
-      String name,
-      String description,
-      Long wrestler1Id,
-      Long wrestler2Id,
-      Long factionId,
-      Long managerId) {
+      final String name,
+      final String description,
+      final Long wrestler1Id,
+      final Long wrestler2Id,
+      final Long factionId,
+      final Long managerId) {
     if (wrestler1Id == null || wrestler2Id == null) {
       log.warn("Cannot create team: Wrestler IDs cannot be null");
       return Optional.empty();
@@ -211,14 +218,15 @@ public class TeamService {
   }
 
   /** Update an existing team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Team> updateTeam(
-      Long teamId,
-      String name,
-      String description,
-      TeamStatus status,
-      Long factionId,
-      Long managerId) {
+      final Long teamId,
+      final String name,
+      final String description,
+      final TeamStatus status,
+      final Long factionId,
+      final Long managerId) {
     Optional<Team> teamOpt = teamRepository.findById(teamId);
     if (teamOpt.isEmpty()) {
       return Optional.empty();
@@ -253,14 +261,15 @@ public class TeamService {
     }
 
     Team savedTeam = teamRepository.saveAndFlush(team);
-    log.info("Updated team: {}", savedTeam.getName());
+    log.debug("Updated team: {}", savedTeam.getName());
 
     return Optional.of(savedTeam);
   }
 
   /** Delete a team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public boolean deleteTeam(Long teamId) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public boolean deleteTeam(final Long teamId) {
     if (!teamRepository.existsById(teamId)) {
       return false;
     }
@@ -295,14 +304,14 @@ public class TeamService {
 
   @org.springframework.context.event.EventListener
   public void onExpansionToggled(
-      com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent event) {
+      final com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent event) {
     log.info("Expansion '{}' toggled, clear team caches if any.", event.getExpansionCode());
   }
 
   /** Get teams by faction. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Team> getTeamsByFaction(Faction faction) {
+  public List<Team> getTeamsByFaction(final Faction faction) {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return teamRepository.findByFaction(faction).stream()
         .filter(
@@ -322,7 +331,7 @@ public class TeamService {
   /** Get teams where a wrestler is a member. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Team> getTeamsByWrestler(Wrestler wrestler) {
+  public List<Team> getTeamsByWrestler(final Wrestler wrestler) {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return teamRepository.findByWrestler(wrestler).stream()
         .filter(
@@ -342,7 +351,7 @@ public class TeamService {
   /** Get active teams where a wrestler is a member. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Team> getActiveTeamsByWrestler(Wrestler wrestler) {
+  public List<Team> getActiveTeamsByWrestler(final Wrestler wrestler) {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return teamRepository.findByWrestlerAndStatus(wrestler, TeamStatus.ACTIVE).stream()
         .filter(
@@ -362,7 +371,7 @@ public class TeamService {
   /** Find team by both wrestlers. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Team> findTeamByWrestlers(Wrestler wrestler1, Wrestler wrestler2) {
+  public Optional<Team> findTeamByWrestlers(final Wrestler wrestler1, final Wrestler wrestler2) {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return teamRepository
         .findByBothWrestlers(wrestler1, wrestler2)
@@ -383,7 +392,8 @@ public class TeamService {
   /** Find active team by both wrestlers. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Team> findActiveTeamByWrestlers(Wrestler wrestler1, Wrestler wrestler2) {
+  public Optional<Team> findActiveTeamByWrestlers(
+      final Wrestler wrestler1, final Wrestler wrestler2) {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
     return teamRepository
         .findActiveTeamByBothWrestlers(wrestler1, wrestler2)
@@ -411,14 +421,16 @@ public class TeamService {
   // ==================== BUSINESS OPERATIONS ====================
 
   /** Disband a team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Team> disbandTeam(Long teamId) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<Team> disbandTeam(final Long teamId) {
     return updateTeam(teamId, null, null, TeamStatus.DISBANDED, null, null);
   }
 
   /** Reactivate a disbanded team. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Team> reactivateTeam(Long teamId) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<Team> reactivateTeam(final Long teamId) {
     return updateTeam(teamId, null, null, TeamStatus.ACTIVE, null, null);
   }
 
@@ -428,7 +440,7 @@ public class TeamService {
    * @param team The team entity.
    * @return The resolved image URL.
    */
-  public String resolveTeamImage(Team team) {
+  public String resolveTeamImage(final Team team) {
     if (team.getImageUrl() != null && !team.getImageUrl().isBlank()) {
       return team.getImageUrl();
     }

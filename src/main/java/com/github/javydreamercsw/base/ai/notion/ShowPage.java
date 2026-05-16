@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
@@ -31,15 +32,12 @@ import org.slf4j.LoggerFactory;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
+@NoArgsConstructor
 public class ShowPage extends NotionPage {
   private NotionProperties properties;
   private transient NotionHandler notionHandler;
 
-  public ShowPage() {
-    // Default constructor
-  }
-
-  public ShowPage(NotionHandler notionHandler) {
+  public ShowPage(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -117,7 +115,7 @@ public class ShowPage extends NotionPage {
   }
 
   /** Helper method to map a Notion Page to a MatchPage object. */
-  private SegmentPage mapPageToMatchPage(@NonNull Page pageData) {
+  private SegmentPage mapPageToMatchPage(@NonNull final Page pageData) {
     SegmentPage matchPage = new SegmentPage();
 
     // Set basic page information
@@ -140,7 +138,7 @@ public class ShowPage extends NotionPage {
   }
 
   /** Helper method to extract segment name from page data. */
-  private String getMatchName(@NonNull Page segmentPageData) {
+  private String getMatchName(@NonNull final Page segmentPageData) {
     try {
       PageProperty nameProperty = segmentPageData.getProperties().get("Name");
       if (nameProperty != null

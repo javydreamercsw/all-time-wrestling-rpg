@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.domain.faction;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -38,9 +38,10 @@ import org.jspecify.annotations.Nullable;
     uniqueConstraints = @UniqueConstraint(columnNames = {"faction1_id", "faction2_id"}))
 @Getter
 @Setter
-public class FactionRivalry extends AbstractEntity<Long> {
+public class FactionRivalry extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "faction_rivalry_id")
   private Long id;
 
@@ -78,11 +79,6 @@ public class FactionRivalry extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"factionRivalry"})
   private List<FactionHeatEvent> heatEvents = new ArrayList<>();
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
   @PrePersist
   protected void onCreate() {
     if (creationDate == null) {
@@ -96,7 +92,7 @@ public class FactionRivalry extends AbstractEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add heat to the faction rivalry. */
-  public void addHeat(int heatGain, String reason) {
+  public void addHeat(final int heatGain, final String reason) {
     this.heat += heatGain;
 
     // Create heat event for tracking
@@ -128,7 +124,7 @@ public class FactionRivalry extends AbstractEntity<Long> {
    * Attempt to resolve the faction rivalry with dice roll. ATW Rule: Both factions roll d20 → total
    * >30 = rivalry ends
    */
-  public boolean attemptResolution(int faction1Roll, int faction2Roll) {
+  public boolean attemptResolution(final int faction1Roll, final int faction2Roll) {
     if (!canAttemptResolution()) {
       return false;
     }
@@ -159,7 +155,7 @@ public class FactionRivalry extends AbstractEntity<Long> {
   }
 
   /** End the faction rivalry. */
-  public void endRivalry(String reason) {
+  public void endRivalry(final String reason) {
     this.isActive = false;
     this.endedDate = Instant.now();
 
@@ -174,7 +170,7 @@ public class FactionRivalry extends AbstractEntity<Long> {
   }
 
   /** Get the opposing faction in the rivalry. */
-  public Faction getOpponent(Faction faction) {
+  public Faction getOpponent(final Faction faction) {
     if (faction.equals(faction1)) {
       return faction2;
     } else if (faction.equals(faction2)) {
@@ -184,7 +180,7 @@ public class FactionRivalry extends AbstractEntity<Long> {
   }
 
   /** Check if a faction is involved in this rivalry. */
-  public boolean involvesFaction(Faction faction) {
+  public boolean involvesFaction(final Faction faction) {
     return faction.equals(faction1) || faction.equals(faction2);
   }
 
@@ -215,8 +211,7 @@ public class FactionRivalry extends AbstractEntity<Long> {
 
   /** Get rivalry summary with heat and intensity. */
   public String getRivalrySummary() {
-    return String.format(
-        "%s (%d heat - %s)", getDisplayName(), heat, getIntensity().getDisplayName());
+    return "%s (%d heat - %s)".formatted(getDisplayName(), heat, getIntensity().getDisplayName());
   }
 
   /** Check if both factions are still active. */

@@ -24,9 +24,11 @@ import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -46,44 +48,58 @@ public class TitleService {
   private final TierBoundaryService tierBoundaryService;
   private final TitleRepository titleRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
+  private final UniverseRepository universeRepository;
   private final Clock clock;
   private final DefaultImageService imageService;
 
-  public boolean isWrestlerEligible(@NonNull Wrestler wrestler, @NonNull Title title) {
+  public boolean isWrestlerEligible(@NonNull final Wrestler wrestler, @NonNull final Title title) {
     if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
       return false;
     }
+
+    if (title.getUniverse() == null) {
+      return false;
+    }
+
     // A wrestler is eligible if their tier is the same or higher than the title's tier.
-    return wrestler.getTier().ordinal() >= title.getTier().ordinal();
+    WrestlerTier wrestlerTier =
+        wrestlerService.getOrCreateState(wrestler.getId(), title.getUniverse().getId()).getTier();
+
+    return wrestlerTier.ordinal() >= title.getTier().ordinal();
   }
 
   @PreAuthorize("isAuthenticated()")
-  public boolean titleNameExists(@NonNull String name) {
+  public boolean titleNameExists(@NonNull final String name) {
     return titleRepository.findByName(name).isPresent();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
   public Title createTitle(
-      @NonNull String name,
-      @NonNull String description,
-      @NonNull WrestlerTier tier,
-      @NonNull ChampionshipType type) {
-    return createTitle(name, description, tier, type, null);
+      @NonNull final String name,
+      @NonNull final String description,
+      @NonNull final WrestlerTier tier,
+      @NonNull final ChampionshipType type,
+      @NonNull final Long universeId) {
+    return createTitle(name, description, tier, type, null, universeId);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
   public Title createTitle(
-      @NonNull String name,
-      @NonNull String description,
-      @NonNull WrestlerTier tier,
-      @NonNull ChampionshipType type,
-      Gender gender) {
+      @NonNull final String name,
+      @NonNull final String description,
+      @NonNull final WrestlerTier tier,
+      @NonNull final ChampionshipType type,
+      final Gender gender,
+      @NonNull final Long universeId) {
     Title title = new Title();
     title.setName(name);
     title.setDescription(description);
@@ -91,6 +107,7 @@ public class TitleService {
     title.setGender(gender);
     title.setCreationDate(Instant.now(clock));
     title.setChampionshipType(type);
+    title.setUniverse(universeRepository.findById(universeId).orElseThrow());
     return titleRepository.save(title);
   }
 
@@ -98,7 +115,7 @@ public class TitleService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       key = "#id")
-  public Optional<Title> getTitleById(@NonNull Long id) {
+  public Optional<Title> getTitleById(@NonNull final Long id) {
     return titleRepository.findById(id);
   }
 
@@ -106,21 +123,31 @@ public class TitleService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       key = "#name")
-  public Optional<Title> findByName(@NonNull String name) {
+  public Optional<Title> findByName(@NonNull final String name) {
     return titleRepository.findByName(name);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<Title> findByExternalId(@NonNull String externalId) {
+  public Optional<Title> findByExternalId(@NonNull final String externalId) {
     return titleRepository.findByExternalId(externalId);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
-  public Title save(@NonNull Title title) {
+  public Title save(@NonNull final Title title) {
     return titleRepository.save(title);
+  }
+
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public List<Title> saveAll(@NonNull final List<Title> titles) {
+    return (List<Title>) titleRepository.saveAll(titles);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -132,7 +159,7 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Page<Title> getAllTitles(Pageable pageable) {
+  public Page<Title> getAllTitles(final Pageable pageable) {
     return titleRepository.findAll(pageable);
   }
 
@@ -158,35 +185,38 @@ public class TitleService {
   @org.springframework.cache.annotation.Cacheable(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       key = "#tier")
-  public List<Title> getTitlesByTier(@NonNull WrestlerTier tier) {
+  public List<Title> getTitlesByTier(@NonNull final WrestlerTier tier) {
     return titleRepository.findByIsActiveTrueAndTier(tier);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
-  public void awardTitleTo(@NonNull Title title, @NonNull List<Wrestler> newChampions) {
+  public void awardTitleTo(@NonNull final Title title, @NonNull final List<Wrestler> newChampions) {
     awardTitleTo(title, newChampions, null);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
   public void awardTitleTo(
-      @NonNull Title title,
-      @NonNull List<Wrestler> newChampions,
-      com.github.javydreamercsw.management.domain.show.segment.Segment wonAtSegment) {
+      @NonNull final Title title,
+      @NonNull final List<Wrestler> newChampions,
+      final com.github.javydreamercsw.management.domain.show.segment.Segment wonAtSegment) {
     title.awardTitleTo(newChampions, Instant.now(clock), wonAtSegment);
     titleRepository.save(title);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
-  public Optional<Title> vacateTitle(@NonNull Long titleId) {
+  public Optional<Title> vacateTitle(@NonNull final Long titleId) {
     return titleRepository
         .findById(titleId)
         .map(
@@ -197,21 +227,27 @@ public class TitleService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
   public Optional<Title> updateTitle(
-      @NonNull Long id, String name, String description, Boolean isActive) {
+      @NonNull final Long id, final String name, final String description, final Boolean isActive) {
     return updateTitle(id, name, description, isActive, null);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
   public Optional<Title> updateTitle(
-      @NonNull Long id, String name, String description, Boolean isActive, Gender gender) {
+      @NonNull final Long id,
+      final String name,
+      final String description,
+      final Boolean isActive,
+      final Gender gender) {
 
     return titleRepository
         .findById(id)
@@ -240,11 +276,12 @@ public class TitleService {
             });
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
-  public boolean deleteTitle(@NonNull Long id) {
+  public boolean deleteTitle(@NonNull final Long id) {
 
     return titleRepository
         .findById(id)
@@ -263,33 +300,41 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Long getChallengeCost(@NonNull Title title) {
+  public Long getChallengeCost(@NonNull final Title title) {
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
     return tierBoundaryService
         .findByTierAndGender(title.getTier(), gender)
         .map(TierBoundary::getChallengeCost)
-        .orElse(title.getTier().getChallengeCost()); // Fallback to static
+        .orElse(title.getTier().getChallengeCost());
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Long getContenderEntryFee(@NonNull Title title) {
+  public Long getContenderEntryFee(@NonNull final Title title) {
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
     return tierBoundaryService
         .findByTierAndGender(title.getTier(), gender)
         .map(TierBoundary::getContenderEntryFee)
-        .orElse(title.getTier().getContenderEntryFee()); // Fallback to static
+        .orElse(title.getTier().getContenderEntryFee());
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Title> findTitlesByChampion(@NonNull Wrestler wrestler) {
+  public List<Title> findTitlesByChampion(
+      @NonNull final Wrestler wrestler, @NonNull final Long universeId) {
+    return titleRepository.findTitlesHeldByWrestler(wrestler, universeId);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Title> findTitlesByChampion(@NonNull final Wrestler wrestler) {
     return titleRepository.findTitlesHeldByWrestler(wrestler);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
-  public ChallengeResult challengeForTitle(@NonNull Long wrestlerId, @NonNull Long titleId) {
+  public ChallengeResult challengeForTitle(
+      @NonNull final Long wrestlerId, @NonNull final Long titleId, @NonNull final Long universeId) {
     Optional<Wrestler> challengerOpt = wrestlerRepository.findById(wrestlerId);
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     if (challengerOpt.isEmpty()) {
@@ -315,13 +360,12 @@ public class TitleService {
     }
 
     Long entryFee = getContenderEntryFee(title);
-    if (!challenger.canAfford(entryFee)) {
+    if (!wrestlerService.getOrCreateState(challenger.getId(), universeId).canAfford(entryFee)) {
       return new ChallengeResult(false, "Wrestler cannot afford the contender entry fee.");
     }
 
     // All checks pass, add as a challenger and deduct fee
-    challenger.spendFans(entryFee);
-    wrestlerRepository.save(challenger);
+    wrestlerService.spendFans(challenger.getId(), universeId, entryFee);
     title.addChallenger(challenger);
     titleRepository.save(title);
     return new ChallengeResult(
@@ -334,7 +378,7 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> getEligibleChallengers(@NonNull Long titleId) {
+  public List<Wrestler> getEligibleChallengers(@NonNull final Long titleId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     if (titleOpt.isEmpty()) {
       return List.of();
@@ -347,8 +391,7 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public TitleStats getTitleStats(@NonNull Long id) {
-    // Basic implementation for now, can be expanded later
+  public TitleStats getTitleStats(@NonNull final Long id) {
     return titleRepository
         .findById(id)
         .map(
@@ -361,11 +404,13 @@ public class TitleService {
         .orElse(null);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
-  public ChallengeResult addChallengerToTitle(@NonNull Long titleId, @NonNull Long wrestlerId) {
+  public ChallengeResult addChallengerToTitle(
+      @NonNull final Long titleId, @NonNull final Long wrestlerId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -389,12 +434,13 @@ public class TitleService {
         true, wrestler.getName() + " has been added as a challenger for " + title.getName());
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
   public ChallengeResult removeChallengerFromTitle(
-      @NonNull Long titleId, @NonNull Long wrestlerId) {
+      @NonNull final Long titleId, @NonNull final Long wrestlerId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -419,25 +465,27 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Title> getTitlesHeldBy(@NonNull Long wrestlerId) {
+  public List<Title> getTitlesHeldBy(@NonNull final Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
     return wrestlerOpt.map(titleRepository::findTitlesHeldByWrestler).orElse(List.of());
   }
 
-  /**
-   * Resolves the image URL for a title, using the default image system if no specific URL is set.
-   *
-   * @param title The title entity.
-   * @return The resolved image URL.
-   */
-  public String resolveTitleImage(Title title) {
+  @PreAuthorize("isAuthenticated()")
+  public List<Title> findEligibleTitlesForFanCount(@NonNull final Long fanCount) {
+    return titleRepository.findEligibleTitlesForFanCount(fanCount);
+  }
+
+  public long count() {
+    return titleRepository.count();
+  }
+
+  public String resolveTitleImage(final Title title) {
     if (title.getImageUrl() != null && !title.getImageUrl().isBlank()) {
       return title.getImageUrl();
     }
     return imageService.resolveImage(title.getName(), ImageCategory.TITLE).url();
   }
 
-  // Nested records for API responses/requests
   public record ChallengeResult(boolean success, @NonNull String message) {}
 
   public record TitleStats(

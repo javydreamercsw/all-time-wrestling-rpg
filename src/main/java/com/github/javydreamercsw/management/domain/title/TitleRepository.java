@@ -41,10 +41,21 @@ public interface TitleRepository
 
   List<Title> findByIsActiveTrueAndTier(WrestlerTier tier);
 
+  /** Find titles currently held by a specific wrestler in a universe. */
+  @Query(
+      """
+      SELECT DISTINCT tr.title FROM TitleReign tr WHERE tr.endDate IS NULL AND :wrestler MEMBER OF\
+       tr.champions AND tr.title.universe.id = :universeId\
+      """)
+  List<Title> findTitlesHeldByWrestler(
+      @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);
+
   /** Find titles currently held by a specific wrestler. */
   @Query(
-      "SELECT DISTINCT tr.title FROM TitleReign tr WHERE tr.endDate IS NULL AND :wrestler MEMBER OF"
-          + " tr.champions")
+      """
+      SELECT DISTINCT tr.title FROM TitleReign tr WHERE tr.endDate IS NULL AND :wrestler MEMBER OF\
+       tr.champions\
+      """)
   List<Title> findTitlesHeldByWrestler(@Param("wrestler") Wrestler wrestler);
 
   /** Find active titles of a specific tier. */
@@ -67,10 +78,12 @@ public interface TitleRepository
       SELECT t FROM Title t
       WHERE t.isActive = true
       AND (
-          (t.tier = 'ROOKIE' AND :fanCount >= 0) OR
-          (t.tier = 'TAG_TEAM' AND :fanCount >= 40000) OR
-          (t.tier = 'EXTREME' AND :fanCount >= 25000) OR
-          (t.tier = 'WORLD' AND :fanCount >= 100000)
+          (t.tier = 'ROOKIE' AND :fanCount >= 0 AND :fanCount < 25000) OR
+          (t.tier = 'RISER' AND :fanCount >= 25000 AND :fanCount < 40000) OR
+          (t.tier = 'CONTENDER' AND :fanCount >= 40000 AND :fanCount < 60000) OR
+          (t.tier = 'MIDCARDER' AND :fanCount >= 60000 AND :fanCount < 100000) OR
+          (t.tier = 'MAIN_EVENTER' AND :fanCount >= 100000 AND :fanCount < 150000) OR
+          (t.tier = 'ICON' AND :fanCount >= 150000)
       )
       """)
   List<Title> findEligibleTitlesForFanCount(@Param("fanCount") Long fanCount);

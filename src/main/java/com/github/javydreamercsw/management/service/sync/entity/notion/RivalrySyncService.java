@@ -45,17 +45,17 @@ public class RivalrySyncService extends BaseSyncService {
 
   @Autowired
   public RivalrySyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      RivalryService rivalryService,
-      WrestlerRepository wrestlerRepository,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final RivalryService rivalryService,
+      final WrestlerRepository wrestlerRepository,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.rivalryService = rivalryService;
     this.wrestlerRepository = wrestlerRepository;
   }
 
-  public SyncResult syncRivalries(@NonNull String operationId) {
+  public SyncResult syncRivalries(@NonNull final String operationId) {
     if (syncServiceDependencies.getSyncSessionManager().isAlreadySyncedInSession("rivalries")) {
       log.info("⏭️ Rivalries already synced in current session, skipping");
       return SyncResult.success("Rivalries", 0, 0, 0);
@@ -78,7 +78,7 @@ public class RivalrySyncService extends BaseSyncService {
   }
 
   @SneakyThrows
-  private SyncResult performRivalriesSync(@NonNull String operationId) {
+  private SyncResult performRivalriesSync(@NonNull final String operationId) {
     if (!isNotionHandlerAvailable()) {
       return SyncResult.failure("Rivalries", "NotionHandler is not available.");
     }
@@ -136,7 +136,7 @@ public class RivalrySyncService extends BaseSyncService {
     return SyncResult.success("Rivalries", createdCount.get(), updatedCount.get(), 0);
   }
 
-  private RivalryDTO toDto(RivalryPage page) {
+  private RivalryDTO toDto(final RivalryPage page) {
     RivalryDTO dto = new RivalryDTO();
     Map<String, Object> props = page.getRawProperties();
     dto.setExternalId(page.getId());
@@ -164,7 +164,9 @@ public class RivalrySyncService extends BaseSyncService {
   }
 
   private void saveRivalriesToDatabase(
-      List<RivalryDTO> dtos, AtomicInteger createdCount, AtomicInteger updatedCount) {
+      final List<RivalryDTO> dtos,
+      final AtomicInteger createdCount,
+      final AtomicInteger updatedCount) {
     for (RivalryDTO dto : dtos) {
       if (dto.getWrestler1Name() == null || dto.getWrestler2Name() == null) {
         log.warn("Skipping rivalry with missing wrestler names (ID: {})", dto.getExternalId());

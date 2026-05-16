@@ -26,7 +26,7 @@ public class OpenAIConfigProperties extends AiBaseProperties {
   private final AiSettingsService aiSettingsService;
 
   @Autowired
-  public OpenAIConfigProperties(AiSettingsService aiSettingsService) {
+  public OpenAIConfigProperties(final AiSettingsService aiSettingsService) {
     super(aiSettingsService);
     this.aiSettingsService = aiSettingsService;
   }

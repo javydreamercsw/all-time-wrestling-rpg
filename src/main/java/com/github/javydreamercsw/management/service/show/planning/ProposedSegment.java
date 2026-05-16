@@ -34,7 +34,7 @@ public class ProposedSegment {
   private List<String> rules;
   private String refereeName;
 
-  public void setTitles(Set<Title> titles) {
+  public void setTitles(final Set<Title> titles) {
     this.titles = titles;
     this.isTitleSegment = !titles.isEmpty();
   }

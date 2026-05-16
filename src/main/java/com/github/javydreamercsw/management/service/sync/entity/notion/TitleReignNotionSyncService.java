@@ -33,14 +33,14 @@ import org.springframework.stereotype.Service;
 public class TitleReignNotionSyncService extends BaseNotionSyncService<TitleReign> {
 
   public TitleReignNotionSyncService(
-      TitleReignRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final TitleReignRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull TitleReign entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final TitleReign entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 

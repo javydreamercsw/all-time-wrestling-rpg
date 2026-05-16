@@ -19,11 +19,12 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageActionService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
@@ -54,9 +55,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class BackstageActionView extends VerticalLayout implements BeforeEnterObserver {
 
   private final BackstageActionService backstageActionService;
-  private final CampaignRepository campaignRepository;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
+  private final InjuryService injuryService;
+  private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
 
@@ -64,16 +66,18 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
 
   @Autowired
   public BackstageActionView(
-      BackstageActionService backstageActionService,
-      CampaignRepository campaignRepository,
-      WrestlerRepository wrestlerRepository,
-      WrestlerService wrestlerService,
-      SecurityUtils securityUtils,
-      CampaignService campaignService) {
+      final BackstageActionService backstageActionService,
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final InjuryService injuryService,
+      final UniverseContextService universeContextService,
+      final SecurityUtils securityUtils,
+      final CampaignService campaignService) {
     this.backstageActionService = backstageActionService;
-    this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
+    this.injuryService = injuryService;
+    this.universeContextService = universeContextService;
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;
 
@@ -83,7 +87,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
   }
 
   @Override
-  public void beforeEnter(BeforeEnterEvent event) {
+  public void beforeEnter(final BeforeEnterEvent event) {
     loadCampaign();
     if (currentCampaign != null) {
       if (backstageActionService
@@ -157,7 +161,13 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
     leftCol.setFlexGrow(1);
 
     DashboardCard statusCard = new DashboardCard("Your Status");
-    statusCard.add(new WrestlerSummaryCard(wrestler, wrestlerService, true));
+    statusCard.add(
+        new WrestlerSummaryCard(
+            wrestler,
+            universeContextService.getCurrentUniverseId(),
+            wrestlerService,
+            injuryService,
+            true));
 
     Span actionsCount = new Span("Actions taken today: " + state.getActionsTaken() + " / 2");
     actionsCount.addClassNames(
@@ -181,7 +191,11 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
     actionsList.setSpacing(true);
 
     boolean actionsAvailable = state.getActionsTaken() < 2;
-    boolean needsRecovery = wrestler.getBumps() > 0 || !wrestler.getActiveInjuries().isEmpty();
+    boolean needsRecovery =
+        wrestler
+            .getDefaultState()
+            .map(s -> s.getBumps() > 0 || !s.getActiveInjuries().isEmpty())
+            .orElse(false);
 
     actionsList.add(
         createActionButton(
@@ -229,8 +243,10 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
         new Paragraph("Every day before continuing your story, you can take two actions."));
     mechContent.add(
         new Span(
-            "• Each action uses one of your primary attributes (Drive, Resilience, Charisma,"
-                + " Brawl)."));
+            """
+            • Each action uses one of your primary attributes (Drive, Resilience, Charisma,\
+             Brawl).\
+            """));
     mechContent.add(
         new Span("• A digital 6-sided die (1d6) is rolled and added to your attribute value."));
     mechContent.add(new Span("• If the total is 4 or higher, the action is successful!"));
@@ -257,7 +273,11 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
   }
 
   private HorizontalLayout createActionButton(
-      String label, String description, BackstageActionType type, int attrValue, boolean enabled) {
+      final String label,
+      final String description,
+      final BackstageActionType type,
+      final int attrValue,
+      final boolean enabled) {
     HorizontalLayout row = new HorizontalLayout();
     row.setWidthFull();
     row.setAlignItems(Alignment.CENTER);
@@ -301,7 +321,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
     return row;
   }
 
-  private HorizontalLayout createPromoActionGroup(int attrValue, boolean enabled) {
+  private HorizontalLayout createPromoActionGroup(final int attrValue, final boolean enabled) {
     HorizontalLayout row = new HorizontalLayout();
     row.setWidthFull();
     row.setAlignItems(Alignment.CENTER);

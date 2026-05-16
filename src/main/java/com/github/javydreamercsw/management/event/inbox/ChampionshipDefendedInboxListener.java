@@ -42,10 +42,10 @@ public class ChampionshipDefendedInboxListener
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public ChampionshipDefendedInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("championshipDefended") InboxEventType championshipDefended,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("championshipDefended") final InboxEventType championshipDefended,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.championshipDefended = championshipDefended;
     this.eventPublisher = eventPublisher;
@@ -53,7 +53,7 @@ public class ChampionshipDefendedInboxListener
   }
 
   @Override
-  public void onApplicationEvent(@NonNull ChampionshipDefendedEvent event) {
+  public void onApplicationEvent(@NonNull final ChampionshipDefendedEvent event) {
     log.debug("Received ChampionshipDefendedEvent for title ID: {}", event.getTitleId());
 
     String champions =
@@ -63,9 +63,8 @@ public class ChampionshipDefendedInboxListener
         event.getChallengers().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
 
     String message =
-        String.format(
-            "Champion(s) %s successfully defended the %s title against %s!",
-            champions, event.getTitleName(), challengers);
+        "Champion(s) %s successfully defended the %s title against %s!"
+            .formatted(champions, event.getTitleName(), challengers);
 
     List<InboxService.TargetInfo> targets = new ArrayList<>();
     targets.add(

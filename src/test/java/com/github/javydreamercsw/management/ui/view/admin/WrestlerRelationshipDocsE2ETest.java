@@ -29,8 +29,7 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureAdminRelationshipsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     WebElement tab =
         waitForVaadinElement(
@@ -47,8 +46,10 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Admin",
         "Wrestler Relationships Management",
-        "Manage the social fabric of your promotion. Define marriages, family ties, and deep"
-            + " friendships that influence chemistry, AI narration, and random backstage events.",
+        """
+        Manage the social fabric of your promotion. Define marriages, family ties, and deep\
+         friendships that influence chemistry, AI narration, and random backstage events.\
+        """,
         "admin-wrestler-relationships");
   }
 
@@ -59,8 +60,7 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
             .findByName("Johnny All Time")
             .orElseThrow(() -> new RuntimeException("Johnny All Time not found"));
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    waitForVaadinClientToLoad();
+    navigateTo("wrestler-list");
 
     // Use the action menu to navigate to profile
     WebElement actionMenu =
@@ -73,12 +73,14 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Wrestler Profile",
         "Personal Relationships",
-        "Wrestler profiles now include a 'Relationships' section showing their social connections."
-            + " These bonds provide chemistry bonuses when related wrestlers perform together.",
+        """
+        Wrestler profiles now include a 'Relationships' section showing their social connections.\
+         These bonds provide chemistry bonuses when related wrestlers perform together.\
+        """,
         "wrestler-profile-relationships");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

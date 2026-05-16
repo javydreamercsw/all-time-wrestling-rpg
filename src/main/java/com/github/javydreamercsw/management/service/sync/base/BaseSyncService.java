@@ -49,9 +49,9 @@ public abstract class BaseSyncService {
   protected final NotionApiExecutor notionApiExecutor;
 
   protected BaseSyncService(
-      @NonNull ObjectMapper objectMapper,
-      @NonNull SyncServiceDependencies syncServiceDependencies,
-      @NonNull NotionApiExecutor notionApiExecutor) {
+      @NonNull final ObjectMapper objectMapper,
+      @NonNull final SyncServiceDependencies syncServiceDependencies,
+      @NonNull final NotionApiExecutor notionApiExecutor) {
     this.objectMapper = objectMapper;
     this.syncServiceDependencies = syncServiceDependencies;
     this.notionApiExecutor = notionApiExecutor;
@@ -74,7 +74,7 @@ public abstract class BaseSyncService {
    * @return The result of the API call.
    */
   @SneakyThrows
-  protected <T> T executeWithRateLimit(@NonNull java.util.function.Supplier<T> apiCall) {
+  protected <T> T executeWithRateLimit(@NonNull final java.util.function.Supplier<T> apiCall) {
     syncServiceDependencies.getRateLimitService().acquirePermit();
     return apiCall.get();
   }
@@ -85,17 +85,17 @@ public abstract class BaseSyncService {
    * @param fileName The name of the JSON file to backup
    * @throws IOException if backup creation fails
    */
-  protected void createBackup(@NonNull String fileName) throws IOException {
+  protected void createBackup(@NonNull final String fileName) throws IOException {
     syncServiceDependencies.getBackupService().createBackup(fileName);
   }
 
   /** Extracts name from any NotionPage type using raw properties. */
-  protected String extractNameFromNotionPage(@NonNull NotionPage page) {
+  protected String extractNameFromNotionPage(@NonNull final NotionPage page) {
     return syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(page);
   }
 
   /** Extracts description from any NotionPage type using raw properties. */
-  protected String extractDescriptionFromNotionPage(@NonNull NotionPage page) {
+  protected String extractDescriptionFromNotionPage(@NonNull final NotionPage page) {
     return syncServiceDependencies
         .getNotionPageDataExtractor()
         .extractDescriptionFromNotionPage(page);
@@ -107,7 +107,7 @@ public abstract class BaseSyncService {
    * @param entityType The entity type being synced (for error messages)
    * @return true if token is available, false otherwise
    */
-  public boolean validateNotionToken(@NonNull String entityType) {
+  public boolean validateNotionToken(@NonNull final String entityType) {
     SyncValidationService.ValidationResult result =
         syncServiceDependencies.getValidationService().validateSyncPrerequisites();
     if (!result.isValid()) {
@@ -129,25 +129,25 @@ public abstract class BaseSyncService {
    * @return List of processed results
    */
   protected <T, R> List<R> processWithControlledParallelism(
-      List<T> items,
-      Function<T, R> processor,
-      int batchSize,
-      String operationId,
-      int progressStep,
-      String description) {
+      final List<T> items,
+      final Function<T, R> processor,
+      final int batchSize,
+      final String operationId,
+      final int progressStep,
+      final String description) {
     return processWithControlledParallelism(
         items, processor, batchSize, operationId, progressStep, description, null);
   }
 
   @SneakyThrows
   protected <T, R> List<R> processWithControlledParallelism(
-      List<T> items,
-      Function<T, R> processor,
-      int batchSize,
-      String operationId,
-      int progressStep,
-      String description,
-      java.util.function.Consumer<String> messageConsumer) {
+      final List<T> items,
+      final Function<T, R> processor,
+      final int batchSize,
+      final String operationId,
+      final int progressStep,
+      final String description,
+      final java.util.function.Consumer<String> messageConsumer) {
 
     if (items.isEmpty()) {
       return List.of();
@@ -247,9 +247,8 @@ public abstract class BaseSyncService {
             .updateProgress(
                 operationId,
                 progressStep,
-                String.format(
-                    "%s %d/%d items (%.1f%%)",
-                    description, processedCount, items.size(), progressPercent));
+                "%s %d/%d items (%.1f%%)"
+                    .formatted(description, processedCount, items.size(), progressPercent));
 
         // Small delay between batches to be nice to the API
         if (endIndex < items.size()) {
@@ -289,12 +288,12 @@ public abstract class BaseSyncService {
     private final List<String> messages = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private SyncResult(
-        boolean success,
-        @NonNull String entityType,
-        int createdCount,
-        int updatedCount,
-        int errorCount,
-        String errorMessage) {
+        final boolean success,
+        @NonNull final String entityType,
+        final int createdCount,
+        final int updatedCount,
+        final int errorCount,
+        final String errorMessage) {
       this.success = success;
       this.entityType = entityType;
       this.syncedCount = createdCount + updatedCount;
@@ -305,39 +304,42 @@ public abstract class BaseSyncService {
     }
 
     public static SyncResult success(
-        @NonNull String entityType, int createdCount, int updatedCount, int errorCount) {
+        @NonNull final String entityType,
+        final int createdCount,
+        final int updatedCount,
+        final int errorCount) {
       return new SyncResult(true, entityType, createdCount, updatedCount, errorCount, null);
     }
 
-    public static SyncResult failure(@NonNull String entityType, String errorMessage) {
+    public static SyncResult failure(@NonNull final String entityType, final String errorMessage) {
       return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
     }
 
-    public static SyncResult unsupported(@NonNull String entityType, String errorMessage) {
+    public static SyncResult unsupported(
+        @NonNull final String entityType, final String errorMessage) {
       return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
     }
 
     public String getSummary() {
       if (success) {
-        return String.format(
-            "%s: %d synced (%d created, %d updated), %d errors",
-            entityType, syncedCount, createdCount, updatedCount, errorCount);
+        return "%s: %d synced (%d created, %d updated), %d errors"
+            .formatted(entityType, syncedCount, createdCount, updatedCount, errorCount);
       } else {
-        return String.format("%s: failed - %s", entityType, errorMessage);
+        return "%s: failed - %s".formatted(entityType, errorMessage);
       }
     }
 
     @Override
     public String toString() {
       if (success) {
-        return String.format(
-            "SyncResult{success=true, entityType='%s', syncedCount=%d, createdCount=%d,"
-                + " updatedCount=%d, errorCount=%d}",
-            entityType, syncedCount, createdCount, updatedCount, errorCount);
+        return """
+        SyncResult{success=true, entityType='%s', syncedCount=%d, createdCount=%d,\
+         updatedCount=%d, errorCount=%d}\
+        """
+            .formatted(entityType, syncedCount, createdCount, updatedCount, errorCount);
       } else {
-        return String.format(
-            "SyncResult{success=false, entityType='%s', errorMessage='%s'}",
-            entityType, errorMessage);
+        return "SyncResult{success=false, entityType='%s', errorMessage='%s'}"
+            .formatted(entityType, errorMessage);
       }
     }
   }

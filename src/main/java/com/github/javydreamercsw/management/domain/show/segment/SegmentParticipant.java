@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.domain.show.segment;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,9 +43,10 @@ import org.jspecify.annotations.Nullable;
 @Getter
 @Setter
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public class SegmentParticipant extends AbstractEntity<Long> {
+public class SegmentParticipant extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "segment_participant_id")
   private Long id;
 
@@ -64,9 +65,4 @@ public class SegmentParticipant extends AbstractEntity<Long> {
 
   @Column(name = "team_number", nullable = false)
   private int teamNumber = 1;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

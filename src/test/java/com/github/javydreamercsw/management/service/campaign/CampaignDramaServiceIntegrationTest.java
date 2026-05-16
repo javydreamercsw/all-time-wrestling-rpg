@@ -52,7 +52,11 @@ class CampaignDramaServiceIntegrationTest extends AbstractIntegrationTest {
     when(random.nextInt(org.mockito.ArgumentMatchers.anyInt())).thenReturn(0);
     when(random.nextDouble()).thenReturn(0.5);
 
-    Campaign campaign = Campaign.builder().wrestler(player).build();
+    Campaign campaign =
+        Campaign.builder()
+            .wrestler(player)
+            .universe(universeContextService.getCurrentUniverse().orElseThrow())
+            .build();
 
     Optional<DramaEvent> event = campaignDramaService.triggerRivalEvent(campaign);
 
@@ -72,7 +76,11 @@ class CampaignDramaServiceIntegrationTest extends AbstractIntegrationTest {
     Wrestler rival = createTestWrestler("Rival Two");
     wrestlerRepository.save(rival);
 
-    Campaign campaign = Campaign.builder().wrestler(player).build();
+    Campaign campaign =
+        Campaign.builder()
+            .wrestler(player)
+            .universe(universeContextService.getCurrentUniverse().orElseThrow())
+            .build();
     CampaignState state =
         CampaignState.builder().campaign(campaign).currentChapterId("tournament").build();
     campaign.setState(state);

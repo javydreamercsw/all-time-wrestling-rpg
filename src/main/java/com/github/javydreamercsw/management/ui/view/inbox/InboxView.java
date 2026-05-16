@@ -76,11 +76,11 @@ public class InboxView extends VerticalLayout {
   private final SecurityUtils securityUtils;
 
   public InboxView(
-      InboxService inboxService,
-      InboxEventTypeRegistry eventTypeRegistry,
-      WrestlerRepository wrestlerRepository,
-      MatchFulfillmentService matchFulfillmentService,
-      SecurityUtils securityUtils) {
+      final InboxService inboxService,
+      final InboxEventTypeRegistry eventTypeRegistry,
+      final WrestlerRepository wrestlerRepository,
+      final MatchFulfillmentService matchFulfillmentService,
+      final SecurityUtils securityUtils) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
@@ -258,12 +258,12 @@ public class InboxView extends VerticalLayout {
     grid.addItemClickListener(event -> showDetails(event.getItem()));
   }
 
-  private Component createActionComponent(@NonNull InboxItem item) {
+  private Component createActionComponent(@NonNull final InboxItem item) {
     HorizontalLayout layout = new HorizontalLayout();
     layout.setPadding(false);
     layout.setSpacing(true);
 
-    if (item.getEventType().getName().equals("MATCH_REQUEST")) {
+    if ("MATCH_REQUEST".equals(item.getEventType().getName())) {
       Button reportButton =
           new Button(
               "Report Result",
@@ -303,7 +303,7 @@ public class InboxView extends VerticalLayout {
     return layout;
   }
 
-  private String getTargetNames(@NonNull InboxItem item) {
+  private String getTargetNames(@NonNull final InboxItem item) {
     if (item.getTargets() == null || item.getTargets().isEmpty()) {
       // This is for backward compatibility with old data that had the target in the
       // description.
@@ -351,7 +351,7 @@ public class InboxView extends VerticalLayout {
         .collect(Collectors.joining(", "));
   }
 
-  private void showDetails(InboxItem item) {
+  private void showDetails(final InboxItem item) {
     if (item == null) {
       detailsView.setText("");
     } else {
@@ -359,7 +359,7 @@ public class InboxView extends VerticalLayout {
     }
   }
 
-  private Button createReadToggleButton(@NonNull InboxItem item) {
+  private Button createReadToggleButton(@NonNull final InboxItem item) {
     Button button = new Button(item.isRead() ? "Mark as Unread" : "Mark as Read");
     button.addClickListener(
         click -> {

@@ -16,12 +16,19 @@
 */
 package com.github.javydreamercsw.management.ui.view.segment;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -32,10 +39,12 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -44,82 +53,52 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.core.env.Environment;
-import org.springframework.web.reactive.function.client.WebClient;
 
 class NarrationDialogTest {
+
+  private Segment segment;
+  private Wrestler wrestler;
+  private NarrationDialog narrationDialog;
 
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private RivalryService rivalryService;
-  @Mock private Environment env;
   @Mock private SegmentNarrationController segmentNarrationController;
-  @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
-  @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
+  @Mock private SegmentNarrationServiceFactory aiFactory;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private NotificationService notificationService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-      relationshipService;
-
-  private NarrationDialog narrationDialog;
-  private Segment segment;
-  private Wrestler wrestler;
+  @Mock private WrestlerRelationshipService relationshipService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     MockitoAnnotations.openMocks(this);
-
-    Show show = new Show();
-    show.setId(1L);
-    show.setName("Test Show");
-
-    SegmentType segmentType = new SegmentType();
-    segmentType.setName("Test Type");
-
-    Segment segment1 = new Segment();
-    segment1.setId(1L);
-    segment1.setSegmentOrder(1);
-    segment1.setNarration("Segment 1 Narration");
-    segment1.setSummary("Segment 1 Summary");
-    segment1.setShow(show);
-    segment1.setSegmentType(segmentType);
-
     segment = new Segment();
-    segment.setId(2L);
-    segment.setSegmentOrder(2);
-    segment.setShow(show);
-    segment.setSegmentType(segmentType);
-
-    // Given
-    Npc manager = new Npc();
-    manager.setName("Paul Heyman");
+    segment.setId(1L);
+    SegmentType type = new SegmentType();
+    type.setName("Match");
+    segment.setSegmentType(type);
 
     wrestler = new Wrestler();
+    wrestler.setId(1L);
     wrestler.setName("Roman Reigns");
-    wrestler.setManager(manager);
-    segment.getWrestlers().add(wrestler);
-    when(wrestlerService.findByName(wrestler.getName()))
-        .thenReturn(java.util.Optional.of(wrestler));
-    when(wrestlerService.findAll()).thenReturn(List.of(wrestler));
-    when(ringsideActionService.getBestSupporter(segment, wrestler)).thenReturn(manager);
+    wrestler.setGender(Gender.MALE);
 
-    List<Segment> segments = new ArrayList<>();
-    segments.add(segment1);
-    segments.add(segment);
-
-    when(showService.getSegments(show)).thenReturn(segments);
-    when(env.getActiveProfiles()).thenReturn(new String[] {});
-    WebClient.Builder webClientBuilder = mock(WebClient.Builder.class);
-    WebClient webClient = mock(WebClient.class);
-    when(webClientBuilder.build()).thenReturn(webClient);
+    when(segmentService.findByIdWithDetails(anyLong())).thenReturn(Optional.of(segment));
+    when(npcService.findAllByType("Referee")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByType("Commissioner")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByType("Commentator")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByType("Announcer")).thenReturn(new ArrayList<>());
+    when(npcService.findAll()).thenReturn(new ArrayList<>());
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
 
     narrationDialog =
         new NarrationDialog(
@@ -131,10 +110,16 @@ class NarrationDialogTest {
             s -> {},
             rivalryService,
             segmentNarrationController,
-            segmentNarrationServiceFactory,
+            aiFactory,
             ringsideActionService,
             relationshipService,
+            universeContextService,
             notificationService);
+  }
+
+  @Test
+  void testDialogInitialization() {
+    assertNotNull(narrationDialog);
 
     // Create mocks for the UI components that teamsLayout would contain
     VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);
@@ -164,6 +149,24 @@ class NarrationDialogTest {
 
   @Test
   void testBuildSegmentContext_withPreviousSegments() {
+    // Given
+    Segment prevSegment = new Segment();
+    prevSegment.setId(99L);
+    prevSegment.setSegmentOrder(0);
+    prevSegment.setNarration("Segment 1 Narration");
+    prevSegment.setSummary("Segment 1 Summary");
+    SegmentType type = new SegmentType();
+    type.setName("Match");
+    prevSegment.setSegmentType(type);
+
+    Show show = new Show();
+    segment.setShow(show);
+    segment.setSegmentOrder(1);
+    prevSegment.setShow(show);
+
+    when(showService.getSegments(show)).thenReturn(List.of(prevSegment, segment));
+    when(segmentService.findByIdWithDetails(99L)).thenReturn(Optional.of(prevSegment));
+
     // When
     SegmentNarrationService.SegmentNarrationContext context = narrationDialog.buildSegmentContext();
 
@@ -185,7 +188,7 @@ class NarrationDialogTest {
     title.setTier(WrestlerTier.MAIN_EVENTER);
     Wrestler champion = new Wrestler();
     champion.setName("John Cena");
-    title.getChampion().add(champion);
+    title.getCurrentChampions().add(champion);
     segment.getTitles().add(title);
 
     // When
@@ -202,8 +205,28 @@ class NarrationDialogTest {
 
   @Test
   void testBuildWrestlerContexts_withManager() {
-    when(wrestlerService.findByName(wrestler.getName()))
-        .thenReturn(java.util.Optional.of(wrestler));
+    // Given
+    // Mock the UI component via reflection
+    VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);
+    HorizontalLayout mockTeamSelector = mock(HorizontalLayout.class);
+    WrestlerDTO wrestlerDTO = new WrestlerDTO(wrestler);
+    when(mockWrestlersCombo.getValue()).thenReturn(new HashSet<>(List.of(wrestlerDTO)));
+    when(mockTeamSelector.getComponentAt(0)).thenReturn(mockWrestlersCombo);
+    when(mockTeamsLayout.getComponentCount()).thenReturn(1);
+    when(mockTeamsLayout.getComponentAt(0)).thenReturn(mockTeamSelector);
+
+    try {
+      Field teamsLayoutField = NarrationDialog.class.getDeclaredField("teamsLayout");
+      teamsLayoutField.setAccessible(true);
+      teamsLayoutField.set(narrationDialog, mockTeamsLayout);
+    } catch (Exception e) {
+      fail(e);
+    }
+
+    Npc manager = new Npc();
+    manager.setName("Paul Heyman");
+    when(wrestlerService.findByName(wrestler.getName())).thenReturn(Optional.of(wrestler));
+    when(ringsideActionService.getBestSupporter(segment, wrestler)).thenReturn(manager);
 
     // When
     List<SegmentNarrationService.WrestlerContext> wrestlerContexts =
@@ -220,6 +243,23 @@ class NarrationDialogTest {
   @Test
   void testBuildWrestlerContexts_withRelationships() {
     // Given
+    // Mock the UI component via reflection
+    VerticalLayout mockTeamsLayout = mock(VerticalLayout.class);
+    HorizontalLayout mockTeamSelector = mock(HorizontalLayout.class);
+    WrestlerDTO wrestlerDTO = new WrestlerDTO(wrestler);
+    when(mockWrestlersCombo.getValue()).thenReturn(new HashSet<>(List.of(wrestlerDTO)));
+    when(mockTeamSelector.getComponentAt(0)).thenReturn(mockWrestlersCombo);
+    when(mockTeamsLayout.getComponentCount()).thenReturn(1);
+    when(mockTeamsLayout.getComponentAt(0)).thenReturn(mockTeamSelector);
+
+    try {
+      Field teamsLayoutField = NarrationDialog.class.getDeclaredField("teamsLayout");
+      teamsLayoutField.setAccessible(true);
+      teamsLayoutField.set(narrationDialog, mockTeamsLayout);
+    } catch (Exception e) {
+      fail(e);
+    }
+
     Wrestler partner = new Wrestler();
     partner.setId(99L);
     partner.setName("Seth Rollins");
@@ -233,7 +273,7 @@ class NarrationDialogTest {
     rel.setLevel(80);
     rel.setIsStoryline(true);
 
-    when(wrestlerService.findById(wrestler.getId())).thenReturn(java.util.Optional.of(wrestler));
+    when(wrestlerService.findById(wrestler.getId())).thenReturn(Optional.of(wrestler));
     when(relationshipService.getRelationshipsForWrestler(wrestler.getId()))
         .thenReturn(List.of(rel));
 

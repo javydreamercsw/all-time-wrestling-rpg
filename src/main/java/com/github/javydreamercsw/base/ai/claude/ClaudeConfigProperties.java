@@ -26,7 +26,7 @@ public class ClaudeConfigProperties extends AiBaseProperties {
   private final AiSettingsService aiSettingsService;
 
   @Autowired
-  public ClaudeConfigProperties(AiSettingsService aiSettingsService) {
+  public ClaudeConfigProperties(final AiSettingsService aiSettingsService) {
     super(aiSettingsService);
     this.aiSettingsService = aiSettingsService;
   }

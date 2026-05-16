@@ -34,7 +34,6 @@ import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -57,11 +56,6 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
-
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
 
   @Test
   void testSyncToNotion() {
@@ -100,7 +94,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
     teamRepository.save(team);
 
     // Sync to Notion for the first time
-    teamNotionSyncService.syncToNotion("test-op-1");
+    teamNotionSyncService.syncToNotion("test-op-1", java.util.List.of(team.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(team.getId());
@@ -119,7 +113,7 @@ class TeamNotionSyncServiceIT extends ManagementIntegrationTest {
     // Sync to Notion again with updates
     updatedTeam.setName("Test Team Updated " + UUID.randomUUID());
     teamRepository.save(updatedTeam);
-    teamNotionSyncService.syncToNotion("test-op-2");
+    teamNotionSyncService.syncToNotion("test-op-2", java.util.List.of(team.getId()));
     Team updatedTeam2 = teamRepository.findById(team.getId()).get();
     assertTrue(updatedTeam2.getLastSync().isAfter(updatedTeam.getLastSync()));
 

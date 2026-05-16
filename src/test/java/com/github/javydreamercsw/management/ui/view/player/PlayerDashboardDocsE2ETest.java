@@ -56,7 +56,6 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,6 +84,13 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+      wrestlerStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+
   @BeforeEach
   public void setupData() {
     // Clear data to ensure a clean state for documentation
@@ -107,11 +113,15 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
             .name("Documentation Legend")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MAIN_EVENTER)
             .account(playerAccount)
-            .fans(5000L)
             .build();
     wrestlerRepository.save(wrestler);
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), 1L);
+    state.setTier(WrestlerTier.MAIN_EVENTER);
+    state.setFans(5000L);
+    wrestlerStateRepository.saveAndFlush(state);
+
     playerAccount.setActiveWrestlerId(wrestler.getId());
     accountRepository.save(playerAccount);
 
@@ -216,7 +226,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     // Add a Title Reign in Season 2
     TitleReign reign = new TitleReign();
     reign.setTitle(worldTitle);
-    reign.setChampions(Arrays.asList(wrestler));
+    reign.setChampions(new java.util.LinkedHashSet<>(java.util.Arrays.asList(wrestler)));
     reign.setStartDate(Instant.parse("2026-01-15T00:00:00Z"));
     titleReignRepository.save(reign);
   }
@@ -226,7 +236,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     login("player", "player123");
 
     // 1. Navigate to Player Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(
@@ -237,9 +247,11 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
           documentFeature(
               "Player Dashboard",
               "Season Summary",
-              "The Season Summary component provides a snapshot of your wrestler's performance"
-                  + " during the currently active season, including their win-loss record, fan"
-                  + " growth progress, and any championships or accolades earned.",
+              """
+              The Season Summary component provides a snapshot of your wrestler's performance\
+               during the currently active season, including their win-loss record, fan\
+               growth progress, and any championships or accolades earned.\
+              """,
               "player-season-summary");
 
           // 3. Switch to Past Season (Season 1)
@@ -262,9 +274,11 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
           documentFeature(
               "Player Dashboard",
               "Historical Season Performance",
-              "Review your past glory by switching between seasons. The dashboard stores historical"
-                  + " data, allowing you to track your wrestler's career trajectory and milestones"
-                  + " over time.",
+              """
+              Review your past glory by switching between seasons. The dashboard stores historical\
+               data, allowing you to track your wrestler's career trajectory and milestones\
+               over time.\
+              """,
               "player-season-history");
         });
   }
@@ -309,7 +323,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     wrestlerStatusRepository.save(status);
 
     login("player", "player123");
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(
@@ -322,11 +336,13 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
           documentFeature(
               "Player Dashboard",
               "Effective Stats and Status Cards",
-              "The Effective Stats section shows real-time HP, Stamina, Momentum, and Hand Size"
-                  + " after applying all active modifiers — campaign bonuses/penalties, injuries,"
-                  + " bumps, and Status Cards. Hover over any stat for a full breakdown. Active"
-                  + " Status Cards appear as colour-coded badges: green for positive, red for"
-                  + " negative.",
+              """
+              The Effective Stats section shows real-time HP, Stamina, Momentum, and Hand Size\
+               after applying all active modifiers — campaign bonuses/penalties, injuries,\
+               bumps, and Status Cards. Hover over any stat for a full breakdown. Active\
+               Status Cards appear as colour-coded badges: green for positive, red for\
+               negative.\
+              """,
               "player-effective-stats");
         });
   }

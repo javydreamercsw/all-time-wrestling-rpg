@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.domain.card;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,9 +34,10 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "card_set")
 @Getter
 @Setter
-public class CardSet extends AbstractEntity<Long> {
+public class CardSet extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "set_id")
   private Long id;
 
@@ -50,11 +51,6 @@ public class CardSet extends AbstractEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   /** Ensure default values before persisting. */
   @PrePersist

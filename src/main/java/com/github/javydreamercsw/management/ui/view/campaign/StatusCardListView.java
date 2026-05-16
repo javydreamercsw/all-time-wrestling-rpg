@@ -56,7 +56,8 @@ public class StatusCardListView extends Main {
   final Grid<StatusCard> cardGrid;
 
   public StatusCardListView(
-      @NonNull StatusCardService statusCardService, @NonNull SecurityUtils securityUtils) {
+      @NonNull final StatusCardService statusCardService,
+      @NonNull final SecurityUtils securityUtils) {
     this.statusCardService = statusCardService;
 
     key = new TextField();
@@ -184,12 +185,14 @@ public class StatusCardListView extends Main {
         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void deleteCard(@NonNull StatusCard card) {
+  private void deleteCard(@NonNull final StatusCard card) {
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Delete Status Card?");
     dialog.setText(
-        "Are you sure you want to delete this status card? This may cause issues with wrestlers"
-            + " currently holding it.");
+        """
+        Are you sure you want to delete this status card? This may cause issues with wrestlers\
+         currently holding it.\
+        """);
     dialog.setConfirmButton(
         "Delete",
         e -> {

@@ -30,7 +30,6 @@ import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
@@ -40,9 +39,11 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
@@ -51,12 +52,12 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.Location;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -97,18 +98,16 @@ class ShowDetailViewTest {
   @Mock private SegmentNarrationController segmentNarrationController;
   @Mock private ShowController showController;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
-  @Mock private LeagueRepository leagueRepository;
+  @Mock private UniverseRepository universeRepository;
+  @Mock private UniverseContextService universeContextService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private ArenaService arenaService;
   @Mock private NotificationService notificationService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-      relationshipService;
+  @Mock private WrestlerRelationshipService relationshipService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     MockitoAnnotations.openMocks(this);
   }
 
@@ -156,10 +155,10 @@ class ShowDetailViewTest {
               segmentService,
               segmentRepository,
               segmentTypeRepository,
+              segmentRuleRepository,
               npcService,
               wrestlerService,
               titleService,
-              segmentRuleRepository,
               showTypeService,
               seasonService,
               showTemplateService,
@@ -168,7 +167,8 @@ class ShowDetailViewTest {
               segmentNarrationController,
               showController,
               matchFulfillmentRepository,
-              leagueRepository,
+              universeRepository,
+              universeContextService,
               commentaryTeamRepository,
               ringsideActionService,
               arenaService,
@@ -241,10 +241,10 @@ class ShowDetailViewTest {
               segmentService,
               segmentRepository,
               segmentTypeRepository,
+              segmentRuleRepository,
               npcService,
               wrestlerService,
               titleService,
-              segmentRuleRepository,
               showTypeService,
               seasonService,
               showTemplateService,
@@ -253,7 +253,8 @@ class ShowDetailViewTest {
               segmentNarrationController,
               showController,
               matchFulfillmentRepository,
-              leagueRepository,
+              universeRepository,
+              universeContextService,
               commentaryTeamRepository,
               ringsideActionService,
               arenaService,
@@ -261,7 +262,7 @@ class ShowDetailViewTest {
               notificationService,
               exportService);
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
-      Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));
+      Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());
 
       ReflectionTestUtils.setField(showDetailView, "currentShow", show);

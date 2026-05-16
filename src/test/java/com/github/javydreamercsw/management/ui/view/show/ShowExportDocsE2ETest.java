@@ -74,8 +74,7 @@ class ShowExportDocsE2ETest extends AbstractE2ETest {
     segmentRepository.save(segment);
 
     // 2. Navigate to Show List
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
-    waitForVaadinClientToLoad();
+    navigateTo("show-list");
 
     // 3. Open Export Dialog from grid
     String exportBtnId = "export-show-button-" + show.getId();
@@ -88,10 +87,12 @@ class ShowExportDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Community",
         "Social Media Export",
-        "Share your show cards with the world! The Social Media Export tool generates"
-            + " perfectly formatted match cards for Markdown, Facebook, X (Twitter), and Bluesky."
-            + " Choose to include match results, segment summaries, and highlighted main events"
-            + " to keep your community engaged and informed.",
+        """
+        Share your show cards with the world! The Social Media Export tool generates\
+         perfectly formatted match cards for Markdown, Facebook, X (Twitter), and Bluesky.\
+         Choose to include match results, segment summaries, and highlighted main events\
+         to keep your community engaged and informed.\
+        """,
         "community-show-export");
   }
 }

@@ -36,14 +36,9 @@ import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@ActiveProfiles("h2")
-@Transactional
-class EntityImageResolutionIntegrationTest {
+class EntityImageResolutionIntegrationTest
+    extends com.github.javydreamercsw.management.test.AbstractIntegrationTest {
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private NpcService npcService;
@@ -58,7 +53,7 @@ class EntityImageResolutionIntegrationTest {
   void testWrestlerImageResolution() {
     // Princess Aussie.png exists in src/main/resources/images/wrestlers/
     Wrestler wrestler = Wrestler.builder().name("Princess Aussie").build();
-    String imageUrl = wrestlerService.resolveWrestlerImage(wrestler);
+    String imageUrl = wrestlerService.resolveWrestlerImage(wrestler).url();
     assertNotNull(imageUrl);
     assertEquals("images/wrestlers/Princess Aussie.png", imageUrl);
   }
@@ -67,7 +62,7 @@ class EntityImageResolutionIntegrationTest {
   void testWrestlerFallbackResolution() {
     // Should fallback to generic-wrestler.png
     Wrestler wrestler = Wrestler.builder().name("Unknown Wrestler").build();
-    String imageUrl = wrestlerService.resolveWrestlerImage(wrestler);
+    String imageUrl = wrestlerService.resolveWrestlerImage(wrestler).url();
     assertNotNull(imageUrl);
     assertEquals("images/generic-wrestler.png", imageUrl);
   }

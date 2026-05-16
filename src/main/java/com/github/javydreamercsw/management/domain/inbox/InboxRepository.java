@@ -28,8 +28,10 @@ public interface InboxRepository
     extends JpaRepository<InboxItem, Long>, JpaSpecificationExecutor<InboxItem> {
 
   @Query(
-      "SELECT i FROM InboxItem i JOIN i.targets t WHERE t.targetId = :wrestlerId AND i.description"
-          + " = :description")
+      """
+      SELECT i FROM InboxItem i JOIN i.targets t WHERE t.targetId = :wrestlerId AND i.description\
+       = :description\
+      """)
   List<InboxItem> findByWrestlerIdAndDescription(
       @Param("wrestlerId") String wrestlerId, @Param("description") String description);
 }

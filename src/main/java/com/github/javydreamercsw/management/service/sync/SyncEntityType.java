@@ -56,7 +56,7 @@ public enum SyncEntityType {
    * @param key The key to search for
    * @return Optional containing the matching SyncEntityType, or empty if not found
    */
-  public static Optional<SyncEntityType> fromKey(String key) {
+  public static Optional<SyncEntityType> fromKey(final String key) {
     if (key == null || key.isBlank()) {
       return Optional.empty();
     }
@@ -69,7 +69,7 @@ public enum SyncEntityType {
    * @param entityClassName The entity class name to search for
    * @return Optional containing the matching SyncEntityType, or empty if not found
    */
-  public static Optional<SyncEntityType> fromEntityClassName(String entityClassName) {
+  public static Optional<SyncEntityType> fromEntityClassName(final String entityClassName) {
     if (entityClassName == null || entityClassName.isBlank()) {
       return Optional.empty();
     }

@@ -33,7 +33,7 @@ public class SeasonSummaryComponent extends VerticalLayout {
   private final ComboBox<Season> seasonSelector;
   private final VerticalLayout statsLayout;
 
-  public SeasonSummaryComponent(List<Season> seasons, Consumer<Season> onSeasonChange) {
+  public SeasonSummaryComponent(final List<Season> seasons, final Consumer<Season> onSeasonChange) {
     setSpacing(true);
     setPadding(true);
     addClassNames(
@@ -62,7 +62,7 @@ public class SeasonSummaryComponent extends VerticalLayout {
     add(seasonSelector, statsLayout);
   }
 
-  public void updateStats(SeasonStatsDTO stats) {
+  public void updateStats(final SeasonStatsDTO stats) {
     statsLayout.removeAll();
 
     if (stats == null) {
@@ -78,8 +78,7 @@ public class SeasonSummaryComponent extends VerticalLayout {
 
     Span record =
         new Span(
-            String.format(
-                "Record: %d-%d-%d", stats.getWins(), stats.getLosses(), stats.getDraws()));
+            "Record: %d-%d-%d".formatted(stats.getWins(), stats.getLosses(), stats.getDraws()));
     record.setId("season-record");
     record.addClassNames(LumoUtility.FontSize.MEDIUM, LumoUtility.FontWeight.BOLD);
 
@@ -118,7 +117,7 @@ public class SeasonSummaryComponent extends VerticalLayout {
     }
   }
 
-  public void setSelectedSeason(Season season) {
+  public void setSelectedSeason(final Season season) {
     seasonSelector.setValue(season);
   }
 }

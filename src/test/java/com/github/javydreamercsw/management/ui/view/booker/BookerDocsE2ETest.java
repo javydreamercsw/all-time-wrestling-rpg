@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class BookerDocsE2ETest extends AbstractE2ETest {
@@ -84,21 +85,21 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     show.setShowDate(LocalDate.now().plusDays(7));
     show.setDescription("Planning Documentation Show");
     show.setType(weekly);
+    show.setUniverse(defaultUniverse);
     show = showRepository.save(show);
 
-    // 3. Navigate to Show Planning
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-planning");
+    // 3. Navigate to Show Planning with the show ID (view requires a parameter)
+    driver.get(
+        "http://localhost:" + serverPort + getContextPath() + "/show-planning/" + show.getId());
     waitForVaadinClientToLoad();
 
-    // 4. Select the show
-    selectFromVaadinComboBox("select-show-combo-box", "Show to Plan");
+    // 4. Wait for context to auto-load
+    WebElement contextArea = waitForVaadinElement(driver, By.id("show-planning-context-area"));
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+        .until(d -> !contextArea.getText().isEmpty());
 
-    // 5. Load Context
-    clickButtonByText("Load Context");
-    waitForText("Show Planning Context");
-
-    // 6. Propose Segments (Triggers Mock AI)
-    clickButtonByText("Propose Segments");
+    // 5. Propose Segments (Triggers Mock AI)
+    clickElement(waitForVaadinElement(driver, By.id("propose-segments-button")));
 
     // Wait for the grid to be populated (Mock AI has 1-3s delay)
     waitForVaadinElement(driver, By.id("proposed-segments-grid"));
@@ -111,31 +112,33 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Booker",
         "Show Planning",
-        "The Show Planning interface allows you to book matches and segments for an upcoming show."
-            + " Drag and drop wrestlers to create matches, set stipulations, and define segment"
-            + " types.",
+        """
+        The Show Planning interface allows you to book matches and segments for an upcoming show.\
+         Drag and drop wrestlers to create matches, set stipulations, and define segment\
+         types.\
+        """,
         "booker-show-planning");
   }
 
   @Test
   void testCaptureShowListView() {
     // Navigate to Show List (History)
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
-    waitForVaadinClientToLoad();
+    navigateTo("show-list");
     waitForText("Shows");
 
     documentFeature(
         "Booker",
         "Show History",
-        "View a complete history of all booked shows. Click on any show to view its detailed"
-            + " results, ratings, and match history.",
+        """
+        View a complete history of all booked shows. Click on any show to view its detailed\
+         results, ratings, and match history.\
+        """,
         "booker-show-history");
   }
 
   @Test
   void testCaptureMatchNarrationView() {
     // 1. Setup participants
-    Account admin = accountRepository.findByUsername("admin").get();
     Wrestler w1 =
         wrestlerRepository
             .findByName("Roster Wrestler 1")
@@ -192,8 +195,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     segment = segmentRepository.save(segment);
 
     // 3. Navigate to Match View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("match/" + segment.getId());
 
     // 4. Trigger AI Narration
     clickButtonByText("Generate Match Narration (AI)");
@@ -211,10 +213,12 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Booker",
         "Match Narration",
-        "Bring your matches to life with AI-generated or manual narration. The Story Director uses"
-            + " match participants, rules, and outcomes to weave a compelling narrative of the"
-            + " action. The new structured transcript format separates objective action from"
-            + " character-driven commentary.",
+        """
+        Bring your matches to life with AI-generated or manual narration. The Story Director uses\
+         match participants, rules, and outcomes to weave a compelling narrative of the\
+         action. The new structured transcript format separates objective action from\
+         character-driven commentary.\
+        """,
         "booker-match-narration");
   }
 
@@ -277,8 +281,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     segment = segmentRepository.save(segment);
 
     // 3. Navigate to Match View
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
-    waitForVaadinClientToLoad();
+    navigateTo("match/" + segment.getId());
 
     // 4. Trigger AI Narration
     clickButtonByText("Generate Match Narration (AI)");
@@ -296,14 +299,16 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "AI Features",
         "Dynamic Commentator Personas",
-        "Experience the match through the eyes of unique commentator teams. Each commentator"
-            + " brings their own alignment, style, and catchphrases to the broadcast, creating"
-            + " an immersive 'sports-entertainment' feel. Face commentators cheer the heroes,"
-            + " while Heel commentators favor the rule-breakers.",
+        """
+        Experience the match through the eyes of unique commentator teams. Each commentator\
+         brings their own alignment, style, and catchphrases to the broadcast, creating\
+         an immersive 'sports-entertainment' feel. Face commentators cheer the heroes,\
+         while Heel commentators favor the rule-breakers.\
+        """,
         "ai-dynamic-commentary");
   }
 
-  private void waitForText(String text) {
+  private void waitForText(final String text) {
     waitForVaadinElement(
         driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
   }

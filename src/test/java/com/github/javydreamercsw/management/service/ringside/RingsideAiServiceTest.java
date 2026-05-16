@@ -48,7 +48,7 @@ class RingsideAiServiceTest {
   private RingsideAction faceAction;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     segment = new Segment();
     segment.setRefereeAwarenessLevel(0);
 

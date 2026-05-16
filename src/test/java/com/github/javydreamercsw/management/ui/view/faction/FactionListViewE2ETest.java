@@ -39,8 +39,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFaction() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the vaadin-grid to be visible
@@ -84,11 +83,14 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   void testEditFaction() {
     // Create a faction to edit
     Faction faction =
-        Faction.builder().name("Faction to Edit").description("Original Description").build();
+        Faction.builder()
+            .name("Faction to Edit")
+            .description("Original Description")
+            .universe(defaultUniverse)
+            .build();
     factionService.save(faction);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the vaadin-grid to be visible
@@ -130,11 +132,14 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   void testDeleteFaction() {
     // Create a faction to delete
     Faction faction =
-        Faction.builder().name("Faction to Delete").description("Description").build();
+        Faction.builder()
+            .name("Faction to Delete")
+            .description("Description")
+            .universe(defaultUniverse)
+            .build();
     factionService.save(faction);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     long initialSize = factionService.count();
@@ -174,11 +179,12 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   @Test
   void testAddWrestlerToFaction() {
     // Create a faction and a wrestler
-    Faction faction = factionService.save(Faction.builder().name("Faction with Wrestler").build());
+    Faction faction =
+        factionService.save(
+            Faction.builder().name("Faction with Wrestler").universe(defaultUniverse).build());
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Faction Wrestler"));
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     waitForVaadinToLoad(driver);
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     WebElement membersButton = driver.findElement(By.id("members-" + faction.getId()));
@@ -214,22 +220,23 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         updatedFaction.get().getMembers().stream()
             .anyMatch(
                 m -> {
-                  Assertions.assertNotNull(m.getId());
-                  return m.getId().equals(wrestler.getId());
+                  Assertions.assertNotNull(m.getWrestler());
+                  return m.getWrestler().getId().equals(wrestler.getId());
                 }));
   }
 
   @Test
   void testRemoveWrestlerFromFaction() {
     // Create a faction and a wrestler, and add the wrestler to the faction
-    Faction faction = factionService.save(Faction.builder().name("Faction to Remove From").build());
+    Faction faction =
+        factionService.save(
+            Faction.builder().name("Faction to Remove From").universe(defaultUniverse).build());
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Wrestler to Remove"));
     Assertions.assertNotNull(faction.getId());
     Assertions.assertNotNull(wrestler.getId());
     factionService.addMemberToFaction(faction.getId(), wrestler.getId());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Wait for the vaadin-grid to be visible
@@ -264,7 +271,8 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         d -> {
           Optional<Faction> f = factionService.getFactionByIdWithMembers(factionId);
           return f.isPresent()
-              && f.get().getMembers().stream().noneMatch(m -> wrestlerId == m.getId());
+              && f.get().getMembers().stream()
+                  .noneMatch(m -> m.getWrestler() != null && wrestlerId == m.getWrestler().getId());
         });
 
     Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(factionId);
@@ -273,8 +281,8 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         updatedFaction.get().getMembers().stream()
             .noneMatch(
                 m -> {
-                  Assertions.assertNotNull(m.getId());
-                  return m.getId().equals(wrestler.getId());
+                  Assertions.assertNotNull(m.getWrestler());
+                  return m.getWrestler().getId().equals(wrestler.getId());
                 }));
   }
 }

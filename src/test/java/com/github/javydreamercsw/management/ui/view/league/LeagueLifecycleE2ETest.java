@@ -104,9 +104,11 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     WebElement maxPicksField = driver.findElement(By.id("league-max-picks-field"));
     ((JavascriptExecutor) driver)
         .executeScript(
-            "arguments[0].value = 2; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles:"
-                + " true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true"
-                + " }));",
+            """
+            arguments[0].value = 2; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles:\
+             true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true\
+             }));\
+            """,
             maxPicksField);
     maxPicksField.sendKeys(Keys.TAB);
 
@@ -134,10 +136,10 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Verify player1 is a member (Debug check)
     List<LeagueMembership> members = leagueMembershipRepository.findByLeague(league);
     boolean player1Joined =
-        members.stream().anyMatch(m -> m.getMember().getUsername().equals("player1"));
+        members.stream().anyMatch(m -> "player1".equals(m.getMember().getUsername()));
     assertTrue(player1Joined, "Player1 did not join the league! Members: " + members.size());
     boolean adminJoined =
-        members.stream().anyMatch(m -> m.getMember().getUsername().equals("admin"));
+        members.stream().anyMatch(m -> "admin".equals(m.getMember().getUsername()));
     assertTrue(
         adminJoined, "Admin did not join the league as a player! Members: " + members.size());
 
@@ -145,6 +147,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Use the ID we added: league-draft-room-btn-<id>
     clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
 
     // Verify draft header
     waitForPageSourceToContain("Round: 1 | Pick: 1");
@@ -172,6 +175,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     navigateTo("leagues");
     clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
 
     // Verify player1 turn
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Current Turn: player1"));
@@ -218,19 +222,21 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
             wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
         .sendKeys(showName);
 
-    List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-    WebElement showTypeComboBox = comboBoxes.get(0);
-    WebElement seasonComboBox = comboBoxes.get(1);
-    WebElement templateComboBox = comboBoxes.get(2);
-    WebElement leagueComboBox = comboBoxes.get(3);
+    selectFromVaadinComboBox("show-type", "Weekly");
 
-    selectFromVaadinComboBox(showTypeComboBox, "Weekly");
+    // Wait for template to become enabled after show-type is selected
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            d ->
+                (Boolean)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "return !arguments[0].disabled;",
+                            d.findElement(By.id("show-template"))));
 
-    wait.until(ignored -> templateComboBox.isEnabled());
-
-    selectFromVaadinComboBox(seasonComboBox, String.valueOf(Year.now().getValue()));
-    selectFromVaadinComboBox(templateComboBox, "Continuum");
-    selectFromVaadinComboBox(leagueComboBox, leagueName);
+    selectFromVaadinComboBox("season", String.valueOf(Year.now().getValue()));
+    selectFromVaadinComboBox("show-template", "Continuum");
+    selectFromVaadinComboBox("show-league", leagueName);
 
     driver
         .findElement(By.id("show-date"))
@@ -248,6 +254,8 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     Assertions.assertEquals(1, matchingShows.size());
     Show show = matchingShows.getFirst();
     Assertions.assertNotNull(show.getLeague(), "Show league should be set");
+    Assertions.assertEquals(
+        leagueName, show.getLeague().getName(), "Show league name should match");
 
     // Click on the newly created show in the grid to navigate to its detail page
     log.info("Navigating to show detail page");
@@ -353,11 +361,6 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     assertTrue(driver.getPageSource().contains(showName));
   }
 
-  private void navigateTo(String route) {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
-    waitForVaadinClientToLoad();
-  }
-
   private void waitForTurnChangeToAdmin() {
     new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(
@@ -417,7 +420,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     }
   }
 
-  private String getPlayer1WrestlerName(League league) {
+  private String getPlayer1WrestlerName(final League league) {
     Account p1 = accountRepository.findByUsername("player1").orElseThrow();
     return leagueRosterRepository.findByLeague(league).stream()
         .filter(r -> r.getOwner().equals(p1))
@@ -426,7 +429,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
         .orElseThrow(() -> new IllegalStateException("Player 1 has no wrestler in this league"));
   }
 
-  private String getAdminWrestlerName(League league) {
+  private String getAdminWrestlerName(final League league) {
     Account admin = accountRepository.findByUsername("admin").orElseThrow();
     return leagueRosterRepository.findByLeague(league).stream()
         .filter(r -> r.getOwner().equals(admin))

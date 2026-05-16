@@ -91,8 +91,10 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Leagues",
         "Creating a League",
-        "Commissioners can create new leagues, setting the maximum picks per player and inviting"
-            + " other players.",
+        """
+        Commissioners can create new leagues, setting the maximum picks per player and inviting\
+         other players.\
+        """,
         "league-creation");
 
     // Fill form to progress
@@ -104,9 +106,11 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     WebElement maxPicksField = driver.findElement(By.id("league-max-picks-field"));
     ((JavascriptExecutor) driver)
         .executeScript(
-            "arguments[0].value = 1; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles:"
-                + " true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true"
-                + " }));",
+            """
+            arguments[0].value = 1; arguments[0].dispatchEvent(new CustomEvent('input', { bubbles:\
+             true })); arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true\
+             }));\
+            """,
             maxPicksField);
     maxPicksField.sendKeys(Keys.TAB);
 
@@ -124,8 +128,10 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Leagues",
         "The Draft Room",
-        "Players participate in a snake draft to build their rosters. The UI shows the current turn"
-            + " and available wrestlers.",
+        """
+        Players participate in a snake draft to build their rosters. The UI shows the current turn\
+         and available wrestlers.\
+        """,
         "league-draft-room");
 
     // Complete Draft to show other features
@@ -145,6 +151,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     navigateTo("leagues");
     clickElement(By.id("league-draft-room-btn-" + league.getId()));
     waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
     Wrestler w2 = wrestlers.get(1);
     clickElement(By.id("draft-wrestler-btn-" + w2.getId()));
 
@@ -176,8 +183,10 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Leagues",
         "Match Reporting",
-        "When a league match is booked, players receive a notification to report the results of"
-            + " their matches.",
+        """
+        When a league match is booked, players receive a notification to report the results of\
+         their matches.\
+        """,
         "league-match-report");
 
     // Submit report
@@ -200,8 +209,10 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     documentFeature(
         "Leagues",
         "League Standings",
-        "The league dashboard displays the current standings, including wins, losses, and draws for"
-            + " each wrestler.",
+        """
+        The league dashboard displays the current standings, including wins, losses, and draws for\
+         each wrestler.\
+        """,
         "league-standings");
 
     click("vaadin-tab", "Rosters");
@@ -219,11 +230,6 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
         "League History",
         "Keep track of all shows and match results that occurred within the league.",
         "league-history-tab");
-  }
-
-  private void navigateTo(String route) {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
-    waitForVaadinClientToLoad();
   }
 
   private void ensurePlayerAccount() {
@@ -275,30 +281,40 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     }
   }
 
-  private void createLeagueShow(String leagueName, String showName) {
+  private void createLeagueShow(final String leagueName, final String showName) {
     navigateTo("show-list");
     waitForVaadinElement(driver, By.id("show-name"));
     driver.findElement(By.id("show-name")).sendKeys(showName);
 
-    List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-    comboBoxes.get(0).sendKeys("Weekly", Keys.TAB);
-    new WebDriverWait(driver, Duration.ofSeconds(10)).until(d -> comboBoxes.get(2).isEnabled());
-    comboBoxes.get(1).sendKeys(seasonName, Keys.TAB);
-    comboBoxes.get(2).sendKeys("Continuum", Keys.TAB);
-    comboBoxes.get(3).sendKeys(leagueName, Keys.TAB);
+    selectFromVaadinComboBox("show-type", "Weekly");
+
+    // Template is disabled until show-type is selected
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            d ->
+                (Boolean)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "return !arguments[0].disabled;",
+                            d.findElement(By.id("show-template"))));
+
+    selectFromVaadinComboBox("season", seasonName);
+    selectFromVaadinComboBox("show-template", "Continuum");
+    selectFromVaadinComboBox("show-league", leagueName);
 
     driver
         .findElement(By.id("show-date"))
         .sendKeys(
             gameSettingService
                 .getCurrentGameDate()
-                .format(DateTimeFormatter.ofPattern("M/d/yyyy"))); // Corrected to use game date
+                .format(DateTimeFormatter.ofPattern("M/d/yyyy")));
 
     clickElement(By.id("create-show-button"));
     waitForPageSourceToContain("Show created.");
   }
 
-  private void addSegmentToShow(Show show, String wrestlerName1, String wrestlerName2) {
+  private void addSegmentToShow(
+      final Show show, final String wrestlerName1, final String wrestlerName2) {
     WebElement viewShowDetails =
         new WebDriverWait(driver, Duration.ofSeconds(10))
             .until(
@@ -320,7 +336,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     waitForNotification("Segment added successfully!");
   }
 
-  private void finalizeShow(Show show) {
+  private void finalizeShow(final Show show) {
     navigateTo("show-list");
     waitForGridToPopulate("show-grid");
     clickElement(driver.findElement(By.id("show-name-button-" + show.getId())));

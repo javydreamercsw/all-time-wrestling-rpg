@@ -37,7 +37,7 @@ class TitleScriptServiceTest {
   private Wrestler champion;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     titleScriptService = new TitleScriptService();
     context = new SegmentNarrationContext();
     championContext = new WrestlerContext();

@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.faction;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.management.AbstractJpaTest;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -26,28 +27,28 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 
 /**
  * Integration tests for FactionRepository. Tests the new findByExternalId method and existing
  * functionality.
  */
-@DataJpaTest
 class FactionRepositoryTest extends AbstractJpaTest {
 
-  @Autowired private TestEntityManager entityManager;
+  @Autowired private EntityManager entityManager;
   @Autowired private FactionRepository factionRepository;
 
   private Faction testFaction;
 
   @AfterEach
-  void tearDown() {
+  public void tearDown() throws Exception {
     entityManager.clear();
+    super.tearDown();
   }
 
+  @Override
   @BeforeEach
-  void setUp() {
+  public void baseSetUp() throws Exception {
+    super.baseSetUp();
     testFaction = Faction.builder().build();
     testFaction.setName("Test Faction");
     testFaction.setDescription("A test faction for unit tests");
@@ -60,7 +61,9 @@ class FactionRepositoryTest extends AbstractJpaTest {
   @DisplayName("Should save and find faction by external ID")
   void shouldSaveAndFindFactionByExternalId() {
     // Given
-    Faction savedFaction = entityManager.persistAndFlush(testFaction);
+    entityManager.persist(testFaction);
+    entityManager.flush();
+    Faction savedFaction = testFaction;
 
     // When
     Optional<Faction> foundFaction = factionRepository.findByExternalId("notion-test-faction-123");
@@ -76,7 +79,8 @@ class FactionRepositoryTest extends AbstractJpaTest {
   @DisplayName("Should return empty when external ID not found")
   void shouldReturnEmptyWhenExternalIdNotFound() {
     // Given
-    entityManager.persistAndFlush(testFaction);
+    entityManager.persist(testFaction);
+    entityManager.flush();
 
     // When
     Optional<Faction> foundFaction = factionRepository.findByExternalId("non-existent-id");
@@ -99,7 +103,8 @@ class FactionRepositoryTest extends AbstractJpaTest {
   @DisplayName("Should find faction by name")
   void shouldFindFactionByName() {
     // Given
-    entityManager.persistAndFlush(testFaction);
+    entityManager.persist(testFaction);
+    entityManager.flush();
 
     // When
     Optional<Faction> foundFaction = factionRepository.findByName("Test Faction");
@@ -114,7 +119,8 @@ class FactionRepositoryTest extends AbstractJpaTest {
   @DisplayName("Should check if faction name exists")
   void shouldCheckIfFactionNameExists() {
     // Given
-    entityManager.persistAndFlush(testFaction);
+    entityManager.persist(testFaction);
+    entityManager.flush();
 
     // When & Then
     assertTrue(factionRepository.existsByName("Test Faction"));
@@ -137,8 +143,10 @@ class FactionRepositoryTest extends AbstractJpaTest {
     faction2.setCreationDate(Instant.now());
     faction2.setExternalId("external-id-2");
 
-    entityManager.persistAndFlush(faction1);
-    entityManager.persistAndFlush(faction2);
+    entityManager.persist(faction1);
+    entityManager.flush();
+    entityManager.persist(faction2);
+    entityManager.flush();
 
     // When
     Optional<Faction> found1 = factionRepository.findByExternalId("external-id-1");

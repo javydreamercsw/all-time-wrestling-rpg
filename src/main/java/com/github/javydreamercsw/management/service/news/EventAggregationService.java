@@ -74,7 +74,7 @@ public class EventAggregationService {
   }
 
   @Transactional(readOnly = true)
-  public String formatMonthlySummary(MonthlySummary summary) {
+  public String formatMonthlySummary(final MonthlySummary summary) {
     StringBuilder sb = new StringBuilder();
     sb.append("PERIOD: ")
         .append(summary.getStartDate())

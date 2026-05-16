@@ -46,7 +46,7 @@ class ShowTemplateServiceTest {
   @InjectMocks private ShowTemplateService showTemplateService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(clock.instant()).thenReturn(java.time.Instant.now());
   }
 

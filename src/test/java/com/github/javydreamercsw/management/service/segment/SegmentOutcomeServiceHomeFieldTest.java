@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.segment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
@@ -25,10 +27,14 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,39 +48,50 @@ import org.mockito.quality.Strictness;
 class SegmentOutcomeServiceHomeFieldTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private InjuryService injuryService;
 
   private SegmentOutcomeService service;
 
-  private Wrestler homeDbWrestler;
-  private Wrestler awayDbWrestler;
-
   @BeforeEach
   void setUp() {
-    service = new SegmentOutcomeService(wrestlerRepository, new Random(42));
+    service =
+        new SegmentOutcomeService(
+            wrestlerRepository, wrestlerService, injuryService, new Random(42));
 
-    homeDbWrestler = new Wrestler();
+    Wrestler homeDbWrestler = new Wrestler();
     homeDbWrestler.setId(1L);
     homeDbWrestler.setName("Kazuchika Okada");
-    homeDbWrestler.setFans(10_000L);
-    homeDbWrestler.setTier(WrestlerTier.MIDCARDER);
-    homeDbWrestler.setBumps(0);
-    homeDbWrestler.setInjuries(Collections.emptyList());
-    homeDbWrestler.setDecks(Collections.emptyList());
+    WrestlerState homeState = new WrestlerState();
+    homeState.setWrestler(homeDbWrestler);
+    homeDbWrestler.getWrestlerStates().add(homeState);
 
-    awayDbWrestler = new Wrestler();
+    homeState.setFans(10_000L);
+    homeState.setTier(WrestlerTier.MIDCARDER);
+    homeState.setBumps(0);
+    homeDbWrestler.setDecks(Collections.emptySet());
+
+    Wrestler awayDbWrestler = new Wrestler();
     awayDbWrestler.setId(2L);
     awayDbWrestler.setName("John Doe");
-    awayDbWrestler.setFans(10_000L);
-    awayDbWrestler.setTier(WrestlerTier.MIDCARDER);
-    awayDbWrestler.setBumps(0);
-    awayDbWrestler.setInjuries(Collections.emptyList());
-    awayDbWrestler.setDecks(Collections.emptyList());
+    WrestlerState awayState = new WrestlerState();
+    awayState.setWrestler(awayDbWrestler);
+    awayDbWrestler.getWrestlerStates().add(awayState);
+
+    awayState.setFans(10_000L);
+    awayState.setTier(WrestlerTier.MIDCARDER);
+    awayState.setBumps(0);
+    awayDbWrestler.setDecks(Collections.emptySet());
 
     when(wrestlerRepository.findByName("Kazuchika Okada")).thenReturn(Optional.of(homeDbWrestler));
     when(wrestlerRepository.findByName("John Doe")).thenReturn(Optional.of(awayDbWrestler));
+
+    when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(homeState);
+    when(wrestlerService.getOrCreateState(eq(2L), anyLong())).thenReturn(awayState);
   }
 
-  private WrestlerContext makeContext(String name, String hailingFrom) {
+  private WrestlerContext makeContext(
+      @NonNull final String name, @NonNull final String hailingFrom) {
     WrestlerContext ctx = new SegmentNarrationService.WrestlerContext();
     ctx.setName(name);
     ctx.setHailingFrom(hailingFrom);
@@ -83,7 +100,7 @@ class SegmentOutcomeServiceHomeFieldTest {
     return ctx;
   }
 
-  private VenueContext makeVenue(String location) {
+  private VenueContext makeVenue(@NonNull final String location) {
     VenueContext venue = new SegmentNarrationService.VenueContext();
     venue.setName("Tokyo Dome");
     venue.setLocation(location);
@@ -91,7 +108,7 @@ class SegmentOutcomeServiceHomeFieldTest {
   }
 
   private SegmentNarrationService.SegmentNarrationContext makeContext(
-      List<WrestlerContext> wrestlers, VenueContext venue) {
+      @NonNull final List<WrestlerContext> wrestlers, final VenueContext venue) {
     SegmentNarrationService.SegmentNarrationContext ctx =
         new SegmentNarrationService.SegmentNarrationContext();
     SegmentNarrationService.SegmentTypeContext st =

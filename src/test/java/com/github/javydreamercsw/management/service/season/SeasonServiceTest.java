@@ -60,7 +60,7 @@ class SeasonServiceTest {
   private ShowType pleShowType;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(clock.instant()).thenReturn(fixedInstant);
     lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
     lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(fixedLocalDate);
@@ -376,7 +376,7 @@ class SeasonServiceTest {
     assertThat(newSeason.getCreationDate()).isNotNull();
   }
 
-  private Season createSeason(String name, Integer seasonNumber) {
+  private Season createSeason(final String name, final Integer seasonNumber) {
     Season season = new Season();
     season.setId(seasonNumber.longValue());
     season.setName(name);
@@ -390,7 +390,10 @@ class SeasonServiceTest {
   }
 
   private Season createSeason(
-      String name, Integer seasonNumber, LocalDate startDate, LocalDate endDate) {
+      final String name,
+      final Integer seasonNumber,
+      final LocalDate startDate,
+      final LocalDate endDate) {
     Season season = new Season();
     season.setId(seasonNumber.longValue());
     season.setName(name);
@@ -401,7 +404,7 @@ class SeasonServiceTest {
     return season;
   }
 
-  private Show createShow(String name, ShowType showType) {
+  private Show createShow(final String name, final ShowType showType) {
     Show show = new Show();
     show.setName(name);
     show.setDescription("Test show");

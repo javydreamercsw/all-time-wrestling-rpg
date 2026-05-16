@@ -35,10 +35,10 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public FanAdjudicationInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("fanAdjudication") InboxEventType fanAdjudication,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("fanAdjudication") final InboxEventType fanAdjudication,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.fanAdjudication = fanAdjudication;
     this.eventPublisher = eventPublisher;
@@ -46,19 +46,19 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FanAwardedEvent event) {
+  public void onApplicationEvent(@NonNull final FanAwardedEvent event) {
     String message =
-        String.format(
-            "Wrestler %s %s %d fans. New total: %d",
-            event.getWrestler().getName(),
-            event.getFanChange() > 0 ? "gained" : "lost",
-            Math.abs(event.getFanChange()),
-            event.getWrestler().getFans());
+        "Wrestler %s %s %d fans. New total: %d"
+            .formatted(
+                event.getWrestlerState().getName(),
+                event.getFanChange() > 0 ? "gained" : "lost",
+                Math.abs(event.getFanChange()),
+                event.getWrestlerState().getFans());
 
     inboxService.createInboxItem(
         fanAdjudication,
         message,
-        event.getWrestler().getId().toString(),
+        event.getWrestlerState().getWrestler().getId().toString(),
         InboxItemTarget.TargetType.WRESTLER);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));

@@ -54,11 +54,11 @@ public class LeagueListView extends Main {
   private final Grid<League> leagueGrid;
 
   public LeagueListView(
-      @NonNull LeagueService leagueService,
-      @NonNull AccountService accountService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull LeagueMembershipRepository leagueMembershipRepository) {
+      @NonNull final LeagueService leagueService,
+      @NonNull final AccountService accountService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final WrestlerRepository wrestlerRepository,
+      @NonNull final LeagueMembershipRepository leagueMembershipRepository) {
     this.leagueService = leagueService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
@@ -149,7 +149,7 @@ public class LeagueListView extends Main {
     leagueGrid.setSizeFull();
   }
 
-  private void openEditDialog(@NonNull League league) {
+  private void openEditDialog(@NonNull final League league) {
     leagueService
         .getLeagueWithExcludedWrestlers(league.getId())
         .ifPresent(
@@ -166,7 +166,7 @@ public class LeagueListView extends Main {
             });
   }
 
-  private void openDeleteDialog(@NonNull League league) {
+  private void openDeleteDialog(@NonNull final League league) {
     Dialog confirm = new Dialog();
     confirm.setHeaderTitle("Delete League");
     confirm.add(new Span("Are you sure you want to delete '" + league.getName() + "'?"));

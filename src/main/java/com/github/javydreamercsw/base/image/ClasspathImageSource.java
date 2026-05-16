@@ -30,7 +30,7 @@ public class ClasspathImageSource implements ImageSource {
   private static final String IMAGES_BASE = "images/";
 
   @Override
-  public Optional<String> resolveImage(String name, ImageCategory category) {
+  public Optional<String> resolveImage(final String name, final ImageCategory category) {
     String subDir = category.getDirectoryName() + "/";
     String filename = category.formatName(name) + ".png";
     String webPath = IMAGES_BASE + subDir + filename;

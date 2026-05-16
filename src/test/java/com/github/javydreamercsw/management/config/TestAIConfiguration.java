@@ -16,20 +16,9 @@
 */
 package com.github.javydreamercsw.management.config;
 
-import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.base.ai.mock.MockSegmentNarrationService;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @TestConfiguration
 @Profile({"test", "e2e"})
-public class TestAIConfiguration {
-
-  @Bean
-  @Primary
-  public SegmentNarrationService mockSegmentNarrationService() {
-    return new MockSegmentNarrationService();
-  }
-}
+public class TestAIConfiguration {}

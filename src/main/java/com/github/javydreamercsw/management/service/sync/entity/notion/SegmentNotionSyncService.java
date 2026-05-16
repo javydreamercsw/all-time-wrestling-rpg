@@ -31,14 +31,14 @@ import org.springframework.stereotype.Service;
 public class SegmentNotionSyncService extends BaseNotionSyncService<Segment> {
 
   public SegmentNotionSyncService(
-      SegmentRepository repository,
-      SyncServiceDependencies syncServiceDependencies,
-      NotionApiExecutor notionApiExecutor) {
+      final SegmentRepository repository,
+      final SyncServiceDependencies syncServiceDependencies,
+      final NotionApiExecutor notionApiExecutor) {
     super(repository, syncServiceDependencies, notionApiExecutor);
   }
 
   @Override
-  protected Map<String, PageProperty> getProperties(@NonNull Segment entity) {
+  protected Map<String, PageProperty> getProperties(@NonNull final Segment entity) {
     Map<String, PageProperty> properties = new HashMap<>();
     properties.put("Name", NotionPropertyBuilder.createTitleProperty(entity.getName()));
 
@@ -153,9 +153,9 @@ public class SegmentNotionSyncService extends BaseNotionSyncService<Segment> {
   }
 
   @Override
-  protected String getEntityDisplayName(@NonNull Segment entity) {
+  protected String getEntityDisplayName(@NonNull final Segment entity) {
     if (entity.getShow() != null) {
-      return String.format("%s - %s", entity.getShow().getName(), entity.getName());
+      return "%s - %s".formatted(entity.getShow().getName(), entity.getName());
     }
     return super.getEntityDisplayName(entity);
   }

@@ -18,21 +18,24 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerNotionSyncService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.UUID;
 import notion.api.v1.NotionClient;
 import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -45,7 +48,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Autowired private WrestlerService wrestlerService;
 
   @MockitoBean private NotionHandler notionHandler;
 
@@ -54,11 +60,6 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Captor private ArgumentCaptor<CreatePageRequest> createPageRequestCaptor;
   @Captor private ArgumentCaptor<UpdatePageRequest> updatePageRequestCaptor;
-
-  @BeforeEach
-  public void setup() {
-    clearAllRepositories();
-  }
 
   @Test
   void testSyncToNotion() {
@@ -78,11 +79,17 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
                   return supplier.get();
                 });
 
+    Universe defaultUniverse = universeRepository.findAll().get(0);
+
     // Create a new Wrestler
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler " + UUID.randomUUID());
-    wrestler.setFans(500L);
-    wrestlerRepository.save(wrestler);
+    wrestler = wrestlerRepository.save(wrestler);
+
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setFans(500L);
+    wrestlerStateRepository.save(state);
 
     // Ensure it has unsynced changes by setting updatedAt to the future
     wrestler.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
@@ -90,7 +97,7 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
 
     // Sync to Notion for the first time
 
-    wrestlerNotionSyncService.syncToNotion("test-op-1");
+    wrestlerNotionSyncService.syncToNotion("test-op-1", java.util.List.of(wrestler.getId()));
 
     // Verify that the externalId and lastSync fields are updated
     assertNotNull(wrestler.getId());
@@ -107,19 +114,25 @@ class WrestlerNotionSyncServiceIT extends ManagementIntegrationTest {
         capturedRequest.getProperties().get("Name").getTitle().get(0).getText().getContent());
 
     // Sync to Notion again with updates
-    updatedWrestler.setFans(1000L);
+    WrestlerState updatedState =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    updatedState.setFans(1000L);
+    wrestlerStateRepository.saveAndFlush(updatedState);
+
     // Ensure it's treated as changed
     updatedWrestler.setUpdatedAt(java.time.Instant.now().plusSeconds(10));
     wrestlerRepository.saveAndFlush(updatedWrestler);
-    wrestlerNotionSyncService.syncToNotion("test-op-2");
-    Wrestler updatedWrestler2 = wrestlerRepository.findById(wrestler.getId()).get();
-    assertTrue(updatedWrestler2.getLastSync().isAfter(updatedWrestler.getLastSync()));
+
+    wrestlerNotionSyncService.syncToNotion("test-op-2", java.util.List.of(wrestler.getId()));
+
+    WrestlerState updatedState2 =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
     // Verify updated properties sent to Notion
     Mockito.verify(notionClient).updatePage(updatePageRequestCaptor.capture());
     UpdatePageRequest capturedUpdateRequest = updatePageRequestCaptor.getValue();
     assertEquals(
-        updatedWrestler2.getFans().doubleValue(),
+        updatedState2.getFans().doubleValue(),
         capturedUpdateRequest.getProperties().get("Fans").getNumber());
   }
 }

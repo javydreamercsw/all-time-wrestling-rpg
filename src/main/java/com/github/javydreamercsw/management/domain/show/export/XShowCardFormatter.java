@@ -32,7 +32,7 @@ public class XShowCardFormatter extends AbstractSocialMediaFormatter {
   }
 
   @Override
-  protected String limitLength(String text) {
+  protected String limitLength(final String text) {
     if (text.length() > 280) {
       return text.substring(0, 277) + "...";
     }

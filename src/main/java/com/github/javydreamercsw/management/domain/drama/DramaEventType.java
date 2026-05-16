@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.domain.drama;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -73,15 +72,16 @@ public enum DramaEventType {
       "Relationship Milestone", "Key moments in wrestler's personal relationships");
 
   private final String displayName;
+
   private final String description;
 
-  DramaEventType(String displayName, String description) {
+  DramaEventType(final String displayName, final String description) {
     this.displayName = displayName;
     this.description = description;
   }
 
   @JsonCreator
-  public static DramaEventType fromString(String value) {
+  public static DramaEventType fromString(final String value) {
     if (value == null) {
       return null;
     }
@@ -91,11 +91,6 @@ public enum DramaEventType {
       }
     }
     throw new IllegalArgumentException("Unknown DramaEventType: " + value);
-  }
-
-  @JsonValue
-  public String getDisplayName() {
-    return displayName;
   }
 
   /** Check if this event type typically involves multiple wrestlers. */

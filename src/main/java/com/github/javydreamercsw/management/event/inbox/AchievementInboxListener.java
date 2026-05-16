@@ -37,10 +37,10 @@ public class AchievementInboxListener implements ApplicationListener<Achievement
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public AchievementInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("ACHIEVEMENT_UNLOCKED") InboxEventType achievementUnlocked,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("ACHIEVEMENT_UNLOCKED") final InboxEventType achievementUnlocked,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.achievementUnlocked = achievementUnlocked;
     this.eventPublisher = eventPublisher;
@@ -48,16 +48,15 @@ public class AchievementInboxListener implements ApplicationListener<Achievement
   }
 
   @Override
-  public void onApplicationEvent(@NonNull AchievementUnlockedEvent event) {
+  public void onApplicationEvent(@NonNull final AchievementUnlockedEvent event) {
     log.info(
         "Received AchievementUnlockedEvent for account ID: {} - Achievement: {}",
         event.getAccountId(),
         event.getAchievementName());
 
     String message =
-        String.format(
-            "New career achievement unlocked: %s! Awarded %d Prestige XP.",
-            event.getAchievementName(), event.getXpValue());
+        "New career achievement unlocked: %s! Awarded %d Prestige XP."
+            .formatted(event.getAchievementName(), event.getXpValue());
 
     inboxService.createInboxItem(
         achievementUnlocked,

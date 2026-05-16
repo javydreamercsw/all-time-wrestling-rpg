@@ -54,7 +54,8 @@ class DramaEventControllerTest extends AbstractControllerTest {
             eq(DramaEventType.BACKSTAGE_INCIDENT),
             eq(DramaEventSeverity.NEUTRAL),
             eq("Test Event"),
-            eq("Description")))
+            eq("Description"),
+            eq(1L)))
         .thenReturn(Optional.of(event));
 
     DramaEventController.CreateDramaEventRequest request =
@@ -64,7 +65,8 @@ class DramaEventControllerTest extends AbstractControllerTest {
             DramaEventType.BACKSTAGE_INCIDENT,
             DramaEventSeverity.NEUTRAL,
             "Test Event",
-            "Description");
+            "Description",
+            1L);
 
     mockMvc
         .perform(

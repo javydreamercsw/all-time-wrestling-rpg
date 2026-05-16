@@ -37,10 +37,10 @@ public class FeudResolvedInboxListener implements ApplicationListener<FeudResolv
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public FeudResolvedInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("feudResolved") InboxEventType feudResolved,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("feudResolved") final InboxEventType feudResolved,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.feudResolved = feudResolved;
     this.eventPublisher = eventPublisher;
@@ -48,11 +48,11 @@ public class FeudResolvedInboxListener implements ApplicationListener<FeudResolv
   }
 
   @Override
-  public void onApplicationEvent(@NonNull FeudResolvedEvent event) {
+  public void onApplicationEvent(@NonNull final FeudResolvedEvent event) {
     log.info("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
     inboxService.createInboxItem(
         feudResolved,
-        String.format("Feud '%s' has been resolved.", event.getFeud().getName()),
+        "Feud '%s' has been resolved.".formatted(event.getFeud().getName()),
         event.getFeud().getId().toString(),
         InboxItemTarget.TargetType.FEUD);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));

@@ -81,7 +81,7 @@ class InjurySyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     injuryPage = Mockito.mock(InjuryPage.class);
 

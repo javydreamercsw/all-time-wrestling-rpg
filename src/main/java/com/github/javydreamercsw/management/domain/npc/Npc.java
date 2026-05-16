@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.npc;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import jakarta.persistence.Column;
@@ -32,6 +32,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -41,10 +42,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class Npc extends AbstractEntity<Long> {
+public class Npc extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter
   private Long id;
 
   @Column(unique = true, nullable = false)
@@ -76,13 +78,7 @@ public class Npc extends AbstractEntity<Long> {
   @jakarta.persistence.Convert(converter = NpcAttributesConverter.class)
   @Column(columnDefinition = "TEXT")
   @Builder.Default
-  private java.util.Map<String, Object> attributes =
-      new java.util.HashMap<>(); // Stores JSON data for additional stats like "Awareness"
-
-  @Override
-  public Long getId() {
-    return id;
-  }
+  private java.util.Map<String, Object> attributes = new java.util.HashMap<>();
 
   @PrePersist
   protected void onCreate() {

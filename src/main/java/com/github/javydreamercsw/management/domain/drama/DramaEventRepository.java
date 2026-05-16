@@ -99,8 +99,10 @@ public interface DramaEventRepository
 
   /** Find drama events that affected heat (positive or negative). */
   @Query(
-      "SELECT de FROM DramaEvent de WHERE de.heatImpact IS NOT NULL AND de.heatImpact != 0 ORDER BY"
-          + " de.eventDate DESC")
+      """
+      SELECT de FROM DramaEvent de WHERE de.heatImpact IS NOT NULL AND de.heatImpact != 0 ORDER BY\
+       de.eventDate DESC\
+      """)
   List<DramaEvent> findHeatAffectingEvents();
 
   /** Count drama events for a wrestler in a time period. */
@@ -135,8 +137,10 @@ public interface DramaEventRepository
 
   /** Find multi-wrestler drama events. */
   @Query(
-      "SELECT de FROM DramaEvent de WHERE de.secondaryWrestler IS NOT NULL ORDER BY de.eventDate"
-          + " DESC")
+      """
+      SELECT de FROM DramaEvent de WHERE de.secondaryWrestler IS NOT NULL ORDER BY de.eventDate\
+       DESC\
+      """)
   List<DramaEvent> findMultiWrestlerEvents();
 
   /** Find single-wrestler drama events. */

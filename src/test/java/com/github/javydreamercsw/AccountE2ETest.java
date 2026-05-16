@@ -60,7 +60,7 @@ public class AccountE2ETest extends AbstractE2ETest {
     Long accountId = testAccount.getId();
 
     // Navigate to the AccountListView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
+    navigateTo("account-list");
 
     // Wait for the grid to load
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
@@ -85,7 +85,7 @@ public class AccountE2ETest extends AbstractE2ETest {
         .until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Navigate to the AccountListView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
+    navigateTo("account-list");
 
     Optional<Account> accountOptional = accountService.get(accountId);
     assertTrue(accountOptional.isPresent());
@@ -113,7 +113,7 @@ public class AccountE2ETest extends AbstractE2ETest {
             username, "ValidPassword1!", username + "@atw.com", RoleName.VIEWER);
 
     // Navigate to the AccountListView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
+    navigateTo("account-list");
 
     // Wait for the grid to load
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
@@ -141,7 +141,7 @@ public class AccountE2ETest extends AbstractE2ETest {
   public void testCreateAccount() {
     String username = "new_account_" + System.currentTimeMillis();
     // Navigate to the AccountListView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
+    navigateTo("account-list");
 
     // Wait for the grid to load
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
@@ -173,7 +173,7 @@ public class AccountE2ETest extends AbstractE2ETest {
         .until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Navigate to the AccountListView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/account-list");
+    navigateTo("account-list");
 
     // Verify the account is created
     Failsafe.with(

@@ -53,11 +53,11 @@ public class InjurySyncService extends BaseSyncService {
 
   @Autowired
   public InjurySyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      InjuryRepository injuryRepository,
-      WrestlerRepository wrestlerRepository,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final InjuryRepository injuryRepository,
+      final WrestlerRepository wrestlerRepository,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.injuryRepository = injuryRepository;
     this.wrestlerRepository = wrestlerRepository;
@@ -69,7 +69,7 @@ public class InjurySyncService extends BaseSyncService {
    * @param operationId Operation ID for progress tracking
    * @return SyncResult containing the outcome of the sync operation
    */
-  public SyncResult syncInjuries(@NonNull String operationId) {
+  public SyncResult syncInjuries(@NonNull final String operationId) {
     // Check if already synced in current session
     if (syncServiceDependencies
         .getSyncSessionManager()
@@ -99,7 +99,7 @@ public class InjurySyncService extends BaseSyncService {
     }
   }
 
-  private SyncResult performInjuriesSync(@NonNull String operationId) {
+  private SyncResult performInjuriesSync(@NonNull final String operationId) {
     log.info("🏥 Starting injuries synchronization from Notion with operation ID: {}", operationId);
     long startTime = System.currentTimeMillis();
 
@@ -158,7 +158,7 @@ public class InjurySyncService extends BaseSyncService {
     }
   }
 
-  private InjurySyncDTO convertInjuryPageToDTO(InjuryPage page) {
+  private InjurySyncDTO convertInjuryPageToDTO(final InjuryPage page) {
     try {
       InjurySyncDTO dto = new InjurySyncDTO();
       dto.setExternalId(page.getId());
@@ -215,7 +215,7 @@ public class InjurySyncService extends BaseSyncService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public boolean processSingleInjury(InjurySyncDTO dto) {
+  public boolean processSingleInjury(final InjurySyncDTO dto) {
     try {
       Injury injury = injuryRepository.findByExternalId(dto.getExternalId()).orElse(null);
       boolean isNew = false;

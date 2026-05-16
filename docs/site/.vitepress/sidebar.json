@@ -1,0 +1,162 @@
+[
+  {
+    "text": "Community",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/community"
+      }
+    ]
+  },
+  {
+    "text": "Wrestler Profile",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/wrestler-profile"
+      }
+    ]
+  },
+  {
+    "text": "General Manager",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/general-manager"
+      }
+    ]
+  },
+  {
+    "text": "Admin",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/admin"
+      }
+    ]
+  },
+  {
+    "text": "Game Mechanics",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/game-mechanics"
+      }
+    ]
+  },
+  {
+    "text": "Campaign",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/campaign"
+      }
+    ]
+  },
+  {
+    "text": "News",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/news"
+      }
+    ]
+  },
+  {
+    "text": "Player Dashboard",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/player-dashboard"
+      }
+    ]
+  },
+  {
+    "text": "Dashboards",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/dashboards"
+      }
+    ]
+  },
+  {
+    "text": "Booker",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/booker"
+      }
+    ]
+  },
+  {
+    "text": "AI Features",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/ai-features"
+      }
+    ]
+  },
+  {
+    "text": "Entities",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/entities"
+      }
+    ]
+  },
+  {
+    "text": "Leagues",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/leagues"
+      }
+    ]
+  },
+  {
+    "text": "Wrestler",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/wrestler"
+      }
+    ]
+  },
+  {
+    "text": "User Settings",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/user-settings"
+      }
+    ]
+  },
+  {
+    "text": "NPC",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/npc"
+      }
+    ]
+  }
+]

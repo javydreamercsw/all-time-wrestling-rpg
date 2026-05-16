@@ -30,11 +30,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 /** Unit tests for Title entity. Tests the ATW RPG championship system functionality. */
 @DisplayName("Title Tests")
-@DataJpaTest
 class TitleTest extends AbstractJpaTest {
   @Autowired private WrestlerRepository wrestlerRepository;
 
@@ -43,8 +41,10 @@ class TitleTest extends AbstractJpaTest {
   private Wrestler wrestler2;
   private final Instant fixedInstant = Instant.parse("2024-01-01T00:00:00Z");
 
+  @Override
   @BeforeEach
-  void setUp() {
+  public void baseSetUp() throws Exception {
+    super.baseSetUp();
     title = new Title();
     title.setName("Test Championship");
     title.setTier(WrestlerTier.MAIN_EVENTER);

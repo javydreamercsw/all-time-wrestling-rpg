@@ -31,6 +31,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.Month;
 import lombok.Data;
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
@@ -40,6 +41,7 @@ public class Holiday {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "id")
   private Long id;
 
@@ -73,10 +75,6 @@ public class Holiday {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  public @Nullable Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

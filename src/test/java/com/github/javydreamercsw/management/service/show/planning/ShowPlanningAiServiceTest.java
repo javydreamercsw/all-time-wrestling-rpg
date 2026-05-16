@@ -52,7 +52,7 @@ class ShowPlanningAiServiceTest {
   private HolidayService holidayService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     narrationServiceFactory = mock(SegmentNarrationServiceFactory.class);
     segmentNarrationService = mock(SegmentNarrationService.class);
     segmentRuleService = mock(SegmentRuleService.class);
@@ -160,8 +160,10 @@ class ShowPlanningAiServiceTest {
     assertTrue(capturedPrompt.contains("\"notes\": \"string\""));
     assertTrue(
         capturedPrompt.contains(
-            "Available Segment Types: One on One (A standard wrestling match between two"
-                + " competitors.)"));
+            """
+            Available Segment Types: One on One (A standard wrestling match between two\
+             competitors.)\
+            """));
     assertTrue(capturedPrompt.contains("Next PLE (Premium Live Event):"));
     assertTrue(capturedPrompt.contains("- Name: WrestleMania"));
     assertTrue(capturedPrompt.contains("  Scheduled Matches:"));

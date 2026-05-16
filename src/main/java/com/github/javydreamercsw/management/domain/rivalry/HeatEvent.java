@@ -37,6 +37,7 @@ import org.jspecify.annotations.Nullable;
 public class HeatEvent extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "heat_event_id")
   private Long id;
 
@@ -87,7 +88,7 @@ public class HeatEvent extends AbstractEntity<Long> {
       changeStr = "±0";
     }
 
-    return String.format("%s (%s heat → %d total)", reason, changeStr, heatAfterEvent);
+    return "%s (%s heat → %d total)".formatted(reason, changeStr, heatAfterEvent);
   }
 
   /** Get the heat change with appropriate emoji. */
@@ -99,11 +100,6 @@ public class HeatEvent extends AbstractEntity<Long> {
     } else {
       return "⚖️ ±0";
     }
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
   }
 
   @PrePersist

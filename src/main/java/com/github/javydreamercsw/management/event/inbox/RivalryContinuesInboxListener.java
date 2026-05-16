@@ -37,10 +37,10 @@ public class RivalryContinuesInboxListener implements ApplicationListener<Rivalr
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
 
   public RivalryContinuesInboxListener(
-      @NonNull InboxService inboxService,
-      @NonNull @Qualifier("rivalryContinues") InboxEventType rivalryContinues,
-      @NonNull ApplicationEventPublisher eventPublisher,
-      @NonNull InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("rivalryContinues") final InboxEventType rivalryContinues,
+      @NonNull final ApplicationEventPublisher eventPublisher,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.rivalryContinues = rivalryContinues;
     this.eventPublisher = eventPublisher;
@@ -48,11 +48,11 @@ public class RivalryContinuesInboxListener implements ApplicationListener<Rivalr
   }
 
   @Override
-  public void onApplicationEvent(@NonNull RivalryContinuesEvent event) {
+  public void onApplicationEvent(@NonNull final RivalryContinuesEvent event) {
     log.info("Received RivalryContinuesEvent for rivalry: {}", event.getRivalry().getDisplayName());
     inboxService.createInboxItem(
         rivalryContinues,
-        String.format("Rivalry '%s' continues.", event.getRivalry().getDisplayName()),
+        "Rivalry '%s' continues.".formatted(event.getRivalry().getDisplayName()),
         event.getRivalry().getId().toString(),
         InboxItemTarget.TargetType.RIVALRY);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));

@@ -110,7 +110,8 @@ public class SmartPromoService {
    * @param opponent The wrestler being addressed (optional).
    * @return The promo context.
    */
-  public SmartPromoResponseDTO generatePromoContext(@NonNull Wrestler player, Wrestler opponent) {
+  public SmartPromoResponseDTO generatePromoContext(
+      @NonNull final Wrestler player, final Wrestler opponent) {
     log.info("Generating promo context for player: {} (id: {})", player.getName(), player.getId());
     // Reload entities to ensure they are attached to the current transaction
     Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
@@ -145,10 +146,10 @@ public class SmartPromoService {
    * @return The promo outcome.
    */
   public PromoOutcomeDTO processPromoHook(
-      @NonNull Wrestler player,
-      Wrestler opponent,
-      @NonNull PromoHookDTO chosenHook,
-      Campaign campaign) {
+      @NonNull final Wrestler player,
+      final Wrestler opponent,
+      @NonNull final PromoHookDTO chosenHook,
+      final Campaign campaign) {
     log.info("Processing promo hook: {} for player: {}", chosenHook.getLabel(), player.getName());
     // Reload entities to ensure they are attached to the current transaction
     Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
@@ -261,7 +262,7 @@ public class SmartPromoService {
     log.info("Created smart promo segment for campaign {}", campaign.getId());
   }
 
-  private String buildContextPrompt(@NonNull Wrestler player, Wrestler opponent) {
+  private String buildContextPrompt(@NonNull final Wrestler player, final Wrestler opponent) {
     StringBuilder sb = new StringBuilder();
     sb.append("PLAYER:\n");
     sb.append("- Name: ").append(player.getName()).append("\n");
@@ -314,7 +315,9 @@ public class SmartPromoService {
   }
 
   private String buildOutcomePrompt(
-      @NonNull Wrestler player, Wrestler opponent, @NonNull PromoHookDTO chosenHook) {
+      @NonNull final Wrestler player,
+      final Wrestler opponent,
+      @NonNull final PromoHookDTO chosenHook) {
     StringBuilder sb = new StringBuilder();
     sb.append("PLAYER: ").append(player.getName()).append("\n");
     if (opponent != null) {
@@ -324,12 +327,15 @@ public class SmartPromoService {
     sb.append("DIALOGUE: \"").append(chosenHook.getText()).append("\"\n");
 
     sb.append(
-        "\nTASK: Generate the reaction, retort, and final summary. Return JSON ONLY. Success"
-            + " should be based on character consistency.");
+        """
+
+        TASK: Generate the reaction, retort, and final summary. Return JSON ONLY. Success\
+         should be based on character consistency.\
+        """);
     return sb.toString();
   }
 
-  private <T> T parseJsonResponse(@NonNull String aiResponse, @NonNull Class<T> clazz)
+  private <T> T parseJsonResponse(@NonNull final String aiResponse, @NonNull final Class<T> clazz)
       throws Exception {
     int start = aiResponse.indexOf('{');
     int end = aiResponse.lastIndexOf('}');
@@ -340,7 +346,7 @@ public class SmartPromoService {
     return objectMapper.readValue(json, clazz);
   }
 
-  private SmartPromoResponseDTO createFallbackResponse(Wrestler opponent) {
+  private SmartPromoResponseDTO createFallbackResponse(final Wrestler opponent) {
     return SmartPromoResponseDTO.builder()
         .opener("You step into the ring, ready to speak your mind.")
         .hooks(
@@ -356,7 +362,8 @@ public class SmartPromoService {
         .build();
   }
 
-  private PromoOutcomeDTO createFallbackOutcome(Wrestler opponent, @NonNull PromoHookDTO hook) {
+  private PromoOutcomeDTO createFallbackOutcome(
+      final Wrestler opponent, @NonNull final PromoHookDTO hook) {
     return PromoOutcomeDTO.builder()
         .retort(opponent != null ? "Whatever you say." : null)
         .crowdReaction("The crowd reacts with mild interest.")

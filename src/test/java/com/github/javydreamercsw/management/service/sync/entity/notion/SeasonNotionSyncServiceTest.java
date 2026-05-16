@@ -45,7 +45,7 @@ class SeasonNotionSyncServiceTest extends AbstractSyncTest {
   @Captor private ArgumentCaptor<Season> seasonCaptor;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     seasonNotionSyncService =
         new SeasonNotionSyncService(seasonRepository, syncServiceDependencies, notionApiExecutor);

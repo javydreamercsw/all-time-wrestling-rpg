@@ -22,7 +22,7 @@ import com.github.javydreamercsw.base.ai.image.ImageGenerationService;
 public class MockImageGenerationService implements ImageGenerationService {
 
   @Override
-  public String generateImage(ImageRequest request) {
+  public String generateImage(final ImageRequest request) {
     return "mock-image-url.png";
   }
 

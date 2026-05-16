@@ -69,7 +69,7 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
 
   @Test
   void testImageGenerationFlow() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-list");
+    navigateTo("npc-list");
     waitForGridToPopulate("npc-grid");
 
     // 1. Navigate to Profile
@@ -144,7 +144,7 @@ public class NpcImageGenerationE2ETest extends AbstractE2ETest {
     Assertions.assertTrue(imageSrc.contains(updated.getImageUrl()));
   }
 
-  protected void waitForGridToPopulate(@NonNull String gridId) {
+  protected void waitForGridToPopulate(@NonNull final String gridId) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
         d -> {

@@ -66,9 +66,11 @@ public class PromoBookingService {
    * @return List of booked promo segments
    */
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<Segment> bookPromosForShow(
-      @NonNull Show show, @NonNull List<Wrestler> availableWrestlers, int maxPromos) {
+      @NonNull final Show show,
+      @NonNull final List<Wrestler> availableWrestlers,
+      final int maxPromos) {
     List<Segment> promos = new ArrayList<>();
 
     if (availableWrestlers.isEmpty() || maxPromos <= 0) {
@@ -94,7 +96,9 @@ public class PromoBookingService {
 
   /** Book rivalry-based confrontation promos. */
   private List<Segment> bookRivalryPromos(
-      @NonNull Show show, @NonNull List<Wrestler> availableWrestlers, int maxPromos) {
+      @NonNull final Show show,
+      @NonNull final List<Wrestler> availableWrestlers,
+      final int maxPromos) {
     List<Segment> promos = new ArrayList<>();
     List<Rivalry> activeRivalries = rivalryService.getActiveRivalries();
 
@@ -133,7 +137,7 @@ public class PromoBookingService {
 
   /** Book character development and storyline promos. */
   private List<Segment> bookCharacterPromos(
-      Show show, List<Wrestler> availableWrestlers, int maxPromos) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxPromos) {
     List<Segment> promos = new ArrayList<>();
 
     for (int i = 0; i < maxPromos && !availableWrestlers.isEmpty(); i++) {
@@ -181,7 +185,9 @@ public class PromoBookingService {
 
   /** Book a promo segment as a segment with promo rules. */
   private Optional<Segment> bookPromoSegment(
-      @NonNull Show show, @NonNull List<Wrestler> wrestlers, @NonNull PromoType promoType) {
+      @NonNull final Show show,
+      @NonNull final List<Wrestler> wrestlers,
+      @NonNull final PromoType promoType) {
     try {
       // Get promo segment type (create if doesn't exist)
       SegmentType promoSegmentType = getOrCreatePromoSegmentType();
@@ -215,60 +221,60 @@ public class PromoBookingService {
 
   /** Generates a descriptive narration for a promo segment. */
   private String generatePromoNarration(
-      @NonNull List<Wrestler> wrestlers, @NonNull PromoType promoType) {
+      @NonNull final List<Wrestler> wrestlers, @NonNull final PromoType promoType) {
     String participantNames =
         wrestlers.stream().map(Wrestler::getName).collect(Collectors.joining(" and "));
     return switch (promoType) {
       case CONFRONTATION_PROMO ->
-          String.format(
-              "%s and %s engage in a heated confrontation promo, exchanging insults and threats.",
-              wrestlers.get(0).getName(), wrestlers.get(1).getName());
+          "%s and %s engage in a heated confrontation promo, exchanging insults and threats."
+              .formatted(wrestlers.get(0).getName(), wrestlers.get(1).getName());
       case CONTRACT_SIGNING ->
-          String.format(
-              "%s and %s are in the ring for a contract signing, but tensions quickly escalate.",
-              participantNames, promoType.getDisplayName().toLowerCase());
+          "%s and %s are in the ring for a contract signing, but tensions quickly escalate."
+              .formatted(participantNames, promoType.getDisplayName().toLowerCase());
       case CHALLENGE_ISSUED ->
-          String.format(
-              "%s steps out to issue a challenge, calling out %s for a future match.",
-              wrestlers.get(0).getName(),
-              wrestlers.size() > 1 ? wrestlers.get(1).getName() : "anyone in the back");
+          "%s steps out to issue a challenge, calling out %s for a future match."
+              .formatted(
+                  wrestlers.get(0).getName(),
+                  wrestlers.size() > 1 ? wrestlers.get(1).getName() : "anyone in the back");
       case INTERVIEW_SEGMENT ->
-          String.format(
-              "%s gives a passionate interview backstage, discussing their career and future"
-                  + " aspirations.",
-              participantNames);
+          """
+          %s gives a passionate interview backstage, discussing their career and future\
+           aspirations.\
+          """
+              .formatted(participantNames);
       case BACKSTAGE_SEGMENT ->
-          String.format(
-              "A chaotic backstage segment unfolds with %s, leading to unexpected developments.",
-              participantNames);
+          "A chaotic backstage segment unfolds with %s, leading to unexpected developments."
+              .formatted(participantNames);
       case SOLO_PROMO ->
-          String.format(
-              "%s delivers a powerful solo promo in the center of the ring, addressing the fans and"
-                  + " their rivals.",
-              participantNames);
+          """
+          %s delivers a powerful solo promo in the center of the ring, addressing the fans and\
+           their rivals.\
+          """
+              .formatted(participantNames);
       case GROUP_PROMO ->
-          String.format(
-              "The group %s cuts a promo, asserting their dominance and laying down a challenge to"
-                  + " the locker room.",
-              participantNames);
+          """
+          The group %s cuts a promo, asserting their dominance and laying down a challenge to\
+           the locker room.\
+          """
+              .formatted(participantNames);
       case CHAMPIONSHIP_PRESENTATION ->
-          String.format(
-              "A prestigious championship presentation is held for %s, celebrating their recent"
-                  + " victory.",
-              participantNames);
+          """
+          A prestigious championship presentation is held for %s, celebrating their recent\
+           victory.\
+          """
+              .formatted(participantNames);
       case RETIREMENT_SPEECH ->
-          String.format(
-              "%s delivers an emotional retirement speech, thanking the fans for their support.",
-              participantNames);
+          "%s delivers an emotional retirement speech, thanking the fans for their support."
+              .formatted(participantNames);
       case ALLIANCE_ANNOUNCEMENT ->
-          String.format(
-              "%s make a shocking alliance announcement, promising to dominate the competition"
-                  + " together.",
-              participantNames);
+          """
+          %s make a shocking alliance announcement, promising to dominate the competition\
+           together.\
+          """
+              .formatted(participantNames);
       default ->
-          String.format(
-              "%s cuts a %s promo, stirring up excitement among the fans.",
-              participantNames, promoType.getDisplayName().toLowerCase());
+          "%s cuts a %s promo, stirring up excitement among the fans."
+              .formatted(participantNames, promoType.getDisplayName().toLowerCase());
     };
   }
 
@@ -289,7 +295,7 @@ public class PromoBookingService {
   }
 
   /** Select appropriate promo type based on rivalry heat using database-driven selection. */
-  private PromoType selectRivalryPromoType(int heat) {
+  private PromoType selectRivalryPromoType(final int heat) {
     List<PromoType> availablePromos = new ArrayList<>();
 
     if (heat >= 25) {
@@ -366,7 +372,7 @@ public class PromoBookingService {
   }
 
   /** Get promo type names from database, filtering out non-existent ones. */
-  private List<PromoType> getPromoTypesByNames(List<PromoType> requestedNames) {
+  private List<PromoType> getPromoTypesByNames(final List<PromoType> requestedNames) {
     return requestedNames.stream()
         .filter(promoType -> segmentRuleService.existsByName(promoType.getDisplayName()))
         .toList();
@@ -374,13 +380,13 @@ public class PromoBookingService {
 
   /** Check if a segment is a promo segment. */
   @PreAuthorize("isAuthenticated()")
-  public boolean isPromoSegment(@NonNull Segment segment) {
+  public boolean isPromoSegment(@NonNull final Segment segment) {
     return segment.getSegmentType() != null && "Promo".equals(segment.getSegmentType().getName());
   }
 
   /** Get all promo segments for a show. */
   @PreAuthorize("isAuthenticated()")
-  public List<Segment> getPromosForShow(@NonNull Show show) {
+  public List<Segment> getPromosForShow(@NonNull final Show show) {
     return segmentRepository.findByShow(show).stream().filter(this::isPromoSegment).toList();
   }
 }

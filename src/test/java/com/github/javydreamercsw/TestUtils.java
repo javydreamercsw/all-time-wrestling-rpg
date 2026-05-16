@@ -19,42 +19,90 @@ package com.github.javydreamercsw;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.util.UUID;
 import lombok.NonNull;
+import lombok.Setter;
 
 public class TestUtils {
+
+  @Setter private static Universe defaultUniverse;
+
   /**
-   * Create a wrestler with default values. Stil needs to be persisted in the database.
+   * Create a wrestler with default values. Still needs to be persisted in the database.
    *
    * @param name Desired wrestler's name.
+   * @param fans Initial fans.
+   * @param universe Universe to associate with.
    * @return Created wrestler.
    */
-  public static Wrestler createWrestler(@NonNull String name, long fans) {
-    Wrestler wrestler = createWrestler(name);
-    wrestler.setFans(fans);
+  public static Wrestler createWrestler(
+      @NonNull final String name, final long fans, final Universe universe) {
+    Universe finalUniverse = universe != null ? universe : defaultUniverse;
+    if (finalUniverse == null) {
+      throw new IllegalStateException(
+          """
+          No default universe set in TestUtils. Call setDefaultUniverse first or pass a\
+           universe.\
+          """);
+    }
+    Wrestler wrestler = createWrestler(name, finalUniverse);
+    setFans(wrestler, fans, finalUniverse);
     return wrestler;
   }
 
   /**
-   * Create a wrestler with default values. Stil needs to be persisted in the database.
+   * Create a wrestler with default values. Still needs to be persisted in the database.
    *
    * @param name Desired wrestler's name.
    * @return Created wrestler.
    */
-  public static Wrestler createWrestler(@NonNull String name) {
+  public static Wrestler createWrestler(@NonNull final String name, final long fans) {
+    Wrestler wrestler = createWrestler(name);
+    setFans(wrestler, fans, null);
+    return wrestler;
+  }
+
+  /**
+   * Create a wrestler with default values. Still needs to be persisted in the database.
+   *
+   * @param name Desired wrestler's name.
+   * @return Created wrestler.
+   */
+  public static Wrestler createWrestler(@NonNull final String name) {
+    return createWrestler(name, (Universe) null);
+  }
+
+  /**
+   * Create a wrestler with default values. Still needs to be persisted in the database.
+   *
+   * @param name Desired wrestler's name.
+   * @param universe Universe to associate with.
+   * @return Created wrestler.
+   */
+  public static Wrestler createWrestler(@NonNull final String name, final Universe universe) {
+    Universe finalUniverse = universe != null ? universe : defaultUniverse;
+    if (finalUniverse == null) {
+      throw new IllegalStateException(
+          """
+          No default universe set in TestUtils. Call setDefaultUniverse first or pass a\
+           universe.\
+          """);
+    }
     Wrestler wrestler =
         createWrestler(name, UUID.randomUUID().toString(), WrestlerTier.ROOKIE, null);
     wrestler.setDescription("Test Wrestler");
-    wrestler.setFans(1_000L); // Default fan count
+    setFans(wrestler, 1_000L, finalUniverse); // Default fan count
     return wrestler;
   }
 
   public static Wrestler createWrestler(
-      @NonNull String name,
-      @NonNull String description,
-      @NonNull WrestlerTier tier,
-      Account account) {
+      @NonNull final String name,
+      @NonNull final String description,
+      @NonNull final WrestlerTier tier,
+      final Account account) {
     Wrestler w = new Wrestler();
     w.setName(name);
     if (account != null) {
@@ -62,7 +110,6 @@ public class TestUtils {
     }
     w.setDescription(description);
     w.setIsPlayer(account != null);
-    w.setTier(tier);
     w.setDescription(description);
     // Defaults
     w.setDeckSize(15);
@@ -70,10 +117,36 @@ public class TestUtils {
     w.setLowHealth(4);
     w.setStartingStamina(15);
     w.setLowStamina(2);
-    w.setFans(0L);
     w.setGender(Gender.MALE);
-    w.setBumps(0);
     w.setActive(true);
+    // Note: fans/state not set here, must be done via setFans if needed
     return w;
+  }
+
+  public static void setFans(final Wrestler wrestler, final long fans, final Universe universe) {
+    WrestlerState state =
+        wrestler
+            .getDefaultState()
+            .orElseGet(
+                () -> {
+                  if (universe == null) {
+                    // Don't create a state if we don't have a universe
+                    return null;
+                  }
+                  WrestlerState s =
+                      WrestlerState.builder().wrestler(wrestler).universe(universe).build();
+                  wrestler.getWrestlerStates().add(s);
+                  return s;
+                });
+
+    if (state != null) {
+      state.setFans(fans);
+      state.setTier(WrestlerTier.fromFanCount(fans));
+    }
+  }
+
+  @Deprecated
+  private static void setFans(final Wrestler wrestler, final long fans) {
+    setFans(wrestler, fans, null);
   }
 }

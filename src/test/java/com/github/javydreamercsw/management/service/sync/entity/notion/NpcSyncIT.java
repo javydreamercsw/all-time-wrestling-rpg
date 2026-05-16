@@ -79,7 +79,7 @@ class NpcSyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     clearAllRepositories();
     syncSessionManager.clearSyncSession();
     npcPage1 = Mockito.mock(NpcPage.class);

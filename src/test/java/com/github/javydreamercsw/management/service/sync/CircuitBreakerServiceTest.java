@@ -32,7 +32,7 @@ class CircuitBreakerServiceTest {
   private CircuitBreakerService circuitBreakerService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     RetryConfig retryConfig = new RetryConfig();
     retryConfig.getCircuitBreaker().setFailureThreshold(3);
     retryConfig.getCircuitBreaker().setRecoveryTimeoutMs(1000);

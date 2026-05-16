@@ -44,7 +44,7 @@ public class HallOfFameE2ETest extends AbstractE2ETest {
     login("admin", "admin123");
 
     // Navigate to Hall of Fame
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/hall-of-fame");
+    navigateTo("hall-of-fame");
 
     // Wait for grid to load
     waitForPageSourceToContain("Hall of Fame");
@@ -59,7 +59,7 @@ public class HallOfFameE2ETest extends AbstractE2ETest {
             d -> {
               List<WebElement> cells =
                   d.findElements(By.cssSelector("#hall-of-fame-grid vaadin-grid-cell-content"));
-              return cells.size() > 0;
+              return !cells.isEmpty();
             });
 
     String pageSource = driver.getPageSource();
@@ -82,7 +82,7 @@ public class HallOfFameE2ETest extends AbstractE2ETest {
     login("player", "player123");
 
     // Navigate to Player Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
 
     // Wait for profile card
     waitForPageSourceToContain("Legacy:");

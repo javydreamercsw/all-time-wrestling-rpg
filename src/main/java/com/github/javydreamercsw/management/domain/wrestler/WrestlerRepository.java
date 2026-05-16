@@ -36,28 +36,42 @@ public interface WrestlerRepository
 
   // If you don't need a total row count, Slice is better than Page.
   @Query(
-      value = "SELECT w FROM Wrestler w LEFT JOIN FETCH w.faction",
-      countQuery = "SELECT count(w) FROM Wrestler w")
+      value =
+          """
+          SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.alignments LEFT JOIN FETCH\
+           w.wrestlerStates ws LEFT JOIN FETCH ws.faction\
+          """,
+      countQuery = "SELECT count(DISTINCT w) FROM Wrestler w")
   Page<Wrestler> findAllBy(Pageable pageable);
 
   @Query(
-      "SELECT w FROM Wrestler w LEFT JOIN FETCH w.decks LEFT JOIN FETCH w.faction WHERE w.name ="
-          + " :name")
+      """
+      SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.decks LEFT JOIN FETCH w.alignments LEFT\
+       JOIN FETCH w.reigns LEFT JOIN FETCH w.wrestlerStates ws LEFT JOIN FETCH ws.faction\
+       WHERE w.name = :name\
+      """)
   Optional<Wrestler> findByName(@Param("name") String name);
-
-  @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.injuries WHERE w.id = :id")
-  Optional<Wrestler> findByIdWithInjuries(@Param("id") Long id);
 
   @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.statuses WHERE w.id = :id")
   Optional<Wrestler> findByIdWithStatuses(@Param("id") Long id);
 
   Optional<Wrestler> findByExternalId(String externalId);
 
-  List<Wrestler> findByFansBetween(long minFans, long maxFans);
+  @Query(
+      """
+      SELECT DISTINCT w FROM Wrestler w JOIN w.wrestlerStates ws WHERE ws.fans BETWEEN :minFans\
+       AND :maxFans\
+      """)
+  List<Wrestler> findByFansBetween(@Param("minFans") long minFans, @Param("maxFans") long maxFans);
 
-  List<Wrestler> findByFansGreaterThanEqual(long minFans);
+  @Query("SELECT DISTINCT w FROM Wrestler w JOIN w.wrestlerStates ws WHERE ws.fans >= :minFans")
+  List<Wrestler> findByFansGreaterThanEqual(@Param("minFans") long minFans);
 
-  @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.faction WHERE w.active = true")
+  @Query(
+      """
+      SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.alignments LEFT JOIN FETCH\
+       w.wrestlerStates ws LEFT JOIN FETCH ws.faction WHERE w.active = true\
+      """)
   List<Wrestler> findAllByActiveTrue();
 
   List<Wrestler> findAllByGenderAndActive(
@@ -67,12 +81,17 @@ public interface WrestlerRepository
 
   List<Wrestler> findByAccountId(Long accountId);
 
-  @Query("SELECT w.id FROM Wrestler w")
+  @Query("SELECT DISTINCT w.id FROM Wrestler w")
   List<Long> findAllIds();
 
+  @Query("SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws WHERE w.id = :id")
+  Optional<Wrestler> findByIdWithStates(@Param("id") Long id);
+
   @Query(
-      "SELECT w FROM Wrestler w JOIN SegmentParticipant sp ON sp.wrestler = w WHERE sp.segment ="
-          + " :segment")
+      """
+      SELECT DISTINCT w FROM Wrestler w JOIN SegmentParticipant sp ON sp.wrestler = w WHERE\
+       sp.segment = :segment\
+      """)
   List<Wrestler> findAllBySegment(
       @Param("segment") com.github.javydreamercsw.management.domain.show.segment.Segment segment);
 }

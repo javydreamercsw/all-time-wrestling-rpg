@@ -50,7 +50,7 @@ public class SeasonController {
 
   private final SeasonService seasonService;
 
-  public SeasonController(SeasonService seasonService) {
+  public SeasonController(final SeasonService seasonService) {
     this.seasonService = seasonService;
   }
 
@@ -64,7 +64,8 @@ public class SeasonController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
       })
   @PostMapping
-  public ResponseEntity<Season> createSeason(@Valid @RequestBody CreateSeasonRequest request) {
+  public ResponseEntity<Season> createSeason(
+      @Valid @RequestBody final CreateSeasonRequest request) {
     Season season =
         seasonService.createSeason(request.name(), request.description(), request.showsPerPpv());
     return ResponseEntity.status(HttpStatus.CREATED).body(season);
@@ -78,12 +79,12 @@ public class SeasonController {
       })
   @GetMapping
   public ResponseEntity<Page<Season>> getAllSeasons(
-      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") @Min(1) int size,
+      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") @Min(0) final int page,
+      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") @Min(1) final int size,
       @Parameter(description = "Sort field") @RequestParam(defaultValue = "creationDate")
-          String sortBy,
+          final String sortBy,
       @Parameter(description = "Sort direction") @RequestParam(defaultValue = "desc")
-          String sortDir) {
+          final String sortDir) {
 
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(page, size, sort);
@@ -99,7 +100,7 @@ public class SeasonController {
       })
   @GetMapping("/{id}")
   public ResponseEntity<Season> getSeasonById(
-      @Parameter(description = "Season ID") @PathVariable Long id) {
+      @Parameter(description = "Season ID") @PathVariable final Long id) {
     Optional<Season> season = seasonService.getSeasonById(id);
     return season.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -137,8 +138,8 @@ public class SeasonController {
       })
   @PutMapping("/{id}")
   public ResponseEntity<Season> updateSeason(
-      @Parameter(description = "Season ID") @PathVariable Long id,
-      @Valid @RequestBody UpdateSeasonRequest request) {
+      @Parameter(description = "Season ID") @PathVariable final Long id,
+      @Valid @RequestBody final UpdateSeasonRequest request) {
     Optional<Season> season =
         seasonService.updateSeason(
             id, request.name(), request.description(), request.showsPerPpv());
@@ -158,7 +159,7 @@ public class SeasonController {
       })
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteSeason(
-      @Parameter(description = "Season ID") @PathVariable Long id) {
+      @Parameter(description = "Season ID") @PathVariable final Long id) {
     boolean deleted = seasonService.deleteSeason(id);
     if (deleted) {
       return ResponseEntity.noContent().build();
@@ -188,7 +189,7 @@ public class SeasonController {
       })
   @GetMapping("/{id}/stats")
   public ResponseEntity<SeasonService.SeasonStats> getSeasonStats(
-      @Parameter(description = "Season ID") @PathVariable Long id) {
+      @Parameter(description = "Season ID") @PathVariable final Long id) {
     SeasonService.SeasonStats stats = seasonService.getSeasonStats(id);
     if (stats != null) {
       return ResponseEntity.ok(stats);

@@ -60,9 +60,9 @@ public class SocialMediaView extends VerticalLayout {
       DateTimeFormatter.ofPattern("MMM dd, HH:mm").withZone(ZoneId.systemDefault());
 
   public SocialMediaView(
-      @NonNull NewsService newsService,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull ObjectMapper objectMapper) {
+      @NonNull final NewsService newsService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final ObjectMapper objectMapper) {
     this.newsService = newsService;
     this.objectMapper = objectMapper;
 
@@ -202,7 +202,7 @@ public class SocialMediaView extends VerticalLayout {
     }
   }
 
-  private VerticalLayout createPostCard(NewsItem item) {
+  private VerticalLayout createPostCard(final NewsItem item) {
     VerticalLayout card = new VerticalLayout();
     card.setWidthFull();
     card.addClassNames(
@@ -263,7 +263,7 @@ public class SocialMediaView extends VerticalLayout {
     return card;
   }
 
-  private HorizontalLayout createInteraction(VaadinIcon vaadinIcon, String count) {
+  private HorizontalLayout createInteraction(final VaadinIcon vaadinIcon, final String count) {
     HorizontalLayout layout = new HorizontalLayout();
     layout.setSpacing(false);
     layout.setAlignItems(Alignment.CENTER);

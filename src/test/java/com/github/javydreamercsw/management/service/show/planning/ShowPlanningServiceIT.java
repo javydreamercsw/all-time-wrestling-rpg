@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
@@ -32,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -54,11 +56,13 @@ import org.mockito.quality.Strictness;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @SpringBootTest
 @MockitoSettings(strictness = Strictness.LENIENT)
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class ShowPlanningServiceIT extends ManagementIntegrationTest {
 
   @MockitoBean private SegmentRepository segmentRepository;
@@ -79,6 +83,14 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
   @MockitoBean private PromoBookingService promoBookingService;
   @Autowired private ShowPlanningService showPlanningService;
 
+  private com.github.javydreamercsw.management.domain.universe.Universe universe;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setupUniverse() {
+    universe = mock(com.github.javydreamercsw.management.domain.universe.Universe.class);
+    when(universe.getId()).thenReturn(1L);
+  }
+
   @Test
   @WithMockUser(roles = "BOOKER")
   void getShowPlanningContext() {
@@ -87,6 +99,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
 
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setName("Wrestler 1");
@@ -104,6 +117,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     Show segmentShow = new Show();
     segmentShow.setId(1L);
     segmentShow.setName("Segment Show");
+    segmentShow.setUniverse(universe);
     match.setShow(segmentShow);
     match.setSegmentType(matchSegmentType);
     SegmentParticipant p1 = new SegmentParticipant();
@@ -155,7 +169,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(contender));
 
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     ShowType pleShowType = new ShowType();
@@ -169,6 +184,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     ple.setTemplate(pleTemplate);
     ple.setShowDate(LocalDate.now().plusMonths(1));
     ple.setDescription("Test PLE Description");
+    ple.setUniverse(universe);
     when(showService.getUpcomingShows(anyInt())).thenReturn(Collections.singletonList(ple));
 
     when(segmentService.findById(anyLong()))
@@ -201,6 +217,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Future Show");
     when(show.getShowDate()).thenReturn(futureShowDate);
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType currentShowType = new ShowType(); // Create a ShowType for the 'show' object
     currentShowType.setName("Regular Show Type");
     currentShowType.setExpectedMatches(5); // Set some default values
@@ -222,6 +239,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     upcomingPle.setType(pleShowType);
     upcomingPle.setShowDate(futureShowDate.plusWeeks(2));
     upcomingPle.setDescription("Test PLE Description");
+    upcomingPle.setUniverse(universe);
 
     when(showService.getUpcomingShows(anyInt())).thenReturn(Collections.singletonList(upcomingPle));
 
@@ -233,7 +251,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -257,6 +276,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Future Show");
     when(show.getShowDate()).thenReturn(futureShowDate);
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType showType = new ShowType(); // Create a ShowType for the 'show' object
     showType.setName("Regular Show Type");
     showType.setExpectedMatches(5); // Set some default values
@@ -296,6 +316,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     segmentShow.setId(3L);
     segmentShow.setName("Segment Show");
     segmentShow.setShowDate(futureShowDate.minusDays(10));
+    segmentShow.setUniverse(universe);
     segment1.setShow(segmentShow);
     segment2.setShow(segmentShow);
 
@@ -308,7 +329,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -342,6 +364,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType showType = new ShowType(); // Create a ShowType for the 'show' object
     showType.setName("Regular Show Type");
     showType.setExpectedMatches(5); // Set some default values
@@ -363,7 +386,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(titleService.getActiveTitles()).thenReturn(Collections.singletonList(title));
     when(titleService.getEligibleChallengers(anyLong()))
         .thenReturn(Collections.singletonList(numberOneContender));
-    when(wrestlerService.findAllFiltered(any(), any(), any())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(Collections.emptyList());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     // Act
@@ -386,6 +410,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType showType = new ShowType();
     showType.setName("Regular Show Type");
     showType.setExpectedMatches(5);
@@ -396,22 +421,18 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
-    wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
 
     Wrestler wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("Wrestler 2");
-    wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
 
     Wrestler wrestler3 = Wrestler.builder().build();
     wrestler3.setId(3L);
     wrestler3.setName("Wrestler 3");
-    wrestler3.setTier(WrestlerTier.MIDCARDER);
 
     Wrestler wrestler4 = Wrestler.builder().build();
     wrestler4.setId(4L);
     wrestler4.setName("Wrestler 4");
-    wrestler4.setTier(WrestlerTier.MIDCARDER);
 
     // Create rivalries
     Rivalry rivalry1 = new Rivalry();
@@ -427,7 +448,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     rivalry2.setHeat(50);
 
     // Mock the wrestler service to return our wrestlers
-    when(wrestlerService.findAllFiltered(any(), any(), any()))
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3, wrestler4));
 
     // Mock the rivalry service to return appropriate rivalries for each wrestler
@@ -497,6 +518,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(show.getName()).thenReturn("Test Show");
     when(show.getShowDate()).thenReturn(LocalDate.now());
     when(show.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     ShowType showType = new ShowType();
     showType.setName("Regular Show Type");
     showType.setExpectedMatches(5);
@@ -507,10 +529,11 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
-    wrestler1.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
+    WrestlerState state = WrestlerState.builder().tier(WrestlerTier.MAIN_EVENTER).build();
+    wrestler1.getWrestlerStates().add(state);
 
     // Mock the wrestler service to return our wrestler
-    when(wrestlerService.findAllFiltered(any(), any(), any()))
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(Collections.singletonList(wrestler1));
 
     // Mock the rivalry service to return empty list (no rivalries)

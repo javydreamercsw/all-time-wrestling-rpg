@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -57,6 +58,11 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired DeckRepository deckRepository;
   @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
+  @Autowired com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
+
+  @Autowired
+  com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
+
   @MockitoBean private OpenAISegmentNarrationService openAIService;
 
   private Season testSeason;
@@ -76,10 +82,21 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
     // Create segment types
     segmentTypeService.createOrUpdateSegmentType("One on One", "1 vs 1 match");
+    segmentTypeService.createOrUpdateSegmentType("Free-for-All", "Multi-person match");
     segmentTypeService.createOrUpdateSegmentType("Promo", "A promotional segment");
 
-    for (int i = 0; i < 10; i++) {
-      wrestlerService.createWrestler("Wrestler " + i, true, null, WrestlerTier.ROOKIE);
+    // Create rules used by the booking service
+    segmentRuleService.createOrUpdateRule(
+        "Standard Match", "Standard rules", false, false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule(
+        "Rivalry Segment", "Rivalry rules", false, false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule("PPV Segment", "PPV rules", true, true, BumpAddition.ALL);
+    segmentRuleService.createOrUpdateRule(
+        "Steel Cage Segment", "Cage rules", true, true, BumpAddition.ALL);
+
+    for (int i = 0; i < 15; i++) {
+      wrestlerService.createWrestler(
+          "Wrestler " + i, true, null, WrestlerTier.ROOKIE, defaultUniverse);
     }
   }
 
@@ -124,7 +141,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
       // Verify all segments have valid participants
       for (Segment segment : allSegments) {
         assertThat(segment.getWrestlers()).isNotEmpty();
-        if (!segment.getSegmentType().getName().equals("Promo")) {
+        if (!"Promo".equals(segment.getSegmentType().getName())) {
           assertThat(segment.getWinners()).isNotEmpty();
         }
         assertThat(segment.getShow()).isEqualTo(show);
@@ -199,13 +216,20 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
       List<Wrestler> allWrestlers = wrestlerRepository.findAll();
       for (int i = 2; i < allWrestlers.size(); i++) {
         Wrestler wrestlerToDelete = allWrestlers.get(i);
-        // Delete associated decks first
-        List<com.github.javydreamercsw.management.domain.deck.Deck> decksToDelete =
-            deckRepository.findByWrestler(wrestlerToDelete);
-        for (com.github.javydreamercsw.management.domain.deck.Deck deck : decksToDelete) {
-          deckCardRepository.deleteAll(deck.getCards());
-        }
-        deckRepository.deleteAll(decksToDelete);
+
+        // Delete team associations manually as they might not be cascaded
+        teamRepository.deleteAll(teamRepository.findByWrestler(wrestlerToDelete));
+
+        // Handle faction leadership
+        factionRepository
+            .findByLeader(wrestlerToDelete)
+            .forEach(
+                f -> {
+                  f.setLeader(null);
+                  factionRepository.save(f);
+                });
+
+        // Cascading will handle decks and deck_cards
         wrestlerRepository.delete(wrestlerToDelete);
       }
 
@@ -319,7 +343,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
       for (Segment segment : allSegments) {
         // Each segment should have basic required fields
-        if (!segment.getSegmentType().getName().equals("Promo")) { // Only matches have winners
+        if (!"Promo".equals(segment.getSegmentType().getName())) { // Only matches have winners
           assertThat(segment.getWinners()).isNotEmpty();
         }
         assertThat(segment.getSegmentDate()).isNotNull();

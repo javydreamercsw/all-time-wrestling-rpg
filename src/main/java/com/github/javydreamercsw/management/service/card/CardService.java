@@ -42,8 +42,8 @@ public class CardService {
   @Autowired private Clock clock;
   @Autowired private Validator validator;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Card createCard(@NonNull String name) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Card createCard(@NonNull final String name) {
     Card card = new Card();
     card.setName(name);
     // Set default values
@@ -71,17 +71,16 @@ public class CardService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<Card> list(Pageable pageable) {
+  public List<Card> list(final Pageable pageable) {
     return cardRepository.findAll(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return cardRepository.count();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Card save(@NonNull Card card) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Card save(@NonNull final Card card) {
     card.setCreationDate(clock.instant());
     var violations = validator.validate(card);
     if (!violations.isEmpty()) {
@@ -90,23 +89,36 @@ public class CardService {
     return cardRepository.saveAndFlush(card);
   }
 
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<Card> saveAll(@NonNull final List<Card> cards) {
+    cards.forEach(
+        card -> {
+          card.setCreationDate(clock.instant());
+          var violations = validator.validate(card);
+          if (!violations.isEmpty()) {
+            throw new ValidationException(violations.toString());
+          }
+        });
+    return cardRepository.saveAll(cards);
+  }
+
   @PreAuthorize("isAuthenticated()")
   public List<Card> findAll() {
     return cardRepository.findAll();
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<Card> findByNumberAndSet(Integer number, String setCode) {
+  public Optional<Card> findByNumberAndSet(final Integer number, final String setCode) {
     return cardRepository.findByNumberAndSetCode(number, setCode);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void delete(Long id) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void delete(final Long id) {
     cardRepository.deleteById(id);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<Card> findById(Long id) {
+  public Optional<Card> findById(final Long id) {
     return cardRepository.findById(id);
   }
 }

@@ -42,7 +42,7 @@ public class SyncValidationService {
 
   private final NotionSyncProperties syncProperties;
 
-  public SyncValidationService(NotionSyncProperties syncProperties) {
+  public SyncValidationService(final NotionSyncProperties syncProperties) {
     this.syncProperties = syncProperties;
   }
 
@@ -74,7 +74,7 @@ public class SyncValidationService {
   }
 
   /** Validate a list of shows before sync. */
-  public ValidationResult validateShows(List<ShowPage> shows) {
+  public ValidationResult validateShows(final List<ShowPage> shows) {
     List<String> errors = new ArrayList<>();
     List<String> warnings = new ArrayList<>();
 
@@ -110,7 +110,7 @@ public class SyncValidationService {
   }
 
   /** Validate a single show. */
-  private List<String> validateSingleShow(ShowPage show, int index) {
+  private List<String> validateSingleShow(final ShowPage show, final int index) {
     List<String> errors = new ArrayList<>();
 
     if (show == null) {
@@ -144,7 +144,7 @@ public class SyncValidationService {
   }
 
   /** Validate a list of wrestlers before sync. */
-  public ValidationResult validateWrestlers(List<WrestlerPage> wrestlers) {
+  public ValidationResult validateWrestlers(final List<WrestlerPage> wrestlers) {
     List<String> errors = new ArrayList<>();
     List<String> warnings = new ArrayList<>();
 
@@ -181,7 +181,7 @@ public class SyncValidationService {
   }
 
   /** Validate a single wrestler. */
-  private List<String> validateSingleWrestler(WrestlerPage wrestler, int index) {
+  private List<String> validateSingleWrestler(final WrestlerPage wrestler, final int index) {
     List<String> errors = new ArrayList<>();
 
     if (wrestler == null) {
@@ -203,7 +203,7 @@ public class SyncValidationService {
   }
 
   /** Validate a list of factions before sync. */
-  public ValidationResult validateFactions(List<FactionPage> factions) {
+  public ValidationResult validateFactions(final List<FactionPage> factions) {
     List<String> errors = new ArrayList<>();
     List<String> warnings = new ArrayList<>();
 
@@ -234,7 +234,7 @@ public class SyncValidationService {
   }
 
   /** Validate a single faction. */
-  private List<String> validateSingleFaction(FactionPage faction, int index) {
+  private List<String> validateSingleFaction(final FactionPage faction, final int index) {
     List<String> errors = new ArrayList<>();
 
     if (faction == null) {
@@ -256,7 +256,7 @@ public class SyncValidationService {
   }
 
   /** Validate a list of teams before sync. */
-  public ValidationResult validateTeams(List<TeamPage> teams) {
+  public ValidationResult validateTeams(final List<TeamPage> teams) {
     List<String> errors = new ArrayList<>();
     List<String> warnings = new ArrayList<>();
 
@@ -287,7 +287,7 @@ public class SyncValidationService {
   }
 
   /** Validate a single team. */
-  private List<String> validateSingleTeam(TeamPage team, int index) {
+  private List<String> validateSingleTeam(final TeamPage team, final int index) {
     List<String> errors = new ArrayList<>();
 
     if (team == null) {
@@ -322,7 +322,8 @@ public class SyncValidationService {
     private final List<String> errors;
     private final List<String> warnings;
 
-    public ValidationResult(boolean valid, List<String> errors, List<String> warnings) {
+    public ValidationResult(
+        final boolean valid, final List<String> errors, final List<String> warnings) {
       this.valid = valid;
       this.errors = new ArrayList<>(errors);
       this.warnings = new ArrayList<>(warnings);
@@ -367,7 +368,7 @@ public class SyncValidationService {
   // ==================== HELPER METHODS ====================
 
   /** Extracts name from any NotionPage type using raw properties. */
-  private String extractNameFromNotionPage(ShowPage page) {
+  private String extractNameFromNotionPage(final ShowPage page) {
     if (page.getRawProperties() != null) {
       Object name = page.getRawProperties().get("Name");
       return name != null ? name.toString() : "Unknown";
@@ -376,7 +377,7 @@ public class SyncValidationService {
   }
 
   /** Extracts name from any NotionPage type using raw properties. */
-  private String extractNameFromNotionPage(WrestlerPage page) {
+  private String extractNameFromNotionPage(final WrestlerPage page) {
     if (page.getRawProperties() != null) {
       Object name = page.getRawProperties().get("Name");
       return name != null ? name.toString() : "Unknown";
@@ -385,7 +386,7 @@ public class SyncValidationService {
   }
 
   /** Extracts name from any NotionPage type using raw properties. */
-  private String extractNameFromNotionPage(FactionPage page) {
+  private String extractNameFromNotionPage(final FactionPage page) {
     if (page.getRawProperties() != null) {
       Object name = page.getRawProperties().get("Name");
       return name != null ? name.toString() : "Unknown";
@@ -394,7 +395,7 @@ public class SyncValidationService {
   }
 
   /** Extracts name from any NotionPage type using raw properties. */
-  private String extractNameFromNotionPage(TeamPage page) {
+  private String extractNameFromNotionPage(final TeamPage page) {
     if (page.getRawProperties() != null) {
       Object name = page.getRawProperties().get("Name");
       return name != null ? name.toString() : "Unknown";
@@ -403,7 +404,7 @@ public class SyncValidationService {
   }
 
   /** Extracts show date from ShowPage using raw properties. */
-  private String extractShowDateFromNotionPage(ShowPage page) {
+  private String extractShowDateFromNotionPage(final ShowPage page) {
     if (page.getRawProperties() != null) {
       Object date = page.getRawProperties().get("Date");
       if (date == null) {
@@ -415,22 +416,22 @@ public class SyncValidationService {
   }
 
   /** Check if a date string is a placeholder value that should be ignored. */
-  private boolean isDatePlaceholder(String dateStr) {
+  private boolean isDatePlaceholder(final String dateStr) {
     if (dateStr == null) {
       return false;
     }
 
     String normalized = dateStr.trim().toLowerCase();
-    return normalized.equals("date")
-        || normalized.equals("n/a")
-        || normalized.equals("tbd")
-        || normalized.equals("unknown")
-        || normalized.equals("null")
+    return "date".equals(normalized)
+        || "n/a".equals(normalized)
+        || "tbd".equals(normalized)
+        || "unknown".equals(normalized)
+        || "null".equals(normalized)
         || normalized.isEmpty();
   }
 
   /** Extracts wrestler names from TeamPage using raw properties. */
-  private String extractWrestler1NameFromNotionPage(TeamPage page) {
+  private String extractWrestler1NameFromNotionPage(final TeamPage page) {
     if (page.getRawProperties() != null) {
       Object members = page.getRawProperties().get("Members");
       if (members != null) {
@@ -445,7 +446,7 @@ public class SyncValidationService {
   }
 
   /** Extracts wrestler names from TeamPage using raw properties. */
-  private String extractWrestler2NameFromNotionPage(TeamPage page) {
+  private String extractWrestler2NameFromNotionPage(final TeamPage page) {
     if (page.getRawProperties() != null) {
       Object members = page.getRawProperties().get("Members");
       if (members != null) {

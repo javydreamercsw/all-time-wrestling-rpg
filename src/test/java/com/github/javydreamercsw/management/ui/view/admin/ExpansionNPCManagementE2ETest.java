@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.admin;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -26,10 +27,10 @@ import org.openqa.selenium.WebElement;
 class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
 
   @Test
+  @SneakyThrows
   void testToggleNPCExpansionAndVerifyFiltering() {
     // 1. Navigate to Admin and select Expansion Management tab
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     WebElement tab =
         waitForVaadinElement(
@@ -51,23 +52,18 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'disabled')]"));
 
     // Give it a moment for cache eviction
-    try {
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
-    }
+    Thread.sleep(1_000);
 
     // 3. Navigate to Wrestler List and verify MVP (HURT_BUSINESS set) is hidden from Manager column
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    waitForVaadinClientToLoad();
+    navigateTo("wrestler-list");
 
     // Verify 'MVP' is NOT present in the Manager column
-    // (Note: Bobby Lashley is Base Game, but managed by MVP)
+    // (Note: Bobby Lashley is from Hurt Business Expansion, but managed by MVP)
     assertThat(driver.findElements(By.xpath("//vaadin-grid-cell-content[contains(., 'MVP')]")))
         .isEmpty();
 
     // 4. Go back and re-enable it
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
     clickElement(
         waitForVaadinElement(
             driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
@@ -82,14 +78,10 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));
 
     // Give it a moment
-    try {
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
-    }
+    Thread.sleep(1_000);
 
     // 5. Verify MVP is back in the Wrestler List grid
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
-    waitForVaadinClientToLoad();
+    navigateTo("wrestler-list");
     waitForVaadinElement(driver, By.xpath("//vaadin-grid-cell-content[contains(., 'MVP')]"));
   }
 }

@@ -35,7 +35,6 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -72,11 +71,6 @@ class TitleReignSyncIT extends ManagementIntegrationTest {
     if (mockedEnvironmentVariableUtil != null) {
       mockedEnvironmentVariableUtil.close();
     }
-  }
-
-  @BeforeEach
-  void setUp() {
-    clearAllRepositories();
   }
 
   @Test
@@ -122,6 +116,6 @@ class TitleReignSyncIT extends ManagementIntegrationTest {
     assertThat(reign.getExternalId()).isEqualTo(reignId);
     assertThat(reign.getTitle().getName()).isEqualTo("Test Title");
     assertThat(reign.getChampions()).hasSize(1);
-    assertThat(reign.getChampions().get(0).getName()).isEqualTo("Test Wrestler");
+    assertThat(reign.getChampions().iterator().next().getName()).isEqualTo("Test Wrestler");
   }
 }

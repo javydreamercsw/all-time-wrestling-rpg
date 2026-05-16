@@ -32,13 +32,18 @@ public class SegmentTypeService {
 
   private final SegmentTypeRepository segmentTypeRepository;
 
-  public SegmentTypeService(@NonNull SegmentTypeRepository segmentTypeRepository) {
+  public SegmentTypeService(@NonNull final SegmentTypeRepository segmentTypeRepository) {
     this.segmentTypeRepository = segmentTypeRepository;
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<SegmentType> findByName(@NonNull String name) {
+  public Optional<SegmentType> findByName(@NonNull final String name) {
     return segmentTypeRepository.findByName(name);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public Optional<SegmentType> findByExternalId(@NonNull final String externalId) {
+    return segmentTypeRepository.findByExternalId(externalId);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -46,42 +51,54 @@ public class SegmentTypeService {
     return segmentTypeRepository.findAll();
   }
 
+  public long count() {
+    return segmentTypeRepository.count();
+  }
+
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_TYPES_CACHE,
       allEntries = true)
-  public SegmentType createSegmentType(@NonNull SegmentType segmentType) {
+  public SegmentType createSegmentType(@NonNull final SegmentType segmentType) {
     log.info("Creating new segment type: {}", segmentType.getName());
     return segmentTypeRepository.save(segmentType);
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_TYPES_CACHE,
       allEntries = true)
-  public SegmentType createOrUpdateSegmentType(@NonNull String name, @NonNull String description) {
+  public SegmentType createOrUpdateSegmentType(
+      @NonNull final String name, @NonNull final String description) {
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
-    SegmentType segmentType;
     if (existingOpt.isPresent()) {
-      segmentType = existingOpt.get();
+      SegmentType st = existingOpt.get();
+      if (st.getDescription() != null && st.getDescription().equals(description)) {
+        return st;
+      }
+      st.setDescription(description);
       log.debug("Updating existing segment type: {}", name);
-    } else {
-      segmentType = new SegmentType();
-      log.debug("Creating new segment type: {}", name);
+      return segmentTypeRepository.save(st);
     }
+
+    SegmentType segmentType = new SegmentType();
+    log.debug("Creating new segment type: {}", name);
     segmentType.setName(name);
     segmentType.setDescription(description);
     return segmentTypeRepository.save(segmentType);
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_TYPES_CACHE,
       allEntries = true)
-  public void deleteSegmentType(@NonNull Long id) {
+  public void deleteSegmentType(@NonNull final Long id) {
     if (segmentTypeRepository.existsById(id)) {
       segmentTypeRepository.deleteById(id);
       log.debug("Deleted segment type with ID: {}", id);

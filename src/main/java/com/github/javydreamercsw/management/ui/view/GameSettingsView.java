@@ -32,6 +32,7 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,7 @@ import org.springframework.stereotype.Component;
 @RolesAllowed("ADMIN")
 @Lazy
 @UIScope
+@Slf4j
 public class GameSettingsView extends VerticalLayout {
 
   private final GameSettingService gameSettingService;
@@ -52,9 +54,9 @@ public class GameSettingsView extends VerticalLayout {
 
   @Autowired
   public GameSettingsView(
-      GameSettingService gameSettingService,
-      ThemeService themeService,
-      Optional<NotionHandler> notionHandler) {
+      final GameSettingService gameSettingService,
+      final ThemeService themeService,
+      final Optional<NotionHandler> notionHandler) {
     this.gameSettingService = gameSettingService;
     this.themeService = themeService;
     this.notionHandler = notionHandler.orElse(null);
@@ -83,8 +85,15 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     notionTokenField = new PasswordField("Notion Integration Token");
-    notionTokenField.setValue(
-        gameSettingService.getNotionToken() != null ? gameSettingService.getNotionToken() : "");
+    try {
+      notionTokenField.setValue(
+          gameSettingService.getNotionToken() != null ? gameSettingService.getNotionToken() : "");
+    } catch (Exception e) {
+      log.warn(
+          "Could not retrieve Notion token (likely due to missing authentication): {}",
+          e.getMessage());
+      notionTokenField.setValue("");
+    }
     notionTokenField.setPlaceholder("Enter your Notion API token");
     notionTokenField.setWidthFull();
     notionTokenField.addValueChangeListener(

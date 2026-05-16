@@ -32,12 +32,12 @@ public class TeamNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public TeamNotionHandler(NotionHandler notionHandler) {
+  public TeamNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
   /** Loads a team from the Notion database by name. */
-  public Optional<TeamPage> loadTeam(@NonNull String teamName) {
+  public Optional<TeamPage> loadTeam(@NonNull final String teamName) {
     log.debug("Loading team: '{}'", teamName);
 
     String teamDbId = notionHandler.getDatabaseId("Teams");
@@ -95,7 +95,7 @@ public class TeamNotionHandler {
   }
 
   /** Maps a Notion page to a TeamPage object. */
-  private TeamPage mapPageToTeamPage(@NonNull Page pageData, @NonNull String teamName) {
+  private TeamPage mapPageToTeamPage(@NonNull final Page pageData, @NonNull final String teamName) {
     TeamPage teamPage =
         notionHandler.mapPageToGenericEntity(
             pageData, teamName, "Team", TeamPage::new, TeamPage.NotionParent::new, true);
@@ -109,7 +109,7 @@ public class TeamNotionHandler {
 
   /** Maps raw properties to TeamPage.NotionProperties. */
   private TeamPage.NotionProperties mapPagePropertiesToNotionProperties(
-      Map<String, notion.api.v1.model.pages.PageProperty> notionProperties) {
+      final Map<String, notion.api.v1.model.pages.PageProperty> notionProperties) {
     TeamPage.NotionProperties props = new TeamPage.NotionProperties();
     if (notionProperties == null) {
       return props;
@@ -139,7 +139,7 @@ public class TeamNotionHandler {
   }
 
   /** Converts a Notion PageProperty to a TeamPage.Property. */
-  private TeamPage.Property toProperty(notion.api.v1.model.pages.PageProperty pageProperty) {
+  private TeamPage.Property toProperty(final notion.api.v1.model.pages.PageProperty pageProperty) {
     if (pageProperty == null) {
       return null;
     }

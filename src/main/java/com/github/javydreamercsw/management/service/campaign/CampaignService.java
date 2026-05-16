@@ -126,7 +126,7 @@ public class CampaignService {
   private static final String KEY_TOURNAMENT_STATE = "tournamentState";
   private static final String KEY_RECRUITING_PARTNER = "recruitingPartner";
 
-  private Map<String, Object> getFeatureData(CampaignState state) {
+  private Map<String, Object> getFeatureData(final CampaignState state) {
     if (state.getFeatureData() == null) {
       return new HashMap<>();
     }
@@ -139,7 +139,7 @@ public class CampaignService {
     }
   }
 
-  private void saveFeatureData(CampaignState state, Map<String, Object> data) {
+  private void saveFeatureData(final CampaignState state, final Map<String, Object> data) {
     try {
       state.setFeatureData(objectMapper.writeValueAsString(data));
     } catch (JsonProcessingException e) {
@@ -147,7 +147,8 @@ public class CampaignService {
     }
   }
 
-  private <T> T getFeatureValue(CampaignState state, String key, Class<T> type, T defaultValue) {
+  private <T> T getFeatureValue(
+      final CampaignState state, final String key, final Class<T> type, final T defaultValue) {
     Map<String, Object> data = getFeatureData(state);
     Object value = data.get(key);
     if (value == null) {
@@ -156,13 +157,13 @@ public class CampaignService {
     return objectMapper.convertValue(value, type);
   }
 
-  public void setFeatureValue(CampaignState state, String key, Object value) {
+  public void setFeatureValue(final CampaignState state, final String key, final Object value) {
     Map<String, Object> data = getFeatureData(state);
     data.put(key, value);
     saveFeatureData(state, data);
   }
 
-  public Campaign startCampaign(@NonNull Wrestler wrestlerParam) {
+  public Campaign startCampaign(@NonNull final Wrestler wrestlerParam) {
     // Re-fetch to ensure attached and initialize lazy collections
     Wrestler wrestler =
         wrestlerRepository
@@ -297,7 +298,13 @@ public class CampaignService {
                         .findByName("One on One")
                         .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
 
-    Segment segment = segmentService.createSegment(show, type, java.time.Instant.now());
+    Segment newSegment = new Segment();
+    newSegment.setShow(show);
+    newSegment.setSegmentType(type);
+    newSegment.setSegmentDate(java.time.Instant.now());
+    newSegment.setIsTitleSegment(false);
+    newSegment.setTitles(new java.util.HashSet<>());
+    final Segment segment = segmentRepository.save(newSegment);
     segment.setNarration(narration);
 
     if ("fighting_champion".equals(chapter.getId())) {
@@ -378,7 +385,7 @@ public class CampaignService {
     return segment;
   }
 
-  private void addParticipant(@NonNull Segment segment, @NonNull Wrestler wrestler) {
+  private void addParticipant(@NonNull final Segment segment, @NonNull final Wrestler wrestler) {
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(segment);
     participant.setWrestler(wrestler);
@@ -437,7 +444,7 @@ public class CampaignService {
    * @param wrestler The wrestler.
    * @return Optional campaign.
    */
-  public Optional<Campaign> getCampaignForWrestler(@NonNull Wrestler wrestler) {
+  public Optional<Campaign> getCampaignForWrestler(@NonNull final Wrestler wrestler) {
     return campaignRepository
         .findActiveByWrestler(wrestler)
         .map(
@@ -459,11 +466,11 @@ public class CampaignService {
    * @param wrestler The wrestler.
    * @return true if an active campaign exists.
    */
-  public boolean hasActiveCampaign(@NonNull Wrestler wrestler) {
+  public boolean hasActiveCampaign(@NonNull final Wrestler wrestler) {
     return campaignRepository.findActiveByWrestler(wrestler).isPresent();
   }
 
-  public void processMatchResult(@NonNull Campaign campaignParam, boolean won) {
+  public void processMatchResult(@NonNull final Campaign campaignParam, final boolean won) {
     // Reload campaign to ensure it's attached and we can fetch lazy collections
     Campaign campaign =
         campaignRepository
@@ -512,11 +519,12 @@ public class CampaignService {
 
       final double finalMultiplier = multiplier;
       final Segment finalMatch = match;
-      // Apply rewards directly for Campaign
+      // Run as admin so all downstream @PreAuthorize guards pass (e.g. awardFans, save).
+      // runAsAdmin now updates the VaadinSession context so it works on WebSocket push threads.
       GeneralSecurityUtils.runAsAdmin(
           (java.util.function.Supplier<Void>)
               () -> {
-                adjudicationService.adjudicateMatch(finalMatch, finalMultiplier);
+                adjudicationService.adjudicateMatchForCampaign(finalMatch, finalMultiplier);
                 return null;
               });
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
@@ -566,7 +574,14 @@ public class CampaignService {
 
       // Finals Phase (Tournament Bracket)
       Show currentShow = state.getCurrentMatch().getShow();
-      tournamentService.advanceTournament(campaign, won, currentShow);
+      final boolean finalWon = won;
+      final Show finalShow = currentShow;
+      GeneralSecurityUtils.runAsAdmin(
+          (java.util.function.Supplier<Void>)
+              () -> {
+                tournamentService.advanceTournament(campaign, finalWon, finalShow);
+                return null;
+              });
 
       if (!won) {
         log.info("Wrestler {} ELIMINATED from the tournament finals.", wrestler.getName());
@@ -579,7 +594,12 @@ public class CampaignService {
           // (redundant check but safe)
           // For purely NPC rounds, 'won' param is ignored by advanceTournament logic for player
           // match
-          tournamentService.advanceTournament(campaign, false, currentShow);
+          GeneralSecurityUtils.runAsAdmin(
+              (java.util.function.Supplier<Void>)
+                  () -> {
+                    tournamentService.advanceTournament(campaign, false, currentShow);
+                    return null;
+                  });
           // Refresh state
           tournament = tournamentService.getTournamentState(campaign);
         }
@@ -666,7 +686,7 @@ public class CampaignService {
 
     // Automatic check for chapter completion
     if (chapterService.isChapterComplete(state)) {
-      log.info("Chapter {} complete! Ready to advance.", state.getCurrentChapterId());
+      log.debug("Chapter {} complete! Ready to advance.", state.getCurrentChapterId());
       // For now we don't automatically advance here to allow for post-match narrative.
       // The CampaignNarrativeView choice will likely trigger advanceChapter.
     }
@@ -677,7 +697,7 @@ public class CampaignService {
    *
    * @param campaignParam The campaign to transition.
    */
-  public void completePostMatch(@NonNull Campaign campaignParam) {
+  public void completePostMatch(@NonNull final Campaign campaignParam) {
     // Reload campaign to ensure attached entity and fresh state
     Campaign campaign =
         campaignRepository
@@ -757,16 +777,18 @@ public class CampaignService {
                             return showTypeRepository.save(st);
                           });
 
-              return showService.createShow(
-                  finalShowName,
-                  "Story matches for " + player.getName(),
-                  weekly.getId(),
-                  finalDate,
-                  season.getId(),
-                  finalTemplateId,
-                  null,
-                  null,
-                  null);
+              // Build directly to avoid ShowService's @PreAuthorize when called from player context
+              Show show = new Show();
+              show.setName(finalShowName);
+              show.setDescription("Story matches for " + player.getName());
+              show.setShowDate(finalDate);
+              show.setCreationDate(java.time.Instant.now());
+              show.setType(weekly);
+              show.setSeason(season);
+              if (finalTemplateId != null) {
+                showTemplateRepository.findById(finalTemplateId).ifPresent(show::setTemplate);
+              }
+              return showRepository.saveAndFlush(show);
             });
   }
 
@@ -791,11 +813,11 @@ public class CampaignService {
                         }));
   }
 
-  public void saveSegment(@NonNull Segment segment) {
+  public void saveSegment(@NonNull final Segment segment) {
     segmentRepository.save(segment);
   }
 
-  public Optional<String> advanceChapter(@NonNull Campaign campaignParam) {
+  public Optional<String> advanceChapter(@NonNull final Campaign campaignParam) {
     // Reload to ensure attached entity and initialize lazy collections
     Campaign campaign =
         campaignRepository
@@ -929,7 +951,7 @@ public class CampaignService {
   }
 
   @Transactional(readOnly = true)
-  public boolean isChapterComplete(@NonNull Campaign campaignParam) {
+  public boolean isChapterComplete(@NonNull final Campaign campaignParam) {
     // Reload to ensure attached entity and initialize lazy collections
     Campaign campaign =
         campaignRepository
@@ -978,7 +1000,7 @@ public class CampaignService {
   }
 
   private void recalculatePendingPicks(
-      @NonNull CampaignState state, @NonNull WrestlerAlignment alignment) {
+      @NonNull final CampaignState state, @NonNull final WrestlerAlignment alignment) {
     int level = alignment.getLevel();
     AlignmentType type = alignment.getAlignmentType();
 
@@ -1030,7 +1052,7 @@ public class CampaignService {
 
     // Grant first pick when reaching Level 1 from 0 (Neutral)
     if (oldLevel == 0 && newLevel >= 1 && type != AlignmentType.NEUTRAL) {
-      log.info("Reached Level 1 {}: Eligible for first Level 1 card.", type);
+      log.debug("Reached Level 1 {}: Eligible for first Level 1 card.", type);
       state.setPendingL1Picks(state.getPendingL1Picks() + 1);
     }
 
@@ -1038,12 +1060,12 @@ public class CampaignService {
     if (type == AlignmentType.FACE) {
       // Face Level 4: Gain a level 2 card
       if (oldLevel < 4 && newLevel >= 4) {
-        log.info("Face reached Level 4: Eligible for Level 2 card.");
+        log.debug("Face reached Level 4: Eligible for Level 2 card.");
         state.setPendingL2Picks(state.getPendingL2Picks() + 1);
       }
       // Face Level 5: Gain a level 3 card, lose a level 1 card
       if (oldLevel < 5 && newLevel >= 5) {
-        log.info("Face reached Level 5: Gain Level 3 card, Lose Level 1 card.");
+        log.debug("Face reached Level 5: Gain Level 3 card, Lose Level 1 card.");
         removeOneCardOfLevel(cards, 1);
         state.setPendingL3Picks(state.getPendingL3Picks() + 1);
         // If they had no L1 card yet, we might want to decrement pending L1 picks instead?
@@ -1054,7 +1076,7 @@ public class CampaignService {
     } else {
       // Heel Level 4: Gain a level 2 card, lose a level 1 card
       if (oldLevel < 4 && newLevel >= 4) {
-        log.info("Heel reached Level 4: Gain Level 2 card, Lose Level 1 card.");
+        log.debug("Heel reached Level 4: Gain Level 2 card, Lose Level 1 card.");
         removeOneCardOfLevel(cards, 1);
         state.setPendingL2Picks(state.getPendingL2Picks() + 1);
         if (state.getPendingL1Picks() > 0) {
@@ -1063,7 +1085,7 @@ public class CampaignService {
       }
       // Heel Level 5: Gain another level 1 card
       if (oldLevel < 5 && newLevel >= 5) {
-        log.info("Heel reached Level 5: Eligible for another Level 1 card.");
+        log.debug("Heel reached Level 5: Eligible for another Level 1 card.");
         state.setPendingL1Picks(state.getPendingL1Picks() + 1);
       }
     }
@@ -1071,14 +1093,15 @@ public class CampaignService {
     campaignStateRepository.save(state);
   }
 
-  private void removeOneCardOfLevel(@NonNull List<CampaignAbilityCard> cards, int level) {
+  private void removeOneCardOfLevel(
+      @NonNull final List<CampaignAbilityCard> cards, final int level) {
     cards.stream()
         .filter(c -> c.getLevel() == level)
         .findFirst()
         .ifPresent(
             card -> {
               cards.remove(card);
-              log.info("Removed Level {} card: {}", level, card.getName());
+              log.debug("Removed Level {} card: {}", level, card.getName());
             });
   }
 
@@ -1116,7 +1139,8 @@ public class CampaignService {
     return pickable;
   }
 
-  private List<CampaignAbilityCard> getAvailableCards(@NonNull AlignmentType type, int level) {
+  private List<CampaignAbilityCard> getAvailableCards(
+      @NonNull final AlignmentType type, final int level) {
     return campaignAbilityCardRepository.findByAlignmentTypeAndLevel(type, level);
   }
 
@@ -1160,7 +1184,7 @@ public class CampaignService {
     }
   }
 
-  private void awardTitleToWinner(Long winnerId) {
+  private void awardTitleToWinner(final Long winnerId) {
     Wrestler winner =
         wrestlerRepository
             .findById(winnerId)

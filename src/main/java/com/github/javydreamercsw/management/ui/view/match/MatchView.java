@@ -38,12 +38,14 @@ import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
@@ -95,6 +97,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   private final SegmentService segmentService;
   private final WrestlerService wrestlerService;
+  private final InjuryService injuryService;
+  private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
   private final CampaignRepository campaignRepository;
@@ -126,29 +130,35 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   @Autowired
   public MatchView(
-      SegmentService segmentService,
-      WrestlerService wrestlerService,
-      SecurityUtils securityUtils,
-      CampaignService campaignService,
-      CampaignRepository campaignRepository,
-      SegmentNarrationServiceFactory narrationServiceFactory,
-      NpcService npcService,
-      SegmentAdjudicationService segmentAdjudicationService,
-      MatchFulfillmentRepository matchFulfillmentRepository,
-      MatchFulfillmentService matchFulfillmentService,
-      PromoService promoService,
-      CommentaryTeamRepository commentaryTeamRepository,
-      NarrationParserService narrationParserService,
-      com.github.javydreamercsw.management.service.ringside.RingsideActionService
+      final SegmentService segmentService,
+      final WrestlerService wrestlerService,
+      final InjuryService injuryService,
+      final UniverseContextService universeContextService,
+      final SecurityUtils securityUtils,
+      final CampaignService campaignService,
+      final CampaignRepository campaignRepository,
+      final SegmentNarrationServiceFactory narrationServiceFactory,
+      final NpcService npcService,
+      final SegmentAdjudicationService segmentAdjudicationService,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
+      final MatchFulfillmentService matchFulfillmentService,
+      final PromoService promoService,
+      final CommentaryTeamRepository commentaryTeamRepository,
+      final NarrationParserService narrationParserService,
+      final com.github.javydreamercsw.management.service.ringside.RingsideActionService
           ringsideActionService,
-      com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService,
-      com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
+      final com.github.javydreamercsw.management.service.ringside.RingsideAiService
+          ringsideAiService,
+      final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
           ringsideActionDataService,
-      com.github.javydreamercsw.management.service.team.TeamService teamService,
-      com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final com.github.javydreamercsw.management.service.team.TeamService teamService,
+      final com.github.javydreamercsw.management.service.title.TitleScriptService
+          titleScriptService,
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
+    this.injuryService = injuryService;
+    this.universeContextService = universeContextService;
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;
     this.campaignRepository = campaignRepository;
@@ -169,11 +179,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   }
 
   @Override
-  public void beforeEnter(BeforeEnterEvent event) {
+  public void beforeEnter(final BeforeEnterEvent event) {
     try {
       removeAll();
       String matchId = event.getRouteParameters().get("matchId").orElse(null);
-      log.info("Entering MatchView for matchId: {}", matchId);
+      log.debug("Entering MatchView for matchId: {}", matchId);
       if (matchId != null) {
         Long id = Long.valueOf(matchId);
         // Try finding as a fulfillment first to get full context
@@ -187,7 +197,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
         if (segment != null) {
           List<Wrestler> wrestlers = segment.getWrestlers();
-          log.info(
+          log.debug(
               "Found segment: {} with {} wrestlers",
               segment.getId(),
               wrestlers != null ? wrestlers.size() : "NULL");
@@ -204,7 +214,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   }
 
   private void buildView() {
-    log.info("Building MatchView for segment: {}", segment.getId());
+    log.debug("Building MatchView for segment: {}", segment.getId());
     setId("match-view-" + segment.getId());
     setAlignItems(Alignment.CENTER);
     getStyle().set("background-color", "var(--lumo-contrast-5pct)");
@@ -229,7 +239,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     buildMatchInterface(playerWrestler);
   }
 
-  private void buildHeader(Wrestler playerWrestler) {
+  private void buildHeader(final Wrestler playerWrestler) {
     // Header Section
     VerticalLayout header = new VerticalLayout();
     header.setPadding(false);
@@ -288,7 +298,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
   }
 
-  private void showInteractivePromoInterface(Wrestler playerWrestler) {
+  private void showInteractivePromoInterface(final Wrestler playerWrestler) {
     DashboardCard promoCard = new DashboardCard("Interactive Promo Chat");
     promoCard.setId("interactive-promo-chat-card");
     VerticalLayout promoLayout = new VerticalLayout();
@@ -371,7 +381,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     add(promoCard);
   }
 
-  private void buildMatchInterface(Wrestler playerWrestler) {
+  private void buildMatchInterface(final Wrestler playerWrestler) {
     boolean isPromo =
         segment.getSegmentType() != null
             && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
@@ -393,8 +403,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     List<Wrestler> wrestlers = segment.getWrestlers();
     boolean isPlayerInMatch = playerWrestler != null && wrestlers.contains(playerWrestler);
 
+    Long universeId = universeContextService.getCurrentUniverseId();
     if (isPlayerInMatch) {
-      participantsCard.add(new WrestlerSummaryCard(playerWrestler, wrestlerService, true));
+      participantsCard.add(
+          new WrestlerSummaryCard(
+              playerWrestler, universeId, wrestlerService, injuryService, true));
 
       // Fetch player campaign to get opponent penalty
       int opponentPenalty = 0;
@@ -409,11 +422,16 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           .forEach(
               opponent ->
                   participantsCard.add(
-                      new WrestlerSummaryCard(opponent, wrestlerService, false, penalty)));
+                      new WrestlerSummaryCard(
+                          opponent, universeId, wrestlerService, injuryService, false, penalty)));
     } else {
       wrestlers.stream()
           .filter(java.util.Objects::nonNull)
-          .forEach(w -> participantsCard.add(new WrestlerSummaryCard(w, wrestlerService, false)));
+          .forEach(
+              w ->
+                  participantsCard.add(
+                      new WrestlerSummaryCard(
+                          w, universeId, wrestlerService, injuryService, false)));
     }
     participantsCol.add(participantsCard);
 
@@ -575,8 +593,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     feedbackArea.setPlaceholder(
         isPromo
             ? "Provide bullet points or a general idea of the promo content..."
-            : "Provide specific details about the match (key spots, ringside actions, etc.) to"
-                + " guide the AI...");
+            : """
+            Provide specific details about the match (key spots, ringside actions, etc.) to\
+             guide the AI...\
+            """);
     feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
     feedbackArea.setId("feedback-area");
 
@@ -730,6 +750,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     try {
       SegmentNarrationContext context = new SegmentNarrationContext();
+      context.setUniverseId(universeContextService.getCurrentUniverseId());
 
       SegmentTypeContext typeContext = new SegmentTypeContext();
       typeContext.setSegmentType(segment.getSegmentType().getName());
@@ -748,7 +769,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     wc.setName(w.getName());
                     wc.setDescription(w.getDescription());
                     wc.setHailingFrom(w.getHeritageTag());
-                    wc.setHealth(w.getEffectiveStartingHealth());
+                    wc.setHealth(
+                        w.getEffectiveStartingHealth(
+                            universeContextService.getCurrentUniverseId()));
                     wc.setStamina(w.getEffectiveStartingStamina());
                     wc.setMomentum(w.getEffectiveStartingMomentum());
                     wc.setHandSize(w.getEffectiveHandSize());
@@ -809,7 +832,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         // Default to All-Time Broadcast Team if not set
         team =
             commentaryTeamRepository.findAll().stream()
-                .filter(t -> t.getName().equalsIgnoreCase("All-Time Broadcast Team"))
+                .filter(t -> "All-Time Broadcast Team".equalsIgnoreCase(t.getName()))
                 .findFirst()
                 .orElse(null);
       }
@@ -926,7 +949,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     cc.setCurrentRival(
                         state.getRival() != null ? state.getRival().getName() : null);
                     cc.setActiveInjuries(
-                        playerWrestler.getActiveInjuries().stream()
+                        playerWrestler
+                            .getDefaultState()
+                            .map(
+                                com.github.javydreamercsw.management.domain.wrestler.WrestlerState
+                                    ::getActiveInjuries)
+                            .orElseGet(java.util.Collections::emptyList)
+                            .stream()
                             .map(com.github.javydreamercsw.management.domain.injury.Injury::getName)
                             .toList());
 

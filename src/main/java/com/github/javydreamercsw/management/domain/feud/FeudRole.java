@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.feud;
 
+import lombok.Getter;
+
 /**
  * Represents the role of a wrestler in a multi-wrestler feud. Roles help define storyline dynamics
  * and segment booking priorities.
@@ -45,11 +47,11 @@ public enum FeudRole {
   AUTHORITY(
       "Authority Figure", "Official, manager, or authority figure involved in the feud", "👔");
 
-  private final String displayName;
-  private final String description;
-  private final String emoji;
+  @Getter private final String displayName;
+  @Getter private final String description;
+  @Getter private final String emoji;
 
-  FeudRole(String displayName, String description, String emoji) {
+  FeudRole(final String displayName, final String description, final String emoji) {
     this.displayName = displayName;
     this.description = description;
     this.emoji = emoji;
@@ -92,13 +94,13 @@ public enum FeudRole {
   }
 
   /** Check if two roles are naturally opposed. */
-  public boolean isOpposedTo(FeudRole other) {
+  public boolean isOpposedTo(final FeudRole other) {
     return (isAntagonistic() && other.isProtagonistic())
         || (isProtagonistic() && other.isAntagonistic());
   }
 
   /** Get heat multiplier for interactions based on role dynamics. */
-  public double getHeatMultiplier(FeudRole other) {
+  public double getHeatMultiplier(final FeudRole other) {
     if (isOpposedTo(other)) {
       if (isMainCharacter() && other.isMainCharacter()) {
         return 2.0; // Main character conflicts generate the most heat
@@ -124,19 +126,6 @@ public enum FeudRole {
       case NEUTRAL -> 3;
       case AUTHORITY -> 1; // Lowest priority for matches
     };
-  }
-
-  // Getters
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getEmoji() {
-    return emoji;
   }
 
   /** Get display string with emoji. */

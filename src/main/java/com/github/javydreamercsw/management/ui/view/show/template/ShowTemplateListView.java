@@ -111,13 +111,13 @@ public class ShowTemplateListView extends Main {
   final Grid<ShowTemplate> templateGrid;
 
   public ShowTemplateListView(
-      @NonNull ShowTemplateService showTemplateService,
-      @NonNull ShowTypeService showTypeService,
-      @NonNull CommentaryTeamRepository commentaryTeamRepository,
-      @NonNull SecurityUtils securityUtils,
-      @NonNull ImageGenerationServiceFactory imageGenerationServiceFactory,
-      @NonNull ImageStorageService imageStorageService,
-      @NonNull AiSettingsService aiSettingsService) {
+      @NonNull final ShowTemplateService showTemplateService,
+      @NonNull final ShowTypeService showTypeService,
+      @NonNull final CommentaryTeamRepository commentaryTeamRepository,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final ImageGenerationServiceFactory imageGenerationServiceFactory,
+      @NonNull final ImageStorageService imageStorageService,
+      @NonNull final AiSettingsService aiSettingsService) {
     this.showTemplateService = showTemplateService;
     this.showTypeService = showTypeService;
     this.commentaryTeamRepository = commentaryTeamRepository;
@@ -284,7 +284,7 @@ public class ShowTemplateListView extends Main {
     templateGrid.setSizeFull();
   }
 
-  private void openGenerateArtDialog(ShowTemplate template) {
+  private void openGenerateArtDialog(final ShowTemplate template) {
     java.util.function.Supplier<String> promptSupplier =
         () -> {
           StringBuilder sb = new StringBuilder();
@@ -298,8 +298,10 @@ public class ShowTemplateListView extends Main {
             sb.append(template.getDescription()).append(". ");
           }
           sb.append(
-              "High quality, bold typography, dramatic lighting, exciting atmosphere, sports"
-                  + " entertainment style.");
+              """
+              High quality, bold typography, dramatic lighting, exciting atmosphere, sports\
+               entertainment style.\
+              """);
           return sb.toString();
         };
 
@@ -590,7 +592,7 @@ public class ShowTemplateListView extends Main {
     editDialog.open();
   }
 
-  private void openEditDialog(ShowTemplate template) {
+  private void openEditDialog(final ShowTemplate template) {
     editingTemplate = template;
     editDialog.setHeaderTitle("Edit Show Template");
     binder.readBean(template);
@@ -666,7 +668,7 @@ public class ShowTemplateListView extends Main {
     }
   }
 
-  private void deleteTemplate(ShowTemplate template) {
+  private void deleteTemplate(final ShowTemplate template) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setHeaderTitle("Confirm Delete");
 

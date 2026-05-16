@@ -16,13 +16,13 @@
 */
 package com.github.javydreamercsw.management.domain.title;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,9 +36,10 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "title_reign")
 @Getter
 @Setter
-public class TitleReign extends AbstractEntity<Long> {
+public class TitleReign extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "title_reign_id")
   private Long id;
 
@@ -55,7 +56,7 @@ public class TitleReign extends AbstractEntity<Long> {
       name = "title_reign_champion",
       joinColumns = @JoinColumn(name = "title_reign_id"),
       inverseJoinColumns = @JoinColumn(name = "wrestler_id"))
-  private List<Wrestler> champions = new ArrayList<>();
+  private Set<Wrestler> champions = new LinkedHashSet<>();
 
   @Column(name = "start_date", nullable = false)
   private Instant startDate;
@@ -81,18 +82,18 @@ public class TitleReign extends AbstractEntity<Long> {
   }
 
   /** End this title reign. */
-  public void endReign(Instant endDate) {
+  public void endReign(final Instant endDate) {
     this.endDate = endDate;
   }
 
   /** Get the length of this reign in days. */
-  public long getReignLengthDays(Instant now) {
+  public long getReignLengthDays(final Instant now) {
     Instant end = endDate != null ? endDate : now;
     return java.time.Duration.between(startDate, end).toDays();
   }
 
   /** Get the length of this reign in a human-readable format. */
-  public String getReignLengthDisplay(Instant now) {
+  public String getReignLengthDisplay(final Instant now) {
     long days = getReignLengthDays(now);
 
     if (days == 0) {
@@ -131,9 +132,8 @@ public class TitleReign extends AbstractEntity<Long> {
   /** Get display string for this reign. */
   public String getDisplayString() {
     String status = isCurrentReign() ? " (Current)" : "";
-    return String.format(
-        "%s - Reign #%d (%s)%s",
-        getChampionNames(), reignNumber, getReignLengthDisplay(Instant.now()), status);
+    return "%s - Reign #%d (%s)%s"
+        .formatted(getChampionNames(), reignNumber, getReignLengthDisplay(Instant.now()), status);
   }
 
   /**
@@ -147,14 +147,9 @@ public class TitleReign extends AbstractEntity<Long> {
 
   @Override
   public String getName() {
-    return String.format(
-        "%s - Reign #%d (%s)",
-        title != null ? title.getName() : "Unknown Title", reignNumber, getChampionNames());
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
+    return "%s - Reign #%d (%s)"
+        .formatted(
+            title != null ? title.getName() : "Unknown Title", reignNumber, getChampionNames());
   }
 
   @PrePersist

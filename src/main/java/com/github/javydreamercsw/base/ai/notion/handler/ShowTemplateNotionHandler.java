@@ -32,7 +32,7 @@ public class ShowTemplateNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public ShowTemplateNotionHandler(NotionHandler notionHandler) {
+  public ShowTemplateNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -42,7 +42,7 @@ public class ShowTemplateNotionHandler {
    * @param templateName The name of the show template to load
    * @return Optional containing the ShowTemplatePage object if found, empty otherwise
    */
-  public Optional<ShowTemplatePage> loadShowTemplate(@NonNull String templateName) {
+  public Optional<ShowTemplatePage> loadShowTemplate(@NonNull final String templateName) {
     log.debug("Loading show template: '{}'", templateName);
 
     String templateDbId = notionHandler.getDatabaseId("Show Templates");
@@ -121,7 +121,7 @@ public class ShowTemplateNotionHandler {
    * @return Map of template name to show template data
    */
   public Map<String, ShowTemplatePage> retrieveShowTemplateData(
-      @NonNull List<String> templateNames) {
+      @NonNull final List<String> templateNames) {
     log.debug("Retrieving show template data for {} templates", templateNames.size());
     Map<String, ShowTemplatePage> templateData = new HashMap<>();
 
@@ -147,7 +147,7 @@ public class ShowTemplateNotionHandler {
 
   /** Logs detailed information about a show template for inspection. */
   private void logShowTemplateData(
-      @NonNull String templateName, @NonNull ShowTemplatePage templatePage) {
+      @NonNull final String templateName, @NonNull final ShowTemplatePage templatePage) {
     log.debug("=== TEMPLATE DATA FOR {} ===", templateName);
 
     // Log raw properties for complete data inspection

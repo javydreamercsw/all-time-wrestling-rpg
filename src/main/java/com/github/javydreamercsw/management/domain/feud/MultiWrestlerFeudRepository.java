@@ -165,24 +165,28 @@ public interface MultiWrestlerFeudRepository
       """)
   List<MultiWrestlerFeud> findLargestFeuds(Pageable pageable);
 
-  /** Find feuds that involve wrestlers from multiple factions. */
+  /** Find feuds that involve wrestlers from multiple factions in a universe. */
   @Query(
       """
       SELECT DISTINCT f FROM MultiWrestlerFeud f
       JOIN f.participants p
       WHERE f.isActive = true AND p.isActive = true
-      AND (SELECT COUNT(DISTINCT p2.wrestler.faction) FROM FeudParticipant p2
-           WHERE p2.feud = f AND p2.isActive = true AND p2.wrestler.faction IS NOT NULL) > 1
+      AND (SELECT COUNT(DISTINCT ws.faction) FROM WrestlerState ws
+           WHERE ws.universe.id = :universeId
+           AND ws.wrestler IN (SELECT p2.wrestler FROM FeudParticipant p2 WHERE p2.feud = f AND p2.isActive = true)
+           AND ws.faction IS NOT NULL) > 1
       """)
-  List<MultiWrestlerFeud> findInterFactionFeuds();
+  List<MultiWrestlerFeud> findInterFactionFeuds(@Param("universeId") Long universeId);
 
-  /** Find feuds involving only wrestlers without factions. */
+  /** Find feuds involving only wrestlers without factions in a universe. */
   @Query(
       """
       SELECT f FROM MultiWrestlerFeud f
       WHERE f.isActive = true
-      AND NOT EXISTS (SELECT p FROM FeudParticipant p
-                      WHERE p.feud = f AND p.isActive = true AND p.wrestler.faction IS NOT NULL)
+      AND NOT EXISTS (SELECT ws FROM WrestlerState ws
+                      WHERE ws.universe.id = :universeId
+                      AND ws.wrestler IN (SELECT p.wrestler FROM FeudParticipant p WHERE p.feud = f AND p.isActive = true)
+                      AND ws.faction IS NOT NULL)
       """)
-  List<MultiWrestlerFeud> findIndependentWrestlerFeuds();
+  List<MultiWrestlerFeud> findIndependentWrestlerFeuds(@Param("universeId") Long universeId);
 }

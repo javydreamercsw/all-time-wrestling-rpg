@@ -74,7 +74,8 @@ public class RankingView extends Main {
   private ChampionshipDTO currentChampionship;
 
   public RankingView(
-      @NonNull RankingService rankingService, @NonNull TierBoundaryService tierBoundaryService) {
+      @NonNull final RankingService rankingService,
+      @NonNull final TierBoundaryService tierBoundaryService) {
     this.rankingService = rankingService;
     this.tierBoundaryService = tierBoundaryService;
 
@@ -181,13 +182,11 @@ public class RankingView extends Main {
     tierGrid.setId("tier-boundaries-grid");
     tierGrid.addColumn(tb -> tb.getTier().getDisplayWithEmoji()).setHeader("Tier");
     tierGrid
-        .addColumn(tb -> String.format("%,d - %,d", tb.getMinFans(), tb.getMaxFans()))
+        .addColumn(tb -> "%,d - %,d".formatted(tb.getMinFans(), tb.getMaxFans()))
         .setHeader("Fan Range");
+    tierGrid.addColumn(tb -> "%,d".formatted(tb.getChallengeCost())).setHeader("Challenge Cost");
     tierGrid
-        .addColumn(tb -> String.format("%,d", tb.getChallengeCost()))
-        .setHeader("Challenge Cost");
-    tierGrid
-        .addColumn(tb -> String.format("%,d", tb.getContenderEntryFee()))
+        .addColumn(tb -> "%,d".formatted(tb.getContenderEntryFee()))
         .setHeader("Contender Entry Fee");
 
     ComboBox<Gender> genderComboBox = new ComboBox<>("Gender");
@@ -221,7 +220,7 @@ public class RankingView extends Main {
     dialog.open();
   }
 
-  private void updateView(ChampionshipDTO championship) {
+  private void updateView(final ChampionshipDTO championship) {
     if (championship == null) {
       championshipImage.setVisible(false);
       championLayout.setVisible(false);

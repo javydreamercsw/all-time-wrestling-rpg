@@ -45,8 +45,10 @@ class NotionSyncAuthReproductionTest extends AbstractMockUserIntegrationTest {
 
   @Test
   @DisplayName(
-      "Should succeed when security context is propagated using"
-          + " GeneralSecurityUtils.runWithContext")
+      """
+      Should succeed when security context is propagated using\
+       GeneralSecurityUtils.runWithContext\
+      """)
   void shouldSucceedWhenContextPropagated() throws Exception {
     SecurityContext context = SecurityContextHolder.getContext();
 

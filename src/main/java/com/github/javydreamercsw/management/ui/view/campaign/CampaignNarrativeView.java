@@ -73,12 +73,12 @@ public class CampaignNarrativeView extends VerticalLayout {
 
   @Autowired
   public CampaignNarrativeView(
-      WrestlerRepository wrestlerRepository,
-      CampaignEncounterService encounterService,
-      CampaignService campaignService,
-      SecurityUtils securityUtils,
-      SegmentNarrationServiceFactory aiFactory,
-      com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final WrestlerRepository wrestlerRepository,
+      final CampaignEncounterService encounterService,
+      final CampaignService campaignService,
+      final SecurityUtils securityUtils,
+      final SegmentNarrationServiceFactory aiFactory,
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.wrestlerRepository = wrestlerRepository;
     this.encounterService = encounterService;
     this.campaignService = campaignService;
@@ -95,7 +95,7 @@ public class CampaignNarrativeView extends VerticalLayout {
   }
 
   @Override
-  protected void onAttach(AttachEvent attachEvent) {
+  protected void onAttach(final AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     if (currentCampaign != null && narrativeContainer.getComponentCount() == 0) {
       generateNextEncounter();
@@ -213,7 +213,7 @@ public class CampaignNarrativeView extends VerticalLayout {
         });
   }
 
-  private void displayEncounter(@NonNull CampaignEncounterResponseDTO encounter) {
+  private void displayEncounter(@NonNull final CampaignEncounterResponseDTO encounter) {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 
@@ -231,7 +231,8 @@ public class CampaignNarrativeView extends VerticalLayout {
   }
 
   private void handleChoice(
-      CampaignEncounterResponseDTO response, CampaignEncounterResponseDTO.Choice choice) {
+      final CampaignEncounterResponseDTO response,
+      final CampaignEncounterResponseDTO.Choice choice) {
     encounterService.recordEncounterChoice(currentCampaign, choice);
 
     narrativeContainer.removeAll();
@@ -295,7 +296,7 @@ public class CampaignNarrativeView extends VerticalLayout {
     }
   }
 
-  private void showLoading(boolean loading) {
+  private void showLoading(final boolean loading) {
     progressBar.setVisible(loading);
     choicesContainer.setVisible(!loading);
   }

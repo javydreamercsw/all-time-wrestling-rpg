@@ -127,7 +127,7 @@ public class NewsGenerationService {
   }
 
   @Transactional
-  public void generateNewsForSegment(@NonNull Segment segment) {
+  public void generateNewsForSegment(@NonNull final Segment segment) {
     if (!gameSettingService.isAiNewsEnabled()) {
       log.debug("AI news generation is disabled. Creating fallback news.");
       createFallbackNews(segment);
@@ -178,7 +178,7 @@ public class NewsGenerationService {
   }
 
   @Transactional
-  public void generateNewsForShow(@NonNull Show show) {
+  public void generateNewsForShow(@NonNull final Show show) {
     if (!gameSettingService.isAiNewsEnabled()) {
       return;
     }
@@ -270,7 +270,7 @@ public class NewsGenerationService {
         dto.getImportance());
   }
 
-  private void createFallbackNews(Segment segment) {
+  private void createFallbackNews(final Segment segment) {
     String winners =
         segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
 
@@ -286,7 +286,7 @@ public class NewsGenerationService {
         headline, content, NewsCategory.BREAKING, false, segment.getIsTitleSegment() ? 5 : 3);
   }
 
-  public boolean isNewsWorthy(@NonNull Segment segment) {
+  public boolean isNewsWorthy(@NonNull final Segment segment) {
     // 1. Title matches are always news-worthy
     if (segment.getIsTitleSegment()) {
       return true;

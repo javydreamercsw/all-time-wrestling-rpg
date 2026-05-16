@@ -76,12 +76,12 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
 
   @Autowired
   public NpcProfileView(
-      NpcService npcService,
-      NpcRepository npcRepository,
-      ImageGenerationServiceFactory imageGenerationServiceFactory,
-      ImageStorageService imageStorageService,
-      AiSettingsService aiSettingsService,
-      SecurityUtils securityUtils) {
+      final NpcService npcService,
+      final NpcRepository npcRepository,
+      final ImageGenerationServiceFactory imageGenerationServiceFactory,
+      final ImageStorageService imageStorageService,
+      final AiSettingsService aiSettingsService,
+      final SecurityUtils securityUtils) {
     this.npcService = npcService;
     this.npcRepository = npcRepository;
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
@@ -179,7 +179,7 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
 
   @Override
   @Transactional
-  public void beforeEnter(BeforeEnterEvent event) {
+  public void beforeEnter(final BeforeEnterEvent event) {
     RouteParameters parameters = event.getRouteParameters();
     if (parameters.get("npcId").isPresent()) {
       Long npcId = Long.valueOf(parameters.get("npcId").get());
@@ -198,7 +198,7 @@ public class NpcProfileView extends Main implements BeforeEnterObserver {
   private void updateView() {
     if (npc != null && npc.getId() != null) {
       npcName.setText(npc.getName());
-      npcDetails.setText(String.format("Type: %s", npc.getNpcType()));
+      npcDetails.setText("Type: %s".formatted(npc.getNpcType()));
 
       npcImage.setSrc(npcService.resolveNpcImage(npc));
 

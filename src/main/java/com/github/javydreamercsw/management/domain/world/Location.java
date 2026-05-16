@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.world;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -36,7 +36,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "location")
@@ -45,7 +44,7 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Location extends AbstractEntity<Long> {
+public class Location extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "location_id")
@@ -66,9 +65,4 @@ public class Location extends AbstractEntity<Long> {
   @Column(name = "cultural_tag")
   @Builder.Default
   private Set<String> culturalTags = new HashSet<>();
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

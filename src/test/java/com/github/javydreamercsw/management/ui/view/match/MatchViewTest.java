@@ -21,6 +21,9 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -38,15 +41,23 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleScriptService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -81,31 +92,28 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private NarrationParserService narrationParserService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.ringside.RingsideActionService
-      ringsideActionService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.ringside.RingsideAiService ringsideAiService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-      ringsideActionDataService;
-
+  @Mock private RingsideActionService ringsideActionService;
+  @Mock private RingsideAiService ringsideAiService;
+  @Mock private RingsideActionDataService ringsideActionDataService;
   @Mock private TeamService teamService;
   @Mock private NotificationService notificationService;
+  @Mock private TitleScriptService titleScriptService;
+  @Mock private InjuryService injuryService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.title.TitleScriptService titleScriptService;
+  @Mock private UniverseContextService universeContextService;
 
   private MatchView matchView;
 
   @BeforeEach
   public void setup() {
+    lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+
     matchView =
         new MatchView(
             segmentService,
             wrestlerService,
+            injuryService,
+            universeContextService,
             securityUtils,
             campaignService,
             campaignRepository,
@@ -137,14 +145,23 @@ class MatchViewTest extends AbstractViewTest {
     segmentType.setName("Test Match");
     segment.setSegmentType(segmentType);
 
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setName("Test Wrestler 1");
     wrestler1.setId(1L);
+    wrestler1
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(wrestler1).universe(universe).build());
 
     Wrestler wrestler2 = new Wrestler();
     wrestler2.setName("Test Wrestler 2");
     wrestler2.setId(2L);
-
+    wrestler2
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(wrestler2).universe(universe).build());
     SegmentParticipant participant1 = new SegmentParticipant();
     participant1.setSegment(segment);
     participant1.setWrestler(wrestler1);
@@ -161,8 +178,17 @@ class MatchViewTest extends AbstractViewTest {
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
     when(userDetails.getWrestler()).thenReturn(wrestler1);
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    lenient().when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler1));
+    lenient().when(wrestlerService.findById(2L)).thenReturn(Optional.of(wrestler2));
     when(wrestlerService.findByIdWithDetails(1L)).thenReturn(Optional.of(wrestler1));
     when(wrestlerService.findByIdWithDetails(2L)).thenReturn(Optional.of(wrestler2));
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenAnswer(
+            invocation -> {
+              Long wrestlerId = invocation.getArgument(0);
+              return (wrestlerId == 1L ? wrestler1 : wrestler2).getState(1L).orElseThrow();
+            });
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
@@ -203,9 +229,16 @@ class MatchViewTest extends AbstractViewTest {
     segmentType.setName("Test Match");
     segment.setSegmentType(segmentType);
 
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setName("Test Wrestler 1");
     wrestler1.setId(1L);
+    wrestler1
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(wrestler1).universe(universe).build());
 
     CustomUserDetails userDetails = mock(CustomUserDetails.class);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));

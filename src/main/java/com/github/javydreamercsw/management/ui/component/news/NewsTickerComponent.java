@@ -40,7 +40,7 @@ public class NewsTickerComponent extends Composite<Div> {
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern("MMM dd, HH:mm").withZone(ZoneId.systemDefault());
 
-  public NewsTickerComponent(@NonNull NewsService newsService) {
+  public NewsTickerComponent(@NonNull final NewsService newsService) {
     this.newsService = newsService;
 
     getContent().setId("news-ticker-component");
@@ -91,7 +91,7 @@ public class NewsTickerComponent extends Composite<Div> {
     getContent().addClickListener(e -> showDetails(item));
   }
 
-  private void showDetails(NewsItem item) {
+  private void showDetails(final NewsItem item) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle(item.getCategory().getEmoji() + " " + item.getHeadline());
 

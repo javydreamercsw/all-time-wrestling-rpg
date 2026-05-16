@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.deck;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import jakarta.persistence.CascadeType;
@@ -34,7 +34,6 @@ import java.time.Instant;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(
@@ -42,7 +41,7 @@ import org.jspecify.annotations.Nullable;
     uniqueConstraints = @UniqueConstraint(columnNames = {"deck_id", "card_id", "set_id"}))
 @Getter
 @Setter
-public class DeckCard extends AbstractEntity<Long> { // Removed implements Ownable
+public class DeckCard extends AbstractSyncableEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -73,12 +72,7 @@ public class DeckCard extends AbstractEntity<Long> { // Removed implements Ownab
   }
 
   @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
-  @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

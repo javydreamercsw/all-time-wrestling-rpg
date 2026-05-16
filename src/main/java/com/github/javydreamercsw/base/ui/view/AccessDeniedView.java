@@ -43,8 +43,10 @@ public class AccessDeniedView extends VerticalLayout {
 
     Paragraph message =
         new Paragraph(
-            "You don't have permission to access this page. Please contact your administrator if"
-                + " you believe this is an error.");
+            """
+            You don't have permission to access this page. Please contact your administrator if\
+             you believe this is an error.\
+            """);
     message.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.TextAlignment.CENTER);
 
     Button homeButton = new Button("Go to Home", VaadinIcon.HOME.create());

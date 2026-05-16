@@ -65,7 +65,7 @@ public class DramaEventController {
       })
   @PostMapping
   public ResponseEntity<Object> createDramaEvent(
-      @Valid @RequestBody CreateDramaEventRequest request) {
+      @Valid @RequestBody final CreateDramaEventRequest request) {
     Optional<DramaEvent> event =
         dramaEventService.createDramaEvent(
             request.primaryWrestlerId(),
@@ -73,7 +73,8 @@ public class DramaEventController {
             request.eventType(),
             request.severity(),
             request.title(),
-            request.description());
+            request.description(),
+            request.universeId());
 
     return event
         .<ResponseEntity<Object>>map(dramaEvent -> ResponseEntity.status(201).body(dramaEvent))
@@ -91,9 +92,10 @@ public class DramaEventController {
         @ApiResponse(responseCode = "201", description = "Random drama event generated"),
         @ApiResponse(responseCode = "404", description = "Wrestler not found")
       })
-  @PostMapping("/generate/{wrestlerId}")
-  public ResponseEntity<Object> generateRandomDramaEvent(@PathVariable Long wrestlerId) {
-    Optional<DramaEvent> event = dramaEventService.generateRandomDramaEvent(wrestlerId);
+  @PostMapping("/generate/{wrestlerId}/{universeId}")
+  public ResponseEntity<Object> generateRandomDramaEvent(
+      @PathVariable final Long wrestlerId, @PathVariable final Long universeId) {
+    Optional<DramaEvent> event = dramaEventService.generateRandomDramaEvent(wrestlerId, universeId);
 
     return event
         .<ResponseEntity<Object>>map(dramaEvent -> ResponseEntity.status(201).body(dramaEvent))
@@ -107,17 +109,17 @@ public class DramaEventController {
       value = {@ApiResponse(responseCode = "200", description = "Events processed successfully")})
   @PostMapping("/process")
   public ResponseEntity<ProcessingResult> processUnprocessedEvents() {
-    int processedCount = dramaEventService.processUnprocessedEvents();
+    dramaEventService.processUnprocessedEvents();
     return ResponseEntity.ok(
-        new ProcessingResult(
-            processedCount, "Successfully processed " + processedCount + " drama events"));
+        new ProcessingResult(0, "Successfully triggered drama event processing"));
   }
 
   @Operation(
       summary = "Get drama events for wrestler",
       description = "Gets all drama events involving a specific wrestler")
   @GetMapping("/wrestler/{wrestlerId}")
-  public ResponseEntity<List<DramaEvent>> getEventsForWrestler(@PathVariable Long wrestlerId) {
+  public ResponseEntity<List<DramaEvent>> getEventsForWrestler(
+      @PathVariable final Long wrestlerId) {
     List<DramaEvent> events = dramaEventService.getEventsForWrestler(wrestlerId);
     return ResponseEntity.ok(events);
   }
@@ -127,7 +129,7 @@ public class DramaEventController {
       description = "Gets drama events for a wrestler with pagination")
   @GetMapping("/wrestler/{wrestlerId}/paginated")
   public ResponseEntity<Page<DramaEvent>> getEventsForWrestlerPaginated(
-      @PathVariable Long wrestlerId, Pageable pageable) {
+      @PathVariable final Long wrestlerId, final Pageable pageable) {
     Page<DramaEvent> events = dramaEventService.getEventsForWrestler(wrestlerId, pageable);
     return ResponseEntity.ok(events);
   }
@@ -146,7 +148,7 @@ public class DramaEventController {
       description = "Gets all drama events between two specific wrestlers")
   @GetMapping("/between/{wrestler1Id}/{wrestler2Id}")
   public ResponseEntity<List<DramaEvent>> getEventsBetweenWrestlers(
-      @PathVariable Long wrestler1Id, @PathVariable Long wrestler2Id) {
+      @PathVariable final Long wrestler1Id, @PathVariable final Long wrestler2Id) {
     List<DramaEvent> events = dramaEventService.getEventsBetweenWrestlers(wrestler1Id, wrestler2Id);
     return ResponseEntity.ok(events);
   }
@@ -176,7 +178,8 @@ public class DramaEventController {
       @NotNull DramaEventType eventType,
       @NotNull DramaEventSeverity severity,
       @NotBlank String title,
-      @NotBlank String description) {}
+      @NotBlank String description,
+      @NotNull Long universeId) {}
 
   /** Response DTO for processing results. */
   public record ProcessingResult(int processedCount, String message) {}

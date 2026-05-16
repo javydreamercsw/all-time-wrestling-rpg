@@ -27,15 +27,11 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
-import com.github.javydreamercsw.management.service.ranking.RankingService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class RankingControllerTest extends AbstractControllerTest {
-
-  @MockitoBean private RankingService rankingService;
 
   @Test
   @WithMockUser(roles = "PLAYER")

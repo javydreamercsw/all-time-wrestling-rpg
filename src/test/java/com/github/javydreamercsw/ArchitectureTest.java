@@ -17,11 +17,9 @@
 package com.github.javydreamercsw;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class ArchitectureTest {
@@ -60,11 +58,5 @@ class ArchitectureTest {
         .dependOnClassesThat()
         .resideInAnyPackage(BASE_PACKAGE + "..ui..")
         .check(importedClasses);
-  }
-
-  @Test
-  @Disabled
-  void there_should_not_be_circular_dependencies_between_feature_packages() {
-    slices().matching(BASE_PACKAGE + ".(*)..").should().beFreeOfCycles().check(importedClasses);
   }
 }

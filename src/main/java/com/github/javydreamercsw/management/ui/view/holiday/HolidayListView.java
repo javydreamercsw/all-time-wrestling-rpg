@@ -67,7 +67,7 @@ public class HolidayListView extends Main {
   private HolidayFormDialog holidayFormDialog;
 
   public HolidayListView(
-      @NonNull HolidayService holidayService, @NonNull SecurityUtils securityUtils) {
+      @NonNull final HolidayService holidayService, @NonNull final SecurityUtils securityUtils) {
     this.holidayService = holidayService;
     this.securityUtils = securityUtils;
     this.grid = new Grid<>(Holiday.class, false);
@@ -121,11 +121,13 @@ public class HolidayListView extends Main {
             holiday -> {
               if (holiday.getType()
                   == com.github.javydreamercsw.management.domain.HolidayType.FIXED) {
-                return String.format("%s %d", holiday.getHolidayMonth(), holiday.getDayOfMonth());
+                return "%s %d".formatted(holiday.getHolidayMonth(), holiday.getDayOfMonth());
               } else {
-                return String.format(
-                    "%s %s of %s",
-                    holiday.getWeekOfMonth(), holiday.getDayOfWeek(), holiday.getHolidayMonth());
+                return "%s %s of %s"
+                    .formatted(
+                        holiday.getWeekOfMonth(),
+                        holiday.getDayOfWeek(),
+                        holiday.getHolidayMonth());
               }
             })
         .setHeader("Date Rule")
@@ -272,14 +274,14 @@ public class HolidayListView extends Main {
     editDialog.open();
   }
 
-  private void editHoliday(@NonNull Holiday holiday) {
+  private void editHoliday(@NonNull final Holiday holiday) {
     editingHoliday = holiday;
     editDialog.setHeaderTitle("Edit Holiday: " + holiday.getDescription());
     holidayFormDialog.setHoliday(holiday);
     editDialog.open();
   }
 
-  private void confirmDelete(@NonNull Holiday holiday) {
+  private void confirmDelete(@NonNull final Holiday holiday) {
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Delete Holiday");
     dialog.setText(
@@ -293,7 +295,7 @@ public class HolidayListView extends Main {
     dialog.open();
   }
 
-  private void deleteHoliday(@NonNull Holiday holiday) {
+  private void deleteHoliday(@NonNull final Holiday holiday) {
     try {
       holidayService.delete(holiday);
       showSuccessNotification("Holiday deleted successfully");
@@ -304,12 +306,12 @@ public class HolidayListView extends Main {
     }
   }
 
-  private void showSuccessNotification(@NonNull String message) {
+  private void showSuccessNotification(@NonNull final String message) {
     Notification notification = Notification.show(message, 3000, Notification.Position.TOP_END);
     notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
   }
 
-  private void showErrorNotification(@NonNull String message) {
+  private void showErrorNotification(@NonNull final String message) {
     Notification notification = Notification.show(message, 5000, Notification.Position.TOP_END);
     notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
   }

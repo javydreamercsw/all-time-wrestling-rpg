@@ -32,7 +32,7 @@ public class FacebookShowCardFormatter extends AbstractSocialMediaFormatter {
   }
 
   @Override
-  protected String limitLength(String text) {
+  protected String limitLength(final String text) {
     // Facebook has high limits, so we don't really need to truncate for a show card
     return text;
   }

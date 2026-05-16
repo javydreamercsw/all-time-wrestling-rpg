@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -46,16 +47,16 @@ public class FactionSyncService extends BaseSyncService {
   @Autowired @Lazy private FactionSyncService self;
 
   public FactionSyncService(
-      ObjectMapper objectMapper,
-      SyncServiceDependencies syncServiceDependencies,
-      FactionService factionService,
-      NotionApiExecutor notionApiExecutor) {
+      final ObjectMapper objectMapper,
+      final SyncServiceDependencies syncServiceDependencies,
+      final FactionService factionService,
+      final NotionApiExecutor notionApiExecutor) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.factionService = factionService;
     this.self = this;
   }
 
-  public SyncResult syncFactions(@NonNull String operationId) {
+  public SyncResult syncFactions(@NonNull final String operationId) {
     if (syncServiceDependencies
         .getSyncSessionManager()
         .isAlreadySyncedInSession(SyncEntityType.FACTIONS.getKey())) {
@@ -80,7 +81,7 @@ public class FactionSyncService extends BaseSyncService {
     }
   }
 
-  private SyncResult performFactionsSync(@NonNull String operationId, long startTime) {
+  private SyncResult performFactionsSync(@NonNull final String operationId, final long startTime) {
     try {
       if (!syncServiceDependencies
           .getNotionSyncProperties()
@@ -133,7 +134,7 @@ public class FactionSyncService extends BaseSyncService {
           .completeOperation(
               operationId,
               true,
-              String.format("Successfully synced %d factions", savedCount),
+              "Successfully synced %d factions".formatted(savedCount),
               savedCount);
 
       syncServiceDependencies
@@ -154,7 +155,7 @@ public class FactionSyncService extends BaseSyncService {
     }
   }
 
-  private FactionDTO convertFactionPageToDTO(@NonNull FactionPage factionPage) {
+  private FactionDTO convertFactionPageToDTO(@NonNull final FactionPage factionPage) {
     try {
       FactionDTO dto = new FactionDTO();
       Map<String, Object> rawProperties = factionPage.getRawProperties();
@@ -178,7 +179,7 @@ public class FactionSyncService extends BaseSyncService {
         if (isActiveObj instanceof Boolean) {
           dto.setIsActive((Boolean) isActiveObj);
         } else if (isActiveObj instanceof String str) {
-          dto.setIsActive(str.equalsIgnoreCase("true") || str.equalsIgnoreCase("active"));
+          dto.setIsActive("true".equalsIgnoreCase(str) || "active".equalsIgnoreCase(str));
         }
 
         dto.setLeaderExternalId(extractRelationId(rawProperties.get("Leader")));
@@ -214,12 +215,12 @@ public class FactionSyncService extends BaseSyncService {
     }
   }
 
-  private String extractRelationId(Object property) {
+  private String extractRelationId(final Object property) {
     List<String> ids = extractRelationIds(property);
     return ids.isEmpty() ? null : ids.get(0);
   }
 
-  private List<String> extractRelationIds(Object property) {
+  private List<String> extractRelationIds(final Object property) {
     List<String> ids = new ArrayList<>();
     if (property == null) {
       return ids;
@@ -251,7 +252,7 @@ public class FactionSyncService extends BaseSyncService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public Faction saveOrUpdateFaction(FactionDTO dto) {
+  public Faction saveOrUpdateFaction(final FactionDTO dto) {
     if (dto == null || dto.getName() == null) {
       return null;
     }
@@ -306,7 +307,15 @@ public class FactionSyncService extends BaseSyncService {
           syncServiceDependencies
               .getWrestlerRepository()
               .findByExternalId(extId)
-              .ifPresent(faction::addMember);
+              .ifPresent(
+                  wrestler -> {
+                    // Default to Universe ID 1
+                    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+                        syncServiceDependencies
+                            .getWrestlerService()
+                            .getOrCreateState(wrestler.getId(), 1L);
+                    faction.addMember(state);
+                  });
         }
       }
 
@@ -327,7 +336,10 @@ public class FactionSyncService extends BaseSyncService {
       factionService.save(faction);
       return faction;
     } catch (Exception e) {
-      log.error("Failed to save faction '{}': {}", dto.getName(), e.getMessage());
+      log.error(
+          "Failed to save faction '{}': {}",
+          LogSanitizer.sanitize(dto.getName()),
+          LogSanitizer.sanitize(e.getMessage()));
       return null;
     }
   }

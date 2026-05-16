@@ -42,9 +42,9 @@ public class BackupService {
   private final ResourceLoader resourceLoader;
 
   public BackupService(
-      NotionSyncProperties syncProperties,
-      StorageProperties storageProperties,
-      ResourceLoader resourceLoader) {
+      final NotionSyncProperties syncProperties,
+      final StorageProperties storageProperties,
+      final ResourceLoader resourceLoader) {
     this.syncProperties = syncProperties;
     this.storageProperties = storageProperties;
     this.resourceLoader = resourceLoader;
@@ -56,8 +56,8 @@ public class BackupService {
    * @param fileName The name of the JSON file to backup
    * @throws IOException if backup creation fails
    */
-  @PreAuthorize("hasRole('ADMIN')")
-  public void createBackup(@NonNull String fileName) throws IOException {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public void createBackup(@NonNull final String fileName) throws IOException {
     Path originalFile = resolveSourceFile(fileName);
 
     if (originalFile == null || !Files.exists(originalFile)) {
@@ -81,7 +81,7 @@ public class BackupService {
     cleanupOldBackups(fileName);
   }
 
-  private Path resolveSourceFile(String fileName) {
+  private Path resolveSourceFile(final String fileName) {
     // 1. Try relative to working directory (dev)
     Path devPath = Paths.get("src/main/resources/" + fileName);
     if (Files.exists(devPath)) {
@@ -106,7 +106,7 @@ public class BackupService {
    *
    * @param fileName The base file name to clean up backups for
    */
-  private void cleanupOldBackups(@NonNull String fileName) {
+  private void cleanupOldBackups(@NonNull final String fileName) {
     try {
       Path backupDir = storageProperties.getResolvedBackupDir();
       if (!Files.exists(backupDir)) {

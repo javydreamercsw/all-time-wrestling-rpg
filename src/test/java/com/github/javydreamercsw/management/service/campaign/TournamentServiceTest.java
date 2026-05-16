@@ -57,7 +57,7 @@ class TournamentServiceTest {
   private Wrestler player;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     player = new Wrestler();
     player.setId(1L);
     player.setName("Player One");

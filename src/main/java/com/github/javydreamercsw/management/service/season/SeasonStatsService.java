@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.SeasonStatsDTO;
 import java.time.Instant;
 import java.util.List;
@@ -41,15 +42,18 @@ public class SeasonStatsService {
   private final SegmentRepository segmentRepository;
   private final SeasonRepository seasonRepository;
   private final TitleReignRepository titleReignRepository;
+  private final WrestlerRepository wrestlerRepository;
 
   @Autowired
   public SeasonStatsService(
-      SegmentRepository segmentRepository,
-      SeasonRepository seasonRepository,
-      TitleReignRepository titleReignRepository) {
+      final SegmentRepository segmentRepository,
+      final SeasonRepository seasonRepository,
+      final TitleReignRepository titleReignRepository,
+      final WrestlerRepository wrestlerRepository) {
     this.segmentRepository = segmentRepository;
     this.seasonRepository = seasonRepository;
     this.titleReignRepository = titleReignRepository;
+    this.wrestlerRepository = wrestlerRepository;
   }
 
   /**
@@ -59,16 +63,23 @@ public class SeasonStatsService {
    * @param season the season to calculate stats for
    * @return the season statistics
    */
-  public SeasonStatsDTO calculateStats(@NonNull Wrestler wrestler, @NonNull Season season) {
+  public SeasonStatsDTO calculateStats(
+      @NonNull final Wrestler wrestler, @NonNull final Season season) {
     log.info(
         "Calculating season stats for wrestler {} in season {}",
         wrestler.getName(),
         season.getName());
 
+    // Ensure we operate on a managed Wrestler with initialized states to avoid LazyInitialization
+    Wrestler managedWrestler = wrestler;
+    if (wrestler.getId() != null) {
+      managedWrestler = wrestlerRepository.findByIdWithStates(wrestler.getId()).orElse(wrestler);
+    }
+
     List<Segment> segments =
         segmentRepository
             .findByWrestlerParticipationAndSeason(
-                wrestler, season, org.springframework.data.domain.Pageable.unpaged())
+                managedWrestler, season, org.springframework.data.domain.Pageable.unpaged())
             .getContent();
 
     int wins = 0;
@@ -77,7 +88,7 @@ public class SeasonStatsService {
 
     for (Segment segment : segments) {
       if (isMatch(segment)) {
-        if (segment.getWinners().contains(wrestler)) {
+        if (segment.getWinners().contains(managedWrestler)) {
           wins++;
         } else if (segment.getWinners().isEmpty()) {
           draws++;
@@ -88,7 +99,7 @@ public class SeasonStatsService {
     }
 
     List<String> accolades =
-        titleReignRepository.findByChampionsContaining(wrestler).stream()
+        titleReignRepository.findByChampionsContaining(managedWrestler).stream()
             .filter(reign -> isReignInSeason(reign, season))
             .map(reign -> reign.getTitle().getName())
             .distinct()
@@ -100,12 +111,12 @@ public class SeasonStatsService {
         .losses(losses)
         .draws(draws)
         .startingFans(0L) // TODO: Implement fan history tracking
-        .endingFans(wrestler.getFans())
+        .endingFans(managedWrestler.getFans())
         .accolades(accolades)
         .build();
   }
 
-  private boolean isMatch(Segment segment) {
+  private boolean isMatch(final Segment segment) {
     if (segment.getSegmentType() == null) {
       return false;
     }
@@ -116,7 +127,7 @@ public class SeasonStatsService {
         && !typeName.contains("review");
   }
 
-  private boolean isReignInSeason(TitleReign reign, Season season) {
+  private boolean isReignInSeason(final TitleReign reign, final Season season) {
     Instant seasonStart = season.getStartDate();
     Instant seasonEnd = season.getEndDate() != null ? season.getEndDate() : Instant.now();
     Instant reignStart = reign.getStartDate();

@@ -45,7 +45,7 @@ class ShowNotionSyncServiceTest extends AbstractSyncTest {
   @Captor private ArgumentCaptor<Show> showCaptor;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     showNotionSyncService =
         new ShowNotionSyncService(showRepository, syncServiceDependencies, notionApiExecutor);

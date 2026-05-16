@@ -17,8 +17,11 @@
 package com.github.javydreamercsw.management.ui.component;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
+import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.html.H4;
@@ -36,15 +39,21 @@ import lombok.extern.slf4j.Slf4j;
 public class WrestlerSummaryCard extends Composite<VerticalLayout> {
 
   public WrestlerSummaryCard(
-      @NonNull Wrestler wrestler, @NonNull WrestlerService wrestlerService, boolean isPlayer) {
-    this(wrestler, wrestlerService, isPlayer, 0);
+      @NonNull final Wrestler wrestler,
+      @NonNull final Long universeId,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      final boolean isPlayer) {
+    this(wrestler, universeId, wrestlerService, injuryService, isPlayer, 0);
   }
 
   public WrestlerSummaryCard(
-      @NonNull Wrestler wrestler,
-      @NonNull WrestlerService wrestlerService,
-      boolean isPlayer,
-      int additionalPenalty) {
+      @NonNull final Wrestler wrestler,
+      @NonNull final Long universeId,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      final boolean isPlayer,
+      final int additionalPenalty) {
     getContent().setPadding(true);
     getContent().setSpacing(false);
 
@@ -67,7 +76,7 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
     getContent().add(name);
 
     if (wrestler.getId() == null) {
-      log.warn("Wrestler {} has NO ID!", wrestler.getName());
+      log.warn("Wrestler {} has NO ID!", LogSanitizer.sanitize(wrestler.getName()));
       return;
     }
 
@@ -75,15 +84,21 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
     statsRow.setSpacing(true);
     statsRow.addClassNames(FontSize.SMALL);
 
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+
     try {
-      Optional<WrestlerStats> stats = wrestlerService.getWrestlerStats(wrestler.getId());
+      Optional<WrestlerStats> stats =
+          wrestlerService.getWrestlerStats(wrestler.getId(), universeId);
       if (stats.isPresent()) {
         WrestlerStats wrestlerStats = stats.get();
         statsRow.add(new Span("Wins: " + wrestlerStats.getWins()));
         statsRow.add(new Span("Losses: " + wrestlerStats.getLosses()));
       }
     } catch (Exception e) {
-      log.error("Error getting stats for wrestler: " + wrestler.getId(), e);
+      log.error(
+          "Error getting stats for wrestler: {} - {}",
+          wrestler.getId(),
+          LogSanitizer.sanitize(e.getMessage()));
     }
     getContent().add(statsRow);
 
@@ -91,7 +106,9 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
         .findByIdWithDetails(wrestler.getId())
         .ifPresent(
             wrestlerWithDetails -> {
-              Span bumps = new Span("Bumps: " + wrestlerWithDetails.getBumps());
+              int bumpsCount =
+                  wrestlerWithDetails.getDefaultState().map(WrestlerState::getBumps).orElse(0);
+              Span bumps = new Span("Bumps: " + bumpsCount);
               bumps.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
 
               Span condition =
@@ -117,7 +134,10 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                       && wrestlerWithDetails.getAlignment().getCampaign().getState() != null;
 
               int effectiveHp =
-                  Math.max(1, wrestlerWithDetails.getEffectiveStartingHealth() - additionalPenalty);
+                  Math.max(
+                      1,
+                      wrestlerWithDetails.getEffectiveStartingHealth(universeId)
+                          - additionalPenalty);
 
               VerticalLayout mods = new VerticalLayout();
               mods.setPadding(false);
@@ -146,8 +166,8 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 }
               }
 
-              if (wrestlerWithDetails.getBumps() > 0) {
-                hpTooltip.append("\nBump Penalty: -").append(wrestlerWithDetails.getBumps());
+              if (bumpsCount > 0) {
+                hpTooltip.append("\nBump Penalty: -").append(bumpsCount);
               }
 
               int conditionPenalty =
@@ -156,7 +176,11 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
               }
 
-              int injuryPenalty = wrestlerWithDetails.getTotalInjuryPenalty();
+              int injuryPenalty =
+                  wrestlerWithDetails
+                      .getDefaultState()
+                      .map(WrestlerState::getTotalInjuryPenalty)
+                      .orElse(0);
               if (injuryPenalty > 0) {
                 hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
               }
@@ -167,9 +191,8 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
 
               String hpText = "❤️ Effective HP: " + effectiveHp;
               Span hp = new Span(hpText);
-              if (wrestlerWithDetails.getBumps() > 0) {
-                Span bumpIndicator =
-                    new Span(" (📉 -" + wrestlerWithDetails.getBumps() + " bumps)");
+              if (bumpsCount > 0) {
+                Span bumpIndicator = new Span(" (📉 -" + bumpsCount + " bumps)");
                 bumpIndicator.addClassNames(TextColor.ERROR, FontSize.XSMALL, Margin.Left.XSMALL);
                 hp.add(bumpIndicator);
               }
@@ -205,9 +228,10 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               mods.add(attrs);
 
               if (hasCampaign) {
-                CampaignState state = wrestlerWithDetails.getAlignment().getCampaign().getState();
-                if (!state.getUpgrades().isEmpty()) {
-                  state
+                CampaignState campaignState =
+                    wrestlerWithDetails.getAlignment().getCampaign().getState();
+                if (!campaignState.getUpgrades().isEmpty()) {
+                  campaignState
                       .getUpgrades()
                       .forEach(
                           upgrade -> {
@@ -217,11 +241,11 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                           });
                 }
 
-                if (!state.getActiveCards().isEmpty()) {
+                if (!campaignState.getActiveCards().isEmpty()) {
                   mods.add(new Span("Cards:"));
                   HorizontalLayout cardsLayout = new HorizontalLayout();
                   cardsLayout.addClassNames(FlexWrap.WRAP, Gap.XSMALL);
-                  state
+                  campaignState
                       .getActiveCards()
                       .forEach(
                           card -> {
@@ -270,7 +294,10 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               }
               getContent().add(mods);
 
-              if (!wrestlerWithDetails.getInjuries().isEmpty()) {
+              java.util.List<com.github.javydreamercsw.management.domain.injury.Injury> injuries =
+                  injuryService.getAllInjuriesForWrestler(
+                      wrestler.getId(), universeId != null ? universeId : 1L);
+              if (!injuries.isEmpty()) {
                 VerticalLayout activeInjuries = new VerticalLayout();
                 activeInjuries.setPadding(false);
                 activeInjuries.setSpacing(false);
@@ -279,20 +306,18 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 healedInjuries.setPadding(false);
                 healedInjuries.setSpacing(false);
 
-                wrestlerWithDetails
-                    .getInjuries()
-                    .forEach(
-                        injury -> {
-                          Span i = new Span("🩹 " + injury.getDisplayString());
-                          i.addClassNames(FontSize.XSMALL);
-                          if (injury.isCurrentlyActive()) {
-                            i.addClassNames(TextColor.ERROR);
-                            activeInjuries.add(i);
-                          } else {
-                            i.addClassNames(TextColor.SECONDARY);
-                            healedInjuries.add(i);
-                          }
-                        });
+                injuries.forEach(
+                    injury -> {
+                      Span i = new Span("🩹 " + injury.getDisplayString());
+                      i.addClassNames(FontSize.XSMALL);
+                      if (injury.isCurrentlyActive()) {
+                        i.addClassNames(TextColor.ERROR);
+                        activeInjuries.add(i);
+                      } else {
+                        i.addClassNames(TextColor.SECONDARY);
+                        healedInjuries.add(i);
+                      }
+                    });
 
                 if (activeInjuries.getComponentCount() > 0) {
                   getContent().add(activeInjuries);

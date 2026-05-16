@@ -58,7 +58,7 @@ class SegmentServiceTest {
   private Instant testDate;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     testDate = Instant.now();
 
     testShow = new Show();

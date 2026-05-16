@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -36,7 +37,9 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "campaign")
@@ -49,6 +52,10 @@ public class Campaign {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
 
   @ManyToOne
   @JoinColumn(name = "wrestler_id", nullable = false)
@@ -66,6 +73,8 @@ public class Campaign {
 
   @OneToOne(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
   @com.fasterxml.jackson.annotation.JsonIgnore
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
   private CampaignState state;
 
   @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)

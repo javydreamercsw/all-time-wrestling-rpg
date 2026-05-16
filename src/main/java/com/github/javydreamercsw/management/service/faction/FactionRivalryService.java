@@ -57,20 +57,20 @@ public class FactionRivalryService {
   /** Get all faction rivalries with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<FactionRivalry> getAllFactionRivalries(Pageable pageable) {
+  public Page<FactionRivalry> getAllFactionRivalries(final Pageable pageable) {
     return factionRivalryRepository.findAllBy(pageable);
   }
 
   /** Get all faction rivalries with factions eagerly loaded. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<FactionRivalry> getAllFactionRivalriesWithFactions(Pageable pageable) {
+  public Page<FactionRivalry> getAllFactionRivalriesWithFactions(final Pageable pageable) {
     return factionRivalryRepository.findAllWithFactions(pageable);
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<FactionRivalry> getFactionRivalryById(Long id) {
+  public Optional<FactionRivalry> getFactionRivalryById(final Long id) {
     return factionRivalryRepository.findById(id);
   }
 
@@ -82,7 +82,7 @@ public class FactionRivalryService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<FactionRivalry> getActiveRivalriesForFaction(Long factionId) {
+  public List<FactionRivalry> getActiveRivalriesForFaction(final Long factionId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
 
     if (factionOpt.isEmpty()) {
@@ -92,9 +92,9 @@ public class FactionRivalryService {
     return factionRivalryRepository.findActiveRivalriesForFaction(factionOpt.get());
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<FactionRivalry> createFactionRivalry(
-      Long faction1Id, Long faction2Id, String storylineNotes) {
+      final Long faction1Id, final Long faction2Id, final String storylineNotes) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
     Optional<Faction> faction2Opt = factionRepository.findById(faction2Id);
 
@@ -130,7 +130,7 @@ public class FactionRivalryService {
 
     FactionRivalry savedRivalry = factionRivalryRepository.saveAndFlush(rivalry);
 
-    log.info(
+    log.debug(
         "Created faction rivalry: {} vs {} (ID: {})",
         faction1.getName(),
         faction2.getName(),
@@ -139,8 +139,9 @@ public class FactionRivalryService {
     return Optional.of(savedRivalry);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<FactionRivalry> addHeat(Long rivalryId, int heatGain, String reason) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Optional<FactionRivalry> addHeat(
+      final Long rivalryId, final int heatGain, final String reason) {
     return factionRivalryRepository
         .findById(rivalryId)
         .filter(FactionRivalry::getIsActive)
@@ -155,7 +156,7 @@ public class FactionRivalryService {
 
               FactionRivalry savedRivalry = factionRivalryRepository.saveAndFlush(rivalry);
 
-              log.info(
+              log.debug(
                   "Added {} heat to faction rivalry {} (total: {}, reason: {})",
                   adjustedHeatGain,
                   rivalry.getDisplayName(),
@@ -169,17 +170,25 @@ public class FactionRivalryService {
                       oldHeat,
                       reason,
                       Stream.concat(
-                              rivalry.getFaction1().getMembers().stream(),
-                              rivalry.getFaction2().getMembers().stream())
+                              rivalry.getFaction1().getMembers().stream()
+                                  .map(
+                                      com.github.javydreamercsw.management.domain.wrestler
+                                              .WrestlerState
+                                          ::getWrestler),
+                              rivalry.getFaction2().getMembers().stream()
+                                  .map(
+                                      com.github.javydreamercsw.management.domain.wrestler
+                                              .WrestlerState
+                                          ::getWrestler))
                           .collect(Collectors.toList())));
 
               return savedRivalry;
             });
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<FactionRivalry> addHeatBetweenFactions(
-      Long faction1Id, Long faction2Id, int heatGain, String reason) {
+      final Long faction1Id, final Long faction2Id, final int heatGain, final String reason) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
     Optional<Faction> faction2Opt = factionRepository.findById(faction2Id);
 
@@ -199,9 +208,9 @@ public class FactionRivalryService {
     return rivalryOpt.flatMap(rivalry -> addHeat(rivalry.getId(), heatGain, reason));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public ResolutionResult<FactionRivalry> attemptResolution(
-      Long rivalryId, Integer faction1Roll, Integer faction2Roll) {
+      final Long rivalryId, final Integer faction1Roll, final Integer faction2Roll) {
     Optional<FactionRivalry> rivalryOpt = factionRivalryRepository.findById(rivalryId);
 
     if (rivalryOpt.isEmpty()) {
@@ -213,9 +222,8 @@ public class FactionRivalryService {
     if (!rivalry.canAttemptResolution()) {
       return new ResolutionResult<>(
           false,
-          String.format(
-              "Faction rivalry needs at least 20 heat to attempt resolution (current: %d)",
-              rivalry.getHeat()),
+          "Faction rivalry needs at least 20 heat to attempt resolution (current: %d)"
+              .formatted(rivalry.getHeat()),
           rivalry,
           0,
           0,
@@ -256,8 +264,8 @@ public class FactionRivalryService {
         total);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<FactionRivalry> endFactionRivalry(Long rivalryId, String reason) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Optional<FactionRivalry> endFactionRivalry(final Long rivalryId, final String reason) {
     Optional<FactionRivalry> rivalryOpt = factionRivalryRepository.findById(rivalryId);
 
     if (rivalryOpt.isEmpty()) {
@@ -298,7 +306,7 @@ public class FactionRivalryService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<FactionRivalry> getHottestRivalries(int limit) {
+  public List<FactionRivalry> getHottestRivalries(final int limit) {
     return factionRivalryRepository.findHottestRivalries(Pageable.ofSize(limit));
   }
 
@@ -317,7 +325,7 @@ public class FactionRivalryService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<FactionRivalry> getFactionRivalryBetweenFactions(
-      @NonNull Long faction1Id, @NonNull Long faction2Id) {
+      @NonNull final Long faction1Id, @NonNull final Long faction2Id) {
     Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
     Optional<Faction> faction2Opt = factionRepository.findById(faction2Id);
 
@@ -329,7 +337,7 @@ public class FactionRivalryService {
   }
 
   /** Check if two factions can have a rivalry. */
-  private boolean canHaveRivalry(Faction faction1, Faction faction2) {
+  private boolean canHaveRivalry(final Faction faction1, final Faction faction2) {
     // Both factions must be active
     if (!faction1.isActive() || !faction2.isActive()) {
       return false;
@@ -353,18 +361,18 @@ public class FactionRivalryService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<FactionRivalry> getRivalriesWithMostWrestlers(int limit) {
+  public List<FactionRivalry> getRivalriesWithMostWrestlers(final int limit) {
     return factionRivalryRepository.findRivalriesWithMostWrestlers(Pageable.ofSize(limit));
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<FactionRivalry> findByExternalId(@NonNull String externalId) {
+  public Optional<FactionRivalry> findByExternalId(@NonNull final String externalId) {
     return factionRivalryRepository.findByExternalId(externalId);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public FactionRivalry save(@NonNull FactionRivalry rivalry) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public FactionRivalry save(@NonNull final FactionRivalry rivalry) {
     return factionRivalryRepository.saveAndFlush(rivalry);
   }
 }

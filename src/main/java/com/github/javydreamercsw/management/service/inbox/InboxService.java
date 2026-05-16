@@ -49,20 +49,20 @@ public class InboxService {
   private final SecurityUtils securityUtils;
   @Getter private final AccountRepository accountRepository;
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public InboxItem createInboxItem(
-      @NonNull InboxEventType eventType,
-      @NonNull String message,
-      @NonNull String referenceId,
-      @NonNull InboxItemTarget.TargetType type) {
+      @NonNull final InboxEventType eventType,
+      @NonNull final String message,
+      @NonNull final String referenceId,
+      @NonNull final InboxItemTarget.TargetType type) {
     return createInboxItem(eventType, message, List.of(new TargetInfo(referenceId, type)));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public InboxItem createInboxItem(
-      @NonNull InboxEventType eventType,
-      @NonNull String message,
-      @NonNull List<TargetInfo> targets) {
+      @NonNull final InboxEventType eventType,
+      @NonNull final String message,
+      @NonNull final List<TargetInfo> targets) {
     InboxItem inboxItem = new InboxItem();
     inboxItem.setDescription(message);
     inboxItem.setEventType(eventType);
@@ -72,41 +72,57 @@ public class InboxService {
 
   public record TargetInfo(String targetId, InboxItemTarget.TargetType type) {}
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
-  public void markSelectedAsRead(@NonNull Set<InboxItem> inboxItems) {
+  @PreAuthorize(
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or\
+       @permissionService.isOwner(#inboxItems)\
+      """)
+  public void markSelectedAsRead(@NonNull final Set<InboxItem> inboxItems) {
     inboxItems.forEach(item -> item.setRead(true));
     inboxRepository.saveAll(inboxItems);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
-  public void markSelectedAsUnread(@NonNull Set<InboxItem> inboxItems) {
+  @PreAuthorize(
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or\
+       @permissionService.isOwner(#inboxItems)\
+      """)
+  public void markSelectedAsUnread(@NonNull final Set<InboxItem> inboxItems) {
     inboxItems.forEach(item -> item.setRead(false));
     inboxRepository.saveAll(inboxItems);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItems)")
-  public void deleteSelected(@NonNull Set<InboxItem> inboxItems) {
+  @PreAuthorize(
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or\
+       @permissionService.isOwner(#inboxItems)\
+      """)
+  public void deleteSelected(@NonNull final Set<InboxItem> inboxItems) {
     inboxRepository.deleteAll(inboxItems);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#inboxItem)")
-  public InboxItem toggleReadStatus(@NonNull InboxItem inboxItem) {
+  @PreAuthorize(
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or\
+       @permissionService.isOwner(#inboxItem)\
+      """)
+  public InboxItem toggleReadStatus(@NonNull final InboxItem inboxItem) {
     inboxItem.setRead(!inboxItem.isRead());
     return inboxRepository.save(inboxItem);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<InboxItem> findAll(Specification<InboxItem> spec, Pageable pageable) {
+  public List<InboxItem> findAll(final Specification<InboxItem> spec, final Pageable pageable) {
     return inboxRepository.findAll(spec, pageable).getContent();
   }
 
   @PreAuthorize("isAuthenticated()")
   public List<InboxItem> search(
-      Set<Wrestler> targets,
-      String readStatus,
-      String eventType,
-      Boolean hideRead,
-      Long accountId) {
+      final Set<Wrestler> targets,
+      final String readStatus,
+      final String eventType,
+      final Boolean hideRead,
+      final Long accountId) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           Predicate predicate = cb.conjunction();
@@ -115,8 +131,8 @@ public class InboxService {
             predicate = cb.and(predicate, cb.isFalse(root.get("isRead")));
           }
 
-          if (readStatus != null && !readStatus.equalsIgnoreCase("All")) {
-            boolean isRead = readStatus.equalsIgnoreCase("Read");
+          if (readStatus != null && !"All".equalsIgnoreCase(readStatus)) {
+            boolean isRead = "Read".equalsIgnoreCase(readStatus);
             predicate = cb.and(predicate, cb.equal(root.get("isRead"), isRead));
           }
 
@@ -170,7 +186,7 @@ public class InboxService {
             predicate = cb.and(predicate, cb.disjunction());
           }
 
-          if (eventType != null && !eventType.equalsIgnoreCase("All")) {
+          if (eventType != null && !"All".equalsIgnoreCase(eventType)) {
             // Find the enum by its friendly name
             InboxEventType foundEventType =
                 eventTypeRegistry.getEventTypes().stream()
@@ -191,17 +207,17 @@ public class InboxService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<InboxItem> list(@NonNull Pageable pageable) {
+  public List<InboxItem> list(@NonNull final Pageable pageable) {
     return inboxRepository.findAll(pageable).toList();
   }
 
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return inboxRepository.count();
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<InboxItem> getInboxItemsForWrestler(@NonNull Wrestler wrestler, int limit) {
+  public List<InboxItem> getInboxItemsForWrestler(
+      @NonNull final Wrestler wrestler, final int limit) {
     Specification<InboxItem> spec =
         (root, query, cb) -> {
           Predicate predicate = cb.conjunction();
@@ -218,8 +234,8 @@ public class InboxService {
     return inboxRepository.findAll(spec, sort);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public InboxItem addInboxItem(@NonNull Wrestler wrestler, @NonNull String message) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public InboxItem addInboxItem(@NonNull final Wrestler wrestler, @NonNull final String message) {
     InboxEventType eventType = eventTypeRegistry.getEventTypes().get(0);
     return createInboxItem(
         eventType, message, wrestler.getId().toString(), InboxItemTarget.TargetType.WRESTLER);

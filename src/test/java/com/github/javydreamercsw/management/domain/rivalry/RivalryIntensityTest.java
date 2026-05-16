@@ -51,7 +51,8 @@ class RivalryIntensityTest {
     "35, EXPLOSIVE",
     "100, EXPLOSIVE"
   })
-  void shouldDetermineCorrectIntensityFromHeat(int heat, RivalryIntensity expectedIntensity) {
+  void shouldDetermineCorrectIntensityFromHeat(
+      final int heat, final RivalryIntensity expectedIntensity) {
     assertThat(RivalryIntensity.fromHeat(heat)).isEqualTo(expectedIntensity);
   }
 
@@ -114,14 +115,16 @@ class RivalryIntensityTest {
   @ParameterizedTest
   @DisplayName("Should correctly check if requires next show segment")
   @CsvSource({"SIMMERING, false", "HEATED, true", "INTENSE, true", "EXPLOSIVE, true"})
-  void shouldCorrectlyCheckIfRequiresNextShowMatch(RivalryIntensity intensity, boolean expected) {
+  void shouldCorrectlyCheckIfRequiresNextShowMatch(
+      final RivalryIntensity intensity, final boolean expected) {
     assertThat(intensity.requiresNextShowMatch()).isEqualTo(expected);
   }
 
   @ParameterizedTest
   @DisplayName("Should correctly check if allows resolution attempt")
   @CsvSource({"SIMMERING, false", "HEATED, false", "INTENSE, true", "EXPLOSIVE, true"})
-  void shouldCorrectlyCheckIfAllowsResolutionAttempt(RivalryIntensity intensity, boolean expected) {
+  void shouldCorrectlyCheckIfAllowsResolutionAttempt(
+      final RivalryIntensity intensity, final boolean expected) {
     assertThat(intensity.allowsResolutionAttempt()).isEqualTo(expected);
   }
 
@@ -129,7 +132,7 @@ class RivalryIntensityTest {
   @DisplayName("Should correctly check if requires rule segment")
   @CsvSource({"SIMMERING, false", "HEATED, false", "INTENSE, false", "EXPLOSIVE, true"})
   void shouldCorrectlyCheckIfRequiresStipulationMatch(
-      RivalryIntensity intensity, boolean expected) {
+      final RivalryIntensity intensity, final boolean expected) {
     assertThat(intensity.requiresStipulationMatch()).isEqualTo(expected);
   }
 

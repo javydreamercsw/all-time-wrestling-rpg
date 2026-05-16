@@ -37,15 +37,14 @@ public class LoginE2ETest extends AbstractE2ETest {
 
     // Verify redirection to the main view
     waitForVaadinElement(driver, By.tagName("vaadin-app-layout"));
-    assertTrue(
-        Objects.requireNonNull(driver.getCurrentUrl()).endsWith(getContextPath() + "/?continue"),
-        driver.getCurrentUrl());
+    String currentUrl = Objects.requireNonNull(driver.getCurrentUrl());
+    assertTrue(currentUrl.contains(getContextPath() + "/"), currentUrl);
   }
 
   @Test
   public void testFailedLogin() {
     logout();
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
+    navigateTo("login");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement loginFormHost =

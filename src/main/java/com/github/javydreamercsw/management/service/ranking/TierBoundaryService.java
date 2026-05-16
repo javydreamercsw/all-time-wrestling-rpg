@@ -36,12 +36,13 @@ public class TierBoundaryService {
   private final TierBoundaryRepository tierBoundaryRepository;
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<TierBoundary> findByTierAndGender(WrestlerTier tier, Gender gender) {
+  public Optional<TierBoundary> findByTierAndGender(final WrestlerTier tier, final Gender gender) {
     return tierBoundaryRepository.findByTierAndGender(tier, gender);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public TierBoundary save(TierBoundary tierBoundary) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM') or hasAuthority('ROLE_BOOKER')")
+  public TierBoundary save(final TierBoundary tierBoundary) {
     return tierBoundaryRepository.save(tierBoundary);
   }
 
@@ -51,12 +52,12 @@ public class TierBoundaryService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<TierBoundary> findAllByGender(Gender gender) {
+  public List<TierBoundary> findAllByGender(final Gender gender) {
     return tierBoundaryRepository.findAllByGender(gender);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public WrestlerTier findTierForFans(long fans, Gender gender) {
+  public WrestlerTier findTierForFans(final long fans, final Gender gender) {
     List<TierBoundary> boundaries =
         findAllByGender(gender).stream()
             .sorted((b1, b2) -> b2.getMinFans().compareTo(b1.getMinFans()))
@@ -71,7 +72,7 @@ public class TierBoundaryService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public void resetTierBoundaries() {
     log.info("Current boundaries: {}", tierBoundaryRepository.count());
     tierBoundaryRepository.deleteAllInBatch();

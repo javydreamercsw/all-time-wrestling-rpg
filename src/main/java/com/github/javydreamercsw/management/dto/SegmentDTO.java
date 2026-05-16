@@ -36,10 +36,17 @@ public class SegmentDTO {
   private List<String> participantNames;
   private List<String> winnerNames;
   private String segmentTypeName;
+  private String segmentTypeExternalId;
   private Instant segmentDate;
   private String narration;
+  private String summary;
   private String notes;
   private List<Long> titleIds; // Added for title association
+  private List<String> titleExternalIds;
+  private List<String> ruleExternalIds;
   private int segmentOrder;
   private boolean isMainEvent;
+  private boolean isTitleSegment;
+  private String status;
+  private String adjudicationStatus;
 }

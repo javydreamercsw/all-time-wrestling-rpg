@@ -23,28 +23,30 @@ class GmModeDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureGmDashboard() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/gm-dashboard");
-    waitForVaadinClientToLoad();
+    navigateTo("gm-dashboard");
 
     documentFeature(
         "General Manager",
         "GM Dashboard",
-        "The GM Dashboard provides a high-level overview of brand performance, including total"
-            + " budget, roster health, and locker room morale. GMs can track financial trends and"
-            + " identify exhausted or unhappy wrestlers at a glance.",
+        """
+        The GM Dashboard provides a high-level overview of brand performance, including total\
+         budget, roster health, and locker room morale. GMs can track financial trends and\
+         identify exhausted or unhappy wrestlers at a glance.\
+        """,
         "admin-gm-dashboard");
   }
 
   @Test
   void testCaptureContractManagement() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/contracts");
-    waitForVaadinClientToLoad();
+    navigateTo("contracts");
 
     documentFeature(
         "General Manager",
         "Contract Management",
-        "View and manage active wrestler contracts. Salaries are dynamically tied to fan count,"
-            + " forcing GMs to balance the cost of superstars with the development of new talent.",
+        """
+        View and manage active wrestler contracts. Salaries are dynamically tied to fan count,\
+         forcing GMs to balance the cost of superstars with the development of new talent.\
+        """,
         "admin-contract-management");
   }
 }

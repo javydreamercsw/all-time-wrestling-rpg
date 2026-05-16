@@ -39,7 +39,7 @@ public class WrestlerRelationshipService {
   private final WrestlerRepository wrestlerRepository;
 
   /** Get all relationships for a wrestler. */
-  public List<WrestlerRelationship> getRelationshipsForWrestler(Long wrestlerId) {
+  public List<WrestlerRelationship> getRelationshipsForWrestler(final Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
         .map(relationshipRepository::findAllByWrestler)
@@ -47,7 +47,7 @@ public class WrestlerRelationshipService {
   }
 
   /** Get relationships between two wrestlers. */
-  public List<WrestlerRelationship> getRelationshipsBetween(Long w1Id, Long w2Id) {
+  public List<WrestlerRelationship> getRelationshipsBetween(final Long w1Id, final Long w2Id) {
     Optional<Wrestler> w1 = wrestlerRepository.findById(w1Id);
     Optional<Wrestler> w2 = wrestlerRepository.findById(w2Id);
 
@@ -60,12 +60,12 @@ public class WrestlerRelationshipService {
   /** Create or update a relationship. */
   @Transactional
   public WrestlerRelationship createOrUpdateRelationship(
-      Long w1Id,
-      Long w2Id,
-      RelationshipType type,
-      Integer level,
-      boolean isStoryline,
-      String notes) {
+      final Long w1Id,
+      final Long w2Id,
+      final RelationshipType type,
+      final Integer level,
+      final boolean isStoryline,
+      final String notes) {
 
     Wrestler w1 =
         wrestlerRepository
@@ -116,7 +116,7 @@ public class WrestlerRelationshipService {
    * it might create a BEST_FRIEND one if they work together enough.
    */
   @Transactional
-  public void improveGameplayRelationships(List<Wrestler> wrestlers, int points) {
+  public void improveGameplayRelationships(final List<Wrestler> wrestlers, final int points) {
     if (wrestlers == null || wrestlers.size() < 2) {
       return;
     }
@@ -152,14 +152,14 @@ public class WrestlerRelationshipService {
     }
   }
 
-  private boolean isPositiveType(RelationshipType type) {
+  private boolean isPositiveType(final RelationshipType type) {
     return switch (type) {
       case SPOUSE, SIBLING, BEST_FRIEND, MENTOR, PROTEGE, ROMANCE, FAMILY -> true;
     };
   }
 
   /** Calculate chemistry bonus for a set of wrestlers. */
-  public double calculateChemistryBonus(List<Wrestler> wrestlers) {
+  public double calculateChemistryBonus(final List<Wrestler> wrestlers) {
     if (wrestlers == null || wrestlers.size() < 2) {
       return 0.0;
     }
@@ -181,7 +181,11 @@ public class WrestlerRelationshipService {
     return totalBonus;
   }
 
-  private double calculatePairBonus(WrestlerRelationship rel) {
+  public long count() {
+    return relationshipRepository.count();
+  }
+
+  private double calculatePairBonus(final WrestlerRelationship rel) {
     // Basic formula: Level (0-100) / 100 * multiplier based on type
     // Max bonus for a single pair is 0.15 (15% boost) for Spouse at Level 100.
     double multiplier =

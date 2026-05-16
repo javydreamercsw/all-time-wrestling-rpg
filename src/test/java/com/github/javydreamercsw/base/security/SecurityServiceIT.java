@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.base.security;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
+
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
@@ -35,12 +38,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DirtiesContext
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class SecurityServiceIT extends ManagementIntegrationTest {
 
   @Autowired private AccountService accountService;
@@ -49,6 +54,7 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private AccountRepository accountRepository;
   @Autowired private RoleRepository roleRepository;
+  @MockitoBean private CustomUserDetailsService userDetailsService;
 
   private static final String TEST_PASSWORD = "ValidPassword1!";
 
@@ -228,12 +234,22 @@ class SecurityServiceIT extends ManagementIntegrationTest {
     String token = passwordResetService.createPasswordResetTokenForUser(account);
     Assertions.assertNotNull(token);
 
-    String newPassword = "NewValidPassword1!";
+    String newPassword = "NewPassword1!";
+    var mockUserDetails =
+        org.springframework.security.core.userdetails.User.withUsername(account.getUsername())
+            .password(account.getPassword())
+            .authorities(
+                account.getRoles().stream()
+                    .map(role -> "ROLE_" + role.getName().name())
+                    .toArray(String[]::new))
+            .build();
+    lenient().when(userDetailsService.loadUserByUsername(anyString())).thenReturn(mockUserDetails);
+
     passwordResetService.resetPassword(token, newPassword);
 
-    // Verify password change
-    UserDetails userDetails = userDetailsService.loadUserByUsername(account.getUsername());
-    Assertions.assertTrue(passwordEncoder.matches(newPassword, userDetails.getPassword()));
+    // Verify password change against database
+    Account updatedAccount = accountRepository.findByUsername(account.getUsername()).orElseThrow();
+    Assertions.assertTrue(passwordEncoder.matches(newPassword, updatedAccount.getPassword()));
   }
 
   @Test

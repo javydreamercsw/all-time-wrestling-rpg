@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.legacy;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -23,6 +24,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -31,9 +33,13 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -43,9 +49,10 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -59,9 +66,10 @@ import org.springframework.context.ApplicationEventPublisher;
 @ExtendWith(MockitoExtension.class)
 class AchievementSystemTest {
 
-  @Mock private AccountRepository accountRepository;
+  @Mock private LeagueRepository leagueRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private AchievementRepository achievementRepository;
+  @Mock private AccountRepository accountRepository;
   @Mock private RivalryService rivalryService;
   @Mock private WrestlerService wrestlerService;
   @Mock private FeudResolutionService feudResolutionService;
@@ -77,24 +85,21 @@ class AchievementSystemTest {
 
   private Account account;
   private Wrestler wrestler;
+  private WrestlerState wrestlerState;
 
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
   @Mock private WrestlerRelationshipService relationshipService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.wrestler.RetirementService retirementService;
-
-  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-      wrestlerStatusService;
+  @Mock private RetirementService retirementService;
+  @Mock private GameSettingService gameSettingService;
+  @Mock private WrestlerStatusService wrestlerStatusService;
+  @Mock private UniverseContextService universeContextService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
+    lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     legacyService =
         new LegacyService(
             accountRepository,
@@ -110,6 +115,7 @@ class AchievementSystemTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,
@@ -119,6 +125,7 @@ class AchievementSystemTest {
             gameSettingService,
             relationshipService,
             wrestlerStatusService,
+            universeContextService,
             new Random());
 
     account = new Account();
@@ -129,9 +136,19 @@ class AchievementSystemTest {
     lenient().when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
     wrestler = new Wrestler();
+    wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
     wrestler.setAccount(account);
-    wrestler.setFans(0L);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+
+    wrestlerState = new WrestlerState();
+    wrestlerState.setWrestler(wrestler);
+    wrestlerState.setUniverse(universe);
+    wrestlerState.setFans(0L);
+    wrestlerState.setPhysicalCondition(100);
+    wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(wrestlerState)));
 
     // Mock achievement repository to return an achievement if found
     lenient()
@@ -145,6 +162,10 @@ class AchievementSystemTest {
               a.setXpValue(10);
               return Optional.of(a);
             });
+
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), anyLong()))
+        .thenAnswer(invocation -> wrestlerState);
   }
 
   @Test
@@ -177,17 +198,17 @@ class AchievementSystemTest {
     when(wrestlerRepository.findByAccount(account)).thenReturn(wrestlers);
 
     // 10k fans
-    wrestler.setFans(10_000L);
+    wrestlerState.setFans(10_000L);
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("CROWD_PLEASER");
 
     // 100k fans
-    wrestler.setFans(100_000L);
+    wrestlerState.setFans(100_000L);
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("MAIN_EVENT_DRAW");
 
     // 1M fans
-    wrestler.setFans(1_000_000L);
+    wrestlerState.setFans(1_000_000L);
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("GLOBAL_ICON");
   }
@@ -199,7 +220,7 @@ class AchievementSystemTest {
 
     TitleReign reign = new TitleReign();
     reign.setEndDate(null);
-    wrestler.setReigns(Collections.singletonList(reign));
+    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign)));
 
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("FIRST_CHAMPION");
@@ -223,7 +244,7 @@ class AchievementSystemTest {
     reign1.setEndDate(null);
 
     // Only holding one title - no grand slam
-    wrestler.setReigns(List.of(reign1));
+    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign1)));
     legacyService.updateLegacyScore(account);
     verify(achievementRepository, never()).findByKey("GRAND_SLAM");
 
@@ -231,7 +252,7 @@ class AchievementSystemTest {
     TitleReign reign2 = new TitleReign();
     reign2.setTitle(t2);
     reign2.setEndDate(null);
-    wrestler.setReigns(List.of(reign1, reign2));
+    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign1, reign2)));
 
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("GRAND_SLAM");

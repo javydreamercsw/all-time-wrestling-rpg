@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.world;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -49,9 +49,10 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Arena extends AbstractEntity<Long> {
+public class Arena extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "arena_id")
   private Long id;
 
@@ -82,25 +83,16 @@ public class Arena extends AbstractEntity<Long> {
   @Builder.Default
   private Set<String> environmentalTraits = new HashSet<>();
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
   public enum AlignmentBias {
     FACE_FAVORABLE("Face Favorable"),
     HEEL_FAVORABLE("Heel Favorable"),
     ANARCHIC("Anarchic"),
     NEUTRAL("Neutral");
 
-    private final String displayName;
+    @Getter private final String displayName;
 
-    AlignmentBias(String displayName) {
+    AlignmentBias(final String displayName) {
       this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-      return displayName;
     }
   }
 }

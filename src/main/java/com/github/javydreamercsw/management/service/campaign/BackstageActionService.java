@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -49,16 +51,16 @@ public class BackstageActionService {
   private final CampaignService campaignService;
   private final SegmentRuleRepository segmentRuleRepository;
   private final WrestlerService wrestlerService;
-  private final BackstageEncounterService backstageEncounterService;
+  @Getter private final BackstageEncounterService backstageEncounterService;
 
   public BackstageActionService(
-      CampaignStateRepository campaignStateRepository,
-      BackstageActionHistoryRepository actionHistoryRepository,
-      InjuryService injuryService,
-      @Lazy CampaignService campaignService,
-      SegmentRuleRepository segmentRuleRepository,
-      WrestlerService wrestlerService,
-      BackstageEncounterService backstageEncounterService) {
+      final CampaignStateRepository campaignStateRepository,
+      final BackstageActionHistoryRepository actionHistoryRepository,
+      final InjuryService injuryService,
+      @Lazy final CampaignService campaignService,
+      final SegmentRuleRepository segmentRuleRepository,
+      final WrestlerService wrestlerService,
+      final BackstageEncounterService backstageEncounterService) {
     this.campaignStateRepository = campaignStateRepository;
     this.actionHistoryRepository = actionHistoryRepository;
     this.injuryService = injuryService;
@@ -66,10 +68,6 @@ public class BackstageActionService {
     this.segmentRuleRepository = segmentRuleRepository;
     this.wrestlerService = wrestlerService;
     this.backstageEncounterService = backstageEncounterService;
-  }
-
-  public BackstageEncounterService getBackstageEncounterService() {
-    return backstageEncounterService;
   }
 
   /**
@@ -81,7 +79,7 @@ public class BackstageActionService {
    * @return The result of the action.
    */
   public ActionOutcome performAction(
-      Campaign campaign, BackstageActionType actionType, int diceSides) {
+      final Campaign campaign, final BackstageActionType actionType, final int diceSides) {
 
     CampaignState state = campaign.getState();
 
@@ -135,7 +133,8 @@ public class BackstageActionService {
       case RECOVERY:
         var activeInjuries =
             injuryService.getActiveInjuriesForWrestler(campaign.getWrestler().getId());
-        int currentBumps = campaign.getWrestler().getBumps();
+        int currentBumps =
+            campaign.getWrestler().getDefaultState().map(WrestlerState::getBumps).orElse(0);
 
         if (successes >= 2) {
           // Prioritize healing 1 injury over 2 bumps (Injury is more severe)
@@ -151,10 +150,11 @@ public class BackstageActionService {
           } else if (currentBumps > 0) {
             // No injuries, so heal up to 2 bumps
             int bumpsRemoved = 0;
-            wrestlerService.healBump(campaign.getWrestler().getId());
+            Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+            wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
             bumpsRemoved++;
             if (currentBumps > 1) {
-              wrestlerService.healBump(campaign.getWrestler().getId());
+              wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
               bumpsRemoved++;
             }
             // Update local state copy if needed, but entity is source of truth
@@ -171,13 +171,16 @@ public class BackstageActionService {
           }
         } else if (successes == 1) {
           if (currentBumps > 0) {
-            wrestlerService.healBump(campaign.getWrestler().getId());
+            Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+            wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
             // state.setBumps is removed
             outcomeDescription = "Recovery successful. Removed 1 bump. (Successes: 1)";
           } else if (!activeInjuries.isEmpty()) {
             outcomeDescription =
-                "Recovery partially successful. Removed 0 injuries (Need 2+ successes). (Successes:"
-                    + " 1)";
+                """
+                Recovery partially successful. Removed 0 injuries (Need 2+ successes). (Successes:\
+                 1)\
+                """;
           } else {
             outcomeDescription = "Recovery successful. Wrestler is fully healthy. (Successes: 1)";
           }
@@ -251,7 +254,7 @@ public class BackstageActionService {
    * @param numberOfDice Number of dice to roll (based on attribute).
    * @return List of roll results.
    */
-  public java.util.List<Integer> rollDice(int numberOfDice) {
+  public java.util.List<Integer> rollDice(final int numberOfDice) {
     if (numberOfDice <= 0) {
       return new ArrayList<>();
     }
@@ -262,7 +265,8 @@ public class BackstageActionService {
     return Arrays.stream(diceBag.getLastRoll()).boxed().collect(Collectors.toList());
   }
 
-  private void createPromoSegment(Campaign campaign, boolean success, String description) {
+  private void createPromoSegment(
+      final Campaign campaign, final boolean success, final String description) {
     try {
       // Use existing service to create a segment but forced to Promo
       var show = campaignService.getOrCreateCampaignShow(campaign);

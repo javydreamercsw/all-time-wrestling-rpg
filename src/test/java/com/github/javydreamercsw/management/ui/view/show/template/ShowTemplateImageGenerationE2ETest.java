@@ -65,7 +65,7 @@ public class ShowTemplateImageGenerationE2ETest extends AbstractE2ETest {
 
   @Test
   void testShowTemplateImageGenerationFlow() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-template-list");
+    navigateTo("show-template-list");
     waitForGridToPopulate("template-grid"); // AbstractE2ETest helper if customized, or use local
 
     // 1. Click "Generate Art" button in grid
@@ -121,7 +121,7 @@ public class ShowTemplateImageGenerationE2ETest extends AbstractE2ETest {
     wait.until(d -> grid.getText().contains("E2E Test Template"));
   }
 
-  protected void waitForGridToPopulate(@NonNull String gridId) {
+  protected void waitForGridToPopulate(@NonNull final String gridId) {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.until(
         d -> {

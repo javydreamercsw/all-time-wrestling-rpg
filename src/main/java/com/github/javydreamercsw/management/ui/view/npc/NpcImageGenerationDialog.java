@@ -26,12 +26,12 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 public class NpcImageGenerationDialog extends GenericImageGenerationDialog {
 
   public NpcImageGenerationDialog(
-      Npc npc,
-      NpcService npcService,
-      ImageGenerationServiceFactory imageFactory,
-      ImageStorageService storageService,
-      AiSettingsService aiSettingsService,
-      Runnable onSave) {
+      final Npc npc,
+      final NpcService npcService,
+      final ImageGenerationServiceFactory imageFactory,
+      final ImageStorageService storageService,
+      final AiSettingsService aiSettingsService,
+      final Runnable onSave) {
     super(
         () -> {
           StringBuilder sb = new StringBuilder();

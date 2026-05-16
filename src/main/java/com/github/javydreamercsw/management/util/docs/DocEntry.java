@@ -17,74 +17,33 @@
 package com.github.javydreamercsw.management.util.docs;
 
 import java.io.Serializable;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@NoArgsConstructor
 public class DocEntry implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  private String id;
-  private String category;
-  private String title;
-  private String description;
-  private String imagePath;
-  private int order;
-
-  public DocEntry() {}
+  @Getter @Setter private String id;
+  @Getter @Setter private String category;
+  @Getter @Setter private String title;
+  @Getter @Setter private String description;
+  @Getter @Setter private String imagePath;
+  @Getter @Setter private int order;
 
   public DocEntry(
-      String id, String category, String title, String description, String imagePath, int order) {
+      final String id,
+      final String category,
+      final String title,
+      final String description,
+      final String imagePath,
+      final int order) {
     this.id = id;
     this.category = category;
     this.title = title;
     this.description = description;
     this.imagePath = imagePath;
-    this.order = order;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getCategory() {
-    return category;
-  }
-
-  public void setCategory(String category) {
-    this.category = category;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public String getImagePath() {
-    return imagePath;
-  }
-
-  public void setImagePath(String imagePath) {
-    this.imagePath = imagePath;
-  }
-
-  public int getOrder() {
-    return order;
-  }
-
-  public void setOrder(int order) {
     this.order = order;
   }
 }

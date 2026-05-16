@@ -17,11 +17,12 @@
 package com.github.javydreamercsw.management.util;
 
 import com.vaadin.flow.server.VaadinServletRequest;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class UrlUtil {
-
-  private UrlUtil() {}
 
   public static String getBaseUrl() {
     VaadinServletRequest request = VaadinServletRequest.getCurrent();

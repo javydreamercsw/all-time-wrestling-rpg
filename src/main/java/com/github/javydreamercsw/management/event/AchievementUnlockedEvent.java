@@ -28,7 +28,8 @@ public class AchievementUnlockedEvent extends ApplicationEvent {
   private final String achievementName;
   private final int xpValue;
 
-  public AchievementUnlockedEvent(Object source, Account account, Achievement achievement) {
+  public AchievementUnlockedEvent(
+      final Object source, final Account account, final Achievement achievement) {
     super(source);
     this.accountId = account.getId();
     this.achievementName = achievement.getName();

@@ -88,8 +88,7 @@ public class ThemePersistenceE2ETest extends AbstractE2ETest {
   public void testAdminDefaultTheme() {
     login("admin", "admin123");
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
     click("vaadin-tab", "Game Settings");
 
     selectFromVaadinComboBox("default-theme-selection", "neon");

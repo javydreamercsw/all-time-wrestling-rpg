@@ -18,12 +18,18 @@ package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
@@ -33,6 +39,9 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
@@ -58,34 +67,30 @@ class WearAndTearAdjudicationTest {
   @Mock private Random random;
   @Mock private Segment segment;
   @Mock private Wrestler wrestler;
+  @Mock private WrestlerState wrestlerState;
   @Mock private SegmentType segmentType;
   @Mock private Show show;
   @Mock private TitleService titleService;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private LeagueRepository leagueRepository;
   @Mock private RetirementService retirementService;
-
-  @Mock
-  private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
-      leagueRosterRepository;
-
+  @Mock private Universe universe;
+  @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private LegacyService legacyService;
   @Mock private FactionService factionService;
   @Mock private RingsideActionService ringsideActionService;
   @Mock private RingsideAiService ringsideAiService;
-  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private GameSettingService gameSettingService;
   @Mock private WrestlerRelationshipService relationshipService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-      wrestlerStatusService;
-
-  @Mock private com.github.javydreamercsw.management.service.world.LocationService locationService;
-  @Mock private com.github.javydreamercsw.management.service.world.ArenaService arenaService;
+  @Mock private WrestlerStatusService wrestlerStatusService;
+  @Mock private LocationService locationService;
+  @Mock private ArenaService arenaService;
+  @Mock private UniverseContextService universeContextService;
 
   private SegmentAdjudicationService segmentAdjudicationService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             rivalryService,
@@ -94,6 +99,7 @@ class WearAndTearAdjudicationTest {
             feudService,
             titleService,
             matchFulfillmentRepository,
+            leagueRepository,
             leagueRosterRepository,
             legacyService,
             factionService,
@@ -103,11 +109,15 @@ class WearAndTearAdjudicationTest {
             gameSettingService,
             relationshipService,
             wrestlerStatusService,
+            universeContextService,
             random);
 
+    when(universe.getId()).thenReturn(1L);
+    when(show.getUniverse()).thenReturn(universe);
     when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     when(wrestler.getId()).thenReturn(1L);
-    when(wrestler.getPhysicalCondition()).thenReturn(100);
+    when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(wrestlerState);
+    when(wrestlerState.getPhysicalCondition()).thenReturn(100);
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(segmentType);
@@ -125,9 +135,8 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestler).setPhysicalCondition(98);
-    verify(wrestlerService).save(wrestler);
-    verify(retirementService).checkRetirement(wrestler);
+    verify(wrestlerState).setPhysicalCondition(98);
+    verify(retirementService).checkRetirement(eq(wrestler), anyLong());
   }
 
   @Test
@@ -145,8 +154,7 @@ class WearAndTearAdjudicationTest {
     // (3 * 2) + 1 = 7
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestler).setPhysicalCondition(93);
-    verify(wrestlerService).save(wrestler);
+    verify(wrestlerState).setPhysicalCondition(93);
   }
 
   @Test
@@ -155,6 +163,6 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestler, never()).setPhysicalCondition(anyInt());
+    verify(wrestlerState, never()).setPhysicalCondition(anyInt());
   }
 }

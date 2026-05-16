@@ -19,7 +19,8 @@ package com.github.javydreamercsw.management.domain.injury;
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -33,9 +34,10 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "injury")
 @Getter
 @Setter
-public class Injury extends AbstractEntity<Long> {
+public class Injury extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "injury_id")
   private Long id;
 
@@ -43,6 +45,11 @@ public class Injury extends AbstractEntity<Long> {
   @JoinColumn(name = "wrestler_id", nullable = false)
   @JsonIgnore
   private Wrestler wrestler;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "universe_id")
+  @JsonIgnore
+  private Universe universe;
 
   @Column(name = "name", nullable = false)
   @Size(max = DESCRIPTION_MAX_LENGTH) private String name;
@@ -102,8 +109,8 @@ public class Injury extends AbstractEntity<Long> {
   @JsonIgnore
   public String getDisplayString() {
     String status = isCurrentlyActive() ? " (Active)" : " (Healed)";
-    return String.format(
-        "%s - %s (%d health penalty)%s", name, severity.getDisplayName(), healthPenalty, status);
+    return "%s - %s (%d health penalty)%s"
+        .formatted(name, severity.getDisplayName(), healthPenalty, status);
   }
 
   @JsonIgnore
@@ -145,11 +152,6 @@ public class Injury extends AbstractEntity<Long> {
       long months = days / 30;
       return months + (months == 1 ? " month" : " months");
     }
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
   }
 
   @PrePersist

@@ -29,7 +29,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(properties = "data.initializer.enabled=false")
 class CardServiceIT extends ManagementIntegrationTest {
 
   @Autowired private CardService cardService;
@@ -39,7 +41,7 @@ class CardServiceIT extends ManagementIntegrationTest {
   private CardSet defaultCardSet;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Ensure there is at least one CardSet for Card creation
     Optional<CardSet> existingSet = cardSetRepository.findByName("Default Test Set");
     if (existingSet.isEmpty()) {
@@ -52,7 +54,7 @@ class CardServiceIT extends ManagementIntegrationTest {
     }
   }
 
-  private Card createCardAsAdmin(String name) {
+  private Card createCardAsAdmin(final String name) {
     Card card = new Card();
     card.setName(name);
     card.setType("Test");
@@ -66,6 +68,8 @@ class CardServiceIT extends ManagementIntegrationTest {
     card.setTaunt(false);
     card.setRecover(false);
     card.setPin(false);
+    Integer max = cardRepository.findMaxCardNumberBySet(defaultCardSet.getId());
+    card.setNumber(max == null ? 1 : max + 1);
     card.setCreationDate(java.time.Instant.now());
     return cardRepository.save(card);
   }

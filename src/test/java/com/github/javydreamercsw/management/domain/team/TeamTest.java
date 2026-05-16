@@ -21,7 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,29 +37,52 @@ class TeamTest {
   private Wrestler wrestler1;
   private Wrestler wrestler2;
   private Faction faction;
+  private Universe universe;
+  private WrestlerState state1;
+  private WrestlerState state2;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
+    // Create universe
+    universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
     // Create test wrestlers
     wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("John Cena");
-    wrestler1.setTier(WrestlerTier.MAIN_EVENTER);
 
     wrestler2 = Wrestler.builder().build();
     wrestler2.setId(2L);
     wrestler2.setName("The Rock");
-    wrestler2.setTier(WrestlerTier.MAIN_EVENTER);
 
     // Create test faction
     faction = Faction.builder().build();
     faction.setId(1L);
     faction.setName("Test Faction");
     faction.setLeader(wrestler1);
+    faction.setUniverse(universe);
 
-    // Set faction for wrestlers
-    wrestler1.setFaction(faction);
-    wrestler2.setFaction(faction);
+    // Create wrestler states in the universe with the faction
+    state1 =
+        WrestlerState.builder()
+            .wrestler(wrestler1)
+            .universe(universe)
+            .tier(WrestlerTier.MAIN_EVENTER)
+            .fans(100000L)
+            .faction(faction)
+            .build();
+    wrestler1.getWrestlerStates().add(state1);
+
+    state2 =
+        WrestlerState.builder()
+            .wrestler(wrestler2)
+            .universe(universe)
+            .tier(WrestlerTier.MAIN_EVENTER)
+            .fans(100000L)
+            .faction(faction)
+            .build();
+    wrestler2.getWrestlerStates().add(state2);
 
     // Create test team
     team = new Team();
@@ -67,6 +92,7 @@ class TeamTest {
     team.setWrestler1(wrestler1);
     team.setWrestler2(wrestler2);
     team.setFaction(faction);
+    team.setUniverse(universe); // Set universe for team
     team.setStatus(TeamStatus.ACTIVE);
     team.setFormedDate(Instant.now());
   }
@@ -218,11 +244,11 @@ class TeamTest {
   @Test
   @DisplayName("Should check if wrestlers are from same faction")
   void shouldCheckIfWrestlersAreFromSameFaction() {
-    // Given - both wrestlers have same faction
+    // Given - both wrestlers have same faction via their states
     assertThat(team.areFromSameFaction()).isTrue();
 
-    // When - remove faction from one wrestler
-    wrestler2.setFaction(null);
+    // When - remove faction from one wrestler's state
+    state2.setFaction(null);
 
     // Then
     assertThat(team.areFromSameFaction()).isFalse();
@@ -231,7 +257,7 @@ class TeamTest {
   @Test
   @DisplayName("Should get common faction when wrestlers are from same faction")
   void shouldGetCommonFactionWhenWrestlersAreFromSameFaction() {
-    // Given - both wrestlers have same faction
+    // Given - both wrestlers have same faction via their states
     assertThat(team.areFromSameFaction()).isTrue();
 
     // When
@@ -244,8 +270,8 @@ class TeamTest {
   @Test
   @DisplayName("Should return null for common faction when wrestlers are from different factions")
   void shouldReturnNullForCommonFactionWhenWrestlersAreFromDifferentFactions() {
-    // Given - remove faction from one wrestler
-    wrestler2.setFaction(null);
+    // Given - remove faction from one wrestler's state
+    state2.setFaction(null);
     assertThat(team.areFromSameFaction()).isFalse();
 
     // When

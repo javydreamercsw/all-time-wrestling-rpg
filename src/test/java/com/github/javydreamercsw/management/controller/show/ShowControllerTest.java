@@ -45,7 +45,8 @@ class ShowControllerTest extends AbstractControllerTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    when(showService.createShow(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+    when(showService.createShow(
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(show);
 
     ShowController.CreateShowRequest request =

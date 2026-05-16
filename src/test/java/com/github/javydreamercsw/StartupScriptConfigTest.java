@@ -41,7 +41,8 @@ class StartupScriptConfigTest {
         "scripts/portable/start-linux.sh",
         "scripts/portable/start-macos.sh"
       })
-  void startup_script_must_activate_h2_profile(@NonNull String scriptPath) throws IOException {
+  void startup_script_must_activate_h2_profile(@NonNull final String scriptPath)
+      throws IOException {
     Path path = Paths.get(scriptPath);
     assertTrue(Files.exists(path), "Startup script not found: " + scriptPath);
 

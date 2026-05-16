@@ -50,9 +50,9 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Autowired // Autowire the configuration properties
   public GeminiSegmentNarrationService(
-      GeminiConfigProperties geminiConfigProperties,
-      Environment environment,
-      AiSettingsService aiSettingsService) {
+      final GeminiConfigProperties geminiConfigProperties,
+      final Environment environment,
+      final AiSettingsService aiSettingsService) {
     this.aiSettingsService = aiSettingsService;
     this.objectMapper = new ObjectMapper();
     this.geminiConfigProperties = geminiConfigProperties;
@@ -60,7 +60,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   @Override
-  protected String callAIProvider(@NonNull String prompt) {
+  protected String callAIProvider(@NonNull final String prompt) {
     return callGemini(prompt);
   }
 
@@ -82,12 +82,12 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   @Override
-  public String generateText(@NonNull String prompt) {
+  public String generateText(@NonNull final String prompt) {
     return callGemini(prompt);
   }
 
   /** Makes a call to the Gemini API with the given prompt. */
-  private String callGemini(@NonNull String prompt) {
+  private String callGemini(@NonNull final String prompt) {
     try {
       // Use configured API URL and model name
       String modelName = geminiConfigProperties.getModelName();
@@ -196,7 +196,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
   }
 
   /** Extracts the content from Gemini API response. */
-  private String extractContentFromResponse(@NonNull String responseBody) {
+  private String extractContentFromResponse(@NonNull final String responseBody) {
     try {
       log.debug("Full Gemini Response Body: {}", responseBody);
       @SuppressWarnings("unchecked")

@@ -20,8 +20,12 @@ import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.time.Clock;
 import java.util.List;
@@ -46,19 +50,25 @@ public class FactionService {
 
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final UniverseRepository universeRepository;
+  private final WrestlerStateRepository wrestlerStateRepository;
   private final ExpansionService expansionService;
-  private final Clock clock; // Injected via constructor
+  private final Clock clock;
   private final DefaultImageService imageService;
 
   @org.springframework.beans.factory.annotation.Autowired
   public FactionService(
-      FactionRepository factionRepository,
-      WrestlerRepository wrestlerRepository,
-      ExpansionService expansionService,
-      Clock clock,
-      DefaultImageService imageService) {
+      final FactionRepository factionRepository,
+      final WrestlerRepository wrestlerRepository,
+      final UniverseRepository universeRepository,
+      final WrestlerStateRepository wrestlerStateRepository,
+      final ExpansionService expansionService,
+      final Clock clock,
+      final DefaultImageService imageService) {
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
+    this.universeRepository = universeRepository;
+    this.wrestlerStateRepository = wrestlerStateRepository;
     this.expansionService = expansionService;
     this.clock = clock;
     this.imageService = imageService;
@@ -73,7 +83,9 @@ public class FactionService {
         .filter(
             faction ->
                 faction.getMembers().stream()
-                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
+                    .allMatch(
+                        member ->
+                            enabledExpansions.contains(member.getWrestler().getExpansionCode())))
         .peek(
             faction -> {
               if (faction.getManager() != null
@@ -81,6 +93,22 @@ public class FactionService {
                 faction.setManager(null);
               }
             })
+        .collect(Collectors.toList());
+  }
+
+  /** Get all factions for a specific universe. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Faction> findAllByUniverse(@NonNull final Long universeId) {
+    Universe universe = universeRepository.findById(universeId).orElseThrow();
+    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    return factionRepository.findByUniverseWithLeaderAndManager(universe).stream()
+        .filter(
+            faction ->
+                faction.getMembers().stream()
+                    .allMatch(
+                        member ->
+                            enabledExpansions.contains(member.getWrestler().getExpansionCode())))
         .collect(Collectors.toList());
   }
 
@@ -91,66 +119,21 @@ public class FactionService {
     return findAll();
   }
 
-  /** Get all factions with members eagerly loaded for UI display. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<Faction> findAllWithMembers() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return factionRepository.findAllWithMembers().stream()
-        .filter(
-            faction ->
-                faction.getMembers().stream()
-                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
-        .peek(
-            faction -> {
-              if (faction.getManager() != null
-                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
-                faction.setManager(null);
-              }
-            })
-        .collect(Collectors.toList());
-  }
-
-  /** Get all factions with both members and teams eagerly loaded for UI display. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<Faction> findAllWithMembersAndTeams() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
-    return factionRepository.findAllWithMembersAndTeams().stream()
-        .filter(
-            faction ->
-                faction.getMembers().stream()
-                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
-        .peek(
-            faction -> {
-              if (faction.getManager() != null
-                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
-                faction.setManager(null);
-              }
-            })
-        .collect(Collectors.toList());
-  }
-
   /** Get all factions with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<Faction> getAllFactions(Pageable pageable) {
+  public Page<Faction> getAllFactions(final Pageable pageable) {
     List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
 
-    // Fetch all since we need to filter based on member properties and manually paginate.
     List<Faction> allFiltered =
         factionRepository.findAll().stream()
             .filter(
                 faction ->
                     faction.getMembers().stream()
-                        .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
-            .peek(
-                faction -> {
-                  if (faction.getManager() != null
-                      && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
-                    faction.setManager(null);
-                  }
-                })
+                        .allMatch(
+                            member ->
+                                enabledExpansions.contains(
+                                    member.getWrestler().getExpansionCode())))
             .collect(Collectors.toList());
 
     if (pageable.isUnpaged()) {
@@ -173,28 +156,28 @@ public class FactionService {
   /** Get faction by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Faction> getFactionById(Long id) {
+  public Optional<Faction> getFactionById(final Long id) {
     return factionRepository.findById(id);
   }
 
   /** Get faction by ID with members eagerly loaded. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Faction> getFactionByIdWithMembers(Long id) {
+  public Optional<Faction> getFactionByIdWithMembers(final Long id) {
     return factionRepository.findByIdWithMembers(id);
   }
 
   /** Get faction by name. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Faction> getFactionByName(String name) {
+  public Optional<Faction> getFactionByName(final String name) {
     return factionRepository.findByName(name);
   }
 
   /** Get faction by external ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Faction> findByExternalId(String externalId) {
+  public Optional<Faction> findByExternalId(final String externalId) {
     return factionRepository.findByExternalId(externalId);
   }
 
@@ -207,32 +190,26 @@ public class FactionService {
         .filter(
             faction ->
                 faction.getMembers().stream()
-                    .allMatch(member -> enabledExpansions.contains(member.getExpansionCode())))
-        .peek(
-            faction -> {
-              // Hide manager if their expansion is disabled
-              if (faction.getManager() != null
-                  && !enabledExpansions.contains(faction.getManager().getExpansionCode())) {
-                faction.setManager(null);
-              }
-            })
+                    .allMatch(
+                        member ->
+                            enabledExpansions.contains(member.getWrestler().getExpansionCode())))
         .collect(Collectors.toList());
   }
 
-  @org.springframework.context.event.EventListener
-  public void onExpansionToggled(
-      com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent event) {
-    log.info("Expansion '{}' toggled, clear faction caches if any.", event.getExpansionCode());
-  }
-
-  /** Create a new faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Faction> createFaction(@NonNull String name, String description, Long leaderId) {
-    // Check if faction name already exists
+  /** Create a new faction in a universe. */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<Faction> createFaction(
+      @NonNull final String name,
+      final String description,
+      final Long leaderId,
+      @NonNull final Long universeId) {
     if (factionRepository.existsByName(name)) {
       log.warn("Faction with name '{}' already exists", name);
       return Optional.empty();
     }
+
+    Universe universe = universeRepository.findById(universeId).orElseThrow();
 
     Faction faction = Faction.builder().build();
     faction.setName(name);
@@ -240,30 +217,44 @@ public class FactionService {
     faction.setActive(true);
     faction.setFormedDate(clock.instant());
     faction.setCreationDate(clock.instant());
+    faction.setUniverse(universe);
 
-    // Set leader if provided
     Optional<Wrestler> leaderOpt = wrestlerRepository.findById(leaderId);
     if (leaderOpt.isPresent()) {
       Wrestler leader = leaderOpt.get();
       faction.setLeader(leader);
-      // Add leader as first member
-      faction.addMember(leader);
-    } else {
-      log.warn("Leader with ID {} not found for faction '{}'", leaderId, name);
+      com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+          wrestlerStateRepository
+              .findByWrestlerIdAndUniverseId(leader.getId(), universeId)
+              .orElseGet(
+                  () ->
+                      wrestlerStateRepository.save(
+                          com.github.javydreamercsw.management.domain.wrestler.WrestlerState
+                              .builder()
+                              .wrestler(leader)
+                              .universe(universe)
+                              .tier(
+                                  com.github.javydreamercsw.base.domain.wrestler.WrestlerTier
+                                      .ROOKIE)
+                              .build()));
+      faction.addMember(state);
     }
 
     Faction savedFaction = factionRepository.saveAndFlush(faction);
     log.debug(
-        "Created faction: {} with {} members",
+        "Created faction: {} with {} members in universe {}",
         savedFaction.getName(),
-        savedFaction.getMemberCount());
+        savedFaction.getMemberCount(),
+        universeId);
 
     return Optional.of(savedFaction);
   }
 
   /** Add a member to a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Faction> addMemberToFaction(@NonNull Long factionId, @NonNull Long wrestlerId) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<Faction> addMemberToFaction(
+      @NonNull final Long factionId, @NonNull final Long wrestlerId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -274,37 +265,32 @@ public class FactionService {
     Faction faction = factionOpt.get();
     Wrestler wrestler = wrestlerOpt.get();
 
-    if (!faction.isActive()) {
-      log.warn("Cannot add member to inactive faction: {}", faction.getName());
+    if (faction.getUniverse() == null) {
       return Optional.empty();
     }
 
-    // Check if wrestler is already in another faction
-    Optional<Faction> currentFaction = factionRepository.findActiveFactionByMember(wrestler);
-    if (currentFaction.isPresent() && !currentFaction.get().equals(faction)) {
-      log.warn(
-          "Wrestler {} is already in faction: {}",
-          wrestler.getName(),
-          currentFaction.get().getName());
-      return Optional.empty();
-    }
+    Long universeId = faction.getUniverse().getId();
 
-    faction.addMember(wrestler);
+    wrestlerStateRepository
+        .findByWrestlerIdAndUniverseId(wrestlerId, universeId)
+        .ifPresent(faction::addMember);
+
     Faction savedFaction = factionRepository.saveAndFlush(faction);
-
     log.debug(
-        "Added {} to faction: {} (now {} members)",
+        "Added {} to faction: {} (now {} members) in universe {}",
         wrestler.getName(),
         faction.getName(),
-        faction.getMemberCount());
+        faction.getMemberCount(),
+        universeId);
 
     return Optional.of(savedFaction);
   }
 
   /** Remove a member from a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Faction> removeMemberFromFaction(
-      @NonNull Long factionId, @NonNull Long wrestlerId, @NonNull String reason) {
+      @NonNull final Long factionId, @NonNull final Long wrestlerId, @NonNull final String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -315,34 +301,29 @@ public class FactionService {
     Faction faction = factionOpt.get();
     Wrestler wrestler = wrestlerOpt.get();
 
-    if (!faction.hasMember(wrestler)) {
-      log.warn("Wrestler {} is not a member of faction: {}", wrestler.getName(), faction.getName());
+    if (faction.getUniverse() == null) {
       return Optional.empty();
     }
+    Long universeId = faction.getUniverse().getId();
 
-    faction.removeMember(wrestler);
-    wrestlerRepository.saveAndFlush(wrestler);
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId).orElseThrow();
+
+    faction.removeMember(state);
 
     // If removing the leader, clear the leader
     if (faction.getLeader() != null && wrestler.getId().equals(faction.getLeader().getId())) {
       faction.setLeader(null);
     }
 
-    Faction savedFaction = factionRepository.saveAndFlush(faction);
-
-    log.info(
-        "Removed {} from faction: {} (reason: {}, now {} members)",
-        wrestler.getName(),
-        faction.getName(),
-        reason,
-        faction.getMemberCount());
-
-    return Optional.of(savedFaction);
+    return Optional.of(factionRepository.saveAndFlush(faction));
   }
 
   /** Change faction leader. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Faction> changeFactionLeader(@NonNull Long factionId, @NonNull Long newLeaderId) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<Faction> changeFactionLeader(
+      @NonNull final Long factionId, @NonNull final Long newLeaderId) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
     Optional<Wrestler> newLeaderOpt = wrestlerRepository.findById(newLeaderId);
 
@@ -353,31 +334,15 @@ public class FactionService {
     Faction faction = factionOpt.get();
     Wrestler newLeader = newLeaderOpt.get();
 
-    if (!faction.hasMember(newLeader)) {
-      log.warn(
-          "Cannot make {} leader of faction {} - not a member",
-          newLeader.getName(),
-          faction.getName());
-      return Optional.empty();
-    }
-
-    Wrestler oldLeader = faction.getLeader();
     faction.setLeader(newLeader);
-
-    Faction savedFaction = factionRepository.saveAndFlush(faction);
-
-    log.info(
-        "Changed leader of faction {} from {} to {}",
-        faction.getName(),
-        oldLeader != null ? oldLeader.getName() : "None",
-        newLeader.getName());
-
-    return Optional.of(savedFaction);
+    return Optional.of(factionRepository.saveAndFlush(faction));
   }
 
   /** Disband a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Optional<Faction> disbandFaction(@NonNull Long factionId, @NonNull String reason) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<Faction> disbandFaction(
+      @NonNull final Long factionId, @NonNull final String reason) {
     Optional<Faction> factionOpt = factionRepository.findById(factionId);
 
     if (factionOpt.isEmpty()) {
@@ -391,9 +356,9 @@ public class FactionService {
       return Optional.of(faction);
     }
 
-    List<Wrestler> members = new java.util.ArrayList<>(faction.getMembers());
+    List<WrestlerState> members = new java.util.ArrayList<>(faction.getMembers());
     faction.disband(reason);
-    wrestlerRepository.saveAllAndFlush(members);
+    wrestlerStateRepository.saveAllAndFlush(members);
     Faction savedFaction = factionRepository.saveAndFlush(faction);
 
     log.info("Disbanded faction: {} (reason: {})", faction.getName(), reason);
@@ -404,14 +369,9 @@ public class FactionService {
   /** Get faction for a wrestler. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Faction> getFactionForWrestler(@NonNull Long wrestlerId) {
+  public Optional<Faction> getFactionForWrestler(@NonNull final Long wrestlerId) {
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
-
-    if (wrestlerOpt.isEmpty()) {
-      return Optional.empty();
-    }
-
-    return factionRepository.findActiveFactionByMember(wrestlerOpt.get());
+    return wrestlerOpt.flatMap(factionRepository::findActiveFactionByMember);
   }
 
   /** Get factions with active rivalries. */
@@ -421,10 +381,10 @@ public class FactionService {
     return factionRepository.findFactionsWithActiveRivalries();
   }
 
-  /** Get factions by type (singles, tag team, stable). */
+  /** Get factions by type. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Faction> getFactionsByType(@NonNull String type) {
+  public List<Faction> getFactionsByType(@NonNull final String type) {
     return switch (type.toLowerCase()) {
       case "singles" -> factionRepository.findSinglesFactions();
       case "tag", "tagteam", "tag_team" -> factionRepository.findTagTeamFactions();
@@ -436,43 +396,15 @@ public class FactionService {
   /** Get largest active factions. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Faction> getLargestFactions(int limit) {
+  public List<Faction> getLargestFactions(final int limit) {
     return factionRepository.findLargestFactions(Pageable.ofSize(limit));
   }
 
-  /** Check if two factions can have a rivalry. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public boolean canHaveRivalry(@NonNull Long faction1Id, @NonNull Long faction2Id) {
-    Optional<Faction> faction1Opt = factionRepository.findById(faction1Id);
-    Optional<Faction> faction2Opt = factionRepository.findById(faction2Id);
-
-    if (faction1Opt.isEmpty() || faction2Opt.isEmpty()) {
-      return false;
-    }
-
-    Faction faction1 = faction1Opt.get();
-    Faction faction2 = faction2Opt.get();
-
-    // Both factions must be active
-    if (!faction1.isActive() || !faction2.isActive()) {
-      return false;
-    }
-
-    // Cannot have rivalry with self
-    if (faction1.equals(faction2)) {
-      return false;
-    }
-
-    // Both factions must have at least one member
-    return faction1.getMemberCount() > 0 && faction2.getMemberCount() > 0;
-  }
-
   /** Save a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public Faction save(@NonNull Faction faction) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Faction save(@NonNull final Faction faction) {
     if (faction.getId() == null) {
-      // New faction
       faction.setCreationDate(clock.instant());
       if (faction.getFormedDate() == null) {
         faction.setFormedDate(clock.instant());
@@ -481,37 +413,30 @@ public class FactionService {
     return factionRepository.saveAndFlush(faction);
   }
 
-  /** Delete a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void delete(@NonNull Faction faction) {
-    log.info("Deleting faction: {}", faction.getName());
-    factionRepository.delete(faction);
-  }
-
   /** Delete a faction by ID. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void deleteById(@NonNull Long id) {
-    log.info("Deleting faction with ID: {}", id);
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public void deleteById(@NonNull final Long id) {
     factionRepository.deleteById(id);
   }
 
   /** Check if a faction exists by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public boolean existsById(@NonNull Long id) {
+  public boolean existsById(@NonNull final Long id) {
     return factionRepository.existsById(id);
   }
 
   /** Count all factions. */
   @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
   public long count() {
     return factionRepository.count();
   }
 
   /** Add affinity points to a faction. */
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void addAffinity(@NonNull Long factionId, int points) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public void addAffinity(@NonNull final Long factionId, final int points) {
     factionRepository
         .findById(factionId)
         .ifPresent(
@@ -520,23 +445,12 @@ public class FactionService {
               int newAffinity = Math.min(100, oldAffinity + points);
               faction.setAffinity(newAffinity);
               factionRepository.saveAndFlush(faction);
-              log.info(
-                  "Added {} affinity to faction: {} (Total: {})",
-                  points,
-                  faction.getName(),
-                  faction.getAffinity());
             });
   }
 
-  /**
-   * Gets the shared faction affinity between two wrestlers.
-   *
-   * @param w1 First wrestler.
-   * @param w2 Second wrestler.
-   * @return Shared affinity (0-100), or 0 if they share no active faction.
-   */
+  /** Gets the shared faction affinity between two wrestlers. */
   @Transactional(readOnly = true)
-  public int getAffinityBetween(Wrestler w1, Wrestler w2) {
+  public int getAffinityBetween(final Wrestler w1, final Wrestler w2) {
     if (w1 == null || w2 == null) {
       return 0;
     }
@@ -549,13 +463,8 @@ public class FactionService {
     return 0;
   }
 
-  /**
-   * Resolves the image URL for a faction, using the default image system if no specific URL is set.
-   *
-   * @param faction The faction entity.
-   * @return The resolved image URL.
-   */
-  public String resolveFactionImage(Faction faction) {
+  /** Resolves the image URL for a faction. */
+  public String resolveFactionImage(final Faction faction) {
     if (faction.getImageUrl() != null && !faction.getImageUrl().isBlank()) {
       return faction.getImageUrl();
     }

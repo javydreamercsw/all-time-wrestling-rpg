@@ -44,7 +44,7 @@ class NewsGenerationServiceLazyInitTest {
   private NewsGenerationService newsGenerationService;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     newsService = mock(NewsService.class);
     aiFactory = mock(SegmentNarrationServiceFactory.class);
     objectMapper = new ObjectMapper();

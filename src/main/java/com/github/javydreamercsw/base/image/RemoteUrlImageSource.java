@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 public class RemoteUrlImageSource implements ImageSource {
 
   @Override
-  public Optional<String> resolveImage(String name, ImageCategory category) {
+  public Optional<String> resolveImage(final String name, final ImageCategory category) {
     if (name != null && (name.startsWith("http://") || name.startsWith("https://"))) {
       log.debug("Resolved remote URL: {}", name);
       return Optional.of(name);

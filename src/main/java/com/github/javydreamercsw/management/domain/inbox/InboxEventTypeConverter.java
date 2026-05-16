@@ -30,12 +30,12 @@ public class InboxEventTypeConverter implements AttributeConverter<InboxEventTyp
   private static InboxEventTypeRegistry registry;
 
   @Autowired
-  public void setRegistry(InboxEventTypeRegistry registry) {
+  public void setRegistry(final InboxEventTypeRegistry registry) {
     InboxEventTypeConverter.registry = registry;
   }
 
   @Override
-  public String convertToDatabaseColumn(InboxEventType attribute) {
+  public String convertToDatabaseColumn(final InboxEventType attribute) {
     if (attribute == null) {
       return null;
     }
@@ -43,7 +43,7 @@ public class InboxEventTypeConverter implements AttributeConverter<InboxEventTyp
   }
 
   @Override
-  public InboxEventType convertToEntityAttribute(String eventType) {
+  public InboxEventType convertToEntityAttribute(final String eventType) {
     if (eventType == null) {
       return null;
     }

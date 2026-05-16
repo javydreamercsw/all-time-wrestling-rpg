@@ -26,7 +26,6 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a wrestler's participation in a multi-wrestler feud. Tracks their role, when they
@@ -71,11 +70,6 @@ public class FeudParticipant extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
   @PrePersist
   protected void onCreate() {
     if (creationDate == null) {
@@ -89,14 +83,14 @@ public class FeudParticipant extends AbstractEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Leave the feud with a reason. */
-  public void leaveFeud(String reason) {
+  public void leaveFeud(final String reason) {
     this.isActive = false;
     this.leftDate = Instant.now();
     this.leftReason = reason;
   }
 
   /** Change the participant's role in the feud. */
-  public void changeRole(FeudRole newRole, String reason) {
+  public void changeRole(final FeudRole newRole, final String reason) {
     this.role = newRole;
     // Could add a role change event here if needed
   }
@@ -115,23 +109,26 @@ public class FeudParticipant extends AbstractEntity<Long> {
   /** Get display string for this participation. */
   public String getDisplayString() {
     String status = isActive ? "Active" : "Left";
-    return String.format("%s (%s - %s)", wrestler.getName(), role.getDisplayName(), status);
+    return "%s (%s - %s)".formatted(wrestler.getName(), role.getDisplayName(), status);
   }
 
   /** Get participation summary. */
   public String getParticipationSummary() {
     if (isActive) {
-      return String.format(
-          "%s has been %s in %s for %d days",
-          wrestler.getName(), role.getDisplayName().toLowerCase(), feud.getName(), getDaysInFeud());
+      return "%s has been %s in %s for %d days"
+          .formatted(
+              wrestler.getName(),
+              role.getDisplayName().toLowerCase(),
+              feud.getName(),
+              getDaysInFeud());
     } else {
-      return String.format(
-          "%s was %s in %s for %d days (Left: %s)",
-          wrestler.getName(),
-          role.getDisplayName().toLowerCase(),
-          feud.getName(),
-          getDaysInFeud(),
-          leftReason != null ? leftReason : "Unknown reason");
+      return "%s was %s in %s for %d days (Left: %s)"
+          .formatted(
+              wrestler.getName(),
+              role.getDisplayName().toLowerCase(),
+              feud.getName(),
+              getDaysInFeud(),
+              leftReason != null ? leftReason : "Unknown reason");
     }
   }
 }

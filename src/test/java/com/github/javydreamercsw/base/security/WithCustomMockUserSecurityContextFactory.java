@@ -17,15 +17,13 @@
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -33,87 +31,84 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
+import org.springframework.stereotype.Component;
 
 /**
- * Factory for creating a security context for @WithCustomMockUser. This factory is designed to
- * create transient mock accounts and wrestlers for testing purposes.
- *
- * <p>NOTE: Do NOT add @Component annotation. This class must be registered as a bean explicitly in
- * test configuration classes to ensure Spring's @WithSecurityContext annotation processing can find
- * it at test class load time.
+ * Factory for creating a security context for @WithCustomMockUser. This factory is designed to be
+ * fast and avoid complex database operations that might interfere with test setup/cleanup.
  */
+@Component
 @Slf4j
 public class WithCustomMockUserSecurityContextFactory
     implements WithSecurityContextFactory<WithCustomMockUser> {
 
   @Autowired(required = false)
-  private PasswordEncoder passwordEncoder;
+  private AccountRepository accountRepository;
+
+  @Autowired(required = false)
+  private WrestlerRepository wrestlerRepository;
 
   @Override
-  public SecurityContext createSecurityContext(WithCustomMockUser customUser) {
+  public SecurityContext createSecurityContext(final WithCustomMockUser customUser) {
     String username = customUser.username();
     String[] roles = customUser.roles();
 
-    log.debug(
-        "Creating security context for user: {} with roles: {}", username, Arrays.toString(roles));
+    log.debug("Creating security context for user: {}", username);
 
-    // Create transient account (don't save to DB)
-    Account account = new Account();
-    account.setId(1L); // Default Mock ID
-    account.setUsername(username);
-    if (passwordEncoder != null) {
-      account.setPassword(passwordEncoder.encode("ValidPassword1!"));
-    } else {
-      account.setPassword("encoded_password");
+    Account account = null;
+    Wrestler wrestler = null;
+
+    // Try to find real account if repository is available
+    if (accountRepository != null) {
+      try {
+        account = accountRepository.findByUsername(username).orElse(null);
+        if (account != null && wrestlerRepository != null) {
+          wrestler = wrestlerRepository.findByAccount(account).stream().findFirst().orElse(null);
+        }
+      } catch (Exception e) {
+        log.trace("Could not load real account for mock context: {}", e.getMessage());
+      }
     }
-    account.setEmail(username + "@test.com");
-    account.setEnabled(true);
-    account.setAccountNonExpired(true);
-    account.setAccountNonLocked(true);
-    account.setCredentialsNonExpired(true);
 
-    Set<Role> assignedRoles =
-        Arrays.stream(roles)
-            .map(RoleName::valueOf)
-            .map(
-                roleName -> {
-                  Role newRole = new Role();
-                  newRole.setId((long) roleName.ordinal() + 100); // Transient ID
-                  newRole.setName(roleName);
-                  newRole.setDescription(roleName + " role");
-                  return newRole;
-                })
-            .collect(Collectors.toSet());
-    account.setRoles(assignedRoles);
+    // If not found, create a mock account object (not persisted)
+    if (account == null) {
+      account = new Account(username, "password", username + "@test.com");
+      account.setEnabled(true);
+      account.setAccountNonExpired(true);
+      account.setAccountNonLocked(true);
+      account.setCredentialsNonExpired(true);
 
-    // Create transient wrestler (don't save to DB)
-    Wrestler wrestler = new Wrestler();
-    wrestler.setId(1L); // Default Mock ID
-    wrestler.setName(account.getUsername() + " Wrestler");
-    wrestler.setIsPlayer(true);
-    wrestler.setAccount(account);
-    wrestler.setCreationDate(Instant.now());
-    wrestler.setExternalId("wrestler-" + account.getUsername());
+      Set<Role> mockRoles = new HashSet<>();
+      for (String roleNameStr : roles) {
+        String cleanRoleName = roleNameStr;
+        if (cleanRoleName.startsWith("ROLE_")) {
+          cleanRoleName = cleanRoleName.substring(5);
+        }
+        try {
+          RoleName rn = RoleName.valueOf(cleanRoleName);
+          mockRoles.add(new Role(rn, rn.name()));
+        } catch (IllegalArgumentException e) {
+          // Ignore
+        }
+      }
+      account.setRoles(mockRoles);
+    }
 
     CustomUserDetails principal = new CustomUserDetails(account, wrestler);
-
-    // Ensure all roles are correctly mapped to authorities
-    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-    for (String role : roles) {
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-      authorities.add(new SimpleGrantedAuthority(role));
+    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+    for (String roleName : roles) {
+      authorities.add(new SimpleGrantedAuthority(roleName));
+      if (!roleName.startsWith("ROLE_")) {
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+      }
     }
 
     Authentication authentication =
-        new UsernamePasswordAuthenticationToken(principal, "ValidPassword1!", authorities);
+        new UsernamePasswordAuthenticationToken(principal, "password", authorities);
 
     SecurityContext context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(authentication);
-
-    log.debug(
-        "Security context created for user: {} with {} authorities", username, authorities.size());
     return context;
   }
 }

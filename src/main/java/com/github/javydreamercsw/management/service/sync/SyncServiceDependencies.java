@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.Getter;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,7 @@ public class SyncServiceDependencies {
   private final SyncLockService syncLockService;
   private final FactionRepository factionRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
   private final InjuryRepository injuryRepository;
   private final InjuryTypeRepository injuryTypeRepository;
   private final SeasonRepository seasonRepository;
@@ -80,37 +82,38 @@ public class SyncServiceDependencies {
 
   @Autowired
   public SyncServiceDependencies(
-      @NonNull SyncProgressTracker progressTracker,
-      @NonNull ISyncHealthMonitor healthMonitor,
-      @NonNull RetryService retryService,
-      @NonNull CircuitBreakerService circuitBreakerService,
-      @NonNull SyncValidationService validationService,
-      @NonNull SyncTransactionManager syncTransactionManager,
-      @NonNull DataIntegrityChecker integrityChecker,
-      @NonNull NotionRateLimitService rateLimitService,
-      @NonNull EntitySyncConfiguration entitySyncConfig,
-      @NonNull NotionSyncProperties notionSyncProperties,
-      @NonNull StorageProperties storageProperties,
-      @NonNull ResourceLoader resourceLoader,
-      @NonNull BackupService backupService,
-      @NonNull NotionHandler notionHandler,
-      @NonNull NotionPageDataExtractor notionPageDataExtractor,
-      @NonNull SyncSessionManager syncSessionManager,
-      @NonNull SyncLockService syncLockService,
-      @NonNull FactionRepository factionRepository,
-      @NonNull WrestlerRepository wrestlerRepository,
-      @NonNull InjuryRepository injuryRepository,
-      @NonNull InjuryTypeRepository injuryTypeRepository,
-      @NonNull SeasonRepository seasonRepository,
-      @NonNull RivalryRepository rivalryRepository,
-      @NonNull ShowRepository showRepository,
-      @NonNull ShowTemplateRepository showTemplateRepository,
-      @NonNull ShowTypeRepository showTypeRepository,
-      @NonNull TeamRepository teamRepository,
-      @NonNull TitleReignRepository titleReignRepository,
-      @NonNull TitleRepository titleRepository,
-      @NonNull NpcRepository npcRepository,
-      @NonNull SegmentRepository segmentRepository) {
+      @NonNull final SyncProgressTracker progressTracker,
+      @NonNull final ISyncHealthMonitor healthMonitor,
+      @NonNull final RetryService retryService,
+      @NonNull final CircuitBreakerService circuitBreakerService,
+      @NonNull final SyncValidationService validationService,
+      @NonNull final SyncTransactionManager syncTransactionManager,
+      @NonNull final DataIntegrityChecker integrityChecker,
+      @NonNull final NotionRateLimitService rateLimitService,
+      @NonNull final EntitySyncConfiguration entitySyncConfig,
+      @NonNull final NotionSyncProperties notionSyncProperties,
+      @NonNull final StorageProperties storageProperties,
+      @NonNull final ResourceLoader resourceLoader,
+      @NonNull final BackupService backupService,
+      @NonNull final NotionHandler notionHandler,
+      @NonNull final NotionPageDataExtractor notionPageDataExtractor,
+      @NonNull final SyncSessionManager syncSessionManager,
+      @NonNull final SyncLockService syncLockService,
+      @NonNull final FactionRepository factionRepository,
+      @NonNull final WrestlerRepository wrestlerRepository,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryRepository injuryRepository,
+      @NonNull final InjuryTypeRepository injuryTypeRepository,
+      @NonNull final SeasonRepository seasonRepository,
+      @NonNull final RivalryRepository rivalryRepository,
+      @NonNull final ShowRepository showRepository,
+      @NonNull final ShowTemplateRepository showTemplateRepository,
+      @NonNull final ShowTypeRepository showTypeRepository,
+      @NonNull final TeamRepository teamRepository,
+      @NonNull final TitleReignRepository titleReignRepository,
+      @NonNull final TitleRepository titleRepository,
+      @NonNull final NpcRepository npcRepository,
+      @NonNull final SegmentRepository segmentRepository) {
     this.progressTracker = progressTracker;
     this.healthMonitor = healthMonitor;
     this.retryService = retryService;
@@ -130,6 +133,7 @@ public class SyncServiceDependencies {
     this.syncLockService = syncLockService;
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerService = wrestlerService;
     this.injuryRepository = injuryRepository;
     this.injuryTypeRepository = injuryTypeRepository;
     this.seasonRepository = seasonRepository;

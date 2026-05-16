@@ -30,12 +30,12 @@ public class DraftBroadcaster {
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
   private final List<Consumer<DraftUpdateEvent>> listeners = new CopyOnWriteArrayList<>();
 
-  public Registration register(Consumer<DraftUpdateEvent> listener) {
+  public Registration register(final Consumer<DraftUpdateEvent> listener) {
     listeners.add(listener);
     return () -> listeners.remove(listener);
   }
 
-  public void broadcast(DraftUpdateEvent event) {
+  public void broadcast(final DraftUpdateEvent event) {
     for (Consumer<DraftUpdateEvent> listener : listeners) {
       executor.execute(() -> listener.accept(event));
     }

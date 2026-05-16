@@ -29,7 +29,7 @@ public class InjuryNotionHandler {
 
   private final NotionHandler notionHandler;
 
-  public InjuryNotionHandler(NotionHandler notionHandler) {
+  public InjuryNotionHandler(final NotionHandler notionHandler) {
     this.notionHandler = notionHandler;
   }
 
@@ -51,7 +51,7 @@ public class InjuryNotionHandler {
     return loadAllFromDatabase("Injury Types", "Injury Type");
   }
 
-  private List<InjuryPage> loadAllFromDatabase(String databaseName, String entityName) {
+  private List<InjuryPage> loadAllFromDatabase(final String databaseName, final String entityName) {
     log.debug("Loading all {} from {} database", entityName, databaseName);
 
     if (!notionHandler.isNotionTokenAvailable()) {
@@ -81,7 +81,8 @@ public class InjuryNotionHandler {
   }
 
   /** Maps a Notion page to an InjuryPage object. */
-  private InjuryPage mapPageToInjuryPage(@NonNull Page pageData, @NonNull String injuryName) {
+  private InjuryPage mapPageToInjuryPage(
+      @NonNull final Page pageData, @NonNull final String injuryName) {
     return notionHandler.mapPageToGenericEntity(
         pageData, injuryName, "Injury", InjuryPage::new, InjuryPage.NotionParent::new);
   }

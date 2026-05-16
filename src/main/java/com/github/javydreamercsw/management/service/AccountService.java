@@ -46,8 +46,9 @@ public class AccountService {
   @Lazy private final PasswordEncoder passwordEncoder;
   private final WrestlerRepository wrestlerRepository;
 
-  @PreAuthorize("hasRole('ADMIN')")
-  public Account createAccount(String username, String password, String email, RoleName roleName) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public Account createAccount(
+      final String username, final String password, final String email, final RoleName roleName) {
     if (!CustomPasswordValidator.isValid(password)) {
       throw new IllegalArgumentException("Password is not valid.");
     }
@@ -60,14 +61,16 @@ public class AccountService {
     return accountRepository.save(account);
   }
 
-  public Optional<Account> get(Long id) {
+  public Optional<Account> get(final Long id) {
     return accountRepository.findById(id);
   }
 
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #entity.id =="
-          + " authentication.principal.id)")
-  public Account update(Account entity) {
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (hasAuthority('ROLE_PLAYER')\
+       and #entity.id == authentication.principal.id)\
+      """)
+  public Account update(final Account entity) {
     Account original =
         accountRepository
             .findById(entity.getId())
@@ -102,11 +105,11 @@ public class AccountService {
     return accountRepository.save(entity);
   }
 
-  public void delete(Long id) {
+  public void delete(final Long id) {
     accountRepository.deleteById(id);
   }
 
-  public Page<Account> list(Pageable pageable) {
+  public Page<Account> list(final Pageable pageable) {
     return accountRepository.findAll(pageable);
   }
 
@@ -118,26 +121,26 @@ public class AccountService {
     return (int) accountRepository.count();
   }
 
-  public Optional<Account> findByUsername(String username) {
+  public Optional<Account> findByUsername(final String username) {
     return accountRepository.findByUsername(username);
   }
 
-  public Optional<Account> findByEmail(String email) {
+  public Optional<Account> findByEmail(final String email) {
     return accountRepository.findByEmail(email);
   }
 
-  public boolean canDelete(Account account) {
+  public boolean canDelete(final Account account) {
     return wrestlerRepository.findByAccountId(account.getId()).isEmpty();
   }
 
-  public Role getRole(RoleName roleName) {
+  public Role getRole(final RoleName roleName) {
     return roleRepository
         .findByName(roleName)
         .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public Account setLockExpiredAndSave(Account account) {
+  public Account setLockExpiredAndSave(final Account account) {
     Account reloadedAccount =
         accountRepository
             .findById(account.getId())
@@ -151,7 +154,7 @@ public class AccountService {
 
   // Package-private method for internal use by trusted services (e.g., PasswordResetService)
   // Bypasses regular @PreAuthorize checks.
-  void updateAccountPasswordInternal(Account account, String newEncodedPassword) {
+  void updateAccountPasswordInternal(final Account account, final String newEncodedPassword) {
     Account existingAccount =
         accountRepository
             .findById(account.getId())
@@ -162,9 +165,11 @@ public class AccountService {
   }
 
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #accountId =="
-          + " authentication.principal.id)")
-  public Account updateThemePreference(Long accountId, String themePreference) {
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (hasAuthority('ROLE_PLAYER')\
+       and #accountId == authentication.principal.id)\
+      """)
+  public Account updateThemePreference(final Long accountId, final String themePreference) {
     Account account =
         accountRepository
             .findById(accountId)
@@ -174,9 +179,11 @@ public class AccountService {
   }
 
   @PreAuthorize(
-      "hasAnyRole('ADMIN', 'BOOKER') or (hasRole('PLAYER') and #accountId =="
-          + " authentication.principal.id)")
-  public Account setActiveWrestlerId(Long accountId, Long wrestlerId) {
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or (hasAuthority('ROLE_PLAYER')\
+       and #accountId == authentication.principal.id)\
+      """)
+  public Account setActiveWrestlerId(final Long accountId, final Long wrestlerId) {
     Account account =
         accountRepository
             .findById(accountId)

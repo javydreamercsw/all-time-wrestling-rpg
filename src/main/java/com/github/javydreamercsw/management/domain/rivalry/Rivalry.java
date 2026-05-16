@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.domain.rivalry;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -44,9 +44,10 @@ import org.jspecify.annotations.Nullable;
 @Getter
 @Setter
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public class Rivalry extends AbstractEntity<Long> {
+public class Rivalry extends AbstractSyncableEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "rivalry_id")
   private Long id;
 
@@ -60,6 +61,10 @@ public class Rivalry extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
   private Wrestler wrestler2;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "league_id")
+  private com.github.javydreamercsw.management.domain.league.League league;
+
   @Column(name = "heat", nullable = false)
   @Min(0) private Integer heat = 0;
 
@@ -70,9 +75,11 @@ public class Rivalry extends AbstractEntity<Long> {
   private Boolean isActive = true;
 
   @Column(name = "started_date", nullable = false)
+  @Getter
   private Instant startedDate;
 
   @Column(name = "ended_date")
+  @Getter
   private Instant endedDate;
 
   @Lob
@@ -90,7 +97,7 @@ public class Rivalry extends AbstractEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add heat to the rivalry based on ATW RPG rules. */
-  public void addHeat(int heatGain, String reason) {
+  public void addHeat(final int heatGain, final String reason) {
     int newHeat = this.heat + heatGain;
     this.heat = Math.max(0, newHeat);
 
@@ -123,7 +130,7 @@ public class Rivalry extends AbstractEntity<Long> {
    * Attempt to resolve the rivalry with dice roll. ATW Rule: Both roll d20 → total >30 = rivalry
    * ends
    */
-  public boolean attemptResolution(int wrestler1Roll, int wrestler2Roll) {
+  public boolean attemptResolution(final int wrestler1Roll, final int wrestler2Roll) {
     if (!canAttemptResolution()) {
       return false;
     }
@@ -154,7 +161,7 @@ public class Rivalry extends AbstractEntity<Long> {
   }
 
   /** End the rivalry. */
-  public void endRivalry(String reason) {
+  public void endRivalry(final String reason) {
     this.isActive = false;
     this.endedDate = Instant.now();
 
@@ -169,7 +176,7 @@ public class Rivalry extends AbstractEntity<Long> {
   }
 
   /** Get the other wrestler in the rivalry. */
-  public Wrestler getOpponent(Wrestler wrestler) {
+  public Wrestler getOpponent(final Wrestler wrestler) {
     if (wrestler.equals(wrestler1)) {
       return wrestler2;
     } else if (wrestler.equals(wrestler2)) {
@@ -179,7 +186,7 @@ public class Rivalry extends AbstractEntity<Long> {
   }
 
   /** Check if a wrestler is involved in this rivalry. */
-  public boolean involvesWrestler(Wrestler wrestler) {
+  public boolean involvesWrestler(final Wrestler wrestler) {
     return wrestler.equals(wrestler1) || wrestler.equals(wrestler2);
   }
 
@@ -213,19 +220,6 @@ public class Rivalry extends AbstractEntity<Long> {
   public long getDurationDays() {
     Instant end = endedDate != null ? endedDate : Instant.now();
     return java.time.Duration.between(startedDate, end).toDays();
-  }
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
-  public Instant getStartedDate() {
-    return startedDate;
-  }
-
-  public Instant getEndedDate() {
-    return endedDate;
   }
 
   @PrePersist

@@ -30,7 +30,10 @@ public class ChampionshipChangeEvent extends ApplicationEvent {
   private final List<Wrestler> oldChampions;
 
   public ChampionshipChangeEvent(
-      Object source, Title title, List<Wrestler> newChampions, List<Wrestler> oldChampions) {
+      final Object source,
+      final Title title,
+      final List<Wrestler> newChampions,
+      final List<Wrestler> oldChampions) {
     super(source);
     this.titleId = title.getId();
     this.newChampions = newChampions;

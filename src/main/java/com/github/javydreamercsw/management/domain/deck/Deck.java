@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.deck;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -37,13 +37,12 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.jspecify.annotations.Nullable;
 
 @Entity
 @Table(name = "deck")
 @Getter
 @Setter
-public class Deck extends AbstractEntity<Long> { // Removed implements Ownable
+public class Deck extends AbstractSyncableEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "deck_id")
@@ -63,12 +62,7 @@ public class Deck extends AbstractEntity<Long> { // Removed implements Ownable
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
-
-  public void addCard(@NonNull Card card, @NonNull CardSet set, int amount) {
+  public void addCard(@NonNull final Card card, @NonNull final CardSet set, final int amount) {
     DeckCard newDeckCard = new DeckCard();
     newDeckCard.setCard(card);
     newDeckCard.setSet(set);

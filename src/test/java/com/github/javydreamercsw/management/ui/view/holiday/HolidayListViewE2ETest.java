@@ -45,14 +45,14 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
   private WebDriverWait wait;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     holidayService.findAll().forEach(holidayService::delete);
     wait = new WebDriverWait(driver, Duration.ofSeconds(30));
   }
 
   @Test
   void testCreateFixedHoliday() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     click("vaadin-tab", "Holidays");
     waitForVaadinElementVisible(By.id("holiday-grid"));
@@ -92,7 +92,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Test Fixed Holiday"));
+                .anyMatch(it -> "Test Fixed Holiday".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -101,12 +101,12 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     assertEquals(initialSize + 1, holidayService.findAll().size());
     assertTrue(
         holidayService.findAll().stream()
-            .anyMatch(h -> h.getDescription().equals("Test Fixed Holiday")));
+            .anyMatch(h -> "Test Fixed Holiday".equals(h.getDescription())));
   }
 
   @Test
   void testCreateFloatingHoliday() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     click("vaadin-tab", "Holidays");
     waitForVaadinElementVisible(By.id("holiday-grid"));
@@ -148,7 +148,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Test Floating Holiday"));
+                .anyMatch(it -> "Test Floating Holiday".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -157,7 +157,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     assertEquals(initialSize + 1, holidayService.findAll().size());
     assertTrue(
         holidayService.findAll().stream()
-            .anyMatch(h -> h.getDescription().equals("Test Floating Holiday")));
+            .anyMatch(h -> "Test Floating Holiday".equals(h.getDescription())));
   }
 
   @Test
@@ -170,7 +170,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holiday.setDayOfMonth(1);
     holidayService.save(holiday);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     click("vaadin-tab", "Holidays");
     waitForVaadinElementVisible(By.id("holiday-grid"));
@@ -202,14 +202,14 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
           d -> {
             WebElement grid = d.findElement(By.id("holiday-grid"));
             return grid.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> it.getText().equals("Updated Theme"));
+                .anyMatch(it -> "Updated Theme".equals(it.getText()));
           });
     } catch (TimeoutException te) {
       // Ignore. Will be confirmed via API below.
     }
 
     assertTrue(
-        holidayService.findAll().stream().anyMatch(h -> h.getTheme().equals("Updated Theme")));
+        holidayService.findAll().stream().anyMatch(h -> "Updated Theme".equals(h.getTheme())));
   }
 
   @Test
@@ -222,7 +222,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holiday.setDayOfMonth(2);
     holidayService.save(holiday);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     click("vaadin-tab", "Holidays");
     waitForVaadinElementVisible(By.id("holiday-grid"));
@@ -249,7 +249,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
         d -> {
           try {
             return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> it.getText().equals("Holiday to Delete"));
+                .noneMatch(it -> "Holiday to Delete".equals(it.getText()));
           } catch (Exception e) {
             return false;
           }
@@ -258,6 +258,6 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     assertEquals(initialSize - 1, holidayService.findAll().size());
     assertTrue(
         holidayService.findAll().stream()
-            .noneMatch(h -> h.getDescription().equals("Holiday to Delete")));
+            .noneMatch(h -> "Holiday to Delete".equals(h.getDescription())));
   }
 }

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import sidebar from './sidebar.json'
 
 const releaseVersion = process.env.RELEASE_VERSION || '1.8.0-SNAPSHOT'
 const releaseTag = `v${releaseVersion}`
@@ -13,45 +14,10 @@ export default defineConfig({
     downloadBase: `${githubBase}/${releaseTag}`,
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/guide/campaign' }
+      { text: 'Guide', link: sidebar.length > 0 ? sidebar[0].items[0].link : '/guide/campaign' }
     ],
 
-    sidebar: [
-      {
-        text: 'Overview',
-        items: [
-          { text: 'Game Mechanics', link: '/guide/game-mechanics' },
-          { text: 'AI Features', link: '/guide/ai-features' }
-        ]
-      },
-      {
-        text: 'Game Modes',
-        items: [
-          { text: 'Campaign Mode', link: '/guide/campaign' },
-          { text: 'Booker Guide', link: '/guide/booker' },
-          { text: 'GM Mode', link: '/guide/general-manager' },
-          { text: 'Leagues', link: '/guide/leagues' }
-        ]
-      },
-      {
-        text: 'Dashboards & Features',
-        items: [
-          { text: 'Dashboards', link: '/guide/dashboards' },
-          { text: 'Player Dashboard', link: '/guide/player-dashboard' },
-          { text: 'News', link: '/guide/news' },
-          { text: 'Wrestler Profile', link: '/guide/wrestler' },
-          { text: 'NPCs', link: '/guide/npc' }
-        ]
-      },
-      {
-        text: 'Management',
-        items: [
-          { text: 'Entities', link: '/guide/entities' },
-          { text: 'Admin Tools', link: '/guide/admin' },
-          { text: 'User Settings', link: '/guide/user-settings' }
-        ]
-      }
-    ],
+    sidebar: sidebar,
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/javydreamercsw/all-time-wrestling-rpg' }

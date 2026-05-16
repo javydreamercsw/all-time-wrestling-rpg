@@ -96,6 +96,6 @@ class InboxServiceIT extends ManagementIntegrationTest {
     // Search for items for this account
     List<InboxItem> results = inboxService.search(null, null, null, false, account.getId());
     Assertions.assertTrue(
-        results.stream().anyMatch(item -> item.getDescription().equals("Account Target Item")));
+        results.stream().anyMatch(item -> "Account Target Item".equals(item.getDescription())));
   }
 }

@@ -28,12 +28,14 @@ public interface MatchFulfillmentRepository extends JpaRepository<MatchFulfillme
   Optional<MatchFulfillment> findBySegment(Segment segment);
 
   @Query(
-      "SELECT m FROM MatchFulfillment m "
-          + "JOIN FETCH m.segment s "
-          + "JOIN FETCH s.show sh "
-          + "JOIN FETCH s.segmentType st "
-          + "LEFT JOIN FETCH s.participants p "
-          + "LEFT JOIN FETCH p.wrestler w "
-          + "WHERE m.id = :id")
+      """
+      SELECT m FROM MatchFulfillment m \
+      JOIN FETCH m.segment s \
+      JOIN FETCH s.show sh \
+      JOIN FETCH s.segmentType st \
+      LEFT JOIN FETCH s.participants p \
+      LEFT JOIN FETCH p.wrestler w \
+      WHERE m.id = :id\
+      """)
   Optional<MatchFulfillment> findByIdWithDetails(@Param("id") Long id);
 }

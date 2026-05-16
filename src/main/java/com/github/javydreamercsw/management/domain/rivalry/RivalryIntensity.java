@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.rivalry;
 
+import lombok.Getter;
+
 /** Represents the intensity levels of a rivalry based on heat in the ATW RPG system. */
 public enum RivalryIntensity {
   /** 0-9 heat - Early stages, building tension */
@@ -30,13 +32,18 @@ public enum RivalryIntensity {
   /** 30+ heat - Requires rule segment */
   EXPLOSIVE("Explosive", 30, Integer.MAX_VALUE, "Requires rule segment", "🌋");
 
-  private final String displayName;
-  private final int minHeat;
-  private final int maxHeat;
-  private final String description;
-  private final String emoji;
+  @Getter private final String displayName;
+  @Getter private final int minHeat;
+  @Getter private final int maxHeat;
+  @Getter private final String description;
+  @Getter private final String emoji;
 
-  RivalryIntensity(String displayName, int minHeat, int maxHeat, String description, String emoji) {
+  RivalryIntensity(
+      final String displayName,
+      final int minHeat,
+      final int maxHeat,
+      final String description,
+      final String emoji) {
     this.displayName = displayName;
     this.minHeat = minHeat;
     this.maxHeat = maxHeat;
@@ -45,7 +52,7 @@ public enum RivalryIntensity {
   }
 
   /** Get the intensity level for a given heat value. */
-  public static RivalryIntensity fromHeat(int heat) {
+  public static RivalryIntensity fromHeat(final int heat) {
     for (RivalryIntensity intensity : values()) {
       if (heat >= intensity.minHeat && heat <= intensity.maxHeat) {
         return intensity;
@@ -77,27 +84,6 @@ public enum RivalryIntensity {
       case INTENSE -> 1.5;
       case EXPLOSIVE -> 2.0;
     };
-  }
-
-  // Getters
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public int getMinHeat() {
-    return minHeat;
-  }
-
-  public int getMaxHeat() {
-    return maxHeat;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getEmoji() {
-    return emoji;
   }
 
   /** Get display string with emoji. */

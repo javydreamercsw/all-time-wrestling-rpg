@@ -39,7 +39,7 @@ class InjuryTypeServiceTest {
   private InjuryType injuryType;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     injuryType = new InjuryType();
     injuryType.setId(1L);
     injuryType.setInjuryName("Sprain");

@@ -58,7 +58,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -99,10 +98,10 @@ public class NotionSyncView extends Main {
   private volatile boolean syncInProgress = false;
 
   public NotionSyncView(
-      NotionSyncScheduler notionSyncScheduler,
-      NotionSyncProperties syncProperties,
-      SyncProgressTracker progressTracker,
-      EntityDependencyAnalyzer dependencyAnalyzer) {
+      final NotionSyncScheduler notionSyncScheduler,
+      final NotionSyncProperties syncProperties,
+      final SyncProgressTracker progressTracker,
+      final EntityDependencyAnalyzer dependencyAnalyzer) {
     this.notionSyncScheduler = notionSyncScheduler;
     this.syncProperties = syncProperties;
     this.progressTracker = progressTracker;
@@ -283,7 +282,8 @@ public class NotionSyncView extends Main {
     return configDetails;
   }
 
-  private HorizontalLayout createConfigItem(@NonNull String label, @NonNull String value) {
+  private HorizontalLayout createConfigItem(
+      @NonNull final String label, @NonNull final String value) {
     HorizontalLayout item = new HorizontalLayout();
     item.addClassNames(LumoUtility.Gap.MEDIUM);
 
@@ -346,7 +346,8 @@ public class NotionSyncView extends Main {
         });
   }
 
-  private void triggerEntitySync(@NonNull String entityName, @NonNull SyncDirection direction) {
+  private void triggerEntitySync(
+      @NonNull final String entityName, @NonNull final SyncDirection direction) {
     if (syncInProgress) {
       showNotification("Sync already in progress", NotificationVariant.LUMO_CONTRAST);
       return;
@@ -385,9 +386,9 @@ public class NotionSyncView extends Main {
   }
 
   private void startSyncOperationWithProgress(
-      @NonNull String operationName,
-      @NonNull String operationId,
-      @NonNull SyncOperation operation) {
+      @NonNull final String operationName,
+      @NonNull final String operationId,
+      @NonNull final SyncOperation operation) {
     syncInProgress = true;
     updateButtonStates();
     showProgressSection();
@@ -399,7 +400,7 @@ public class NotionSyncView extends Main {
     SyncProgressTracker.SyncProgressListener progressListener =
         new SyncProgressTracker.SyncProgressListener() {
           @Override
-          public void onProgressUpdated(@NonNull SyncProgress progress) {
+          public void onProgressUpdated(@NonNull final SyncProgress progress) {
             if (progress.getOperationId().startsWith(operationId) && ui != null) {
               ui.access(
                   () -> {
@@ -410,7 +411,7 @@ public class NotionSyncView extends Main {
           }
 
           @Override
-          public void onOperationCompleted(@NonNull SyncProgress progress) {
+          public void onOperationCompleted(@NonNull final SyncProgress progress) {
             // Only handle completion for the main operation ID to avoid premature completion
             // when sub-operations (like individual entities in a full sync) finish.
             if (progress.getOperationId().equals(operationId) && ui != null) {
@@ -437,7 +438,9 @@ public class NotionSyncView extends Main {
 
           @Override
           public void onLogMessage(
-              @NonNull String logOperationId, @NonNull String message, @NonNull String level) {
+              @NonNull final String logOperationId,
+              @NonNull final String message,
+              @NonNull final String level) {
             if (logOperationId.startsWith(operationId) && ui != null) {
               ui.access(
                   () -> {
@@ -482,7 +485,11 @@ public class NotionSyncView extends Main {
     final int itemsSynced;
     final String message;
 
-    SyncOperationResult(boolean success, int entitiesProcessed, int itemsSynced, String message) {
+    SyncOperationResult(
+        final boolean success,
+        final int entitiesProcessed,
+        final int itemsSynced,
+        final String message) {
       this.success = success;
       this.entitiesProcessed = entitiesProcessed;
       this.itemsSynced = itemsSynced;
@@ -497,7 +504,7 @@ public class NotionSyncView extends Main {
     statusLabel.addClassNames(LumoUtility.TextColor.PRIMARY);
   }
 
-  private void updateProgressDisplay(@NonNull SyncProgress progress) {
+  private void updateProgressDisplay(@NonNull final SyncProgress progress) {
     // Update progress bar
     if (progress.getTotalSteps() > 0) {
       progressBar.setIndeterminate(false);
@@ -508,11 +515,11 @@ public class NotionSyncView extends Main {
 
     // Update progress text
     String progressText =
-        String.format(
-            "%s (%d/%d)",
-            progress.getCurrentStepDescription(),
-            progress.getCurrentStep(),
-            progress.getTotalSteps());
+        "%s (%d/%d)"
+            .formatted(
+                progress.getCurrentStepDescription(),
+                progress.getCurrentStep(),
+                progress.getTotalSteps());
 
     // Find and update the progress text span
     progressContainer
@@ -525,7 +532,7 @@ public class NotionSyncView extends Main {
 
     // Add log entry for significant progress updates
     if (progress.getCurrentStep() > 0) {
-      addLogEntry(String.format("Progress: %s", progress.getCurrentStepDescription()), "INFO");
+      addLogEntry("Progress: %s".formatted(progress.getCurrentStepDescription()), "INFO");
     }
   }
 
@@ -540,13 +547,13 @@ public class NotionSyncView extends Main {
     syncSelectedButton.setEnabled(enabled);
   }
 
-  private void handleSyncResult(@NonNull SyncOperationResult result) {
+  private void handleSyncResult(@NonNull final SyncOperationResult result) {
     if (result.success) {
       statusLabel.setText("Completed");
       statusLabel.removeClassNames(LumoUtility.TextColor.PRIMARY, LumoUtility.TextColor.ERROR);
       statusLabel.addClassNames(LumoUtility.TextColor.SUCCESS);
 
-      String message = String.format("✅ %s (%d items synced)", result.message, result.itemsSynced);
+      String message = "✅ %s (%d items synced)".formatted(result.message, result.itemsSynced);
       addLogEntry(message, "SUCCESS");
       showNotification(message, NotificationVariant.LUMO_SUCCESS);
     } else {
@@ -554,7 +561,7 @@ public class NotionSyncView extends Main {
     }
   }
 
-  private void handleSyncError(@NonNull Throwable error) {
+  private void handleSyncError(@NonNull final Throwable error) {
     statusLabel.setText("Error");
     statusLabel.removeClassNames(LumoUtility.TextColor.PRIMARY, LumoUtility.TextColor.SUCCESS);
     statusLabel.addClassNames(LumoUtility.TextColor.ERROR);
@@ -577,7 +584,7 @@ public class NotionSyncView extends Main {
     updateLastSyncTimeForSelectedEntity();
   }
 
-  private void addLogEntry(@NonNull String message, @NonNull String level) {
+  private void addLogEntry(@NonNull final String message, @NonNull final String level) {
     String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
 
     HorizontalLayout logEntry = new HorizontalLayout();
@@ -595,11 +602,11 @@ public class NotionSyncView extends Main {
         };
 
     levelIcon.addClassNames(
-        level.equals("SUCCESS")
+        "SUCCESS".equals(level)
             ? LumoUtility.TextColor.SUCCESS
-            : level.equals("ERROR")
+            : "ERROR".equals(level)
                 ? LumoUtility.TextColor.ERROR
-                : level.equals("WARN")
+                : "WARN".equals(level)
                     ? LumoUtility.TextColor.WARNING
                     : LumoUtility.TextColor.PRIMARY);
 
@@ -618,12 +625,13 @@ public class NotionSyncView extends Main {
     logContainer.getElement().executeJs("this.scrollTop = this.scrollHeight;");
   }
 
-  private void showNotification(@NonNull String message, @NonNull NotificationVariant variant) {
+  private void showNotification(
+      @NonNull final String message, @NonNull final NotificationVariant variant) {
     Notification notification = Notification.show(message, 5000, Notification.Position.TOP_END);
     notification.addThemeVariants(variant);
   }
 
-  private String formatInterval(long milliseconds) {
+  private String formatInterval(final long milliseconds) {
     long seconds = milliseconds / 1000;
     long minutes = seconds / 60;
     long hours = minutes / 60;
@@ -638,10 +646,16 @@ public class NotionSyncView extends Main {
   }
 
   @Override
-  protected void onAttach(@NonNull AttachEvent attachEvent) {
+  protected void onAttach(@NonNull final AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     // Initialize UI update executor for periodic status updates
-    uiUpdateExecutor = new ScheduledThreadPoolExecutor(1);
+    uiUpdateExecutor =
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor(
+            r -> {
+              Thread t = new Thread(r, "notion-sync-view-update-" + hashCode());
+              t.setDaemon(true);
+              return t;
+            });
 
     // Update status every 30 seconds
     uiUpdateExecutor.scheduleAtFixedRate(
@@ -656,7 +670,7 @@ public class NotionSyncView extends Main {
   }
 
   @Override
-  protected void onDetach(@NonNull DetachEvent detachEvent) {
+  protected void onDetach(@NonNull final DetachEvent detachEvent) {
     super.onDetach(detachEvent);
     if (uiUpdateExecutor != null) {
       uiUpdateExecutor.shutdown();

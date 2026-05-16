@@ -68,11 +68,13 @@ public class ShowTemplateController {
       })
   @GetMapping
   public ResponseEntity<Page<ShowTemplate>> getAllShowTemplates(
-      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "Sort field") @RequestParam(defaultValue = "name") String sortBy,
+      @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0")
+          final int page,
+      @Parameter(description = "Page size") @RequestParam(defaultValue = "20") final int size,
+      @Parameter(description = "Sort field") @RequestParam(defaultValue = "name")
+          final String sortBy,
       @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc")
-          String sortDir) {
+          final String sortDir) {
 
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(page, size, sort);
@@ -90,7 +92,7 @@ public class ShowTemplateController {
       })
   @GetMapping("/{id}")
   public ResponseEntity<ShowTemplate> getShowTemplateById(
-      @Parameter(description = "Show template ID") @PathVariable Long id) {
+      @Parameter(description = "Show template ID") @PathVariable final Long id) {
     Optional<ShowTemplate> template = showTemplateService.getTemplateById(id);
     return template.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -104,7 +106,7 @@ public class ShowTemplateController {
       })
   @GetMapping("/by-show-type/{showTypeName}")
   public ResponseEntity<List<ShowTemplate>> getShowTemplatesByShowType(
-      @Parameter(description = "Show type name") @PathVariable String showTypeName) {
+      @Parameter(description = "Show type name") @PathVariable final String showTypeName) {
     List<ShowTemplate> templates = showTemplateService.getTemplatesByShowType(showTypeName);
     return ResponseEntity.ok(templates);
   }
@@ -146,7 +148,7 @@ public class ShowTemplateController {
       })
   @PostMapping
   public ResponseEntity<ShowTemplate> createShowTemplate(
-      @Valid @RequestBody CreateShowTemplateRequest request) {
+      @Valid @RequestBody final CreateShowTemplateRequest request) {
     ShowTemplate template =
         showTemplateService.createOrUpdateTemplate(
             request.name(), request.description(), request.showTypeName(), request.notionUrl());
@@ -169,8 +171,8 @@ public class ShowTemplateController {
       })
   @PutMapping("/{id}")
   public ResponseEntity<ShowTemplate> updateShowTemplate(
-      @Parameter(description = "Show template ID") @PathVariable Long id,
-      @Valid @RequestBody UpdateShowTemplateRequest request) {
+      @Parameter(description = "Show template ID") @PathVariable final Long id,
+      @Valid @RequestBody final UpdateShowTemplateRequest request) {
 
     Optional<ShowTemplate> updatedTemplate =
         showTemplateService.updateTemplate(
@@ -187,7 +189,7 @@ public class ShowTemplateController {
       })
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteShowTemplate(
-      @Parameter(description = "Show template ID") @PathVariable Long id) {
+      @Parameter(description = "Show template ID") @PathVariable final Long id) {
 
     boolean deleted = showTemplateService.deleteTemplate(id);
     return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();

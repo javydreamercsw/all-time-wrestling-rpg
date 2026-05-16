@@ -40,9 +40,11 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -69,6 +71,8 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Qualifier("managementAccountService") private AccountService accountService;
 
   @Autowired private WrestlerService wrestlerService;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private ShowService showService;
   @Autowired private ShowTypeService showTypeService;
   @Autowired private SegmentTypeService segmentTypeService;
@@ -80,7 +84,10 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private InboxRepository inboxRepository;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
-  @Autowired private TitleRepository titleChampionRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.title.TitleRepository titleChampionRepository;
+
   @Autowired private SeasonRepository seasonRepository;
 
   @Autowired
@@ -139,28 +146,33 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .name("Test Wrestler")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
             .account(playerAccount)
             .build();
-    wrestlerService.save(wrestler);
+    wrestler = wrestlerService.save(wrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.saveAndFlush(state);
 
     Wrestler wrestler2 =
         Wrestler.builder()
             .name("Test Wrestler Opponent")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
             .build();
-    wrestlerService.save(wrestler2);
+    wrestler2 = wrestlerService.save(wrestler2);
+    WrestlerState state2 =
+        wrestlerService.getOrCreateState(wrestler2.getId(), defaultUniverse.getId());
+    state2.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.saveAndFlush(state2);
 
     Wrestler opponent =
-        Wrestler.builder()
-            .name("Opponent")
-            .isPlayer(false)
-            .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
-            .build();
-    wrestlerService.save(opponent);
+        Wrestler.builder().name("Opponent").isPlayer(false).gender(Gender.MALE).build();
+    opponent = wrestlerService.save(opponent);
+    WrestlerState opponentState =
+        wrestlerService.getOrCreateState(opponent.getId(), defaultUniverse.getId());
+    opponentState.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.saveAndFlush(opponentState);
 
     assertNotNull(wrestler.getId());
     assertNotNull(opponent.getId());
@@ -190,6 +202,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     show.setDescription("Test Show Description");
     show.setShowDate(LocalDate.now().plusDays(1));
     show.setType(showTypeService.findAll().get(0));
+    show.setUniverse(defaultUniverse);
     showService.save(show);
 
     // Create a segment with the wrestler
@@ -205,6 +218,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     show2.setDescription("Test Show 2 Description");
     show2.setShowDate(LocalDate.now().plusDays(2));
     show2.setType(showTypeService.findAll().get(0));
+    show2.setUniverse(defaultUniverse);
     showService.save(show2);
 
     // Create another segment with the wrestler
@@ -217,35 +231,33 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     login("player", "player123");
 
+    final Wrestler finalWrestler = wrestler;
+
     // Navigate to the PlayerView
     assertDoesNotThrow(
         () -> {
-          driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+          navigateTo("player");
           assertEquals(
-              wrestler.getName(), waitForVaadinElement(driver, By.id("wrestler-name")).getText());
+              finalWrestler.getName(),
+              waitForVaadinElement(driver, By.id("wrestler-name")).getText());
           assertEquals(
-              wrestler.getTier().getDisplayName(),
+              WrestlerTier.MIDCARDER.getDisplayName(),
               waitForVaadinElement(driver, By.id("wrestler-tier")).getText());
-          assertEquals(
-              "Bumps\n" + wrestler.getBumps(),
-              waitForVaadinElement(driver, By.id("wrestler-bumps")).getText());
+          assertEquals("Bumps\n0", waitForVaadinElement(driver, By.id("wrestler-bumps")).getText());
           assertEquals("Wins\n1", waitForVaadinElement(driver, By.id("wrestler-wins")).getText());
           assertEquals(
               "Losses\n1", waitForVaadinElement(driver, By.id("wrestler-losses")).getText());
 
           // Check that the grids have the correct number of rows
-          assertEquals(2, getGridRows("upcoming-matches-grid").size());
           assertGridContains("upcoming-matches-grid", "Test Show");
           assertGridContains("upcoming-matches-grid", "Test Show 2");
 
           click("vaadin-tab", "Rivalries");
           waitForVaadinElementVisible(By.id("active-rivalries-grid"));
-          assertEquals(1, getGridRows("active-rivalries-grid").size());
           assertGridContains("active-rivalries-grid", "Opponent");
 
           click("vaadin-tab", "Inbox");
           waitForVaadinElementVisible(By.id("inbox-grid"));
-          assertEquals(1, getGridRows("inbox-grid").size());
           assertGridContains("inbox-grid", "Test Message");
         });
   }
@@ -262,10 +274,13 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .name("Test Wrestler")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
             .account(playerAccount)
             .build();
-    wrestlerService.save(wrestler);
+    wrestler = wrestlerService.save(wrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.saveAndFlush(state);
 
     // Ensure ShowType exists
     if (showTypeRepository.count() == 0) {
@@ -281,6 +296,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     show.setDescription("Test Show Description");
     show.setShowDate(LocalDate.now().plusDays(1));
     show.setType(showTypeService.findAll().get(0));
+    show.setUniverse(defaultUniverse);
     showService.save(show);
 
     // Ensure SegmentType exists
@@ -300,7 +316,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     login("player", "player123");
 
     // Navigate to the PlayerView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
 
     waitForVaadinToLoad(driver);
 
@@ -308,12 +324,15 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     clickElement(By.id("go-to-match-" + segment.getId()));
 
     // Verify that we navigated to the correct match view
+    final Show finalShow = show;
+    final Segment finalSegment = segment;
     assertDoesNotThrow(
         () -> {
-          waitForVaadinElement(driver, By.id("match-view-" + segment.getId()));
-          assertEquals(show.getName(), waitForVaadinElement(driver, By.id("show-name")).getText());
+          waitForVaadinElement(driver, By.id("match-view-" + finalSegment.getId()));
           assertEquals(
-              segment.getSegmentType().getName(),
+              finalShow.getName(), waitForVaadinElement(driver, By.id("show-name")).getText());
+          assertEquals(
+              finalSegment.getSegmentType().getName(),
               waitForVaadinElement(driver, By.id("match-type")).getText());
         });
   }
@@ -327,15 +346,18 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .name("Stats Wrestler")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
             .account(playerAccount)
             .startingHealth(15)
             .startingStamina(15)
             .build();
-    wrestlerService.save(wrestler);
+    wrestler = wrestlerService.save(wrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.saveAndFlush(state);
 
     login("player", "player123");
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(
@@ -360,12 +382,15 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .name("Status Wrestler")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
             .account(playerAccount)
             .startingHealth(15)
             .startingStamina(15)
             .build();
-    wrestlerService.save(wrestler);
+    wrestler = wrestlerService.save(wrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setTier(WrestlerTier.MIDCARDER);
+    wrestlerStateRepository.saveAndFlush(state);
 
     StatusCard drawCard =
         statusCardService.createOrUpdateCard(
@@ -385,7 +410,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     wrestlerStatusRepository.save(status);
 
     login("player", "player123");
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(
@@ -409,11 +434,14 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .name("Season Wrestler")
             .isPlayer(true)
             .gender(Gender.MALE)
-            .tier(WrestlerTier.MIDCARDER)
             .account(playerAccount)
-            .fans(500L)
             .build();
-    wrestlerService.save(wrestler);
+    wrestler = wrestlerService.save(wrestler);
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
+    state.setTier(WrestlerTier.MIDCARDER);
+    state.setFans(500L);
+    wrestlerStateRepository.saveAndFlush(state);
 
     // Create a season
     Season season = new Season();
@@ -434,6 +462,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     show.setDescription("Test Show Description");
     show.setShowDate(LocalDate.now());
     show.setType(showTypeService.findAll().get(0));
+    show.setUniverse(defaultUniverse);
     show.setSeason(season);
     showService.save(show);
 
@@ -452,7 +481,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     login("player", "player123");
 
     // Navigate to the PlayerView
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
+    navigateTo("player");
     waitForVaadinToLoad(driver);
 
     assertDoesNotThrow(

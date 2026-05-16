@@ -28,11 +28,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 /** Unit tests for Rivalry entity. Tests the ATW RPG rivalry and heat system functionality. */
 @DisplayName("Rivalry Tests")
-@DataJpaTest
 class RivalryTest extends AbstractJpaTest {
   @Autowired private WrestlerRepository wrestlerRepository;
 
@@ -41,8 +39,10 @@ class RivalryTest extends AbstractJpaTest {
   private Wrestler wrestler2;
   private Wrestler wrestler3;
 
+  @Override
   @BeforeEach
-  void setUp() {
+  public void baseSetUp() throws Exception {
+    super.baseSetUp();
     wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
     wrestler2 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 2"));
     wrestler3 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 3"));

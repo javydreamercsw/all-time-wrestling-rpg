@@ -51,7 +51,7 @@ public class TeamDTO {
   private boolean active;
   private boolean disbanded;
 
-  public static TeamDTO fromEntity(Team team) {
+  public static TeamDTO fromEntity(final Team team) {
     TeamDTO dto = new TeamDTO();
     dto.setId(team.getId());
     dto.setName(team.getName());

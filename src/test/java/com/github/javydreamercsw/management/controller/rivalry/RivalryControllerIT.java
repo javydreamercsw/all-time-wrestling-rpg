@@ -16,52 +16,53 @@
 */
 package com.github.javydreamercsw.management.controller.rivalry;
 
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.controller.rivalry.RivalryController.AddHeatRequest;
-import com.github.javydreamercsw.management.controller.rivalry.RivalryController.CreateRivalryRequest;
-import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.controller.AbstractRestControllerIT;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.mapper.RivalryMapper;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for RivalryController. Tests the complete REST API functionality for rivalry
  * management.
  */
 @DisplayName("RivalryController Integration Tests")
-@WithMockUser(authorities = {"ADMIN", "ROLE_ADMIN", "ROLE_BOOKER"})
-class RivalryControllerIT extends AbstractIntegrationTest {
+@Transactional
+class RivalryControllerIT extends AbstractRestControllerIT {
 
-  @Autowired private WebApplicationContext context;
-  private MockMvc mockMvc;
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private RivalryService rivalryService;
+  @Autowired private RivalryMapper rivalryMapper;
   @Autowired private RivalryRepository rivalryRepository;
-  @Autowired private DeckRepository deckRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
 
   @BeforeEach
   public void setUp() {
-    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+    // Manually build MockMvc to bypass Vaadin servlet issues
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(new RivalryController(rivalryService, rivalryMapper))
+            .build();
 
-    // Delete in correct order to avoid foreign key constraint violations
     rivalryRepository.deleteAll();
-    deckRepository.deleteAll();
-    wrestlerRepository.deleteAll();
   }
 
   @Test
@@ -70,8 +71,9 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     Wrestler wrestler1 = createTestWrestler("Wrestler 1", 50_000L);
     Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
 
-    CreateRivalryRequest request =
-        new CreateRivalryRequest(wrestler1.getId(), wrestler2.getId(), "Test storyline");
+    RivalryController.CreateRivalryRequest request =
+        new RivalryController.CreateRivalryRequest(
+            wrestler1.getId(), wrestler2.getId(), "Test storyline");
 
     mockMvc
         .perform(
@@ -95,8 +97,9 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     // Create existing rivalry
     Rivalry existingRivalry = createTestRivalry(wrestler1, wrestler2, 10);
 
-    CreateRivalryRequest request =
-        new CreateRivalryRequest(wrestler1.getId(), wrestler2.getId(), "New storyline");
+    RivalryController.CreateRivalryRequest request =
+        new RivalryController.CreateRivalryRequest(
+            wrestler1.getId(), wrestler2.getId(), "New storyline");
 
     mockMvc
         .perform(
@@ -114,7 +117,8 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
     Rivalry rivalry = createTestRivalry(wrestler1, wrestler2, 5);
 
-    AddHeatRequest request = new AddHeatRequest(3, "Backstage confrontation");
+    RivalryController.AddHeatRequest request =
+        new RivalryController.AddHeatRequest(3, "Backstage confrontation");
 
     mockMvc
         .perform(
@@ -217,8 +221,8 @@ class RivalryControllerIT extends AbstractIntegrationTest {
   @Test
   @DisplayName("Should validate required fields when creating rivalry")
   void shouldValidateRequiredFieldsWhenCreatingRivalry() throws Exception {
-    CreateRivalryRequest request =
-        new CreateRivalryRequest(
+    RivalryController.CreateRivalryRequest request =
+        new RivalryController.CreateRivalryRequest(
             null, // Invalid null wrestler1Id
             null, // Invalid null wrestler2Id
             null);
@@ -238,7 +242,8 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     Wrestler wrestler2 = createTestWrestler("Wrestler 2", 50_000L);
     Rivalry rivalry = createTestRivalry(wrestler1, wrestler2, 5);
 
-    AddHeatRequest request = new AddHeatRequest(100, "Too much heat"); // Exceeds max of 50
+    RivalryController.AddHeatRequest request =
+        new RivalryController.AddHeatRequest(100, "Too much heat"); // Exceeds max of 50
 
     mockMvc
         .perform(
@@ -254,24 +259,34 @@ class RivalryControllerIT extends AbstractIntegrationTest {
     mockMvc.perform(get("/api/rivalries/{id}", 999L)).andExpect(status().isNotFound());
   }
 
-  private Wrestler createTestWrestler(@NonNull String name, @NonNull Long fans) {
+  public Wrestler createTestWrestler(@NonNull final String name, @NonNull final Long fans) {
     Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName(name);
-    wrestler.setFans(fans);
     wrestler.setStartingHealth(15);
     wrestler.setStartingStamina(15);
-    wrestler.setCurrentHealth(15);
     wrestler.setLowHealth(5);
     wrestler.setLowStamina(5);
     wrestler.setDeckSize(40);
-    wrestler.setBumps(0);
     wrestler.setIsPlayer(true);
-    wrestler.setTier(WrestlerTier.ROOKIE);
-    return wrestlerRepository.save(wrestler);
+    Wrestler savedWrestler = wrestlerRepository.save(wrestler);
+
+    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+        com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
+            .wrestler(savedWrestler)
+            .universe(defaultUniverse)
+            .fans(fans)
+            .tier(WrestlerTier.fromFanCount(fans))
+            .currentHealth(15)
+            .bumps(0)
+            .morale(100)
+            .build();
+    wrestlerStateRepository.save(state);
+
+    return savedWrestler;
   }
 
   private Rivalry createTestRivalry(
-      @NonNull Wrestler wrestler1, @NonNull Wrestler wrestler2, int heat) {
+      @NonNull final Wrestler wrestler1, @NonNull final Wrestler wrestler2, final int heat) {
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
     rivalry.setWrestler2(wrestler2);

@@ -34,16 +34,16 @@ public class StatusCardService {
   private final StatusCardRepository statusCardRepository;
 
   public StatusCard createOrUpdateCard(
-      String key,
-      String level1Name,
-      String level2Name,
-      String description,
-      boolean positive,
-      String level1Effect,
-      String level2Effect,
-      String flipUpCondition,
-      String flipDownCondition,
-      String discardCondition) {
+      final String key,
+      final String level1Name,
+      final String level2Name,
+      final String description,
+      final boolean positive,
+      final String level1Effect,
+      final String level2Effect,
+      final String flipUpCondition,
+      final String flipDownCondition,
+      final String discardCondition) {
 
     Optional<StatusCard> existingOpt = statusCardRepository.findByKey(key);
 
@@ -70,7 +70,7 @@ public class StatusCardService {
     return statusCardRepository.save(card);
   }
 
-  public StatusCard findByKey(String key) {
+  public StatusCard findByKey(final String key) {
     return statusCardRepository
         .findByKey(key)
         .orElseThrow(
@@ -81,12 +81,12 @@ public class StatusCardService {
     return statusCardRepository.save(card);
   }
 
-  public void delete(Long id) {
+  public void delete(final Long id) {
     statusCardRepository.deleteById(id);
   }
 
   public org.springframework.data.domain.Page<StatusCard> list(
-      org.springframework.data.domain.Pageable pageable) {
+      final org.springframework.data.domain.Pageable pageable) {
     return statusCardRepository.findAll(pageable);
   }
 

@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.notion.WrestlerPage;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService.SyncResult;
 import java.util.Arrays;
@@ -51,9 +53,10 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   private WrestlerSyncService wrestlerSyncService;
 
   @Mock private WrestlerNotionSyncService wrestlerNotionSyncService;
+  @Mock private WrestlerStateRepository wrestlerStateRepository;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
 
     // Mock Name extraction
@@ -92,12 +95,18 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             notionApiExecutor,
             wrestlerService,
             wrestlerRepository,
+            universeRepository,
+            wrestlerStateRepository,
             wrestlerNotionSyncService,
             tierRecalculationService,
             wrestlerAlignmentRepository,
             factionRepository,
             npcRepository,
             injuryRepository);
+
+    lenient()
+        .when(wrestlerService.getOrCreateState(any(), anyLong()))
+        .thenReturn(new com.github.javydreamercsw.management.domain.wrestler.WrestlerState());
   }
 
   @Test
@@ -190,9 +199,9 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
   }
 
   private WrestlerPage createMockWrestlerPage(
-      String id, String name, int health, int stamina, int charisma) {
-    WrestlerPage page = mock(WrestlerPage.class);
-    lenient().when(page.getId()).thenReturn(id);
+      final String id, final String name, final int health, final int stamina, final int charisma) {
+    WrestlerPage page = new WrestlerPage();
+    page.setId(id);
 
     Map<String, Object> properties = new HashMap<>();
     properties.put("Name", Map.of("title", List.of(Map.of("text", Map.of("content", name)))));
@@ -201,7 +210,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
     properties.put("Charisma", (double) charisma);
     properties.put("Tier", "Main Event");
     properties.put("Fans", 1000.0);
-    lenient().when(page.getRawProperties()).thenReturn(properties);
+    page.setRawProperties(properties);
 
     return page;
   }

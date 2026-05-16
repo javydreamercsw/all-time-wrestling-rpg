@@ -34,7 +34,7 @@ public class HistoryTimelineComponent extends Composite<Div> {
           .withLocale(Locale.US)
           .withZone(ZoneId.systemDefault());
 
-  public HistoryTimelineComponent(List<TitleReignDTO> history) {
+  public HistoryTimelineComponent(final List<TitleReignDTO> history) {
     getContent().addClassNames(Display.FLEX, Overflow.AUTO, Padding.Vertical.MEDIUM, Gap.SMALL);
     getContent().getStyle().set("scrollbar-width", "thin");
 
@@ -47,7 +47,7 @@ public class HistoryTimelineComponent extends Composite<Div> {
     }
   }
 
-  private Div createTimelineItem(TitleReignDTO reign, boolean isCurrent) {
+  private Div createTimelineItem(final TitleReignDTO reign, final boolean isCurrent) {
     Div item = new Div();
     item.addClassNames(
         Display.FLEX,
@@ -70,12 +70,12 @@ public class HistoryTimelineComponent extends Composite<Div> {
 
     Span dates =
         new Span(
-            String.format(
-                "%s - %s",
-                DATE_FORMATTER.format(reign.getStartDate()),
-                reign.getEndDate() != null
-                    ? DATE_FORMATTER.format(reign.getEndDate())
-                    : "Present"));
+            "%s - %s"
+                .formatted(
+                    DATE_FORMATTER.format(reign.getStartDate()),
+                    reign.getEndDate() != null
+                        ? DATE_FORMATTER.format(reign.getEndDate())
+                        : "Present"));
     dates.addClassNames(FontSize.XXSMALL, TextColor.SECONDARY);
 
     item.add(name, dates);

@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,13 +63,13 @@ public class TournamentService {
   private static final String KEY_TOURNAMENT_STATE = "tournamentState";
 
   @Transactional
-  public void initializeTournament(@NonNull Campaign campaign) {
+  public void initializeTournament(@NonNull final Campaign campaign) {
     CampaignState state = campaign.getState();
     if (getTournamentState(campaign) != null) {
       return; // Already initialized
     }
 
-    log.info("Initializing Tournament for {}", campaign.getWrestler().getName());
+    log.debug("Initializing Tournament for {}", campaign.getWrestler().getName());
 
     List<Wrestler> roster = wrestlerRepository.findAll();
     roster.removeIf(w -> w.equals(campaign.getWrestler()));
@@ -174,7 +173,7 @@ public class TournamentService {
     saveTournamentState(state, tournament);
   }
 
-  public TournamentDTO getTournamentState(@NonNull Campaign campaign) {
+  public TournamentDTO getTournamentState(@NonNull final Campaign campaign) {
     CampaignState state = campaign.getState();
     if (state.getFeatureData() == null) {
       return null;
@@ -195,30 +194,29 @@ public class TournamentService {
   }
 
   @Transactional
-  public void advanceTournament(@NonNull Campaign campaign, boolean playerWon, Show show) {
+  public void advanceTournament(
+      @NonNull final Campaign campaign, final boolean playerWon, final Show show) {
     TournamentDTO tournament = getTournamentState(campaign);
     if (tournament == null) {
       return;
     }
 
     int currentRound = tournament.getCurrentRound();
-    log.info("Advancing tournament. Current Round: {}", currentRound);
+    log.debug("Advancing tournament. Current Round: {}", currentRound);
 
     List<TournamentMatch> currentRoundMatches =
-        tournament.getMatches().stream()
-            .filter(m -> m.getRound() == currentRound)
-            .collect(Collectors.toList());
+        tournament.getMatches().stream().filter(m -> m.getRound() == currentRound).toList();
 
-    log.info("Found {} matches for round {}", currentRoundMatches.size(), currentRound);
+    log.debug("Found {} matches for round {}", currentRoundMatches.size(), currentRound);
 
     // Simulate current round
     for (TournamentMatch match : currentRoundMatches) {
       if (match.getWinnerId() != null) {
-        log.info("Match {} already resolved. Winner: {}", match.getId(), match.getWinnerId());
+        log.debug("Match {} already resolved. Winner: {}", match.getId(), match.getWinnerId());
         continue; // Already resolved
       }
 
-      log.info(
+      log.debug(
           "Resolving match {}: {} vs {}",
           match.getId(),
           match.getWrestler1Name(),
@@ -230,7 +228,7 @@ public class TournamentService {
         // Player Match logic
         if (playerWon) {
           winnerId = campaign.getWrestler().getId();
-          log.info("Player WON match {}", match.getId());
+          log.debug("Player WON match {}", match.getId());
         } else {
           // Determine opponent ID
           winnerId =
@@ -309,7 +307,7 @@ public class TournamentService {
   }
 
   private void propagateWinners(
-      @NonNull TournamentDTO tournament, int round, @NonNull Campaign campaign) {
+      @NonNull final TournamentDTO tournament, final int round, @NonNull final Campaign campaign) {
     List<TournamentMatch> matches =
         tournament.getMatches().stream().filter(m -> m.getRound() == round).toList();
 
@@ -354,7 +352,7 @@ public class TournamentService {
     }
   }
 
-  public TournamentMatch getCurrentPlayerMatch(@NonNull Campaign campaign) {
+  public TournamentMatch getCurrentPlayerMatch(@NonNull final Campaign campaign) {
     TournamentDTO tournament = getTournamentState(campaign);
     if (tournament == null) {
       return null;
@@ -367,7 +365,7 @@ public class TournamentService {
         .orElse(null);
   }
 
-  public boolean isPlayerChampion(@NonNull Campaign campaign) {
+  public boolean isPlayerChampion(@NonNull final Campaign campaign) {
     TournamentDTO tournament = getTournamentState(campaign);
     if (tournament == null) {
       return false;
@@ -383,7 +381,8 @@ public class TournamentService {
     return finals != null && campaign.getWrestler().getId().equals(finals.getWinnerId());
   }
 
-  private void saveTournamentState(@NonNull CampaignState state, @NonNull TournamentDTO dto) {
+  private void saveTournamentState(
+      @NonNull final CampaignState state, @NonNull final TournamentDTO dto) {
     try {
       Map<String, Object> featureData = new HashMap<>();
       if (state.getFeatureData() != null) {

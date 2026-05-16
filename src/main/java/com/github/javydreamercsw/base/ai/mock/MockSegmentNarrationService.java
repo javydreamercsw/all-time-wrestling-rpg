@@ -46,7 +46,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
-  protected String callAIProvider(@NonNull String prompt) {
+  protected String callAIProvider(@NonNull final String prompt) {
     // Simulate AI processing time
     try {
       Thread.sleep(random.nextInt(2000) + 1000); // 1-3 seconds
@@ -85,9 +85,11 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
 
     if (prompt.contains("Respond directly to them with a short, impactful retort")) {
-      return "You think you can just step into my ring and talk like that? I've retired legends"
-          + " while you were still learning to tie your boots. When the bell rings, the"
-          + " talking stops and the pain begins!";
+      return """
+      You think you can just step into my ring and talk like that? I've retired legends\
+       while you were still learning to tie your boots. When the bell rings, the\
+       talking stops and the pain begins!\
+      """;
     }
 
     log.info("Mock AI generating segment narration (simulated processing time)");
@@ -105,11 +107,13 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       return generateMockNews(prompt);
     }
 
-    return "The wrestler looks at you with a mix of confusion and respect, nodding slowly before"
-        + " walking away.";
+    return """
+    The wrestler looks at you with a mix of confusion and respect, nodding slowly before\
+     walking away.\
+    """;
   }
 
-  private String generateMockBackstageSituation(String prompt) {
+  private String generateMockBackstageSituation(final String prompt) {
     try {
       var choice1 =
           com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
@@ -130,15 +134,19 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               .alignmentShift(-1)
               .momentumBonus(0)
               .outcomeText(
-                  "You leave the veteran shaking their head, but you feel more focused on your own"
-                      + " path.")
+                  """
+                  You leave the veteran shaking their head, but you feel more focused on your own\
+                   path.\
+                  """)
               .nextPhase("BACKSTAGE")
               .build();
 
       var response =
           new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
-              "Mock Situation: You are approached by a veteran in the locker room who offers some"
-                  + " unsolicited advice about your upcoming matches.",
+              """
+              Mock Situation: You are approached by a veteran in the locker room who offers some\
+               unsolicited advice about your upcoming matches.\
+              """,
               List.of(choice1, choice2));
 
       return objectMapper.writeValueAsString(response);
@@ -148,19 +156,21 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
   }
 
-  private String generateMockMonthlyAnalysis(String prompt) {
+  private String generateMockMonthlyAnalysis(final String prompt) {
     try {
       var response =
           Map.of(
               "headline",
               "THE MONTHLY RECAP: A New Era of Dominance",
               "content",
-              "This past month has seen a seismic shift in the wrestling landscape. "
-                  + "With multiple title changes and the emergence of unexpected rivalries, "
-                  + "the hierarchy of the roster is being completely rewritten. "
-                  + "The recent PLE served as a perfect climax, providing fans with moments "
-                  + "that will be discussed for years to come. As we look ahead, one question "
-                  + "remains: who has the resilience to stay at the top?",
+              """
+              This past month has seen a seismic shift in the wrestling landscape. \
+              With multiple title changes and the emergence of unexpected rivalries, \
+              the hierarchy of the roster is being completely rewritten. \
+              The recent PLE served as a perfect climax, providing fans with moments \
+              that will be discussed for years to come. As we look ahead, one question \
+              remains: who has the resilience to stay at the top?\
+              """,
               "category",
               "ANALYSIS",
               "isRumor",
@@ -175,7 +185,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
   }
 
-  private String generateMockStorylineArc(String prompt) {
+  private String generateMockStorylineArc(final String prompt) {
     try {
       var m1 =
           Map.of(
@@ -211,7 +221,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
   }
 
-  private String generateMockNews(String prompt) {
+  private String generateMockNews(final String prompt) {
     try {
       String headline = "BREAKING: Major Results from the Ring!";
       String category = "BREAKING";
@@ -231,9 +241,11 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
           Map.of(
               "headline", headline,
               "content",
-                  "In an incredible turn of events, the wrestling world was shaken by the latest"
-                      + " show results. Fans are still talking about the implications of these"
-                      + " matches.",
+                  """
+                  In an incredible turn of events, the wrestling world was shaken by the latest\
+                   show results. Fans are still talking about the implications of these\
+                   matches.\
+                  """,
               "category", category,
               "isRumor", isRumor,
               "importance", importance);
@@ -245,7 +257,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
   }
 
-  private String generateMockTextNarration(String prompt) {
+  private String generateMockTextNarration(final String prompt) {
     String wrestler1 = "Wrestler A";
     String wrestler2 = "Wrestler B";
     String venue = "the arena";
@@ -312,7 +324,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     String w1Alignment = participantAlignments.getOrDefault(wrestler1, "FACE");
     sb.append(comm1).append(": ").append("What a match we have tonight!").append("\n\n");
 
-    if (type.equals("Match")) {
+    if ("Match".equals(type)) {
       sb.append("Narrator: ").append(generateEarlyAction(wrestler1, wrestler2)).append("\n\n");
 
       String reaction;
@@ -356,7 +368,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     return sb.toString();
   }
 
-  private String generateMockCampaignEncounter(String prompt) {
+  private String generateMockCampaignEncounter(final String prompt) {
     try {
       var choice1 =
           com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
@@ -390,7 +402,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
   }
 
-  private String generateMockPromoContext(String prompt) {
+  private String generateMockPromoContext(final String prompt) {
     try {
       var hook1 =
           Map.of(
@@ -399,8 +411,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               "label",
               "Cheap Heat",
               "text",
-              "I've been all over the world, but I've never seen a more pathetic group of"
-                  + " losers than the people in this arena tonight!",
+              """
+              I've been all over the world, but I've never seen a more pathetic group of\
+               losers than the people in this arena tonight!\
+              """,
               "alignmentShift",
               -1,
               "difficulty",
@@ -412,8 +426,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               "label",
               "Pop the Crowd",
               "text",
-              "It's an honor to be here tonight! There's no place I'd rather be than right"
-                  + " here, in front of the best fans in the business!",
+              """
+              It's an honor to be here tonight! There's no place I'd rather be than right\
+               here, in front of the best fans in the business!\
+              """,
               "alignmentShift",
               1,
               "difficulty",
@@ -425,8 +441,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               "label",
               "Call Out",
               "text",
-              "I didn't come here to talk. I came here to fight. If anyone in that locker room"
-                  + " has the guts, come down here and face me!",
+              """
+              I didn't come here to talk. I came here to fight. If anyone in that locker room\
+               has the guts, come down here and face me!\
+              """,
               "alignmentShift",
               0,
               "difficulty",
@@ -435,8 +453,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       Map<String, Object> response = new java.util.HashMap<>();
       response.put(
           "opener",
-          "The crowd is buzzing as you step through the ropes and signal for a microphone. You"
-              + " stand in the center of the ring, soaking in the atmosphere.");
+          """
+          The crowd is buzzing as you step through the ropes and signal for a microphone. You\
+           stand in the center of the ring, soaking in the atmosphere.\
+          """);
       response.put("hooks", List.of(hook1, hook2, hook3));
       response.put("opponentName", prompt.contains("OPPONENT:") ? "Mock Opponent" : null);
 
@@ -447,7 +467,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
   }
 
-  private String generateMockPromoOutcome(String prompt) {
+  private String generateMockPromoOutcome(final String prompt) {
     try {
       var response =
           Map.of(
@@ -462,8 +482,10 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               "momentumBonus",
               2,
               "finalNarration",
-              "The player delivered a passionate promo that really connected with the fans, setting"
-                  + " the stage for their next encounter.");
+              """
+              The player delivered a passionate promo that really connected with the fans, setting\
+               the stage for their next encounter.\
+              """);
 
       return objectMapper.writeValueAsString(response);
     } catch (Exception e) {
@@ -483,7 +505,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   }
 
   /** Generates a realistic mock wrestling segment narration. */
-  private String generateMockNarration(@NonNull String prompt) {
+  private String generateMockNarration(@NonNull final String prompt) {
     try {
       // The prompt is not a simple JSON, but a text with a JSON schema in it.
       // We need to extract the expected number of matches and promos from the prompt.
@@ -520,7 +542,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     return random.nextInt(3) + 1;
   }
 
-  private List<String> extractSegmentTypes(String prompt) {
+  private List<String> extractSegmentTypes(final String prompt) {
     String searchString = "Available Segment Types: ";
     int startIndex = prompt.indexOf(searchString);
     if (startIndex != -1) {
@@ -534,7 +556,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     return List.of("Match", "Promo");
   }
 
-  private List<String> extractParticipants(String prompt) {
+  private List<String> extractParticipants(final String prompt) {
     List<String> participants = new ArrayList<>();
 
     // Try extracting from JSON "wrestlers" array block
@@ -612,7 +634,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   private Object createMockSegment(
       List<String> segmentTypes, List<String> participants, String typeHint, String venue) {
     String type;
-    if (typeHint.equalsIgnoreCase("Match")) {
+    if ("Match".equalsIgnoreCase(typeHint)) {
       type = "One on One";
     } else {
       type = "Promo";
@@ -649,44 +671,62 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   private String generateOpening(
       String wrestler1, String wrestler2, String venue, String segmentType) {
     String[] openings = {
-      "The atmosphere is electric here at %s! The crowd is on their feet as we prepare for this %s"
-          + " between %s and %s!",
-      "What a night we have in store! %s is packed to capacity for this incredible %s featuring %s"
-          + " taking on %s!",
-      "The energy is palpable here at %s! Two of wrestling's finest, %s and %s, are about to"
-          + " collide in this %s!"
+      """
+      The atmosphere is electric here at %s! The crowd is on their feet as we prepare for this %s\
+       between %s and %s!\
+      """,
+      """
+      What a night we have in store! %s is packed to capacity for this incredible %s featuring %s\
+       taking on %s!\
+      """,
+      """
+      The energy is palpable here at %s! Two of wrestling's finest, %s and %s, are about to\
+       collide in this %s!\
+      """
     };
 
     String opening = openings[random.nextInt(openings.length)];
-    return String.format(opening, venue, segmentType, wrestler1, wrestler2);
+    return opening.formatted(venue, segmentType, wrestler1, wrestler2);
   }
 
   private String generateEarlyAction(String wrestler1, String wrestler2) {
     String[] actions = {
-      "The bell rings and both competitors circle each other cautiously. %s makes the first move"
-          + " with a quick takedown attempt, but %s counters beautifully!",
-      "%s starts aggressively, charging at %s with a series of strikes. The crowd roars as %s"
-          + " fights back with incredible intensity!",
-      "We're underway! %s and %s lock up in the center of the ring. %s gains the early advantage"
-          + " with superior technique!"
+      """
+      The bell rings and both competitors circle each other cautiously. %s makes the first move\
+       with a quick takedown attempt, but %s counters beautifully!\
+      """,
+      """
+      %s starts aggressively, charging at %s with a series of strikes. The crowd roars as %s\
+       fights back with incredible intensity!\
+      """,
+      """
+      We're underway! %s and %s lock up in the center of the ring. %s gains the early advantage\
+       with superior technique!\
+      """
     };
 
     String action = actions[random.nextInt(actions.length)];
-    return String.format(action, wrestler1, wrestler2, wrestler2, wrestler1, wrestler2, wrestler1);
+    return action.formatted(wrestler1, wrestler2, wrestler2, wrestler1, wrestler2, wrestler1);
   }
 
   private String generateMidSegmentDrama(String wrestler1, String wrestler2) {
     String[] dramas = {
-      "The momentum shifts as %s hits a devastating signature move! %s is down but not out - the"
-          + " resilience is incredible! The crowd is split, half cheering for each competitor!",
-      "What a sequence! %s attempts a high-risk maneuver but %s scouts it perfectly and counters!"
-          + " This segment could go either way!",
-      "The action spills outside the ring! %s and %s are giving everything they have! The referee"
-          + " is struggling to maintain control as the intensity reaches fever pitch!"
+      """
+      The momentum shifts as %s hits a devastating signature move! %s is down but not out - the\
+       resilience is incredible! The crowd is split, half cheering for each competitor!\
+      """,
+      """
+      What a sequence! %s attempts a high-risk maneuver but %s scouts it perfectly and counters!\
+       This segment could go either way!\
+      """,
+      """
+      The action spills outside the ring! %s and %s are giving everything they have! The referee\
+       is struggling to maintain control as the intensity reaches fever pitch!\
+      """
     };
 
     String drama = dramas[random.nextInt(dramas.length)];
-    return String.format(drama, wrestler1, wrestler2, wrestler2, wrestler1, wrestler1, wrestler2);
+    return drama.formatted(wrestler1, wrestler2, wrestler2, wrestler1, wrestler1, wrestler2);
   }
 
   private String generateClimaxAndFinish(String wrestler1, String wrestler2) {
@@ -696,21 +736,27 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     String loser = wrestler1Wins ? wrestler2 : wrestler1;
 
     String[] finishes = {
-      "In an incredible turn of events, %s manages to hit their finishing move! The referee counts:"
-          + " ONE! TWO! THREE! %s has done it! What an amazing victory here tonight!",
-      "The crowd is on their feet! %s pulls off the upset of the century! %s fought valiantly but"
-          + " %s was just too much tonight! What a segment!",
-      "UNBELIEVABLE! %s with the victory! %s gave everything they had, but %s proved why they're"
-          + " one of the best in the business! The crowd shows their appreciation for both"
-          + " competitors!"
+      """
+      In an incredible turn of events, %s manages to hit their finishing move! The referee counts:\
+       ONE! TWO! THREE! %s has done it! What an amazing victory here tonight!\
+      """,
+      """
+      The crowd is on their feet! %s pulls off the upset of the century! %s fought valiantly but\
+       %s was just too much tonight! What a segment!\
+      """,
+      """
+      UNBELIEVABLE! %s with the victory! %s gave everything they had, but %s proved why they're\
+       one of the best in the business! The crowd shows their appreciation for both\
+       competitors!\
+      """
     };
 
     String finish = finishes[random.nextInt(finishes.length)];
-    return String.format(finish, winner, winner, loser, winner, winner, loser, winner);
+    return finish.formatted(winner, winner, loser, winner, winner, loser, winner);
   }
 
   /** Extracts venue information from the JSON-like text in the prompt. */
-  private String extractVenue(String prompt) {
+  private String extractVenue(final String prompt) {
     String searchString = "\"name\" : \"";
     int venueBlockStart = prompt.indexOf("\"venue\" :");
     if (venueBlockStart != -1) {

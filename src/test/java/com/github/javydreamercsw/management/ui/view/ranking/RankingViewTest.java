@@ -52,7 +52,7 @@ class RankingViewTest extends AbstractViewTest {
   private ChampionshipDTO championshipDTO;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     championshipDTO =
         new ChampionshipDTO(
             1L, "Test Title", "images/championships/test.png", WrestlerTier.MIDCARDER);

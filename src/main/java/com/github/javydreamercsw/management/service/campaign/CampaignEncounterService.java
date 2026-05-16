@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import java.time.LocalDateTime;
@@ -59,18 +60,18 @@ public class CampaignEncounterService {
   private final ObjectMapper objectMapper;
 
   public CampaignEncounterService(
-      SegmentNarrationServiceFactory aiFactory,
-      CampaignEncounterRepository encounterRepository,
-      CampaignStateRepository stateRepository,
-      CampaignChapterService chapterService,
-      @org.springframework.context.annotation.Lazy CampaignService campaignService,
-      StorylineDirectorService storylineDirectorService,
-      WrestlerStatusService wrestlerStatusService,
-      WrestlerRepository wrestlerRepository,
-      TeamRepository teamRepository,
-      FactionRepository factionRepository,
-      CommentatorRepository commentatorRepository,
-      ObjectMapper objectMapper) {
+      final SegmentNarrationServiceFactory aiFactory,
+      final CampaignEncounterRepository encounterRepository,
+      final CampaignStateRepository stateRepository,
+      final CampaignChapterService chapterService,
+      @org.springframework.context.annotation.Lazy final CampaignService campaignService,
+      final StorylineDirectorService storylineDirectorService,
+      final WrestlerStatusService wrestlerStatusService,
+      final WrestlerRepository wrestlerRepository,
+      final TeamRepository teamRepository,
+      final FactionRepository factionRepository,
+      final CommentatorRepository commentatorRepository,
+      final ObjectMapper objectMapper) {
     this.aiFactory = aiFactory;
     this.encounterRepository = encounterRepository;
     this.stateRepository = stateRepository;
@@ -86,7 +87,7 @@ public class CampaignEncounterService {
   }
 
   @Transactional
-  public CampaignEncounterResponseDTO generateEncounter(Campaign campaign) {
+  public CampaignEncounterResponseDTO generateEncounter(final Campaign campaign) {
     CampaignState state = campaign.getState();
     CampaignChapterDTO chapter =
         campaignService
@@ -133,7 +134,9 @@ public class CampaignEncounterService {
   }
 
   private String buildPrompt(
-      Campaign campaign, CampaignChapterDTO chapter, List<CampaignEncounter> history) {
+      final Campaign campaign,
+      final CampaignChapterDTO chapter,
+      final List<CampaignEncounter> history) {
     StringBuilder sb = new StringBuilder();
     sb.append(chapter.getAiSystemPrompt()).append("\n\n");
 
@@ -154,7 +157,9 @@ public class CampaignEncounterService {
       sb.append("- Bio: ").append(campaign.getWrestler().getDescription()).append("\n");
     }
     sb.append("- Gender: ").append(campaign.getWrestler().getGender()).append("\n");
-    sb.append("- Tier: ").append(campaign.getWrestler().getTier()).append("\n");
+    sb.append("- Tier: ")
+        .append(campaign.getWrestler().getDefaultState().map(WrestlerState::getTier).orElse(null))
+        .append("\n");
     if (campaign.getWrestler().getAlignment() != null) {
       sb.append("- Alignment: ")
           .append(campaign.getWrestler().getAlignment().getAlignmentType())
@@ -191,8 +196,10 @@ public class CampaignEncounterService {
             .append("\n");
       }
       sb.append(
-          "Use these commentators for post-match analysis or to frame the story narrative where"
-              + " appropriate.\n");
+          """
+          Use these commentators for post-match analysis or to frame the story narrative where\
+           appropriate.
+          """);
     }
 
     // Check for partner ID in feature data
@@ -240,8 +247,10 @@ public class CampaignEncounterService {
       if (isFinalsPhase && !chapter.isTournament()) {
         sb.append("\n*** CHAPTER FINALE PHASE ***\n");
         sb.append(
-            "The player has reached the climax of this chapter. The story must now lead to the"
-                + " final showdown.\n");
+            """
+            The player has reached the climax of this chapter. The story must now lead to the\
+             final showdown.
+            """);
         if (chapter.getRules().getFinalMatchType() != null) {
           sb.append("The match type is mandated to be: ")
               .append(chapter.getRules().getFinalMatchType())
@@ -299,7 +308,8 @@ public class CampaignEncounterService {
         .forEach(
             w -> {
               sb.append("- ").append(w.getName());
-              sb.append(" (Tier: ").append(w.getTier());
+              sb.append(" (Tier: ")
+                  .append(w.getDefaultState().map(WrestlerState::getTier).orElse(null));
               sb.append(", Gender: ").append(w.getGender()).append(")");
               if (w.getDescription() != null) {
                 sb.append(". Bio: ").append(w.getDescription());
@@ -325,12 +335,16 @@ public class CampaignEncounterService {
     sb.append("\nFINAL INSTRUCTIONS (CRITICAL):\n");
     if (campaign.getState().getCurrentPhase() == CampaignPhase.POST_MATCH) {
       sb.append(
-          "1. Generate a 'Post-Match' narrative segment. This should be the immediate aftermath of"
-              + " the match result mentioned above.\n");
+          """
+          1. Generate a 'Post-Match' narrative segment. This should be the immediate aftermath of\
+           the match result mentioned above.
+          """);
       sb.append("2. Reflect the winner/loser behavior based on the player's alignment.\n");
       sb.append(
-          "3. Provide choices that define the player's reaction or immediate next steps (e.g.,"
-              + " backstage interview, locker room confrontation).\n");
+          """
+          3. Provide choices that define the player's reaction or immediate next steps (e.g.,\
+           backstage interview, locker room confrontation).
+          """);
     } else {
       sb.append("1. Generate a professional wrestling narrative segment appropriate for chapter ")
           .append(chapter.getId())
@@ -340,22 +354,28 @@ public class CampaignEncounterService {
       sb.append("2. Provide exactly 2 or 3 distinct choices for the player.\n");
     }
     sb.append(
-        "3. For each choice, define the 'alignmentShift' (positive value moves toward Babyface,"
-            + " negative toward Heel), 'vpReward' (Victory Points granted immediately, ONLY for"
-            + " choices that lead to a MATCH), and"
-            + " 'nextPhase' (MATCH, POST_MATCH, or BACKSTAGE). Use BACKSTAGE to end the current"
-            + " story loop and return to management.\n");
+        """
+        3. For each choice, define the 'alignmentShift' (positive value moves toward Babyface,\
+         negative toward Heel), 'vpReward' (Victory Points granted immediately, ONLY for\
+         choices that lead to a MATCH), and\
+         'nextPhase' (MATCH, POST_MATCH, or BACKSTAGE). Use BACKSTAGE to end the current\
+         story loop and return to management.
+        """);
     sb.append(
-        "4. If 'nextPhase' is MATCH, you may optionally provide a 'forcedOpponentName' (string) if"
-            + " the story dictates a specific opponent from the ROSTER above. Also provide a"
-            + " 'matchType' (string) from this list: ['One on One', 'Tag Team', 'Free-for-All',"
-            + " 'Abu Dhabi Rumble', 'Promo', 'Handicap Match', 'Faction Beatdown',"
-            + " 'GM Office Confrontation', 'Performance Review']. Defaults to 'One on One'.\n");
+        """
+        4. If 'nextPhase' is MATCH, you may optionally provide a 'forcedOpponentName' (string) if\
+         the story dictates a specific opponent from the ROSTER above. Also provide a\
+         'matchType' (string) from this list: ['One on One', 'Tag Team', 'Free-for-All',\
+         'Abu Dhabi Rumble', 'Promo', 'Handicap Match', 'Faction Beatdown',\
+         'GM Office Confrontation', 'Performance Review']. Defaults to 'One on One'.
+        """);
     sb.append(
-        "5. If 'nextPhase' is MATCH, you may also provide a 'segmentRules' (list of strings) for"
-            + " special stipulations (e.g., ['No DQ', 'Cage Match', 'Submission Only']). Available"
-            + " rules: Normal, Hardcore, Submission, No DQ, Cage, Ladder, Table, Last Man Standing,"
-            + " Iron Man.\n");
+        """
+        5. If 'nextPhase' is MATCH, you may also provide a 'segmentRules' (list of strings) for\
+         special stipulations (e.g., ['No DQ', 'Cage Match', 'Submission Only']). Available\
+         rules: Normal, Hardcore, Submission, No DQ, Cage, Ladder, Table, Last Man Standing,\
+         Iron Man.
+        """);
 
     Long currentPartnerId = null;
     try {
@@ -375,29 +395,37 @@ public class CampaignEncounterService {
 
     if (chapter.isTagTeam() && currentPartnerId == null) {
       sb.append(
-          "6. The player is currently looking for a Tag Team partner. Generate narrative and"
-              + " choices that involve scouting, teaming up with, or impressing a potential partner"
-              + " from the ROSTER (who is not already in a team/faction).\n");
+          """
+          6. The player is currently looking for a Tag Team partner. Generate narrative and\
+           choices that involve scouting, teaming up with, or impressing a potential partner\
+           from the ROSTER (who is not already in a team/faction).
+          """);
     }
 
     if ("fighting_champion".equals(chapter.getId())) {
       sb.append(
-          "7. In this chapter (Open Challenge), when nextPhase is MATCH, you MUST select a random"
-              + " credible opponent from the ROSTER above as the one who answers the challenge.\n");
+          """
+          7. In this chapter (Open Challenge), when nextPhase is MATCH, you MUST select a random\
+           credible opponent from the ROSTER above as the one who answers the challenge.
+          """);
     }
 
     sb.append(
-        "8. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational"
-            + " filler before or after the JSON.\n");
+        """
+        8. IMPORTANT: Your response MUST be a valid JSON object. Do not include any conversational\
+         filler before or after the JSON.
+        """);
     sb.append("REQUIRED JSON STRUCTURE:\n");
     sb.append("{\n");
     sb.append("  \"narrative\": \"The story text here...\",\n");
     sb.append("  \"choices\": [\n");
     sb.append(
-        "    { \"text\": \"Full choice description\", \"label\": \"Short button label\","
-            + " \"alignmentShift\": 1, \"vpReward\": 5, \"nextPhase\": \"MATCH\","
-            + " \"forcedOpponentName\": null, \"matchType\": \"One on One\", \"segmentRules\":"
-            + " [\"No DQ\"], \"statusCardKeys\": [\"status_draw\"] }\n");
+        """
+            { "text": "Full choice description", "label": "Short button label",\
+         "alignmentShift": 1, "vpReward": 5, "nextPhase": "MATCH",\
+         "forcedOpponentName": null, "matchType": "One on One", "segmentRules":\
+         ["No DQ"], "statusCardKeys": ["status_draw"] }
+        """);
     sb.append("  ]\n");
     sb.append("}\n");
 
@@ -417,7 +445,8 @@ public class CampaignEncounterService {
   }
 
   @Transactional
-  public void recordEncounterChoice(Campaign campaign, CampaignEncounterResponseDTO.Choice choice) {
+  public void recordEncounterChoice(
+      final Campaign campaign, final CampaignEncounterResponseDTO.Choice choice) {
     List<CampaignEncounter> encounters =
         encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign);
     if (encounters.isEmpty()) {
@@ -459,14 +488,14 @@ public class CampaignEncounterService {
     state.setVictoryPoints(state.getVictoryPoints() + finalVp);
     stateRepository.save(state);
 
-    log.info(
+    log.debug(
         "Recorded choice for wrestler {}: {}. Alignment shift: {}",
         campaign.getWrestler().getName(),
         choice.getText(),
         choice.getAlignmentShift());
   }
 
-  public java.util.Optional<CampaignEncounter> getLatestEncounter(Campaign campaign) {
+  public java.util.Optional<CampaignEncounter> getLatestEncounter(final Campaign campaign) {
     List<CampaignEncounter> encounters =
         encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign);
     return encounters.isEmpty()

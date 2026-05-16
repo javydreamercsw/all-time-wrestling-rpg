@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.team;
 
+import lombok.Getter;
+
 /** Represents the status of a team in the ATW RPG system. */
 public enum TeamStatus {
   /** Team is currently active and can compete in matches */
@@ -27,14 +29,10 @@ public enum TeamStatus {
   /** Team is temporarily inactive (e.g., due to injuries, storyline) */
   INACTIVE("Inactive");
 
-  private final String displayName;
+  @Getter private final String displayName;
 
-  TeamStatus(String displayName) {
+  TeamStatus(final String displayName) {
     this.displayName = displayName;
-  }
-
-  public String getDisplayName() {
-    return displayName;
   }
 
   @Override

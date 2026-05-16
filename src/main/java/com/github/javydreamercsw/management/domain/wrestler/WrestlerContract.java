@@ -48,6 +48,7 @@ import org.jspecify.annotations.Nullable;
 public class WrestlerContract extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "contract_id")
   private Long id;
 
@@ -81,11 +82,6 @@ public class WrestlerContract extends AbstractEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 
   @PrePersist
   protected void onCreate() {

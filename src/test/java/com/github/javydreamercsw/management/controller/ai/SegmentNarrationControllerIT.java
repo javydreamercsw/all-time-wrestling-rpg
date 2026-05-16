@@ -16,18 +16,26 @@
 */
 package com.github.javydreamercsw.management.controller.ai;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
-import com.github.javydreamercsw.management.controller.AbstractControllerTest;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Integration tests for MatchNarrationController. Tests the complete flow from REST endpoints to AI
@@ -35,7 +43,16 @@ import org.springframework.test.context.TestPropertySource;
  */
 @DisplayName("Segment Narration Controller Integration Tests")
 @TestPropertySource(properties = "notion.sync.enabled=true")
-class SegmentNarrationControllerIT extends AbstractControllerTest {
+class SegmentNarrationControllerIT extends AbstractIntegrationTest {
+
+  protected MockMvc mockMvc;
+  @Autowired private WebApplicationContext context;
+  @Autowired protected ObjectMapper objectMapper;
+
+  @BeforeEach
+  public void setupData() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+  }
 
   @Test
   @DisplayName("GET /api/segment-narration/limits should return provider information")
@@ -111,7 +128,7 @@ class SegmentNarrationControllerIT extends AbstractControllerTest {
   @DisplayName("POST /api/segment-narration/narrate should accept custom segment context")
   void shouldAcceptCustomSegmentContext() throws Exception {
     // Given
-    SegmentNarrationContext customContext = super.createCustomSegmentContext();
+    SegmentNarrationContext customContext = createCustomSegmentContext();
     String requestBody = objectMapper.writeValueAsString(customContext);
 
     // When & Then
@@ -130,6 +147,34 @@ class SegmentNarrationControllerIT extends AbstractControllerTest {
         .andExpect(jsonPath("$.wrestlers[1]").value("Mankind"))
         .andExpect(jsonPath("$.outcome").exists())
         .andExpect(jsonPath("$.estimatedCost").exists());
+  }
+
+  protected SegmentNarrationContext createCustomSegmentContext() {
+    SegmentNarrationContext context = new SegmentNarrationContext();
+
+    com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext segmentType =
+        new com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext();
+    segmentType.setSegmentType("Hell in a Cell");
+    segmentType.setStipulation("Grudge Match");
+    segmentType.setRules(List.of("No Disqualification", "Cage Escape"));
+    segmentType.setTimeLimit(60);
+    context.setSegmentType(segmentType);
+
+    com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext w1 =
+        new com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext();
+    w1.setName("The Undertaker");
+    w1.setAlignment("FACE");
+
+    com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext w2 =
+        new com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext();
+    w2.setName("Mankind");
+    w2.setAlignment("HEEL");
+
+    context.setWrestlers(List.of(w1, w2));
+    context.setAudience("Intense heat");
+    context.setDeterminedOutcome("Undertaker throws Mankind off the cage");
+
+    return context;
   }
 
   @Test

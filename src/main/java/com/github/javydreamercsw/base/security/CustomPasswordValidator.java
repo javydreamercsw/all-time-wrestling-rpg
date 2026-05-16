@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.base.security;
 
 import java.util.Arrays;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.passay.DefaultPasswordValidator;
 import org.passay.PasswordData;
 import org.passay.PasswordValidator;
@@ -26,13 +28,10 @@ import org.passay.rule.CharacterRule;
 import org.passay.rule.LengthRule;
 import org.passay.rule.WhitespaceRule;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CustomPasswordValidator {
 
-  private CustomPasswordValidator() {
-    // Hidden constructor
-  }
-
-  public static boolean isValid(String password) {
+  public static boolean isValid(final String password) {
     PasswordValidator validator =
         new DefaultPasswordValidator(
             Arrays.asList(

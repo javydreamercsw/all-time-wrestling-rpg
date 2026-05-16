@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import java.time.LocalDateTime;
@@ -58,7 +59,7 @@ public class BackstageEncounterService {
    * @return true if an encounter should be triggered
    */
   @Transactional
-  public boolean shouldTriggerEncounter(Campaign campaign) {
+  public boolean shouldTriggerEncounter(final Campaign campaign) {
     CampaignState state = campaign.getState();
 
     // Only trigger if no actions have been taken today
@@ -88,13 +89,13 @@ public class BackstageEncounterService {
     // 20% chance to trigger
     boolean triggered = random.nextInt(100) < 20;
     if (triggered) {
-      log.info("Triggering random backstage encounter for campaign: {}", campaign.getId());
+      log.debug("Triggering random backstage encounter for campaign: {}", campaign.getId());
       updateLastEncounterDate(state);
     }
     return triggered;
   }
 
-  private void updateLastEncounterDate(CampaignState state) {
+  private void updateLastEncounterDate(final CampaignState state) {
     if (state.getCurrentGameDate() == null) {
       log.warn("Cannot update last encounter date: currentGameDate is null");
       return;
@@ -115,7 +116,7 @@ public class BackstageEncounterService {
   }
 
   @Transactional
-  public CampaignEncounterResponseDTO generateBackstageEncounter(Campaign campaign) {
+  public CampaignEncounterResponseDTO generateBackstageEncounter(final Campaign campaign) {
     CampaignState state = campaign.getState();
     CampaignChapterDTO chapter =
         campaignService
@@ -158,7 +159,7 @@ public class BackstageEncounterService {
     }
   }
 
-  private String buildBackstagePrompt(Campaign campaign, CampaignChapterDTO chapter) {
+  private String buildBackstagePrompt(final Campaign campaign, final CampaignChapterDTO chapter) {
     Wrestler player = campaign.getWrestler();
     StringBuilder sb = new StringBuilder();
 
@@ -168,7 +169,9 @@ public class BackstageEncounterService {
         .append(".\n\n");
 
     sb.append("WRESTLER CONTEXT:\n");
-    sb.append("- Tier: ").append(player.getTier()).append("\n");
+    sb.append("- Tier: ")
+        .append(player.getDefaultState().map(WrestlerState::getTier).orElse(null))
+        .append("\n");
     if (player.getAlignment() != null) {
       sb.append("- Alignment: ")
           .append(player.getAlignment().getAlignmentType())
@@ -203,7 +206,7 @@ public class BackstageEncounterService {
                 sb.append("- ")
                     .append(w.getName())
                     .append(" (Tier: ")
-                    .append(w.getTier())
+                    .append(w.getDefaultState().map(WrestlerState::getTier).orElse(null))
                     .append(")\n"));
 
     sb.append("\nINSTRUCTIONS:\n");
@@ -213,8 +216,10 @@ public class BackstageEncounterService {
     sb.append("   - alignmentShift (e.g., +1 for Face behavior, -1 for Heel behavior).\n");
     sb.append("   - momentumBonus (e.g., +1 or +2 for the next match).\n");
     sb.append(
-        "   - outcomeText (Narrative text explaining what happened immediately after the"
-            + " choice).\n");
+        """
+           - outcomeText (Narrative text explaining what happened immediately after the\
+         choice).
+        """);
     sb.append("4. All choices for these situations should have nextPhase: 'BACKSTAGE'.\n");
     sb.append("5. IMPORTANT: Your response MUST be a valid JSON object.\n\n");
 
@@ -228,8 +233,10 @@ public class BackstageEncounterService {
     sb.append("      \"alignmentShift\": 1,\n");
     sb.append("      \"momentumBonus\": 1,\n");
     sb.append(
-        "      \"outcomeText\": \"The veteran nods in approval, giving you a boost of"
-            + " confidence.\",\n");
+        """
+              "outcomeText": "The veteran nods in approval, giving you a boost of\
+         confidence.",
+        """);
     sb.append("      \"nextPhase\": \"BACKSTAGE\"\n");
     sb.append("    }\n");
     sb.append("  ]\n");
@@ -239,7 +246,8 @@ public class BackstageEncounterService {
   }
 
   @Transactional
-  public void recordBackstageChoice(Campaign campaign, CampaignEncounterResponseDTO.Choice choice) {
+  public void recordBackstageChoice(
+      final Campaign campaign, final CampaignEncounterResponseDTO.Choice choice) {
     List<CampaignEncounter> encounters =
         encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign);
     if (encounters.isEmpty()) {
@@ -264,7 +272,7 @@ public class BackstageEncounterService {
 
     stateRepository.save(state);
 
-    log.info(
+    log.debug(
         "Recorded backstage choice for {}: {}. Alignment shift: {}, Momentum bonus: {}",
         campaign.getWrestler().getName(),
         choice.getText(),

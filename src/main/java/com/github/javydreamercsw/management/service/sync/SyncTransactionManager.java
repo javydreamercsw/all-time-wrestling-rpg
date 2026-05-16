@@ -40,7 +40,7 @@ public class SyncTransactionManager {
   private final PlatformTransactionManager transactionManager;
   private final Map<String, SyncTransaction> activeTransactions = new ConcurrentHashMap<>();
 
-  public SyncTransactionManager(PlatformTransactionManager transactionManager) {
+  public SyncTransactionManager(final PlatformTransactionManager transactionManager) {
     this.transactionManager = transactionManager;
   }
 
@@ -55,7 +55,9 @@ public class SyncTransactionManager {
    * @throws Exception if operation fails
    */
   public <T> T executeInTransaction(
-      String operationId, String entityType, TransactionalSyncOperation<T> operation)
+      final String operationId,
+      final String entityType,
+      final TransactionalSyncOperation<T> operation)
       throws Exception {
 
     SyncTransaction syncTransaction = startTransaction(operationId, entityType);
@@ -93,7 +95,8 @@ public class SyncTransactionManager {
    * @throws Exception if operation fails
    */
   public <T> T executeWithSavepoints(
-      String operationId, String entityType, SavepointSyncOperation<T> operation) throws Exception {
+      final String operationId, final String entityType, final SavepointSyncOperation<T> operation)
+      throws Exception {
 
     SyncTransaction syncTransaction = startTransaction(operationId, entityType);
 
@@ -123,7 +126,7 @@ public class SyncTransactionManager {
   }
 
   /** Start a new sync transaction. */
-  private SyncTransaction startTransaction(String operationId, String entityType) {
+  private SyncTransaction startTransaction(final String operationId, final String entityType) {
     DefaultTransactionDefinition def = new DefaultTransactionDefinition();
     def.setName("SyncTransaction-" + operationId);
     def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -140,7 +143,7 @@ public class SyncTransactionManager {
   }
 
   /** Commit a sync transaction. */
-  private void commitTransaction(SyncTransaction syncTransaction) {
+  private void commitTransaction(final SyncTransaction syncTransaction) {
     try {
       transactionManager.commit(syncTransaction.getStatus());
       syncTransaction.markCommitted();
@@ -153,7 +156,7 @@ public class SyncTransactionManager {
   }
 
   /** Rollback a sync transaction. */
-  private void rollbackTransaction(SyncTransaction syncTransaction) {
+  private void rollbackTransaction(final SyncTransaction syncTransaction) {
     try {
       if (!syncTransaction.getStatus().isCompleted()) {
         transactionManager.rollback(syncTransaction.getStatus());
@@ -189,7 +192,7 @@ public class SyncTransactionManager {
   }
 
   /** Force rollback of a specific transaction (emergency use). */
-  public boolean forceRollback(String operationId) {
+  public boolean forceRollback(final String operationId) {
     SyncTransaction transaction = activeTransactions.get(operationId);
     if (transaction != null) {
       log.warn("🚨 Force rolling back sync transaction: {}", operationId);
@@ -222,7 +225,8 @@ public class SyncTransactionManager {
     @Getter private boolean committed = false;
     @Getter private boolean rolledBack = false;
 
-    public SyncTransaction(String operationId, String entityType, TransactionStatus status) {
+    public SyncTransaction(
+        final String operationId, final String entityType, final TransactionStatus status) {
       this.operationId = operationId;
       this.entityType = entityType;
       this.status = status;
@@ -230,7 +234,7 @@ public class SyncTransactionManager {
     }
 
     /** Create a savepoint for partial rollback. */
-    public Object createSavepoint(String name) throws Exception {
+    public Object createSavepoint(final String name) throws Exception {
       if (status.hasSavepoint()) {
         Object savepoint = status.createSavepoint();
         savepoints.add(savepoint);
@@ -243,7 +247,7 @@ public class SyncTransactionManager {
     }
 
     /** Rollback to a specific savepoint. */
-    public void rollbackToSavepoint(Object savepoint) throws Exception {
+    public void rollbackToSavepoint(final Object savepoint) throws Exception {
       if (savepoints.contains(savepoint)) {
         status.rollbackToSavepoint(savepoint);
         log.debug("Rolled back to savepoint for transaction: {}", operationId);
@@ -253,7 +257,7 @@ public class SyncTransactionManager {
     }
 
     /** Release a savepoint (no longer needed). */
-    public void releaseSavepoint(Object savepoint) throws Exception {
+    public void releaseSavepoint(final Object savepoint) throws Exception {
       if (savepoints.contains(savepoint)) {
         status.releaseSavepoint(savepoint);
         savepoints.remove(savepoint);
@@ -284,7 +288,10 @@ public class SyncTransactionManager {
     private final int savepointCount;
 
     public TransactionInfo(
-        String operationId, String entityType, LocalDateTime startTime, int savepointCount) {
+        final String operationId,
+        final String entityType,
+        final LocalDateTime startTime,
+        final int savepointCount) {
       this.operationId = operationId;
       this.entityType = entityType;
       this.startTime = startTime;

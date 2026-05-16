@@ -48,7 +48,7 @@ public class PasswordResetToken {
 
   private LocalDateTime expiryDate;
 
-  public PasswordResetToken(String token, Account account) {
+  public PasswordResetToken(final String token, final Account account) {
     this.token = token;
     this.account = account;
     this.expiryDate = LocalDateTime.now().plusHours(24);

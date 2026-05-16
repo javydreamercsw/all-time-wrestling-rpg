@@ -45,14 +45,14 @@ public class GameSettingService {
   private final GameSettingRepository repository;
   private final ApplicationEventPublisher eventPublisher;
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public String getNotionToken() {
     return repository.findById(NOTION_TOKEN_KEY).map(GameSetting::getValue).orElse(null);
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
-  public void setNotionToken(String token) {
+  public void setNotionToken(final String token) {
     save(NOTION_TOKEN_KEY, token);
   }
 
@@ -65,9 +65,9 @@ public class GameSettingService {
         .orElse(true); // Enabled by default
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
-  public void setWearAndTearEnabled(boolean enabled) {
+  public void setWearAndTearEnabled(final boolean enabled) {
     save(WEAR_AND_TEAR_ENABLED_KEY, String.valueOf(enabled));
   }
 
@@ -82,7 +82,7 @@ public class GameSettingService {
 
   @PreAuthorize("hasRole('ADMIN')")
   @Transactional
-  public void setStatusCardsEnabled(boolean enabled) {
+  public void setStatusCardsEnabled(final boolean enabled) {
     save(STATUS_CARDS_ENABLED_KEY, String.valueOf(enabled));
   }
 
@@ -109,21 +109,21 @@ public class GameSettingService {
     return repository.findById(NEWS_STRATEGY_KEY).map(GameSetting::getValue).orElse("SEGMENT");
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
-  public void setAiNewsEnabled(boolean enabled) {
+  public void setAiNewsEnabled(final boolean enabled) {
     save(AI_NEWS_ENABLED_KEY, String.valueOf(enabled));
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
-  public void setNewsRumorChance(int chance) {
+  public void setNewsRumorChance(final int chance) {
     save(NEWS_RUMOR_CHANCE_KEY, String.valueOf(chance));
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
-  public void setNewsStrategy(String strategy) {
+  public void setNewsStrategy(final String strategy) {
     save(NEWS_STRATEGY_KEY, strategy);
   }
 
@@ -136,9 +136,10 @@ public class GameSettingService {
         .orElse(LocalDate.now()); // Fallback to real date if not set
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
-  public void saveCurrentGameDate(LocalDate date) {
+  public void saveCurrentGameDate(final LocalDate date) {
     LocalDate oldDate = getCurrentGameDate();
     GameSetting setting = repository.findById(CURRENT_GAME_DATE_KEY).orElseGet(GameSetting::new);
     setting.setId(CURRENT_GAME_DATE_KEY);
@@ -152,13 +153,14 @@ public class GameSettingService {
   }
 
   @PreAuthorize("permitAll()")
-  public Optional<GameSetting> findById(String key) {
+  public Optional<GameSetting> findById(final String key) {
     return repository.findById(key);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @Transactional
-  public GameSetting save(GameSetting gameSetting) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public GameSetting save(final GameSetting gameSetting) {
     log.debug(
         "Saving game setting: {} = {}",
         gameSetting.getId(),
@@ -166,9 +168,10 @@ public class GameSettingService {
     return repository.save(gameSetting);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @Transactional
-  public void save(String key, String value) {
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public void save(final String key, final String value) {
     GameSetting setting = repository.findById(key).orElseGet(GameSetting::new);
     setting.setId(key);
     setting.setValue(value);

@@ -34,7 +34,11 @@ public class FeudHeatChangeEvent extends ApplicationEvent {
   private final String feudName;
 
   public FeudHeatChangeEvent(
-      Object source, MultiWrestlerFeud feud, int oldHeat, String reason, List<Wrestler> wrestlers) {
+      final Object source,
+      final MultiWrestlerFeud feud,
+      final int oldHeat,
+      final String reason,
+      final List<Wrestler> wrestlers) {
     super(source);
     this.feudId = feud.getId();
     this.oldHeat = oldHeat;

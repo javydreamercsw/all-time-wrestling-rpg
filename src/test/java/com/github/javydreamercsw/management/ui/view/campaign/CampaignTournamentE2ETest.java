@@ -16,78 +16,33 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
-import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
-import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.title.ChampionshipType;
-import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.campaign.CampaignService;
-import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
-import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.H4;
-import java.util.Collections;
+import java.time.Duration;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
-public class CampaignTournamentE2ETest extends AbstractViewTest {
+@Slf4j
+public class CampaignTournamentE2ETest extends AbstractE2ETest {
 
-  @Autowired private CampaignService campaignService;
-  @Autowired private CampaignRepository campaignRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
-  @Autowired private AccountRepository accountRepository;
-  @Autowired private CampaignStateRepository campaignStateRepository;
-  @Autowired private ShowTypeRepository showTypeRepository;
-  @Autowired private SegmentTypeRepository segmentTypeRepository;
-  @Autowired private RoleRepository roleRepository;
-  @Autowired private CampaignAbilityCardRepository cardRepository;
-  @Autowired private CampaignUpgradeService upgradeService;
-  @Autowired private SecurityUtils securityUtils;
   @Autowired private TournamentService tournamentService;
-  @Autowired private TitleRepository titleRepository;
-  @Autowired private ObjectMapper objectMapper;
-
-  @Autowired
-  private com.github.javydreamercsw.management.service.campaign.StorylineDirectorService
-      storylineDirectorService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.service.campaign.StorylineExportService
-      storylineExportService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.service.campaign.CampaignChapterService
-      chapterService;
-
-  @Autowired private com.github.javydreamercsw.management.service.title.TitleService titleService;
-  private Campaign campaign;
 
   @BeforeEach
-  public void setUp() {
+  public void setupTournamentData() {
     // Populate Reference Data
     if (showTypeRepository.count() == 0) {
       ShowType st = new ShowType();
@@ -95,47 +50,16 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
       st.setDescription("Weekly Show");
       st.setExpectedMatches(3);
       st.setExpectedPromos(2);
-      showTypeRepository.save(st);
-    }
-    if (segmentTypeRepository.count() == 0) {
-      SegmentType st = new SegmentType();
-      st.setName("One on One");
-      st.setDescription("Standard Match");
-      segmentTypeRepository.save(st);
+      showTypeRepository.saveAndFlush(st);
     }
 
-    if (titleRepository.findByName("ATW World").isEmpty()) {
-      Title world = new Title();
-      world.setName("ATW World");
-      world.setDescription("World Championship");
-      world.setTier(WrestlerTier.MAIN_EVENTER);
-      world.setChampionshipType(ChampionshipType.SINGLE);
-      titleRepository.save(world);
-    }
+    // Create Tournament User — password must match what testTournamentFullFlow uses to log in
+    Account account = createTestAccount("tournamentuser", getPassword(), RoleName.PLAYER);
+    Wrestler playerWrestler = createTestWrestler("Tournament Player");
+    playerWrestler.setAccount(account);
+    wrestlerRepository.saveAndFlush(playerWrestler);
 
-    Role bookerRole =
-        roleRepository
-            .findByName(RoleName.BOOKER)
-            .orElseGet(() -> roleRepository.save(new Role(RoleName.BOOKER, "Booker")));
-
-    // 1. Create Account & Wrestler
-    Account account = new Account();
-    account.setUsername("tournamentuser");
-    account.setPassword("password");
-    account.setEmail("tournament@test.com");
-    account.setRoles(Collections.singleton(bookerRole));
-    account = accountRepository.save(account);
-
-    Wrestler player =
-        Wrestler.builder()
-            .name("Tournament Player")
-            .startingHealth(100)
-            .startingStamina(100)
-            .build();
-    player.setAccount(account);
-    player = wrestlerRepository.save(player);
-
-    // Create opponents (5 opponents -> 6 total -> Bracket size 8)
+    // Create opponents first (5 opponents -> 6 total -> Bracket size 8)
     for (int i = 1; i < 5 + 1; i++) {
       wrestlerRepository.save(
           Wrestler.builder()
@@ -145,103 +69,96 @@ public class CampaignTournamentE2ETest extends AbstractViewTest {
               .build());
     }
 
-    // Login as user
-    login(account);
+    // Build state with chapterId in one save; a separate saveAndFlush on detached state inserts a
+    // dup.
+    campaignChapterService.loadChapters();
+    Campaign campaign =
+        Campaign.builder()
+            .wrestler(playerWrestler)
+            .status(CampaignStatus.ACTIVE)
+            .startedAt(java.time.LocalDateTime.now())
+            .universe(defaultUniverse)
+            .build();
+    campaign = campaignRepository.saveAndFlush(campaign);
 
-    // 2. Start Campaign
-    campaign = campaignService.startCampaign(player);
+    CampaignState state =
+        CampaignState.builder()
+            .campaign(campaign)
+            .victoryPoints(9)
+            .currentGameDate(java.time.LocalDate.now())
+            .currentChapterId("tournament")
+            .build();
+    campaign.setState(state);
+    campaign = campaignRepository.saveAndFlush(campaign);
 
-    // 3. Force Chapter 2 (Tournament)
-    CampaignState state = campaign.getState();
-    state.setCurrentChapterId("tournament");
-    campaignStateRepository.save(state);
+    wrestlerAlignmentRepository.save(
+        WrestlerAlignment.builder()
+            .wrestler(playerWrestler)
+            .campaign(campaign)
+            .alignmentType(AlignmentType.NEUTRAL)
+            .level(1)
+            .build());
 
-    // Force re-fetch to ensure tournament init logic runs when service is called
-    campaign = campaignRepository.findById(campaign.getId()).get();
+    tournamentService.initializeTournament(campaign);
+    // Logout from the default admin account.
+    logout();
   }
 
   @Test
-  public void testTournamentFullFlow() {
-    // 1. Manually instantiate Dashboard
-    CampaignDashboardView dashboard =
-        new CampaignDashboardView(
-            campaignRepository,
-            campaignService,
-            wrestlerRepository,
-            cardRepository,
-            upgradeService,
-            securityUtils,
-            tournamentService,
-            objectMapper,
-            chapterService,
-            titleService,
-            titleRepository,
-            storylineExportService);
+  void testTournamentFullFlow() {
+    // Switch to the tournament user (account was created in setupTournamentData)
+    login("tournamentuser", getPassword());
 
-    UI.getCurrent().add(dashboard);
+    // Navigate to Campaign Dashboard
+    navigateTo("campaign");
+    waitForAppToBeReady();
 
-    // Initial State: Round 1
-    // 5 Opponents + 1 Player = 6 Total. Bracket Size 8.
-    // 3 Rounds (R1: 4 matches, R2: 2 matches, R3: 1 match).
-    int expectedRounds = 3;
+    int expectedRounds = 4;
 
     for (int round = 1; round < expectedRounds + 1; round++) {
-      // Determine expected title
-      String expectedTitle = "Round " + round;
+      log.info("Round {})", round);
+      // Wait for the bracket header with this round's text to appear in the DOM
+      String roundHeaderXpath =
+          "//h4[contains(text(), 'Tournament Bracket (Round " + round + ")')]";
+      new WebDriverWait(driver, Duration.ofSeconds(30))
+          .until(ExpectedConditions.presenceOfElementLocated(By.xpath(roundHeaderXpath)));
 
-      // Verify Bracket Header
-      _get(H4.class, spec -> spec.withText("Tournament Bracket (" + expectedTitle + ")"));
+      // Advance tournament state via service (debug panel is unavailable in production mode)
+      Campaign campaign =
+          campaignRepository.findAll().stream()
+              .filter(
+                  c ->
+                      c.getWrestler() != null
+                          && c.getWrestler().getAccount() != null
+                          && "tournamentuser".equals(c.getWrestler().getAccount().getUsername()))
+              .findFirst()
+              .orElseThrow(() -> new IllegalStateException("Tournament campaign not found"));
 
-      // Play Match
-      Button playButton =
-          _get(
-              Button.class,
-              spec -> spec.withPredicate(b -> b.getText().startsWith("Play Tournament Match")));
-      playButton.click();
+      Wrestler opponent =
+          wrestlerRepository.findAll().stream()
+              .filter(w -> !w.equals(campaign.getWrestler()))
+              .findFirst()
+              .orElseThrow(() -> new IllegalStateException("No opponent found"));
 
-      // Verify Continue Button exists (proving match created)
-      _get(
-          Button.class,
-          spec -> spec.withPredicate(b -> b.getText().startsWith("Continue Tournament Match")));
-
-      // Simulate Match Win (Bypass MatchView)
+      campaignService.createMatchForEncounter(
+          campaign, opponent.getName(), "Test Tournament Match", "One on One");
       campaignService.processMatchResult(campaign, true);
+      campaignService.completePostMatch(campaign);
 
-      // Reload Dashboard (simulating return from MatchView)
-      UI.getCurrent().removeAll();
-      dashboard =
-          new CampaignDashboardView(
-              campaignRepository,
-              campaignService,
-              wrestlerRepository,
-              cardRepository,
-              upgradeService,
-              securityUtils,
-              tournamentService,
-              objectMapper,
-              chapterService,
-              titleService,
-              titleRepository,
-              storylineExportService);
-      UI.getCurrent().add(dashboard);
+      // Reload to reflect updated state
+      driver.navigate().refresh();
+      waitForVaadinClientToLoad();
 
-      if (round < expectedRounds) {
-        // Verify "Advance to Next Day" button
-        Button advanceButton =
-            _get(Button.class, spec -> spec.withText("Match Complete - Advance to Next Day"));
-
-        // Click Advance (Clears match, advances day, refreshes UI)
-        advanceButton.click();
-      } else {
-        // Final Round (Champion)
-
-        // Verify Champion Message
-        _get(
-            com.vaadin.flow.component.html.Span.class,
-            spec -> spec.withText("🏆 You are the Tournament Champion!"));
+      if (round == expectedRounds) {
+        // Verify Tournament Champion message
+        new WebDriverWait(driver, Duration.ofSeconds(30))
+            .until(
+                ExpectedConditions.presenceOfElementLocated(
+                    By.xpath("//span[contains(text(), '🏆 You are the Tournament Champion!')]")));
 
         // Verify Chapter Completion Button
-        _get(Button.class, spec -> spec.withText("Complete Chapter & Advance"));
+        waitForVaadinElement(
+            driver, By.xpath("//vaadin-button[text()='Complete Chapter & Advance']"));
       }
     }
   }

@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
@@ -35,9 +36,11 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -52,7 +55,9 @@ class SegmentServiceLeagueTest {
   @Mock private SegmentRepository segmentRepository;
   @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
+  @Mock private LeagueRepository leagueRepository;
   @Mock private InboxService inboxService;
+  @Mock private NewsGenerationService newsGenerationService;
   @Mock private InboxEventType matchRequestEventType;
 
   // Mocks for other dependencies required by constructor
@@ -74,12 +79,16 @@ class SegmentServiceLeagueTest {
     player.setId(2L);
     player.setUsername("player");
 
+    Universe universe = new Universe();
+    universe.setId(1L);
+
     League league = new League();
     league.setCommissioner(commissioner);
+    league.setUniverse(universe);
 
     Show show = new Show();
     show.setName("Test Show");
-    show.setLeague(league);
+    show.setUniverse(universe);
 
     Segment segment = new Segment();
     segment.setShow(show);
@@ -93,6 +102,7 @@ class SegmentServiceLeagueTest {
     roster.setWrestler(wrestler);
     roster.setOwner(player);
 
+    when(leagueRepository.findByUniverse(universe)).thenReturn(Optional.of(league));
     when(leagueRosterRepository.findByLeagueAndWrestler(league, wrestler))
         .thenReturn(Optional.of(roster));
 
@@ -108,6 +118,6 @@ class SegmentServiceLeagueTest {
     segmentService.addParticipant(segment, wrestler);
 
     verify(matchFulfillmentRepository).save(any(MatchFulfillment.class));
-    verify(inboxService).createInboxItem(any(InboxEventType.class), anyString(), anyList());
+    verify(inboxService).createInboxItem(any(), anyString(), anyList());
   }
 }

@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.commentator;
 
-import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -37,10 +37,11 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "commentary_team")
 @Getter
 @Setter
-public class CommentaryTeam extends AbstractEntity<Long> {
+public class CommentaryTeam extends AbstractSyncableEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Getter(onMethod_ = {@Nullable})
   @Column(name = "team_id")
   private Long id;
 
@@ -53,9 +54,4 @@ public class CommentaryTeam extends AbstractEntity<Long> {
       joinColumns = @JoinColumn(name = "team_id"),
       inverseJoinColumns = @JoinColumn(name = "commentator_id"))
   private List<Commentator> commentators = new ArrayList<>();
-
-  @Override
-  public @Nullable Long getId() {
-    return id;
-  }
 }

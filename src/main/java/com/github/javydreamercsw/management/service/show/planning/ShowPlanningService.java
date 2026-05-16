@@ -75,8 +75,8 @@ public class ShowPlanningService {
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public ShowPlanningContextDTO getShowPlanningContext(@NonNull Show show) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public ShowPlanningContextDTO getShowPlanningContext(@NonNull final Show show) {
     if (show.getShowDate() == null) {
       throw new IllegalStateException(
           "Show '"
@@ -85,6 +85,10 @@ public class ShowPlanningService {
               + show.getId()
               + ") has no showDate set. "
               + "Set a scheduled date before opening Show Planning.");
+    }
+    if (show.getUniverse() == null) {
+      throw new IllegalStateException(
+          "Show '" + show.getName() + "' (id=" + show.getId() + ") has no universe assigned.");
     }
 
     ShowPlanningContext context = new ShowPlanningContext();
@@ -161,7 +165,7 @@ public class ShowPlanningService {
     Gender genderConstraint =
         show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
 
-    log.info(
+    log.debug(
         "Found {} active titles, filtering by gender: {}", activeTitles.size(), genderConstraint);
     for (Title title : activeTitles) {
       // Skip titles that don't match the gender constraint
@@ -209,7 +213,9 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Get all wrestlers
-    List<Wrestler> allWrestlers = wrestlerService.findAllFiltered(null, genderConstraint, null);
+    List<Wrestler> allWrestlers =
+        wrestlerService.findAllFiltered(
+            null, genderConstraint, show.getUniverse().getId(), null, null);
 
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
@@ -244,8 +250,9 @@ public class ShowPlanningService {
   }
 
   @Transactional
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
-  public void approveSegments(@NonNull Show show, @NonNull List<ProposedSegment> proposedSegments) {
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void approveSegments(
+      @NonNull final Show show, @NonNull final List<ProposedSegment> proposedSegments) {
     if (show.getShowDate() == null) {
       throw new IllegalStateException(
           "Cannot approve segments for show '"
@@ -321,7 +328,7 @@ public class ShowPlanningService {
       segmentsToSave.add(segment);
     }
     segmentRepository.saveAll(segmentsToSave);
-    log.info("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
+    log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
   }
 
@@ -330,7 +337,7 @@ public class ShowPlanningService {
    * creates entries for each opponent they're feuding with and the heat level of that feud.
    */
   private List<ShowPlanningWrestlerHeat> buildWrestlerHeats(
-      @NonNull List<Wrestler> wrestlers, Gender genderConstraint) {
+      @NonNull final List<Wrestler> wrestlers, final Gender genderConstraint) {
     List<ShowPlanningWrestlerHeat> wrestlerHeats = new ArrayList<>();
 
     for (Wrestler wrestler : wrestlers) {

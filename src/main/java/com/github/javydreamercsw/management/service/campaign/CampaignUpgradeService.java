@@ -42,6 +42,10 @@ public class CampaignUpgradeService {
   private final CampaignStateRepository stateRepository;
   private final com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
       wrestlerRepository;
+  private final com.github.javydreamercsw.management.service.wrestler.WrestlerService
+      wrestlerService;
+  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
+      wrestlerStateRepository;
 
   @PostConstruct
   public void init() {
@@ -72,7 +76,7 @@ public class CampaignUpgradeService {
   }
 
   @Transactional
-  public void purchaseUpgrade(Campaign campaign, Long upgradeId) {
+  public void purchaseUpgrade(final Campaign campaign, final Long upgradeId) {
     CampaignState state = campaign.getState();
     if (state.getSkillTokens() < 8) {
       throw new IllegalStateException("Not enough skill tokens. Need 8.");
@@ -102,9 +106,14 @@ public class CampaignUpgradeService {
     if ("HEALTH".equals(upgrade.getType())) {
       com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
           campaign.getWrestler();
-      wrestler.refreshCurrentHealth();
-      wrestlerRepository.save(wrestler);
-      log.debug("Refreshed health for wrestler {}", wrestler.getName());
+      Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+      com.github.javydreamercsw.management.domain.wrestler.WrestlerState wrestlerState =
+          wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+
+      wrestlerState.setCurrentHealth(wrestler.getEffectiveStartingHealth(universeId));
+      wrestlerStateRepository.save(wrestlerState);
+
+      log.info("Refreshed health for wrestler {} in universe {}", wrestler.getName(), universeId);
     }
   }
 }

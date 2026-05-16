@@ -51,7 +51,7 @@ class NotionSyncViewE2ETest extends AbstractE2ETest {
   private NotionSyncView notionSyncView;
 
   @BeforeEach
-  void setUp() {
+  public void setUp() {
     // Mock the sync properties
     lenient().when(syncProperties.isEnabled()).thenReturn(true);
     lenient().when(syncProperties.isSchedulerEnabled()).thenReturn(true);

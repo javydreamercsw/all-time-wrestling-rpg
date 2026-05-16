@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -30,8 +31,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SecurityUtils {
 
-  private final AuthenticationContext authenticationContext;
   private final PermissionService permissionService;
+  private final AuthenticationContext authenticationContext;
 
   /**
    * Check if the current user has a specific role.
@@ -39,7 +40,7 @@ public class SecurityUtils {
    * @param roleName the role name to check
    * @return true if the user has the role
    */
-  public boolean hasRole(RoleName roleName) {
+  public boolean hasRole(final RoleName roleName) {
     return hasRole("ROLE_" + roleName.name());
   }
 
@@ -49,12 +50,13 @@ public class SecurityUtils {
    * @param role the role with ROLE_ prefix
    * @return true if the user has the role
    */
-  public boolean hasRole(String role) {
+  public boolean hasRole(final String role) {
     return getAuthenticatedUser()
         .map(
             user ->
                 user.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
+                    .filter(Objects::nonNull)
                     .anyMatch(authority -> authority.equals(role)))
         .orElse(false);
   }
@@ -65,7 +67,7 @@ public class SecurityUtils {
    * @param roleNames the role names to check
    * @return true if the user has any of the roles
    */
-  public boolean hasAnyRole(RoleName... roleNames) {
+  public boolean hasAnyRole(final RoleName... roleNames) {
     for (RoleName roleName : roleNames) {
       if (hasRole(roleName)) {
         return true;
@@ -125,7 +127,7 @@ public class SecurityUtils {
    * @param target the object to check ownership for
    * @return true if the user is the owner
    */
-  public boolean isOwner(Object target) {
+  public boolean isOwner(final Object target) {
     return permissionService.isOwner(target);
   }
 
@@ -144,7 +146,7 @@ public class SecurityUtils {
    * @param target the object to check permissions for
    * @return true if the user can edit the object
    */
-  public boolean canEdit(Object target) {
+  public boolean canEdit(final Object target) {
     if (isAdmin() || isBooker()) {
       return true;
     }
@@ -169,7 +171,7 @@ public class SecurityUtils {
    * @param target the object to check permissions for
    * @return true if the user can delete the object
    */
-  public boolean canDelete(Object target) {
+  public boolean canDelete(final Object target) {
     if (isAdmin() || isBooker()) {
       return true;
     }

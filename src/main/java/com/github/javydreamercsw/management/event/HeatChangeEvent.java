@@ -32,7 +32,11 @@ public class HeatChangeEvent extends ApplicationEvent {
   private final List<Wrestler> wrestlers;
 
   public HeatChangeEvent(
-      Object source, Rivalry rivalry, int oldHeat, String reason, List<Wrestler> wrestlers) {
+      final Object source,
+      final Rivalry rivalry,
+      final int oldHeat,
+      final String reason,
+      final List<Wrestler> wrestlers) {
     super(source);
     this.rivalryId = rivalry.getId();
     this.oldHeat = oldHeat;

@@ -48,7 +48,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
-@TestPropertySource(properties = "notion.sync.load-from-json=false")
+@TestPropertySource(
+    properties = {"notion.sync.load-from-json=false", "data.initializer.enabled=false"})
 class WrestlerSyncIT extends ManagementIntegrationTest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
@@ -81,7 +82,8 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
   }
 
   @BeforeEach
-  void setUp() {
+  @org.springframework.transaction.annotation.Transactional
+  public void setUp() {
     clearAllRepositories();
     wrestlerPage = Mockito.mock(WrestlerPage.class);
 

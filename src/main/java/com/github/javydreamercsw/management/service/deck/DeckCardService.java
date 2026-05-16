@@ -27,24 +27,33 @@ import org.springframework.stereotype.Service;
 public class DeckCardService {
   private final DeckCardRepository deckCardRepository;
 
-  public DeckCardService(DeckCardRepository deckCardRepository) {
+  public DeckCardService(final DeckCardRepository deckCardRepository) {
     this.deckCardRepository = deckCardRepository;
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#dc)")
-  public DeckCard save(DeckCard dc) {
+  @PreAuthorize(
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or\
+       @permissionService.isOwner(#dc)\
+      """)
+  public DeckCard save(final DeckCard dc) {
 
     return deckCardRepository.save(dc);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER') or @permissionService.isOwner(#dc)")
-  public void delete(DeckCard dc) {
+  @PreAuthorize(
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or\
+       @permissionService.isOwner(#dc)\
+      """)
+  public void delete(final DeckCard dc) {
 
     deckCardRepository.delete(dc);
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<DeckCard> findByDeckIdAndCardIdAndSetId(Long deckId, Long cardId, Long setId) {
+  public Optional<DeckCard> findByDeckIdAndCardIdAndSetId(
+      final Long deckId, final Long cardId, final Long setId) {
     return deckCardRepository.findByDeckIdAndCardIdAndSetId(deckId, cardId, setId);
   }
 
@@ -54,7 +63,8 @@ public class DeckCardService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<DeckCard> findByDeck(com.github.javydreamercsw.management.domain.deck.Deck deck) {
+  public List<DeckCard> findByDeck(
+      final com.github.javydreamercsw.management.domain.deck.Deck deck) {
     return deckCardRepository.findByDeck(deck);
   }
 }

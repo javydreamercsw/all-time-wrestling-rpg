@@ -57,10 +57,10 @@ public class NotionSyncController {
 
   /** Constructor with optional NotionSyncScheduler for integration tests. */
   public NotionSyncController(
-      NotionSyncService notionSyncService,
-      @Autowired(required = false) NotionSyncScheduler notionSyncScheduler,
-      NotionSyncProperties syncProperties,
-      EntityDependencyAnalyzer dependencyAnalyzer) {
+      final NotionSyncService notionSyncService,
+      @Autowired(required = false) final NotionSyncScheduler notionSyncScheduler,
+      final NotionSyncProperties syncProperties,
+      final EntityDependencyAnalyzer dependencyAnalyzer) {
     this.notionSyncService = notionSyncService;
     this.notionSyncScheduler = notionSyncScheduler;
     this.syncProperties = syncProperties;
@@ -174,7 +174,7 @@ public class NotionSyncController {
   public ResponseEntity<Map<String, Object>> triggerEntitySync(
       @Parameter(description = "Entity name to sync (shows, wrestlers, teams, segments, templates)")
           @PathVariable
-          String entity) {
+          final String entity) {
 
     try {
       // Validate entity name against automatically determined entities

@@ -208,7 +208,8 @@ public class SegmentNarrationController {
   }
 
   @PostMapping("/test/{provider}")
-  public ResponseEntity<Map<String, Object>> testSpecificProvider(@PathVariable String provider) {
+  public ResponseEntity<Map<String, Object>> testSpecificProvider(
+      @PathVariable final String provider) {
     SegmentNarrationService service = serviceFactory.getServiceByProvider(provider);
     if (service == null) {
       return ResponseEntity.badRequest()
@@ -275,8 +276,10 @@ public class SegmentNarrationController {
     WrestlerContext rvd = new WrestlerContext();
     rvd.setName("Rob Van Dam");
     rvd.setDescription(
-        "The Whole F'n Show - High-flying ECW legend known for his laid-back attitude and"
-            + " innovative offense");
+        """
+        The Whole F'n Show - High-flying ECW legend known for his laid-back attitude and\
+         innovative offense\
+        """);
     rvd.setHailingFrom("Battle Creek, Michigan");
     MoveSet rvdMoves = new MoveSet();
     rvdMoves.setFinishers(
@@ -299,8 +302,10 @@ public class SegmentNarrationController {
     WrestlerContext angle = new WrestlerContext();
     angle.setName("Kurt Angle");
     angle.setDescription(
-        "Olympic Hero turned ruthless champion - Technical wrestling machine with legitimate"
-            + " amateur background");
+        """
+        Olympic Hero turned ruthless champion - Technical wrestling machine with legitimate\
+         amateur background\
+        """);
     angle.setHailingFrom("Pittsburgh, Pennsylvania");
     MoveSet angleMoves = new MoveSet();
     angleMoves.setFinishers(
@@ -339,7 +344,9 @@ public class SegmentNarrationController {
     commentator2.setPersonality("Knowledgeable with ECW bias");
     context.setNpcs(Arrays.asList(announcer, commentator1, commentator2));
 
-    List<Arena> allArenas = arenaService.findAll();
+    List<Arena> allArenas =
+        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+            arenaService::findAll);
     if (!allArenas.isEmpty()) {
       Arena selectedArena = allArenas.get(new java.util.Random().nextInt(allArenas.size()));
 
@@ -360,7 +367,9 @@ public class SegmentNarrationController {
       context.setVenue(venue);
     } else {
       // Fallback: try to at least get a random location if no arenas exist
-      List<Location> allLocations = locationService.findAll();
+      List<Location> allLocations =
+          com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+              locationService::findAll);
 
       VenueContext venue = new VenueContext();
       if (!allLocations.isEmpty()) {
@@ -393,8 +402,10 @@ public class SegmentNarrationController {
 
     context.setAudience("Sold-out crowd with high energy and anticipation");
     context.setDeterminedOutcome(
-        "Rob Van Dam wins the World Championship after hitting the Five-Star Frog Splash, ending"
-            + " Kurt Angle's 6-month reign");
+        """
+        Rob Van Dam wins the World Championship after hitting the Five-Star Frog Splash, ending\
+         Kurt Angle's 6-month reign\
+        """);
     context.setRecentSegmentNarrations(
         Arrays.asList(
             "Previous segment saw intense back-and-forth action with multiple near-falls...",

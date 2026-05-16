@@ -44,7 +44,7 @@ class InjuryTypeNotionSyncServiceTest extends AbstractSyncTest {
   @Captor private ArgumentCaptor<InjuryType> injuryTypeCaptor;
 
   @BeforeEach
-  protected void setUp() {
+  public void setUp() {
     super.setUp();
     injuryTypeNotionSyncService =
         new InjuryTypeNotionSyncService(
