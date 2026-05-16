@@ -36,7 +36,7 @@ class DocumentationManifestTest {
     DocumentationManifest.addEntry(entry);
 
     assertThat(DocumentationManifest.getEntries())
-        .anyMatch(e -> e.getId().equals(uniqueId) && e.getTitle().equals("Test Entry"));
+        .anyMatch(e -> e.getId().equals(uniqueId) && "Test Entry".equals(e.getTitle()));
   }
 
   @Test
@@ -69,7 +69,7 @@ class DocumentationManifestTest {
   }
 
   @Test
-  void write_createsJsonFile(@TempDir Path tempDir) throws IOException {
+  void write_createsJsonFile(@TempDir final Path tempDir) throws IOException {
     String uniqueId = "write-" + UUID.randomUUID();
     DocumentationManifest.addEntry(
         new DocEntry(uniqueId, "features", "Write Test", "Test write", null, 1));
