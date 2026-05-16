@@ -27,6 +27,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.util.List;
@@ -57,14 +59,8 @@ public class NPCSegmentResolutionService {
   @Autowired protected Random random;
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerService wrestlerService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.service.ringside.RingsideActionService
-      ringsideActionService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-      ringsideActionDataService;
+  @Autowired private RingsideActionService ringsideActionService;
+  @Autowired private RingsideActionDataService ringsideActionDataService;
 
   /**
    * Resolve a team-based segment using ATW RPG mechanics. This is the core method that handles all
@@ -91,7 +87,7 @@ public class NPCSegmentResolutionService {
     String finalStipulation =
         stipulation != null && !stipulation.trim().isEmpty() ? stipulation : "Standard Match";
 
-    log.info(
+    log.debug(
         "Resolving team segment: {} vs {} on show {} ({}) in universe {}",
         team1.getTeamName(),
         team2.getTeamName(),
@@ -126,7 +122,7 @@ public class NPCSegmentResolutionService {
     // Save and return
     Segment savedResult = segmentRepository.save(result);
 
-    log.info(
+    log.debug(
         "Team segment resolved: {} defeated {} ({}% probability)",
         winningTeam.getTeamName(),
         winningTeam.equals(team1) ? team2.getTeamName() : team1.getTeamName(),
@@ -164,7 +160,7 @@ public class NPCSegmentResolutionService {
     String finalStipulation =
         stipulation != null && !stipulation.trim().isEmpty() ? stipulation : "Standard Match";
 
-    log.info(
+    log.debug(
         "Resolving {}-team segment on show {} ({}): {} in universe {}",
         teams.size(),
         show.getName(),
@@ -196,7 +192,7 @@ public class NPCSegmentResolutionService {
     // Save and return
     Segment savedResult = segmentRepository.save(result);
 
-    log.info(
+    log.debug(
         "Multi-team segment resolved: {} defeated {} other teams",
         winningTeam.getTeamName(),
         teams.size() - 1);
