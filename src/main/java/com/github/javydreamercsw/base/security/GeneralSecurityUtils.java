@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.security;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.vaadin.flow.server.VaadinSession;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -32,6 +33,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 /** A utility class for general security-related operations. */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -84,6 +86,26 @@ public final class GeneralSecurityUtils {
       return supplier.get();
     }
 
+    // VaadinAwareSecurityContextHolderStrategy reads from VaadinSession's HTTP session
+    // BEFORE the ThreadLocal, so we must update both to make privilege elevation visible.
+    Object originalSessionCtx = null;
+    VaadinSession vaadinSession = null;
+    try {
+      vaadinSession = VaadinSession.getCurrent();
+    } catch (Exception ignored) {
+      // No Vaadin context available
+    }
+    if (vaadinSession != null) {
+      try {
+        originalSessionCtx =
+            vaadinSession
+                .getSession()
+                .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+      } catch (IllegalStateException ignored) {
+        vaadinSession = null;
+      }
+    }
+
     try {
       SecurityContext newContext = strategy.createEmptyContext();
 
@@ -117,6 +139,16 @@ public final class GeneralSecurityUtils {
       // Establish the new context globally/thread-locally
       strategy.setContext(newContext);
       setTestSecurityContext(newContext);
+      if (vaadinSession != null) {
+        try {
+          vaadinSession
+              .getSession()
+              .setAttribute(
+                  HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, newContext);
+        } catch (IllegalStateException ignored) {
+          // Session invalidated between the check and here
+        }
+      }
 
       log.debug(
           "Establishing system authority for user '{}' with authorities: {}",
@@ -128,6 +160,17 @@ public final class GeneralSecurityUtils {
       // Restore the original context
       strategy.setContext(originalContext);
       setTestSecurityContext(originalContext);
+      if (vaadinSession != null) {
+        try {
+          vaadinSession
+              .getSession()
+              .setAttribute(
+                  HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                  originalSessionCtx);
+        } catch (IllegalStateException ignored) {
+          // Session invalidated
+        }
+      }
 
       log.trace("Restored original SecurityContext");
     }

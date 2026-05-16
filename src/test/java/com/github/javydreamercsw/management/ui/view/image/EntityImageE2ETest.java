@@ -91,7 +91,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
     npc.setNpcType("Manager");
     npc = npcRepository.saveAndFlush(npc);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/npc-profile/" + npc.getId());
+    navigateTo("npc-profile/" + npc.getId());
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     WebElement image = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("npc-image")));
@@ -105,7 +105,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
   @Test
   void testChampionshipImage() {
     // ATW Tag Team is selected by default (alphabetically first in championships.json)
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/championship-rankings");
+    navigateTo("championship-rankings");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 

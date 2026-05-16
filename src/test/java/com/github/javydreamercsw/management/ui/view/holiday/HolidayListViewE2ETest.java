@@ -52,7 +52,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFixedHoliday() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     click("vaadin-tab", "Holidays");
     waitForVaadinElementVisible(By.id("holiday-grid"));
@@ -106,7 +106,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFloatingHoliday() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     click("vaadin-tab", "Holidays");
     waitForVaadinElementVisible(By.id("holiday-grid"));
@@ -170,7 +170,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holiday.setDayOfMonth(1);
     holidayService.save(holiday);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     click("vaadin-tab", "Holidays");
     waitForVaadinElementVisible(By.id("holiday-grid"));
@@ -222,7 +222,7 @@ class HolidayListViewE2ETest extends AbstractE2ETest {
     holiday.setDayOfMonth(2);
     holidayService.save(holiday);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
+    navigateTo("admin");
 
     click("vaadin-tab", "Holidays");
     waitForVaadinElementVisible(By.id("holiday-grid"));

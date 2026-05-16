@@ -81,8 +81,7 @@ class CampaignE2ETest extends AbstractE2ETest {
   @Test
   void testCampaignFlow() {
     // 1. Navigate to Campaign Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
 
     // Verify key elements
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Chapter"));
@@ -141,8 +140,7 @@ class CampaignE2ETest extends AbstractE2ETest {
     campaignRepository.save(campaign);
 
     // 2. Navigate to Campaign Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign");
     takeSequencedScreenshot("campaign-dashboard-for-upgrades");
 
     // 3. Verify Upgrade section is visible

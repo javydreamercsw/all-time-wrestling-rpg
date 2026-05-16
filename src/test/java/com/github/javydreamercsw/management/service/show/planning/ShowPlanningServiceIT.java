@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -528,7 +529,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
-    wrestler1.getDefaultState().get().setTier(WrestlerTier.MAIN_EVENTER);
+    WrestlerState state = WrestlerState.builder().tier(WrestlerTier.MAIN_EVENTER).build();
+    wrestler1.getWrestlerStates().add(state);
 
     // Mock the wrestler service to return our wrestler
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))

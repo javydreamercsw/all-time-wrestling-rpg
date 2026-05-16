@@ -232,11 +232,6 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
         "league-history-tab");
   }
 
-  private void navigateTo(final String route) {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
-    waitForVaadinClientToLoad();
-  }
-
   private void ensurePlayerAccount() {
     if (accountRepository.findByUsername("player1").isEmpty()) {
       Account p1 =
@@ -291,19 +286,28 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.id("show-name"));
     driver.findElement(By.id("show-name")).sendKeys(showName);
 
-    List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-    comboBoxes.get(0).sendKeys("Weekly", Keys.TAB);
-    new WebDriverWait(driver, Duration.ofSeconds(10)).until(d -> comboBoxes.get(2).isEnabled());
-    comboBoxes.get(1).sendKeys(seasonName, Keys.TAB);
-    comboBoxes.get(2).sendKeys("Continuum", Keys.TAB);
-    comboBoxes.get(3).sendKeys(leagueName, Keys.TAB);
+    selectFromVaadinComboBox("show-type", "Weekly");
+
+    // Template is disabled until show-type is selected
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            d ->
+                (Boolean)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "return !arguments[0].disabled;",
+                            d.findElement(By.id("show-template"))));
+
+    selectFromVaadinComboBox("season", seasonName);
+    selectFromVaadinComboBox("show-template", "Continuum");
+    selectFromVaadinComboBox("show-league", leagueName);
 
     driver
         .findElement(By.id("show-date"))
         .sendKeys(
             gameSettingService
                 .getCurrentGameDate()
-                .format(DateTimeFormatter.ofPattern("M/d/yyyy"))); // Corrected to use game date
+                .format(DateTimeFormatter.ofPattern("M/d/yyyy")));
 
     clickElement(By.id("create-show-button"));
     waitForPageSourceToContain("Show created.");
@@ -323,9 +327,10 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.id("add-segment-dialog"));
 
     selectFromVaadinComboBox("segment-type-combo-box", "One on One");
-    WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, wrestlerName1);
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, wrestlerName2);
+    WebElement team1Combo = driver.findElement(By.id("add-team-combo-1"));
+    selectFromVaadinMultiSelectComboBox(team1Combo, wrestlerName1);
+    WebElement team2Combo = driver.findElement(By.id("add-team-combo-2"));
+    selectFromVaadinMultiSelectComboBox(team2Combo, wrestlerName2);
 
     clickElement(By.id("add-segment-save-button"));
     waitForNotification("Segment added successfully!");

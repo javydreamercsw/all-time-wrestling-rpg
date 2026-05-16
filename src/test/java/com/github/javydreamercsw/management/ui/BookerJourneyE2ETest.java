@@ -187,7 +187,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     try {
       // Navigate to the Show List view
       log.info("Navigating to show list");
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+      navigateTo("show-list");
 
       final String showName = "My E2E Show";
 
@@ -392,6 +392,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
             null,
             null,
+            null,
             null);
 
     // Create a new segment objects
@@ -435,7 +436,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     segmentService.updateSegment(firstSegment);
 
     // Navigate to the Show List view
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+    navigateTo("show-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
@@ -488,6 +489,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
             null,
             null,
+            null,
             null);
 
     // Create a new segment objects
@@ -510,7 +512,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     segmentService.updateSegment(firstSegment);
 
     // Navigate to the Show List view
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+    navigateTo("show-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
@@ -584,6 +586,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             showTemplateRepository.findByName(TEMPLATE_NAME).get().getId(),
             null,
             null,
+            null,
             null);
 
     // Create a new segment objects
@@ -606,7 +609,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     segmentService.updateSegment(firstSegment);
 
     // Navigate back to the list.
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
+    navigateTo("show-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 

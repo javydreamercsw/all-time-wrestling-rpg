@@ -621,16 +621,29 @@ public class SegmentService {
   }
 
   private void checkAndNotifyLeagueMatch(final Segment segment) {
+    if (segment.getShow() == null) {
+      return;
+    }
+
+    // Reload show within this transaction to guarantee lazy associations are accessible;
+    // fall back to the in-memory instance when the show has not been persisted yet (e.g. tests).
     Show show = segment.getShow();
-    if (show != null && show.getUniverse() != null) {
-      leagueRepository
-          .findByUniverse(show.getUniverse())
-          .ifPresent(
-              league -> {
-                for (Wrestler wrestler : segment.getWrestlers()) {
-                  notifyLeagueParticipant(segment, show, wrestler, league);
-                }
-              });
+    if (show.getId() != null) {
+      Show reloaded = entityManager.find(Show.class, show.getId());
+      if (reloaded != null) {
+        show = reloaded;
+      }
+    }
+
+    League league = show.getLeague();
+    if (league == null && show.getUniverse() != null) {
+      league = leagueRepository.findByUniverse(show.getUniverse()).orElse(null);
+    }
+
+    if (league != null) {
+      for (Wrestler wrestler : segment.getWrestlers()) {
+        notifyLeagueParticipant(segment, show, wrestler, league);
+      }
     }
   }
 

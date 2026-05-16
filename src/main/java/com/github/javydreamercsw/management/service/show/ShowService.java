@@ -263,6 +263,7 @@ public class ShowService {
       final Long seasonId,
       final Long templateId,
       final Long universeId,
+      @org.springframework.lang.Nullable final Long leagueId,
       final Long commentaryTeamId,
       final Long arenaId) {
 
@@ -300,6 +301,13 @@ public class ShowService {
               .findById(universeId)
               .orElseThrow(() -> new IllegalArgumentException("Universe not found: " + universeId));
       show.setUniverse(universe);
+    }
+
+    if (leagueId != null) {
+      League league = leagueRepository.findById(leagueId).orElse(null);
+      if (league != null) {
+        show.setLeague(league);
+      }
     }
 
     if (commentaryTeamId != null) {
@@ -593,6 +601,11 @@ public class ShowService {
     return showRepository.findByUniverse(universe);
   }
 
+  @PreAuthorize("isAuthenticated()")
+  public List<Show> getShowsByLeague(@NonNull final League league) {
+    return showRepository.findByLeague(league);
+  }
+
   /**
    * Checks if all segments for the show are adjudicated and, if so, finalizes attendance and gate
    * revenue. The guard on existing attendance prevents re-running.
@@ -626,7 +639,10 @@ public class ShowService {
             .flatMap(s -> s.getWrestlers().stream())
             .filter(w -> w.getId() != null && seen.add(w.getId()))
             .mapToLong(
-                w -> w.getFanWeight(show.getUniverse() != null ? show.getUniverse().getId() : null))
+                w -> {
+                  Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : null;
+                  return w.getFanWeight(universeId);
+                })
             .sum();
 
     int baseAttendance = (int) (totalFanWeight / 2);

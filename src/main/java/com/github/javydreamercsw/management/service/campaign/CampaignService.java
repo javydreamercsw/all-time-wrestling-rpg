@@ -298,7 +298,13 @@ public class CampaignService {
                         .findByName("One on One")
                         .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
 
-    Segment segment = segmentService.createSegment(show, type, java.time.Instant.now());
+    Segment newSegment = new Segment();
+    newSegment.setShow(show);
+    newSegment.setSegmentType(type);
+    newSegment.setSegmentDate(java.time.Instant.now());
+    newSegment.setIsTitleSegment(false);
+    newSegment.setTitles(new java.util.HashSet<>());
+    final Segment segment = segmentRepository.save(newSegment);
     segment.setNarration(narration);
 
     if ("fighting_champion".equals(chapter.getId())) {
@@ -513,11 +519,12 @@ public class CampaignService {
 
       final double finalMultiplier = multiplier;
       final Segment finalMatch = match;
-      // Apply rewards directly for Campaign
+      // Run as admin so all downstream @PreAuthorize guards pass (e.g. awardFans, save).
+      // runAsAdmin now updates the VaadinSession context so it works on WebSocket push threads.
       GeneralSecurityUtils.runAsAdmin(
           (java.util.function.Supplier<Void>)
               () -> {
-                adjudicationService.adjudicateMatch(finalMatch, finalMultiplier);
+                adjudicationService.adjudicateMatchForCampaign(finalMatch, finalMultiplier);
                 return null;
               });
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
@@ -567,7 +574,14 @@ public class CampaignService {
 
       // Finals Phase (Tournament Bracket)
       Show currentShow = state.getCurrentMatch().getShow();
-      tournamentService.advanceTournament(campaign, won, currentShow);
+      final boolean finalWon = won;
+      final Show finalShow = currentShow;
+      GeneralSecurityUtils.runAsAdmin(
+          (java.util.function.Supplier<Void>)
+              () -> {
+                tournamentService.advanceTournament(campaign, finalWon, finalShow);
+                return null;
+              });
 
       if (!won) {
         log.info("Wrestler {} ELIMINATED from the tournament finals.", wrestler.getName());
@@ -580,7 +594,12 @@ public class CampaignService {
           // (redundant check but safe)
           // For purely NPC rounds, 'won' param is ignored by advanceTournament logic for player
           // match
-          tournamentService.advanceTournament(campaign, false, currentShow);
+          GeneralSecurityUtils.runAsAdmin(
+              (java.util.function.Supplier<Void>)
+                  () -> {
+                    tournamentService.advanceTournament(campaign, false, currentShow);
+                    return null;
+                  });
           // Refresh state
           tournament = tournamentService.getTournamentState(campaign);
         }
@@ -758,16 +777,18 @@ public class CampaignService {
                             return showTypeRepository.save(st);
                           });
 
-              return showService.createShow(
-                  finalShowName,
-                  "Story matches for " + player.getName(),
-                  weekly.getId(),
-                  finalDate,
-                  season.getId(),
-                  finalTemplateId,
-                  null,
-                  null,
-                  null);
+              // Build directly to avoid ShowService's @PreAuthorize when called from player context
+              Show show = new Show();
+              show.setName(finalShowName);
+              show.setDescription("Story matches for " + player.getName());
+              show.setShowDate(finalDate);
+              show.setCreationDate(java.time.Instant.now());
+              show.setType(weekly);
+              show.setSeason(season);
+              if (finalTemplateId != null) {
+                showTemplateRepository.findById(finalTemplateId).ifPresent(show::setTemplate);
+              }
+              return showRepository.saveAndFlush(show);
             });
   }
 

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show;
 
+import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import java.time.LocalDate;
 import java.util.List;
@@ -41,6 +42,8 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
   boolean existsByUniverse(Universe universe);
 
   List<Show> findByUniverse(Universe universe);
+
+  List<Show> findByLeague(League league);
 
   // ==================== CALENDAR-SPECIFIC QUERIES ====================
 

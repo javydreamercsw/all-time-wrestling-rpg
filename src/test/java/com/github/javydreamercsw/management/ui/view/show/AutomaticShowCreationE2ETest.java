@@ -165,8 +165,7 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
         null);
 
     // Navigate to Season Settings view
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     // Click the "Season Settings" tab
     click("vaadin-tab", "Season Settings");

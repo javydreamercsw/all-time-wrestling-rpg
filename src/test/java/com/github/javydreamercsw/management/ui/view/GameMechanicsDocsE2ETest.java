@@ -79,8 +79,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureCardListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/card-list");
-    waitForVaadinClientToLoad();
+    navigateTo("card-list");
     waitForText("Card List");
 
     documentFeature(
@@ -95,8 +94,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureDeckListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/deck-list");
-    waitForVaadinClientToLoad();
+    navigateTo("deck-list");
     waitForText("Deck List");
 
     documentFeature(
@@ -111,8 +109,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureWrestlerRankingsView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-rankings");
-    waitForVaadinClientToLoad();
+    navigateTo("wrestler-rankings");
     waitForText("Rankings");
 
     documentFeature(
@@ -127,8 +124,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureShowCalendarView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-calendar");
-    waitForVaadinClientToLoad();
+    navigateTo("show-calendar");
     waitForText("Show Calendar");
 
     documentFeature(
@@ -143,8 +139,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureFactionSynergy() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/faction-list");
-    waitForVaadinClientToLoad();
+    navigateTo("faction-list");
     waitForText("Synergy");
 
     documentFeature(
@@ -164,8 +159,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     // Navigate to a match.
     Segment segment = segmentRepository.findAll().stream().findFirst().orElse(null);
     if (segment != null) {
-      driver.get("http://localhost:" + serverPort + getContextPath() + "/match/" + segment.getId());
-      waitForVaadinClientToLoad();
+      navigateTo("match/" + segment.getId());
       waitForText("Ringside Actions");
 
       documentFeature(
@@ -209,8 +203,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureExpansionPacks() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/admin");
-    waitForVaadinClientToLoad();
+    navigateTo("admin");
 
     WebElement tab =
         waitForVaadinElement(

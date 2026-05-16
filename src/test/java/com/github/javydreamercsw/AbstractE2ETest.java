@@ -44,6 +44,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
@@ -69,6 +70,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Import(TestE2ESecurityConfig.class)
 @Slf4j
 @WithCustomMockUser(roles = {"ADMIN"})
+@ExtendWith(UITestWatcher.class)
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @Autowired protected ObjectMapper objectMapper;
@@ -574,10 +576,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     scrollIntoView(element);
     waitForVaadinClientToLoad();
     takeSequencedScreenshot("before-click");
-    // First, wait for the element to be visible.
+    // Wait for the element to become visible (short window — elements inside vaadin-details or
+    // animated containers may be present but hidden; fall through to JS click in that case).
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(ExpectedConditions.visibilityOf(element));
-    wait.until(ExpectedConditions.elementToBeClickable(element));
+    boolean visible;
+    try {
+      new WebDriverWait(driver, Duration.ofSeconds(5))
+          .until(ExpectedConditions.visibilityOf(element));
+      visible = true;
+    } catch (org.openqa.selenium.TimeoutException ignored) {
+      visible = false;
+    } catch (org.openqa.selenium.StaleElementReferenceException ignored) {
+      visible = false;
+    }
+    if (visible) {
+      wait.until(ExpectedConditions.elementToBeClickable(element));
+    }
 
     // Ensure the drawer is closed if it might intercept clicks
     try {
@@ -628,8 +642,20 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void clickElement(@NonNull final By locator) {
-    WebElement element = waitForVaadinElement(driver, locator);
-    clickElement(element);
+    int maxRetries = 3;
+    for (int attempt = 1; attempt < maxRetries + 1; attempt++) {
+      try {
+        WebElement element = waitForVaadinElement(driver, locator);
+        clickElement(element);
+        return;
+      } catch (org.openqa.selenium.StaleElementReferenceException e) {
+        if (attempt == maxRetries) {
+          throw e;
+        }
+        log.warn(
+            "StaleElementReferenceException in clickElement(By), retry {}/{}", attempt, maxRetries);
+      }
+    }
   }
 
   protected void selectFromVaadinComboBox(
@@ -643,26 +669,52 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     scrollIntoView(comboBox);
     waitForVaadinClientToLoad();
 
-    // Open the dropdown via JS (shadow DOM prevents normal click from opening it)
-    ((JavascriptExecutor) driver).executeScript("arguments[0].opened = true;", comboBox);
+    JavascriptExecutor js = (JavascriptExecutor) driver;
 
-    // Wait for the overlay to appear in the DOM (may be attached to document body)
-    new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(
-            d ->
-                (Boolean)
-                    ((JavascriptExecutor) d)
-                        .executeScript(
-                            """
-                            var el = arguments[0]; return el.opened === true\
-                             && !!el._overlayElement;\
-                            """,
-                            comboBox));
+    // Click the shadow-root input to trigger Vaadin's overlay lifecycle, then filter
+    js.executeScript(
+        """
+        const el = arguments[0];
+        const input = el.shadowRoot && el.shadowRoot.querySelector('input');
+        if (input) { input.focus(); input.click(); }
+        el.opened = true;
+        el.filter = arguments[1];
+        """,
+        comboBox,
+        itemText);
 
+    // Wait for a visible combo-box item whose text matches.
+    // If no items appear, retry opening (handles lazy data providers or slow Vaadin push).
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement item =
-        waitForVaadinElement(
-            driver, By.xpath("//vaadin-combo-box-item[contains(text(), '" + itemText + "')]"));
-    clickElement(item);
+        wait.until(
+            d -> {
+              Object found =
+                  js.executeScript(
+                      """
+                      const items = Array.from(document.querySelectorAll(\
+                      'vaadin-combo-box-item'));\
+                      const visible = items.filter(el => {\
+                        const r = el.getBoundingClientRect();\
+                        return r.width > 0 && r.height > 0;\
+                      });\
+                      if (visible.length === 0) {\
+                        const cb = arguments[1];\
+                        const inp = cb.shadowRoot && cb.shadowRoot.querySelector('input');\
+                        if (inp) { inp.click(); }\
+                        cb.opened = true;\
+                      }\
+                      return visible.find(\
+                        el => (el.innerText || el.textContent).trim().includes(arguments[0])\
+                      ) || null;\
+                      """,
+                      itemText,
+                      comboBox);
+              return found instanceof WebElement ? (WebElement) found : null;
+            });
+
+    scrollIntoView(item);
+    item.click();
   }
 
   protected void selectFromVaadinMultiSelectComboBox(
@@ -740,7 +792,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void toggleVaadinCheckbox(@NonNull final By locator) {
     WebElement checkbox = waitForVaadinElement(driver, locator);
-    clickElement(checkbox);
+    scrollIntoView(checkbox);
+    waitForVaadinClientToLoad();
+    // Click the shadow DOM <input> directly; outer-element clicks don't always reach it in
+    // headless Chrome when the vaadin-checkbox shadow root intercepts the event.
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            """
+            const cb = arguments[0];
+            const input = cb.shadowRoot ? cb.shadowRoot.querySelector('input') : null;
+            if (input) { input.click(); } else { cb.click(); }
+            """,
+            checkbox);
   }
 
   protected void assertGridContains(@NonNull final String gridId, @NonNull final String text) {
@@ -807,13 +870,67 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       @NonNull final String rowText,
       @NonNull final By buttonLocator) {
     WebElement grid = driver.findElement(By.id(gridId));
-    List<WebElement> rows = grid.findElements(By.tagName("vaadin-grid-row"));
-    for (WebElement row : rows) {
-      if (row.getText().contains(rowText)) {
-        return row.findElement(buttonLocator);
-      }
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+
+    // Scroll grid to end so all rows are virtualized into the DOM
+    js.executeScript(
+        "arguments[0].scrollToIndex(arguments[0].items ? arguments[0].items.length - 1 : 9999);",
+        grid);
+    waitForVaadinClientToLoad();
+
+    // Vaadin Grid uses slot-based rendering: vaadin-grid-cell-content elements in the light
+    // DOM carry a slot attribute like "vaadin-grid-cell-content-{rowIdx}-{colIdx}". Extract
+    // the row prefix from the matching cell and then check all sibling cells (same row) for
+    // the target button — no shadow DOM traversal needed.
+    String buttonCss = buttonLocator.toString().replace("By.cssSelector: ", "");
+    Object raw =
+        js.executeScript(
+            """
+            const grid = arguments[0];
+            const needle = arguments[1];
+            const css = arguments[2];
+            const cells = Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));
+            const matchCell = cells.find(c => (c.innerText || c.textContent || '').includes(needle));
+            if (!matchCell) return 'ERR:no_cell';
+            const slotName = matchCell.getAttribute('slot') || '';
+            // slot name format: vaadin-grid-cell-content-<rowIdx>-<colIdx>
+            const parts = slotName.split('-');
+            // last two parts are colIdx and rowIdx; row prefix is everything except last segment
+            if (parts.length < 2) return 'ERR:bad_slot:' + slotName;
+            const rowPrefix = parts.slice(0, parts.length - 1).join('-');
+            // Find all sibling cells in the same row
+            const rowCells = cells.filter(c => {
+              const s = c.getAttribute('slot') || '';
+              return s.startsWith(rowPrefix + '-');
+            });
+            for (const cell of rowCells) {
+              const found = cell.querySelector(css);
+              if (found) return found;
+            }
+            return 'ERR:no_button_in_row:' + rowPrefix + ':cells=' + rowCells.length;
+            """,
+            grid,
+            rowText,
+            buttonCss);
+
+    if (!(raw instanceof WebElement button)) {
+      Object debugResult =
+          js.executeScript(
+              """
+              const grid = arguments[0];
+              const cells = Array.from(grid.querySelectorAll('vaadin-grid-cell-content'));
+              return cells.map(c => (c.getAttribute('slot') || '') + '|' + (c.innerText || c.textContent || '').substring(0, 60)).join('\\n');
+              """,
+              grid);
+      throw new RuntimeException(
+          "Could not find row with text: "
+              + rowText
+              + " | debug="
+              + raw
+              + " | cells="
+              + debugResult);
     }
-    throw new RuntimeException("Could not find row with text: " + rowText);
+    return button;
   }
 
   protected void waitForGridToSettle(
@@ -842,7 +959,13 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void scrollIntoView(@NonNull final WebElement element) {
-    ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+    try {
+      ((JavascriptExecutor) driver)
+          .executeScript(
+              "arguments[0].scrollIntoView({behavior:'instant',block:'center'});", element);
+    } catch (org.openqa.selenium.StaleElementReferenceException e) {
+      log.warn("StaleElementReferenceException in scrollIntoView — element was re-rendered");
+    }
   }
 
   protected void takeSequencedScreenshot(@NonNull final String context) {
@@ -893,6 +1016,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     } catch (IOException e) {
       log.error("Failed to save page source to: {}", filePath, e);
     }
+  }
+
+  protected void navigateTo(@NonNull final String route) {
+    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
+    waitForVaadinClientToLoad();
   }
 
   protected void logout() {

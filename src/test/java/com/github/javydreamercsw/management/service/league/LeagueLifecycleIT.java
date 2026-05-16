@@ -182,6 +182,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
             null,
             defaultUniverse.getId(),
             null,
+            null,
             null);
     show = showRepository.saveAndFlush(show);
     entityManager.clear();

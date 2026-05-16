@@ -66,8 +66,7 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureShowTemplateList() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-template-list");
-    waitForVaadinClientToLoad();
+    navigateTo("show-template-list");
     waitForGridToPopulate("template-grid");
 
     documentFeature(
@@ -82,8 +81,7 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureShowTemplateImageGeneration() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-template-list");
-    waitForVaadinClientToLoad();
+    navigateTo("show-template-list");
     waitForGridToPopulate("template-grid");
 
     // Click "Generate Art" button for our template

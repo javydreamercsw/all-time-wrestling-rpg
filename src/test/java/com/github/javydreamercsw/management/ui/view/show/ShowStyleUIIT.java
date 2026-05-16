@@ -140,6 +140,8 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
 
     ShowExportService exportService = mock(ShowExportService.class);
     NotificationService notificationService = mock(NotificationService.class);
+    LeagueRepository leagueRepository = mock(LeagueRepository.class);
+    when(leagueRepository.findAll()).thenReturn(java.util.Collections.emptyList());
 
     ShowListView showListView =
         new ShowListView(
@@ -155,6 +157,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             arenaService,
             exportService,
             notificationService,
+            leagueRepository,
             clock);
     Grid<Show> grid = showListView.showGrid;
 

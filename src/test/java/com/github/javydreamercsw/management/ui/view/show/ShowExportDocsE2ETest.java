@@ -74,8 +74,7 @@ class ShowExportDocsE2ETest extends AbstractE2ETest {
     segmentRepository.save(segment);
 
     // 2. Navigate to Show List
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show-list");
-    waitForVaadinClientToLoad();
+    navigateTo("show-list");
 
     // 3. Open Export Dialog from grid
     String exportBtnId = "export-show-button-" + show.getId();

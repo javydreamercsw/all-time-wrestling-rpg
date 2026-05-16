@@ -164,6 +164,7 @@ public class ShowController {
             request.showDate(),
             request.seasonId(),
             request.templateId(),
+            null,
             request.leagueId(),
             request.commentaryTeamId(),
             request.arenaId());

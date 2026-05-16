@@ -52,6 +52,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -548,6 +549,7 @@ public class ShowDetailView extends Main
     Button addSegmentBtn =
         new Button("Add Segment", new Icon(VaadinIcon.PLUS), e -> openAddSegmentDialog(show));
     addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    addSegmentBtn.setId("add-segment-btn");
 
     header.add(segmentsTitle, new HorizontalLayout(adjudicateButton, addSegmentBtn));
 
@@ -786,7 +788,16 @@ public class ShowDetailView extends Main
     deleteButton.setId("delete-segment-button-" + segment.getId());
     deleteButton.addClickListener(e -> deleteSegment(segment));
 
-    return new VerticalLayout(summaryButton, narrateButton, editButton, deleteButton);
+    SegmentType segmentType = segment.getSegmentType();
+    boolean isMatch = segmentType != null && !"Promo".equalsIgnoreCase(segmentType.getName());
+    Button qrButton = new Button(new Icon(VaadinIcon.QRCODE));
+    qrButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    qrButton.setTooltipText("Share Match QR Code");
+    qrButton.setId("share-qr-button-" + segment.getId());
+    qrButton.setVisible(isMatch);
+    qrButton.addClickListener(e -> new QrCodeDialog(segment.getId()).open());
+
+    return new VerticalLayout(summaryButton, narrateButton, editButton, deleteButton, qrButton);
   }
 
   private void generateSummary(@NonNull Segment segment) {

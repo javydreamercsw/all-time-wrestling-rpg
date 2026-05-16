@@ -33,7 +33,28 @@ public final class UrlUtil {
           .build()
           .toUriString();
     }
-    // Fallback for testing or background threads
     return "http://localhost:8080";
+  }
+
+  /**
+   * Like getBaseUrl() but replaces localhost/127.0.0.1 with the machine's LAN IP so QR codes are
+   * scannable from phones on the same network.
+   */
+  public static String getNetworkUrl() {
+    String override = System.getenv("QR_BASE_URL");
+    if (override != null && !override.isBlank()) {
+      return override;
+    }
+    VaadinServletRequest request = VaadinServletRequest.getCurrent();
+    if (request != null) {
+      String forwardedHost = request.getHttpServletRequest().getHeader("X-Forwarded-Host");
+      String forwardedProto = request.getHttpServletRequest().getHeader("X-Forwarded-Proto");
+      if (forwardedHost != null && !forwardedHost.isBlank()) {
+        String scheme = forwardedProto != null ? forwardedProto : "https";
+        String contextPath = request.getHttpServletRequest().getContextPath();
+        return scheme + "://" + forwardedHost + contextPath;
+      }
+    }
+    return getBaseUrl();
   }
 }

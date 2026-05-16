@@ -29,7 +29,7 @@ public class SeasonListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToSeasonListView() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/season-list");
+    navigateTo("season-list");
 
     // Check that the grid is present
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));

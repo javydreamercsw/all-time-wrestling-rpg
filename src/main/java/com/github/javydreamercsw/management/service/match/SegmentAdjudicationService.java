@@ -178,6 +178,17 @@ public class SegmentAdjudicationService {
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   @Transactional
   public void adjudicateMatch(@NonNull final Segment segment, final double multiplier) {
+    adjudicateMatchInternal(segment, multiplier);
+  }
+
+  /** Called by CampaignService where the player security context cannot be elevated. */
+  @Transactional
+  public void adjudicateMatchForCampaign(@NonNull final Segment segment, final double multiplier) {
+    adjudicateMatchInternal(segment, multiplier);
+  }
+
+  @Transactional
+  private void adjudicateMatchInternal(@NonNull final Segment segment, final double multiplier) {
     // Check for league fulfillment
     matchFulfillmentRepository
         .findBySegment(segment)
@@ -194,44 +205,47 @@ public class SegmentAdjudicationService {
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
 
-    // Update League Stats if applicable
-    if (segment.getShow().getUniverse() != null) {
-      leagueRepository
-          .findByUniverse(segment.getShow().getUniverse())
-          .ifPresent(
-              league -> {
-                if (winners.isEmpty()) {
-                  // Draw
-                  for (Wrestler w : segment.getWrestlers()) {
-                    leagueRosterRepository
-                        .findByLeagueAndWrestler(league, w)
-                        .ifPresent(
-                            roster -> {
-                              roster.setDraws(roster.getDraws() + 1);
-                              leagueRosterRepository.save(roster);
-                            });
-                  }
-                } else {
-                  for (Wrestler w : winners) {
-                    leagueRosterRepository
-                        .findByLeagueAndWrestler(league, w)
-                        .ifPresent(
-                            roster -> {
-                              roster.setWins(roster.getWins() + 1);
-                              leagueRosterRepository.save(roster);
-                            });
-                  }
-                  for (Wrestler w : losers) {
-                    leagueRosterRepository
-                        .findByLeagueAndWrestler(league, w)
-                        .ifPresent(
-                            roster -> {
-                              roster.setLosses(roster.getLosses() + 1);
-                              leagueRosterRepository.save(roster);
-                            });
-                  }
-                }
-              });
+    // Update League Stats if applicable — check show.getLeague() first, then fall back to
+    // the universe-based lookup for shows that were associated via universe rather than directly.
+    com.github.javydreamercsw.management.domain.league.League effectiveLeague =
+        segment.getShow().getLeague();
+    if (effectiveLeague == null && segment.getShow().getUniverse() != null) {
+      effectiveLeague =
+          leagueRepository.findByUniverse(segment.getShow().getUniverse()).orElse(null);
+    }
+    if (effectiveLeague != null) {
+      final com.github.javydreamercsw.management.domain.league.League league = effectiveLeague;
+      if (winners.isEmpty()) {
+        // Draw
+        for (Wrestler w : segment.getWrestlers()) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setDraws(roster.getDraws() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+      } else {
+        for (Wrestler w : winners) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setWins(roster.getWins() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+        for (Wrestler w : losers) {
+          leagueRosterRepository
+              .findByLeagueAndWrestler(league, w)
+              .ifPresent(
+                  roster -> {
+                    roster.setLosses(roster.getLosses() + 1);
+                    leagueRosterRepository.save(roster);
+                  });
+        }
+      }
     }
 
     // Apply standard rewards (Multiplier 1.0 for normal league play)

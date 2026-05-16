@@ -59,7 +59,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
   void testCreateArena() {
     Location location = locationService.createLocation("Arena City", "Desc", null, Set.of());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/arena-list");
+    navigateTo("arena-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Get the initial size of the grid
@@ -123,7 +123,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         arenaService.createArena(
             "Edit Me Arena", "Desc", location.getId(), 5000, Arena.AlignmentBias.NEUTRAL, Set.of());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/arena-list");
+    navigateTo("arena-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to load
@@ -176,7 +176,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
             Arena.AlignmentBias.NEUTRAL,
             Set.of());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/arena-list");
+    navigateTo("arena-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to load

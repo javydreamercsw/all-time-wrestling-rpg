@@ -224,6 +224,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             null,
             defaultUniverse.getId(),
             null,
+            null,
             null);
 
     SegmentType matchType = segmentTypeService.findByName("One on One").get();
@@ -311,6 +312,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             season.getId(),
             null,
             defaultUniverse.getId(),
+            null,
             null,
             null);
 

@@ -36,8 +36,7 @@ public class HallOfFameDocsE2ETest extends AbstractDocsE2ETest {
     login("admin", "admin123");
 
     // Navigate to Hall of Fame
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/hall-of-fame");
-    waitForVaadinClientToLoad();
+    navigateTo("hall-of-fame");
 
     // Wait for grid to load
     waitForText("Hall of Fame");
@@ -68,8 +67,7 @@ public class HallOfFameDocsE2ETest extends AbstractDocsE2ETest {
     login("player", "player123");
 
     // Navigate to Player Dashboard
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/player");
-    waitForVaadinClientToLoad();
+    navigateTo("player");
 
     // Wait for profile card legacy info
     waitForText("Legacy:");

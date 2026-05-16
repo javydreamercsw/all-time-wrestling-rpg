@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -198,9 +199,20 @@ public class FactionListView extends VerticalLayout {
               new Button(
                   new Icon(VaadinIcon.TRASH),
                   e -> {
-                    factionService.deleteById(faction.getId());
-                    refreshGrid();
-                    Notification.show("Faction deleted.");
+                    ConfirmDialog confirm = new ConfirmDialog();
+                    confirm.setHeader("Delete Faction");
+                    confirm.setText(
+                        "Are you sure you want to delete \"" + faction.getName() + "\"?");
+                    confirm.setConfirmText("Delete");
+                    confirm.setConfirmButtonTheme("error primary");
+                    confirm.setCancelable(true);
+                    confirm.addConfirmListener(
+                        ev -> {
+                          factionService.deleteById(faction.getId());
+                          refreshGrid();
+                          Notification.show("Faction deleted.");
+                        });
+                    confirm.open();
                   });
           deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
           deleteButton.setTooltipText("Delete Faction");
@@ -295,8 +307,8 @@ public class FactionListView extends VerticalLayout {
     dialog.setWidth("800px");
     dialog.setHeight("600px");
 
-    // Fetch fresh faction data to ensure members are loaded
-    Optional<Faction> updatedFaction = factionService.getFactionById(faction.getId());
+    // Fetch fresh faction data with members eagerly loaded
+    Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     if (updatedFaction.isEmpty()) {
       return;
     }
@@ -327,16 +339,15 @@ public class FactionListView extends VerticalLayout {
 
     currentMembersGrid.addComponentColumn(
         memberState -> {
-          Button removeBtn =
-              new Button(
-                  new Icon(VaadinIcon.MINUS),
-                  e -> {
-                    loadedFaction.removeMember(memberState);
-                    factionService.save(loadedFaction);
-                    dialog.close();
-                    openMembersDialog(loadedFaction);
-                    refreshGrid();
-                  });
+          Button removeBtn = new Button(new Icon(VaadinIcon.MINUS));
+          removeBtn.addClickListener(
+              e -> {
+                factionService.removeMemberFromFaction(
+                    loadedFaction.getId(), memberState.getWrestler().getId(), "Removed via UI");
+                dialog.close();
+                openMembersDialog(loadedFaction);
+                refreshGrid();
+              });
           removeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
           removeBtn.setTooltipText("Remove from Faction");
           removeBtn.setId("remove-member-" + memberState.getWrestler().getId());

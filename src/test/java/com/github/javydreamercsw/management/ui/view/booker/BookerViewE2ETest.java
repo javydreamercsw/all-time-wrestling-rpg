@@ -90,7 +90,7 @@ public class BookerViewE2ETest extends AbstractE2ETest {
     // Navigate to the BookerView
     assertDoesNotThrow(
         () -> {
-          driver.get("http://localhost:" + serverPort + getContextPath() + "/booker");
+          navigateTo("booker");
           // Check that the grids have the correct number of rows
           assertFalse(getGridRows("roster-overview-grid").isEmpty());
 

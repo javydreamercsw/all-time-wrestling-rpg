@@ -222,19 +222,21 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
             wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-name"))))
         .sendKeys(showName);
 
-    List<WebElement> comboBoxes = driver.findElements(By.cssSelector("vaadin-combo-box"));
-    WebElement showTypeComboBox = comboBoxes.get(0);
-    WebElement seasonComboBox = comboBoxes.get(1);
-    WebElement templateComboBox = comboBoxes.get(2);
-    WebElement leagueComboBox = comboBoxes.get(3);
+    selectFromVaadinComboBox("show-type", "Weekly");
 
-    selectFromVaadinComboBox(showTypeComboBox, "Weekly");
+    // Wait for template to become enabled after show-type is selected
+    new WebDriverWait(driver, Duration.ofSeconds(10))
+        .until(
+            d ->
+                (Boolean)
+                    ((JavascriptExecutor) d)
+                        .executeScript(
+                            "return !arguments[0].disabled;",
+                            d.findElement(By.id("show-template"))));
 
-    wait.until(ignored -> templateComboBox.isEnabled());
-
-    selectFromVaadinComboBox(seasonComboBox, String.valueOf(Year.now().getValue()));
-    selectFromVaadinComboBox(templateComboBox, "Continuum");
-    selectFromVaadinComboBox(leagueComboBox, leagueName);
+    selectFromVaadinComboBox("season", String.valueOf(Year.now().getValue()));
+    selectFromVaadinComboBox("show-template", "Continuum");
+    selectFromVaadinComboBox("show-league", leagueName);
 
     driver
         .findElement(By.id("show-date"))
@@ -251,7 +253,9 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     List<Show> matchingShows = showService.findByName(showName);
     Assertions.assertEquals(1, matchingShows.size());
     Show show = matchingShows.getFirst();
-    Assertions.assertNotNull(show.getUniverse(), "Show universe should be set");
+    Assertions.assertNotNull(show.getLeague(), "Show league should be set");
+    Assertions.assertEquals(
+        leagueName, show.getLeague().getName(), "Show league name should match");
 
     // Click on the newly created show in the grid to navigate to its detail page
     log.info("Navigating to show detail page");
@@ -269,15 +273,15 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     selectFromVaadinComboBox("segment-type-combo-box", "One on One");
 
-    WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
-
     String p1WrestlerName = getPlayer1WrestlerName(league);
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, p1WrestlerName);
+    WebElement team1Combo = driver.findElement(By.id("add-team-combo-1"));
+    selectFromVaadinMultiSelectComboBox(team1Combo, p1WrestlerName);
 
     // Add another wrestler (can be admin's or anyone)
     // We need at least 2
     String adminWrestlerName = getAdminWrestlerName(league);
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, adminWrestlerName);
+    WebElement team2Combo = driver.findElement(By.id("add-team-combo-2"));
+    selectFromVaadinMultiSelectComboBox(team2Combo, adminWrestlerName);
 
     clickElement(By.id("add-segment-save-button"));
     waitForNotification("Segment added successfully!");
@@ -355,11 +359,6 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     click("vaadin-tab", "Show History");
     waitForPageSourceToContain("Show History");
     assertTrue(driver.getPageSource().contains(showName));
-  }
-
-  private void navigateTo(final String route) {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
-    waitForVaadinClientToLoad();
   }
 
   private void waitForTurnChangeToAdmin() {

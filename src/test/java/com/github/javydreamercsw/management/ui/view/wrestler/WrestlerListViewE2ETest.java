@@ -66,7 +66,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateWrestler() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    navigateTo("wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Get the initial size of the grid
@@ -121,7 +121,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     assertNotNull(w3.getId());
     wrestlerService.getOrCreateState(w3.getId(), defaultUniverse.getId());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    navigateTo("wrestler-list");
 
     // Wait for the grid to settle
     waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
@@ -146,7 +146,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Create a wrestler to edit
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Edit"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    navigateTo("wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
@@ -204,7 +204,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Delete"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    navigateTo("wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
@@ -242,7 +242,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Bump"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    navigateTo("wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
@@ -288,7 +288,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     state.setBumps(1);
     wrestlerStateRepository.saveAndFlush(state);
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    navigateTo("wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
@@ -348,7 +348,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
                 "Landed awkwardly.")
             .get();
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/wrestler-list");
+    navigateTo("wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 

@@ -108,8 +108,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
     doNothing().when(backstageEncounterService).recordBackstageChoice(any(), any());
 
     // 2. Navigate to Backstage Actions - should trigger reroute
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/campaign/actions");
-    waitForVaadinClientToLoad();
+    navigateTo("campaign/actions");
 
     // 3. Verify we are on the situation view
     waitForText("Backstage Situation");

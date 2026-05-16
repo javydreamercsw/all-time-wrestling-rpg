@@ -133,7 +133,7 @@ class WorldDataIntegrationTest extends AbstractIntegrationTest {
 
     Show show =
         showService.createShow(
-            "Test Show", "Desc", type.getId(), null, null, null, null, null, arena.getId());
+            "Test Show", "Desc", type.getId(), null, null, null, null, null, null, arena.getId());
     assertNotNull(show.getArena());
     assertEquals(arena.getId(), show.getArena().getId());
   }

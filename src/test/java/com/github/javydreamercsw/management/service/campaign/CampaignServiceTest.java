@@ -18,8 +18,6 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
@@ -232,12 +230,9 @@ class CampaignServiceTest {
 
     when(wrestlerRepository.findByName("Opponent")).thenReturn(Optional.of(opponent));
 
-    when(showService.createShow(
-            anyString(), anyString(), anyLong(), any(), anyLong(), any(), any(), any(), any()))
-        .thenReturn(show);
+    when(showRepository.saveAndFlush(any())).thenReturn(show);
 
-    when(segmentService.createSegment(any(Show.class), any(SegmentType.class), any()))
-        .thenReturn(new Segment());
+    when(segmentRepository.save(any(Segment.class))).thenReturn(new Segment());
 
     campaignService.createMatchForEncounter(
         campaign, "Opponent", "Test Narration", "One on One", "Normal");
