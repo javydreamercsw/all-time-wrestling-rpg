@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.SeasonStatsDTO;
 import java.time.Instant;
 import java.util.List;
@@ -111,7 +112,7 @@ public class SeasonStatsService {
         .losses(losses)
         .draws(draws)
         .startingFans(0L) // TODO: Implement fan history tracking
-        .endingFans(managedWrestler.getFans())
+        .endingFans(managedWrestler.getDefaultState().map(WrestlerState::getFans).orElse(0L))
         .accolades(accolades)
         .build();
   }

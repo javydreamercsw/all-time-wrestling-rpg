@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.gm;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -95,16 +96,24 @@ public class GmDashboardView extends VerticalLayout {
         .setHeader("Tier");
 
     rosterGrid
-        .addColumn(w -> w.getManagementStamina() + "%")
+        .addColumn(w -> w.getDefaultState().map(s -> s.getManagementStamina() + "%").orElse("100%"))
         .setHeader("Stamina")
-        .setPartNameGenerator(w -> w.getManagementStamina() < 40 ? "danger" : "");
+        .setPartNameGenerator(
+            w ->
+                w.getDefaultState()
+                    .map(s -> s.getManagementStamina() < 40 ? "danger" : "")
+                    .orElse(""));
 
     rosterGrid
-        .addColumn(w -> w.getMorale() + "%")
+        .addColumn(w -> w.getDefaultState().map(s -> s.getMorale() + "%").orElse("100%"))
         .setHeader("Morale")
-        .setPartNameGenerator(w -> w.getMorale() < 50 ? "warning" : "");
+        .setPartNameGenerator(
+            w -> w.getDefaultState().map(s -> s.getMorale() < 50 ? "warning" : "").orElse(""));
 
-    rosterGrid.addColumn(w -> "%,d".formatted(w.getFans())).setHeader("Fans").setSortable(true);
+    rosterGrid
+        .addColumn(w -> "%,d".formatted(w.getDefaultState().map(WrestlerState::getFans).orElse(0L)))
+        .setHeader("Fans")
+        .setSortable(true);
 
     rosterGrid.addClassNames(LumoUtility.Border.ALL, LumoUtility.BorderRadius.MEDIUM);
 

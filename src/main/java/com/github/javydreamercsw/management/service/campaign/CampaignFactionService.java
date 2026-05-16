@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.campaign;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import java.util.Optional;
 import lombok.NonNull;
@@ -58,7 +59,7 @@ public class CampaignFactionService {
    */
   public Optional<Faction> betrayFaction(@NonNull final Campaign campaign) {
     Wrestler player = campaign.getWrestler();
-    Faction currentFaction = player.getFaction();
+    Faction currentFaction = player.getDefaultState().map(WrestlerState::getFaction).orElse(null);
 
     if (currentFaction == null) {
       log.warn("Wrestler {} is not in a faction to betray", player.getName());
@@ -83,7 +84,7 @@ public class CampaignFactionService {
   public Optional<Faction> recruitToFaction(
       @NonNull final Campaign campaign, @NonNull final Wrestler recruit) {
     Wrestler player = campaign.getWrestler();
-    Faction currentFaction = player.getFaction();
+    Faction currentFaction = player.getDefaultState().map(WrestlerState::getFaction).orElse(null);
 
     if (currentFaction == null) {
       log.warn("Player {} must be in a faction to recruit others", player.getName());

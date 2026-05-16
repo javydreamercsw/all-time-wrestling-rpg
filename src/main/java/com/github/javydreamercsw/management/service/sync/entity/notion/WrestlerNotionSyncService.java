@@ -52,10 +52,16 @@ public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
           "Starting Health",
           NotionPropertyBuilder.createNumberProperty(entity.getStartingHealth().doubleValue()));
     }
-    if (entity.getFans() != null) {
-      properties.put(
-          "Fans", NotionPropertyBuilder.createNumberProperty(entity.getFans().doubleValue()));
-    }
+    entity
+        .getDefaultState()
+        .ifPresent(
+            state -> {
+              if (state.getFans() != null) {
+                properties.put(
+                    "Fans",
+                    NotionPropertyBuilder.createNumberProperty(state.getFans().doubleValue()));
+              }
+            });
     entity
         .getDefaultState()
         .ifPresent(
@@ -123,16 +129,23 @@ public class WrestlerNotionSyncService extends BaseNotionSyncService<Wrestler> {
       properties.put(
           "Heritage Tag", NotionPropertyBuilder.createRichTextProperty(entity.getHeritageTag()));
     }
-    if (entity.getFaction() != null && entity.getFaction().getExternalId() != null) {
-      properties.put(
-          "Faction",
-          NotionPropertyBuilder.createRelationProperty(entity.getFaction().getExternalId()));
-    }
-    if (entity.getManager() != null && entity.getManager().getExternalId() != null) {
-      properties.put(
-          "Manager",
-          NotionPropertyBuilder.createRelationProperty(entity.getManager().getExternalId()));
-    }
+    entity
+        .getDefaultState()
+        .ifPresent(
+            state -> {
+              if (state.getFaction() != null && state.getFaction().getExternalId() != null) {
+                properties.put(
+                    "Faction",
+                    NotionPropertyBuilder.createRelationProperty(
+                        state.getFaction().getExternalId()));
+              }
+              if (state.getManager() != null && state.getManager().getExternalId() != null) {
+                properties.put(
+                    "Manager",
+                    NotionPropertyBuilder.createRelationProperty(
+                        state.getManager().getExternalId()));
+              }
+            });
     properties.put(
         "Injuries",
         NotionPropertyBuilder.createRelationProperty(

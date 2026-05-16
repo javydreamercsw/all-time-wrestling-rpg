@@ -179,9 +179,10 @@ public class BackstageEncounterService {
           .append(player.getAlignment().getLevel())
           .append(")\n");
     }
-    if (player.getFaction() != null) {
-      sb.append("- Faction: ").append(player.getFaction().getName()).append("\n");
-    }
+    player
+        .getDefaultState()
+        .map(WrestlerState::getFaction)
+        .ifPresent(faction -> sb.append("- Faction: ").append(faction.getName()).append("\n"));
     if (campaign.getState().getRival() != null) {
       sb.append("- Current Rival: ").append(campaign.getState().getRival().getName()).append("\n");
     }

@@ -111,13 +111,16 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               Span bumps = new Span("Bumps: " + bumpsCount);
               bumps.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
 
-              Span condition =
-                  new Span(
-                      "💪 Physical Condition: " + wrestlerWithDetails.getPhysicalCondition() + "%");
+              int physicalCondition =
+                  wrestlerWithDetails
+                      .getDefaultState()
+                      .map(WrestlerState::getPhysicalCondition)
+                      .orElse(100);
+              Span condition = new Span("💪 Physical Condition: " + physicalCondition + "%");
               condition.addClassNames(FontSize.SMALL, FontWeight.MEDIUM);
-              if (wrestlerWithDetails.getPhysicalCondition() < 50) {
+              if (physicalCondition < 50) {
                 condition.addClassNames(TextColor.ERROR);
-              } else if (wrestlerWithDetails.getPhysicalCondition() < 80) {
+              } else if (physicalCondition < 80) {
                 condition.addClassNames(TextColor.WARNING);
               } else {
                 condition.addClassNames(TextColor.SUCCESS);
@@ -170,8 +173,7 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 hpTooltip.append("\nBump Penalty: -").append(bumpsCount);
               }
 
-              int conditionPenalty =
-                  Math.min(5, (100 - wrestlerWithDetails.getPhysicalCondition()) / 5);
+              int conditionPenalty = Math.min(5, (100 - physicalCondition) / 5);
               if (conditionPenalty > 0) {
                 hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
               }

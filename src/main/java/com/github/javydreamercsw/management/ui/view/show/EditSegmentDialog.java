@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -288,11 +289,14 @@ public class EditSegmentDialog extends Dialog {
     java.util.Map<Long, Integer> factionAffinity = new java.util.HashMap<>();
 
     for (Wrestler w : wrestlers) {
-      if (w.getFaction() != null) {
-        Long fid = w.getFaction().getId();
-        factionCounts.put(fid, factionCounts.getOrDefault(fid, 0) + 1);
-        factionAffinity.put(fid, w.getFaction().getAffinity());
-      }
+      w.getDefaultState()
+          .map(WrestlerState::getFaction)
+          .ifPresent(
+              faction -> {
+                Long fid = faction.getId();
+                factionCounts.put(fid, factionCounts.getOrDefault(fid, 0) + 1);
+                factionAffinity.put(fid, faction.getAffinity());
+              });
     }
 
     for (java.util.Map.Entry<Long, Integer> entry : factionCounts.entrySet()) {

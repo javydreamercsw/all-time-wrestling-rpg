@@ -551,7 +551,15 @@ public class PlayerView extends VerticalLayout {
     if (bumps > 0) {
       hpTooltip.append("\nBump Penalty: -").append(bumps);
     }
-    int conditionPenalty = Math.min(5, (100 - playerWrestler.getPhysicalCondition()) / 5);
+    int conditionPenalty =
+        Math.min(
+            5,
+            (100
+                    - playerWrestler
+                        .getDefaultState()
+                        .map(WrestlerState::getPhysicalCondition)
+                        .orElse(100))
+                / 5);
     if (conditionPenalty > 0) {
       hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
     }
