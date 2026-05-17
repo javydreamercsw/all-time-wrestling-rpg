@@ -21,15 +21,21 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership.UniverseMemberRole;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.expansion.Expansion;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
@@ -44,6 +50,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 
@@ -60,13 +67,24 @@ public class UniverseFormDialog extends Dialog {
       @NonNull final UniverseService universeService,
       @NonNull final Universe universe,
       @NonNull final Runnable onSave) {
-    this(universeService, null, null, universe, onSave);
+    this(universeService, null, null, null, null, universe, onSave);
   }
 
   public UniverseFormDialog(
       @NonNull final UniverseService universeService,
       final UniverseMembershipService membershipService,
       final AccountService accountService,
+      @NonNull final Universe universe,
+      @NonNull final Runnable onSave) {
+    this(universeService, membershipService, accountService, null, null, universe, onSave);
+  }
+
+  public UniverseFormDialog(
+      @NonNull final UniverseService universeService,
+      final UniverseMembershipService membershipService,
+      final AccountService accountService,
+      final UniverseSettingsService settingsService,
+      final WrestlerRepository wrestlerRepository,
       @NonNull final Universe universe,
       @NonNull final Runnable onSave) {
     this.universeService = universeService;
@@ -79,6 +97,9 @@ public class UniverseFormDialog extends Dialog {
       tabs.setWidthFull();
       tabs.add(new Tab("Details"), buildDetailsLayout(onSave));
       tabs.add(new Tab("Members"), buildMembersLayout(membershipService, accountService));
+      if (settingsService != null && wrestlerRepository != null) {
+        tabs.add(new Tab("Settings"), buildSettingsLayout(settingsService, wrestlerRepository));
+      }
       add(tabs);
     } else {
       add(buildDetailsLayout(onSave));
@@ -209,8 +230,104 @@ public class UniverseFormDialog extends Dialog {
     return layout;
   }
 
+  private VerticalLayout buildSettingsLayout(
+      final UniverseSettingsService settingsService, final WrestlerRepository wrestlerRepository) {
+
+    // --- Expansion overrides ---
+    H4 expansionHeader = new H4("Expansion Settings");
+    Grid<Expansion> expansionGrid = new Grid<>(Expansion.class, false);
+    expansionGrid.addColumn(Expansion::getName).setHeader("Expansion").setSortable(true);
+    expansionGrid.addColumn(Expansion::getCode).setHeader("Code").setSortable(true);
+    expansionGrid
+        .addComponentColumn(
+            exp -> {
+              Checkbox cb = new Checkbox(exp.isEnabled());
+              cb.setId("universe-expansion-" + exp.getCode());
+              cb.addValueChangeListener(
+                  ev -> {
+                    settingsService.setExpansionEnabled(universe, exp.getCode(), ev.getValue());
+                    String state = ev.getValue() ? "enabled" : "disabled";
+                    Notification.show(
+                            "Expansion '%s' %s for this universe.".formatted(exp.getName(), state),
+                            3000,
+                            Notification.Position.BOTTOM_END)
+                        .addThemeVariants(
+                            ev.getValue()
+                                ? NotificationVariant.LUMO_SUCCESS
+                                : NotificationVariant.LUMO_CONTRAST);
+                  });
+              return cb;
+            })
+        .setHeader("Enabled");
+    expansionGrid.setItems(settingsService.getExpansionsForUniverse(universe));
+    expansionGrid.setHeight("200px");
+
+    // --- Wrestler exclusions ---
+    H4 exclusionHeader = new H4("Excluded Wrestlers");
+    Grid<Wrestler> exclusionGrid = new Grid<>(Wrestler.class, false);
+    exclusionGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
+    exclusionGrid
+        .addComponentColumn(
+            w -> {
+              Button include = new Button("Remove Exclusion");
+              include.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+              include.addClickListener(
+                  e -> {
+                    settingsService.includeWrestler(universe, w);
+                    refreshExclusionGrid(exclusionGrid, settingsService);
+                  });
+              return include;
+            })
+        .setHeader("Actions");
+    refreshExclusionGrid(exclusionGrid, settingsService);
+    exclusionGrid.setHeight("200px");
+
+    ComboBox<Wrestler> wrestlerPicker = new ComboBox<>("Exclude Wrestler");
+    wrestlerPicker.setItems(
+        wrestlerRepository.findAllByActiveTrue().stream()
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList()));
+    wrestlerPicker.setItemLabelGenerator(Wrestler::getName);
+    wrestlerPicker.setWidthFull();
+
+    Button excludeButton = new Button("Exclude");
+    excludeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+    excludeButton.addClickListener(
+        e -> {
+          Wrestler selected = wrestlerPicker.getValue();
+          if (selected == null) return;
+          Set<Wrestler> excluded = settingsService.getExcludedWrestlers(universe);
+          if (excluded.contains(selected)) {
+            Notification.show(
+                selected.getName() + " is already excluded.",
+                3000,
+                Notification.Position.BOTTOM_END);
+            return;
+          }
+          settingsService.excludeWrestler(universe, selected);
+          wrestlerPicker.clear();
+          refreshExclusionGrid(exclusionGrid, settingsService);
+        });
+
+    HorizontalLayout addExclusionRow = new HorizontalLayout(wrestlerPicker, excludeButton);
+    addExclusionRow.setAlignItems(Alignment.BASELINE);
+    addExclusionRow.setWidthFull();
+
+    VerticalLayout layout =
+        new VerticalLayout(
+            expansionHeader, expansionGrid, exclusionHeader, exclusionGrid, addExclusionRow);
+    layout.setPadding(false);
+    layout.setWidthFull();
+    return layout;
+  }
+
   private void refreshMembersGrid(
       final Grid<UniverseMembership> grid, final UniverseMembershipService membershipService) {
     grid.setItems(membershipService.getMembersForUniverse(universe));
+  }
+
+  private void refreshExclusionGrid(
+      final Grid<Wrestler> grid, final UniverseSettingsService settingsService) {
+    grid.setItems(settingsService.getExcludedWrestlers(universe));
   }
 }

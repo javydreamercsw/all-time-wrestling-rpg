@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.ui.view.universe;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -62,15 +64,21 @@ public class UniverseListView extends Main {
   private final UniverseService universeService;
   private final UniverseMembershipService membershipService;
   private final AccountService accountService;
+  private final UniverseSettingsService settingsService;
+  private final WrestlerRepository wrestlerRepository;
   public final Grid<Universe> grid = new Grid<>(Universe.class, false);
 
   public UniverseListView(
       final UniverseService universeService,
       final UniverseMembershipService membershipService,
-      final AccountService accountService) {
+      final AccountService accountService,
+      final UniverseSettingsService settingsService,
+      final WrestlerRepository wrestlerRepository) {
     this.universeService = universeService;
     this.membershipService = membershipService;
     this.accountService = accountService;
+    this.settingsService = settingsService;
+    this.wrestlerRepository = wrestlerRepository;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -131,7 +139,13 @@ public class UniverseListView extends Main {
   UniverseFormDialog openEditDialog(final Universe universe) {
     UniverseFormDialog dialog =
         new UniverseFormDialog(
-            universeService, membershipService, accountService, universe, this::refreshGrid);
+            universeService,
+            membershipService,
+            accountService,
+            settingsService,
+            wrestlerRepository,
+            universe,
+            this::refreshGrid);
     dialog.setHeaderTitle("Edit Universe: " + universe.getName());
     return dialog;
   }
