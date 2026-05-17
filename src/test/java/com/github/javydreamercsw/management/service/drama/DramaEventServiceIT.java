@@ -255,8 +255,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanGetEventsForWrestler() {
+    loginAs("player");
     dramaEventService.getEventsForWrestler(playerWrestler.getId());
     // No exception means success
   }
