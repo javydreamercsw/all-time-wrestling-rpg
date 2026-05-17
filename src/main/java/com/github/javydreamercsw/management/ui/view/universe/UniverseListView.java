@@ -23,9 +23,12 @@ import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.UnorderedList;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -41,6 +44,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 @Route("universe-list")
@@ -123,6 +127,13 @@ public class UniverseListView extends Main {
   }
 
   private void confirmDelete(final Universe universe) {
+    List<String> blockers = universeService.getDeletionBlockers(universe);
+
+    if (!blockers.isEmpty()) {
+      showDeletionBlockedDialog(universe, blockers);
+      return;
+    }
+
     ConfirmDialog confirm = new ConfirmDialog();
     confirm.setHeader("Delete Universe");
     confirm.setText(
@@ -141,9 +152,6 @@ public class UniverseListView extends Main {
             refreshGrid();
             Notification.show("Universe deleted.", 3000, Notification.Position.BOTTOM_END)
                 .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-          } catch (IllegalStateException ex) {
-            Notification.show(ex.getMessage(), 5000, Notification.Position.BOTTOM_END)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
           } catch (Exception ex) {
             log.error("Error deleting universe", ex);
             Notification.show(
@@ -155,6 +163,27 @@ public class UniverseListView extends Main {
         });
 
     confirm.open();
+  }
+
+  private void showDeletionBlockedDialog(final Universe universe, final List<String> blockers) {
+    Dialog warning = new Dialog();
+    warning.setHeaderTitle("Cannot Delete Universe");
+
+    Paragraph intro =
+        new Paragraph(
+            "Universe '"
+                + universe.getName()
+                + "' cannot be deleted because it is still referenced by:");
+
+    UnorderedList list = new UnorderedList();
+    blockers.stream().map(b -> new com.vaadin.flow.component.html.ListItem(b)).forEach(list::add);
+
+    Paragraph outro =
+        new Paragraph("Remove or reassign these entities before deleting this universe.");
+
+    warning.add(intro, list, outro);
+    warning.getFooter().add(new Button("Close", e -> warning.close()));
+    warning.open();
   }
 
   private static String formatType(final UniverseType type) {

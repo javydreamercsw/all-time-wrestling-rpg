@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -103,6 +104,21 @@ public class UniverseService {
     }
 
     universeRepository.delete(universe);
+  }
+
+  /**
+   * Returns human-readable names of entity types that still reference this universe, preventing
+   * deletion. An empty list means the universe is safe to delete.
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<String> getDeletionBlockers(@NonNull final Universe universe) {
+    List<String> blockers = new ArrayList<>();
+    if (showRepository.existsByUniverse(universe)) blockers.add("Shows");
+    if (factionRepository.existsByUniverse(universe)) blockers.add("Factions");
+    if (leagueRepository.existsByUniverse(universe)) blockers.add("Leagues");
+    if (titleRepository.existsByUniverse(universe)) blockers.add("Titles");
+    if (campaignRepository.existsByUniverse(universe)) blockers.add("Campaigns");
+    return blockers;
   }
 
   @PreAuthorize("isAuthenticated()")
