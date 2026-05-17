@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.title;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import java.util.Optional;
@@ -69,8 +70,10 @@ public interface TitleRepository
   /** Check if a title with the given name already exists. */
   boolean existsByName(String name);
 
+  List<Title> findByUniverse(Universe universe);
+
   /** Check if any titles exist in a specific universe. */
-  boolean existsByUniverse(com.github.javydreamercsw.management.domain.universe.Universe universe);
+  boolean existsByUniverse(Universe universe);
 
   /** Find a title by its external ID (Notion page ID). */
   Optional<Title> findByExternalId(String externalId);
