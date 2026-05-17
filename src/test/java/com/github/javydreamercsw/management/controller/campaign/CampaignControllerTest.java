@@ -398,4 +398,163 @@ class CampaignControllerTest extends AbstractIntegrationTest {
     assertThat(features.get("finalsPhase")).isEqualTo(true);
     assertThat(features.get("tournamentWinner")).isEqualTo(true);
   }
+
+  // ==================== GET /api/campaign/{wrestlerId}/state (error paths) ====================
+
+  @Test
+  void getCampaignState_wrestlerNotFound_returnsNotFound() throws Exception {
+    mockMvc.perform(get("/api/campaign/9999/state")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void getCampaignState_noCampaign_returnsNotFound() throws Exception {
+    // testWrestler exists but has no campaign started
+    mockMvc
+        .perform(get("/api/campaign/" + testWrestler.getId() + "/state"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void getCampaignState_withActiveCampaign_returnsOk() throws Exception {
+    campaignService.startCampaign(testWrestler);
+
+    mockMvc
+        .perform(get("/api/campaign/" + testWrestler.getId() + "/state"))
+        .andExpect(status().isOk());
+  }
+
+  // ==================== GET /api/campaign/upgrades ====================
+
+  @Test
+  void getAllUpgrades_returnsOk() throws Exception {
+    String responseJson =
+        mockMvc
+            .perform(get("/api/campaign/upgrades"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    List<CampaignUpgrade> upgrades =
+        objectMapper.readValue(
+            responseJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+    assertThat(upgrades).isNotEmpty();
+  }
+
+  // ==================== POST /api/campaign/{wrestlerId}/upgrades/purchase (error paths)
+  // ====================
+
+  @Test
+  void purchaseUpgrade_wrestlerNotFound_returnsNotFound() throws Exception {
+    List<CampaignUpgrade> allUpgrades = upgradeService.getAllUpgrades();
+    assertThat(allUpgrades).isNotEmpty();
+    Long upgradeId = allUpgrades.get(0).getId();
+
+    mockMvc
+        .perform(
+            post("/api/campaign/9999/upgrades/purchase").param("upgradeId", upgradeId.toString()))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void purchaseUpgrade_noCampaign_returnsNotFound() throws Exception {
+    List<CampaignUpgrade> allUpgrades = upgradeService.getAllUpgrades();
+    assertThat(allUpgrades).isNotEmpty();
+    Long upgradeId = allUpgrades.get(0).getId();
+
+    // testWrestler has no campaign
+    mockMvc
+        .perform(
+            post("/api/campaign/" + testWrestler.getId() + "/upgrades/purchase")
+                .param("upgradeId", upgradeId.toString()))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void purchaseUpgrade_success() throws Exception {
+    campaignService.startCampaign(testWrestler);
+    Campaign campaign = campaignRepository.findActiveByWrestler(testWrestler).get();
+
+    // Give enough tokens to purchase
+    CampaignState state = campaign.getState();
+    state.setSkillTokens(20);
+    campaignRepository.save(campaign);
+
+    List<CampaignUpgrade> allUpgrades = upgradeService.getAllUpgrades();
+    assertThat(allUpgrades).isNotEmpty();
+    Long upgradeId = allUpgrades.get(0).getId();
+
+    mockMvc
+        .perform(
+            post("/api/campaign/" + testWrestler.getId() + "/upgrades/purchase")
+                .param("upgradeId", upgradeId.toString()))
+        .andExpect(status().isOk());
+  }
+
+  // ==================== POST /api/campaign/{wrestlerId}/test/process-match (error paths)
+  // ====================
+
+  @Test
+  void processMatchResult_wrestlerNotFound_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(post("/api/campaign/9999/test/process-match").param("won", "true"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void processMatchResult_noCampaign_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/campaign/" + testWrestler.getId() + "/test/process-match")
+                .param("won", "true"))
+        .andExpect(status().isNotFound());
+  }
+
+  // ==================== POST /api/campaign/{wrestlerId}/test/advance-chapter ====================
+
+  @Test
+  void advanceChapter_wrestlerNotFound_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(post("/api/campaign/9999/test/advance-chapter"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void advanceChapter_noCampaign_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(post("/api/campaign/" + testWrestler.getId() + "/test/advance-chapter"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void advanceChapter_success() throws Exception {
+    campaignService.startCampaign(testWrestler);
+
+    mockMvc
+        .perform(post("/api/campaign/" + testWrestler.getId() + "/test/advance-chapter"))
+        .andExpect(status().isOk());
+  }
+
+  // ==================== POST /api/campaign/{wrestlerId}/test/skip-to-show ====================
+
+  @Test
+  void skipToShow_wrestlerNotFound_returnsNotFound() throws Exception {
+    mockMvc.perform(post("/api/campaign/9999/test/skip-to-show")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void skipToShow_noCampaign_returnsNotFound() throws Exception {
+    mockMvc
+        .perform(post("/api/campaign/" + testWrestler.getId() + "/test/skip-to-show"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void skipToShow_success() throws Exception {
+    campaignService.startCampaign(testWrestler);
+
+    mockMvc
+        .perform(post("/api/campaign/" + testWrestler.getId() + "/test/skip-to-show"))
+        .andExpect(status().isOk());
+  }
 }
