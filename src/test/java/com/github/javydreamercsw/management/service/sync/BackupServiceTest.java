@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.config.StorageProperties;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -142,8 +141,8 @@ class BackupServiceTest {
     when(mockResource.getFile()).thenReturn(sourceFile.toFile());
 
     // Pre-create maxFiles existing backup files (older timestamps come first alphabetically)
-    for (int i = 1; i <= maxFiles; i++) {
-      Path oldBackup = tempDir.resolve(String.format("test-shows-unit_2020010%d_120000.json", i));
+    for (int i = 1; i < maxFiles + 1; i++) {
+      Path oldBackup = tempDir.resolve("test-shows-unit_2020010%d_120000.json".formatted(i));
       Files.writeString(oldBackup, "{}");
     }
 
@@ -312,11 +311,5 @@ class BackupServiceTest {
   void createBackup_nullFileName_throwsNullPointerException() {
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> backupService.createBackup(null))
         .isInstanceOf(NullPointerException.class);
-  }
-
-  /** Helper to create a temp file backed by the given path, visible to the filesystem. */
-  private File createTempFileAt(final Path path, final String content) throws IOException {
-    Files.writeString(path, content);
-    return path.toFile();
   }
 }

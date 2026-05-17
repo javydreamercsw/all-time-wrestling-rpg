@@ -37,20 +37,20 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 Community leaders will follow these Community Impact Guidelines to determine the consequences for any action they deem in violation of this Code of Conduct:
 
 1. **Correction**
-   *Community Impact*: Use of inappropriate language or other behavior deemed unprofessional or unwelcome.
-   *Consequence*: A private, written warning, providing clarity around the nature of the violation and an explanation of why the behavior was inappropriate.
+*Community Impact*: Use of inappropriate language or other behavior deemed unprofessional or unwelcome.
+*Consequence*: A private, written warning, providing clarity around the nature of the violation and an explanation of why the behavior was inappropriate.
 
 2. **Warning**
-   *Community Impact*: A violation through a single incident or series of actions.
-   *Consequence*: A warning with consequences for continued behavior.
+*Community Impact*: A violation through a single incident or series of actions.
+*Consequence*: A warning with consequences for continued behavior.
 
 3. **Temporary Ban**
-   *Community Impact*: A serious violation of community standards, including sustained inappropriate behavior.
-   *Consequence*: A temporary ban from any sort of interaction or public communication with the community.
+*Community Impact*: A serious violation of community standards, including sustained inappropriate behavior.
+*Consequence*: A temporary ban from any sort of interaction or public communication with the community.
 
 4. **Permanent Ban**
-   *Community Impact*: Demonstrating a pattern of violation or harassment of an individual or aggression toward or disparagement of classes of individuals.
-   *Consequence*: A permanent ban from any sort of public interaction within the community.
+*Community Impact*: Demonstrating a pattern of violation or harassment of an individual or aggression toward or disparagement of classes of individuals.
+*Consequence*: A permanent ban from any sort of public interaction within the community.
 
 ## Attribution
 
