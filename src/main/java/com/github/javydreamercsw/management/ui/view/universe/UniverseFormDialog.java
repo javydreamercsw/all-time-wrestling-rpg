@@ -295,7 +295,9 @@ public class UniverseFormDialog extends Dialog {
     excludeButton.addClickListener(
         e -> {
           Wrestler selected = wrestlerPicker.getValue();
-          if (selected == null) return;
+          if (selected == null) {
+            return;
+          }
           Set<Wrestler> excluded = settingsService.getExcludedWrestlers(universe);
           if (excluded.contains(selected)) {
             Notification.show(
