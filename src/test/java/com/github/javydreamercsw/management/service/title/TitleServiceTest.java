@@ -470,7 +470,7 @@ class TitleServiceTest {
     boolean result = titleService.deleteTitle(999L);
 
     assertThat(result).isFalse();
-    verify(titleRepository, never()).delete(any(Title.class));
+    verify(titleRepository, never()).delete((Title) any());
   }
 
   @Test
@@ -481,7 +481,7 @@ class TitleServiceTest {
     boolean result = titleService.deleteTitle(100L);
 
     assertThat(result).isFalse();
-    verify(titleRepository, never()).delete(any(Title.class));
+    verify(titleRepository, never()).delete((Title) any());
   }
 
   @Test
@@ -493,7 +493,7 @@ class TitleServiceTest {
     boolean result = titleService.deleteTitle(100L);
 
     assertThat(result).isFalse();
-    verify(titleRepository, never()).delete(any(Title.class));
+    verify(titleRepository, never()).delete((Title) any());
   }
 
   @Test
@@ -505,7 +505,7 @@ class TitleServiceTest {
     boolean result = titleService.deleteTitle(100L);
 
     assertThat(result).isTrue();
-    verify(titleRepository).delete(title);
+    verify(titleRepository).delete((Title) title);
   }
 
   // =====================================================================
