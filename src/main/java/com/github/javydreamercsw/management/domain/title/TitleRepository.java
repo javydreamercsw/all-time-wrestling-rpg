@@ -69,6 +69,9 @@ public interface TitleRepository
   /** Check if a title with the given name already exists. */
   boolean existsByName(String name);
 
+  /** Check if any titles exist in a specific universe. */
+  boolean existsByUniverse(com.github.javydreamercsw.management.domain.universe.Universe universe);
+
   /** Find a title by its external ID (Notion page ID). */
   Optional<Title> findByExternalId(String externalId);
 

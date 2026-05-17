@@ -92,6 +92,7 @@ public class MenuService {
     entities.addChild(new MenuItem("Shows", VaadinIcon.CALENDAR_O, "show-list"));
     entities.addChild(new MenuItem("Teams", VaadinIcon.USERS, "teams"));
     entities.addChild(new MenuItem("Titles", VaadinIcon.TROPHY, "title-list"));
+    entities.addChild(new MenuItem("Universes", VaadinIcon.GLOBE_WIRE, "universe-list"));
     entities.addChild(new MenuItem("Wrestlers", VaadinIcon.USER, "wrestler-list"));
 
     // Content Generation: Only ADMIN and BOOKER

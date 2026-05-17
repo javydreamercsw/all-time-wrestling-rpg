@@ -59,6 +59,9 @@ public interface FactionRepository
   /** Check if faction name exists. */
   boolean existsByName(String name);
 
+  /** Check if any factions exist in a specific universe. */
+  boolean existsByUniverse(Universe universe);
+
   /** Find active factions. */
   List<Faction> findByIsActiveTrue();
 

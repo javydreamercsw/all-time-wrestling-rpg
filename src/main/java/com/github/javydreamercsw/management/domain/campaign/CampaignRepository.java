@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,4 +28,6 @@ import org.springframework.stereotype.Repository;
 public interface CampaignRepository extends JpaRepository<Campaign, Long> {
   @Query("SELECT DISTINCT c FROM Campaign c WHERE c.wrestler = :wrestler AND c.status = 'ACTIVE'")
   Optional<Campaign> findActiveByWrestler(@Param("wrestler") Wrestler wrestler);
+
+  boolean existsByUniverse(Universe universe);
 }
