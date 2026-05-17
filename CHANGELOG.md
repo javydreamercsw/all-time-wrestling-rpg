@@ -1,13 +1,32 @@
 # Changelog
 
-## [v1.8.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.8.0) (2026-05-08)
+## [v1.8.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.8.1) (2026-05-17)
 
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.3...v1.8.0)
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.8.1-RC2...v1.8.1)
+
+**Implemented enhancements:**
+
+- fix\(ATW-131\): Fix QR code share URL for LAN access via Caddy reverse proxy [\#291](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/291) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Build\(deps-dev\): Bump org.panteleyev:jpackage-maven-plugin from 1.6.0 to 1.7.4 [\#288](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/288) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump org.openrewrite.recipe:rewrite-static-analysis from 2.33.1 to 2.34.1 [\#287](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/287) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.apache.maven.plugins:maven-assembly-plugin from 3.7.1 to 3.8.0 [\#286](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/286) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.graalvm.buildtools:native-maven-plugin from 0.11.3 to 1.1.0 [\#285](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/285) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump com.github.oshi:oshi-core from 7.0.1 to 7.1.0 [\#284](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/284) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v1.8.1-RC2](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.8.1-RC2) (2026-05-08)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.8.1...v1.8.1-RC2)
+
+## [v1.8.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.8.1) (2026-05-08)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.8.0...v1.8.1)
 
 **Implemented enhancements:**
 
 - feat: implement double-sided Status Cards mechanic for Women's Edition expansion [\#274](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/274) ([javydreamercsw](https://github.com/javydreamercsw))
-- Feature: arena home field and attendance [\#272](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/272) ([javydreamercsw](https://github.com/javydreamercsw))
 
 **Fixed bugs:**
 
@@ -21,6 +40,14 @@
 - Build\(deps-dev\): Bump org.apache.maven.plugins:maven-antrun-plugin from 3.1.0 to 3.2.0 [\#276](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/276) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump org.openrewrite.maven:rewrite-maven-plugin from 6.37.0 to 6.38.0 [\#275](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/275) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump the npm\_and\_yarn group across 2 directories with 2 updates [\#273](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/273) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v1.8.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.8.0) (2026-05-01)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.7.3...v1.8.0)
+
+**Implemented enhancements:**
+
+- Feature: arena home field and attendance [\#272](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/272) ([javydreamercsw](https://github.com/javydreamercsw))
 
 ## [v1.7.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.7.3) (2026-04-30)
 
