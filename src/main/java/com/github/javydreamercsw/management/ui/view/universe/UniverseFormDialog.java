@@ -186,7 +186,9 @@ public class UniverseFormDialog extends Dialog {
         e -> {
           Account selected = accountPicker.getValue();
           UniverseMemberRole role = rolePicker.getValue();
-          if (selected == null || role == null) return;
+          if (selected == null || role == null) {
+            return;
+          }
           try {
             membershipService.addMember(universe, selected, role);
             accountPicker.clear();

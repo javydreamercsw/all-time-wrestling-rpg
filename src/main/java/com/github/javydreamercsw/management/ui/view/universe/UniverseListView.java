@@ -197,7 +197,9 @@ public class UniverseListView extends Main {
   }
 
   private static String formatType(final UniverseType type) {
-    if (type == null) return "";
+    if (type == null) {
+      return "";
+    }
     return switch (type) {
       case GLOBAL -> "Global";
       case LEAGUE -> "League";

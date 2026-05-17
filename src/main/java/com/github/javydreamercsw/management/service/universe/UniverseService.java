@@ -113,11 +113,21 @@ public class UniverseService {
   @PreAuthorize("isAuthenticated()")
   public List<String> getDeletionBlockers(@NonNull final Universe universe) {
     List<String> blockers = new ArrayList<>();
-    if (showRepository.existsByUniverse(universe)) blockers.add("Shows");
-    if (factionRepository.existsByUniverse(universe)) blockers.add("Factions");
-    if (leagueRepository.existsByUniverse(universe)) blockers.add("Leagues");
-    if (titleRepository.existsByUniverse(universe)) blockers.add("Titles");
-    if (campaignRepository.existsByUniverse(universe)) blockers.add("Campaigns");
+    if (showRepository.existsByUniverse(universe)) {
+      blockers.add("Shows");
+    }
+    if (factionRepository.existsByUniverse(universe)) {
+      blockers.add("Factions");
+    }
+    if (leagueRepository.existsByUniverse(universe)) {
+      blockers.add("Leagues");
+    }
+    if (titleRepository.existsByUniverse(universe)) {
+      blockers.add("Titles");
+    }
+    if (campaignRepository.existsByUniverse(universe)) {
+      blockers.add("Campaigns");
+    }
     return blockers;
   }
 
