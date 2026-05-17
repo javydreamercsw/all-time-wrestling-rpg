@@ -838,7 +838,7 @@ class TitleServiceTest {
   /**
    * Convenience wrapper to keep verify calls tidy with argument matchers that need static import.
    */
-  private static <T> T eq(T value) {
+  private static <T> T eq(final T value) {
     return org.mockito.ArgumentMatchers.eq(value);
   }
 }

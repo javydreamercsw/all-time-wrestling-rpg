@@ -308,7 +308,7 @@ class TournamentServiceTest {
   void testAdvanceTournament_npcVsNpcMatch_randomWinner() {
     // 4 participants = player + 3 opponents, bracketSize=4
     List<Wrestler> roster = new ArrayList<>();
-    for (long i = 2; i <= 4; i++) {
+    for (long i = 2; i < 4 + 1; i++) {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);
