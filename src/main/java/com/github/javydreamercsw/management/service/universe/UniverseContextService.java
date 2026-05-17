@@ -38,15 +38,20 @@ public class UniverseContextService implements Serializable {
 
   private final UniverseRepository universeRepository;
   private static final String UNIVERSE_ID_SESSION_KEY = "currentUniverseId";
-  private static final ThreadLocal<Long> threadLocalUniverseId = ThreadLocal.withInitial(() -> 1L);
+  private static final ThreadLocal<Long> threadLocalUniverseId =
+      ThreadLocal.withInitial(() -> null);
 
   /**
    * Get the current universe.
    *
-   * @return Optional of current universe
+   * @return Optional of current universe, empty if no universe has been explicitly selected
    */
   public Optional<Universe> getCurrentUniverse() {
-    return universeRepository.findById(getCurrentUniverseId());
+    Long id = getInternalUniverseId();
+    if (id == null) {
+      return Optional.empty();
+    }
+    return universeRepository.findById(id);
   }
 
   private Long getInternalUniverseId() {
