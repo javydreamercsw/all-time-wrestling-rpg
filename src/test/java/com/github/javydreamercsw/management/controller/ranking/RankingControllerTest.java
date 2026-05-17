@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -93,5 +94,72 @@ class RankingControllerTest extends AbstractControllerTest {
         .perform(get("/api/rankings/championships/1/champion"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].name").value("Champion 1"));
+  }
+
+  @Test
+  @WithMockUser(roles = "PLAYER")
+  void getChampionships_emptyList_returnsOkWithEmptyArray() throws Exception {
+    when(rankingService.getChampionships()).thenReturn(Collections.emptyList());
+
+    mockMvc
+        .perform(get("/api/rankings/championships"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$").isEmpty());
+  }
+
+  @Test
+  @WithMockUser(roles = "PLAYER")
+  void getRankedContenders_emptyList_returnsOkWithEmptyArray() throws Exception {
+    when(rankingService.getRankedContenders(anyLong())).thenReturn(Collections.emptyList());
+
+    mockMvc
+        .perform(get("/api/rankings/championships/1/contenders"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$").isEmpty());
+  }
+
+  @Test
+  @WithMockUser(roles = "PLAYER")
+  void getCurrentChampions_emptyList_returns404() throws Exception {
+    // Controller returns 404 when champion list is empty.
+    when(rankingService.getCurrentChampions(anyLong())).thenReturn(Collections.emptyList());
+
+    mockMvc.perform(get("/api/rankings/championships/1/champion")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  @WithMockUser(roles = "PLAYER")
+  void getChampionships_multipleEntries_returnsAll() throws Exception {
+    ChampionshipDTO c1 =
+        ChampionshipDTO.builder().id(1L).name("World Title").imageUrl("world.png").build();
+    ChampionshipDTO c2 =
+        ChampionshipDTO.builder().id(2L).name("Tag Titles").imageUrl("tag.png").build();
+
+    when(rankingService.getChampionships()).thenReturn(List.of(c1, c2));
+
+    mockMvc
+        .perform(get("/api/rankings/championships"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].name").value("World Title"))
+        .andExpect(jsonPath("$[1].name").value("Tag Titles"));
+  }
+
+  @Test
+  @WithMockUser(roles = "PLAYER")
+  void getCurrentChampions_multipleCoChampions_returnsAll() throws Exception {
+    ChampionDTO c1 = ChampionDTO.builder().id(1L).name("Co-Champ A").fans(1000L).build();
+    ChampionDTO c2 = ChampionDTO.builder().id(2L).name("Co-Champ B").fans(900L).build();
+
+    when(rankingService.getCurrentChampions(anyLong())).thenReturn(List.of(c1, c2));
+
+    mockMvc
+        .perform(get("/api/rankings/championships/1/champion"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].name").value("Co-Champ A"))
+        .andExpect(jsonPath("$[1].name").value("Co-Champ B"));
   }
 }
