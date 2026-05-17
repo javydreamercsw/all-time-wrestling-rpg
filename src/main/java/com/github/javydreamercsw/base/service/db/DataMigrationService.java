@@ -221,6 +221,7 @@ public class DataMigrationService {
         // Dependent tables
         migrateAccounts(sourceConnection, targetConnection);
         migrateAccountRoles(sourceConnection, targetConnection);
+        migrateUniverseMembers(sourceConnection, targetConnection);
         migrateWrestlers(sourceConnection, targetConnection);
         migrateWrestlerStates(sourceConnection, targetConnection);
         migrateInjuries(sourceConnection, targetConnection);
@@ -1617,6 +1618,40 @@ public class DataMigrationService {
       if (count > 0) {
         targetStatement.executeBatch();
         log.debug("Migrated {} Factions", count);
+      }
+    }
+  }
+
+  private void migrateUniverseMembers(
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
+      throws SQLException {
+    String sql =
+        """
+        INSERT INTO universe_members (id, universe_id, account_id, role, joined_date) \
+        VALUES (?, ?, ?, ?, ?)\
+        """;
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet resultSet =
+            sourceStatement.executeQuery(
+                "SELECT id, universe_id, account_id, role, joined_date FROM universe_members");
+        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+
+      int count = 0;
+      while (resultSet.next()) {
+        targetStatement.setLong(1, resultSet.getLong("id"));
+        targetStatement.setLong(2, resultSet.getLong("universe_id"));
+        targetStatement.setLong(3, resultSet.getLong("account_id"));
+        targetStatement.setString(4, resultSet.getString("role"));
+        targetStatement.setTimestamp(5, resultSet.getTimestamp("joined_date"));
+        targetStatement.addBatch();
+        count++;
+        if (count % 1000 == 0) {
+          targetStatement.executeBatch();
+        }
+      }
+      if (count > 0) {
+        targetStatement.executeBatch();
+        log.debug("Migrated {} Universe Members", count);
       }
     }
   }
