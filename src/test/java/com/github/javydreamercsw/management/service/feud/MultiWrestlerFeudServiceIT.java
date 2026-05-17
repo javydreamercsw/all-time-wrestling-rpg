@@ -53,7 +53,7 @@ class MultiWrestlerFeudServiceIT extends ManagementIntegrationTest {
 
   @Override
   @BeforeEach
-  public void baseSetUp() throws Exception {
+  public void baseSetUp() {
     super.baseSetUp();
     // Do NOT delete accounts to avoid breaking other tests running in parallel
 
