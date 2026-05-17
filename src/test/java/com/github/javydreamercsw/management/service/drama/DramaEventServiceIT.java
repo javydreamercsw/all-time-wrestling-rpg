@@ -106,6 +106,7 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
     playerWrestler.setName("Drama Player Wrestler");
     playerWrestler.setAccount(dramaPlayerAccount);
     wrestlerRepository.save(playerWrestler);
+    wrestlerRepository.flush();
   }
 
   /*
@@ -245,8 +246,8 @@ class DramaEventServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testAuthenticatedCanGetEventsForWrestler() {
+    loginAs("player");
     dramaEventService.getEventsForWrestler(playerWrestler.getId());
     // No exception means success
   }
