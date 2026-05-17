@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.ui.view.universe;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
+import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -58,10 +60,17 @@ public class UniverseListView extends Main {
       DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withZone(ZoneId.systemDefault());
 
   private final UniverseService universeService;
+  private final UniverseMembershipService membershipService;
+  private final AccountService accountService;
   public final Grid<Universe> grid = new Grid<>(Universe.class, false);
 
-  public UniverseListView(final UniverseService universeService) {
+  public UniverseListView(
+      final UniverseService universeService,
+      final UniverseMembershipService membershipService,
+      final AccountService accountService) {
     this.universeService = universeService;
+    this.membershipService = membershipService;
+    this.accountService = accountService;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -121,7 +130,8 @@ public class UniverseListView extends Main {
 
   UniverseFormDialog openEditDialog(final Universe universe) {
     UniverseFormDialog dialog =
-        new UniverseFormDialog(universeService, universe, this::refreshGrid);
+        new UniverseFormDialog(
+            universeService, membershipService, accountService, universe, this::refreshGrid);
     dialog.setHeaderTitle("Edit Universe: " + universe.getName());
     return dialog;
   }

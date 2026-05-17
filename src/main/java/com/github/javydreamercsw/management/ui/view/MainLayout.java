@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
@@ -60,6 +61,8 @@ import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +85,7 @@ public class MainLayout extends AppLayout {
   private ThemeService themeService;
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
+  private UniverseMembershipService universeMembershipService;
 
   @Autowired
   public MainLayout(
@@ -93,7 +97,8 @@ public class MainLayout extends AppLayout {
       final PasswordEncoder passwordEncoder,
       final ThemeService themeService,
       final UniverseContextService universeContextService,
-      final UniverseRepository universeRepository) {
+      final UniverseRepository universeRepository,
+      final UniverseMembershipService universeMembershipService) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -103,6 +108,7 @@ public class MainLayout extends AppLayout {
     this.themeService = themeService;
     this.universeContextService = universeContextService;
     this.universeRepository = universeRepository;
+    this.universeMembershipService = universeMembershipService;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -120,25 +126,51 @@ public class MainLayout extends AppLayout {
   }
 
   private Div createUniverseSelector() {
+    List<Universe> accessible = resolveAccessibleUniverses();
+
     ComboBox<Universe> universeSelector = new ComboBox<>("Active Universe");
-    universeSelector.setItems(universeRepository.findAll());
     universeSelector.setItemLabelGenerator(Universe::getName);
     universeSelector.setWidthFull();
     universeSelector.addClassNames(Padding.Horizontal.MEDIUM, Padding.Bottom.SMALL);
 
-    universeContextService.getCurrentUniverse().ifPresent(universeSelector::setValue);
+    if (accessible.isEmpty()) {
+      universeSelector.setPlaceholder("No universes assigned");
+      universeSelector.setEnabled(false);
+    } else {
+      universeSelector.setItems(accessible);
 
-    universeSelector.addValueChangeListener(
-        event -> {
-          if (event.getValue() != null) {
-            universeContextService.setCurrentUniverse(event.getValue());
-            UI.getCurrent().getPage().reload(); // Reload to refresh data context
-          }
-        });
+      // If the current universe is not in the accessible list, switch to the first available.
+      Universe current = universeContextService.getCurrentUniverse().orElse(null);
+      if (current != null && accessible.contains(current)) {
+        universeSelector.setValue(current);
+      } else {
+        Universe fallback = accessible.get(0);
+        universeContextService.setCurrentUniverse(fallback);
+        universeSelector.setValue(fallback);
+      }
+
+      universeSelector.addValueChangeListener(
+          event -> {
+            if (event.getValue() != null) {
+              universeContextService.setCurrentUniverse(event.getValue());
+              UI.getCurrent().getPage().reload();
+            }
+          });
+    }
 
     Div container = new Div(universeSelector);
     container.addClassName("universe-selector-container");
     return container;
+  }
+
+  private List<Universe> resolveAccessibleUniverses() {
+    if (securityUtils.isAdmin()) {
+      return universeRepository.findAll();
+    }
+    return securityUtils
+        .getAuthenticatedUser()
+        .map(user -> universeMembershipService.getUniversesForAccount(user.getAccount()))
+        .orElseGet(Collections::emptyList);
   }
 
   private Div createHeader() {
