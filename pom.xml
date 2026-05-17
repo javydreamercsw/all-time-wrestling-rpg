@@ -187,11 +187,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test-autoconfigure</artifactId>
       <scope>test</scope>
@@ -199,6 +194,16 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-flyway</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.data</groupId>
@@ -239,7 +244,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>7.0.1</version>
+      <version>7.1.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
@@ -388,6 +393,16 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-data-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jpa-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-jdbc</artifactId>
     </dependency>
     <dependency>
@@ -464,6 +479,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.github.mvysny.kaributesting</groupId>
+      <artifactId>karibu-testing-v24</artifactId>
+      <version>2.7.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <scope>test</scope>
@@ -536,6 +557,16 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
       <version>1.5.32</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-client</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
@@ -668,38 +699,19 @@
         <version>6.38.0</version>
         <configuration>
           <failOnDryRunResults>true</failOnDryRunResults>
-          <exclusions>
-            <exclusion>**/target/**</exclusion>
-          </exclusions>
           <activeRecipes>
-            <!-- Braces &amp; structure -->
             <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
-
-            <!-- Lombok -->
-            <recipe>org.openrewrite.java.migrate.lombok.UseLombokGetter</recipe>
-            <recipe>org.openrewrite.java.migrate.lombok.UseLombokSetter</recipe>
-            <recipe>org.openrewrite.java.migrate.lombok.UseNoArgsConstructor</recipe>
-
-            <!-- Remove unused code -->
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLabels</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLocalVariables</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateFields</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods</recipe>
-
-            <!-- XML -->
             <recipe>org.openrewrite.xml.style.AutodetectDebug</recipe>
-
-            <!-- Unnecessary constructs -->
+            <recipe>org.openrewrite.staticanalysis.UnnecessaryThrows</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCatch</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryParentheses</recipe>
-
-            <!-- Equality -->
             <recipe>org.openrewrite.staticanalysis.SillyEqualsCheck</recipe>
-            <recipe>org.openrewrite.staticanalysis.EqualsAvoidsNull</recipe>
-
-            <!-- Simplifications -->
             <recipe>org.openrewrite.staticanalysis.SimplifyArraysAsList</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpression</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan</recipe>
@@ -713,40 +725,27 @@
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryFalseTrueRecipe</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryTrueFalseRecipe</recipe>
-
-            <!-- Collections -->
-            <recipe>org.openrewrite.staticanalysis.IsEmptyCallOnCollections</recipe>
-
-            <!-- Modern Java (Java 25) -->
-            <recipe>org.openrewrite.java.migrate.lang.UseTextBlocks</recipe>
-            <recipe>org.openrewrite.java.migrate.lang.StringFormatted</recipe>
-            <recipe>org.openrewrite.staticanalysis.ReplaceStringBuilderWithString</recipe>
-
-            <!-- Finalize locals and parameters -->
-            <recipe>org.openrewrite.staticanalysis.FinalizeMethodArguments</recipe>
-
-            <!-- Spring (style / best practices — already on Boot 4 / Security 7) -->
-            <recipe>org.openrewrite.java.spring.NoRequestMappingAnnotation</recipe>
-            <recipe>org.openrewrite.java.spring.ImplicitWebAnnotationNames</recipe>
+            <recipe>org.openrewrite.staticanalysis.SillyEqualsCheck</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyArraysAsList</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpression</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyBooleanReturn</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyCompoundStatement</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyConsecutiveAssignments</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyConstantIfBranchExecution</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyDurationCreationUnits</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyElseBranch</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyForLoopBoundaryComparison</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryFalseTrueRecipe</recipe>
+            <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryTrueFalseRecipe</recipe>
           </activeRecipes>
         </configuration>
         <dependencies>
           <dependency>
             <groupId>org.openrewrite.recipe</groupId>
             <artifactId>rewrite-static-analysis</artifactId>
-            <version>2.34.0</version>
-            <scope>runtime</scope>
-          </dependency>
-          <dependency>
-            <groupId>org.openrewrite.recipe</groupId>
-            <artifactId>rewrite-migrate-java</artifactId>
-            <version>3.34.0</version>
-            <scope>runtime</scope>
-          </dependency>
-          <dependency>
-            <groupId>org.openrewrite.recipe</groupId>
-            <artifactId>rewrite-spring</artifactId>
-            <version>6.9.0</version>
+            <version>2.34.1</version>
             <scope>runtime</scope>
           </dependency>
         </dependencies>
@@ -842,10 +841,10 @@
         <version>3.5.5</version>
         <configuration>
           <skipTests>${surefire.skip}</skipTests>
-          <!-- Parallel execution disabled to prevent database interference -->
-          <parallel>class</parallel>
+          <!-- Enable parallel execution for unit tests -->
+          <parallel>classes</parallel>
 
-          <threadCount>1</threadCount>
+          <threadCount>4</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
           <!-- Optimize for faster execution -->
@@ -864,7 +863,7 @@
             <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
           </excludes>
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>@{surefireArgLine} -Xmx4g -XX:+UseG1GC -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -876,7 +875,7 @@
           <skipITs>${e2e.skipITs}</skipITs>
 
           <!-- Parallel execution disabled to prevent database interference between tests sharing the same context -->
-          <parallel>class</parallel>
+          <parallel>none</parallel>
           <threadCount>1</threadCount>
           <perCoreThreadCount>true</perCoreThreadCount>
           <useUnlimitedThreads>false</useUnlimitedThreads>
@@ -890,7 +889,7 @@
           </excludes>
 
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>@{failsafeArgLine} -Xmx4g -XX:+UseG1GC -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+          <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
           <systemPropertyVariables>
             <webdriver.chrome.whitelistedIps/>
             <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
@@ -1092,64 +1091,6 @@
         <version>3.3.4</version>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.9.0</version>
-        <configuration>
-          <failOnWarning>true</failOnWarning>
-          <ignoredUnusedDeclaredDependencies>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-spring-boot-starter</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.vaadin:vaadin-dev-server</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.github.oshi:oshi-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-tomcat</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-data-jpa</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>jakarta.transaction:jakarta.transaction-api</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>jakarta.inject:jakarta.inject-api</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.yaml:snakeyaml</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.json:json</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>com.github.mvysysny.kaributesting:karibu-testing-v24</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.apache.tomcat.embed:tomcat-embed-core</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>jakarta.annotation:jakarta.annotation-api</ignoredUnusedDeclaredDependency>
-            <!--Only used with MySQL-->
-            <ignoredUnusedDeclaredDependency>com.mysql:mysql-connector-j</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.flywaydb:flyway-mysql</ignoredUnusedDeclaredDependency>
-            <!--Only used with H2-->
-            <ignoredUnusedDeclaredDependency>com.h2database:h2</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-flyway</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-test</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-aop</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-test-autoconfigure</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-actuator</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-web</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-starter-validation</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>ch.qos.logback:logback-core</ignoredUnusedDeclaredDependency>
-          </ignoredUnusedDeclaredDependencies>
-          <ignoredUsedUndeclaredDependencies>
-            <ignoredUsedUndeclaredDependency>org.springframework.boot:spring-boot-health</ignoredUsedUndeclaredDependency>
-            <ignoredUsedUndeclaredDependency>com.vaadin:*</ignoredUsedUndeclaredDependency>
-            <ignoredUsedUndeclaredDependency>org.springframework.security:spring-security-oauth2-core</ignoredUsedUndeclaredDependency>
-          </ignoredUsedUndeclaredDependencies>
-          <ignoredNonTestScopedDependencies>
-            <ignoredNonTestScopedDependency>ch.qos.logback:logback-classic</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>junit:junit</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>commons-io:commons-io</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>org.flywaydb:flyway-core</ignoredNonTestScopedDependency>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
-        <executions>
-          <execution>
-            <id>dependency-analyze</id>
-            <goals>
-              <goal>analyze</goal>
-            </goals>
-            <phase>package</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>com.google.cloud.tools</groupId>
         <artifactId>jib-maven-plugin</artifactId>
         <version>3.5.1</version>
@@ -1248,7 +1189,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>0.11.3</version>
+            <version>1.1.0</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>
@@ -1278,7 +1219,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.7.1</version>
+            <version>3.8.0</version>
             <executions>
               <execution>
                 <id>make-portable</id>
@@ -1475,7 +1416,7 @@
           <plugin>
             <groupId>org.panteleyev</groupId>
             <artifactId>jpackage-maven-plugin</artifactId>
-            <version>1.6.0</version>
+            <version>1.7.4</version>
             <executions>
               <execution>
                 <id>jpackage</id>
@@ -1554,184 +1495,11 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <!-- Ensure E2E is not skipped in this profile. -->
-              <skipITs>false</skipITs>
-
-              <!-- One JVM fork per core, fresh per test class for DB/port isolation -->
-              <forkCount>1C</forkCount>
-              <reuseForks>false</reuseForks>
-              <parallel>none</parallel>
-
-              <includes>
-                <include>**/*E2ETest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*IT.java</exclude>
-                <exclude>**/*IntegrationTest.java</exclude>
-              </excludes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=e2e -Dflyway.cleanDisabled=false</argLine>
-              <systemPropertyVariables>
-                <webdriver.chrome.whitelistedIps/>
-                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
-                <headless>${headless}</headless>
-              </systemPropertyVariables>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>repackage</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>report-e2e</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <configuration>
-                  <dataFile>${jacoco.it.destFile}</dataFile>
-                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-e2e</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>integration-test</id>
-      <properties>
-        <e2e.skipITs>false</e2e.skipITs>
-        <failsafe.exclude>**/*E2ETest.java</failsafe.exclude>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <includes>
-                <include>**/*IT.java</include>
-                <include>**/*IntegrationTest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*DockerIT.java</exclude>
-                <exclude>**/Docker*IT.java</exclude>
-              </excludes>
+              <classifier>exec</classifier>
             </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>notion-it</id>
-      <properties>
-        <e2e.skipITs>false</e2e.skipITs>
-        <jacoco.it.destFile>${jacoco.notion.it.destFile}</jacoco.it.destFile>
-        <surefire.skip>true</surefire.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>**/*Notion*IT.java</include>
-                <include>**/Notion*IT.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*E2ETest.java</exclude>
-                <exclude>**/DockerPackageIT.java</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>report-notion-it</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <configuration>
-                  <dataFile>${jacoco.notion.it.destFile}</dataFile>
-                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-notion-it</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>notion-e2e</id>
-      <properties>
-        <e2e.skipITs>false</e2e.skipITs>
-        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
-        <jacoco.it.destFile>${jacoco.notion.e2e.destFile}</jacoco.it.destFile>
-        <surefire.skip>true</surefire.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <!-- Ensure E2E is not skipped in this profile. -->
-              <skipITs>false</skipITs>
-
-              <includes>
-                <include>**/*Notion*E2ETest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*IT.java</exclude>
-                <exclude>**/*IntegrationTest.java</exclude>
-              </excludes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=e2e -Dflyway.cleanDisabled=false</argLine>
-              <systemPropertyVariables>
-                <webdriver.chrome.whitelistedIps/>
-                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
-                <headless>${headless}</headless>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>report-notion-e2e</id>
-                <goals>
-                  <goal>report-integration</goal>
-                </goals>
-                <configuration>
-                  <dataFile>${jacoco.notion.e2e.destFile}</dataFile>
-                  <outputDirectory>${project.reporting.outputDirectory}/jacoco-notion-e2e</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
           </plugin>
         </plugins>
       </build>
@@ -1807,68 +1575,7 @@
               <includes>
                 <include>**/*E2ETest.java</include>
               </includes>
-              <excludes>
-                <exclude>**/*DocsE2ETest.java</exclude>
-              </excludes>
-              <rerunFailingTestsCount>2</rerunFailingTestsCount>
             </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>docs-e2e</id>
-      <properties>
-        <e2e.skipITs>false</e2e.skipITs>
-        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
-        <jacoco.docs-e2e.destFile>${project.build.directory}/jacoco-docs-e2e.exec</jacoco.docs-e2e.destFile>
-        <surefire.skip>true</surefire.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>prepare-agent-integration</id>
-                <goals>
-                  <goal>prepare-agent-integration</goal>
-                </goals>
-                <configuration>
-                  <destFile>${jacoco.docs-e2e.destFile}</destFile>
-                  <propertyName>failsafeArgLine</propertyName>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <includes>
-                <include>**/*DocsE2ETest.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*IT.java</exclude>
-                <exclude>**/*IntegrationTest.java</exclude>
-              </excludes>
-              <argLine>@{failsafeArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=e2e -Dflyway.cleanDisabled=false</argLine>
-              <systemPropertyVariables>
-                <webdriver.chrome.whitelistedIps/>
-                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
-                <headless>${headless}</headless>
-              </systemPropertyVariables>
-              <rerunFailingTestsCount>2</rerunFailingTestsCount>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-              </execution>
-            </executions>
           </plugin>
         </plugins>
       </build>
@@ -1894,6 +1601,71 @@
                 </fileSet>
               </fileSets>
               <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>integration-test</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>**/*E2ETest.java</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*IT.java</include>
+                <include>**/*IntegrationTest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*DockerIT.java</exclude>
+                <exclude>**/Docker*IT.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>notion-it</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*Notion*IT.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>notion-e2e</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*Notion*E2ETest.java</include>
+              </includes>
             </configuration>
           </plugin>
         </plugins>
