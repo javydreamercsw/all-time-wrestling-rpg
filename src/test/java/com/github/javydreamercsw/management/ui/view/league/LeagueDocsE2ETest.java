@@ -311,9 +311,10 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.id("add-segment-dialog"));
 
     selectFromVaadinComboBox("segment-type-combo-box", "One on One");
-    WebElement wrestlersCombo = driver.findElement(By.id("wrestlers-combo-box"));
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, wrestlerName1);
-    selectFromVaadinMultiSelectComboBox(wrestlersCombo, wrestlerName2);
+    WebElement team1Combo = driver.findElement(By.id("add-team-combo-1"));
+    selectFromVaadinMultiSelectComboBox(team1Combo, wrestlerName1);
+    WebElement team2Combo = driver.findElement(By.id("add-team-combo-2"));
+    selectFromVaadinMultiSelectComboBox(team2Combo, wrestlerName2);
 
     clickElement(By.id("add-segment-save-button"));
     waitForNotification("Segment added successfully!");

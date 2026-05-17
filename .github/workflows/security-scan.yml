@@ -20,7 +20,19 @@ jobs:
     
     steps:
       - name: 'Checkout repository'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: 'Scan database files for secrets'
+        run: |
+          SECRET_PATTERNS="AIzaSy|sk-ant-api|sk-proj-|AKIA[0-9A-Z]{16}"
+          FOUND=0
+          for db_file in $(git ls-files '*.mv.db'); do
+            if strings "$db_file" | grep -qE "$SECRET_PATTERNS"; then
+              echo "::error file=$db_file::Possible secret found in $db_file"
+              FOUND=1
+            fi
+          done
+          if [ "$FOUND" -eq 1 ]; then exit 1; fi
         
       - name: 'Set up JDK 25'
         uses: actions/setup-java@v4

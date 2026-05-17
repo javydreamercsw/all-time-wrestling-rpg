@@ -51,6 +51,8 @@ src/main/resources/META-INF/resources/images/generated/
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+# Test fixture intentionally tracked — must NOT contain real secrets
+!src/test/resources/db/sample.mv.db
 
 # Beads internal state
 .beads/backup/
@@ -62,3 +64,7 @@ src/main/resources/META-INF/resources/images/generated/
 # Vaadin bundles
 src/main/bundles/
 node/
+
+# Beads / Dolt files (added by bd init)
+.beads-credential-key
+/.claude/worktrees/
