@@ -102,11 +102,14 @@ Array.from(allCategories).sort().forEach(category => {
 
   catFeatures.forEach(feature => {
     content += `## ${feature.title}\n\n`;
-    content += `${feature.description}\n\n`;
-
-    // In built site, /public/screenshots/ maps to /screenshots/
-    const imagePublicPath = `/screenshots/${path.basename(feature.imagePath)}`;
-    content += `![${feature.title}](${imagePublicPath})\n\n`;
+    if (feature.description) {
+      content += `${feature.description}\n\n`;
+    }
+    if (feature.imagePath) {
+      // In built site, /public/screenshots/ maps to /screenshots/
+      const imagePublicPath = `/screenshots/${path.basename(feature.imagePath)}`;
+      content += `![${feature.title}](${imagePublicPath})\n\n`;
+    }
     content += `---\n\n`;
   });
 
