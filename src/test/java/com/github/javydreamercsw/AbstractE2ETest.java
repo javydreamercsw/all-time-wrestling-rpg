@@ -1243,6 +1243,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       return;
     }
 
+    // Compute actual capture rate from wall time so ffmpeg plays at real speed
+    long totalMs = System.currentTimeMillis() - session.startMs;
+    double actualFps = Math.max(1.0, frameCount / Math.max(1.0, totalMs / 1000.0));
+
     try {
       Path videosDir = Paths.get("docs", "videos");
       Files.createDirectories(videosDir);
@@ -1259,7 +1263,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       }
 
       Path outputMp4 = videosDir.resolve(videoName + ".mp4");
-      runFfmpeg(session.frameDir, audioFile, outputMp4);
+      runFfmpeg(session.frameDir, audioFile, outputMp4, actualFps);
 
       String description =
           session.captions.isEmpty()
@@ -1392,12 +1396,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return Optional.empty();
   }
 
-  private void runFfmpeg(Path frameDir, Optional<Path> audioFile, Path outputMp4) throws Exception {
+  private void runFfmpeg(Path frameDir, Optional<Path> audioFile, Path outputMp4, double fps)
+      throws Exception {
     List<String> cmd = new ArrayList<>();
     cmd.add("ffmpeg");
     cmd.add("-y");
     cmd.add("-framerate");
-    cmd.add("8");
+    // Round to one decimal; ffmpeg accepts fractional framerates
+    cmd.add("%.2f".formatted(fps));
     cmd.add("-i");
     cmd.add(frameDir.resolve("frame-%04d.png").toString());
     if (audioFile.isPresent()) {
