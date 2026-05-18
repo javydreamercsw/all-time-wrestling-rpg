@@ -163,7 +163,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           driver = new ChromeDriver(options);
           break;
         } catch (Exception ex) {
-          if (attempt >= 3) throw ex;
+          if (attempt >= 3) {
+            throw ex;
+          }
           log.warn(
               "ChromeDriver start failed (attempt {}), retrying: {}", attempt, ex.getMessage());
           Thread.sleep(2000);
@@ -1231,10 +1233,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     String text = description.replace('\n', ' ').trim();
     for (int i = 0; i < frameCount; i++) {
       Path framePath = frameDir.resolve("frame-%04d.png".formatted(i));
-      if (!Files.exists(framePath)) continue;
+      if (!Files.exists(framePath)) {
+        continue;
+      }
 
       java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(framePath.toFile());
-      if (img == null) continue;
+      if (img == null) {
+        continue;
+      }
 
       int w = img.getWidth();
       int h = img.getHeight();
@@ -1287,11 +1293,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       if (fm.stringWidth(candidate) <= maxWidth) {
         current = new StringBuilder(candidate);
       } else {
-        if (!current.isEmpty()) lines.add(current.toString());
+        if (!current.isEmpty()) {
+          lines.add(current.toString());
+        }
         current = new StringBuilder(word);
       }
     }
-    if (!current.isEmpty()) lines.add(current.toString());
+    if (!current.isEmpty()) {
+      lines.add(current.toString());
+    }
     return lines;
   }
 
