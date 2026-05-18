@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -65,6 +66,7 @@ class TitleListViewTest extends AbstractViewTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private TierRecalculationService tierRecalculationService;
   @Mock private ImageStorageService imageStorageService;
+  @Mock private UniverseContextService universeContextService;
 
   private TitleListView titleListView;
   private Title testTitle;
@@ -142,6 +144,8 @@ class TitleListViewTest extends AbstractViewTest {
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
 
+    when(universeContextService.getCurrentUniverse()).thenReturn(java.util.Optional.empty());
+
     titleListView =
         new TitleListView(
             titleService,
@@ -149,7 +153,8 @@ class TitleListViewTest extends AbstractViewTest {
             wrestlerRepository,
             tierRecalculationService,
             securityUtils,
-            imageStorageService);
+            imageStorageService,
+            universeContextService);
   }
 
   @Test

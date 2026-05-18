@@ -40,14 +40,14 @@ class FactionRepositoryTest extends AbstractJpaTest {
   private Faction testFaction;
 
   @AfterEach
-  public void tearDown() throws Exception {
+  public void tearDown() {
     entityManager.clear();
     super.tearDown();
   }
 
   @Override
   @BeforeEach
-  public void baseSetUp() throws Exception {
+  public void baseSetUp() {
     super.baseSetUp();
     testFaction = Faction.builder().build();
     testFaction.setName("Test Faction");

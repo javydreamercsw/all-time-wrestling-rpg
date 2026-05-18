@@ -148,7 +148,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   }
 
   @org.junit.jupiter.api.AfterEach
-  public void tearDown() throws Exception {
+  public void tearDown() {
     clearSecurityContext();
     clearCache();
   }

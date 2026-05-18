@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueMembershipReposi
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -39,6 +40,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.List;
 import lombok.NonNull;
 
 @Route(value = "leagues", layout = MainLayout.class)
@@ -51,6 +53,7 @@ public class LeagueListView extends Main {
   private final SecurityUtils securityUtils;
   private final WrestlerRepository wrestlerRepository;
   private final LeagueMembershipRepository leagueMembershipRepository;
+  private final UniverseContextService universeContextService;
   private final Grid<League> leagueGrid;
 
   public LeagueListView(
@@ -58,12 +61,14 @@ public class LeagueListView extends Main {
       @NonNull final AccountService accountService,
       @NonNull final SecurityUtils securityUtils,
       @NonNull final WrestlerRepository wrestlerRepository,
-      @NonNull final LeagueMembershipRepository leagueMembershipRepository) {
+      @NonNull final LeagueMembershipRepository leagueMembershipRepository,
+      @NonNull final UniverseContextService universeContextService) {
     this.leagueService = leagueService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     this.wrestlerRepository = wrestlerRepository;
     this.leagueMembershipRepository = leagueMembershipRepository;
+    this.universeContextService = universeContextService;
     this.leagueGrid = new Grid<>(League.class, false);
     this.leagueGrid.setId("league-grid");
 
@@ -215,6 +220,16 @@ public class LeagueListView extends Main {
   private void reloadGrid() {
     securityUtils
         .getAuthenticatedUser()
-        .ifPresent(user -> leagueGrid.setItems(leagueService.getLeaguesForUser(user.getAccount())));
+        .ifPresent(
+            user -> {
+              List<League> leagues = leagueService.getLeaguesForUser(user.getAccount());
+              universeContextService
+                  .getCurrentUniverse()
+                  .ifPresent(
+                      u ->
+                          leagues.removeIf(
+                              l -> l.getUniverse() == null || !u.equals(l.getUniverse())));
+              leagueGrid.setItems(leagues);
+            });
   }
 }
