@@ -16,6 +16,10 @@
 */
 package com.github.javydreamercsw.management.controller.show;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,10 +29,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -53,6 +60,15 @@ class ShowPlanningControllerTest extends AbstractControllerTest {
   }
 
   @Test
+  void getShowPlanningContext_showNotFound_returns404() throws Exception {
+    // Given
+    when(showService.getShowById(99L)).thenReturn(Optional.empty());
+
+    // When & Then
+    mockMvc.perform(get("/api/show-planning/context/99")).andExpect(status().isNotFound());
+  }
+
+  @Test
   void planShow() throws Exception {
     // Given
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
@@ -66,5 +82,97 @@ class ShowPlanningControllerTest extends AbstractControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(context)))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  void planShow_withNullFields_returnsOk() throws Exception {
+    // Given - context with all null fields
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class)))
+        .thenReturn(new ProposedShow());
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/show-planning/plan")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void planShow_withEmptyBody_returnsOk() throws Exception {
+    // Given
+    when(showPlanningAiService.planShow(any(ShowPlanningContextDTO.class)))
+        .thenReturn(new ProposedShow());
+
+    // When & Then - empty JSON object is a valid ShowPlanningContextDTO
+    mockMvc
+        .perform(
+            post("/api/show-planning/plan")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new ShowPlanningContextDTO())))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void approveSegments_showFound_returns200() throws Exception {
+    // Given
+    Show show = new Show();
+    show.setId(1L);
+    when(showService.getShowById(1L)).thenReturn(Optional.of(show));
+
+    List<ProposedSegment> segments = List.of(new ProposedSegment());
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/show-planning/approve/1")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(segments)))
+        .andExpect(status().isOk());
+
+    verify(showPlanningService).approveSegments(eq(show), any());
+  }
+
+  @Test
+  void approveSegments_showNotFound_returns200WithoutCallingService() throws Exception {
+    // Given - show does not exist; controller still returns 200 (ifPresent silently skips)
+    when(showService.getShowById(99L)).thenReturn(Optional.empty());
+
+    List<ProposedSegment> segments = Collections.emptyList();
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/show-planning/approve/99")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(segments)))
+        .andExpect(status().isOk());
+
+    verify(showPlanningService, never()).approveSegments(any(), any());
+  }
+
+  @Test
+  void approveSegments_emptySegmentList_returns200() throws Exception {
+    // Given
+    Show show = new Show();
+    show.setId(1L);
+    when(showService.getShowById(1L)).thenReturn(Optional.of(show));
+
+    // When & Then
+    mockMvc
+        .perform(
+            post("/api/show-planning/approve/1")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("[]"))
+        .andExpect(status().isOk());
+
+    verify(showPlanningService).approveSegments(eq(show), eq(Collections.emptyList()));
   }
 }
