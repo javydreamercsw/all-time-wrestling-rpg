@@ -1,0 +1,10 @@
+{
+  "videos" : [ {
+    "id" : "booker-journey-booker-full-show-lifecycle",
+    "category" : "Booker Journey",
+    "title" : "Full Show Lifecycle",
+    "description" : "The show card reflects the new summary immediately.",
+    "videoPath" : "videos/booker-full-show-lifecycle.mp4",
+    "order" : 0
+  } ]
+}

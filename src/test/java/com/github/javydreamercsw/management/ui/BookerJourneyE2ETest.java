@@ -193,7 +193,10 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       navigateTo("show-list");
       waitForVaadinClientToLoad();
       captureCaption(
-          "Show list — fill in the name, type, season, and template, then click Create.");
+          "Show List — the starting point for every show. To create a new show, fill in the"
+              + " name, pick a Show Type (Weekly, PPV, etc.), assign a Season, choose a Template,"
+              + " and set the date. Each field shapes what the AI will plan for you.",
+          4000);
 
       final String showName = "My E2E Show";
 
@@ -212,11 +215,26 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("show-template")));
 
       selectFromVaadinComboBox(showTypeComboBox, SHOW_TYPE_NAME);
+      captureCaption(
+          "Show Type controls pacing expectations — 'Weekly' tells the AI to propose a"
+              + " balanced card with a mix of matches and promos. PPV types lean heavier on"
+              + " title matches and longer main events.",
+          3500);
 
       wait.until(driver -> templateComboBox.isEnabled());
 
       selectFromVaadinComboBox(seasonComboBox, SEASON_NAME);
+      captureCaption(
+          "Season links this show to its storyline arc. The AI will factor in current feuds,"
+              + " title reigns, and fan momentum within the season when building the card.",
+          3000);
+
       selectFromVaadinComboBox(templateComboBox, TEMPLATE_NAME);
+      captureCaption(
+          "Templates define the show's structure — segment count, expected match types, and"
+              + " promo slots. The 'Continuum' template is a balanced weekly format with"
+              + " 5 matches and 2 promos.",
+          3500);
 
       WebElement universeComboBox =
           wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("universe")));
@@ -239,6 +257,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       Assertions.assertEquals(1, matchingShows.size());
       Show show = matchingShows.getFirst();
 
+      captureCaption(
+          "Show created and listed — the grid shows all scheduled shows with their type,"
+              + " season, and status. Click 'View Details' to open the show and start planning.",
+          3000);
+
       // Click on the newly created show in the grid to navigate to its detail page
       log.info("Navigating to show detail page");
       WebElement viewShowDetails =
@@ -258,7 +281,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           wait.until(ExpectedConditions.presenceOfElementLocated(By.id("show-info-details")));
       clickElement(showInfoDetails);
 
-      captureCaption("Expand the info panel and click Plan Show to open the planning view.");
+      captureCaption(
+          "Show Detail view — the info panel shows metadata and actions. From here you can:"
+              + " plan the card with AI (Plan Show), manually add segments, or finalize the show"
+              + " once all segments are set. Click 'Plan Show' to let the AI build the card.",
+          4000);
 
       // Click the "Planning Show" button
       log.info("Navigating to show planning view");
@@ -284,8 +311,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       Assertions.assertFalse(showPlanningContextArea.getText().contains("Error"));
 
       captureCaption(
-          "The AI context panel summarizes the roster. Click Propose Segments"
-              + " to generate a card.");
+          "Show Planning view — the AI context panel on the left summarizes the roster:"
+              + " active feuds, title reigns, fan momentum, and available wrestlers."
+              + " This is the context sent to the AI when you click 'Propose Segments'."
+              + " You can also add segments manually using the Add Segment button.",
+          4500);
 
       // Click the "Propose Segments" button
       log.info("Proposing segments");
@@ -299,7 +329,12 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           ExpectedConditions.presenceOfElementLocated(
               By.cssSelector("vaadin-grid#proposed-segments-grid vaadin-grid-cell-content")));
 
-      captureCaption("Review the AI-suggested matches, then click Approve.");
+      captureCaption(
+          "AI-proposed card — each row is a suggested segment with match type, participants,"
+              + " and the reasoning behind the booking. You can accept all proposals at once"
+              + " with Approve, or remove individual segments before approving."
+              + " The AI picks match types from the available segment types in your library.",
+          4500);
 
       // Approve segments
       log.info("Approving segments");
@@ -335,8 +370,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       waitForGridToPopulate("segments-grid");
 
       captureCaption(
-          "Segments are now listed. Click the edit icon on any segment to"
-              + " adjust the summary.");
+          "Segments are now locked in on the show card. Each row shows the match type,"
+              + " participants, and current summary. Available actions per segment:"
+              + " Edit (change participants or summary), Narrate (AI writes the full match story),"
+              + " Reorder (move it up or down the card), and Mark as Main Event.",
+          4500);
 
       // Click the edit button on the first row
       log.info("Clicking edit segment button");
@@ -349,6 +387,12 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       // Wait for the dialog to appear
       log.info("Waiting for edit dialog");
       wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
+
+      captureCaption(
+          "Segment editor — update the summary, swap participants, set the winner,"
+              + " attach titles on the line, or change the match rules (Normal, No DQ, etc.)."
+              + " All changes are saved immediately when you click Save.",
+          4000);
 
       // Edit the description
       log.info("Editing summary");
@@ -388,7 +432,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           ExpectedConditions.textToBePresentInElementLocated(
               By.xpath("//vaadin-grid-cell-content[contains(., '" + newDescription + "')]"),
               newDescription));
-      captureCaption("The show card reflects the new summary immediately.");
+      captureCaption(
+          "Summary updated and reflected on the show card. Once you're happy with the card,"
+              + " you can finalize the show — which locks the card, triggers fan updates,"
+              + " and makes the results visible to players and viewers.",
+          4000);
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);

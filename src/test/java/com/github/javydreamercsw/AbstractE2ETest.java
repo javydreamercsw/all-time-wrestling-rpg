@@ -1193,6 +1193,20 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
+   * Marks a timed caption and then holds on the current screen state for {@code dwellMs}
+   * milliseconds before returning. Use this in video tests where you want the viewer to have more
+   * time to read the caption and absorb what is on screen.
+   */
+  protected void captureCaption(@NonNull String description, int dwellMs) {
+    captureCaption(description);
+    try {
+      Thread.sleep(dwellMs);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  /**
    * Stops frame capture and assembles the MP4. Called by AbstractVideoDocsE2ETest after each test.
    *
    * @param category manifest category

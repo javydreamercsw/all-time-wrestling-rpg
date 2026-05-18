@@ -50,6 +50,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -72,6 +73,7 @@ class DataExportControllerIT extends AbstractControllerTest {
 
   @Override
   @BeforeEach
+  @SneakyThrows
   public void baseSetUp() {
     super.baseSetUp();
     // Clear the exports directory
