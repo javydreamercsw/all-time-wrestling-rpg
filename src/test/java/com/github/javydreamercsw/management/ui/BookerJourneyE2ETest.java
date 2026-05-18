@@ -258,8 +258,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           wait.until(ExpectedConditions.presenceOfElementLocated(By.id("show-info-details")));
       clickElement(showInfoDetails);
 
-      captureCaption(
-          "Show detail — expand the info panel and click Plan Show to open the planning view.");
+      captureCaption("Expand the info panel and click Plan Show to open the planning view.");
 
       // Click the "Planning Show" button
       log.info("Navigating to show planning view");
@@ -285,7 +284,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       Assertions.assertFalse(showPlanningContextArea.getText().contains("Error"));
 
       captureCaption(
-          "Show planning view — the AI context panel summarizes the roster. Click Propose Segments"
+          "The AI context panel summarizes the roster. Click Propose Segments"
               + " to generate a card.");
 
       // Click the "Propose Segments" button
@@ -300,8 +299,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           ExpectedConditions.presenceOfElementLocated(
               By.cssSelector("vaadin-grid#proposed-segments-grid vaadin-grid-cell-content")));
 
-      captureCaption(
-          "Proposed segments grid — review the AI-suggested matches, then click Approve.");
+      captureCaption("Review the AI-suggested matches, then click Approve.");
 
       // Approve segments
       log.info("Approving segments");
@@ -337,7 +335,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       waitForGridToPopulate("segments-grid");
 
       captureCaption(
-          "Approved show card — segments are now listed. Click the edit icon on any segment to"
+          "Segments are now listed. Click the edit icon on any segment to"
               + " adjust the summary.");
 
       // Click the edit button on the first row
@@ -390,8 +388,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           ExpectedConditions.textToBePresentInElementLocated(
               By.xpath("//vaadin-grid-cell-content[contains(., '" + newDescription + "')]"),
               newDescription));
-      captureCaption(
-          "Segment description updated — the show card reflects the new summary immediately.");
+      captureCaption("The show card reflects the new summary immediately.");
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
@@ -401,6 +398,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   @Test
   @Tag("video")
   public void testChangeSegmentOrder() {
+    setVideoInfo("Booker Journey", "Change Segment Order", "booker-change-segment-order");
     Show show =
         showService.createShow(
             "My E2E Show",
@@ -464,6 +462,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
     Assertions.assertNotNull(viewShowDetails);
+    captureCaption("Lets update the order segments take place in our show.");
     clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
@@ -473,6 +472,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.presenceOfAllElementsLocatedBy(
             By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
+
+    captureCaption("Reorder the segments using the up and down arrows.");
 
     // Click the down button on the first row
     WebElement downButton =
@@ -499,6 +500,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   @Test
   @Tag("video")
   public void testNarrateAndSummarizeSegment() {
+    setVideoInfo(
+        "Booker Journey", "Narrate and Summarize Segment", "booker-narrate-summarize-segment");
     Show show =
         showService.createShow(
             "My E2E Show",
@@ -540,6 +543,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     WebElement viewShowDetails =
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
+    captureCaption("Lets use AI to generate compelling narration for our segments.");
     clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
@@ -558,6 +562,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
+    captureCaption("Once AI is properly configured it can help you narrate segments.");
+
     WebElement generateNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("generate-narration-button")));
     Assertions.assertNotNull(generateNarrationButton);
@@ -566,6 +572,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     WebElement saveNarrationButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("save-narration-button")));
     Assertions.assertNotNull(saveNarrationButton);
+    captureCaption(
+        "Wrestler's decks are used as well as any provided input like participants, referees and"
+            + " other NPCs.");
     clickElement(saveNarrationButton);
 
     // Wait for the dialog to disappear
@@ -577,6 +586,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             ExpectedConditions.elementToBeClickable(
                 By.id("generate-summary-button-" + firstSegment.getId())));
     Assertions.assertNotNull(summaryButton);
+    captureCaption("Summary is generated from the full narration.");
     clickElement(summaryButton);
 
     // Navigate to the Show Detail view
@@ -597,6 +607,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   @Test
   @Tag("video")
   public void testSetMainEvent() {
+    setVideoInfo("Booker Journey", "Set Main Event", "booker-set-main-event");
     Show show =
         showService.createShow(
             "My E2E Show",
@@ -629,6 +640,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
+    captureCaption("Lets set our main event match for our show!");
+
     // Navigate back to the list.
     navigateTo("show-list");
 
@@ -648,6 +661,10 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     WebElement mainEventCheckbox =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
     Assertions.assertNotNull(mainEventCheckbox);
+    captureCaption(
+        "This setting impacts the narration as well as the fans obtained by the participants!");
     clickElement(mainEventCheckbox);
+
+    waitForVaadinClientToLoad();
   }
 }
