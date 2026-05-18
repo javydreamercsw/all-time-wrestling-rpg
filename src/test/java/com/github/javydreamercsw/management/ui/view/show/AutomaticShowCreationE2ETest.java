@@ -176,26 +176,36 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.id("generate-schedule-button"));
     captureCaption(
         "Admin panel — Season Settings. Show templates define recurring weekly shows and"
-            + " monthly Premium Live Events (PLEs).");
+            + " monthly Premium Live Events (PLEs). Each template sets the recurrence"
+            + " pattern, day of week, and number of nights for multi-day events.",
+        4500);
 
     // Click the generate button
     WebElement generateButton = waitForVaadinElement(driver, By.id("generate-schedule-button"));
     clickElement(generateButton);
     captureCaption(
         "Generate Schedule fills the entire season automatically based on your templates"
-            + " — no manual date entry needed.");
+            + " — no manual date entry needed. The engine calculates every show date from"
+            + " the season start to end, respecting each template's recurrence rule.",
+        4500);
 
     // Confirm the dialog
     WebElement confirmButton =
         waitForVaadinElement(driver, By.id("confirm-generate-schedule-button"));
-    captureCaption("Confirm to kick off automatic schedule generation for the active season.");
+    captureCaption(
+        "Confirm to kick off automatic schedule generation for the active season."
+            + " Existing shows are not deleted — only new dates from the templates are added,"
+            + " so it's safe to run on a partially-booked season.",
+        4000);
     clickElement(confirmButton);
 
     // Wait for success notification
     waitForNotification("Season schedule generated successfully.");
     captureCaption(
         "32 shows created in one click — Monday Night Mayhem every Monday, Friday Night"
-            + " Fire every Friday, and WrestleFest PLEs on the last Sunday of each month.");
+            + " Fire every Friday, and WrestleFest PLEs on the last Sunday of each month."
+            + " Multi-night PLEs automatically get a Night 1 and Night 2 entry.",
+        4500);
 
     // Verify shows were created
     List<com.github.javydreamercsw.management.domain.show.Show> allShows = showService.findAll();
@@ -245,6 +255,9 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
     navigateTo("show-list");
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     captureCaption(
-        "The full season schedule — weekly shows and PLEs — is now ready to plan and book.");
+        "The full season schedule — weekly shows and PLEs — is now ready to plan and book."
+            + " Click any show to open its detail view and start adding segments and"
+            + " assigning wrestlers to the card.",
+        4000);
   }
 }

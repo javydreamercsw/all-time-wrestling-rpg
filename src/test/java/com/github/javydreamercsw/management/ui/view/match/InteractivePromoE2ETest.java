@@ -176,7 +176,9 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
 
     captureCaption(
         "Match view for a Promo segment — the player sees a special 'Go Interactive' button"
-            + " that opens a live chat-style promo battle against the opponent.");
+            + " that opens a live chat-style promo battle against the opponent. This option"
+            + " is only available for Promo segment types, not standard matches.",
+        4500);
 
     // 1. Activate Interactive Chat Mode
     WebElement goChatBtn = waitForVaadinElement(driver, By.id("go-interactive-promo-button"));
@@ -186,7 +188,9 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.xpath("//h3[text()='Interactive Promo Chat']"));
     captureCaption(
         "Interactive Promo Chat — a real-time message thread where the player types lines"
-            + " and the AI opponent fires back in character, building a promo exchange.");
+            + " and the AI opponent fires back in character, building a promo exchange."
+            + " The full conversation is saved as the segment's official narration.",
+        4500);
 
     // 3. Locate Message Input
     WebElement messageInput = waitForVaadinElement(driver, By.tagName("vaadin-message-input"));
@@ -222,7 +226,9 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
     wait.until(d -> Objects.requireNonNull(d.getPageSource()).contains(promoText));
     captureCaption(
         "Player's line appears in the chat — the message is attributed to the player's"
-            + " wrestler and triggers the AI to generate the opponent's retort.");
+            + " wrestler and immediately triggers the AI to generate the opponent's retort"
+            + " in character, drawing on the opponent's personality and description.",
+        4500);
 
     // 5. Verify AI Retort appears (The Silent One)
     wait.until(
@@ -242,8 +248,10 @@ public class InteractivePromoE2ETest extends AbstractE2ETest {
         });
 
     captureCaption(
-        "The Silent One responds — AI-generated retort appears under the opponent's name,"
-            + " the full exchange is persisted to the segment narration for the show record.");
+        "The Silent One responds — AI-generated retort appears under the opponent's name."
+            + " The full exchange is persisted to the segment narration and becomes part"
+            + " of the permanent show record, visible to all participants.",
+        4500);
 
     // Verify DB persistence
     assert promoSegment.getId() != null;

@@ -157,7 +157,9 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
     waitForVaadinElement(driver, By.id("match-view-" + matchSegment.getId()));
     captureCaption(
         "Player perspective — when you're a participant in a league match, the match detail"
-            + " view shows an AI narration panel only visible to you.");
+            + " view shows an AI narration panel only visible to participants. Admins and"
+            + " bookers see the match data but not the private narration controls.",
+        4500);
 
     // Assert Feedback Area is visible
     Assertions.assertTrue(
@@ -169,7 +171,9 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
         driver.findElement(By.id("ai-generate-narration-button")).isDisplayed(),
         "Generate button should be visible to participant player");
     captureCaption(
-        "The Generate Narration button lets the player request an AI-written match story"
-            + " — only participants see this; admins and bookers get a read-only view.");
+        "Generate Narration lets the player request an AI-written match story using their"
+            + " deck cards and the segment outcome. Only participants see this button —"
+            + " the result is stored on the segment and visible to everyone afterward.",
+        4500);
   }
 }

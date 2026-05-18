@@ -143,7 +143,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
       captureCaption(
           "Wrestler Rankings shows all active wrestlers by default — male and female"
-              + " ranked together.");
+              + " ranked together by fan count. Use the Gender filter to scope the view"
+              + " to a specific division.",
+          3500);
 
       // Select "FEMALE" from the gender ComboBox
       log.info("Filtering by FEMALE");
@@ -164,7 +166,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
           });
       captureCaption(
           "Selecting FEMALE in the gender filter narrows the rankings to women's division"
-              + " wrestlers only.");
+              + " wrestlers only. This also controls which names appear in the championship"
+              + " contender lists for gender-specific titles.",
+          4000);
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
@@ -229,7 +233,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       assertGridContains("wrestler-contenders-grid", femaleWrestler.getName());
       captureCaption(
           "Championship Rankings — select a title to see its eligible contenders ranked"
-              + " by fans. Only wrestlers of the correct gender division appear.");
+              + " by fans. Only wrestlers of the correct gender division appear, enforcing"
+              + " divisional integrity automatically.",
+          4000);
 
       // Open the "Tier Boundaries" dialog
       WebElement showTierBoundariesButton =
@@ -240,8 +246,10 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Wait for the dialog to appear
       wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
       captureCaption(
-          "Tier Boundaries shows the fan thresholds for each tier. Switch gender to compare"
-              + " men's and women's division boundaries side by side.");
+          "Tier Boundaries dialog shows the fan thresholds for each tier. Switch the gender"
+              + " selector to compare men's and women's division boundaries side by side —"
+              + " each division can have independent threshold values.",
+          4500);
 
       // Select "FEMALE" in the dialog's gender ComboBox
       WebElement dialogGenderComboBox =
@@ -252,8 +260,10 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       waitForGridToPopulate("tier-boundaries-grid");
       assertGridContains("tier-boundaries-grid", "Midcarder");
       captureCaption(
-          "Women's division tier boundaries — each row shows the fan range a wrestler"
-              + " needs to reach or hold that tier.");
+          "Women's division tier boundaries — each row shows the minimum and maximum fan"
+              + " count a wrestler needs to reach or hold that tier. Wrestlers are promoted"
+              + " or demoted automatically when their fan count crosses a boundary.",
+          4500);
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);

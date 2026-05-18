@@ -253,7 +253,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
           captureCaption(
               "Player Dashboard — shows wrestler name, tier, win/loss record, and bumps at a"
-                  + " glance. Upcoming matches are listed below for quick navigation.");
+                  + " glance. The Upcoming Matches grid lists every scheduled segment; click"
+                  + " 'Go to Match' to open the match detail view for that event.",
+              4500);
 
           // Check that the grids have the correct number of rows
           assertGridContains("upcoming-matches-grid", "Test Show");
@@ -265,7 +267,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
           captureCaption(
               "Rivalries tab — shows all active feuds the player's wrestler is involved in."
-                  + " Heat level and opponent are displayed for quick situation awareness.");
+                  + " Heat level and opponent are displayed so the player can track which"
+                  + " storylines are hottest and plan their next promo or match accordingly.",
+              4500);
 
           click("vaadin-tab", "Inbox");
           waitForVaadinElementVisible(By.id("inbox-grid"));
@@ -273,7 +277,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
           captureCaption(
               "Inbox tab — booker messages, angle updates, and match announcements arrive here."
-                  + " Players stay informed without leaving the dashboard.");
+                  + " Players stay informed about story directions and upcoming bookings"
+                  + " without needing to contact the booker directly.",
+              4000);
         });
   }
 
@@ -338,7 +344,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     captureCaption(
         "Upcoming matches grid — each scheduled segment has a 'Go to Match' button that"
-            + " takes the player directly to the match detail view for that show.");
+            + " takes the player directly to the match detail view for that show. The button"
+            + " is disabled if the match result has already been submitted.",
+        4000);
 
     // Click the "Go to Match" button
     clickElement(By.id("go-to-match-" + segment.getId()));
@@ -356,7 +364,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
               waitForVaadinElement(driver, By.id("match-type")).getText());
           captureCaption(
               "Match view loaded — shows the show name, match type, and participants."
-                  + " Players can submit results or start an interactive promo from here.");
+                  + " Players can submit results, request AI narration, or start an"
+                  + " interactive promo depending on the segment type.",
+              4000);
         });
   }
 
@@ -444,14 +454,18 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
           captureCaption(
               "Status card badge visible on the dashboard — 'Draw' is a campaign-earned"
-                  + " ability that boosts Momentum by +4, shown directly on the stat panel.");
+                  + " ability that boosts Momentum by +4, shown directly on the stat panel."
+                  + " Multiple status cards stack, and all bonuses apply during match play.",
+              4500);
 
           // Momentum boosted by +4 from the status card
           waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Momentum: 4')]"));
 
           captureCaption(
               "Momentum reflects all active status card bonuses — the effective stat shown"
-                  + " here is what the match engine uses when drawing cards in combat.");
+                  + " here is exactly what the match engine uses when drawing cards in combat."
+                  + " Higher momentum increases the chance of landing powerful moves.",
+              4500);
         });
   }
 
@@ -526,7 +540,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
           captureCaption(
               "Season Summary panel shows the wrestler's W-L-D record and fan growth for the"
-                  + " current season — updated after every show the wrestler appears on.");
+                  + " current season. It updates automatically after every show the wrestler"
+                  + " appears on, giving a running picture of seasonal performance.",
+              4500);
 
           WebElement recordSpan =
               waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Record: 1-0-0')]"));
@@ -537,8 +553,10 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           assertNotNull(fanGrowth);
 
           captureCaption(
-              "Fan growth tracks audience gained or lost this season — wins push it up,"
-                  + " losses and inactivity can drag it down over the course of a season.");
+              "Fan growth tracks audience gained or lost this season — wins and title feuds"
+                  + " push it up, while losses and inactivity drag it down. The net change"
+                  + " is displayed so players can see the impact of their booking outcomes.",
+              4500);
         });
   }
 }

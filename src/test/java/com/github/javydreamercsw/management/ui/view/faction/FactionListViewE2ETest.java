@@ -50,7 +50,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
 
     captureCaption(
         "Faction List view — factions group wrestlers into allied stables. Bookers can create,"
-            + " edit, and manage faction rosters directly from this page.");
+            + " edit, and manage faction rosters directly from this page. Factions appear in"
+            + " segment booking and can be featured in multi-person storylines.",
+        4500);
 
     // Get the initial size of the grid
     long initialSize = factionService.count();
@@ -85,7 +87,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
 
     captureCaption(
         "New faction appears in the grid — it's immediately available for member assignment"
-            + " and can be featured in feuds and storylines.");
+            + " and can be featured in feuds and storylines. Use the Members button to add"
+            + " wrestlers to the roster right away.",
+        4000);
 
     assertEquals(initialSize + 1, factionService.count());
   }
@@ -202,7 +206,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
 
     captureCaption(
         "Faction List — each row has a Members button that opens the roster management"
-            + " dialog. Wrestlers are added via a searchable ComboBox.");
+            + " dialog. Wrestlers are added via a searchable ComboBox; type a name to"
+            + " filter and select, then click Add Member to confirm.",
+        4000);
 
     WebElement membersButton = driver.findElement(By.id("members-" + faction.getId()));
     scrollIntoView(membersButton);
@@ -233,7 +239,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
 
     captureCaption(
         "Wrestler added to the faction roster — the members grid updates instantly."
-            + " Members can be removed at any time without affecting their match history.");
+            + " Members can be removed at any time without affecting their match or feud"
+            + " history; faction membership is independent of past results.",
+        4000);
 
     Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     assertTrue(updatedFaction.isPresent());

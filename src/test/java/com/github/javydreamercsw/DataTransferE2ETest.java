@@ -115,7 +115,9 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     captureCaption(
         "Data Transfer Wizard — migrate all application data from H2 to MySQL in three"
-            + " steps: connection config, table selection, and transfer.");
+            + " steps: connection config, table selection, and transfer. This is the"
+            + " recommended path before switching to a production MySQL deployment.",
+        4000);
     clickElement(nextButton);
 
     waitForVaadinClientToLoad();
@@ -134,7 +136,9 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     passwordField.sendKeys(MYSQL_CONTAINER.getPassword(), Keys.TAB);
     captureCaption(
         "Step 1 — enter the MySQL connection details: host, port, database name, username,"
-            + " and password. Use Test Connection to verify before proceeding.");
+            + " and password. Use Test Connection to verify connectivity before proceeding;"
+            + " the wizard will not advance if the connection fails.",
+        4000);
 
     // Click the next button to advance to Data Selection step
     clickElement(nextButton);
@@ -145,7 +149,9 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     selectFromVaadinComboBox("table-selection-combo", "All Tables");
     captureCaption(
         "Step 2 — choose which tables to migrate. 'All Tables' transfers the complete"
-            + " dataset; individual tables can be selected for partial migrations.");
+            + " dataset; individual tables can be selected for targeted or partial migrations"
+            + " without touching the rest of the schema.",
+        4000);
 
     // Click the next button again to advance to Data Transfer Process step
     nextButton = waitForVaadinElement(driver, By.id("next-button"));
@@ -161,7 +167,9 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     assertNotNull(progressIndicator);
     captureCaption(
         "Step 3 — transfer runs in the background with a live progress indicator."
-            + " The process is transactional: if anything fails, it rolls back automatically.");
+            + " The process is fully transactional: if anything fails, the entire migration"
+            + " rolls back automatically so no partial data is left in MySQL.",
+        4500);
 
     // Wait for completion message
     new WebDriverWait(driver, Duration.ofMinutes(2))
@@ -170,7 +178,9 @@ public class DataTransferE2ETest extends AbstractE2ETest {
                 By.id("status-label"), "Data transfer completed successfully."));
     captureCaption(
         "Migration complete — all data is now in MySQL and verified. Restart the"
-            + " application with the MySQL profile to run in production mode.");
+            + " application with the MySQL Spring profile (spring.profiles.active=mysql)"
+            + " to run in production mode against the new database.",
+        4000);
 
     // Verify data in MySQL
     try (Connection conn =

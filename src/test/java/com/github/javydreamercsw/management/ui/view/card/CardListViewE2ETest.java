@@ -65,8 +65,10 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     wait.pollingEvery(Duration.ofMillis(500));
 
     captureCaption(
-        "Card List view — cards represent the move set and ability pool available"
-            + " in matches. Each card belongs to a card set and can be edited inline.");
+        "Card List view — cards represent the move set and ability pool available in"
+            + " matches. Each card belongs to a card set, has configurable stats, and can"
+            + " be edited or deleted inline without leaving this view.",
+        4000);
 
     // Find the input field and create button
     WebElement nameField =
@@ -84,7 +86,9 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     findCardInGridWithScrolling(wait, "New E2E Card");
     captureCaption(
         "New card created — it appears in the grid immediately and is ready to be"
-            + " assigned stats, a card set, and rules for use in segments.");
+            + " assigned stats, a card set, and rules for use in segments. Open the Edit"
+            + " dialog to configure health cost, stamina cost, and damage values.",
+        4000);
   }
 
   @Test
@@ -97,7 +101,9 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
     captureCaption(
         "Cards can be created, renamed, and removed directly from the Card List view —"
-            + " inline editing keeps the workflow fast for bookers managing large move sets.");
+            + " inline editing keeps the workflow fast for bookers managing large move sets."
+            + " Use the Name column sorter to quickly locate cards alphabetically.",
+        4000);
 
     // Find the input field and create button
     WebElement nameField =
@@ -142,7 +148,9 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     findCardInGridWithScrolling(wait, updatedName);
     captureCaption(
         "Card name updated in place — changes persist immediately with no page reload,"
-            + " keeping the editing flow smooth during show preparation.");
+            + " keeping the editing flow smooth during show preparation. Updated cards"
+            + " are reflected in all decks that reference them automatically.",
+        4000);
   }
 
   @Test

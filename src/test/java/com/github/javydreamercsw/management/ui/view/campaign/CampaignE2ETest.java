@@ -92,7 +92,9 @@ class CampaignE2ETest extends AbstractE2ETest {
     assertTrue(driver.getPageSource().contains("Victory Points"));
     captureCaption(
         "Campaign Dashboard — tracks your current chapter, Victory Points, and available"
-            + " actions. Each chapter has unique story beats and goals.");
+            + " actions. Each chapter has unique story beats and goals; completing them"
+            + " unlocks the next chapter and new backstage options.",
+        4500);
 
     // 2. Navigate to Backstage Actions
     WebElement actionsButton =
@@ -103,15 +105,19 @@ class CampaignE2ETest extends AbstractE2ETest {
     // Verify we are on the backstage actions view
     waitForText("Backstage Actions");
     captureCaption(
-        "Backstage Actions let you spend your weekly action on Training, Promos,"
-            + " Networking, and more — each affects your stats and story progression.");
+        "Backstage Actions — spend your one weekly action on Training, Promos, Networking,"
+            + " or other activities. Each option has different stat impacts and story"
+            + " consequences; choose based on your current chapter goals.",
+        4500);
 
     // 3. Perform an action (Training)
     WebElement trainingButton = waitForVaadinElement(driver, By.id("action-button-TRAINING"));
     clickElement(trainingButton);
     captureCaption(
-        "Training increases your wrestler's stats over time — the result is shown"
-            + " immediately and logged to your campaign history.");
+        "Training increases your wrestler's core stats over time — the result is shown"
+            + " immediately and logged to your campaign history. Repeated training compounds"
+            + " gains and can eventually unlock new skills.",
+        4000);
 
     // 4. Navigate back
     int retryCount = 0;
@@ -137,8 +143,10 @@ class CampaignE2ETest extends AbstractE2ETest {
 
     waitForText("Campaign: All or Nothing");
     captureCaption(
-        "Back on the Campaign Dashboard — Victory Points accumulate from actions and"
-            + " match wins, driving chapter progression throughout the season.");
+        "Back on the Campaign Dashboard — Victory Points accumulate from backstage actions"
+            + " and match wins, driving chapter progression throughout the season. Reaching"
+            + " each VP threshold automatically transitions the story to the next chapter.",
+        4500);
   }
 
   @Test
@@ -159,7 +167,9 @@ class CampaignE2ETest extends AbstractE2ETest {
     waitForText("Unbreakable");
     captureCaption(
         "Skill Upgrades appear on the Campaign Dashboard when you have enough Skill Tokens."
-            + " Tokens are earned by completing backstage actions and winning matches.");
+            + " Tokens are earned by completing backstage actions and winning matches —"
+            + " the more consistent your performance, the faster you unlock new abilities.",
+        4500);
 
     // 4. Purchase an upgrade (Iron Man)
     WebElement upgradeButton =
@@ -168,14 +178,18 @@ class CampaignE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
     captureCaption(
         "Purchasing Iron Man — each upgrade permanently boosts a stat for the rest of"
-            + " the campaign. Choose carefully; tokens are limited.");
+            + " the campaign. Choose carefully; tokens are limited and upgrades cannot be"
+            + " reversed once purchased.",
+        4000);
 
     // 5. Verify upgrade is in "Purchased Skills" section
     waitForText("Purchased Skills");
     waitForText("Iron Man: Increases your wrestler’s maximum stamina by 2.");
     captureCaption(
         "The upgrade moves to Purchased Skills and takes effect immediately — maximum"
-            + " stamina increased by 2 for all future matches.");
+            + " stamina increased by 2 for all future matches. The effective stats shown"
+            + " on your Player Dashboard update to reflect the new total.",
+        4000);
   }
 
   private void waitForText(final String text) {

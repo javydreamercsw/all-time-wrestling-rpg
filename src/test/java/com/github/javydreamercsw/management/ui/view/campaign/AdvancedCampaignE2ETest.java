@@ -118,7 +118,9 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     waitForText("The Fighting Champion");
     captureCaption(
         "The Fighting Champion chapter activates when the player holds a championship."
-            + " The campaign tracks title reigns automatically and unlocks this chapter.");
+            + " The campaign tracks title reigns automatically and unlocks this chapter,"
+            + " presenting unique storyline choices available only to a defending champion.",
+        4500);
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("The Fighting Champion"));
   }
 
@@ -137,7 +139,9 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     waitForText("Gang Warfare");
     captureCaption(
         "Gang Warfare unlocks when factions collide for territory control — the chapter"
-            + " sets up a faction turf war storyline across multiple shows.");
+            + " sets up a faction turf war storyline across multiple shows, with backstage"
+            + " actions that let the player recruit allies or sabotage rivals.",
+        4500);
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Gang Warfare"));
   }
 
@@ -160,7 +164,9 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     waitForText("Corporate Power Trip");
     captureCaption(
         "Corporate Power Trip triggers at 15 Victory Points — the player has earned enough"
-            + " momentum to challenge the establishment and climb to the top of the card.");
+            + " momentum to challenge the establishment and climb to the top of the card."
+            + " VP accumulates from match wins, backstage actions, and completed milestones.",
+        4500);
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Corporate Power Trip"));
   }
 

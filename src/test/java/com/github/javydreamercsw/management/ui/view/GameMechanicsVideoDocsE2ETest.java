@@ -34,13 +34,18 @@ class GameMechanicsVideoDocsE2ETest extends AbstractDocsE2ETest {
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     captureCaption(
         "The heart of the ATW RPG battle system. Each card represents a move — Strike, Grapple,"
-            + " Aerial, or Throw — with specific health and stamina costs and damage effects.");
+            + " Aerial, or Throw — with specific health and stamina costs and damage effects."
+            + " Wrestlers draw from their personal deck each round of a match.",
+        4500);
 
     // Scroll down to show more cards
     ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 400)");
     waitForVaadinClientToLoad();
     sleep(2000);
-    captureCaption("Browse your full card collection. Click any card to see its stat breakdown.");
+    captureCaption(
+        "Browse your full card collection. Click any card to see its stat breakdown —"
+            + " health cost, stamina cost, damage type, and which move category it belongs to.",
+        3500);
 
     // Scroll back to top
     ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0)");
@@ -50,7 +55,11 @@ class GameMechanicsVideoDocsE2ETest extends AbstractDocsE2ETest {
     WebElement firstRow = driver.findElement(By.cssSelector("vaadin-grid-cell-content"));
     clickElement(firstRow);
     waitForVaadinClientToLoad();
-    captureCaption("Card detail view: health cost, stamina cost, damage type, and move category.");
+    captureCaption(
+        "Card detail view shows health cost, stamina cost, damage type, and move category."
+            + " These values are referenced directly by the match engine and AI narration"
+            + " when describing what happened in a segment.",
+        4000);
     sleep(2000);
   }
 
@@ -62,10 +71,16 @@ class GameMechanicsVideoDocsE2ETest extends AbstractDocsE2ETest {
     waitForVaadinClientToLoad();
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     captureCaption(
-        "Manage wrestler-specific decks. Each wrestler can have one active deck used in matches.");
+        "Deck List — manage wrestler-specific decks. Each wrestler can have one active deck"
+            + " used in matches; the deck determines which moves the AI draws from when"
+            + " generating match narration and outcomes.",
+        4000);
 
     sleep(2000);
-    captureCaption("These are the move sets AI will use during narration.");
+    captureCaption(
+        "These move sets are what the AI draws from during match narration — a richer deck"
+            + " with varied move types leads to more dynamic and realistic commentary.",
+        3500);
 
     ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 300)");
     sleep(1500);
@@ -79,14 +94,20 @@ class GameMechanicsVideoDocsE2ETest extends AbstractDocsE2ETest {
     waitForVaadinClientToLoad();
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     captureCaption(
-        "Track the momentum of every wrestler in the promotion."
-            + " Rankings determine title eligibility and positioning on show cards.");
+        "Wrestler Rankings — track the momentum of every wrestler in the promotion."
+            + " Rankings are determined by fan count and determine title eligibility,"
+            + " match positioning, and contendership on upcoming show cards.",
+        4500);
 
     sleep(2000);
 
     ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 400)");
     sleep(1500);
-    captureCaption("Wrestlers accumulate fans through wins, title matches, and fan reactions.");
+    captureCaption(
+        "Wrestlers accumulate fans through wins, title matches, and fan reactions — losses"
+            + " and inactivity erode the fan base over time, creating natural momentum shifts"
+            + " that drive realistic storyline booking decisions.",
+        4000);
 
     ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0)");
     sleep(1000);

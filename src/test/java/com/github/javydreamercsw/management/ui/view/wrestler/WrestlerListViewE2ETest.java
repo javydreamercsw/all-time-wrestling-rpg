@@ -79,7 +79,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
     captureCaption(
         "Wrestler List — your full roster at a glance. Click Create Wrestler to add a new"
-            + " athlete to the promotion.");
+            + " athlete to the promotion. Each row shows core attributes and provides an"
+            + " action menu for editing, injuries, bumps, and more.",
+        4000);
 
     // Click the "Create Wrestler" button
     WebElement createButton =
@@ -94,7 +96,11 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebElement nameField =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-dialog-name-field")));
-    captureCaption("Enter the wrestler's name and configure their starting attributes.");
+    captureCaption(
+        "Enter the wrestler's name and configure their starting attributes — health,"
+            + " stamina, deck size, and gender. These values shape how the wrestler"
+            + " performs in matches and which titles they are eligible for.",
+        4000);
 
     // Enter a new wrestler name
     assertNotNull(nameField);
@@ -110,8 +116,10 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
     captureCaption(
-        "The new wrestler appears in the roster immediately, ready to be booked into shows"
-            + " and assigned to factions.");
+        "The new wrestler appears in the roster immediately, ready to be booked into shows,"
+            + " assigned to factions, and given a card deck. The roster is sorted"
+            + " alphabetically by default for easy navigation.",
+        4000);
 
     assertEquals(initialSize + 1, wrestlerRepository.count());
   }
@@ -165,7 +173,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
     captureCaption(
         "Each wrestler row has an action menu — open it to edit attributes, manage"
-            + " injuries, add bumps, and more.");
+            + " injuries, add or heal bumps, and navigate to the full profile view."
+            + " All operations apply to just this wrestler.",
+        4000);
 
     // Find the menu for the wrestler
     WebElement menuBar =
@@ -179,7 +189,11 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
-    captureCaption("The Edit dialog lets you update the wrestler's name and core attributes.");
+    captureCaption(
+        "The Edit dialog lets you update the wrestler's name and core attributes — health,"
+            + " stamina, deck size, gender, and active status. Changes take effect"
+            + " immediately when you click Save.",
+        4000);
 
     // Find the editor's name field and change the value
     WebElement nameEditor =
@@ -210,7 +224,11 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             return false;
           }
         });
-    captureCaption("Changes are saved immediately and reflected in the roster grid.");
+    captureCaption(
+        "Changes are saved immediately and reflected in the roster grid with no page"
+            + " reload. The updated name also propagates to any show segments or faction"
+            + " memberships that reference this wrestler.",
+        4000);
 
     assertTrue(
         wrestlerRepository.findAll().stream().anyMatch(w -> "Edit Updated".equals(w.getName())));
@@ -410,8 +428,10 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
           }
         });
     captureCaption(
-        "Manage Injuries shows all active injuries for a wrestler — severity, cause,"
-            + " and a Heal button for each.");
+        "Manage Injuries shows all active injuries for a wrestler — severity (Minor through"
+            + " Critical), cause description, and a Heal button for each. Injuries can"
+            + " affect booking availability and AI narration tone.",
+        4500);
 
     // Heal an injury
     WebElement healButton =
@@ -420,7 +440,11 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     assertNotNull(healButton);
     clickElement(healButton);
-    captureCaption("Clicking Heal removes the injury from the active list immediately.");
+    captureCaption(
+        "Clicking Heal removes the injury from the active list immediately — the wrestler"
+            + " is marked recovered and becomes fully eligible for booking again."
+            + " Healed injuries are retained in history for reference.",
+        3500);
 
     // Create a new injury
     WebElement createButton =
@@ -453,8 +477,10 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     clickElement(severitySelector);
     severitySelector.sendKeys("CRITICAL", Keys.TAB);
     captureCaption(
-        "New injuries can be logged at any time — name, description, severity, and the"
-            + " cause are all recorded for narrative purposes.");
+        "New injuries can be logged at any time — name, description, severity (Minor,"
+            + " Moderate, Serious, or Critical), and the in-kayfabe cause are all recorded"
+            + " for narrative and booking reference purposes.",
+        4000);
 
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-save-button")));
@@ -473,7 +499,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
           }
         });
     captureCaption(
-        "The new injury appears in the grid — it will affect the wrestler's availability"
-            + " and AI narration until healed.");
+        "The new injury appears in the grid — it will affect the wrestler's booking"
+            + " availability and appear in AI narration commentary until it is healed."
+            + " Critical injuries are flagged prominently to alert bookers.",
+        4000);
   }
 }

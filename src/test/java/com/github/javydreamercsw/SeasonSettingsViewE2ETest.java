@@ -74,13 +74,19 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
         waitForVaadinElement(driver, By.id("reset-boundaries-button"));
     captureCaption(
         "Season Settings — tier boundaries define the minimum fan count required for each"
-            + " wrestler tier. Use Reset Tier Boundaries to restore the defaults.");
+            + " wrestler tier (Rookie through Icon). Use Reset Tier Boundaries to restore"
+            + " the defaults if boundaries were customised during the season.",
+        4000);
     clickElement(resetBoundariesButton);
 
     // Wait for dialog
     WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
-    captureCaption("Confirm to restore all tier fan thresholds to their default values.");
+    captureCaption(
+        "Confirm to restore all tier fan thresholds to their default values."
+            + " This does not change any wrestler's current fan count — only the boundary"
+            + " targets are reset.",
+        3500);
 
     WebElement confirmButton =
         waitForVaadinElement(driver, By.id("confirm-reset-boundaries-button"));
@@ -91,7 +97,9 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     assertEquals("Tier boundaries reset successfully.", notification.getText());
     captureCaption(
         "Tier boundaries reset — all tiers now use their default fan requirements,"
-            + " ready for the new season.");
+            + " ready for the new season. Wrestlers are automatically re-evaluated against"
+            + " the restored thresholds on the next ranking calculation.",
+        3500);
 
     // Verify boundaries were reset
     WrestlerTier tier = boundary.getTier();
@@ -130,13 +138,18 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
         waitForVaadinElement(driver, By.id("recalibrate-fans-button"));
     captureCaption(
         "Recalibrate Fans trims each wrestler's fan count to the minimum for their current"
-            + " tier — useful for resetting momentum at the start of a new season.");
+            + " tier — useful for resetting momentum at the start of a new season without"
+            + " demoting anyone or wiping tiers entirely.",
+        4000);
     clickElement(recalibrateFansButton);
 
     // Wait for dialog
     WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
-    captureCaption("Confirm to recalibrate fan counts across all wrestlers.");
+    captureCaption(
+        "Confirm to recalibrate fan counts across all wrestlers. Icon-tier wrestlers are"
+            + " demoted to Main Eventer automatically since Icon has no upper boundary.",
+        3500);
 
     WebElement confirmButton =
         waitForVaadinElement(driver, By.id("confirm-recalibrate-fans-button"));
@@ -147,7 +160,9 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     assertEquals("Fan counts recalibrated successfully.", notification.getText());
     captureCaption(
         "Fan counts recalibrated — wrestlers retain their tier but excess fans are"
-            + " trimmed to the tier minimum, levelling the playing field.");
+            + " trimmed to the tier minimum, levelling the playing field. This creates"
+            + " a competitive reset without erasing the hierarchy built during the season.",
+        4000);
 
     // Verify fan counts were reset
     WrestlerState updatedState =
@@ -215,15 +230,19 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     WebElement fullResetButton = waitForVaadinElement(driver, By.id("full-reset-button"));
     captureCaption(
         "Full Fan Reset wipes all wrestler fan counts to zero and demotes every wrestler"
-            + " back to Rookie — a complete season restart.");
+            + " back to Rookie — a complete season restart. Use this only when you want"
+            + " every competitor to rebuild their career from scratch.",
+        4500);
     clickElement(fullResetButton);
 
     // Wait for dialog
     WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
     captureCaption(
-        "This is irreversible — confirm only when you want to start a brand-new season"
-            + " from scratch.");
+        "This action is irreversible — confirm only when you want to start a brand-new"
+            + " season from scratch. All fan counts and tier standings will be permanently"
+            + " reset to zero.",
+        4000);
 
     WebElement confirmButton = waitForVaadinElement(driver, By.id("confirm-full-reset-button"));
     clickElement(confirmButton);
@@ -233,7 +252,9 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     assertEquals("All wrestler fan counts have been reset to 0.", notification.getText());
     captureCaption(
         "All fan counts reset to 0 and tiers demoted to Rookie — the new season starts"
-            + " with a clean slate.");
+            + " with a clean slate. Every wrestler must earn their way back up the card"
+            + " through wins, promos, and fan-building events.",
+        4000);
 
     // Verify fan counts were reset and tier was demoted
     WrestlerState updatedState =
