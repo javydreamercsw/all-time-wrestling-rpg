@@ -326,9 +326,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     int maxRetries = 3;
     String loginUrl = "http://localhost:" + serverPort + getContextPath() + "/login";
     Exception lastException = null;
-    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        log.debug("Login attempt {}/{} for user: {}", attempt, maxRetries, username);
+        log.debug("Login attempt {}/{} for user: {}", attempt + 1, maxRetries, username);
         // Skip navigation if already on the login page (e.g. right after logout())
         if (!loginUrl.equals(driver.getCurrentUrl())) {
           driver.get(loginUrl);
@@ -379,7 +379,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         return; // Success!
       } catch (Exception e) {
         lastException = e;
-        log.warn("Login attempt {}/{} failed: {}", attempt, maxRetries, e.getMessage());
+        log.warn("Login attempt {}/{} failed: {}", attempt + 1, maxRetries, e.getMessage());
         if (attempt < maxRetries) {
           // Force a fresh navigation before retrying
           try {
