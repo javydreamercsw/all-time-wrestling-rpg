@@ -43,6 +43,8 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
 
   List<Show> findByUniverse(Universe universe);
 
+  List<Show> findByUniverseOrUniverseIsNull(Universe universe);
+
   List<Show> findByLeague(League league);
 
   // ==================== CALENDAR-SPECIFIC QUERIES ====================

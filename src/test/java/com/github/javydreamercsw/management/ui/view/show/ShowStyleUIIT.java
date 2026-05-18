@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
@@ -133,6 +134,8 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     when(securityUtils.canDelete()).thenReturn(true); // Default to true for tests
 
     UniverseRepository universeRepository = mock(UniverseRepository.class);
+    UniverseContextService universeContextService = mock(UniverseContextService.class);
+    when(universeContextService.getCurrentUniverse()).thenReturn(java.util.Optional.empty());
     ImageGenerationServiceFactory imageGenerationServiceFactory =
         mock(ImageGenerationServiceFactory.class);
     ImageStorageService imageStorageService = mock(ImageStorageService.class);
@@ -151,6 +154,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             seasonService,
             showTemplateService,
             universeRepository,
+            universeContextService,
             securityUtils,
             imageGenerationServiceFactory,
             imageStorageService,

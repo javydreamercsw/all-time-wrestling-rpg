@@ -325,21 +325,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected void login(@NonNull final String username, @NonNull final String password) {
     int maxRetries = 3;
-    int attempt = 0;
-    while (attempt < maxRetries) {
-      attempt++;
+    String loginUrl = "http://localhost:" + serverPort + getContextPath() + "/login";
+    Exception lastException = null;
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        log.debug("Login attempt {} of {} for user: {}", attempt, maxRetries, username);
-        // Navigate via about:blank first to clear any stale browser state before retries
-        if (attempt > 1) {
-          try {
-            driver.get("about:blank");
-            Thread.sleep(1000);
-          } catch (Exception ignored) {
-            // best-effort reset
-          }
+        log.debug("Login attempt {}/{} for user: {}", attempt + 1, maxRetries, username);
+        // Skip navigation if already on the login page (e.g. right after logout())
+        if (!loginUrl.equals(driver.getCurrentUrl())) {
+          driver.get(loginUrl);
         }
-        driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
         waitForVaadinClientToLoad();
         takeSequencedScreenshot("on-login-page");
 
@@ -385,11 +379,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         lastLoggedInUser = username;
         return; // Success!
       } catch (Exception e) {
-        log.warn("Login attempt {} of {} failed: {}", attempt, maxRetries, e.getMessage());
-        if (attempt >= maxRetries) {
-          log.error("All {} login attempts failed for user: {}", maxRetries, username);
-          takeSequencedScreenshot("on-login-final-failure");
-          throw e;
+        lastException = e;
+        log.warn("Login attempt {}/{} failed: {}", attempt + 1, maxRetries, e.getMessage());
+        if (attempt < maxRetries) {
+          // Force a fresh navigation before retrying
+          try {
+            driver.get(loginUrl);
+          } catch (Exception ignored) {
+          }
         }
         // Brief pause before retrying
         try {
@@ -399,6 +396,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         }
       }
     }
+    log.error("All {} login attempts failed for user: {}", maxRetries, username);
+    takeSequencedScreenshot("on-login-final-failure");
+    throw new RuntimeException("Login failed after " + maxRetries + " attempts", lastException);
   }
 
   @AfterEach
@@ -545,6 +545,18 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-app-layout")));
     } catch (Exception ignored) {
       // Not all pages might have vaadin-app-layout
+    }
+
+    // Wait for at least two animation frames so headless Chrome completes its CSS layout pass.
+    // In headless mode, Vite's async CSS injection may finish after Vaadin's Flow clients go idle,
+    // causing screenshots to be taken before utility classes (e.g. flex layout) take effect.
+    try {
+      ((JavascriptExecutor) driver)
+          .executeAsyncScript(
+              "const done = arguments[arguments.length - 1];"
+                  + "requestAnimationFrame(() => requestAnimationFrame(done));");
+    } catch (Exception ignored) {
+      // Non-critical; proceed even if rAF is unavailable
     }
   }
 

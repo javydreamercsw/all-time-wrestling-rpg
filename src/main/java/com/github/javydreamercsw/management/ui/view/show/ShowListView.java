@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -86,6 +87,7 @@ public class ShowListView extends Main {
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
   private final UniverseRepository universeRepository;
+  private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
   private final ArenaService arenaService;
   private final Clock clock;
@@ -126,6 +128,7 @@ public class ShowListView extends Main {
       @NonNull final SeasonService seasonService,
       @NonNull final ShowTemplateService showTemplateService,
       @NonNull final UniverseRepository universeRepository,
+      @NonNull final UniverseContextService universeContextService,
       @NonNull final SecurityUtils securityUtils,
       @NonNull final ImageGenerationServiceFactory imageGenerationServiceFactory,
       @NonNull final ImageStorageService imageStorageService,
@@ -140,6 +143,7 @@ public class ShowListView extends Main {
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
     this.universeRepository = universeRepository;
+    this.universeContextService = universeContextService;
     this.securityUtils = securityUtils;
     this.arenaService = arenaService;
     this.exportService = exportService;
@@ -510,8 +514,11 @@ public class ShowListView extends Main {
   }
 
   private void refreshGrid() {
-    List<Show> shows = showService.findAllWithRelationships();
-    showGrid.setItems(shows);
+    universeContextService
+        .getCurrentUniverse()
+        .ifPresentOrElse(
+            u -> showGrid.setItems(showService.getShowsByUniverse(u)),
+            () -> showGrid.setItems(showService.findAllWithRelationships()));
   }
 
   private void openGenerateArtDialog(final ShowTemplate template) {

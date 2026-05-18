@@ -46,14 +46,17 @@ public class AlignmentTrackComponent extends Div {
     add(title);
 
     Div trackContainer = new Div();
-    trackContainer.addClassNames(
-        LumoUtility.Display.FLEX,
-        LumoUtility.FlexDirection.ROW,
-        LumoUtility.JustifyContent.BETWEEN,
-        LumoUtility.AlignItems.CENTER,
-        LumoUtility.Width.FULL,
-        LumoUtility.Padding.Horizontal.MEDIUM,
-        LumoUtility.Margin.Vertical.MEDIUM);
+    // Use inline styles for layout-critical properties so they apply immediately,
+    // independent of async Vite CSS bundle injection (avoids headless Chrome timing issues).
+    trackContainer.getStyle().set("display", "flex");
+    trackContainer.getStyle().set("flex-direction", "row");
+    trackContainer.getStyle().set("justify-content", "space-between");
+    trackContainer.getStyle().set("align-items", "center");
+    trackContainer.getStyle().set("width", "100%");
+    trackContainer.getStyle().set("padding-left", "var(--lumo-space-m, 1rem)");
+    trackContainer.getStyle().set("padding-right", "var(--lumo-space-m, 1rem)");
+    trackContainer.getStyle().set("margin-top", "var(--lumo-space-m, 1rem)");
+    trackContainer.getStyle().set("margin-bottom", "var(--lumo-space-m, 1rem)");
     trackContainer.setMinHeight("56px");
     trackContainer.getStyle().set("flex-wrap", "nowrap");
     trackContainer.getStyle().set("overflow", "visible");
@@ -127,13 +130,12 @@ public class AlignmentTrackComponent extends Div {
     spot.setWidth("32px");
     spot.setHeight("32px");
     spot.getStyle().set("flex-shrink", "0");
-    spot.addClassNames(
-        LumoUtility.Display.FLEX,
-        LumoUtility.AlignItems.CENTER,
-        LumoUtility.JustifyContent.CENTER,
-        LumoUtility.BorderRadius.FULL,
-        LumoUtility.FontWeight.BOLD,
-        LumoUtility.FontSize.XSMALL);
+    spot.getStyle().set("display", "flex");
+    spot.getStyle().set("align-items", "center");
+    spot.getStyle().set("justify-content", "center");
+    spot.getStyle().set("border-radius", "50%");
+    spot.getStyle().set("font-weight", "bold");
+    spot.getStyle().set("font-size", "var(--lumo-font-size-xs, 0.75rem)");
 
     spot.getStyle().set("border", "2px solid white");
     spot.setText(level == 0 ? "N" : String.valueOf(level));

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -156,6 +157,11 @@ public class TitleService {
       key = "'all'")
   public List<Title> findAll() {
     return (List<Title>) titleRepository.findAll();
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Title> findByUniverse(@NonNull final Universe universe) {
+    return titleRepository.findByUniverse(universe);
   }
 
   @PreAuthorize("isAuthenticated()")

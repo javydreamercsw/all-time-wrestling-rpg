@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.button.Button;
@@ -62,6 +63,7 @@ public class WrestlerListView extends Main {
   private final InjuryService injuryService;
   private final NpcService npcService;
   private final ExpansionService expansionService;
+  private final UniverseSettingsService universeSettingsService;
   private final AccountService accountService;
   private final SecurityUtils securityUtils;
   private final ImageStorageService imageStorageService;
@@ -75,6 +77,7 @@ public class WrestlerListView extends Main {
       @NonNull final InjuryService injuryService,
       @NonNull final NpcService npcService,
       @NonNull final ExpansionService expansionService,
+      @NonNull final UniverseSettingsService universeSettingsService,
       @NonNull @Qualifier("baseAccountService") final AccountService accountService,
       @NonNull final SecurityUtils securityUtils,
       @NonNull final CampaignService campaignService,
@@ -85,6 +88,7 @@ public class WrestlerListView extends Main {
     this.injuryService = injuryService;
     this.npcService = npcService;
     this.expansionService = expansionService;
+    this.universeSettingsService = universeSettingsService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     this.imageStorageService = imageStorageService;
@@ -260,10 +264,21 @@ public class WrestlerListView extends Main {
             .collect(Collectors.toSet());
 
     Set<String> enabledCodes = new HashSet<>(expansionService.getEnabledExpansionCodes());
+    Set<Long> excludedIds =
+        universeContextService
+            .getCurrentUniverse()
+            .map(
+                u ->
+                    universeSettingsService.getExcludedWrestlers(u).stream()
+                        .map(Wrestler::getId)
+                        .collect(Collectors.toSet()))
+            .orElseGet(java.util.Collections::emptySet);
+
     if (securityUtils.isAdmin() || securityUtils.isBooker()) {
       wrestlerGrid.setItems(
           wrestlerService.findAllIncludingInactive().stream()
               .filter(w -> enabledCodes.contains(w.getExpansionCode()))
+              .filter(w -> !excludedIds.contains(w.getId()))
               .toList());
     } else {
       securityUtils
@@ -273,6 +288,7 @@ public class WrestlerListView extends Main {
                 wrestlerGrid.setItems(
                     wrestlerService.findAllByAccount(user.getAccount()).stream()
                         .filter(w -> enabledCodes.contains(w.getExpansionCode()))
+                        .filter(w -> !excludedIds.contains(w.getId()))
                         .toList());
               });
     }
