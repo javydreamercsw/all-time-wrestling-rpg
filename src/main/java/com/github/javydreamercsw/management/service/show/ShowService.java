@@ -598,7 +598,7 @@ public class ShowService {
 
   @PreAuthorize("isAuthenticated()")
   public List<Show> getShowsByUniverse(@NonNull final Universe universe) {
-    return showRepository.findByUniverse(universe);
+    return showRepository.findByUniverseOrUniverseIsNull(universe);
   }
 
   @PreAuthorize("isAuthenticated()")

@@ -123,7 +123,7 @@ class FactionServiceIT extends ManagementIntegrationTest {
   }
 
   @AfterEach
-  public void tearDown() throws Exception {
+  public void tearDown() {
     // Rely on the robust cleanup in the parent class
     super.tearDown();
   }
