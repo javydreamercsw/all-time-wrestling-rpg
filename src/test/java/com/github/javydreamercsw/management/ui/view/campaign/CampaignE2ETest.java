@@ -173,7 +173,7 @@ class CampaignE2ETest extends AbstractE2ETest {
 
     // 4. Purchase an upgrade (Iron Man)
     WebElement upgradeButton =
-        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()=’Iron Man’]"));
+        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Iron Man']"));
     clickElement(upgradeButton);
     waitForVaadinClientToLoad();
     captureCaption(
@@ -184,7 +184,7 @@ class CampaignE2ETest extends AbstractE2ETest {
 
     // 5. Verify upgrade is in "Purchased Skills" section
     waitForText("Purchased Skills");
-    waitForText("Iron Man: Increases your wrestler’s maximum stamina by 2.");
+    waitForText("Iron Man: Increases your wrestler's maximum stamina by 2.");
     captureCaption(
         "The upgrade moves to Purchased Skills and takes effect immediately — maximum"
             + " stamina increased by 2 for all future matches. The effective stats shown"

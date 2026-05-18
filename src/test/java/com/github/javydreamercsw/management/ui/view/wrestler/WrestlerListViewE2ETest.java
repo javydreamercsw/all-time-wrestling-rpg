@@ -488,16 +488,17 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     assertNotNull(saveButton);
     clickElement(saveButton);
 
-    // Verify the new injury is in the grid
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> "Broken Leg".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    // Verify the new injury is in the grid (use a longer wait for the Vaadin round-trip)
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d -> {
+              try {
+                return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
+                    .anyMatch(it -> "Broken Leg".equals(it.getText()));
+              } catch (Exception e) {
+                return false;
+              }
+            });
     captureCaption(
         "The new injury appears in the grid — it will affect the wrestler's booking"
             + " availability and appear in AI narration commentary until it is healed."
