@@ -262,19 +262,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       @NonNull final String title,
       @NonNull final String description,
       @NonNull final String screenshotName) {
-    // When recording video, hold on the current page for 4s so the feature is visible
-    if (activeVideoSession != null) {
-      try {
-        Thread.sleep(4000);
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-      }
-    }
     if (Boolean.getBoolean("generate.docs")) {
       takeDocScreenshot(screenshotName);
       updateManifest(category, title, description, screenshotName);
     }
-    markCaptionSegment(category, title, screenshotName, description);
   }
 
   /**
@@ -1125,22 +1116,19 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     final List<CaptionSegment> captions = new ArrayList<>();
     final long startMs = System.currentTimeMillis();
     Thread captureThread;
-    // Filled by the first documentFeature() call during this session
-    volatile String videoCategory;
-    volatile String videoTitle;
-    volatile String videoName;
 
     FrameCaptureSession(Path frameDir) {
       this.frameDir = frameDir;
     }
   }
 
-  // Per-test video session — started by AbstractDocsE2ETest @BeforeEach, finished by @AfterEach
+  // Per-test video session — started by AbstractVideoDocsE2ETest @BeforeEach, finished by
+  // @AfterEach
   private FrameCaptureSession activeVideoSession;
 
   /**
-   * Starts frame capture for the current test. Called by AbstractDocsE2ETest before each test when
-   * {@code generate.videos=true}.
+   * Starts frame capture for the current test. Called by AbstractVideoDocsE2ETest before each test
+   * when {@code generate.videos=true}.
    */
   protected void startVideoCapture(String testName) {
     if (!Boolean.getBoolean("generate.videos")) {
@@ -1166,7 +1154,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                   log.warn("Frame capture error: {}", e.getMessage());
                 }
                 try {
-                  Thread.sleep(125); // ~8 fps
+                  Thread.sleep(125); // ~8 fps target (actual rate limited by screenshot speed)
                 } catch (InterruptedException ie) {
                   Thread.currentThread().interrupt();
                   break;
@@ -1181,45 +1169,32 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
-   * Marks a caption segment at the current frame index. Called automatically by {@link
-   * #documentFeature} when a video session is active. Also captures video metadata from the first
-   * call so the subclass needs no extra setup.
+   * Marks a timed caption at the current frame index. Call this from a video test after navigating
+   * to a new state to describe what is visible on screen.
    */
-  private void markCaptionSegment(
-      String category, String title, String screenshotName, String description) {
+  protected void captureCaption(@NonNull String description) {
     if (activeVideoSession != null) {
-      if (activeVideoSession.videoName == null) {
-        activeVideoSession.videoCategory = category;
-        activeVideoSession.videoTitle = title;
-        activeVideoSession.videoName = screenshotName;
-      }
-      int currentFrame = activeVideoSession.frameIndex.get();
-      activeVideoSession.captions.add(new CaptionSegment(currentFrame, description));
+      activeVideoSession.captions.add(
+          new CaptionSegment(activeVideoSession.frameIndex.get(), description));
     }
   }
 
   /**
-   * Stops frame capture and assembles the MP4. Called by AbstractDocsE2ETest after each test. Uses
-   * metadata captured from the first {@link #documentFeature} call.
+   * Stops frame capture and assembles the MP4. Called by AbstractVideoDocsE2ETest after each test.
+   *
+   * @param category manifest category
+   * @param title manifest title
+   * @param videoName output file base name (no extension)
    */
-  protected void finishVideoCapture() {
+  protected void finishVideoCapture(
+      @NonNull String category, @NonNull String title, @NonNull String videoName) {
     if (activeVideoSession == null) {
       return;
     }
     FrameCaptureSession session = activeVideoSession;
     activeVideoSession = null;
 
-    if (session.videoName == null) {
-      log.debug("No documentFeature() called during this test, skipping video assembly");
-      session.running.set(false);
-      return;
-    }
-
-    String category = session.videoCategory;
-    String title = session.videoTitle;
-    String videoName = session.videoName;
-
-    // Hold for at least 2 s after the last documentFeature() so the final caption is visible
+    // Hold 2s after the last captureCaption() so the final state is visible in the video
     long elapsedMs = System.currentTimeMillis() - session.startMs;
     long holdMs = Math.max(0, 2000 - elapsedMs);
     if (holdMs > 0) {

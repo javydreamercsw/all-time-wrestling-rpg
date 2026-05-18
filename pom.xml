@@ -1556,7 +1556,7 @@
             <configuration>
               <argLine>@{failsafeArgLine} -Dgenerate.videos=true</argLine>
               <includes>
-                <include>**/*DocsE2ETest.java</include>
+                <include>**/*VideoDocsE2ETest.java</include>
               </includes>
               <excludes>
                 <exclude>**/*IT.java</exclude>

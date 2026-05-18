@@ -17,23 +17,7 @@
 package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
 import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(properties = "data.initializer.enabled=true")
-public abstract class AbstractDocsE2ETest extends AbstractE2ETest {
-
-  @BeforeEach
-  final void startDocsVideoCapture(TestInfo testInfo) {
-    String safeName =
-        testInfo.getTestMethod().map(java.lang.reflect.Method::getName).orElse("unknown");
-    startVideoCapture(safeName);
-  }
-
-  @AfterEach
-  final void finishDocsVideoCapture() {
-    finishVideoCapture();
-  }
-}
+public abstract class AbstractDocsE2ETest extends AbstractE2ETest {}
