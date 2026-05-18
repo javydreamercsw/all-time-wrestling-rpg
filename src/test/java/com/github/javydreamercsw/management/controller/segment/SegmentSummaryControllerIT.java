@@ -110,15 +110,17 @@ class SegmentSummaryControllerIT extends AbstractRestControllerIT {
 
   @Test
   @DisplayName(
-      "POST /api/segments/{id}/summarize returns 200 and persists summary for segment with"
-          + " narration")
+      """
+      POST /api/segments/{id}/summarize returns 200 and persists summary for segment with\
+       narration""")
   void shouldPersistSummaryWhenNarrationExists() throws Exception {
     Show show = createShow("Summary IT Show With Narration");
     String narration =
-        "Narrator: The bell rings and both competitors charge at each other! "
-            + "Wrestler A hits a powerful clothesline! "
-            + "Wrestler B recovers and delivers a stunning suplex! "
-            + "The crowd is on their feet! Wrestler A gets the pin. ONE! TWO! THREE!";
+        """
+        Narrator: The bell rings and both competitors charge at each other! \
+        Wrestler A hits a powerful clothesline! \
+        Wrestler B recovers and delivers a stunning suplex! \
+        The crowd is on their feet! Wrestler A gets the pin. ONE! TWO! THREE!""";
     Segment segment = createSegment(show, narration);
 
     mockMvc

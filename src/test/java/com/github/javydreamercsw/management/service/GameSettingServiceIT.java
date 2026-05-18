@@ -61,7 +61,6 @@ class GameSettingServiceIT extends ManagementIntegrationTest {
         .findById(GameSettingService.CURRENT_GAME_DATE_KEY)
         .ifPresent(
             s -> {
-              GameSetting setting = s;
               // delete by overwriting with a unique sentinel then verify we still get a valid date
             });
 
