@@ -87,11 +87,16 @@ Object.keys(videosByCategory).forEach(cat => {
 });
 
 // 3. Generate Markdown files
+// Merge screenshot categories and video-only categories into one set
+const allCategories = new Set([...Object.keys(categories), ...Object.keys(videosByCategory)]);
+
 console.log('Generating Markdown files...');
-Object.entries(categories).forEach(([category, catFeatures]) => {
+Array.from(allCategories).sort().forEach(category => {
+  const catFeatures = categories[category] || [];
+  const catVideos = videosByCategory[category] || [];
   const fileName = category.toLowerCase().replace(/ /g, '-') + '.md';
   const filePath = path.join(outputDir, fileName);
-  
+
   let content = `# ${category}\n\n`;
   content += `Welcome to the ${category} guide. This documentation is automatically generated from the latest game features.\n\n`;
 
@@ -106,7 +111,6 @@ Object.entries(categories).forEach(([category, catFeatures]) => {
   });
 
   // Append video walkthroughs for this category
-  const catVideos = videosByCategory[category] || [];
   if (catVideos.length > 0) {
     content += `## Video Walkthroughs\n\n`;
     catVideos.forEach(video => {
@@ -129,7 +133,7 @@ Object.entries(categories).forEach(([category, catFeatures]) => {
 // 4. Generate Sidebar for VitePress
 console.log('Generating dynamic sidebar...');
 const sidebar = [];
-Object.entries(categories).forEach(([category, catFeatures]) => {
+Array.from(allCategories).sort().forEach(category => {
   const categoryLink = '/guide/' + category.toLowerCase().replace(/ /g, '-');
   sidebar.push({
     text: category,

@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Tag("video")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class MatchNarrationE2ETest extends AbstractE2ETest {
 
@@ -144,6 +146,8 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
 
   @Test
   void testPlayerCanSeeFeedbackInLeagueMatch() {
+    setVideoInfo("Player Dashboard", "Match Narration", "player-match-narration");
+
     // Logout admin (default) and login as player
     logout();
     login("player1", "password123");
@@ -151,6 +155,9 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
     driver.get(
         "http://localhost:" + serverPort + getContextPath() + "/match/" + matchSegment.getId());
     waitForVaadinElement(driver, By.id("match-view-" + matchSegment.getId()));
+    captureCaption(
+        "Player perspective — when you're a participant in a league match, the match detail"
+            + " view shows an AI narration panel only visible to you.");
 
     // Assert Feedback Area is visible
     Assertions.assertTrue(
@@ -161,5 +168,8 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
     Assertions.assertTrue(
         driver.findElement(By.id("ai-generate-narration-button")).isDisplayed(),
         "Generate button should be visible to participant player");
+    captureCaption(
+        "The Generate Narration button lets the player request an AI-written match story"
+            + " — only participants see this; admins and bookers get a read-only view.");
   }
 }
