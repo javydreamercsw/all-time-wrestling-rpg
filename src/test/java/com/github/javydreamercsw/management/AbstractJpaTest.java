@@ -33,7 +33,7 @@ public abstract class AbstractJpaTest extends AbstractIntegrationTest {
 
   @Override
   @BeforeEach
-  public void baseSetUp() throws Exception {
+  public void baseSetUp() {
     super.baseSetUp();
   }
 }

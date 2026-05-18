@@ -72,23 +72,27 @@ class DataExportControllerIT extends AbstractControllerTest {
 
   @Override
   @BeforeEach
-  public void baseSetUp() throws Exception {
+  public void baseSetUp() {
     super.baseSetUp();
     // Clear the exports directory
     Path exportsDir = Paths.get("target/exports");
-    if (Files.exists(exportsDir)) {
-      Files.walk(exportsDir)
-          .sorted(Comparator.reverseOrder())
-          .forEach(
-              path -> {
-                try {
-                  Files.deleteIfExists(path);
-                } catch (IOException e) {
-                  // Ignore
-                }
-              });
+    try {
+      if (Files.exists(exportsDir)) {
+        Files.walk(exportsDir)
+            .sorted(Comparator.reverseOrder())
+            .forEach(
+                path -> {
+                  try {
+                    Files.deleteIfExists(path);
+                  } catch (IOException e) {
+                    // Ignore
+                  }
+                });
+      }
+      Files.createDirectories(exportsDir);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to set up exports directory", e);
     }
-    Files.createDirectories(exportsDir);
 
     // Reset mocks for a clean slate for each test
     reset(

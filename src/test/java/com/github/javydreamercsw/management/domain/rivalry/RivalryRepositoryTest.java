@@ -36,7 +36,7 @@ class RivalryRepositoryTest extends AbstractJpaTest {
   @Autowired private EntityManager entityManager;
 
   @AfterEach
-  public void tearDown() throws Exception {
+  public void tearDown() {
     entityManager.clear();
     super.tearDown();
   }

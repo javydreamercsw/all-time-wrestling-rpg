@@ -43,7 +43,7 @@ class TitleTest extends AbstractJpaTest {
 
   @Override
   @BeforeEach
-  public void baseSetUp() throws Exception {
+  public void baseSetUp() {
     super.baseSetUp();
     title = new Title();
     title.setName("Test Championship");

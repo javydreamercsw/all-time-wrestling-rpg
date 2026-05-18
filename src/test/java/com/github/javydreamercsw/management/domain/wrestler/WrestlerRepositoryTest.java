@@ -36,7 +36,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
 
   @Override
   @BeforeEach
-  public void baseSetUp() throws Exception {
+  public void baseSetUp() {
     super.baseSetUp();
   }
 

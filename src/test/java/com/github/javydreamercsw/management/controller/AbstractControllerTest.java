@@ -58,7 +58,7 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
   @Override
   @BeforeEach
-  public void baseSetUp() throws Exception {
+  public void baseSetUp() {
     this.dataInitializerEnabled = false;
     super.baseSetUp();
   }
