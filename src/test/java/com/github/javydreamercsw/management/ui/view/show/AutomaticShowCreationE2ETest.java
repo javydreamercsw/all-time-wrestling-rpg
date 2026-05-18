@@ -36,6 +36,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -43,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.test.context.support.WithMockUser;
 
+@Tag("video")
 @WithMockUser(username = "admin", roles = "ADMIN")
 class AutomaticShowCreationE2ETest extends AbstractE2ETest {
 
@@ -112,6 +114,8 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
 
   @Test
   void testAutomaticShowCreation() {
+    setVideoInfo("Season Management", "Automatic Show Creation", "automatic-show-creation");
+
     // Create templates
     showTemplateService.createOrUpdateTemplate(
         "Monday Night Mayhem",
@@ -170,18 +174,28 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
     // Click the "Season Settings" tab
     click("vaadin-tab", "Season Settings");
     waitForVaadinElement(driver, By.id("generate-schedule-button"));
+    captureCaption(
+        "Admin panel — Season Settings. Show templates define recurring weekly shows and"
+            + " monthly Premium Live Events (PLEs).");
 
     // Click the generate button
     WebElement generateButton = waitForVaadinElement(driver, By.id("generate-schedule-button"));
     clickElement(generateButton);
+    captureCaption(
+        "Generate Schedule fills the entire season automatically based on your templates"
+            + " — no manual date entry needed.");
 
     // Confirm the dialog
     WebElement confirmButton =
         waitForVaadinElement(driver, By.id("confirm-generate-schedule-button"));
+    captureCaption("Confirm to kick off automatic schedule generation for the active season.");
     clickElement(confirmButton);
 
     // Wait for success notification
     waitForNotification("Season schedule generated successfully.");
+    captureCaption(
+        "32 shows created in one click — Monday Night Mayhem every Monday, Friday Night"
+            + " Fire every Friday, and WrestleFest PLEs on the last Sunday of each month.");
 
     // Verify shows were created
     List<com.github.javydreamercsw.management.domain.show.Show> allShows = showService.findAll();
@@ -226,5 +240,11 @@ class AutomaticShowCreationE2ETest extends AbstractE2ETest {
             .filter(s -> s.getShowDate().equals(LocalDate.of(2026, 2, 23)))
             .findFirst();
     assertTrue(wrestleFestFebNight2.isPresent());
+
+    // Navigate to the show list so the video ends with the full schedule visible
+    navigateTo("show-list");
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    captureCaption(
+        "The full season schedule — weekly shows and PLEs — is now ready to plan and book.");
   }
 }
