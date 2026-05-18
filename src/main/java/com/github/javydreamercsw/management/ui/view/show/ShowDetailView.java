@@ -65,6 +65,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.grid.dnd.GridDropMode;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -139,6 +140,7 @@ public class ShowDetailView extends Main
   private Grid<Segment> segmentsGrid;
   private Button adjudicateButton;
   private Span noSegmentsMessage;
+  private Segment draggedSegment;
 
   private final NotificationService notificationService;
   private final ShowExportService exportService;
@@ -599,6 +601,25 @@ public class ShowDetailView extends Main
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(segments);
 
+    grid.setRowsDraggable(true);
+    grid.setDropMode(GridDropMode.BETWEEN);
+    grid.addDragStartListener(
+        e -> e.getDraggedItems().stream().findFirst().ifPresent(s -> draggedSegment = s));
+    grid.addDragEndListener(e -> draggedSegment = null);
+    grid.addDropListener(
+        e -> {
+          if (draggedSegment == null) {
+            return;
+          }
+          e.getDropTargetItem()
+              .ifPresent(
+                  target -> {
+                    if (!draggedSegment.getId().equals(target.getId())) {
+                      moveSegmentToPosition(draggedSegment, target);
+                    }
+                  });
+        });
+
     // Segment type column
     grid.addColumn(
             segment ->
@@ -694,24 +715,40 @@ public class ShowDetailView extends Main
   }
 
   private Component createOrderButtons(@NonNull Segment segment) {
-    List<Segment> segments = segmentRepository.findByShow(segment.getShow());
+    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(segment.getShow());
     int currentIndex = segments.indexOf(segment);
+    boolean isFirst = currentIndex == 0;
+    boolean isLast = currentIndex == segments.size() - 1;
+
+    Button topButton = new Button(new Icon(VaadinIcon.ANGLE_DOUBLE_UP));
+    topButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    topButton.setTooltipText("Move to Top");
+    topButton.setId("move-segment-top-button-" + segment.getId());
+    topButton.addClickListener(e -> moveSegmentToTop(segment));
+    topButton.setEnabled(!isFirst);
 
     Button upButton = new Button(new Icon(VaadinIcon.ARROW_UP));
     upButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     upButton.setTooltipText("Move Up");
     upButton.setId("move-segment-up-button-" + segment.getId());
     upButton.addClickListener(e -> moveSegment(segment, -1));
-    upButton.setEnabled(currentIndex > 0);
+    upButton.setEnabled(!isFirst);
 
     Button downButton = new Button(new Icon(VaadinIcon.ARROW_DOWN));
     downButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     downButton.setTooltipText("Move Down");
     downButton.setId("move-segment-down-button-" + segment.getId());
     downButton.addClickListener(e -> moveSegment(segment, 1));
-    downButton.setEnabled(currentIndex < segments.size() - 1);
+    downButton.setEnabled(!isLast);
 
-    return new HorizontalLayout(upButton, downButton);
+    Button bottomButton = new Button(new Icon(VaadinIcon.ANGLE_DOUBLE_DOWN));
+    bottomButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    bottomButton.setTooltipText("Move to Bottom");
+    bottomButton.setId("move-segment-bottom-button-" + segment.getId());
+    bottomButton.addClickListener(e -> moveSegmentToBottom(segment));
+    bottomButton.setEnabled(!isLast);
+
+    return new HorizontalLayout(topButton, upButton, downButton, bottomButton);
   }
 
   protected void moveSegment(@NonNull Segment segment, int direction) {
@@ -729,6 +766,55 @@ public class ShowDetailView extends Main
       segmentRepository.save(otherSegment);
       refreshSegmentsGrid();
     }
+  }
+
+  private void moveSegmentToTop(@NonNull Segment segment) {
+    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(segment.getShow());
+    int currentIndex = segments.indexOf(segment);
+    if (currentIndex <= 0) {
+      return;
+    }
+    for (int i = currentIndex; i > 0; i--) {
+      Segment prev = segments.get(i - 1);
+      int order = segment.getSegmentOrder();
+      segment.setSegmentOrder(prev.getSegmentOrder());
+      prev.setSegmentOrder(order);
+      segments.set(i, prev);
+      segments.set(i - 1, segment);
+    }
+    segmentRepository.saveAll(segments);
+    refreshSegmentsGrid();
+  }
+
+  private void moveSegmentToBottom(@NonNull Segment segment) {
+    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(segment.getShow());
+    int currentIndex = segments.indexOf(segment);
+    if (currentIndex >= segments.size() - 1) {
+      return;
+    }
+    for (int i = currentIndex; i < segments.size() - 1; i++) {
+      Segment next = segments.get(i + 1);
+      int order = segment.getSegmentOrder();
+      segment.setSegmentOrder(next.getSegmentOrder());
+      next.setSegmentOrder(order);
+      segments.set(i, next);
+      segments.set(i + 1, segment);
+    }
+    segmentRepository.saveAll(segments);
+    refreshSegmentsGrid();
+  }
+
+  private void moveSegmentToPosition(@NonNull Segment dragged, @NonNull Segment target) {
+    List<Segment> segments =
+        new ArrayList<>(segmentRepository.findByShowOrderBySegmentOrderAsc(dragged.getShow()));
+    segments.remove(dragged);
+    int targetIndex = segments.indexOf(target);
+    segments.add(targetIndex, dragged);
+    for (int i = 0; i < segments.size(); i++) {
+      segments.get(i).setSegmentOrder(i + 1);
+    }
+    segmentRepository.saveAll(segments);
+    refreshSegmentsGrid();
   }
 
   private Component createMainEventCheckbox(@NonNull Segment segment) {
