@@ -38,6 +38,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -1085,5 +1088,265 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void waitForPageSourceToContain(@NonNull final String text) {
     new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
+  }
+
+  // -------------------------------------------------------------------------
+  // Video documentation helpers (generate.videos system property gates all)
+  // -------------------------------------------------------------------------
+
+  /** Opaque handle returned by startFrameCapture; passed back to assembleVideo. */
+  private static final class FrameCaptureSession {
+    final Path frameDir;
+    final AtomicInteger frameIndex = new AtomicInteger(0);
+    final AtomicBoolean running = new AtomicBoolean(true);
+    final Thread captureThread;
+    volatile long startMs = System.currentTimeMillis();
+
+    FrameCaptureSession(Path frameDir, Thread captureThread) {
+      this.frameDir = frameDir;
+      this.captureThread = captureThread;
+    }
+  }
+
+  /**
+   * Records a short MP4 walkthrough video of a feature.
+   *
+   * <p>Gated by {@code -Dgenerate.videos=true}. Mirrors {@link #documentFeature} in structure so
+   * tests can call both side-by-side or independently.
+   *
+   * @param category Feature category (e.g. "Game Mechanics")
+   * @param title Feature title (e.g. "Cards Walkthrough")
+   * @param description Inline script used for captions and optional TTS voiceover
+   * @param videoName Output file base name (no extension, e.g. "mechanic-cards-walkthrough")
+   * @param actions Lambda containing the UI interactions to record
+   */
+  protected void recordFeatureVideo(
+      @NonNull final String category,
+      @NonNull final String title,
+      @NonNull final String description,
+      @NonNull final String videoName,
+      @NonNull final Runnable actions) {
+    if (!Boolean.getBoolean("generate.videos")) {
+      return;
+    }
+    FrameCaptureSession session = startFrameCapture(videoName);
+    try {
+      actions.run();
+    } finally {
+      assembleVideo(session, category, title, description, videoName);
+    }
+  }
+
+  private FrameCaptureSession startFrameCapture(String videoName) {
+    Path frameDir;
+    try {
+      frameDir = Files.createTempDirectory("atw-video-" + videoName + "-");
+    } catch (IOException e) {
+      throw new RuntimeException("Cannot create frame temp dir", e);
+    }
+    AtomicInteger idx = new AtomicInteger(0);
+    AtomicBoolean running = new AtomicBoolean(true);
+    long[] startMs = {System.currentTimeMillis()};
+    Thread t =
+        new Thread(
+            () -> {
+              while (running.get()) {
+                try {
+                  File frame = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+                  String name = "frame-%04d.png".formatted(idx.getAndIncrement());
+                  FileUtils.copyFile(frame, frameDir.resolve(name).toFile());
+                } catch (Exception e) {
+                  log.warn("Frame capture error: {}", e.getMessage());
+                }
+                try {
+                  Thread.sleep(125); // ~8 fps
+                } catch (InterruptedException ie) {
+                  Thread.currentThread().interrupt();
+                  break;
+                }
+              }
+            },
+            "video-frame-capture");
+    t.setDaemon(true);
+    FrameCaptureSession session = new FrameCaptureSession(frameDir, t);
+    session.frameIndex.set(idx.get());
+    session.running.set(true);
+    session.startMs = startMs[0];
+    t.start();
+    return session;
+  }
+
+  private void assembleVideo(
+      FrameCaptureSession session,
+      String category,
+      String title,
+      String description,
+      String videoName) {
+    session.running.set(false);
+    try {
+      session.captureThread.join(3000);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+
+    int frameCount = session.frameIndex.get();
+    if (frameCount == 0) {
+      log.warn("No frames captured for video '{}', skipping assembly", videoName);
+      return;
+    }
+
+    int durationSeconds =
+        Math.max(1, (int) ((System.currentTimeMillis() - session.startMs) / 1000));
+
+    try {
+      Path videosDir = Paths.get("docs", "videos");
+      Files.createDirectories(videosDir);
+
+      Path srtFile = writeSrtFile(description, durationSeconds, session.frameDir);
+      Optional<Path> audioFile = Optional.empty();
+      if (Boolean.getBoolean("generate.video.voice")) {
+        audioFile = generateNarrationAudio(description, session.frameDir);
+      }
+
+      Path outputMp4 = videosDir.resolve(videoName + ".mp4");
+      runFfmpeg(session.frameDir, srtFile, audioFile, outputMp4);
+
+      updateVideoManifest(category, title, description, videoName);
+      log.info("Video documentation saved: {}", outputMp4);
+    } catch (Exception e) {
+      log.error("Failed to assemble video '{}': {}", videoName, e.getMessage(), e);
+    }
+  }
+
+  private Path writeSrtFile(String description, int durationSeconds, Path dir) throws IOException {
+    String sanitized = description.replace('\n', ' ').replace('"', '\'').trim();
+    String srt =
+        "1\n00:00:00,000 --> %s\n%s\n".formatted(formatSrtTimestamp(durationSeconds), sanitized);
+    Path srtFile = dir.resolve("captions.srt");
+    Files.writeString(srtFile, srt);
+    return srtFile;
+  }
+
+  private String formatSrtTimestamp(int totalSeconds) {
+    int h = totalSeconds / 3600;
+    int m = (totalSeconds % 3600) / 60;
+    int s = totalSeconds % 60;
+    return "%02d:%02d:%02d,000".formatted(h, m, s);
+  }
+
+  private Optional<Path> generateNarrationAudio(String text, Path dir) {
+    String os = System.getProperty("os.name", "").toLowerCase();
+    Path audioFile = dir.resolve("narration.wav");
+    try {
+      ProcessBuilder pb;
+      if (os.contains("mac")) {
+        Path aiff = dir.resolve("narration.aiff");
+        new ProcessBuilder("/usr/bin/say", "-o", aiff.toString(), text)
+            .redirectErrorStream(true)
+            .start()
+            .waitFor();
+        pb = new ProcessBuilder("ffmpeg", "-y", "-i", aiff.toString(), audioFile.toString());
+      } else {
+        pb = new ProcessBuilder("espeak-ng", "-w", audioFile.toString(), text);
+      }
+      pb.redirectErrorStream(true);
+      int rc = pb.start().waitFor();
+      if (rc == 0 && Files.exists(audioFile)) {
+        return Optional.of(audioFile);
+      }
+      log.warn("TTS command exited with code {}", rc);
+    } catch (Exception e) {
+      log.warn("TTS generation failed (voice will be skipped): {}", e.getMessage());
+    }
+    return Optional.empty();
+  }
+
+  private void runFfmpeg(Path frameDir, Path srtFile, Optional<Path> audioFile, Path outputMp4)
+      throws Exception {
+    List<String> cmd = new ArrayList<>();
+    cmd.add("ffmpeg");
+    cmd.add("-y");
+    cmd.add("-framerate");
+    cmd.add("8");
+    cmd.add("-i");
+    cmd.add(frameDir.resolve("frame-%04d.png").toString());
+    if (audioFile.isPresent()) {
+      cmd.add("-i");
+      cmd.add(audioFile.get().toString());
+    }
+    String srtPath = srtFile.toAbsolutePath().toString().replace("\\", "/").replace(":", "\\:");
+    cmd.add("-vf");
+    cmd.add("subtitles=" + srtPath);
+    cmd.add("-c:v");
+    cmd.add("libx264");
+    cmd.add("-pix_fmt");
+    cmd.add("yuv420p");
+    cmd.add("-crf");
+    cmd.add("28");
+    if (audioFile.isPresent()) {
+      cmd.add("-c:a");
+      cmd.add("libmp3lame");
+      cmd.add("-shortest");
+    }
+    cmd.add(outputMp4.toString());
+
+    ProcessBuilder pb = new ProcessBuilder(cmd);
+    pb.redirectErrorStream(true);
+    Process process = pb.start();
+    String output = new String(process.getInputStream().readAllBytes());
+    int rc = process.waitFor();
+    if (rc != 0) {
+      throw new RuntimeException("ffmpeg failed (exit " + rc + "): " + output);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  protected synchronized void updateVideoManifest(
+      final String category, final String title, final String description, final String videoName) {
+    try {
+      Path manifestPath = Paths.get("docs", "manifest.json");
+      if (!Files.exists(manifestPath)) {
+        log.warn("Manifest file not found at: {}", manifestPath.toAbsolutePath());
+        return;
+      }
+
+      Map<String, Object> manifest =
+          objectMapper.readValue(manifestPath.toFile(), new TypeReference<>() {});
+      List<Map<String, Object>> features = (List<Map<String, Object>>) manifest.get("features");
+      if (features == null) {
+        features = new ArrayList<>();
+        manifest.put("features", features);
+      }
+
+      String videoPath = "videos/" + videoName + ".mp4";
+      String id = category.toLowerCase().replace(" ", "-") + "-" + videoName;
+
+      boolean found = false;
+      for (Map<String, Object> feature : features) {
+        if (id.equals(feature.get("id")) || videoPath.equals(feature.get("videoPath"))) {
+          feature.put("category", category);
+          feature.put("title", title);
+          feature.put("description", description);
+          feature.put("videoPath", videoPath);
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        Map<String, Object> newFeature = new LinkedHashMap<>();
+        newFeature.put("id", id);
+        newFeature.put("category", category);
+        newFeature.put("title", title);
+        newFeature.put("description", description);
+        newFeature.put("videoPath", videoPath);
+        newFeature.put("order", 0);
+        features.add(newFeature);
+      }
+
+      objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), manifest);
+    } catch (IOException e) {
+      log.error("Failed to update video manifest", e);
+    }
   }
 }
