@@ -21,12 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -36,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,16 +45,12 @@ class CampaignE2ETest extends AbstractE2ETest {
   @Autowired private AccountRepository accountRepository;
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
-  @Autowired private CampaignStateRepository campaignStateRepository;
-  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
-  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
-  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   private Wrestler player;
 
   @BeforeEach
   @Override
-  public void setup(final org.junit.jupiter.api.TestInfo testInfo) throws Exception {
+  public void setup(final TestInfo testInfo) throws Exception {
     super.setup(testInfo);
 
     // Initialize campaign for the admin user if it doesn't exist
@@ -193,6 +186,10 @@ class CampaignE2ETest extends AbstractE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
+    String escaped =
+        text.contains("'")
+            ? "concat('" + text.replace("'", "', \"'\", '") + "')"
+            : "'" + text + "'";
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), " + escaped + ")]"));
   }
 }

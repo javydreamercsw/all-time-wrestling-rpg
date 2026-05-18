@@ -80,7 +80,7 @@
     "id": "roster-management-manage-wrestler-injuries",
     "category": "Roster Management",
     "title": "Managing Wrestler Injuries",
-    "description": "New injuries can be logged at any time — name, description, severity (Minor, Moderate, Serious, or Critical), and the in-kayfabe cause are all recorded for narrative and booking reference purposes.",
+    "description": "The new injury appears in the grid — it will affect the wrestler's booking availability and appear in AI narration commentary until it is healed. Critical injuries are flagged prominently to alert bookers.",
     "videoPath": "videos/manage-wrestler-injuries.mp4",
     "order": 0
   }, {
