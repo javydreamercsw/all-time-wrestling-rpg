@@ -266,6 +266,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       takeDocScreenshot(screenshotName);
       updateManifest(category, title, description, screenshotName);
     }
+    markCaptionSegment(category, title, screenshotName, description);
   }
 
   /**
@@ -1106,58 +1107,44 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   // Video documentation helpers (generate.videos system property gates all)
   // -------------------------------------------------------------------------
 
-  /** Opaque handle returned by startFrameCapture; passed back to assembleVideo. */
+  /** One timed caption: description text starts at this frame index. */
+  private record CaptionSegment(int startFrame, String description) {}
+
   private static final class FrameCaptureSession {
     final Path frameDir;
     final AtomicInteger frameIndex = new AtomicInteger(0);
     final AtomicBoolean running = new AtomicBoolean(true);
+    final List<CaptionSegment> captions = new ArrayList<>();
     Thread captureThread;
-    volatile long startMs = System.currentTimeMillis();
+    // Filled by the first documentFeature() call during this session
+    volatile String videoCategory;
+    volatile String videoTitle;
+    volatile String videoName;
 
-    FrameCaptureSession(Path frameDir, Thread captureThread) {
+    FrameCaptureSession(Path frameDir) {
       this.frameDir = frameDir;
-      this.captureThread = captureThread;
     }
   }
 
+  // Per-test video session — started by AbstractDocsE2ETest @BeforeEach, finished by @AfterEach
+  private FrameCaptureSession activeVideoSession;
+
   /**
-   * Records a short MP4 walkthrough video of a feature.
-   *
-   * <p>Gated by {@code -Dgenerate.videos=true}. Mirrors {@link #documentFeature} in structure so
-   * tests can call both side-by-side or independently.
-   *
-   * @param category Feature category (e.g. "Game Mechanics")
-   * @param title Feature title (e.g. "Cards Walkthrough")
-   * @param description Inline script used for captions and optional TTS voiceover
-   * @param videoName Output file base name (no extension, e.g. "mechanic-cards-walkthrough")
-   * @param actions Lambda containing the UI interactions to record
+   * Starts frame capture for the current test. Called by AbstractDocsE2ETest before each test when
+   * {@code generate.videos=true}.
    */
-  protected void recordFeatureVideo(
-      @NonNull final String category,
-      @NonNull final String title,
-      @NonNull final String description,
-      @NonNull final String videoName,
-      @NonNull final Runnable actions) {
+  protected void startVideoCapture(String testName) {
     if (!Boolean.getBoolean("generate.videos")) {
       return;
     }
-    FrameCaptureSession session = startFrameCapture(videoName);
-    try {
-      actions.run();
-    } finally {
-      assembleVideo(session, category, title, description, videoName);
-    }
-  }
-
-  private FrameCaptureSession startFrameCapture(String videoName) {
     Path frameDir;
     try {
-      frameDir = Files.createTempDirectory("atw-video-" + videoName + "-");
+      frameDir = Files.createTempDirectory("atw-video-" + testName + "-");
     } catch (IOException e) {
-      throw new RuntimeException("Cannot create frame temp dir", e);
+      log.warn("Cannot create frame temp dir, video will be skipped: {}", e.getMessage());
+      return;
     }
-    FrameCaptureSession session = new FrameCaptureSession(frameDir, null);
-    session.startMs = System.currentTimeMillis();
+    FrameCaptureSession session = new FrameCaptureSession(frameDir);
     Thread t =
         new Thread(
             () -> {
@@ -1181,15 +1168,48 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     t.setDaemon(true);
     session.captureThread = t;
     t.start();
-    return session;
+    activeVideoSession = session;
   }
 
-  private void assembleVideo(
-      FrameCaptureSession session,
-      String category,
-      String title,
-      String description,
-      String videoName) {
+  /**
+   * Marks a caption segment at the current frame index. Called automatically by {@link
+   * #documentFeature} when a video session is active. Also captures video metadata from the first
+   * call so the subclass needs no extra setup.
+   */
+  private void markCaptionSegment(
+      String category, String title, String screenshotName, String description) {
+    if (activeVideoSession != null) {
+      if (activeVideoSession.videoName == null) {
+        activeVideoSession.videoCategory = category;
+        activeVideoSession.videoTitle = title;
+        activeVideoSession.videoName = screenshotName;
+      }
+      int currentFrame = activeVideoSession.frameIndex.get();
+      activeVideoSession.captions.add(new CaptionSegment(currentFrame, description));
+    }
+  }
+
+  /**
+   * Stops frame capture and assembles the MP4. Called by AbstractDocsE2ETest after each test. Uses
+   * metadata captured from the first {@link #documentFeature} call.
+   */
+  protected void finishVideoCapture() {
+    if (activeVideoSession == null) {
+      return;
+    }
+    FrameCaptureSession session = activeVideoSession;
+    activeVideoSession = null;
+
+    if (session.videoName == null) {
+      log.debug("No documentFeature() called during this test, skipping video assembly");
+      session.running.set(false);
+      return;
+    }
+
+    String category = session.videoCategory;
+    String title = session.videoTitle;
+    String videoName = session.videoName;
+
     session.running.set(false);
     try {
       session.captureThread.join(3000);
@@ -1203,23 +1223,28 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       return;
     }
 
-    int durationSeconds =
-        Math.max(1, (int) ((System.currentTimeMillis() - session.startMs) / 1000));
-
     try {
       Path videosDir = Paths.get("docs", "videos");
       Files.createDirectories(videosDir);
 
-      burnCaptionsOntoFrames(description, session.frameDir, frameCount);
+      burnCaptionsOntoFrames(session.captions, session.frameDir, frameCount);
 
       Optional<Path> audioFile = Optional.empty();
-      if (Boolean.getBoolean("generate.video.voice")) {
-        audioFile = generateNarrationAudio(description, session.frameDir);
+      if (Boolean.getBoolean("generate.video.voice") && !session.captions.isEmpty()) {
+        String fullScript =
+            session.captions.stream()
+                .map(CaptionSegment::description)
+                .reduce("", (a, b) -> a.isEmpty() ? b : a + ". " + b);
+        audioFile = generateNarrationAudio(fullScript, session.frameDir);
       }
 
       Path outputMp4 = videosDir.resolve(videoName + ".mp4");
       runFfmpeg(session.frameDir, audioFile, outputMp4);
 
+      String description =
+          session.captions.isEmpty()
+              ? ""
+              : session.captions.get(session.captions.size() - 1).description();
       updateVideoManifest(category, title, description, videoName);
       log.info("Video documentation saved: {}", outputMp4);
     } catch (Exception e) {
@@ -1227,61 +1252,76 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  /** Burns caption text onto every frame PNG using Java2D — no libass/freetype needed. */
-  private void burnCaptionsOntoFrames(String description, Path frameDir, int frameCount)
+  /** Burns timed captions onto frames using Java2D — no libass/freetype needed. */
+  private void burnCaptionsOntoFrames(List<CaptionSegment> captions, Path frameDir, int frameCount)
       throws IOException {
-    String text = description.replace('\n', ' ').trim();
+    if (captions.isEmpty()) {
+      return;
+    }
+    // Build lookup: for each frame, which caption applies
     for (int i = 0; i < frameCount; i++) {
+      String text = captionForFrame(captions, i);
+      if (text == null) {
+        continue;
+      }
       Path framePath = frameDir.resolve("frame-%04d.png".formatted(i));
       if (!Files.exists(framePath)) {
         continue;
       }
-
       java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(framePath.toFile());
       if (img == null) {
         continue;
       }
-
-      int w = img.getWidth();
-      int h = img.getHeight();
-      java.awt.Graphics2D g = img.createGraphics();
-      g.setRenderingHint(
-          java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
-          java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
-      int fontSize = Math.max(16, w / 60);
-      java.awt.Font font =
-          new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.BOLD, fontSize);
-      g.setFont(font);
-      java.awt.FontMetrics fm = g.getFontMetrics();
-
-      // Word-wrap to fit within 90% of frame width
-      int maxWidth = (int) (w * 0.90);
-      java.util.List<String> lines = wrapText(text, fm, maxWidth);
-
-      int lineHeight = fm.getHeight();
-      int totalTextHeight = lines.size() * lineHeight + 8;
-      int boxY = h - totalTextHeight - 20;
-      int boxX = (int) (w * 0.05);
-      int boxW = (int) (w * 0.90);
-
-      // Semi-transparent black background bar
-      g.setColor(new java.awt.Color(0, 0, 0, 180));
-      g.fillRoundRect(boxX - 8, boxY - 4, boxW + 16, totalTextHeight + 8, 10, 10);
-
-      // White text
-      g.setColor(java.awt.Color.WHITE);
-      int y = boxY + fm.getAscent();
-      for (String line : lines) {
-        int lineW = fm.stringWidth(line);
-        int x = boxX + (boxW - lineW) / 2;
-        g.drawString(line, x, y);
-        y += lineHeight;
-      }
-      g.dispose();
-
+      burnTextOntoImage(img, text);
       javax.imageio.ImageIO.write(img, "png", framePath.toFile());
     }
+  }
+
+  private String captionForFrame(List<CaptionSegment> captions, int frameIndex) {
+    String active = null;
+    for (CaptionSegment seg : captions) {
+      if (seg.startFrame() <= frameIndex) {
+        active = seg.description();
+      } else {
+        break;
+      }
+    }
+    return active;
+  }
+
+  private void burnTextOntoImage(java.awt.image.BufferedImage img, String text) {
+    int w = img.getWidth();
+    int h = img.getHeight();
+    java.awt.Graphics2D g = img.createGraphics();
+    g.setRenderingHint(
+        java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+        java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+    int fontSize = Math.max(16, w / 60);
+    java.awt.Font font = new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.BOLD, fontSize);
+    g.setFont(font);
+    java.awt.FontMetrics fm = g.getFontMetrics();
+
+    int maxWidth = (int) (w * 0.90);
+    java.util.List<String> lines = wrapText(text.replace('\n', ' ').trim(), fm, maxWidth);
+
+    int lineHeight = fm.getHeight();
+    int totalTextHeight = lines.size() * lineHeight + 8;
+    int boxY = h - totalTextHeight - 20;
+    int boxX = (int) (w * 0.05);
+    int boxW = (int) (w * 0.90);
+
+    g.setColor(new java.awt.Color(0, 0, 0, 180));
+    g.fillRoundRect(boxX - 8, boxY - 4, boxW + 16, totalTextHeight + 8, 10, 10);
+
+    g.setColor(java.awt.Color.WHITE);
+    int y = boxY + fm.getAscent();
+    for (String line : lines) {
+      int x = boxX + (boxW - fm.stringWidth(line)) / 2;
+      g.drawString(line, x, y);
+      y += lineHeight;
+    }
+    g.dispose();
   }
 
   private java.util.List<String> wrapText(String text, java.awt.FontMetrics fm, int maxWidth) {

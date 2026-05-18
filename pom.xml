@@ -1524,8 +1524,6 @@
               <excludes>
                 <exclude>**/*IT.java</exclude>
                 <exclude>**/*IntegrationTest.java</exclude>
-                <!-- Exclude video tests — they match *DocsE2ETest but belong to generate-videos -->
-                <exclude>**/*VideoDocsE2ETest.java</exclude>
               </excludes>
               <systemPropertyVariables>
                 <headless>${headless}</headless>
@@ -1558,7 +1556,7 @@
             <configuration>
               <argLine>@{failsafeArgLine} -Dgenerate.videos=true</argLine>
               <includes>
-                <include>**/*VideoDocsE2ETest.java</include>
+                <include>**/*DocsE2ETest.java</include>
               </includes>
               <excludes>
                 <exclude>**/*IT.java</exclude>
