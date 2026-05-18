@@ -157,6 +157,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
       driver = new ChromeDriver(options);
       driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+      driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(120));
     }
 
     // Only login if needed
@@ -323,11 +324,21 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void login(@NonNull final String username, @NonNull final String password) {
-    int maxRetries = 1;
+    int maxRetries = 3;
     int attempt = 0;
-    while (attempt++ < maxRetries) {
+    while (attempt < maxRetries) {
+      attempt++;
       try {
-        log.debug("Login attempt {} for user: {}", attempt, username);
+        log.debug("Login attempt {} of {} for user: {}", attempt, maxRetries, username);
+        // Navigate via about:blank first to clear any stale browser state before retries
+        if (attempt > 1) {
+          try {
+            driver.get("about:blank");
+            Thread.sleep(1000);
+          } catch (Exception ignored) {
+            // best-effort reset
+          }
+        }
         driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
         waitForVaadinClientToLoad();
         takeSequencedScreenshot("on-login-page");
@@ -374,12 +385,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         lastLoggedInUser = username;
         return; // Success!
       } catch (Exception e) {
-        attempt++;
-        log.warn("Login attempt {} failed: {}", attempt, e.getMessage());
+        log.warn("Login attempt {} of {} failed: {}", attempt, maxRetries, e.getMessage());
         if (attempt >= maxRetries) {
-          log.error("All login attempts failed for user: {}", username);
+          log.error("All {} login attempts failed for user: {}", maxRetries, username);
           takeSequencedScreenshot("on-login-final-failure");
           throw e;
+        }
+        // Brief pause before retrying
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
         }
       }
     }
