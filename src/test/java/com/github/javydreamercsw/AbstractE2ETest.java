@@ -262,6 +262,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       @NonNull final String title,
       @NonNull final String description,
       @NonNull final String screenshotName) {
+    // When recording video, hold on the current page for 4s so the feature is visible
+    if (activeVideoSession != null) {
+      try {
+        Thread.sleep(4000);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+      }
+    }
     if (Boolean.getBoolean("generate.docs")) {
       takeDocScreenshot(screenshotName);
       updateManifest(category, title, description, screenshotName);
@@ -1211,9 +1219,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     String title = session.videoTitle;
     String videoName = session.videoName;
 
-    // Hold for at least 3 s after the last documentFeature() so the final screen is visible
+    // Hold for at least 2 s after the last documentFeature() so the final caption is visible
     long elapsedMs = System.currentTimeMillis() - session.startMs;
-    long holdMs = Math.max(0, 3000 - elapsedMs);
+    long holdMs = Math.max(0, 2000 - elapsedMs);
     if (holdMs > 0) {
       try {
         Thread.sleep(holdMs);
