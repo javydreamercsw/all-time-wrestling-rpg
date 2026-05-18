@@ -323,12 +323,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void login(@NonNull final String username, @NonNull final String password) {
-    int maxRetries = 1;
-    int attempt = 0;
-    while (attempt++ < maxRetries) {
+    int maxRetries = 3;
+    String loginUrl = "http://localhost:" + serverPort + getContextPath() + "/login";
+    Exception lastException = null;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        log.debug("Login attempt {} for user: {}", attempt, username);
-        driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
+        log.debug("Login attempt {}/{} for user: {}", attempt, maxRetries, username);
+        // Skip navigation if already on the login page (e.g. right after logout())
+        if (!loginUrl.equals(driver.getCurrentUrl())) {
+          driver.get(loginUrl);
+        }
         waitForVaadinClientToLoad();
         takeSequencedScreenshot("on-login-page");
 
@@ -374,15 +378,20 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         lastLoggedInUser = username;
         return; // Success!
       } catch (Exception e) {
-        attempt++;
-        log.warn("Login attempt {} failed: {}", attempt, e.getMessage());
-        if (attempt >= maxRetries) {
-          log.error("All login attempts failed for user: {}", username);
-          takeSequencedScreenshot("on-login-final-failure");
-          throw e;
+        lastException = e;
+        log.warn("Login attempt {}/{} failed: {}", attempt, maxRetries, e.getMessage());
+        if (attempt < maxRetries) {
+          // Force a fresh navigation before retrying
+          try {
+            driver.get(loginUrl);
+          } catch (Exception ignored) {
+          }
         }
       }
     }
+    log.error("All {} login attempts failed for user: {}", maxRetries, username);
+    takeSequencedScreenshot("on-login-final-failure");
+    throw new RuntimeException("Login failed after " + maxRetries + " attempts", lastException);
   }
 
   @AfterEach
