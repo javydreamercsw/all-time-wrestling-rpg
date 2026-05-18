@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -34,16 +35,22 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Tag("video")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class FactionListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateFaction() {
+    setVideoInfo("Community", "Creating a Faction", "create-faction");
     navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the vaadin-grid to be visible
     waitForVaadinToLoad(driver);
+
+    captureCaption(
+        "Faction List view — factions group wrestlers into allied stables. Bookers can create,"
+            + " edit, and manage faction rosters directly from this page.");
 
     // Get the initial size of the grid
     long initialSize = factionService.count();
@@ -75,6 +82,10 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     // Verify that the new faction appears in the grid
     wait.until(
         ExpectedConditions.textToBePresentInElementLocated(By.id("faction-grid"), "Test Faction"));
+
+    captureCaption(
+        "New faction appears in the grid — it's immediately available for member assignment"
+            + " and can be featured in feuds and storylines.");
 
     assertEquals(initialSize + 1, factionService.count());
   }
@@ -178,6 +189,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testAddWrestlerToFaction() {
+    setVideoInfo("Community", "Managing Faction Members", "faction-member-management");
     // Create a faction and a wrestler
     Faction faction =
         factionService.save(
@@ -187,6 +199,11 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     navigateTo("faction-list");
     waitForVaadinToLoad(driver);
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    captureCaption(
+        "Faction List — each row has a Members button that opens the roster management"
+            + " dialog. Wrestlers are added via a searchable ComboBox.");
+
     WebElement membersButton = driver.findElement(By.id("members-" + faction.getId()));
     scrollIntoView(membersButton);
     wait.until(ExpectedConditions.elementToBeClickable(membersButton));
@@ -213,6 +230,10 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.textToBePresentInElementLocated(
             By.id("members-grid"), wrestler.getName()));
+
+    captureCaption(
+        "Wrestler added to the faction roster — the members grid updates instantly."
+            + " Members can be removed at any time without affecting their match history.");
 
     Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());
     assertTrue(updatedFaction.isPresent());
