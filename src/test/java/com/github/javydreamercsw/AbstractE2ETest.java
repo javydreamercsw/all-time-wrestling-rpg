@@ -1115,6 +1115,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     final AtomicInteger frameIndex = new AtomicInteger(0);
     final AtomicBoolean running = new AtomicBoolean(true);
     final List<CaptionSegment> captions = new ArrayList<>();
+    final long startMs = System.currentTimeMillis();
     Thread captureThread;
     // Filled by the first documentFeature() call during this session
     volatile String videoCategory;
@@ -1209,6 +1210,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     String category = session.videoCategory;
     String title = session.videoTitle;
     String videoName = session.videoName;
+
+    // Hold for at least 3 s after the last documentFeature() so the final screen is visible
+    long elapsedMs = System.currentTimeMillis() - session.startMs;
+    long holdMs = Math.max(0, 3000 - elapsedMs);
+    if (holdMs > 0) {
+      try {
+        Thread.sleep(holdMs);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+      }
+    }
 
     session.running.set(false);
     try {
