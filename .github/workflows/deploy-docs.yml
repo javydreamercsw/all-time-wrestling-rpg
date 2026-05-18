@@ -45,6 +45,9 @@ jobs:
       - name: Generate screenshots and manifest
         run: mvn -B spotless:apply verify -Pgenerate-docs -Dheadless=true
 
+      - name: Generate videos
+        run: mvn -B verify -Pgenerate-videos -Dheadless=true
+
       - name: Generate Markdown Content
         run: node scripts/generate-docs.cjs
 

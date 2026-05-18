@@ -1430,44 +1430,46 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected synchronized void updateVideoManifest(
       final String category, final String title, final String description, final String videoName) {
     try {
-      Path manifestPath = Paths.get("docs", "manifest.json");
-      if (!Files.exists(manifestPath)) {
-        log.warn("Manifest file not found at: {}", manifestPath.toAbsolutePath());
-        return;
+      Path manifestPath = Paths.get("docs", "video-manifest.json");
+      Files.createDirectories(manifestPath.getParent());
+
+      Map<String, Object> manifest;
+      if (Files.exists(manifestPath)) {
+        manifest = objectMapper.readValue(manifestPath.toFile(), new TypeReference<>() {});
+      } else {
+        manifest = new LinkedHashMap<>();
       }
 
-      Map<String, Object> manifest =
-          objectMapper.readValue(manifestPath.toFile(), new TypeReference<>() {});
-      List<Map<String, Object>> features = (List<Map<String, Object>>) manifest.get("features");
-      if (features == null) {
-        features = new ArrayList<>();
-        manifest.put("features", features);
+      List<Map<String, Object>> videos = (List<Map<String, Object>>) manifest.get("videos");
+      if (videos == null) {
+        videos = new ArrayList<>();
+        manifest.put("videos", videos);
       }
 
       String videoPath = "videos/" + videoName + ".mp4";
       String id = category.toLowerCase().replace(" ", "-") + "-" + videoName;
 
       boolean found = false;
-      for (Map<String, Object> feature : features) {
-        if (id.equals(feature.get("id")) || videoPath.equals(feature.get("videoPath"))) {
-          feature.put("category", category);
-          feature.put("title", title);
-          feature.put("description", description);
-          feature.put("videoPath", videoPath);
+      for (Map<String, Object> entry : videos) {
+        if (id.equals(entry.get("id")) || videoPath.equals(entry.get("videoPath"))) {
+          entry.put("category", category);
+          entry.put("title", title);
+          entry.put("description", description);
+          entry.put("videoPath", videoPath);
           found = true;
           break;
         }
       }
 
       if (!found) {
-        Map<String, Object> newFeature = new LinkedHashMap<>();
-        newFeature.put("id", id);
-        newFeature.put("category", category);
-        newFeature.put("title", title);
-        newFeature.put("description", description);
-        newFeature.put("videoPath", videoPath);
-        newFeature.put("order", 0);
-        features.add(newFeature);
+        Map<String, Object> newEntry = new LinkedHashMap<>();
+        newEntry.put("id", id);
+        newEntry.put("category", category);
+        newEntry.put("title", title);
+        newEntry.put("description", description);
+        newEntry.put("videoPath", videoPath);
+        newEntry.put("order", 0);
+        videos.add(newEntry);
       }
 
       objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), manifest);
@@ -1510,8 +1512,31 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (videoName != null) {
       finishVideoCapture(videoCategory, videoTitle, videoName);
     } else {
-      // setVideoInfo() was never called — abort silently without writing output
-      finishVideoCapture("Uncategorized", "Unknown", "_discard_" + System.currentTimeMillis());
+      // setVideoInfo() was never called — stop capture thread and discard frames
+      discardVideoCapture();
+    }
+  }
+
+  private void discardVideoCapture() {
+    FrameCaptureSession session = activeVideoSession;
+    activeVideoSession = null;
+    if (session == null) {
+      return;
+    }
+    session.running.set(false);
+    try {
+      session.captureThread.join(3000);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+    try {
+      if (Files.exists(session.frameDir)) {
+        try (var stream = Files.walk(session.frameDir)) {
+          stream.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+        }
+      }
+    } catch (IOException e) {
+      log.debug("Could not clean up discard frame dir: {}", e.getMessage());
     }
   }
 }

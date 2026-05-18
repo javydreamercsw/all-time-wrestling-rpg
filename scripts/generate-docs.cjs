@@ -4,14 +4,27 @@ const { execSync } = require('child_process');
 
 const rootDir = path.join(__dirname, '..');
 const manifestPath = path.join(rootDir, 'docs', 'manifest.json');
+const videoManifestPath = path.join(rootDir, 'docs', 'video-manifest.json');
 const outputDir = path.join(rootDir, 'docs', 'site', 'guide');
 const screenshotsDir = path.join(rootDir, 'docs', 'screenshots');
+const videosDir = path.join(rootDir, 'docs', 'videos');
 const vitepressPublicDir = path.join(rootDir, 'docs', 'site', 'public', 'screenshots');
+const vitepressVideosDir = path.join(rootDir, 'docs', 'site', 'public', 'videos');
 const appStaticDocsDir = path.join(rootDir, 'src', 'main', 'resources', 'META-INF', 'resources', 'docs');
 
 if (!fs.existsSync(manifestPath)) {
   console.error('Manifest not found at:', manifestPath);
   process.exit(1);
+}
+
+// Load video manifest (optional — only present after generate-videos profile runs)
+let videoFeatures = [];
+if (fs.existsSync(videoManifestPath)) {
+  const videoManifest = JSON.parse(fs.readFileSync(videoManifestPath, 'utf8'));
+  videoFeatures = videoManifest.videos || [];
+  console.log(`Loaded ${videoFeatures.length} video(s) from video-manifest.json`);
+} else {
+  console.log('No video-manifest.json found — skipping video content');
 }
 
 // 1. Prepare Markdown directory
@@ -31,6 +44,19 @@ if (fs.existsSync(screenshotsDir)) {
   });
 }
 
+// 2b. Sync videos to VitePress public folder for building
+if (videoFeatures.length > 0 && fs.existsSync(videosDir)) {
+  console.log('Syncing videos to VitePress public folder...');
+  if (!fs.existsSync(vitepressVideosDir)) {
+    fs.mkdirSync(vitepressVideosDir, { recursive: true });
+  }
+  const mp4Files = fs.readdirSync(videosDir).filter(f => f.endsWith('.mp4'));
+  mp4Files.forEach(file => {
+    fs.copyFileSync(path.join(videosDir, file), path.join(vitepressVideosDir, file));
+  });
+  console.log(`Copied ${mp4Files.length} video(s) to VitePress public folder`);
+}
+
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const features = manifest.features || [];
 
@@ -48,6 +74,18 @@ Object.keys(categories).forEach(cat => {
   categories[cat].sort((a, b) => (a.order || 0) - (b.order || 0));
 });
 
+// Group videos by category
+const videosByCategory = {};
+videoFeatures.forEach(v => {
+  if (!videosByCategory[v.category]) {
+    videosByCategory[v.category] = [];
+  }
+  videosByCategory[v.category].push(v);
+});
+Object.keys(videosByCategory).forEach(cat => {
+  videosByCategory[cat].sort((a, b) => (a.order || 0) - (b.order || 0));
+});
+
 // 3. Generate Markdown files
 console.log('Generating Markdown files...');
 Object.entries(categories).forEach(([category, catFeatures]) => {
@@ -60,12 +98,29 @@ Object.entries(categories).forEach(([category, catFeatures]) => {
   catFeatures.forEach(feature => {
     content += `## ${feature.title}\n\n`;
     content += `${feature.description}\n\n`;
-    
+
     // In built site, /public/screenshots/ maps to /screenshots/
     const imagePublicPath = `/screenshots/${path.basename(feature.imagePath)}`;
     content += `![${feature.title}](${imagePublicPath})\n\n`;
     content += `---\n\n`;
   });
+
+  // Append video walkthroughs for this category
+  const catVideos = videosByCategory[category] || [];
+  if (catVideos.length > 0) {
+    content += `## Video Walkthroughs\n\n`;
+    catVideos.forEach(video => {
+      const videoPublicPath = `/videos/${path.basename(video.videoPath)}`;
+      content += `### ${video.title}\n\n`;
+      if (video.description) {
+        content += `${video.description}\n\n`;
+      }
+      content += `<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">\n`;
+      content += `  <source src="${videoPublicPath}" type="video/mp4">\n`;
+      content += `</video>\n\n`;
+      content += `---\n\n`;
+    });
+  }
 
   fs.writeFileSync(filePath, content);
   console.log(`Generated: ${filePath}`);
