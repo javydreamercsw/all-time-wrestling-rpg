@@ -620,6 +620,20 @@ public class ShowDetailView extends Main
                   });
         });
 
+    grid.addComponentColumn(
+            segment -> {
+              Icon handle = new Icon(VaadinIcon.GRID_BEVEL);
+              handle
+                  .getStyle()
+                  .set("cursor", "grab")
+                  .set("color", "var(--lumo-secondary-text-color)");
+              handle.setTooltipText("Drag to reorder");
+              return handle;
+            })
+        .setWidth("3em")
+        .setFlexGrow(0)
+        .setHeader("");
+
     // Segment type column
     grid.addColumn(
             segment ->
