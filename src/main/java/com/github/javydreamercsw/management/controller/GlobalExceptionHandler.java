@@ -17,8 +17,6 @@
 package com.github.javydreamercsw.management.controller;
 
 import com.github.javydreamercsw.management.controller.title.TitleController.ErrorResponse;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,11 +28,5 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
       final IllegalArgumentException ex) {
     return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
-  }
-
-  @ExceptionHandler(EntityNotFoundException.class)
-  public ResponseEntity<ErrorResponse> handleEntityNotFoundException(
-      final EntityNotFoundException ex) {
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
   }
 }
