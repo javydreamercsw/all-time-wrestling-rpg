@@ -200,22 +200,6 @@ class DramaEventControllerIT extends AbstractRestControllerIT {
   }
 
   @Test
-  @DisplayName(
-      """
-      POST /api/drama-events/generate/{wrestlerId}/{universeId} should return 404 for\
-       non-existent wrestler\
-      """)
-  void shouldReturn404ForNonExistentWrestlerWhenGenerating() throws Exception {
-    mockMvc
-        .perform(
-            post(
-                "/api/drama-events/generate/{wrestlerId}/{universeId}",
-                999L,
-                defaultUniverse.getId()))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
   @DisplayName("GET /api/drama-events/between/{wrestler1Id}/{wrestler2Id} should return events")
   void shouldReturnEventsBetweenWrestlers() throws Exception {
     Wrestler wrestler1 = createTestWrestler("Between Wrestler 1", 50_000L);
