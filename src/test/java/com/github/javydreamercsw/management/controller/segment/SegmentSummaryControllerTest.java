@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.controller.segment;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,5 +68,59 @@ class SegmentSummaryControllerTest extends AbstractControllerTest {
         .andExpect(status().isBadRequest()); // or isNotFound() if you map to 404
 
     verify(segmentSummaryService, times(1)).summarizeSegment(segmentId);
+  }
+
+  @Test
+  void testSummarizeSegment_serviceThrowsRuntimeException_propagates() throws Exception {
+    Long segmentId = 2L;
+    when(segmentSummaryService.summarizeSegment(segmentId))
+        .thenThrow(new RuntimeException("Unexpected error during summarization"));
+
+    // Unhandled RuntimeException is re-thrown as a ServletException by MockMvc's
+    // TestDispatcherServlet (unlike production where Spring converts it to a 500).
+    org.junit.jupiter.api.Assertions.assertThrows(
+        Exception.class,
+        () -> mockMvc.perform(post("/api/segments/{segmentId}/summarize", segmentId).with(csrf())));
+
+    verify(segmentSummaryService, times(1)).summarizeSegment(segmentId);
+  }
+
+  @Test
+  void testSummarizeSegment_nullSummary_returns200WithNullSummary() throws Exception {
+    Long segmentId = 3L;
+    Segment mockSegment = new Segment();
+    mockSegment.setId(segmentId);
+    mockSegment.setSummary(null);
+    when(segmentSummaryService.summarizeSegment(segmentId)).thenReturn(mockSegment);
+
+    mockMvc
+        .perform(post("/api/segments/{segmentId}/summarize", segmentId).with(csrf()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.summary", nullValue()));
+
+    verify(segmentSummaryService, times(1)).summarizeSegment(segmentId);
+  }
+
+  @Test
+  void testSummarizeSegment_emptySummary_returns200WithEmptySummary() throws Exception {
+    Long segmentId = 4L;
+    Segment mockSegment = new Segment();
+    mockSegment.setId(segmentId);
+    mockSegment.setSummary("");
+    when(segmentSummaryService.summarizeSegment(segmentId)).thenReturn(mockSegment);
+
+    mockMvc
+        .perform(post("/api/segments/{segmentId}/summarize", segmentId).with(csrf()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.summary", is("")));
+
+    verify(segmentSummaryService, times(1)).summarizeSegment(segmentId);
+  }
+
+  @Test
+  void testSummarizeSegment_invalidSegmentIdFormat_returns400() throws Exception {
+    mockMvc
+        .perform(post("/api/segments/{segmentId}/summarize", "notANumber").with(csrf()))
+        .andExpect(status().isBadRequest());
   }
 }

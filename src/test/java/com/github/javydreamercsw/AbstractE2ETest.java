@@ -157,6 +157,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
       driver = new ChromeDriver(options);
       driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+      driver.manage().timeouts().pageLoadTimeout(Duration.ofMinutes(2));
     }
 
     // Only login if needed
@@ -386,6 +387,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             driver.get(loginUrl);
           } catch (Exception ignored) {
           }
+        }
+        // Brief pause before retrying
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
         }
       }
     }
