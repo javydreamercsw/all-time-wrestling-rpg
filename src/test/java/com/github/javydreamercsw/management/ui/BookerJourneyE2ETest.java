@@ -49,6 +49,7 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -183,11 +184,16 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   }
 
   @Test
+  @Tag("video")
   public void testFullShowLifecycle() {
+    setVideoInfo("Booker Journey", "Full Show Lifecycle", "booker-full-show-lifecycle");
     try {
       // Navigate to the Show List view
       log.info("Navigating to show list");
       navigateTo("show-list");
+      waitForVaadinClientToLoad();
+      captureCaption(
+          "Show list — fill in the name, type, season, and template, then click Create.");
 
       final String showName = "My E2E Show";
 
@@ -252,6 +258,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           wait.until(ExpectedConditions.presenceOfElementLocated(By.id("show-info-details")));
       clickElement(showInfoDetails);
 
+      captureCaption(
+          "Show detail — expand the info panel and click Plan Show to open the planning view.");
+
       // Click the "Planning Show" button
       log.info("Navigating to show planning view");
       WebElement planningShowButton =
@@ -275,6 +284,10 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       Assertions.assertNotNull(showPlanningContextArea);
       Assertions.assertFalse(showPlanningContextArea.getText().contains("Error"));
 
+      captureCaption(
+          "Show planning view — the AI context panel summarizes the roster. Click Propose Segments"
+              + " to generate a card.");
+
       // Click the "Propose Segments" button
       log.info("Proposing segments");
       WebElement proposeSegmentsButton =
@@ -286,6 +299,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       wait.until(
           ExpectedConditions.presenceOfElementLocated(
               By.cssSelector("vaadin-grid#proposed-segments-grid vaadin-grid-cell-content")));
+
+      captureCaption(
+          "Proposed segments grid — review the AI-suggested matches, then click Approve.");
 
       // Approve segments
       log.info("Approving segments");
@@ -320,6 +336,10 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       waitForVaadinElement(driver, By.id("segments-grid-wrapper"));
       waitForGridToPopulate("segments-grid");
 
+      captureCaption(
+          "Approved show card — segments are now listed. Click the edit icon on any segment to"
+              + " adjust the summary.");
+
       // Click the edit button on the first row
       log.info("Clicking edit segment button");
       WebElement editButton =
@@ -347,11 +367,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       WebElement saveButton = driver.findElement(By.id("edit-segment-save-button"));
       clickElement(saveButton);
 
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
+      sleep(1000);
 
       log.info("Waiting for save button to disappear");
       wait.withTimeout(Duration.ofMinutes(1));
@@ -374,6 +390,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
           ExpectedConditions.textToBePresentInElementLocated(
               By.xpath("//vaadin-grid-cell-content[contains(., '" + newDescription + "')]"),
               newDescription));
+      captureCaption(
+          "Segment description updated — the show card reflects the new summary immediately.");
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
@@ -381,6 +399,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   }
 
   @Test
+  @Tag("video")
   public void testChangeSegmentOrder() {
     Show show =
         showService.createShow(
@@ -478,6 +497,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   }
 
   @Test
+  @Tag("video")
   public void testNarrateAndSummarizeSegment() {
     Show show =
         showService.createShow(
@@ -575,6 +595,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   }
 
   @Test
+  @Tag("video")
   public void testSetMainEvent() {
     Show show =
         showService.createShow(

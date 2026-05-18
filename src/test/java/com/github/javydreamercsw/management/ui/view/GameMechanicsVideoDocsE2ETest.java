@@ -16,12 +16,14 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 
-class GameMechanicsVideoDocsE2ETest extends AbstractVideoDocsE2ETest {
+@Tag("video")
+class GameMechanicsVideoDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testRecordCardListWalkthrough() {
@@ -45,15 +47,11 @@ class GameMechanicsVideoDocsE2ETest extends AbstractVideoDocsE2ETest {
     sleep(1500);
 
     // Click the first row if available
-    try {
-      WebElement firstRow = driver.findElement(By.cssSelector("vaadin-grid-cell-content"));
-      clickElement(firstRow);
-      waitForVaadinClientToLoad();
-      captureCaption(
-          "Card detail view: health cost, stamina cost, damage type, and move category.");
-      sleep(2000);
-    } catch (Exception ignored) {
-    }
+    WebElement firstRow = driver.findElement(By.cssSelector("vaadin-grid-cell-content"));
+    clickElement(firstRow);
+    waitForVaadinClientToLoad();
+    captureCaption("Card detail view: health cost, stamina cost, damage type, and move category.");
+    sleep(2000);
   }
 
   @Test
@@ -67,9 +65,7 @@ class GameMechanicsVideoDocsE2ETest extends AbstractVideoDocsE2ETest {
         "Manage wrestler-specific decks. Each wrestler can have one active deck used in matches.");
 
     sleep(2000);
-    captureCaption(
-        "Strategy: balance high-damage finishers with efficient setup moves"
-            + " and stamina-recovering taunts.");
+    captureCaption("These are the move sets AI will use during narration.");
 
     ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 300)");
     sleep(1500);
@@ -90,18 +86,9 @@ class GameMechanicsVideoDocsE2ETest extends AbstractVideoDocsE2ETest {
 
     ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 400)");
     sleep(1500);
-    captureCaption(
-        "Wrestlers accumulate ranking points through wins, title matches, and fan reactions.");
+    captureCaption("Wrestlers accumulate fans through wins, title matches, and fan reactions.");
 
     ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0)");
     sleep(1000);
-  }
-
-  private void sleep(long ms) {
-    try {
-      Thread.sleep(ms);
-    } catch (InterruptedException ie) {
-      Thread.currentThread().interrupt();
-    }
   }
 }

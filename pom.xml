@@ -1556,12 +1556,13 @@
             <configuration>
               <argLine>@{failsafeArgLine} -Dgenerate.videos=true</argLine>
               <includes>
-                <include>**/*VideoDocsE2ETest.java</include>
+                <include>**/*E2ETest.java</include>
               </includes>
               <excludes>
                 <exclude>**/*IT.java</exclude>
                 <exclude>**/*IntegrationTest.java</exclude>
               </excludes>
+              <groups>video</groups>
               <systemPropertyVariables>
                 <headless>${headless}</headless>
               </systemPropertyVariables>

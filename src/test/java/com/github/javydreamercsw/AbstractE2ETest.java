@@ -87,6 +87,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   private int screenshotCounter = 0;
   protected Path testArtifactsDir;
 
+  private String videoCategory;
+  private String videoTitle;
+  private String videoName;
+
   static {
     // Register shutdown hook to close the shared driver
     Runtime.getRuntime()
@@ -1130,7 +1134,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    * Starts frame capture for the current test. Called by AbstractVideoDocsE2ETest before each test
    * when {@code generate.videos=true}.
    */
-  protected void startVideoCapture(String testName) {
+  protected void startVideoCapture(@NonNull String testName) {
     if (!Boolean.getBoolean("generate.videos")) {
       return;
     }
@@ -1469,6 +1473,45 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), manifest);
     } catch (IOException e) {
       log.error("Failed to update video manifest", e);
+    }
+  }
+
+  protected void sleep(long ms) {
+    try {
+      Thread.sleep(ms);
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  /**
+   * Sets the video metadata for the current test. Must be called once per {@code @Test} method
+   * before any interactions so the assembled MP4 gets the correct filename and manifest entry.
+   */
+  protected void setVideoInfo(
+      @NonNull String category, @NonNull String title, @NonNull String videoName) {
+    this.videoCategory = category;
+    this.videoTitle = title;
+    this.videoName = videoName;
+  }
+
+  @BeforeEach
+  final void startVideoRecording(TestInfo testInfo) {
+    videoCategory = null;
+    videoTitle = null;
+    videoName = null;
+    String safeName =
+        testInfo.getTestMethod().map(java.lang.reflect.Method::getName).orElse("unknown");
+    startVideoCapture(safeName);
+  }
+
+  @AfterEach
+  final void stopVideoRecording() {
+    if (videoName != null) {
+      finishVideoCapture(videoCategory, videoTitle, videoName);
+    } else {
+      // setVideoInfo() was never called — abort silently without writing output
+      finishVideoCapture("Uncategorized", "Unknown", "_discard_" + System.currentTimeMillis());
     }
   }
 }
