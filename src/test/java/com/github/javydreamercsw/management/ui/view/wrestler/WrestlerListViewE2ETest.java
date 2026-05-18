@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -44,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Tag("video")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class WrestlerListViewE2ETest extends AbstractE2ETest {
 
@@ -66,11 +68,18 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testCreateWrestler() {
+    setVideoInfo("Roster Management", "Creating a Wrestler", "create-wrestler");
+
     navigateTo("wrestler-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Get the initial size of the grid
     long initialSize = wrestlerRepository.count();
+
+    waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
+    captureCaption(
+        "Wrestler List — your full roster at a glance. Click Create Wrestler to add a new"
+            + " athlete to the promotion.");
 
     // Click the "Create Wrestler" button
     WebElement createButton =
@@ -85,6 +94,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     WebElement nameField =
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("wrestler-dialog-name-field")));
+    captureCaption("Enter the wrestler's name and configure their starting attributes.");
 
     // Enter a new wrestler name
     assertNotNull(nameField);
@@ -98,10 +108,10 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
-    // Wait for the grid to finish re-rendering after the save callback, then verify the
-    // count increased. The row may be off-screen in the virtual list so we don't check
-    // cell text directly.
     waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
+    captureCaption(
+        "The new wrestler appears in the roster immediately, ready to be booked into shows"
+            + " and assigned to factions.");
 
     assertEquals(initialSize + 1, wrestlerRepository.count());
   }
@@ -143,12 +153,19 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testEditWrestler() {
+    setVideoInfo("Roster Management", "Editing a Wrestler", "edit-wrestler");
+
     // Create a wrestler to edit
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Edit"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
     navigateTo("wrestler-list");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    waitForGridToSettle("wrestler-list-grid", Duration.ofSeconds(30));
+    captureCaption(
+        "Each wrestler row has an action menu — open it to edit attributes, manage"
+            + " injuries, add bumps, and more.");
 
     // Find the menu for the wrestler
     WebElement menuBar =
@@ -162,6 +179,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
+    captureCaption("The Edit dialog lets you update the wrestler's name and core attributes.");
 
     // Find the editor's name field and change the value
     WebElement nameEditor =
@@ -192,6 +210,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             return false;
           }
         });
+    captureCaption("Changes are saved immediately and reflected in the roster grid.");
 
     assertTrue(
         wrestlerRepository.findAll().stream().anyMatch(w -> "Edit Updated".equals(w.getName())));
@@ -324,6 +343,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testManageInjuries() {
+    setVideoInfo("Roster Management", "Managing Wrestler Injuries", "manage-wrestler-injuries");
+
     // Create a wrestler
     Wrestler wrestler = wrestlerService.save(TestUtils.createWrestler("Injuries"));
     wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
@@ -388,6 +409,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             return false;
           }
         });
+    captureCaption(
+        "Manage Injuries shows all active injuries for a wrestler — severity, cause,"
+            + " and a Heal button for each.");
 
     // Heal an injury
     WebElement healButton =
@@ -396,9 +420,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     assertNotNull(healButton);
     clickElement(healButton);
+    captureCaption("Clicking Heal removes the injury from the active list immediately.");
 
     // Create a new injury
-
     WebElement createButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-button")));
 
@@ -413,7 +437,6 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-name")));
 
     assertNotNull(nameField);
-
     nameField.sendKeys("Broken Leg");
 
     WebElement descriptionField =
@@ -421,23 +444,22 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-description")));
 
     assertNotNull(descriptionField);
-
     descriptionField.sendKeys("A very broken leg.");
 
     WebElement severitySelector =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-severity")));
 
     assertNotNull(severitySelector);
-
     clickElement(severitySelector);
-
     severitySelector.sendKeys("CRITICAL", Keys.TAB);
+    captureCaption(
+        "New injuries can be logged at any time — name, description, severity, and the"
+            + " cause are all recorded for narrative purposes.");
 
     WebElement saveButton =
         wait.until(ExpectedConditions.elementToBeClickable(By.id("create-injury-save-button")));
 
     assertNotNull(saveButton);
-
     clickElement(saveButton);
 
     // Verify the new injury is in the grid
@@ -450,5 +472,8 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             return false;
           }
         });
+    captureCaption(
+        "The new injury appears in the grid — it will affect the wrestler's availability"
+            + " and AI narration until healed.");
   }
 }

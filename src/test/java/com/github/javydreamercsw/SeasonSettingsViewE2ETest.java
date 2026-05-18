@@ -29,11 +29,13 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Tag("video")
 public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerService wrestlerService;
@@ -49,6 +51,8 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testResetTierBoundaries() {
+    setVideoInfo("Season Management", "Reset Tier Boundaries", "reset-tier-boundaries");
+
     // Change a boundary to something different
     TierBoundary boundary =
         tierBoundaryRepository.findAllByGender(Gender.MALE).stream()
@@ -68,11 +72,15 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     // Wait for view to load
     WebElement resetBoundariesButton =
         waitForVaadinElement(driver, By.id("reset-boundaries-button"));
+    captureCaption(
+        "Season Settings — tier boundaries define the minimum fan count required for each"
+            + " wrestler tier. Use Reset Tier Boundaries to restore the defaults.");
     clickElement(resetBoundariesButton);
 
     // Wait for dialog
     WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
+    captureCaption("Confirm to restore all tier fan thresholds to their default values.");
 
     WebElement confirmButton =
         waitForVaadinElement(driver, By.id("confirm-reset-boundaries-button"));
@@ -81,6 +89,9 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     // Wait for notification
     WebElement notification = waitForVaadinElement(driver, By.tagName("vaadin-notification-card"));
     assertEquals("Tier boundaries reset successfully.", notification.getText());
+    captureCaption(
+        "Tier boundaries reset — all tiers now use their default fan requirements,"
+            + " ready for the new season.");
 
     // Verify boundaries were reset
     WrestlerTier tier = boundary.getTier();
@@ -95,6 +106,8 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testRecalibrateFans() {
+    setVideoInfo("Season Management", "Recalibrate Fan Counts", "recalibrate-fans");
+
     // Make sure there is at least one wrestler
     Wrestler wrestler =
         wrestlerService.findAll().stream()
@@ -115,11 +128,15 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     // Wait for view to load
     WebElement recalibrateFansButton =
         waitForVaadinElement(driver, By.id("recalibrate-fans-button"));
+    captureCaption(
+        "Recalibrate Fans trims each wrestler's fan count to the minimum for their current"
+            + " tier — useful for resetting momentum at the start of a new season.");
     clickElement(recalibrateFansButton);
 
     // Wait for dialog
     WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
+    captureCaption("Confirm to recalibrate fan counts across all wrestlers.");
 
     WebElement confirmButton =
         waitForVaadinElement(driver, By.id("confirm-recalibrate-fans-button"));
@@ -128,6 +145,9 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     // Wait for notification
     WebElement notification = waitForVaadinElement(driver, By.tagName("vaadin-notification-card"));
     assertEquals("Fan counts recalibrated successfully.", notification.getText());
+    captureCaption(
+        "Fan counts recalibrated — wrestlers retain their tier but excess fans are"
+            + " trimmed to the tier minimum, levelling the playing field.");
 
     // Verify fan counts were reset
     WrestlerState updatedState =
@@ -176,6 +196,8 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testResetFans() {
+    setVideoInfo("Season Management", "Full Fan Reset", "full-fan-reset");
+
     // Create an Icon wrestler
     Wrestler icon =
         wrestlerService.createWrestler(
@@ -190,12 +212,18 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     click("vaadin-tab", "Season Settings");
 
     // Wait for view to load
-    WebElement recalibrateFansButton = waitForVaadinElement(driver, By.id("full-reset-button"));
-    clickElement(recalibrateFansButton);
+    WebElement fullResetButton = waitForVaadinElement(driver, By.id("full-reset-button"));
+    captureCaption(
+        "Full Fan Reset wipes all wrestler fan counts to zero and demotes every wrestler"
+            + " back to Rookie — a complete season restart.");
+    clickElement(fullResetButton);
 
     // Wait for dialog
     WebElement dialog = waitForVaadinElement(driver, By.tagName("vaadin-dialog"));
     assertTrue(dialog.isDisplayed());
+    captureCaption(
+        "This is irreversible — confirm only when you want to start a brand-new season"
+            + " from scratch.");
 
     WebElement confirmButton = waitForVaadinElement(driver, By.id("confirm-full-reset-button"));
     clickElement(confirmButton);
@@ -203,6 +231,9 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     // Wait for notification
     WebElement notification = waitForVaadinElement(driver, By.tagName("vaadin-notification-card"));
     assertEquals("All wrestler fan counts have been reset to 0.", notification.getText());
+    captureCaption(
+        "All fan counts reset to 0 and tiers demoted to Rookie — the new season starts"
+            + " with a clean slate.");
 
     // Verify fan counts were reset and tier was demoted
     WrestlerState updatedState =

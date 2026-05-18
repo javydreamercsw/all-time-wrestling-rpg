@@ -40,6 +40,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -48,6 +49,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
+@Tag("video")
 public class GenderFilteringE2ETest extends AbstractE2ETest {
 
   @Autowired private TierRecalculationService tierRecalculationService;
@@ -127,6 +129,8 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
   @Test
   public void testFemaleGenderFiltering() {
+    setVideoInfo("Roster Management", "Gender Filtering in Rankings", "gender-filtering-rankings");
+
     try {
       // Navigate to the Wrestler Rankings view
       navigateTo("wrestler-rankings");
@@ -137,6 +141,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       waitForGridToPopulate("wrestler-rankings-grid");
       assertGridContains("wrestler-rankings-grid", maleWrestler.getName());
       assertGridContains("wrestler-rankings-grid", femaleWrestler.getName());
+      captureCaption(
+          "Wrestler Rankings shows all active wrestlers by default — male and female"
+              + " ranked together.");
 
       // Select "FEMALE" from the gender ComboBox
       log.info("Filtering by FEMALE");
@@ -155,6 +162,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
             List<WebElement> rows = getGridRows("wrestler-rankings-grid");
             return rows.stream().noneMatch(row -> row.getText().contains(maleWrestler.getName()));
           });
+      captureCaption(
+          "Selecting FEMALE in the gender filter narrows the rankings to women's division"
+              + " wrestlers only.");
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
@@ -196,6 +206,11 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
   @Test
   public void testChampionshipAndTierBoundaries() {
+    setVideoInfo(
+        "Roster Management",
+        "Championship Contenders and Tier Boundaries",
+        "championship-contenders-tier-boundaries");
+
     try {
       // Navigate to the Championship Rankings view
       navigateTo("championship-rankings");
@@ -212,6 +227,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Verify the female wrestler is in the contenders list
       waitForGridToPopulate("wrestler-contenders-grid");
       assertGridContains("wrestler-contenders-grid", femaleWrestler.getName());
+      captureCaption(
+          "Championship Rankings — select a title to see its eligible contenders ranked"
+              + " by fans. Only wrestlers of the correct gender division appear.");
 
       // Open the "Tier Boundaries" dialog
       WebElement showTierBoundariesButton =
@@ -221,6 +239,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
 
       // Wait for the dialog to appear
       wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
+      captureCaption(
+          "Tier Boundaries shows the fan thresholds for each tier. Switch gender to compare"
+              + " men's and women's division boundaries side by side.");
 
       // Select "FEMALE" in the dialog's gender ComboBox
       WebElement dialogGenderComboBox =
@@ -230,6 +251,9 @@ public class GenderFilteringE2ETest extends AbstractE2ETest {
       // Verify that the female tier boundaries are displayed in the dialog's grid
       waitForGridToPopulate("tier-boundaries-grid");
       assertGridContains("tier-boundaries-grid", "Midcarder");
+      captureCaption(
+          "Women's division tier boundaries — each row shows the fan range a wrestler"
+              + " needs to reach or hold that tier.");
     } catch (Exception e) {
       log.error("Error during E2E test", e);
       Assertions.fail(e);
