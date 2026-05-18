@@ -158,7 +158,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       options.setExperimentalOption("prefs", prefs);
       options.setExperimentalOption("excludeSwitches", new String[] {"enable-automation"});
 
-      driver = new ChromeDriver(options);
+      for (int attempt = 1; ; attempt++) {
+        try {
+          driver = new ChromeDriver(options);
+          break;
+        } catch (Exception ex) {
+          if (attempt >= 3) throw ex;
+          log.warn(
+              "ChromeDriver start failed (attempt {}), retrying: {}", attempt, ex.getMessage());
+          Thread.sleep(2000);
+        }
+      }
       driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
     }
 
@@ -1099,7 +1109,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     final Path frameDir;
     final AtomicInteger frameIndex = new AtomicInteger(0);
     final AtomicBoolean running = new AtomicBoolean(true);
-    final Thread captureThread;
+    Thread captureThread;
     volatile long startMs = System.currentTimeMillis();
 
     FrameCaptureSession(Path frameDir, Thread captureThread) {
@@ -1144,17 +1154,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     } catch (IOException e) {
       throw new RuntimeException("Cannot create frame temp dir", e);
     }
-    AtomicInteger idx = new AtomicInteger(0);
-    AtomicBoolean running = new AtomicBoolean(true);
-    long[] startMs = {System.currentTimeMillis()};
+    FrameCaptureSession session = new FrameCaptureSession(frameDir, null);
+    session.startMs = System.currentTimeMillis();
     Thread t =
         new Thread(
             () -> {
-              while (running.get()) {
+              while (session.running.get()) {
                 try {
                   File frame = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-                  String name = "frame-%04d.png".formatted(idx.getAndIncrement());
-                  FileUtils.copyFile(frame, frameDir.resolve(name).toFile());
+                  String name = "frame-%04d.png".formatted(session.frameIndex.getAndIncrement());
+                  FileUtils.copyFile(frame, session.frameDir.resolve(name).toFile());
                 } catch (Exception e) {
                   log.warn("Frame capture error: {}", e.getMessage());
                 }
@@ -1168,10 +1177,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             },
             "video-frame-capture");
     t.setDaemon(true);
-    FrameCaptureSession session = new FrameCaptureSession(frameDir, t);
-    session.frameIndex.set(idx.get());
-    session.running.set(true);
-    session.startMs = startMs[0];
+    session.captureThread = t;
     t.start();
     return session;
   }
