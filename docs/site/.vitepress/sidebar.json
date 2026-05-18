@@ -1,31 +1,11 @@
 [
   {
-    "text": "Community",
+    "text": "AI Features",
     "collapsed": false,
     "items": [
       {
         "text": "Overview",
-        "link": "/guide/community"
-      }
-    ]
-  },
-  {
-    "text": "Wrestler Profile",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/wrestler-profile"
-      }
-    ]
-  },
-  {
-    "text": "General Manager",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/general-manager"
+        "link": "/guide/ai-features"
       }
     ]
   },
@@ -40,12 +20,22 @@
     ]
   },
   {
-    "text": "Game Mechanics",
+    "text": "Booker",
     "collapsed": false,
     "items": [
       {
         "text": "Overview",
-        "link": "/guide/game-mechanics"
+        "link": "/guide/booker"
+      }
+    ]
+  },
+  {
+    "text": "Booker Journey",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/booker-journey"
       }
     ]
   },
@@ -56,6 +46,76 @@
       {
         "text": "Overview",
         "link": "/guide/campaign"
+      }
+    ]
+  },
+  {
+    "text": "Community",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/community"
+      }
+    ]
+  },
+  {
+    "text": "Dashboards",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/dashboards"
+      }
+    ]
+  },
+  {
+    "text": "Entities",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/entities"
+      }
+    ]
+  },
+  {
+    "text": "Game Mechanics",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/game-mechanics"
+      }
+    ]
+  },
+  {
+    "text": "General Manager",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/general-manager"
+      }
+    ]
+  },
+  {
+    "text": "Leagues",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/leagues"
+      }
+    ]
+  },
+  {
+    "text": "NPC",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/npc"
       }
     ]
   },
@@ -80,62 +140,32 @@
     ]
   },
   {
-    "text": "Dashboards",
+    "text": "Roster Management",
     "collapsed": false,
     "items": [
       {
         "text": "Overview",
-        "link": "/guide/dashboards"
+        "link": "/guide/roster-management"
       }
     ]
   },
   {
-    "text": "Booker",
+    "text": "Season Management",
     "collapsed": false,
     "items": [
       {
         "text": "Overview",
-        "link": "/guide/booker"
+        "link": "/guide/season-management"
       }
     ]
   },
   {
-    "text": "AI Features",
+    "text": "Uncategorized",
     "collapsed": false,
     "items": [
       {
         "text": "Overview",
-        "link": "/guide/ai-features"
-      }
-    ]
-  },
-  {
-    "text": "Entities",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/entities"
-      }
-    ]
-  },
-  {
-    "text": "Leagues",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/leagues"
-      }
-    ]
-  },
-  {
-    "text": "Wrestler",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/wrestler"
+        "link": "/guide/uncategorized"
       }
     ]
   },
@@ -150,12 +180,22 @@
     ]
   },
   {
-    "text": "NPC",
+    "text": "Wrestler",
     "collapsed": false,
     "items": [
       {
         "text": "Overview",
-        "link": "/guide/npc"
+        "link": "/guide/wrestler"
+      }
+    ]
+  },
+  {
+    "text": "Wrestler Profile",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/wrestler-profile"
       }
     ]
   }

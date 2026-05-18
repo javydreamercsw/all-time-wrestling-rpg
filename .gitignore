@@ -69,3 +69,10 @@ node/
 .beads-credential-key
 /.claude/worktrees/
 /docs/videos/
+/docs/site/public/videos/
+/docs/site/.vitepress/dist/videos/
+/docs/site/.vitepress/cache/
+/docs/site/node_modules/
+/docs/site/#/
+/docs/screenshots/
+/src/main/resources/META-INF/resources/docs/videos/

@@ -34,3 +34,15 @@ Track the momentum of every wrestler in the promotion. Rankings determine title 
 
 ---
 
+## Video Walkthroughs
+
+### Wrestler Rankings
+
+Wrestlers accumulate fans through wins, title matches, and fan reactions — losses and inactivity erode the fan base over time, creating natural momentum shifts that drive realistic storyline booking decisions.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="/videos/dashboard-rankings-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
