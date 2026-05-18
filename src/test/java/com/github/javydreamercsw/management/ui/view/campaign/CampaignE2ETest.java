@@ -34,12 +34,14 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
+@Tag("video")
 class CampaignE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
@@ -80,34 +82,38 @@ class CampaignE2ETest extends AbstractE2ETest {
 
   @Test
   void testCampaignFlow() {
+    setVideoInfo("Campaign", "Campaign Flow and Backstage Actions", "campaign-backstage-actions");
+
     // 1. Navigate to Campaign Dashboard
     navigateTo("campaign");
 
     // Verify key elements
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Chapter"));
     assertTrue(driver.getPageSource().contains("Victory Points"));
-
-    takeSequencedScreenshot("campaign-dashboard-initial");
+    captureCaption(
+        "Campaign Dashboard — tracks your current chapter, Victory Points, and available"
+            + " actions. Each chapter has unique story beats and goals.");
 
     // 2. Navigate to Backstage Actions
     WebElement actionsButton =
         waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Backstage Actions']"));
     clickElement(actionsButton);
     waitForVaadinClientToLoad();
-    takeSequencedScreenshot("backstage-actions-view");
 
     // Verify we are on the backstage actions view
     waitForText("Backstage Actions");
+    captureCaption(
+        "Backstage Actions let you spend your weekly action on Training, Promos,"
+            + " Networking, and more — each affects your stats and story progression.");
 
     // 3. Perform an action (Training)
     WebElement trainingButton = waitForVaadinElement(driver, By.id("action-button-TRAINING"));
     clickElement(trainingButton);
-
-    // Verify notification (Success or Fail)
-    takeSequencedScreenshot("after-training-action");
+    captureCaption(
+        "Training increases your wrestler's stats over time — the result is shown"
+            + " immediately and logged to your campaign history.");
 
     // 4. Navigate back
-    // Wrap in retry to handle StaleElementReferenceException if page re-renders during navigation
     int retryCount = 0;
     while (retryCount < 3) {
       try {
@@ -130,10 +136,15 @@ class CampaignE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
 
     waitForText("Campaign: All or Nothing");
+    captureCaption(
+        "Back on the Campaign Dashboard — Victory Points accumulate from actions and"
+            + " match wins, driving chapter progression throughout the season.");
   }
 
   @Test
   void testCampaignUpgrades() {
+    setVideoInfo("Campaign", "Skill Upgrades", "campaign-skill-upgrades");
+
     // 1. Grant tokens directly in DB before starting test
     Campaign campaign = campaignRepository.findActiveByWrestler(player).get();
     campaign.getState().setSkillTokens(8);
@@ -141,26 +152,30 @@ class CampaignE2ETest extends AbstractE2ETest {
 
     // 2. Navigate to Campaign Dashboard
     navigateTo("campaign");
-    takeSequencedScreenshot("campaign-dashboard-for-upgrades");
 
     // 3. Verify Upgrade section is visible
     waitForText("Available Skill Upgrades");
     waitForText("Iron Man");
     waitForText("Unbreakable");
+    captureCaption(
+        "Skill Upgrades appear on the Campaign Dashboard when you have enough Skill Tokens."
+            + " Tokens are earned by completing backstage actions and winning matches.");
 
     // 4. Purchase an upgrade (Iron Man)
     WebElement upgradeButton =
-        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Iron Man']"));
+        waitForVaadinElement(driver, By.xpath("//vaadin-button[text()=’Iron Man’]"));
     clickElement(upgradeButton);
     waitForVaadinClientToLoad();
-    takeSequencedScreenshot("after-upgrade-purchase");
+    captureCaption(
+        "Purchasing Iron Man — each upgrade permanently boosts a stat for the rest of"
+            + " the campaign. Choose carefully; tokens are limited.");
 
     // 5. Verify upgrade is in "Purchased Skills" section
     waitForText("Purchased Skills");
     waitForText("Iron Man: Increases your wrestler’s maximum stamina by 2.");
-
-    // 6. Verify the upgrade section is gone (since only 8 tokens were granted and consumed)
-    // assertFalse(driver.getPageSource().contains("Available Skill Upgrades"));
+    captureCaption(
+        "The upgrade moves to Purchased Skills and takes effect immediately — maximum"
+            + " stamina increased by 2 for all future matches.");
   }
 
   private void waitForText(final String text) {
