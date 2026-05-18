@@ -1208,14 +1208,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       Path videosDir = Paths.get("docs", "videos");
       Files.createDirectories(videosDir);
 
-      Path srtFile = writeSrtFile(description, durationSeconds, session.frameDir);
+      burnCaptionsOntoFrames(description, session.frameDir, frameCount);
+
       Optional<Path> audioFile = Optional.empty();
       if (Boolean.getBoolean("generate.video.voice")) {
         audioFile = generateNarrationAudio(description, session.frameDir);
       }
 
       Path outputMp4 = videosDir.resolve(videoName + ".mp4");
-      runFfmpeg(session.frameDir, srtFile, audioFile, outputMp4);
+      runFfmpeg(session.frameDir, audioFile, outputMp4);
 
       updateVideoManifest(category, title, description, videoName);
       log.info("Video documentation saved: {}", outputMp4);
@@ -1224,20 +1225,74 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  private Path writeSrtFile(String description, int durationSeconds, Path dir) throws IOException {
-    String sanitized = description.replace('\n', ' ').replace('"', '\'').trim();
-    String srt =
-        "1\n00:00:00,000 --> %s\n%s\n".formatted(formatSrtTimestamp(durationSeconds), sanitized);
-    Path srtFile = dir.resolve("captions.srt");
-    Files.writeString(srtFile, srt);
-    return srtFile;
+  /** Burns caption text onto every frame PNG using Java2D — no libass/freetype needed. */
+  private void burnCaptionsOntoFrames(String description, Path frameDir, int frameCount)
+      throws IOException {
+    String text = description.replace('\n', ' ').trim();
+    for (int i = 0; i < frameCount; i++) {
+      Path framePath = frameDir.resolve("frame-%04d.png".formatted(i));
+      if (!Files.exists(framePath)) continue;
+
+      java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(framePath.toFile());
+      if (img == null) continue;
+
+      int w = img.getWidth();
+      int h = img.getHeight();
+      java.awt.Graphics2D g = img.createGraphics();
+      g.setRenderingHint(
+          java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+          java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+      int fontSize = Math.max(16, w / 60);
+      java.awt.Font font =
+          new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.BOLD, fontSize);
+      g.setFont(font);
+      java.awt.FontMetrics fm = g.getFontMetrics();
+
+      // Word-wrap to fit within 90% of frame width
+      int maxWidth = (int) (w * 0.90);
+      java.util.List<String> lines = wrapText(text, fm, maxWidth);
+
+      int lineHeight = fm.getHeight();
+      int totalTextHeight = lines.size() * lineHeight + 8;
+      int boxY = h - totalTextHeight - 20;
+      int boxX = (int) (w * 0.05);
+      int boxW = (int) (w * 0.90);
+
+      // Semi-transparent black background bar
+      g.setColor(new java.awt.Color(0, 0, 0, 180));
+      g.fillRoundRect(boxX - 8, boxY - 4, boxW + 16, totalTextHeight + 8, 10, 10);
+
+      // White text
+      g.setColor(java.awt.Color.WHITE);
+      int y = boxY + fm.getAscent();
+      for (String line : lines) {
+        int lineW = fm.stringWidth(line);
+        int x = boxX + (boxW - lineW) / 2;
+        g.drawString(line, x, y);
+        y += lineHeight;
+      }
+      g.dispose();
+
+      javax.imageio.ImageIO.write(img, "png", framePath.toFile());
+    }
   }
 
-  private String formatSrtTimestamp(int totalSeconds) {
-    int h = totalSeconds / 3600;
-    int m = (totalSeconds % 3600) / 60;
-    int s = totalSeconds % 60;
-    return "%02d:%02d:%02d,000".formatted(h, m, s);
+  private java.util.List<String> wrapText(String text, java.awt.FontMetrics fm, int maxWidth) {
+    java.util.List<String> lines = new java.util.ArrayList<>();
+    String[] words = text.split(" ");
+    StringBuilder current = new StringBuilder();
+    for (String word : words) {
+      String candidate = current.isEmpty() ? word : current + " " + word;
+      if (fm.stringWidth(candidate) <= maxWidth) {
+        current = new StringBuilder(candidate);
+      } else {
+        if (!current.isEmpty()) lines.add(current.toString());
+        current = new StringBuilder(word);
+      }
+    }
+    if (!current.isEmpty()) lines.add(current.toString());
+    return lines;
   }
 
   private Optional<Path> generateNarrationAudio(String text, Path dir) {
@@ -1267,8 +1322,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return Optional.empty();
   }
 
-  private void runFfmpeg(Path frameDir, Path srtFile, Optional<Path> audioFile, Path outputMp4)
-      throws Exception {
+  private void runFfmpeg(Path frameDir, Optional<Path> audioFile, Path outputMp4) throws Exception {
     List<String> cmd = new ArrayList<>();
     cmd.add("ffmpeg");
     cmd.add("-y");
@@ -1280,13 +1334,11 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       cmd.add("-i");
       cmd.add(audioFile.get().toString());
     }
-    String srtPath = srtFile.toAbsolutePath().toString().replace("\\", "/").replace(":", "\\:");
+    // Ensure even dimensions and convert rgb24 PNG frames to yuv420p (required by libx264)
     cmd.add("-vf");
-    cmd.add("subtitles=" + srtPath);
+    cmd.add("scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p");
     cmd.add("-c:v");
     cmd.add("libx264");
-    cmd.add("-pix_fmt");
-    cmd.add("yuv420p");
     cmd.add("-crf");
     cmd.add("28");
     if (audioFile.isPresent()) {
@@ -1299,8 +1351,21 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     ProcessBuilder pb = new ProcessBuilder(cmd);
     pb.redirectErrorStream(true);
     Process process = pb.start();
-    String output = new String(process.getInputStream().readAllBytes());
+    // Drain stdout/stderr on a separate thread to prevent pipe-buffer deadlock
+    StringBuilder output = new StringBuilder();
+    Thread reader =
+        new Thread(
+            () -> {
+              try (java.io.BufferedReader br =
+                  new java.io.BufferedReader(
+                      new java.io.InputStreamReader(process.getInputStream()))) {
+                br.lines().forEach(line -> output.append(line).append('\n'));
+              } catch (IOException ignored) {
+              }
+            });
+    reader.start();
     int rc = process.waitFor();
+    reader.join(5000);
     if (rc != 0) {
       throw new RuntimeException("ffmpeg failed (exit " + rc + "): " + output);
     }
