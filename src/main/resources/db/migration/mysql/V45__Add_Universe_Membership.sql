@@ -1,4 +1,4 @@
-CREATE TABLE universe_members
+CREATE TABLE IF NOT EXISTS universe_members
 (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     universe_id BIGINT       NOT NULL,
@@ -12,6 +12,6 @@ CREATE TABLE universe_members
 );
 
 -- Seed all existing accounts as MEMBER of the Default Universe (ID=1)
-INSERT INTO universe_members (universe_id, account_id, role)
+INSERT IGNORE INTO universe_members (universe_id, account_id, role)
 SELECT 1, id, 'MEMBER'
 FROM account;

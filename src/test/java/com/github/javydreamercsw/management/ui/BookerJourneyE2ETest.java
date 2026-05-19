@@ -379,9 +379,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       // Click the edit button on the first row
       log.info("Clicking edit segment button");
       WebElement editButton =
-          driver.findElement(
-              By.id(
-                  "edit-segment-button-" + segmentService.getSegmentsByShow(show).get(0).getId()));
+          wait.until(
+              ExpectedConditions.elementToBeClickable(
+                  By.id(
+                      "edit-segment-button-"
+                          + segmentService.getSegmentsByShow(show).get(0).getId())));
       clickElement(editButton);
 
       // Wait for the dialog to appear
@@ -649,7 +651,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
     Assertions.assertNotNull(cells);
-    Assertions.assertEquals(24, cells.size()); // 11 headers, 1 rows (columns increased)
+    Assertions.assertEquals(
+        25,
+        cells.size()); // 12 headers, 1 row (drag handle col has empty header; icon in data cell)
   }
 
   @Test
