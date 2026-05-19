@@ -21,8 +21,7 @@ details: Lead your wrestler to glory in an immersive single-player campaign.
 details: Take control of the promotion and book the ultimate card.
 - title: Multiplayer
 details: Challenge other players in online leagues and tournaments.
-
----
+-------------------------------------------------------------------
 
 ## Download & Play
 

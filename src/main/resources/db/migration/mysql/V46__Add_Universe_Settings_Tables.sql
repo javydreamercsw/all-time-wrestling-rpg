@@ -1,4 +1,4 @@
-CREATE TABLE universe_expansion_settings (
+CREATE TABLE IF NOT EXISTS universe_expansion_settings (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     universe_id BIGINT NOT NULL,
     expansion_code VARCHAR(255) NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE universe_expansion_settings (
     CONSTRAINT fk_ues_universe FOREIGN KEY (universe_id) REFERENCES universe (id)
 );
 
-CREATE TABLE universe_wrestler_exclusions (
+CREATE TABLE IF NOT EXISTS universe_wrestler_exclusions (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     universe_id BIGINT NOT NULL,
     wrestler_id BIGINT NOT NULL,

@@ -44,7 +44,7 @@
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <selenium.version>4.43.0</selenium.version>
+    <selenium.version>4.44.0</selenium.version>
     <skipTests>false</skipTests>
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
@@ -431,7 +431,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.2.0-M1</version>
+      <version>6.1.0</version>
       <scope>test</scope>
     </dependency>
     <!-- Security -->
@@ -602,7 +602,7 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations-jakarta</artifactId>
-      <version>2.2.49</version>
+      <version>2.2.50</version>
     </dependency>
     <dependency>
       <groupId>jakarta.persistence</groupId>
@@ -639,7 +639,7 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-models-jakarta</artifactId>
-      <version>2.2.49</version>
+      <version>2.2.50</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
@@ -913,7 +913,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.4.0</version>
+        <version>3.5.1</version>
         <configuration>
           <!-- optional: limit format enforcement to just the files changed by this feature branch
                 <ratchetFrom>origin/master</ratchetFrom>-->
@@ -1524,9 +1524,45 @@
               <excludes>
                 <exclude>**/*IT.java</exclude>
                 <exclude>**/*IntegrationTest.java</exclude>
-                <!-- Exclude non-Docs E2Es -->
-                <exclude>**/*E2ETest.java</exclude>
               </excludes>
+              <systemPropertyVariables>
+                <headless>${headless}</headless>
+              </systemPropertyVariables>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>generate-videos</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+        <surefire.skip>true</surefire.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <argLine>@{failsafeArgLine} -Dgenerate.videos=true</argLine>
+              <includes>
+                <include>**/*E2ETest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
+              <groups>video</groups>
               <systemPropertyVariables>
                 <headless>${headless}</headless>
               </systemPropertyVariables>

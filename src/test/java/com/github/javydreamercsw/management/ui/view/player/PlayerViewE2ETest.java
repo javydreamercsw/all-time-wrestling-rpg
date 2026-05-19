@@ -59,12 +59,14 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+@Tag("video")
 public class PlayerViewE2ETest extends AbstractE2ETest {
 
   @Autowired
@@ -136,6 +138,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testPlayerViewLoads() {
+    setVideoInfo("Player Dashboard", "Player Dashboard Overview", "player-dashboard-overview");
     // Get player account
     Account playerAccount = accountService.findByUsername("player").get();
     assertNotNull(playerAccount);
@@ -248,6 +251,12 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           assertEquals(
               "Losses\n1", waitForVaadinElement(driver, By.id("wrestler-losses")).getText());
 
+          captureCaption(
+              "Player Dashboard — shows wrestler name, tier, win/loss record, and bumps at a"
+                  + " glance. The Upcoming Matches grid lists every scheduled segment; click"
+                  + " 'Go to Match' to open the match detail view for that event.",
+              4500);
+
           // Check that the grids have the correct number of rows
           assertGridContains("upcoming-matches-grid", "Test Show");
           assertGridContains("upcoming-matches-grid", "Test Show 2");
@@ -256,14 +265,27 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           waitForVaadinElementVisible(By.id("active-rivalries-grid"));
           assertGridContains("active-rivalries-grid", "Opponent");
 
+          captureCaption(
+              "Rivalries tab — shows all active feuds the player's wrestler is involved in."
+                  + " Heat level and opponent are displayed so the player can track which"
+                  + " storylines are hottest and plan their next promo or match accordingly.",
+              4500);
+
           click("vaadin-tab", "Inbox");
           waitForVaadinElementVisible(By.id("inbox-grid"));
           assertGridContains("inbox-grid", "Test Message");
+
+          captureCaption(
+              "Inbox tab — booker messages, angle updates, and match announcements arrive here."
+                  + " Players stay informed about story directions and upcoming bookings"
+                  + " without needing to contact the booker directly.",
+              4000);
         });
   }
 
   @Test
   public void testGoToMatchNavigation() {
+    setVideoInfo("Player Dashboard", "Navigating to a Match", "player-go-to-match");
     // Get player account
     Account playerAccount = accountService.findByUsername("player").get();
     assertNotNull(playerAccount);
@@ -320,6 +342,12 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     waitForVaadinToLoad(driver);
 
+    captureCaption(
+        "Upcoming matches grid — each scheduled segment has a 'Go to Match' button that"
+            + " takes the player directly to the match detail view for that show. The button"
+            + " is disabled if the match result has already been submitted.",
+        4000);
+
     // Click the "Go to Match" button
     clickElement(By.id("go-to-match-" + segment.getId()));
 
@@ -334,6 +362,11 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           assertEquals(
               finalSegment.getSegmentType().getName(),
               waitForVaadinElement(driver, By.id("match-type")).getText());
+          captureCaption(
+              "Match view loaded — shows the show name, match type, and participants."
+                  + " Players can submit results, request AI narration, or start an"
+                  + " interactive promo depending on the segment type.",
+              4000);
         });
   }
 
@@ -375,6 +408,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testStatusCardBadgeVisibleOnDashboard() {
+    setVideoInfo("Player Dashboard", "Status Cards and Momentum", "player-status-cards");
     Account playerAccount = accountService.findByUsername("player").get();
 
     Wrestler wrestler =
@@ -418,13 +452,26 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           // Status badge must appear
           waitForVaadinElement(driver, By.xpath("//span[text()='Draw']"));
 
+          captureCaption(
+              "Status card badge visible on the dashboard — 'Draw' is a campaign-earned"
+                  + " ability that boosts Momentum by +4, shown directly on the stat panel."
+                  + " Multiple status cards stack, and all bonuses apply during match play.",
+              4500);
+
           // Momentum boosted by +4 from the status card
           waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Momentum: 4')]"));
+
+          captureCaption(
+              "Momentum reflects all active status card bonuses — the effective stat shown"
+                  + " here is exactly what the match engine uses when drawing cards in combat."
+                  + " Higher momentum increases the chance of landing powerful moves.",
+              4500);
         });
   }
 
   @Test
   public void testSeasonSummaryVisibleOnDashboard() {
+    setVideoInfo("Player Dashboard", "Season Summary", "player-season-summary");
     // Get player account
     Account playerAccount = accountService.findByUsername("player").get();
 
@@ -491,6 +538,12 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
                   driver, By.xpath("//h4[contains(text(), 'Test Season 2026 Summary')]"));
           assertNotNull(summaryTitle);
 
+          captureCaption(
+              "Season Summary panel shows the wrestler's W-L-D record and fan growth for the"
+                  + " current season. It updates automatically after every show the wrestler"
+                  + " appears on, giving a running picture of seasonal performance.",
+              4500);
+
           WebElement recordSpan =
               waitForVaadinElement(driver, By.xpath("//span[contains(text(), 'Record: 1-0-0')]"));
           assertNotNull(recordSpan);
@@ -498,6 +551,12 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
           WebElement fanGrowth =
               waitForVaadinElement(driver, By.xpath("//span[contains(text(), '0 fans')]"));
           assertNotNull(fanGrowth);
+
+          captureCaption(
+              "Fan growth tracks audience gained or lost this season — wins and title feuds"
+                  + " push it up, while losses and inactivity drag it down. The net change"
+                  + " is displayed so players can see the impact of their booking outcomes.",
+              4500);
         });
   }
 }

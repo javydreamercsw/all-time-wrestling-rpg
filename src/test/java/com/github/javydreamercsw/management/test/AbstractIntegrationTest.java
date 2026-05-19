@@ -299,16 +299,12 @@ public abstract class AbstractIntegrationTest {
     transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     transactionTemplate.execute(
         status -> {
-          try {
-            entityManager
-                .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
-                .executeUpdate();
-            entityManager
-                .createNativeQuery("ALTER TABLE account ALTER COLUMN id RESTART WITH 1")
-                .executeUpdate();
-          } catch (Exception e) {
-            log.trace("Could not reset basic sequences: {}", e.getMessage());
-          }
+          entityManager
+              .createNativeQuery("ALTER TABLE wrestler_state ALTER COLUMN id RESTART WITH 1")
+              .executeUpdate();
+          entityManager
+              .createNativeQuery("ALTER TABLE account ALTER COLUMN id RESTART WITH 1")
+              .executeUpdate();
           return null;
         });
 

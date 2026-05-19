@@ -81,7 +81,6 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(
-        driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
+    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

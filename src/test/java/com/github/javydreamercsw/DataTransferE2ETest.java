@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.util.Objects;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -34,6 +35,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testcontainers.mysql.MySQLContainer;
 
+@Tag("video")
 public class DataTransferE2ETest extends AbstractE2ETest {
 
   private static final MySQLContainer MYSQL_CONTAINER =
@@ -105,16 +107,22 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
   @Test
   public void testDataTransferProcessView() throws SQLException {
+    setVideoInfo("Admin", "MySQL Data Migration Wizard", "data-transfer-full-wizard");
+
     System.setProperty("simulateFailure", "false");
     navigateTo("data-transfer");
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
+    captureCaption(
+        "Data Transfer Wizard — migrate all application data from H2 to MySQL in three"
+            + " steps: connection config, table selection, and transfer. This is the"
+            + " recommended path before switching to a production MySQL deployment.",
+        4000);
     clickElement(nextButton);
 
     waitForVaadinClientToLoad();
 
     // Step 1: Connection Configuration
-    // Fill in valid connection parameters
     WebElement hostField = waitForVaadinElement(driver, By.id("host-field"));
     hostField.sendKeys(MYSQL_CONTAINER.getHost());
     WebElement portField = waitForVaadinElement(driver, By.id("port-field"));
@@ -126,6 +134,11 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     usernameField.sendKeys(MYSQL_CONTAINER.getUsername());
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
     passwordField.sendKeys(MYSQL_CONTAINER.getPassword(), Keys.TAB);
+    captureCaption(
+        "Step 1 — enter the MySQL connection details: host, port, database name, username,"
+            + " and password. Use Test Connection to verify connectivity before proceeding;"
+            + " the wizard will not advance if the connection fails.",
+        4000);
 
     // Click the next button to advance to Data Selection step
     clickElement(nextButton);
@@ -134,6 +147,11 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
     assertNotNull(dataSelectionStep);
     selectFromVaadinComboBox("table-selection-combo", "All Tables");
+    captureCaption(
+        "Step 2 — choose which tables to migrate. 'All Tables' transfers the complete"
+            + " dataset; individual tables can be selected for targeted or partial migrations"
+            + " without touching the rest of the schema.",
+        4000);
 
     // Click the next button again to advance to Data Transfer Process step
     nextButton = waitForVaadinElement(driver, By.id("next-button"));
@@ -142,18 +160,27 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     // Assert that the data transfer process step is displayed via WebDriver
     WebElement dataTransferProcessStep =
         waitForVaadinElement(driver, By.id("data-transfer-process-step"));
-
     assertNotNull(dataTransferProcessStep);
 
     // Assert that a progress indicator is present
     WebElement progressIndicator = waitForVaadinElement(driver, By.id("progress-indicator"));
     assertNotNull(progressIndicator);
+    captureCaption(
+        "Step 3 — transfer runs in the background with a live progress indicator."
+            + " The process is fully transactional: if anything fails, the entire migration"
+            + " rolls back automatically so no partial data is left in MySQL.",
+        4500);
 
     // Wait for completion message
     new WebDriverWait(driver, Duration.ofMinutes(2))
         .until(
             ExpectedConditions.textToBePresentInElementLocated(
                 By.id("status-label"), "Data transfer completed successfully."));
+    captureCaption(
+        "Migration complete — all data is now in MySQL and verified. Restart the"
+            + " application with the MySQL Spring profile (spring.profiles.active=mysql)"
+            + " to run in production mode against the new database.",
+        4000);
 
     // Verify data in MySQL
     try (Connection conn =

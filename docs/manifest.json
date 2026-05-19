@@ -432,7 +432,8 @@
     "title": "Cards",
     "description": "The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.",
     "imagePath": "screenshots/mechanic-cards.png",
-    "order": 320
+    "order": 320,
+    "videoPath": "videos/mechanic-cards.mp4"
   }, {
     "id": "dashboards-dashboard-rankings",
     "category": "Dashboards",
@@ -446,7 +447,8 @@
     "title": "Decks",
     "description": "Manage wrestler-specific decks. Strategy involves balancing high-damage finishers with efficient setup moves and stamina-recovering taunts.",
     "imagePath": "screenshots/mechanic-decks.png",
-    "order": 340
+    "order": 340,
+    "videoPath": "videos/mechanic-decks.mp4"
   }, {
     "id": "npc-npc-list",
     "category": "NPC",
@@ -489,5 +491,33 @@
     "description": "View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.",
     "imagePath": "screenshots/booker-show-history.png",
     "order": 400
+  }, {
+    "id": "game-mechanics-mechanic-cards-walkthrough",
+    "category": "Game Mechanics",
+    "title": "Cards Walkthrough",
+    "description": "Card detail view: health cost, stamina cost, damage type, and move category.",
+    "videoPath": "videos/mechanic-cards-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "uncategorized-_discard_1779114245433",
+    "category": "Uncategorized",
+    "title": "Unknown",
+    "description": "Segment description updated — the show card reflects the new summary immediately.",
+    "videoPath": "videos/_discard_1779114245433.mp4",
+    "order": 0
+  }, {
+    "id": "booker-journey-booker-full-show-lifecycle",
+    "category": "Booker Journey",
+    "title": "Full Show Lifecycle",
+    "description": "Segment description updated — the show card reflects the new summary immediately.",
+    "videoPath": "videos/booker-full-show-lifecycle.mp4",
+    "order": 0
+  }, {
+    "id": "booker-journey-booker-set-main-event",
+    "category": "Booker Journey",
+    "title": "Set Main Event",
+    "description": "This setting impacts the narration as well as the fans obtained by the participants!.",
+    "videoPath": "videos/booker-set-main-event.mp4",
+    "order": 0
   } ]
 }
