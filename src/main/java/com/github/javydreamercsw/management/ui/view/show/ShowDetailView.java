@@ -1108,6 +1108,7 @@ public class ShowDetailView extends Main
   }
 
   private void openEditSegmentDialog(@NonNull Segment segment) {
+    segment = segmentRepository.findById(segment.getId()).orElse(segment);
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Edit Segment for " + segment.getShow().getName());
     dialog.setWidth("600px");
