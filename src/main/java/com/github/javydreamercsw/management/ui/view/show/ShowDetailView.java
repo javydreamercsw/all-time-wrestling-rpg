@@ -599,6 +599,21 @@ public class ShowDetailView extends Main
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(segments);
 
+    // Drag handle column — visual affordance for row drag-and-drop
+    grid.addComponentColumn(
+            segment -> {
+              Icon handle = new Icon(VaadinIcon.GRID_BEVEL);
+              handle
+                  .getStyle()
+                  .set("cursor", "grab")
+                  .set("color", "var(--lumo-secondary-text-color)");
+              handle.setTooltipText("Drag to reorder");
+              return handle;
+            })
+        .setWidth("3em")
+        .setFlexGrow(0)
+        .setHeader("");
+
     // Segment type column
     grid.addColumn(
             segment ->
@@ -1108,8 +1123,9 @@ public class ShowDetailView extends Main
   }
 
   private void openEditSegmentDialog(@NonNull Segment segment) {
+    final Segment seg = segmentRepository.findById(segment.getId()).orElse(segment);
     Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Edit Segment for " + segment.getShow().getName());
+    dialog.setHeaderTitle("Edit Segment for " + currentShow.getName());
     dialog.setWidth("600px");
     dialog.setMaxWidth("90vw");
     dialog.setId("edit-segment-dialog");
@@ -1128,7 +1144,7 @@ public class ShowDetailView extends Main
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
-    segmentTypeCombo.setValue(segment.getSegmentType());
+    segmentTypeCombo.setValue(seg.getSegmentType());
     segmentTypeCombo.setId("edit-segment-type-combo-box");
 
     // Segment rules selection (multi-select)
@@ -1139,7 +1155,7 @@ public class ShowDetailView extends Main
             .collect(Collectors.toList()));
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
-    rulesCombo.setValue(segment.getSegmentRules());
+    rulesCombo.setValue(seg.getSegmentRules());
     rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
@@ -1151,7 +1167,7 @@ public class ShowDetailView extends Main
             .collect(Collectors.toList()));
     refereeCombo.setItemLabelGenerator(Npc::getName);
     refereeCombo.setWidthFull();
-    refereeCombo.setValue(segment.getReferee());
+    refereeCombo.setValue(seg.getReferee());
     refereeCombo.setId("edit-referee-combo-box");
 
     // Alignment and Gender Filters
@@ -1168,9 +1184,7 @@ public class ShowDetailView extends Main
     genderFilter.setPlaceholder("All genders");
     genderFilter.setWidthFull();
     Gender defaultGender =
-        segment.getShow() != null && segment.getShow().getTemplate() != null
-            ? segment.getShow().getTemplate().getGenderConstraint()
-            : null;
+        currentShow.getTemplate() != null ? currentShow.getTemplate().getGenderConstraint() : null;
     genderFilter.setValue(defaultGender);
     genderFilter.setId("edit-gender-filter-combo-box");
 
@@ -1239,7 +1253,7 @@ public class ShowDetailView extends Main
         };
 
     // One team per existing wrestler; fall back to two empty teams for a new segment
-    for (Wrestler w : segment.getWrestlers()) {
+    for (Wrestler w : seg.getWrestlers()) {
       addTeamRow.accept(new HashSet<>(Set.of(w)));
     }
     if (teamCombos.isEmpty()) {
@@ -1285,26 +1299,26 @@ public class ShowDetailView extends Main
     teamsSection.setPadding(false);
     formLayout.setColspan(teamsSection, 2);
 
-    winnersCombo.setValue(new HashSet<>(segment.getWinners()));
+    winnersCombo.setValue(new HashSet<>(seg.getWinners()));
 
     // Narration
     TextArea summaryArea = new TextArea("Summary");
     summaryArea.setWidthFull();
-    summaryArea.setValue(segment.getSummary() != null ? segment.getSummary() : "");
+    summaryArea.setValue(seg.getSummary() != null ? seg.getSummary() : "");
     summaryArea.setId("edit-summary-text-area");
     formLayout.setColspan(summaryArea, 2);
 
     // Narration
     TextArea narrationArea = new TextArea("Narration");
     narrationArea.setWidthFull();
-    narrationArea.setValue(segment.getNarration() != null ? segment.getNarration() : "");
+    narrationArea.setValue(seg.getNarration() != null ? seg.getNarration() : "");
     narrationArea.setId("edit-narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
     // Notes
     TextArea notesArea = new TextArea("Notes/Feedback");
     notesArea.setWidthFull();
-    notesArea.setValue(segment.getNotes() != null ? segment.getNotes() : "");
+    notesArea.setValue(seg.getNotes() != null ? seg.getNotes() : "");
     notesArea.setId("edit-notes-text-area");
     formLayout.setColspan(notesArea, 2);
 
@@ -1316,13 +1330,13 @@ public class ShowDetailView extends Main
             .collect(Collectors.toList()));
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
-    titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment());
-    titleMultiSelectComboBox.setValue(segment.getTitles());
+    titleMultiSelectComboBox.setVisible(seg.getIsTitleSegment());
+    titleMultiSelectComboBox.setValue(seg.getTitles());
     titleMultiSelectComboBox.setId("edit-title-multi-select-combo-box");
 
     // Add checkbox to indicate if it's a title segment
     Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
-    isTitleSegmentCheckbox.setValue(segment.getIsTitleSegment());
+    isTitleSegmentCheckbox.setValue(seg.getIsTitleSegment());
     isTitleSegmentCheckbox.setId("edit-is-title-segment-checkbox");
     isTitleSegmentCheckbox.addValueChangeListener(
         event -> {
@@ -1351,28 +1365,28 @@ public class ShowDetailView extends Main
         new Button(
             "Save Changes",
             e -> {
-              segment.setNarration(narrationArea.getValue());
-              segment.setSummary(summaryArea.getValue());
-              segment.setNotes(notesArea.getValue());
-              segment.setReferee(refereeCombo.getValue());
+              seg.setNarration(narrationArea.getValue());
+              seg.setSummary(summaryArea.getValue());
+              seg.setNotes(notesArea.getValue());
+              seg.setReferee(refereeCombo.getValue());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
-              segment.setIsTitleSegment(isTitleSegment);
+              seg.setIsTitleSegment(isTitleSegment);
               // If it's a title segment, set the selected titles
               if (isTitleSegment) {
-                segment.setTitles(titleMultiSelectComboBox.getValue());
+                seg.setTitles(titleMultiSelectComboBox.getValue());
               }
               java.util.Map<Integer, List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
               for (int i = 0; i < teamCombos.size(); i++) {
                 teamMap.put(i + 1, new ArrayList<>(teamCombos.get(i).getValue()));
               }
               if (validateAndSaveSegment(
-                  segment.getShow(),
+                  currentShow,
                   segmentTypeCombo.getValue(),
                   teamMap,
                   winnersCombo.getValue(),
                   rulesCombo.getValue(),
-                  segment)) {
+                  seg)) {
                 dialog.close();
                 refreshSegmentsGrid();
               }

@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -134,7 +135,11 @@ public class DramaEventService {
   public Optional<DramaEvent> generateRandomDramaEvent(
       @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     // Basic implementation for generating random events
-    Wrestler wrestler = wrestlerRepository.findById(wrestlerId).orElseThrow();
+    Wrestler wrestler =
+        wrestlerRepository
+            .findById(wrestlerId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Wrestler not found with id: " + wrestlerId));
 
     // Choose random event type and severity
     DramaEventType[] types = DramaEventType.values();
@@ -201,7 +206,11 @@ public class DramaEventService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<DramaEvent> getEventsForWrestler(@NonNull final Long wrestlerId) {
-    Wrestler wrestler = wrestlerRepository.findById(wrestlerId).orElseThrow();
+    Wrestler wrestler =
+        wrestlerRepository
+            .findById(wrestlerId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Wrestler not found with id: " + wrestlerId));
     return dramaEventRepository.findByWrestler(wrestler);
   }
 
@@ -209,7 +218,11 @@ public class DramaEventService {
   @PreAuthorize("isAuthenticated()")
   public Page<DramaEvent> getEventsForWrestler(
       @NonNull final Long wrestlerId, @NonNull final Pageable pageable) {
-    Wrestler wrestler = wrestlerRepository.findById(wrestlerId).orElseThrow();
+    Wrestler wrestler =
+        wrestlerRepository
+            .findById(wrestlerId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Wrestler not found with id: " + wrestlerId));
     return dramaEventRepository.findByWrestler(wrestler, pageable);
   }
 

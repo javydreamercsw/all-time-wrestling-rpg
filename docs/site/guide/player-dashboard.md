@@ -42,3 +42,65 @@ Review your past glory by switching between seasons. The dashboard stores histor
 
 ---
 
+## Video Walkthroughs
+
+### Interactive Promo
+
+The Silent One responds — AI-generated retort appears under the opponent's name. The full exchange is persisted to the segment narration and becomes part of the permanent show record, visible to all participants.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+<source src="/videos/interactive-promo.mp4" type="video/mp4">
+</video>
+
+---
+
+### Match Narration
+
+Generate Narration lets the player request an AI-written match story using their deck cards and the segment outcome. Only participants see this button — the result is stored on the segment and visible to everyone afterward.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+<source src="/videos/player-match-narration.mp4" type="video/mp4">
+</video>
+
+---
+
+### Navigating to a Match
+
+Match view loaded — shows the show name, match type, and participants. Players can submit results, request AI narration, or start an interactive promo depending on the segment type.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+<source src="/videos/player-go-to-match.mp4" type="video/mp4">
+</video>
+
+---
+
+### Season Summary
+
+Fan growth tracks audience gained or lost this season — wins and title feuds push it up, while losses and inactivity drag it down. The net change is displayed so players can see the impact of their booking outcomes.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+<source src="/videos/player-season-summary.mp4" type="video/mp4">
+</video>
+
+---
+
+### Player Dashboard Overview
+
+Inbox tab — booker messages, angle updates, and match announcements arrive here. Players stay informed about story directions and upcoming bookings without needing to contact the booker directly.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+<source src="/videos/player-dashboard-overview.mp4" type="video/mp4">
+</video>
+
+---
+
+### Status Cards and Momentum
+
+Momentum reflects all active status card bonuses — the effective stat shown here is exactly what the match engine uses when drawing cards in combat. Higher momentum increases the chance of landing powerful moves.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+<source src="/videos/player-status-cards.mp4" type="video/mp4">
+</video>
+
+---
+

@@ -41,9 +41,11 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import java.time.Instant;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Tag("video")
 class AdvancedCampaignE2ETest extends AbstractE2ETest {
 
   @Autowired private WrestlerRepository wrestlerRepository;
@@ -95,6 +97,8 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
 
   @Test
   void testFightingChampionTrigger() {
+    setVideoInfo("Campaign", "The Fighting Champion Chapter", "campaign-fighting-champion");
+
     // 1. Give player a title
     Title title = titleRepository.findAll().getFirst();
     TitleReign reign = new TitleReign();
@@ -112,11 +116,18 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     navigateTo("campaign");
 
     waitForText("The Fighting Champion");
+    captureCaption(
+        "The Fighting Champion chapter activates when the player holds a championship."
+            + " The campaign tracks title reigns automatically and unlocks this chapter,"
+            + " presenting unique storyline choices available only to a defending champion.",
+        4500);
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("The Fighting Champion"));
   }
 
   @Test
   void testGangWarfareTrigger() {
+    setVideoInfo("Campaign", "Gang Warfare Chapter", "campaign-gang-warfare");
+
     // Start Campaign and force chapter directly (entry condition not evaluated)
     Campaign campaign = campaignService.startCampaign(player);
     campaign.getState().setCurrentChapterId("gang_warfare");
@@ -126,11 +137,18 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     navigateTo("campaign");
 
     waitForText("Gang Warfare");
+    captureCaption(
+        "Gang Warfare unlocks when factions collide for territory control — the chapter"
+            + " sets up a faction turf war storyline across multiple shows, with backstage"
+            + " actions that let the player recruit allies or sabotage rivals.",
+        4500);
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Gang Warfare"));
   }
 
   @Test
   void testCorporatePowerTripTrigger() {
+    setVideoInfo("Campaign", "Corporate Power Trip Chapter", "campaign-corporate-power-trip");
+
     // 1. Start Campaign normally
     Campaign campaign = campaignService.startCampaign(player);
 
@@ -144,11 +162,15 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     navigateTo("campaign");
 
     waitForText("Corporate Power Trip");
+    captureCaption(
+        "Corporate Power Trip triggers at 15 Victory Points — the player has earned enough"
+            + " momentum to challenge the establishment and climb to the top of the card."
+            + " VP accumulates from match wins, backstage actions, and completed milestones.",
+        4500);
     assertTrue(Objects.requireNonNull(driver.getPageSource()).contains("Corporate Power Trip"));
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(
-        driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
+    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

@@ -392,7 +392,6 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(@NonNull final String text) {
-    waitForVaadinElement(
-        driver, org.openqa.selenium.By.xpath("//*[contains(text(), '" + text + "')]"));
+    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

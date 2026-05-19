@@ -111,7 +111,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
   protected void login(@NonNull final Account account) {
     log.info("Logging in as user: {}", account.getUsername());
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
-    Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
+    Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     var principal = new CustomUserDetails(account, wrestler);
     Set<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
@@ -145,11 +145,6 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     } else {
       throw new RuntimeException("loginAs: Account not found: " + username);
     }
-  }
-
-  protected void clearSecurityContext() {
-    SecurityContextHolder.clearContext();
-    TestSecurityContextHolder.clearContext();
   }
 
   @org.junit.jupiter.api.AfterEach

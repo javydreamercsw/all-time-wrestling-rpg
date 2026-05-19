@@ -59,7 +59,7 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
     navigateTo("wrestler-list");
 
     // Verify 'Rob Van Dam' is NOT present
-    assertThat(driver.findElements(By.xpath("//*[contains(text(), 'Rob Van Dam')]"))).isEmpty();
+    assertThat(driver.findElements(By.xpath("//*[contains(., 'Rob Van Dam')]"))).isEmpty();
 
     // 4. Go back and re-enable it
     navigateTo("admin");
@@ -81,6 +81,6 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
 
     // 5. Verify Rob Van Dam is back
     navigateTo("wrestler-list");
-    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Rob Van Dam')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., 'Rob Van Dam')]"));
   }
 }

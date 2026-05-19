@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -39,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Tag("video")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class CardListViewE2ETest extends AbstractE2ETest {
 
@@ -57,9 +59,16 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testCreateCard() {
+    setVideoInfo("Game Mechanics", "Creating a Card", "create-card");
     navigateTo("card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.pollingEvery(Duration.ofMillis(500));
+
+    captureCaption(
+        "Card List view — cards represent the move set and ability pool available in"
+            + " matches. Each card belongs to a card set, has configurable stats, and can"
+            + " be edited or deleted inline without leaving this view.",
+        4000);
 
     // Find the input field and create button
     WebElement nameField =
@@ -75,14 +84,26 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
     // Verify the new card is in the grid by scrolling to the end.
     findCardInGridWithScrolling(wait, "New E2E Card");
+    captureCaption(
+        "New card created — it appears in the grid immediately and is ready to be"
+            + " assigned stats, a card set, and rules for use in segments. Open the Edit"
+            + " dialog to configure health cost, stamina cost, and damage values.",
+        4000);
   }
 
   @Test
   public void testUpdateCard() {
+    setVideoInfo("Game Mechanics", "Managing Cards", "card-list-manage");
     String cardName = "Card to Update";
     navigateTo("card-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.pollingEvery(Duration.ofMillis(500));
+
+    captureCaption(
+        "Cards can be created, renamed, and removed directly from the Card List view —"
+            + " inline editing keeps the workflow fast for bookers managing large move sets."
+            + " Use the Name column sorter to quickly locate cards alphabetically.",
+        4000);
 
     // Find the input field and create button
     WebElement nameField =
@@ -125,6 +146,11 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
     // Verify the update
     findCardInGridWithScrolling(wait, updatedName);
+    captureCaption(
+        "Card name updated in place — changes persist immediately with no page reload,"
+            + " keeping the editing flow smooth during show preparation. Updated cards"
+            + " are reflected in all decks that reference them automatically.",
+        4000);
   }
 
   @Test

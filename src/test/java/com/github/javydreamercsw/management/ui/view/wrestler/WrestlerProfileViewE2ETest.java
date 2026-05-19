@@ -52,6 +52,7 @@ import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -61,6 +62,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Tag("video")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
@@ -138,6 +140,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testFeudHistorySorting() {
+    setVideoInfo("Wrestler Profile", "Feud and Rivalry History", "wrestler-feud-history");
     // Given
     Wrestler wrestler1 = TestUtils.createWrestler("Wrestler 1");
     wrestler1.setGender(Gender.MALE);
@@ -180,6 +183,11 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     expandAccordionPanel("Rivalry History");
+    captureCaption(
+        "Wrestler Profile — the Rivalry History accordion shows every active feud and"
+            + " rivalry, sorted by heat so the hottest storylines appear first. Heat is"
+            + " accumulated via match outcomes, promos, and drama events.",
+        4500);
 
     wait.until(
         ExpectedConditions.visibilityOfElementLocated(By.xpath("//h3[text()='Feud History']")));
@@ -192,10 +200,16 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     assertTrue(feudParagraph.getText().contains("Feud: Test Feud (Heat: 200)"));
     assertTrue(rivalryParagraph.getText().contains("Rivalry with Wrestler 2 (Heat: 100)"));
+    captureCaption(
+        "Feuds and rivalries are ranked by heat — high-heat storylines rise to the top,"
+            + " helping bookers identify which angles to push on upcoming shows. Each entry"
+            + " shows the current heat total accumulated across all events in that feud.",
+        4500);
   }
 
   @Test
   void testRecentMatchesGrid() {
+    setVideoInfo("Wrestler Profile", "Recent Match Log", "wrestler-recent-matches");
     // Given
     Wrestler wrestler1 = wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Wrestler 1"));
     wrestler1.setGender(Gender.MALE);
@@ -248,6 +262,11 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     expandAccordionPanel("Match Logs");
+    captureCaption(
+        "The Match Logs accordion shows every match the wrestler has competed in —"
+            + " opponents, titles on the line, outcome, and the show it appeared on."
+            + " Click the show name to navigate directly to that show's detail view.",
+        4500);
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
 
     wait.until(
@@ -259,6 +278,11 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     wait.until(
         ExpectedConditions.textToBePresentInElementLocated(
             By.xpath("//vaadin-grid-cell-content[text()='Test Title']"), "Test Title"));
+    captureCaption(
+        "Championship matches are highlighted — the title at stake is shown alongside"
+            + " the participants, giving a full picture of the wrestler's title history."
+            + " This data feeds into the Championships accordion on the same profile.",
+        4000);
   }
 
   @Test
@@ -293,6 +317,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
   @Test
   void testTitleHistoryIsVisible() {
+    setVideoInfo("Wrestler Profile", "Championship Title History", "wrestler-title-history");
     // Given
     Wrestler wrestler1 =
         wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Champion Wrestler"));
@@ -341,6 +366,11 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     // Then
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     expandAccordionPanel("Championships");
+    captureCaption(
+        "The Championships accordion shows a wrestler's full title history as a timeline —"
+            + " every reign, the shows it started on, and whether it's currently active."
+            + " This is the canonical record of a wrestler's championship lineage.",
+        4500);
 
     wait.until(
         ExpectedConditions.visibilityOfElementLocated(By.xpath("//h3[text()='Title History']")));
@@ -350,6 +380,11 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
 
     // Verify card presence
     assertNotNull(waitForVaadinElement(driver, By.xpath("//span[text()='World Title']")));
+    captureCaption(
+        "Active reigns are marked CURRENT. Each entry links directly to the show where"
+            + " the title was won — click the link to navigate to that show's detail view"
+            + " and review the full card from that night.",
+        4000);
 
     // Verify match link
     WebElement link =
@@ -359,6 +394,11 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
     // Click and verify navigation
     clickElement(link);
     wait.until(ExpectedConditions.urlContains("show-detail/" + show.getId()));
+    captureCaption(
+        "The show detail view opens — you can review the full card and segment results"
+            + " from the night the title changed hands. All segments, participants, and"
+            + " AI-generated narration are preserved in the show record.",
+        4500);
   }
 
   private void expandAccordionPanel(final String label) {
