@@ -25,7 +25,7 @@ Wrestler profiles now include a 'Relationships' section showing their social con
 The show detail view opens — you can review the full card and segment results from the night the title changed hands. All segments, participants, and AI-generated narration are preserved in the show record.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="/videos/wrestler-title-history.mp4" type="video/mp4">
+<source src="/videos/wrestler-title-history.mp4" type="video/mp4">
 </video>
 
 ---
@@ -35,7 +35,7 @@ The show detail view opens — you can review the full card and segment results 
 Championship matches are highlighted — the title at stake is shown alongside the participants, giving a full picture of the wrestler's title history. This data feeds into the Championships accordion on the same profile.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="/videos/wrestler-recent-matches.mp4" type="video/mp4">
+<source src="/videos/wrestler-recent-matches.mp4" type="video/mp4">
 </video>
 
 ---
@@ -45,7 +45,7 @@ Championship matches are highlighted — the title at stake is shown alongside t
 Feuds and rivalries are ranked by heat — high-heat storylines rise to the top, helping bookers identify which angles to push on upcoming shows. Each entry shows the current heat total accumulated across all events in that feud.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="/videos/wrestler-feud-history.mp4" type="video/mp4">
+<source src="/videos/wrestler-feud-history.mp4" type="video/mp4">
 </video>
 
 ---
