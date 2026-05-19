@@ -1110,7 +1110,7 @@ public class ShowDetailView extends Main
   private void openEditSegmentDialog(@NonNull Segment segment) {
     final Segment seg = segmentRepository.findById(segment.getId()).orElse(segment);
     Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Edit Segment for " + seg.getShow().getName());
+    dialog.setHeaderTitle("Edit Segment for " + currentShow.getName());
     dialog.setWidth("600px");
     dialog.setMaxWidth("90vw");
     dialog.setId("edit-segment-dialog");
@@ -1169,9 +1169,7 @@ public class ShowDetailView extends Main
     genderFilter.setPlaceholder("All genders");
     genderFilter.setWidthFull();
     Gender defaultGender =
-        seg.getShow() != null && seg.getShow().getTemplate() != null
-            ? seg.getShow().getTemplate().getGenderConstraint()
-            : null;
+        currentShow.getTemplate() != null ? currentShow.getTemplate().getGenderConstraint() : null;
     genderFilter.setValue(defaultGender);
     genderFilter.setId("edit-gender-filter-combo-box");
 
@@ -1368,7 +1366,7 @@ public class ShowDetailView extends Main
                 teamMap.put(i + 1, new ArrayList<>(teamCombos.get(i).getValue()));
               }
               if (validateAndSaveSegment(
-                  seg.getShow(),
+                  currentShow,
                   segmentTypeCombo.getValue(),
                   teamMap,
                   winnersCombo.getValue(),
