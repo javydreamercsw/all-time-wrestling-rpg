@@ -620,6 +620,7 @@ public class ShowDetailView extends Main
                   });
         });
 
+
     // Drag handle column — visual affordance for row drag-and-drop
     grid.addComponentColumn(
             segment -> {
