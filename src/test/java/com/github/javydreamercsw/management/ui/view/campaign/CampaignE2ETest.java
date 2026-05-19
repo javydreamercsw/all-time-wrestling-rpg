@@ -190,6 +190,6 @@ class CampaignE2ETest extends AbstractE2ETest {
         text.contains("'")
             ? "concat('" + text.replace("'", "', \"'\", '") + "')"
             : "'" + text + "'";
-    waitForVaadinElement(driver, By.xpath("//*[contains(text(), " + escaped + ")]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., " + escaped + ")]"));
   }
 }

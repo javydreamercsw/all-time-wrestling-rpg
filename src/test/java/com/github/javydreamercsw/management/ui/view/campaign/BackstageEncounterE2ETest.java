@@ -138,6 +138,6 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, By.xpath("//*[contains(text(), '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }
