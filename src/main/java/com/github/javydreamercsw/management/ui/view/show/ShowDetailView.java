@@ -1525,7 +1525,8 @@ public class ShowDetailView extends Main
 
   private void refreshSegmentsGrid() {
     if (currentShow != null && segmentsGrid != null) {
-      List<Segment> updatedSegments = segmentRepository.findByShow(currentShow);
+      List<Segment> updatedSegments =
+          segmentRepository.findByShowOrderBySegmentOrderAsc(currentShow);
       segmentsGrid.setItems(updatedSegments);
 
       // Update visibility of grid and noSegmentsMessage
