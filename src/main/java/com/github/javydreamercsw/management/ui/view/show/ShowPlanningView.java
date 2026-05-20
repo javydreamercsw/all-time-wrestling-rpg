@@ -56,6 +56,7 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.Menu;
+import com.vaadin.flow.router.OptionalParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -66,7 +67,9 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Route("show-planning")
+@Route(
+    value = "show-planning",
+    layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
 @RolesAllowed({ADMIN_ROLE, BOOKER_ROLE})
@@ -364,7 +367,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   }
 
   @Override
-  public void setParameter(final BeforeEvent event, final Long parameter) {
+  public void setParameter(final BeforeEvent event, @OptionalParameter final Long parameter) {
     if (parameter != null) {
       showService
           .getShowById(parameter)

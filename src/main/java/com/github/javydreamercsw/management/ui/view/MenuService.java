@@ -70,12 +70,13 @@ public class MenuService {
             RoleName.BOOKER,
             RoleName.PLAYER);
 
-    // Campaign: Only PLAYER, BOOKER, and ADMIN
-    // Note: the resolver will further narrow access based on @RolesAllowed on the view class.
-    MenuItem campaignMenu =
-        new MenuItem(
-            "Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN, RoleName.BOOKER, RoleName.PLAYER);
-    campaignMenu.addChild(new MenuItem("Dashboard", VaadinIcon.DASHBOARD, "campaign"));
+    // Campaign: Only ADMIN
+    // RouteRoleResolver will also enforce @RolesAllowed(ADMIN_ROLE) on each view.
+    MenuItem campaignMenu = new MenuItem("Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN);
+    campaignMenu.addChild(
+        new MenuItem("Campaigns", VaadinIcon.FILM, "campaign-list", RoleName.ADMIN));
+    campaignMenu.addChild(
+        new MenuItem("Dashboard", VaadinIcon.DASHBOARD, "campaign", RoleName.ADMIN));
 
     // Entities menu: Only ADMIN can access
     // BOOKER, PLAYER, and VIEWER have their own dedicated views
@@ -103,13 +104,6 @@ public class MenuService {
     MenuItem contentGeneration =
         new MenuItem(
             "Content Generation", VaadinIcon.AUTOMATION, null, RoleName.ADMIN, RoleName.BOOKER);
-    contentGeneration.addChild(
-        new MenuItem(
-            "Show Planning",
-            VaadinIcon.CALENDAR,
-            "show-planning",
-            RoleName.ADMIN,
-            RoleName.BOOKER));
 
     MenuItem cardGame = new MenuItem("Card Game", VaadinIcon.RECORDS, null);
     cardGame.addChild(new MenuItem("Cards", VaadinIcon.CREDIT_CARD, "card-list"));

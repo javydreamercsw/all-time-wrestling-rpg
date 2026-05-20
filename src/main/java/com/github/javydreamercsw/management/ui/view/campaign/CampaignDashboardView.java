@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
@@ -68,7 +70,7 @@ import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -79,7 +81,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "campaign", layout = MainLayout.class)
 @PageTitle("Campaign Dashboard")
-@PermitAll
+@RolesAllowed(ADMIN_ROLE)
 @Slf4j
 public class CampaignDashboardView extends VerticalLayout {
 

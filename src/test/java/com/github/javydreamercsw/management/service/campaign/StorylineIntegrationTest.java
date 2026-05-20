@@ -40,6 +40,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
@@ -48,6 +49,7 @@ import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -88,6 +90,8 @@ class StorylineIntegrationTest {
   @Mock private StorylineExportService storylineExportService;
   @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private AlignmentService alignmentService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseRepository universeRepository;
   private ObjectMapper objectMapper = new ObjectMapper();
 
   private CampaignService campaignService;
@@ -115,6 +119,8 @@ class StorylineIntegrationTest {
             participantRepository,
             tournamentService,
             storylineRepository,
+            universeContextService,
+            universeRepository,
             titleRepository,
             titleReignRepository,
             teamRepository,
