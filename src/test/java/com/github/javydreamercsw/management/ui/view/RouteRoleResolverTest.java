@@ -40,22 +40,22 @@ class RouteRoleResolverTest {
 
   @Route("admin-only")
   @RolesAllowed(RoleName.ADMIN_ROLE)
-  static class AdminOnlyView {}
+  static class AdminOnlyView extends com.vaadin.flow.component.Component {}
 
   @Route("admin-or-booker")
   @RolesAllowed({RoleName.ADMIN_ROLE, RoleName.BOOKER_ROLE})
-  static class AdminOrBookerView {}
+  static class AdminOrBookerView extends com.vaadin.flow.component.Component {}
 
   @Route("permit-all")
   @PermitAll
-  static class PermitAllView {}
+  static class PermitAllView extends com.vaadin.flow.component.Component {}
 
   @Route("deny-all")
   @DenyAll
-  static class DenyAllView {}
+  static class DenyAllView extends com.vaadin.flow.component.Component {}
 
   @Route("unannotated")
-  static class UnannotatedView {}
+  static class UnannotatedView extends com.vaadin.flow.component.Component {}
 
   // ── Test setup ─────────────────────────────────────────────────────────────
 
