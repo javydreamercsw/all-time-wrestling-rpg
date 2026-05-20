@@ -31,7 +31,6 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -41,7 +40,6 @@ import lombok.NonNull;
 
 @Route(value = "campaign-list", layout = MainLayout.class)
 @PageTitle("Campaigns")
-@Menu(order = 9, icon = "vaadin:film", title = "Campaigns")
 @RolesAllowed(ADMIN_ROLE)
 public class CampaignListView extends Main {
 
