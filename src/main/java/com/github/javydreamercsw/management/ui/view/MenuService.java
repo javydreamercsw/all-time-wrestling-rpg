@@ -192,6 +192,11 @@ public class MenuService {
             .filter(child -> child != null)
             .toList();
 
+    // Hide group headers (null path) that have no accessible children
+    if (menuItem.getPath() == null && filteredChildren.isEmpty()) {
+      return null;
+    }
+
     MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
     filtered.setExternal(menuItem.isExternal());
     filtered.setRequiredRoles(menuItem.getRequiredRoles());
