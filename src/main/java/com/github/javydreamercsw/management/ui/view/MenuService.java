@@ -22,6 +22,8 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Service;
 public class MenuService {
 
   private final SecurityUtils securityUtils;
+  private final RouteRoleResolver routeRoleResolver;
 
   public List<MenuItem> getMenuItems() {
     List<MenuItem> menuItems = new ArrayList<>();
@@ -68,6 +71,7 @@ public class MenuService {
             RoleName.PLAYER);
 
     // Campaign: Only PLAYER, BOOKER, and ADMIN
+    // Note: the resolver will further narrow access based on @RolesAllowed on the view class.
     MenuItem campaignMenu =
         new MenuItem(
             "Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN, RoleName.BOOKER, RoleName.PLAYER);
@@ -177,26 +181,68 @@ public class MenuService {
   }
 
   /**
-   * Filter a single menu item and its children based on user roles. Returns null if the user
-   * doesn't have access and the item has no accessible children.
+   * Filter a single menu item and its children based on user roles.
+   *
+   * <p>Access is determined in this order:
+   *
+   * <ol>
+   *   <li>If the item has a non-null, non-external path, the {@link RouteRoleResolver} is consulted
+   *       first. Its result (derived from {@code @RolesAllowed} / {@code @PermitAll} /
+   *       {@code @DenyAll} on the view class) takes precedence over any explicit roles on the
+   *       {@link MenuItem}.
+   *   <li>If the resolver has no information for the path (view is unannotated or path is unknown),
+   *       the item's own {@link MenuItem#getRequiredRoles()} list is used as the fallback.
+   *   <li>Items with a {@code null} path (group headers) and external links always use the item's
+   *       explicit role list.
+   * </ol>
+   *
+   * <p>Group headers (null path) with no accessible children are hidden to avoid empty menu
+   * sections.
+   *
+   * @return a filtered copy of the item, or {@code null} if the user has no access
    */
   private MenuItem filterMenuItem(final MenuItem menuItem) {
-    // Check if user has required role for this item FIRST
-    boolean hasAccess =
-        !menuItem.hasRequiredRoles()
-            || menuItem.getRequiredRoles().stream().anyMatch(securityUtils::hasRole);
+    boolean hasAccess;
 
-    // If user doesn't have access to this item at all, return null immediately
+    if (menuItem.getPath() != null && !menuItem.isExternal()) {
+      // @DenyAll → always hidden
+      if (routeRoleResolver.isDeniedAll(menuItem.getPath())) {
+        return null;
+      }
+
+      Optional<Set<RoleName>> resolved = routeRoleResolver.resolveRoles(menuItem.getPath());
+      if (resolved.isPresent()) {
+        // View annotation is authoritative: empty set = @PermitAll, non-empty = role check
+        Set<RoleName> roles = resolved.get();
+        hasAccess = roles.isEmpty() || roles.stream().anyMatch(securityUtils::hasRole);
+      } else {
+        // No annotation found — fall back to MenuItem's explicit roles
+        hasAccess =
+            !menuItem.hasRequiredRoles()
+                || menuItem.getRequiredRoles().stream().anyMatch(securityUtils::hasRole);
+      }
+    } else {
+      // null path (group header) or external link — use MenuItem's explicit roles
+      hasAccess =
+          !menuItem.hasRequiredRoles()
+              || menuItem.getRequiredRoles().stream().anyMatch(securityUtils::hasRole);
+    }
+
     if (!hasAccess) {
       return null;
     }
 
-    // User has access - now filter children and remove nulls
+    // User has access — now filter children and remove nulls
     List<MenuItem> filteredChildren =
         menuItem.getChildren().stream()
             .map(this::filterMenuItem)
             .filter(child -> child != null)
             .toList();
+
+    // Hide group headers (null path) that have no accessible children
+    if (menuItem.getPath() == null && filteredChildren.isEmpty()) {
+      return null;
+    }
 
     MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
     filtered.setExternal(menuItem.isExternal());
