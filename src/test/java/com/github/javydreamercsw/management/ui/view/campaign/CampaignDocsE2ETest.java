@@ -265,6 +265,54 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  @Order(11)
+  void testCaptureCampaignListView() {
+    // 1. Setup — create two campaigns so the grid is populated
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "beginning");
+
+    // 2. Navigate to the campaign list
+    navigateTo("campaign-list");
+
+    // 3. Verify & Capture
+    waitForVaadinElement(driver, org.openqa.selenium.By.tagName("vaadin-grid"));
+    documentFeature(
+        "Campaign",
+        "Campaign List",
+        """
+        The Campaign List gives admins a bird's-eye view of every active and completed\
+         campaign across the promotion. Each row shows the wrestler, current status,\
+         start date, and a direct link to the campaign dashboard.\
+        """,
+        "campaign-list");
+  }
+
+  @Test
+  @Order(12)
+  void testCaptureCampaignListUniverseFilter() {
+    // 1. Setup — ensure at least one campaign exists in the default universe
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "beginning");
+
+    // 2. Navigate to the campaign list
+    navigateTo("campaign-list");
+
+    // 3. Open the universe selector (top-right of MainLayout) to show universe scope
+    waitForVaadinElement(driver, org.openqa.selenium.By.tagName("vaadin-grid"));
+    documentFeature(
+        "Campaign",
+        "Campaign List – Universe Scope",
+        """
+        The campaign list is scoped to the currently selected universe. Switching universes\
+         in the top toolbar immediately updates the grid to show only the campaigns\
+         belonging to that universe, keeping multi-universe promotions cleanly separated.\
+        """,
+        "campaign-list-universe-filter");
+  }
+
+  @Test
   void testCaptureWrestlerProfileView() {
     // 1. Setup
     Account admin = accountRepository.findByUsername("admin").get();
