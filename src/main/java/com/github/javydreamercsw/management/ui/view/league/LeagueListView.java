@@ -222,13 +222,10 @@ public class LeagueListView extends Main {
         .getAuthenticatedUser()
         .ifPresent(
             user -> {
+              Long universeId = universeContextService.getCurrentUniverseId();
               List<League> leagues = leagueService.getLeaguesForUser(user.getAccount());
-              universeContextService
-                  .getCurrentUniverse()
-                  .ifPresent(
-                      u ->
-                          leagues.removeIf(
-                              l -> l.getUniverse() == null || !u.equals(l.getUniverse())));
+              leagues.removeIf(
+                  l -> l.getUniverse() == null || !universeId.equals(l.getUniverse().getId()));
               leagueGrid.setItems(leagues);
             });
   }

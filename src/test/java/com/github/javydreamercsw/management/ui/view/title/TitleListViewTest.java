@@ -31,6 +31,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -67,6 +68,7 @@ class TitleListViewTest extends AbstractViewTest {
   @Mock private TierRecalculationService tierRecalculationService;
   @Mock private ImageStorageService imageStorageService;
   @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseRepository universeRepository;
 
   private TitleListView titleListView;
   private Title testTitle;
@@ -144,7 +146,9 @@ class TitleListViewTest extends AbstractViewTest {
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
 
-    when(universeContextService.getCurrentUniverse()).thenReturn(java.util.Optional.empty());
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+    when(titleService.findByUniverse(universe)).thenReturn(List.of(testTitle));
 
     titleListView =
         new TitleListView(
@@ -154,7 +158,8 @@ class TitleListViewTest extends AbstractViewTest {
             tierRecalculationService,
             securityUtils,
             imageStorageService,
-            universeContextService);
+            universeContextService,
+            universeRepository);
   }
 
   @Test
@@ -198,7 +203,7 @@ class TitleListViewTest extends AbstractViewTest {
     newTitle.awardTitleTo(new ArrayList<>(List.of(otherWrestler)), Instant.now());
 
     when(titleService.save(any(Title.class))).thenReturn(newTitle);
-    when(titleService.findAll()).thenReturn(List.of(testTitle, newTitle));
+    when(titleService.findByUniverse(any())).thenReturn(List.of(testTitle, newTitle));
 
     saveButton.click();
     titleListView.refreshGrid();
@@ -245,7 +250,7 @@ class TitleListViewTest extends AbstractViewTest {
     updatedTitle.awardTitleTo(new ArrayList<>(List.of(otherWrestler)), Instant.now());
 
     when(titleService.save(any(Title.class))).thenReturn(updatedTitle);
-    when(titleService.findAll()).thenReturn(List.of(updatedTitle));
+    when(titleService.findByUniverse(any())).thenReturn(List.of(updatedTitle));
 
     saveButton.click();
     titleListView.refreshGrid();
@@ -259,7 +264,8 @@ class TitleListViewTest extends AbstractViewTest {
 
   @Test
   void testDeleteTitle() {
-    when(titleService.findAll()).thenReturn(new ArrayList<>()); // Return empty list after deletion
+    when(titleService.findByUniverse(any()))
+        .thenReturn(new ArrayList<>()); // Return empty list after deletion
 
     // Simulate deletion
     titleService.deleteTitle(testTitle.getId());

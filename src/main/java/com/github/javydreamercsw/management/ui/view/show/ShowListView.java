@@ -514,11 +514,10 @@ public class ShowListView extends Main {
   }
 
   private void refreshGrid() {
-    universeContextService
-        .getCurrentUniverse()
-        .ifPresentOrElse(
-            u -> showGrid.setItems(showService.getShowsByUniverse(u)),
-            () -> showGrid.setItems(showService.findAllWithRelationships()));
+    Long universeId = universeContextService.getCurrentUniverseId();
+    universeRepository
+        .findById(universeId)
+        .ifPresent(u -> showGrid.setItems(showService.getShowsByUniverse(u)));
   }
 
   private void openGenerateArtDialog(final ShowTemplate template) {

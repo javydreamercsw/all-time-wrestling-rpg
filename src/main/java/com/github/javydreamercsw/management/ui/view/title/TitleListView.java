@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
@@ -66,6 +67,7 @@ public class TitleListView extends Main {
   private final SecurityUtils securityUtils;
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
+  private final UniverseRepository universeRepository;
   public final Grid<Title> grid = new Grid<>(Title.class, false);
 
   public TitleListView(
@@ -75,7 +77,8 @@ public class TitleListView extends Main {
       @NonNull final TierRecalculationService tierRecalculationService,
       @NonNull final SecurityUtils securityUtils,
       @NonNull final ImageStorageService imageStorageService,
-      @NonNull final UniverseContextService universeContextService) {
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final UniverseRepository universeRepository) {
     this.titleService = titleService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
@@ -83,6 +86,7 @@ public class TitleListView extends Main {
     this.securityUtils = securityUtils;
     this.imageStorageService = imageStorageService;
     this.universeContextService = universeContextService;
+    this.universeRepository = universeRepository;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -198,11 +202,10 @@ public class TitleListView extends Main {
   }
 
   public void refreshGrid() {
-    universeContextService
-        .getCurrentUniverse()
-        .ifPresentOrElse(
-            u -> grid.setItems(titleService.findByUniverse(u)),
-            () -> grid.setItems(titleService.findAll()));
+    Long universeId = universeContextService.getCurrentUniverseId();
+    universeRepository
+        .findById(universeId)
+        .ifPresent(u -> grid.setItems(titleService.findByUniverse(u)));
   }
 
   TitleFormDialog openCreateDialog() {
