@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +74,7 @@ class WrestlerServiceTest {
   @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
   @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
   @Mock private com.github.javydreamercsw.base.security.SecurityUtils securityUtils;
+  @Mock private UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
 
   @InjectMocks private WrestlerService wrestlerService;
 
@@ -86,6 +89,11 @@ class WrestlerServiceTest {
   public void setUp() {
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Collections.singletonList("BASE_GAME"));
+
+    // Default: no wrestlers excluded from any universe
+    lenient()
+        .when(wrestlerExclusionRepository.findExcludedWrestlerIdsByUniverseId(anyLong()))
+        .thenReturn(Set.of());
 
     Universe universe = Universe.builder().name("Default Universe").build();
     universe.setId(1L);
@@ -257,6 +265,42 @@ class WrestlerServiceTest {
         wrestlerService.findAllFiltered(null, Gender.FEMALE, 1L, (String) null, null);
     assertEquals(1, femaleWrestlers.size());
     assertEquals("Active NPC", femaleWrestlers.get(0).getName());
+  }
+
+  @Test
+  void testFindAllFiltered_excludedWrestlersAreHidden() {
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+
+    // Exclude wrestler with id=1 ("Active Player") from universe 1
+    when(wrestlerExclusionRepository.findExcludedWrestlerIdsByUniverseId(1L))
+        .thenReturn(Set.of(1L));
+
+    List<Wrestler> result = wrestlerService.findAllFiltered(null, null, 1L, (String) null, null);
+
+    // Active wrestlers: ids 1, 2, 5 — with id=1 excluded → 2 and 5 remain
+    assertEquals(2, result.size());
+    result.forEach(
+        w -> assertEquals(false, w.getId().equals(1L), "Excluded wrestler must not appear"));
+  }
+
+  @Test
+  void testFindAllFiltered_includedWrestlersBypassesExclusion() {
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(wrestlers.stream().filter(Wrestler::getActive).toList());
+
+    // Exclude wrestler with id=1 from universe 1
+    when(wrestlerExclusionRepository.findExcludedWrestlerIdsByUniverseId(1L))
+        .thenReturn(Set.of(1L));
+
+    // But force-include that same wrestler (already assigned to a segment)
+    Wrestler excludedButIncluded =
+        wrestlers.stream().filter(w -> w.getId().equals(1L)).findFirst().orElseThrow();
+    List<Wrestler> result =
+        wrestlerService.findAllFiltered(null, null, 1L, (String) null, Set.of(excludedButIncluded));
+
+    // The excluded wrestler is force-included — all 3 active appear
+    assertEquals(3, result.size());
   }
 
   @Test

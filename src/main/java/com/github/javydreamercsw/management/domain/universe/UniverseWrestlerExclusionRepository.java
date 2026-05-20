@@ -18,7 +18,10 @@ package com.github.javydreamercsw.management.domain.universe;
 
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
+import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface UniverseWrestlerExclusionRepository
     extends JpaRepository<UniverseWrestlerExclusion, Long> {
@@ -28,4 +31,11 @@ public interface UniverseWrestlerExclusionRepository
   boolean existsByUniverseAndWrestler(Universe universe, Wrestler wrestler);
 
   void deleteByUniverseAndWrestler(Universe universe, Wrestler wrestler);
+
+  /**
+   * Returns the IDs of wrestlers excluded from the given universe. Using an ID-only projection
+   * avoids loading full Wrestler entities and keeps this query cheap.
+   */
+  @Query("SELECT e.wrestler.id FROM UniverseWrestlerExclusion e WHERE e.universe.id = :universeId")
+  Set<Long> findExcludedWrestlerIdsByUniverseId(@Param("universeId") Long universeId);
 }
