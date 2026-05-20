@@ -27,9 +27,12 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +56,8 @@ public class FactionService {
   private final UniverseRepository universeRepository;
   private final WrestlerStateRepository wrestlerStateRepository;
   private final ExpansionService expansionService;
+  private final UniverseContextService universeContextService;
+  private final UniverseSettingsService universeSettingsService;
   private final Clock clock;
   private final DefaultImageService imageService;
 
@@ -63,6 +68,8 @@ public class FactionService {
       final UniverseRepository universeRepository,
       final WrestlerStateRepository wrestlerStateRepository,
       final ExpansionService expansionService,
+      final UniverseContextService universeContextService,
+      final UniverseSettingsService universeSettingsService,
       final Clock clock,
       final DefaultImageService imageService) {
     this.factionRepository = factionRepository;
@@ -70,15 +77,24 @@ public class FactionService {
     this.universeRepository = universeRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.expansionService = expansionService;
+    this.universeContextService = universeContextService;
+    this.universeSettingsService = universeSettingsService;
     this.clock = clock;
     this.imageService = imageService;
+  }
+
+  private Set<String> enabledExpansionCodes() {
+    return universeContextService
+        .getCurrentUniverse()
+        .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+        .orElseGet(() -> new java.util.HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
 
   /** Get all factions. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAll() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return factionRepository.findAll().stream()
         .filter(
             faction ->
@@ -101,7 +117,8 @@ public class FactionService {
   @PreAuthorize("isAuthenticated()")
   public List<Faction> findAllByUniverse(@NonNull final Long universeId) {
     Universe universe = universeRepository.findById(universeId).orElseThrow();
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions =
+        universeSettingsService.getEnabledExpansionCodesForUniverse(universe);
     return factionRepository.findByUniverseWithLeaderAndManager(universe).stream()
         .filter(
             faction ->
@@ -123,7 +140,7 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Page<Faction> getAllFactions(final Pageable pageable) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
 
     List<Faction> allFiltered =
         factionRepository.findAll().stream()
@@ -185,7 +202,7 @@ public class FactionService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Faction> getActiveFactions() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return factionRepository.findByIsActiveTrue().stream()
         .filter(
             faction ->

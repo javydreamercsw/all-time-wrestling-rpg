@@ -24,8 +24,12 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseExpansionToggledEvent;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,16 +48,29 @@ public class NpcService {
 
   private final NpcRepository npcRepository;
   private final ExpansionService expansionService;
+  private final UniverseContextService universeContextService;
+  private final UniverseSettingsService universeSettingsService;
   private final DefaultImageService imageService;
 
   @Autowired
   public NpcService(
       final NpcRepository npcRepository,
       final ExpansionService expansionService,
+      final UniverseContextService universeContextService,
+      final UniverseSettingsService universeSettingsService,
       final DefaultImageService imageService) {
     this.npcRepository = npcRepository;
     this.expansionService = expansionService;
+    this.universeContextService = universeContextService;
+    this.universeSettingsService = universeSettingsService;
     this.imageService = imageService;
+  }
+
+  private Set<String> enabledExpansionCodes() {
+    return universeContextService
+        .getCurrentUniverse()
+        .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+        .orElseGet(() -> new java.util.HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
 
   public static final String ATTRIBUTE_AWARENESS = "awareness";
@@ -84,14 +101,14 @@ public class NpcService {
   }
 
   public List<Npc> findAllByType(final String npcType) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAllByNpcType(npcType).stream()
         .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
         .collect(Collectors.toList());
   }
 
   public List<Npc> findAllIncludingInactive() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAll().stream()
         .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
         .collect(Collectors.toList());
@@ -99,7 +116,7 @@ public class NpcService {
 
   @Cacheable(value = NPCS_CACHE)
   public List<Npc> findAll() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAll().stream()
         .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
         .collect(Collectors.toList());
@@ -127,6 +144,15 @@ public class NpcService {
   @CacheEvict(value = NPCS_CACHE, allEntries = true)
   public void onExpansionToggled(final ExpansionToggledEvent event) {
     log.info("Expansion '{}' toggled, evicting NPC cache.", event.getExpansionCode());
+  }
+
+  @EventListener
+  @CacheEvict(value = NPCS_CACHE, allEntries = true)
+  public void onUniverseExpansionToggled(final UniverseExpansionToggledEvent event) {
+    log.info(
+        "Universe {} expansion '{}' toggled, evicting NPC cache.",
+        event.getUniverseId(),
+        event.getExpansionCode());
   }
 
   public void delete(final Npc npc) {

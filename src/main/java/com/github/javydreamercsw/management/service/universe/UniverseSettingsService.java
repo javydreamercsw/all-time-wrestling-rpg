@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,16 @@ public class UniverseSettingsService {
   private final UniverseExpansionSettingRepository expansionSettingRepository;
   private final UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
   private final ExpansionService expansionService;
+  private final ApplicationEventPublisher eventPublisher;
+
+  /** Returns the set of expansion codes enabled for a universe (falling back to global). */
+  @PreAuthorize("isAuthenticated()")
+  public Set<String> getEnabledExpansionCodesForUniverse(@NonNull final Universe universe) {
+    return expansionService.getExpansions().stream()
+        .filter(e -> isExpansionEnabledForUniverse(universe, e.getCode()))
+        .map(Expansion::getCode)
+        .collect(Collectors.toSet());
+  }
 
   /** Returns all expansions with their per-universe enabled state (falling back to global). */
   @PreAuthorize("isAuthenticated()")
@@ -81,6 +92,8 @@ public class UniverseSettingsService {
                 });
     setting.setEnabled(enabled);
     expansionSettingRepository.save(setting);
+    eventPublisher.publishEvent(
+        new UniverseExpansionToggledEvent(this, universe.getId(), expansionCode, enabled));
   }
 
   /** Removes the per-universe override, reverting to the global setting. */

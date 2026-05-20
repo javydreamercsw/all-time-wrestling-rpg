@@ -27,8 +27,11 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +54,16 @@ public class TeamService {
   @Autowired private FactionRepository factionRepository;
   @Autowired private NpcRepository npcRepository;
   @Autowired private ExpansionService expansionService;
+  @Autowired private UniverseContextService universeContextService;
+  @Autowired private UniverseSettingsService universeSettingsService;
   @Autowired private DefaultImageService imageService;
+
+  private Set<String> enabledExpansionCodes() {
+    return universeContextService
+        .getCurrentUniverse()
+        .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+        .orElseGet(() -> new java.util.HashSet<>(expansionService.getEnabledExpansionCodes()));
+  }
 
   // ==================== CRUD OPERATIONS ====================
 
@@ -59,7 +71,7 @@ public class TeamService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public org.springframework.data.domain.Page<Team> getAllTeams(@NonNull final Pageable pageable) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
 
     // Fetch all since we need to filter based on member properties not in the Team table directly
     // and then manually paginate.
@@ -100,7 +112,7 @@ public class TeamService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public long countAllTeams() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findAll().stream()
         .filter(
             team ->
@@ -285,7 +297,7 @@ public class TeamService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> getActiveTeams() {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByStatus(TeamStatus.ACTIVE).stream()
         .filter(
             team ->
@@ -312,7 +324,7 @@ public class TeamService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> getTeamsByFaction(final Faction faction) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByFaction(faction).stream()
         .filter(
             team ->
@@ -332,7 +344,7 @@ public class TeamService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> getTeamsByWrestler(final Wrestler wrestler) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByWrestler(wrestler).stream()
         .filter(
             team ->
@@ -352,7 +364,7 @@ public class TeamService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> getActiveTeamsByWrestler(final Wrestler wrestler) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByWrestlerAndStatus(wrestler, TeamStatus.ACTIVE).stream()
         .filter(
             team ->
@@ -372,7 +384,7 @@ public class TeamService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<Team> findTeamByWrestlers(final Wrestler wrestler1, final Wrestler wrestler2) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository
         .findByBothWrestlers(wrestler1, wrestler2)
         .filter(
@@ -394,7 +406,7 @@ public class TeamService {
   @PreAuthorize("isAuthenticated()")
   public Optional<Team> findActiveTeamByWrestlers(
       final Wrestler wrestler1, final Wrestler wrestler2) {
-    List<String> enabledExpansions = expansionService.getEnabledExpansionCodes();
+    Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository
         .findActiveTeamByBothWrestlers(wrestler1, wrestler2)
         .filter(
