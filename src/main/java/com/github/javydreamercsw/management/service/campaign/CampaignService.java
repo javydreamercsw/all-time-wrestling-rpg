@@ -55,6 +55,8 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
@@ -64,6 +66,7 @@ import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -105,6 +108,8 @@ public class CampaignService {
   private final SegmentParticipantRepository participantRepository;
   private final TournamentService tournamentService;
   private final CampaignStorylineRepository storylineRepository;
+  private final UniverseContextService universeContextService;
+  private final UniverseRepository universeRepository;
   private final TitleRepository titleRepository;
   private final TitleReignRepository titleReignRepository;
   private final TeamRepository teamRepository;
@@ -192,9 +197,13 @@ public class CampaignService {
                   return wrestlerAlignmentRepository.save(newAlignment);
                 });
 
+    Universe universe =
+        universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
+
     Campaign campaign =
         Campaign.builder()
             .wrestler(wrestler)
+            .universe(universe)
             .status(CampaignStatus.ACTIVE)
             .startedAt(LocalDateTime.now())
             .build();

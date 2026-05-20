@@ -51,6 +51,8 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
@@ -59,6 +61,7 @@ import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -100,6 +103,8 @@ class CampaignServiceTest {
   @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private StorylineExportService storylineExportService;
   @Mock private AlignmentService alignmentService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseRepository universeRepository;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignService campaignService;
@@ -110,6 +115,12 @@ class CampaignServiceTest {
     wrestler.setId(1L);
     // Initialize lazy collections to avoid NPE if service checks them
     wrestler.setReigns(new LinkedHashSet<>());
+
+    Universe universe = Universe.builder().name("Default").build();
+    universe.setId(1L);
+
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
 
     when(campaignRepository.save(any(Campaign.class)))
         .thenAnswer(
@@ -140,8 +151,11 @@ class CampaignServiceTest {
     assertThat(campaign).isNotNull();
     assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.ACTIVE);
     assertThat(campaign.getState()).isNotNull();
-    // Chapter ID depends on mock behavior, but we verified the logic
     assertThat(campaign.getState().getPendingL1Picks()).isZero(); // Neutral start
+    // Regression: campaign must be stamped with the current universe so it
+    // appears in the CampaignListView universe filter
+    assertThat(campaign.getUniverse()).isNotNull();
+    assertThat(campaign.getUniverse().getId()).isEqualTo(1L);
 
     verify(campaignRepository, atLeastOnce()).save(any(Campaign.class));
     verify(campaignStateRepository, atLeastOnce()).save(any(CampaignState.class));

@@ -67,11 +67,12 @@ public class MenuService {
             RoleName.BOOKER,
             RoleName.PLAYER);
 
-    // Campaign: Only PLAYER, BOOKER, and ADMIN
-    MenuItem campaignMenu =
-        new MenuItem(
-            "Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN, RoleName.BOOKER, RoleName.PLAYER);
-    campaignMenu.addChild(new MenuItem("Dashboard", VaadinIcon.DASHBOARD, "campaign"));
+    // Campaign: Only ADMIN
+    MenuItem campaignMenu = new MenuItem("Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN);
+    campaignMenu.addChild(
+        new MenuItem("Campaigns", VaadinIcon.FILM, "campaign-list", RoleName.ADMIN));
+    campaignMenu.addChild(
+        new MenuItem("Dashboard", VaadinIcon.DASHBOARD, "campaign", RoleName.ADMIN));
 
     // Entities menu: Only ADMIN can access
     // BOOKER, PLAYER, and VIEWER have their own dedicated views
@@ -99,13 +100,6 @@ public class MenuService {
     MenuItem contentGeneration =
         new MenuItem(
             "Content Generation", VaadinIcon.AUTOMATION, null, RoleName.ADMIN, RoleName.BOOKER);
-    contentGeneration.addChild(
-        new MenuItem(
-            "Show Planning",
-            VaadinIcon.CALENDAR,
-            "show-planning",
-            RoleName.ADMIN,
-            RoleName.BOOKER));
 
     MenuItem cardGame = new MenuItem("Card Game", VaadinIcon.RECORDS, null);
     cardGame.addChild(new MenuItem("Cards", VaadinIcon.CREDIT_CARD, "card-list"));
@@ -197,6 +191,11 @@ public class MenuService {
             .map(this::filterMenuItem)
             .filter(child -> child != null)
             .toList();
+
+    // Hide group headers (null path) that have no accessible children
+    if (menuItem.getPath() == null && filteredChildren.isEmpty()) {
+      return null;
+    }
 
     MenuItem filtered = new MenuItem(menuItem.getTitle(), menuItem.getIcon(), menuItem.getPath());
     filtered.setExternal(menuItem.isExternal());
