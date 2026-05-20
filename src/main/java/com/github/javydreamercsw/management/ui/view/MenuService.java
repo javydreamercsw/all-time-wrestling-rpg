@@ -100,13 +100,6 @@ public class MenuService {
     MenuItem contentGeneration =
         new MenuItem(
             "Content Generation", VaadinIcon.AUTOMATION, null, RoleName.ADMIN, RoleName.BOOKER);
-    contentGeneration.addChild(
-        new MenuItem(
-            "Show Planning",
-            VaadinIcon.CALENDAR,
-            "show-planning",
-            RoleName.ADMIN,
-            RoleName.BOOKER));
 
     MenuItem cardGame = new MenuItem("Card Game", VaadinIcon.RECORDS, null);
     cardGame.addChild(new MenuItem("Cards", VaadinIcon.CREDIT_CARD, "card-list"));
