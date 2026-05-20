@@ -1075,8 +1075,17 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     waitForVaadinElement(driver, By.id("logout-button"));
     WebElement logoutButton = driver.findElement(By.id("logout-button"));
     clickElement(logoutButton);
-    // Vaadin logout may not redirect in E2E mode (anyRequest().permitAll()), so navigate directly
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/login");
+    // Wait for the logout redirect to complete naturally before navigating. Calling driver.get()
+    // immediately after the click can abort the in-flight redirect and leave the Vaadin session
+    // in an inconsistent state, causing the login page not to render.
+    String loginUrl = "http://localhost:" + serverPort + getContextPath() + "/login";
+    try {
+      new WebDriverWait(driver, Duration.ofSeconds(10))
+          .until(d -> Objects.requireNonNull(d.getCurrentUrl()).contains("/login"));
+    } catch (org.openqa.selenium.TimeoutException ignored) {
+      // Vaadin logout may not redirect in E2E mode (anyRequest().permitAll()), so navigate directly
+      driver.get(loginUrl);
+    }
     lastLoggedInUser = null;
   }
 
