@@ -68,7 +68,7 @@ class GeminiSegmentNarrationServiceTest {
 
   /** Returns an empty HttpHeaders to satisfy the trace-log call in callGemini(). */
   private HttpHeaders emptyHeaders() {
-    return HttpHeaders.of(Map.<String, List<String>>of(), (k, v) -> true);
+    return HttpHeaders.of(Map.of(), (k, v) -> true);
   }
 
   @Test
