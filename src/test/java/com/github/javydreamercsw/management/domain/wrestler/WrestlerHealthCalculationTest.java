@@ -122,16 +122,28 @@ class WrestlerHealthCalculationTest {
   @Test
   @DisplayName("Should never allow effective health to go below 1")
   void shouldNeverAllowEffectiveHealthToGoBelowOne() {
-    // Given - Massive penalties
-    state.setBumps(2);
-    wrestler.setStartingHealth(5); // Low starting health
-    state.setPhysicalCondition(0); // Very poor condition (adds -5 penalty)
+    // Given - bumps alone drive HP below 1
+    state.setBumps(6);
+    wrestler.setStartingHealth(5);
 
     // When
     Integer effectiveHealth = wrestler.getEffectiveStartingHealth(universe.getId());
 
-    // Then - Should be 1, not negative (5 - 2 bumps - 5 condition penalty = -2, clamped to 1)
+    // Then - 5 - 6 bumps = -1, clamped to 1
     assertThat(effectiveHealth).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("Physical condition should not directly reduce effective starting health")
+  void physicalConditionShouldNotDirectlyReduceHealth() {
+    // Given - poor condition, no bumps or injuries
+    state.setPhysicalCondition(0);
+
+    // When
+    Integer effectiveHealth = wrestler.getEffectiveStartingHealth(universe.getId());
+
+    // Then - condition no longer penalises HP; bumps/injuries do
+    assertThat(effectiveHealth).isEqualTo(15);
   }
 
   @Test

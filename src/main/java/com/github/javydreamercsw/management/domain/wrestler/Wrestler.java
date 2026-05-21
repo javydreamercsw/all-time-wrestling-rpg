@@ -251,15 +251,9 @@ public class Wrestler extends AbstractSyncableEntity<Long> {
             .orElse(null);
 
     int bumpsValue = state != null ? state.getBumps() : 0;
-    int condition = state != null ? state.getPhysicalCondition() : 100;
     int injuryPenalty = state != null ? state.getTotalInjuryPenalty() : 0;
 
-    // Physical condition penalty: -1 health for every 5% lost from 100%
-    // Capped at -5 health points.
-    int conditionPenalty = Math.min(5, (100 - condition) / 5);
-
-    int effective =
-        startingHealth + bonus - penalty - bumpsValue - injuryPenalty - conditionPenalty;
+    int effective = startingHealth + bonus - penalty - bumpsValue - injuryPenalty;
     return Math.max(1, effective); // Never go below 1
   }
 
