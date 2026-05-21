@@ -784,11 +784,20 @@ public class SegmentAdjudicationService {
     for (Wrestler wrestler : segment.getWrestlers()) {
       WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
       int current = state.getPhysicalCondition();
-      state.setPhysicalCondition(Math.max(0, current - baseLoss));
+      int newCondition = Math.max(0, current - baseLoss);
+      state.setPhysicalCondition(newCondition);
       wrestlerService.save(wrestler);
       log.info(
           "Applied {}% wear and tear to {} in league {}. New condition: {}%",
-          baseLoss, wrestler.getName(), universeId, state.getPhysicalCondition());
+          baseLoss, wrestler.getName(), universeId, newCondition);
+
+      int bumpChance = Math.max(0, 75 - newCondition);
+      if (bumpChance > 0 && random.nextInt(100) < bumpChance) {
+        log.info(
+            "Wear-and-tear bump triggered for {} (condition: {}%, chance: {}%)",
+            wrestler.getName(), newCondition, bumpChance);
+        wrestlerService.addBump(wrestler.getId(), universeId);
+      }
 
       // Check for retirement
       retirementService.checkRetirement(wrestler, universeId);
