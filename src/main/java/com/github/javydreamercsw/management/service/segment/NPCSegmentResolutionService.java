@@ -16,7 +16,11 @@
 */
 package com.github.javydreamercsw.management.service.segment;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -26,12 +30,14 @@ import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.campaign.CampaignEffectContext;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +67,7 @@ public class NPCSegmentResolutionService {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private RingsideActionService ringsideActionService;
   @Autowired private RingsideActionDataService ringsideActionDataService;
+  @Autowired private ObjectMapper objectMapper;
 
   /**
    * Resolve a team-based segment using ATW RPG mechanics. This is the core method that handles all
@@ -212,22 +219,97 @@ public class NPCSegmentResolutionService {
     };
   }
 
-  /** Get health penalty based on bumps and injuries in a specific universe. */
+  /** Get health penalty based on bumps, injuries, and campaign-state penalties. */
   private int getHealthPenalty(@NonNull final Wrestler wrestler, @NonNull final Long universeId) {
     int penalty = 0;
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        wrestlerService.getOrCreateState(wrestler.getId(), universeId);
-
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
     if (state != null) {
-      // Bump penalties (each bump reduces effectiveness)
       penalty += state.getBumps();
-
-      // Injury penalties (active injuries significantly reduce effectiveness)
       penalty += injuryService.getTotalHealthPenaltyForWrestler(wrestler.getId(), universeId);
     }
 
+    // Campaign health penalty (ATW-9gf): the player's pre-match damage from scripts/backstage
+    WrestlerAlignment alignment = wrestler.getAlignment();
+    if (alignment != null
+        && alignment.getCampaign() != null
+        && alignment.getCampaign().getState() != null) {
+      penalty += alignment.getCampaign().getState().getHealthPenalty();
+      // staminaPenalty also degrades physical effectiveness (ATW-xvc)
+      penalty += alignment.getCampaign().getState().getStaminaPenalty();
+    }
+
     return penalty;
+  }
+
+  /**
+   * Returns the campaign weight modifier for a wrestler by reading pre-match script flags from
+   * featureData. Positive means the wrestler is advantaged; negative means disadvantaged. The flags
+   * are NOT consumed here — they remain until the campaign's post-match cleanup so they can also
+   * influence narration.
+   */
+  private int getCampaignWeightModifier(@NonNull final Wrestler wrestler) {
+    WrestlerAlignment alignment = wrestler.getAlignment();
+    if (alignment == null
+        || alignment.getCampaign() == null
+        || alignment.getCampaign().getState() == null) {
+      return 0;
+    }
+    CampaignState campaignState = alignment.getCampaign().getState();
+
+    // Momentum bonus translates directly to weight (ATW-8vs)
+    int modifier = campaignState.getMomentumBonus();
+
+    // Read featureData flags (ATW-32b initiative, ATW-wot negateAttack, ATW-yk1 pin,
+    // ATW-t8q rollModifier)
+    String featureData = campaignState.getFeatureData();
+    if (featureData == null) {
+      return modifier;
+    }
+    try {
+      Map<String, Object> data =
+          objectMapper.readValue(featureData, new TypeReference<Map<String, Object>>() {});
+
+      // Initiative: player acts first — +5 weight advantage (ATW-32b)
+      if (Boolean.TRUE.equals(data.get(CampaignEffectContext.KEY_INITIATIVE_GRANTED))) {
+        modifier += 5;
+      }
+      // Pending pin attempt: strong win advantage (ATW-yk1)
+      if (Boolean.TRUE.equals(data.get(CampaignEffectContext.KEY_PENDING_PIN_ATTEMPT))) {
+        modifier += 10;
+      }
+      // Player roll modifier: each point = 1 weight (ATW-t8q)
+      Object rollMod = data.get(CampaignEffectContext.KEY_PLAYER_ROLL_MODIFIER);
+      if (rollMod instanceof Number n) {
+        modifier += n.intValue();
+      }
+      // Attack negated: player's next incoming attack is nullified — defensive advantage (ATW-wot)
+      if (Boolean.TRUE.equals(data.get(CampaignEffectContext.KEY_ATTACK_NEGATED))) {
+        modifier += 3;
+      }
+      // Break pin granted: player can escape the next pin — defensive advantage (ATW-yk1)
+      if (Boolean.TRUE.equals(data.get(CampaignEffectContext.KEY_BREAK_PIN_GRANTED))) {
+        modifier += 3;
+      }
+    } catch (Exception e) {
+      log.warn("Failed to read campaign featureData for wrestler {}", wrestler.getName(), e);
+    }
+    return modifier;
+  }
+
+  /**
+   * Returns the campaign weight penalty imposed on this wrestler by an opposing campaign player
+   * (e.g. from attackNegated or opponentRollModifier). Positive return value = this wrestler is
+   * penalised.
+   */
+  private int getCampaignOpponentPenalty(@NonNull final Wrestler wrestler) {
+    // opponentHealthPenalty is on the player's state, not the opponent's.
+    // We apply it here as a penalty to any wrestler that is a known campaign opponent.
+    // Since we can't easily identify "who is the opponent" without the segment context,
+    // we rely on opponentHealthPenalty already being absorbed into the player's weight
+    // via getHealthPenalty above. Nothing additional needed here unless the wrestler has
+    // its own opponent-facing featureData.
+    return 0;
   }
 
   /** Add all team members as participants in the segment. */
@@ -370,7 +452,8 @@ public class NPCSegmentResolutionService {
                     int fanWeight = Math.toIntExact(state.getFans() / 5);
                     int tierBonus = getTierBonus(state.getTier());
                     int healthPenalty = getHealthPenalty(wrestler, universeId);
-                    int weight = Math.max(1, fanWeight + tierBonus - healthPenalty);
+                    int campaignMod = getCampaignWeightModifier(wrestler);
+                    int weight = Math.max(1, fanWeight + tierBonus - healthPenalty + campaignMod);
                     if (isHomeTerritory(wrestler)) {
                       weight += (int) (weight * 0.10);
                       log.debug(

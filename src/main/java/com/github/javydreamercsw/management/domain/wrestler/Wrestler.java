@@ -266,13 +266,15 @@ public class Wrestler extends AbstractSyncableEntity<Long> {
   @JsonIgnore
   public Integer getEffectiveStartingStamina() {
     WrestlerAlignment alignment = getAlignment();
-    int bonus =
-        alignment != null
-                && alignment.getCampaign() != null
-                && alignment.getCampaign().getState() != null
-            ? alignment.getCampaign().getState().getCampaignStaminaBonus()
-            : 0;
-    return startingStamina + bonus;
+    int bonus = 0;
+    int penalty = 0;
+    if (alignment != null
+        && alignment.getCampaign() != null
+        && alignment.getCampaign().getState() != null) {
+      bonus = alignment.getCampaign().getState().getCampaignStaminaBonus();
+      penalty = alignment.getCampaign().getState().getStaminaPenalty();
+    }
+    return Math.max(1, startingStamina + bonus - penalty);
   }
 
   @JsonIgnore
