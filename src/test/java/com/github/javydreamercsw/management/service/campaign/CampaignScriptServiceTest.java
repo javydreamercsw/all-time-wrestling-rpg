@@ -17,15 +17,30 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class CampaignScriptServiceTest {
 
-  private final CampaignScriptService scriptService = new CampaignScriptService();
+  private CampaignScriptService scriptService;
+  private CampaignStateRepository stateRepository;
+
+  @BeforeEach
+  void setUp() {
+    stateRepository = mock(CampaignStateRepository.class);
+    when(stateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    scriptService = new CampaignScriptService(stateRepository, new ObjectMapper());
+  }
 
   @Test
   void testEvaluateSnippet() {
@@ -37,8 +52,11 @@ class CampaignScriptServiceTest {
 
   @Test
   void testExecuteEffect() {
+    CampaignState state = new CampaignState();
     Campaign campaign = new Campaign();
-    // This just verifies it runs without crashing, as methods currently only log
+    campaign.setState(state);
+    // Verifies the script runs and mutates state without crashing
     scriptService.executeEffect("spendStamina(1); gainInitiative()", campaign);
+    assertThat(state.getStaminaPenalty()).isEqualTo(1);
   }
 }
