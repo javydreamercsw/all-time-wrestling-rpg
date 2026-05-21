@@ -16,8 +16,13 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import lombok.RequiredArgsConstructor;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -25,84 +30,193 @@ import lombok.extern.slf4j.Slf4j;
  * manipulate campaign state, wrestler stats, and match flow.
  */
 @Slf4j
-@RequiredArgsConstructor
 public class CampaignEffectContext {
 
+  // featureData keys consumed by sub-issues (match engine wiring)
+  public static final String KEY_INITIATIVE_GRANTED = "initiativeGranted";
+  public static final String KEY_PENDING_PIN_ATTEMPT = "pendingPinAttempt";
+  public static final String KEY_BREAK_PIN_GRANTED = "breakPinGranted";
+  public static final String KEY_ATTACK_NEGATED = "attackNegated";
+  public static final String KEY_PLAYER_ROLL_MODIFIER = "playerRollModifier";
+  public static final String KEY_OPPONENT_ROLL_MODIFIER = "opponentRollModifier";
+  public static final String KEY_BACKSTAGE_DICE_BONUS = "backstageDiceBonus";
+  public static final String KEY_ATTRIBUTE_MODIFIER_PREFIX = "attributeModifier_";
+
   private final Campaign campaign;
+  private final CampaignStateRepository stateRepository;
+  private final ObjectMapper objectMapper;
+
+  public CampaignEffectContext(
+      final Campaign campaign,
+      final CampaignStateRepository stateRepository,
+      final ObjectMapper objectMapper) {
+    this.campaign = campaign;
+    this.stateRepository = stateRepository;
+    this.objectMapper = objectMapper;
+  }
 
   // ==================== Resource Management ====================
 
   public void spendStamina(final int amount) {
-    // TODO: Integrate with Match Engine to reduce current stamina
-    log.debug("[Script] Spending {} Stamina", amount);
+    CampaignState state = campaign.getState();
+    state.setStaminaPenalty(state.getStaminaPenalty() + amount);
+    stateRepository.save(state);
+    log.debug(
+        "[Script] Spending {} Stamina. New staminaPenalty={}", amount, state.getStaminaPenalty());
   }
 
   public void gainStamina(final int amount) {
-    // TODO: Integrate with Match Engine to increase current stamina
-    log.debug("[Script] Gaining {} Stamina", amount);
+    CampaignState state = campaign.getState();
+    state.setStaminaPenalty(Math.max(0, state.getStaminaPenalty() - amount));
+    stateRepository.save(state);
+    log.debug(
+        "[Script] Gaining {} Stamina. New staminaPenalty={}", amount, state.getStaminaPenalty());
   }
 
   public void gainHitPoints(final int amount) {
-    // TODO: Integrate with Match Engine to heal
-    log.debug("[Script] Gaining {} HP", amount);
+    CampaignState state = campaign.getState();
+    state.setHealthPenalty(Math.max(0, state.getHealthPenalty() - amount));
+    stateRepository.save(state);
+    log.debug("[Script] Gaining {} HP. New healthPenalty={}", amount, state.getHealthPenalty());
   }
 
   public void damage(final int amount) {
-    // TODO: Integrate with Match Engine to damage opponent
-    log.debug("[Script] Dealing {} Damage to opponent", amount);
+    CampaignState state = campaign.getState();
+    state.setOpponentHealthPenalty(state.getOpponentHealthPenalty() + amount);
+    stateRepository.save(state);
+    log.debug(
+        "[Script] Dealing {} damage to opponent. New opponentHealthPenalty={}",
+        amount,
+        state.getOpponentHealthPenalty());
   }
 
   public void gainMomentum(final int amount) {
-    // TODO: Integrate with Match Engine momentum tracker
-    log.debug("[Script] Gaining {} Momentum", amount);
+    CampaignState state = campaign.getState();
+    state.setMomentumBonus(state.getMomentumBonus() + amount);
+    stateRepository.save(state);
+    log.debug(
+        "[Script] Gaining {} Momentum. New momentumBonus={}", amount, state.getMomentumBonus());
   }
 
   public void drawCard(final int amount) {
-    // TODO: Integrate with Deck/Hand management
-    log.debug("[Script] Drawing {} cards", amount);
+    CampaignState state = campaign.getState();
+    state.setHandSizePenalty(Math.max(0, state.getHandSizePenalty() - amount));
+    stateRepository.save(state);
+    log.debug(
+        "[Script] Drawing {} cards. New handSizePenalty={}", amount, state.getHandSizePenalty());
   }
 
   // ==================== Match Flow Control ====================
 
   public void gainInitiative() {
-    // TODO: Set initiative to player
-    log.debug("[Script] Gaining Initiative");
+    setFeatureFlag(KEY_INITIATIVE_GRANTED, true);
+    log.debug("[Script] Initiative granted to player");
   }
 
   public void pin() {
-    // TODO: Attempt pinfall
-    log.debug("[Script] Attempting Pin");
+    setFeatureFlag(KEY_PENDING_PIN_ATTEMPT, true);
+    log.debug("[Script] Pending pin attempt flagged");
   }
 
   public void breakPin() {
-    // TODO: Force pin break
-    log.debug("[Script] Breaking Pin");
+    setFeatureFlag(KEY_BREAK_PIN_GRANTED, true);
+    log.debug("[Script] Break pin flagged");
   }
 
   public void negateAttack() {
-    // TODO: Cancel incoming attack
-    log.debug("[Script] Negating Attack");
+    setFeatureFlag(KEY_ATTACK_NEGATED, true);
+    log.debug("[Script] Attack negation flagged");
   }
 
   // ==================== Modifiers ====================
 
   public void modifyOpponentRoll(final int modifier) {
-    // TODO: Add temporary modifier to opponent's next roll
-    log.debug("[Script] Modifying Opponent Roll by {}", modifier);
+    accumulateFeatureInt(KEY_OPPONENT_ROLL_MODIFIER, modifier);
+    log.debug("[Script] Opponent roll modifier: {}", modifier);
   }
 
   public void modifyRoll(final int modifier) {
-    // TODO: Add temporary modifier to player's roll
-    log.debug("[Script] Modifying Player Roll by {}", modifier);
+    accumulateFeatureInt(KEY_PLAYER_ROLL_MODIFIER, modifier);
+    log.debug("[Script] Player roll modifier: {}", modifier);
   }
 
   public void modifyBackstageDice(final int amount) {
-    // TODO: Add bonus dice for backstage checks
-    log.debug("[Script] Adding {} dice to Backstage Check", amount);
+    accumulateFeatureInt(KEY_BACKSTAGE_DICE_BONUS, amount);
+    log.debug("[Script] Backstage dice bonus: {}", amount);
   }
 
   public void modifyAttribute(final String attribute, final int amount) {
-    // TODO: Temporary or permanent attribute buff
-    log.debug("[Script] Modifying attribute {} by {}", attribute, amount);
+    // Map well-known attributes to CampaignState fields; store the rest in featureData.
+    switch (attribute.toLowerCase()) {
+      case "health", "hp" -> {
+        if (amount >= 0) {
+          gainHitPoints(amount);
+        } else {
+          CampaignState state = campaign.getState();
+          state.setHealthPenalty(state.getHealthPenalty() + Math.abs(amount));
+          stateRepository.save(state);
+        }
+      }
+      case "stamina" -> {
+        if (amount >= 0) {
+          gainStamina(amount);
+        } else {
+          spendStamina(Math.abs(amount));
+        }
+      }
+      case "momentum" -> gainMomentum(amount);
+      case "handsize", "hand_size" -> {
+        if (amount >= 0) {
+          drawCard(amount);
+        } else {
+          CampaignState state = campaign.getState();
+          state.setHandSizePenalty(state.getHandSizePenalty() + Math.abs(amount));
+          stateRepository.save(state);
+        }
+      }
+      default -> {
+        accumulateFeatureInt(KEY_ATTRIBUTE_MODIFIER_PREFIX + attribute.toLowerCase(), amount);
+        log.debug("[Script] Stored attribute modifier: {}={}", attribute, amount);
+      }
+    }
+  }
+
+  // ==================== featureData helpers ====================
+
+  private Map<String, Object> readFeatureData() {
+    CampaignState state = campaign.getState();
+    if (state.getFeatureData() == null) {
+      return new HashMap<>();
+    }
+    try {
+      return objectMapper.readValue(
+          state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
+    } catch (Exception e) {
+      log.warn("Failed to parse featureData in CampaignEffectContext", e);
+      return new HashMap<>();
+    }
+  }
+
+  private void writeFeatureData(final Map<String, Object> data) {
+    CampaignState state = campaign.getState();
+    try {
+      state.setFeatureData(objectMapper.writeValueAsString(data));
+      stateRepository.save(state);
+    } catch (Exception e) {
+      log.error("Failed to write featureData in CampaignEffectContext", e);
+    }
+  }
+
+  private void setFeatureFlag(final String key, final boolean value) {
+    Map<String, Object> data = readFeatureData();
+    data.put(key, value);
+    writeFeatureData(data);
+  }
+
+  private void accumulateFeatureInt(final String key, final int delta) {
+    Map<String, Object> data = readFeatureData();
+    int current = data.containsKey(key) ? ((Number) data.get(key)).intValue() : 0;
+    data.put(key, current + delta);
+    writeFeatureData(data);
   }
 }
