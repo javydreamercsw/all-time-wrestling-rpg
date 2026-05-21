@@ -297,21 +297,6 @@ public class NPCSegmentResolutionService {
     return modifier;
   }
 
-  /**
-   * Returns the campaign weight penalty imposed on this wrestler by an opposing campaign player
-   * (e.g. from attackNegated or opponentRollModifier). Positive return value = this wrestler is
-   * penalised.
-   */
-  private int getCampaignOpponentPenalty(@NonNull final Wrestler wrestler) {
-    // opponentHealthPenalty is on the player's state, not the opponent's.
-    // We apply it here as a penalty to any wrestler that is a known campaign opponent.
-    // Since we can't easily identify "who is the opponent" without the segment context,
-    // we rely on opponentHealthPenalty already being absorbed into the player's weight
-    // via getHealthPenalty above. Nothing additional needed here unless the wrestler has
-    // its own opponent-facing featureData.
-    return 0;
-  }
-
   /** Add all team members as participants in the segment. */
   private void addTeamParticipants(@NonNull final Segment result, @NonNull final SegmentTeam team) {
     for (Wrestler wrestler : team.getMembers()) {
