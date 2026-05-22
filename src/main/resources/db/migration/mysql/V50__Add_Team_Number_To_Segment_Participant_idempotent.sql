@@ -1,4 +1,4 @@
--- ADD COLUMN IF NOT EXISTS is not supported in MySQL 8 before 8.0.29; use prepared statement
+-- Make V42 idempotent: add column only if it doesn't exist (compatible with MySQL 8.0+)
 SET @col_exists = (
     SELECT COUNT(*)
     FROM information_schema.columns

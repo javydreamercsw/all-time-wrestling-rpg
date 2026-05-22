@@ -1,5 +1,4 @@
--- Add unique constraint to campaign_ability_card for name, alignmentType, and level.
--- IF EXISTS for DROP INDEX requires MySQL 8.0.29+; use a prepared statement for compatibility.
+-- Make V41 idempotent: drop existing index before re-adding (compatible with MySQL 8.0+)
 SET @idx_exists = (
     SELECT COUNT(*)
     FROM information_schema.statistics
