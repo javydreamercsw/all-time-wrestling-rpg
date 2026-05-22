@@ -133,10 +133,9 @@ class PollinationsImageGenerationServiceTest {
     ImageGenerationService.ImageRequest request =
         ImageGenerationService.ImageRequest.builder().prompt("A wrestler").build();
 
-    // The AIServiceException thrown inside the try block is caught and re-wrapped as 500
     assertThatThrownBy(() -> service.generateImage(request))
         .isInstanceOf(AIServiceException.class)
-        .satisfies(ex -> assertThat(((AIServiceException) ex).getStatusCode()).isEqualTo(500));
+        .satisfies(ex -> assertThat(((AIServiceException) ex).getStatusCode()).isEqualTo(403));
   }
 
   @Test
