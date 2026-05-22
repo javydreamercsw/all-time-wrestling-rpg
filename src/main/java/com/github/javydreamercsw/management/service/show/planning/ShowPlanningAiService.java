@@ -387,7 +387,7 @@ public class ShowPlanningAiService {
     if (!segmentTypes.isEmpty()) {
       prompt
           .append("  \"type\": \"string\", // e.g., \"")
-          .append(segmentTypes.get(0).getName())
+          .append(segmentTypes.getFirst().getName())
           .append("\"\n");
     } else {
       prompt.append("  \"type\": \"string\", // e.g., \"Match\"\n");
