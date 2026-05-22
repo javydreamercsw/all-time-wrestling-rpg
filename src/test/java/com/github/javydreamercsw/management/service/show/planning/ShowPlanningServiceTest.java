@@ -40,7 +40,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
@@ -79,7 +78,6 @@ class ShowPlanningServiceTest {
   @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
   @Mock private SegmentSummaryService segmentSummaryService;
   @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
-  @Mock private PromoBookingService promoBookingService;
   @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
   @Mock private Clock clock;
@@ -193,7 +191,6 @@ class ShowPlanningServiceTest {
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(List.of(activeWrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
-    when(rivalryService.getRivalriesForWrestler(anyLong())).thenReturn(new ArrayList<>());
     when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
     when(factionService.findAll()).thenReturn(new ArrayList<>());
     when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
@@ -287,7 +284,6 @@ class ShowPlanningServiceTest {
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(List.of(activeWrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
-    when(rivalryService.getRivalriesForWrestler(anyLong())).thenReturn(new ArrayList<>());
     when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
     when(factionService.findAll()).thenReturn(new ArrayList<>());
     when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
@@ -311,7 +307,6 @@ class ShowPlanningServiceTest {
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(List.of(activeWrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
-    when(rivalryService.getRivalriesForWrestler(anyLong())).thenReturn(new ArrayList<>());
     when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
     when(factionService.findAll()).thenReturn(new ArrayList<>());
     when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());

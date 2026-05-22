@@ -28,12 +28,10 @@ import lombok.Data;
 public class ShowPlanningContext {
   private List<Segment> recentSegments;
   private List<Rivalry> currentRivalries;
-  private List<Segment> recentPromos;
   private ShowTemplate showTemplate;
   private List<ShowPlanningChampionship> championships;
   private ShowPlanningPle nextPle;
   private List<Wrestler> fullRoster;
-  private List<ShowPlanningWrestlerHeat> wrestlerHeats;
   private List<Faction> factions;
   private Instant showDate;
   private boolean isPremiumLiveEvent;

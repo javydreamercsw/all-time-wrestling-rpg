@@ -398,4 +398,130 @@ class ShowPlanningAiServiceTest {
     assertFalse(prompt.contains("THIS IS A PREMIUM LIVE EVENT (PLE)"));
     assertFalse(prompt.contains("PLE-Specific Booking Rules"));
   }
+
+  @Test
+  void planShow_rivalryClassifiedAsMustBook_whenHeatBetween10And19() {
+    // Given
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(
+        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(1L);
+    rivalry.setName("Brewing Feud");
+    rivalry.setHeat(15);
+    rivalry.setParticipants(List.of("Alpha", "Beta"));
+    context.setCurrentRivalries(List.of(rivalry));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
+    String prompt = promptCaptor.getValue();
+    assertTrue(prompt.contains("Classification: MUST_BOOK"));
+  }
+
+  @Test
+  void planShow_rivalryClassifiedAsPleResolutionEligible_whenHeatBetween20And29() {
+    // Given
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(
+        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(2L);
+    rivalry.setName("Hot Feud");
+    rivalry.setHeat(25);
+    rivalry.setParticipants(List.of("Gamma", "Delta"));
+    context.setCurrentRivalries(List.of(rivalry));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
+    String prompt = promptCaptor.getValue();
+    assertTrue(prompt.contains("Classification: PLE_RESOLUTION_ELIGIBLE"));
+  }
+
+  @Test
+  void planShow_rivalryClassifiedAsStipulationRequired_whenHeatAtOrAbove30() {
+    // Given
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(
+        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(3L);
+    rivalry.setName("Blood Feud");
+    rivalry.setHeat(35);
+    rivalry.setParticipants(List.of("Epsilon", "Zeta"));
+    context.setCurrentRivalries(List.of(rivalry));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
+    String prompt = promptCaptor.getValue();
+    assertTrue(prompt.contains("Classification: STIPULATION_REQUIRED"));
+  }
+
+  @Test
+  void planShow_promptOmitsWrestlerHeatSection() {
+    // Given
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(
+        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
+    String prompt = promptCaptor.getValue();
+    assertFalse(prompt.contains("Wrestler Heat:"));
+  }
+
+  @Test
+  void planShow_promptOmitsRecentPromosSection() {
+    // Given
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(
+        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
+    String prompt = promptCaptor.getValue();
+    assertFalse(prompt.contains("Recent Promos"));
+  }
 }

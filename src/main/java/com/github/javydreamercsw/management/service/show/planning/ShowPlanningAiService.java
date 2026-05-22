@@ -185,43 +185,35 @@ public class ShowPlanningAiService {
                       .append("\n"));
     }
 
-    if (context.getRecentPromos() != null && !context.getRecentPromos().isEmpty()) {
-      prompt.append("Recent Promos (up to 10):\n");
-      context.getRecentPromos().stream()
-          .limit(10)
-          .forEach(
-              promo ->
-                  prompt
-                      .append("- Name: ")
-                      .append(promo.getName())
-                      .append(", Summary: ")
-                      .append(promo.getSummary())
-                      .append(", Participants: ")
-                      .append(String.join(", ", promo.getParticipants()))
-                      .append(", Show: ")
-                      .append(promo.getShowName())
-                      .append(", Date: ")
-                      .append(promo.getShowDate())
-                      .append("\n"));
-    }
     if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
-      prompt.append("Current Rivalries:\n");
+      prompt.append("Current Rivalries (heat ≥ 10 only):\n");
       context
           .getCurrentRivalries()
           .forEach(
-              rivalry ->
-                  prompt
-                      .append("- Id: ")
-                      .append(rivalry.getId())
-                      .append(", Name: ")
-                      .append(rivalry.getName())
-                      .append(", Participants: ")
-                      .append(String.join(", ", rivalry.getParticipants()))
-                      .append(", Heat: ")
-                      .append(rivalry.getHeat())
-                      .append(", Priority: ")
-                      .append(rivalry.getPriority())
-                      .append("\n"));
+              rivalry -> {
+                String classification;
+                if (rivalry.getHeat() >= 30) {
+                  classification = "STIPULATION_REQUIRED";
+                } else if (rivalry.getHeat() >= 20) {
+                  classification = "PLE_RESOLUTION_ELIGIBLE";
+                } else {
+                  classification = "MUST_BOOK";
+                }
+                prompt
+                    .append("- Id: ")
+                    .append(rivalry.getId())
+                    .append(", Name: ")
+                    .append(rivalry.getName())
+                    .append(", Participants: ")
+                    .append(String.join(", ", rivalry.getParticipants()))
+                    .append(", Heat: ")
+                    .append(rivalry.getHeat())
+                    .append(", Priority: ")
+                    .append(rivalry.getPriority())
+                    .append(", Classification: ")
+                    .append(classification)
+                    .append("\n");
+              });
       prompt.append("\n**Rivalry Resolution Rules:**\n");
       prompt.append("- At 10 Heat: They must wrestle at the next PLE show\n");
       prompt.append("- At 30 Heat → forced into High Heat Rule Match\n");
@@ -234,20 +226,6 @@ public class ShowPlanningAiService {
           .append("Available Stipulation Matches: ")
           .append(String.join(", ", highHeatRuleDescriptions))
           .append("\n\n");
-    }
-
-    if (context.getWrestlerHeats() != null && !context.getWrestlerHeats().isEmpty()) {
-      prompt.append("Wrestler Heat:\n");
-      context
-          .getWrestlerHeats()
-          .forEach(
-              heat ->
-                  prompt
-                      .append("- Wrestler: ")
-                      .append(heat.getWrestlerName())
-                      .append(", Heat: ")
-                      .append(heat.getHeat())
-                      .append("\n"));
     }
 
     if (context.getChampionships() != null && !context.getChampionships().isEmpty()) {
