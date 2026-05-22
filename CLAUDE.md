@@ -116,4 +116,9 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 - **DTOs:** use `*ResponseDTO` / `*DTO` classes for REST responses; map via MapStruct.
 - **ArchUnit:** architecture rules are enforced by tests in `*ArchTests.java`; violations fail the build.
 - **Flyway:** add new migrations as versioned SQL files in both `h2/` and `mysql/` directories when changing the schema.
+  - **Never edit a released script.** Each directory has a `.released` file recording the highest version shipped to users (e.g. `V42` for MySQL, `V74` for H2). Scripts at or below that version are frozen — editing them causes Flyway checksum validation failures on every existing install. `ReleasedMigrationChecksumTest` enforces this on every `mvn test` build and will fail immediately if a released file is modified.
+  - If a released script needs a correction, create a **new** migration at the next available version number instead.
+  - **Generating checksums:** after bumping `.released` at release time, run `bash scripts/generate-migration-checksums.sh` to regenerate the `.checksums` manifests and commit them. The release workflow does this automatically.
+  - **H2 is production for installer users.** Most customers use a file-based H2 database (configured by the portable/desktop installers), not MySQL. H2 migrations are therefore production migrations — treat them with the same care as MySQL.
+  - **Migration tests:** `FlywayMigrationIT` (MySQL, Testcontainers) validates fresh-schema and prod-dump upgrade paths. A planned `H2MigrationIT` (ATW-68q) will do the same for H2 file databases using a committed reference snapshot at the `.released` state — this will run under `-Pintegration-test` when any `db/migration/h2/` file changes.
 - **Notion sync:** entities that sync from Notion extend `AbstractSyncableEntity`. See `docs/SYNC_TROUBLESHOOTING.md` for debugging.
