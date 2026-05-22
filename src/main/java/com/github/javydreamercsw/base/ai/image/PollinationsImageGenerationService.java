@@ -109,6 +109,8 @@ public class PollinationsImageGenerationService implements ImageGenerationServic
               "Failed to generate image: HTTP " + response.statusCode() + " - " + url);
         }
 
+      } catch (AIServiceException e) {
+        throw e;
       } catch (Exception e) {
         log.error("Error generating image with Pollinations API Key", e);
         throw new AIServiceException(
