@@ -342,6 +342,20 @@ public class SegmentAdjudicationService {
           }
         });
 
+    // If the AI tagged a specific rivalry, boost its heat directly before the generic pair-scan.
+    if (segment.getRivalryId() != null) {
+      int targetedHeat = segment.getShow().isPremiumLiveEvent() ? 3 : 2;
+      rivalryService.addHeat(
+          segment.getRivalryId(),
+          targetedHeat,
+          "AI-booked segment: " + segment.getSegmentType().getName());
+      log.debug(
+          "Added {} heat to rivalry {} from AI-booked segment {}",
+          targetedHeat,
+          segment.getRivalryId(),
+          segment.getId());
+    }
+
     // Add heat to rivalries
     int heat = 1;
     String segmentTypeName = segment.getSegmentType().getName();
@@ -404,28 +418,38 @@ public class SegmentAdjudicationService {
           feudResolutionService.attemptFeudResolution(feud);
         }
       }
-      // Check if feuds should be resolved.
-      switch (segment.getSegmentType().getName()) {
-        case "Tag Team":
-          attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(2));
-          attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(3));
-          attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(2));
-          attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(3));
-          break;
-        case "Abu Dhabi Rumble":
-        case "One on One":
-        case "Free-for-All":
-        default:
-          List<Wrestler> wrestlers = segment.getWrestlers();
-          if (!wrestlers.isEmpty()) {
-            Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
-            for (Wrestler other : wrestlers) {
-              if (!baseWrestler.equals(other)) {
-                attemptRivalryResolution(baseWrestler, other);
+      // If the AI tagged a specific rivalry, attempt resolution on it directly.
+      if (segment.getRivalryId() != null) {
+        DiceBag diceBag = new DiceBag(20);
+        rivalryService.attemptResolution(segment.getRivalryId(), diceBag.roll(), diceBag.roll());
+        log.info(
+            "Attempted resolution of AI-tagged rivalry {} after PLE segment {}",
+            segment.getRivalryId(),
+            segment.getId());
+      } else {
+        // Fall back to generic pair-scan when no rivalry was explicitly tagged.
+        switch (segment.getSegmentType().getName()) {
+          case "Tag Team":
+            attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(2));
+            attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(3));
+            attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(2));
+            attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(3));
+            break;
+          case "Abu Dhabi Rumble":
+          case "One on One":
+          case "Free-for-All":
+          default:
+            List<Wrestler> wrestlers = segment.getWrestlers();
+            if (!wrestlers.isEmpty()) {
+              Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
+              for (Wrestler other : wrestlers) {
+                if (!baseWrestler.equals(other)) {
+                  attemptRivalryResolution(baseWrestler, other);
+                }
               }
             }
-          }
-          break;
+            break;
+        }
       }
     }
 
