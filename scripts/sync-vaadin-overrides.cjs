@@ -66,6 +66,15 @@ const resolveVaadinNpmVersion = (pkgName, currentVersion) => {
   return fallbackVaadinVersion;
 };
 
+// For overrides: if the package is also a direct dependency, use a $ reference so the
+// override always tracks the dependency version and can never produce EOVERRIDE conflicts.
+const resolveVaadinOverrideVersion = (pkgName, currentVersion) => {
+  if (pkg.dependencies && pkg.dependencies[pkgName] !== undefined) {
+    return `$${pkgName}`;
+  }
+  return resolveVaadinNpmVersion(pkgName, currentVersion);
+};
+
 // Keep direct Vaadin deps aligned too (prevents EOVERRIDE conflicts with overrides)
 const syncVaadinVersionsInObject = (obj) => {
   if (!obj || typeof obj !== 'object') return;
@@ -83,7 +92,7 @@ if (pkg.vaadin && typeof pkg.vaadin === 'object') {
 // Sync/clean @vaadin/* overrides.
 for (const k of Object.keys(overrides)) {
   if (!k.startsWith('@vaadin/')) continue;
-  overrides[k] = resolveVaadinNpmVersion(k, overrides[k]);
+  overrides[k] = resolveVaadinOverrideVersion(k, overrides[k]);
 }
 
 // Add missing allowed packages to overrides ONLY if not in dependencies
@@ -103,7 +112,7 @@ if (pkg.vaadin && typeof pkg.vaadin === 'object') {
 
 for (const k of Array.from(allVaadinPackages)) {
   if (!pkg.dependencies[k]) {
-    overrides[k] = resolveVaadinNpmVersion(k, overrides[k]);
+    overrides[k] = resolveVaadinOverrideVersion(k, overrides[k]);
   }
 }
 
