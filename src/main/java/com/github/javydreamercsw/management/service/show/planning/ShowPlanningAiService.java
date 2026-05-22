@@ -214,9 +214,18 @@ public class ShowPlanningAiService {
                     .append(classification)
                     .append("\n");
               });
-      prompt.append("\n**Rivalry Resolution Rules:**\n");
-      prompt.append("- At 10 Heat: They must wrestle at the next PLE show\n");
-      prompt.append("- At 30 Heat → forced into High Heat Rule Match\n");
+      prompt.append("\n**Rivalry Classification Rules:**\n");
+      prompt.append(
+          """
+          - MUST_BOOK (Heat 10-19): This rivalry MUST have a segment on this show. Book a match \
+          or a promo confrontation — do not skip it.
+          - PLE_RESOLUTION_ELIGIBLE (Heat 20-29): This rivalry is hot enough to headline a PLE. \
+          On a regular show, build tension with a confrontation, brawl, or non-finish match. \
+          On a PLE, give it a decisive match.
+          - STIPULATION_REQUIRED (Heat ≥ 30): This rivalry has reached maximum intensity. It MUST \
+          have a match with a stipulation from the Available Stipulation Matches list below. \
+          Use a decisive, no-DQ finish — do not end with a count-out or disqualification.
+          """);
       List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
       List<String> highHeatRuleDescriptions =
           highHeatRules.stream()

@@ -174,6 +174,10 @@ class ShowPlanningAiServiceTest {
     assertTrue(
         capturedPrompt.contains(
             "Available Stipulation Matches: Steel Cage (A match fought within a steel cage.)"));
+    assertTrue(capturedPrompt.contains("Rivalry Classification Rules:"));
+    assertTrue(capturedPrompt.contains("MUST_BOOK"));
+    assertTrue(capturedPrompt.contains("PLE_RESOLUTION_ELIGIBLE"));
+    assertTrue(capturedPrompt.contains("STIPULATION_REQUIRED"));
   }
 
   @Test
