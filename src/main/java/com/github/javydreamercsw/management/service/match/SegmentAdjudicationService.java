@@ -356,11 +356,20 @@ public class SegmentAdjudicationService {
     if (!"Abu Dhabi Rumble".equals(segment.getSegmentType().getName())) {
       for (int i = 0; i < participants.size(); i++) {
         for (int j = i + 1; j < participants.size(); j++) {
+          Wrestler wi = participants.get(i);
+          Wrestler wj = participants.get(j);
+          Faction fi = wi.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+          Faction fj = wj.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+          if (fi != null && fi.equals(fj)) {
+            log.debug(
+                "Skipping heat between teammates {} and {} (faction: {})",
+                wi.getName(),
+                wj.getName(),
+                fi.getName());
+            continue;
+          }
           rivalryService.addHeatBetweenWrestlers(
-              participants.get(i).getId(),
-              participants.get(j).getId(),
-              heat,
-              "From segment: " + segment.getSegmentType().getName());
+              wi.getId(), wj.getId(), heat, "From segment: " + segment.getSegmentType().getName());
         }
       }
     } else {
@@ -406,6 +415,7 @@ public class SegmentAdjudicationService {
         case "Abu Dhabi Rumble":
         case "One on One":
         case "Free-for-All":
+        default:
           List<Wrestler> wrestlers = segment.getWrestlers();
           if (!wrestlers.isEmpty()) {
             Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
