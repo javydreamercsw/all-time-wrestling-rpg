@@ -1014,6 +1014,7 @@
               <exclude>node/**</exclude>
               <exclude>docs/site/**</exclude>
               <exclude>src/main/resources/META-INF/resources/docs/**</exclude>
+              <exclude>src/main/bundles/**</exclude>
             </excludes>
           </markdown>
           <json>
