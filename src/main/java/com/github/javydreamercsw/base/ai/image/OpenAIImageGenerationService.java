@@ -90,6 +90,8 @@ public class OpenAIImageGenerationService implements ImageGenerationService {
           getProviderName(),
           "Failed to generate image: " + response.body());
 
+    } catch (AIServiceException e) {
+      throw e;
     } catch (Exception e) {
       log.error("Error generating image with OpenAI", e);
       throw new AIServiceException(
