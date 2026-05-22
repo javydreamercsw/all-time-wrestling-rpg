@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -105,6 +106,63 @@ class ReleasedMigrationChecksumTest {
               + String.join("\n\n", violations)
               + "\n\nTo fix: revert the changes to the listed scripts and add a new migration"
               + " (with the next available version number) for any schema corrections.");
+    }
+  }
+
+  /**
+   * Verifies no gaps exist in migration versions above {@code .released}. Gaps in released
+   * (historical) versions are pre-existing and cannot safely be filled.
+   */
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(strings = {"h2", "mysql"})
+  void unreleased_migration_version_sequence_must_have_no_gaps(String dbType) throws Exception {
+    Path migrationDir = Paths.get("src/main/resources/db/migration", dbType);
+    Path releasedFile = migrationDir.resolve(".released");
+    assertFileExists(releasedFile, "Run scripts/generate-migration-checksums.sh to create it.");
+
+    int releasedNum =
+        Integer.parseInt(Files.readString(releasedFile).strip().replaceAll("[^0-9]", ""));
+
+    List<Integer> versions;
+    try (var files = Files.list(migrationDir)) {
+      versions =
+          files
+              .map(p -> p.getFileName().toString())
+              .filter(name -> name.matches("V[0-9]+__.*\\.sql"))
+              .map(name -> Integer.parseInt(name.replaceAll("V([0-9]+)__.*", "$1")))
+              .filter(v -> v > releasedNum)
+              .sorted()
+              .collect(Collectors.toList());
+    }
+
+    if (versions.isEmpty()) {
+      return;
+    }
+
+    List<String> gaps = new ArrayList<>();
+    // Check for gap between .released and the first unreleased migration
+    if (versions.get(0) != releasedNum + 1) {
+      gaps.add("Gap between V" + releasedNum + " (released) and V" + versions.get(0));
+    }
+    for (int i = 1; i < versions.size(); i++) {
+      int prev = versions.get(i - 1);
+      int curr = versions.get(i);
+      if (curr != prev + 1) {
+        gaps.add("Gap between V" + prev + " and V" + curr);
+      }
+    }
+
+    if (!gaps.isEmpty()) {
+      fail(
+          "["
+              + dbType
+              + "] Unreleased migration version sequence has gaps ("
+              + gaps.size()
+              + " gap(s)):\n\n"
+              + String.join("\n", gaps)
+              + "\n\nFill the gaps by adding the missing migration versions."
+              + " Gaps in released (historical) versions are allowed but unreleased ones must be"
+              + " sequential to ensure correct upgrade order.");
     }
   }
 
