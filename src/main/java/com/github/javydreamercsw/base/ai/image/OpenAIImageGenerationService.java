@@ -41,6 +41,7 @@ public class OpenAIImageGenerationService implements ImageGenerationService {
 
   private final AiSettingsService aiSettings;
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private HttpClient httpClient;
 
   @Override
   public String generateImage(@NonNull final ImageRequest request) {
@@ -52,10 +53,7 @@ public class OpenAIImageGenerationService implements ImageGenerationService {
     try {
       log.info("Generating image with OpenAI. Prompt: {}", request.getPrompt());
 
-      HttpClient client =
-          HttpClient.newBuilder()
-              .connectTimeout(Duration.ofSeconds(aiSettings.getAiTimeout()))
-              .build();
+      HttpClient client = getHttpClient(aiSettings.getAiTimeout());
 
       String model =
           request.getModel() != null ? request.getModel() : aiSettings.getOpenAIImageModel();
@@ -97,6 +95,14 @@ public class OpenAIImageGenerationService implements ImageGenerationService {
       throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), "Error during image generation", e);
     }
+  }
+
+  protected HttpClient getHttpClient(final int timeoutSeconds) {
+    if (httpClient == null) {
+      httpClient =
+          HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(timeoutSeconds)).build();
+    }
+    return httpClient;
   }
 
   @Override
