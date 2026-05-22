@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -46,6 +47,7 @@ import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
+import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -55,8 +57,6 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
-import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -270,8 +270,10 @@ class SegmentAdjudicationServiceTest {
     segmentAdjudicationService.adjudicateMatch(segment);
 
     // Heat must NOT be added between teammates
-    verify(rivalryService, never()).addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString());
-    verify(rivalryService, never()).addHeatBetweenWrestlers(eq(11L), eq(10L), anyInt(), anyString());
+    verify(rivalryService, never())
+        .addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString());
+    verify(rivalryService, never())
+        .addHeatBetweenWrestlers(eq(11L), eq(10L), anyInt(), anyString());
   }
 
   @Test
