@@ -77,6 +77,9 @@ jobs:
           echo "$LATEST_H2" > src/main/resources/db/migration/h2/.released
           echo "$LATEST_MYSQL" > src/main/resources/db/migration/mysql/.released
 
+      - name: Generate migration checksums
+        run: bash scripts/generate-migration-checksums.sh
+
       - name: Format and Push initial changes
         run: |
           mvn spotless:apply
