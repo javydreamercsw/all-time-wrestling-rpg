@@ -136,7 +136,9 @@ class H2MigrationIT {
   }
 
   private static void deleteDirIfExists(Path dir) throws IOException {
-    if (!Files.exists(dir)) return;
+    if (!Files.exists(dir)) {
+      return;
+    }
     try (var walk = Files.walk(dir)) {
       walk.sorted(Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
     }

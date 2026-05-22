@@ -62,7 +62,9 @@ class ReleasedMigrationChecksumTest {
 
     for (String line : Files.readAllLines(checksumsFile)) {
       line = line.trim();
-      if (line.isEmpty()) continue;
+      if (line.isEmpty()) {
+        continue;
+      }
 
       String[] parts = line.split("  ", 2);
       if (parts.length != 2) {
