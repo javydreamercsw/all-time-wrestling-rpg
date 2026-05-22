@@ -93,6 +93,7 @@ public class ShowPlanningAiService {
                     segment.setSummary(dto.getOutcome());
                     segment.setNotes(dto.getNotes());
                     segment.setParticipants(dto.getParticipants());
+                    segment.setRivalryId(dto.getRivalryId());
                     return segment;
                   })
               .collect(java.util.stream.Collectors.toList());
@@ -120,6 +121,13 @@ public class ShowPlanningAiService {
          coherent show by generating a list of segments in JSON format.
 
         """);
+    if (context.isPremiumLiveEvent()) {
+      prompt.append(
+          """
+          **THIS IS A PREMIUM LIVE EVENT (PLE).** Apply PLE-specific booking rules (see below).
+
+          """);
+    }
     prompt.append("Here is the context for the show:\n");
 
     if (context.getShowTemplate() != null) {
@@ -203,7 +211,9 @@ public class ShowPlanningAiService {
           .forEach(
               rivalry ->
                   prompt
-                      .append("- Name: ")
+                      .append("- Id: ")
+                      .append(rivalry.getId())
+                      .append(", Name: ")
                       .append(rivalry.getName())
                       .append(", Participants: ")
                       .append(String.join(", ", rivalry.getParticipants()))
@@ -350,6 +360,19 @@ public class ShowPlanningAiService {
         - Within the same calendar week, avoid having a wrestler in more than one match. The\
          exception is for Premium Live Event (PLE) where this is not avoidable.
         """);
+    if (context.isPremiumLiveEvent()) {
+      prompt.append(
+          """
+
+          **PLE-Specific Booking Rules:**
+          - ALL rivalries at Heat ≥ 10 MUST have a match on this card — no deferral to a future show.
+          - ALL rivalries at Heat ≥ 30 MUST use a stipulation match from the Available Stipulation\
+           Matches list above.
+          - Every active championship MUST be defended on this card.
+          - Matches should have clear, decisive finishes — PLE is not the place for count-out or\
+           disqualification endings.
+          """);
+    }
 
     List<SegmentType> segmentTypes = segmentTypeService.findAll();
     List<String> segmentTypeDescriptions =
@@ -386,7 +409,10 @@ public class ShowPlanningAiService {
     prompt.append("  \"outcome\": \"string\",\n");
     prompt.append(
         "  \"notes\": \"string\", // Optional instructions/feedback for future AI narration\n");
-    prompt.append("  \"participants\": [\"string\"]\n");
+    prompt.append("  \"participants\": [\"string\"],\n");
+    prompt.append(
+        "  \"rivalryId\": number // Optional: the Id of the rivalry this match resolves; omit or"
+            + " null if not rivalry-driven\n");
     prompt.append("}\n");
     prompt.append("```\n\n");
     prompt

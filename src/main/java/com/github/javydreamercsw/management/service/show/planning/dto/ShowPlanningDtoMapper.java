@@ -74,6 +74,7 @@ public class ShowPlanningDtoMapper {
       dto.setFactions(context.getFactions().stream().map(this::toDto).collect(Collectors.toList()));
     }
     dto.setShowDate(context.getShowDate());
+    dto.setPremiumLiveEvent(context.isPremiumLiveEvent());
     return dto;
   }
 

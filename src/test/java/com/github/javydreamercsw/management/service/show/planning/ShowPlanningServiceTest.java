@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,6 +32,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -266,5 +268,63 @@ class ShowPlanningServiceTest {
     // When & Then
     assertThrows(
         IllegalStateException.class, () -> showPlanningService.getShowPlanningContext(show));
+  }
+
+  @Test
+  void testGetShowPlanningContext_PleShowFlagsPropagated() {
+    // Given
+    ShowType pleShowType = new ShowType();
+    pleShowType.setName("Premium Live Event (PLE)");
+
+    ShowTemplate pleTemplate = new ShowTemplate();
+    pleTemplate.setShowType(pleShowType);
+    pleTemplate.setExpectedMatches(5);
+    pleTemplate.setExpectedPromos(2);
+
+    show.setTemplate(pleTemplate);
+
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(rivalryService.getRivalriesForWrestler(anyLong())).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ArgumentCaptor<ShowPlanningContext> contextCaptor =
+        ArgumentCaptor.forClass(ShowPlanningContext.class);
+
+    // When
+    showPlanningService.getShowPlanningContext(show);
+
+    // Then
+    verify(mapper).toDto(contextCaptor.capture());
+    assertTrue(contextCaptor.getValue().isPremiumLiveEvent());
+  }
+
+  @Test
+  void testGetShowPlanningContext_NonPleShowFlagsFalse() {
+    // Given — show has no template, isPremiumLiveEvent() returns false
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(rivalryService.getRivalriesForWrestler(anyLong())).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ArgumentCaptor<ShowPlanningContext> contextCaptor =
+        ArgumentCaptor.forClass(ShowPlanningContext.class);
+
+    // When
+    showPlanningService.getShowPlanningContext(show);
+
+    // Then
+    verify(mapper).toDto(contextCaptor.capture());
+    assertFalse(contextCaptor.getValue().isPremiumLiveEvent());
   }
 }

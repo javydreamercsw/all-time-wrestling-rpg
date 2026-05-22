@@ -36,4 +36,5 @@ public class ShowPlanningContext {
   private List<ShowPlanningWrestlerHeat> wrestlerHeats;
   private List<Faction> factions;
   private Instant showDate;
+  private boolean isPremiumLiveEvent;
 }

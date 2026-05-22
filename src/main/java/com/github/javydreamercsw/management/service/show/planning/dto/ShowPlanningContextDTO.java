@@ -35,4 +35,5 @@ public class ShowPlanningContextDTO {
   private List<WrestlerDTO> fullRoster;
   private List<FactionDTO> factions;
   private Instant showDate;
+  private boolean isPremiumLiveEvent;
 }
