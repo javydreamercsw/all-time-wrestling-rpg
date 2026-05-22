@@ -136,6 +136,9 @@ public class Segment extends AbstractSyncableEntity<Long> {
   @Column(name = "crowd_noise_level")
   @Min(0) @jakarta.validation.constraints.Max(100) private Integer crowdNoiseLevel = 0;
 
+  @Column(name = "rivalry_id")
+  private Long rivalryId;
+
   // Segment participants
   @OneToMany(
       mappedBy = "segment",

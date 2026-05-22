@@ -16,21 +16,16 @@
 */
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
-import com.github.javydreamercsw.management.dto.FactionDTO;
-import com.github.javydreamercsw.management.service.show.planning.ShowTemplate;
-import java.time.Instant;
-import java.util.List;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import lombok.Data;
 
+/** Booking-relevant wrestler summary for AI show planning. Omits bios, stats, and move sets. */
 @Data
-public class ShowPlanningContextDTO {
-  private List<ShowPlanningSegmentDTO> recentSegments;
-  private List<ShowPlanningRivalryDTO> currentRivalries;
-  private ShowTemplate showTemplate;
-  private List<ShowPlanningChampionshipDTO> championships;
-  private ShowPlanningPleDTO nextPle;
-  private List<ShowPlanningRosterEntryDTO> fullRoster;
-  private List<FactionDTO> factions;
-  private Instant showDate;
-  private boolean isPremiumLiveEvent;
+public class ShowPlanningRosterEntryDTO {
+  private String name;
+  private String gender;
+  private WrestlerTier tier;
+  private Long fans;
+  private String alignment;
+  private boolean injured;
 }

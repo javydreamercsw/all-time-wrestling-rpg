@@ -93,6 +93,7 @@ public class ShowPlanningAiService {
                     segment.setSummary(dto.getOutcome());
                     segment.setNotes(dto.getNotes());
                     segment.setParticipants(dto.getParticipants());
+                    segment.setRivalryId(dto.getRivalryId());
                     return segment;
                   })
               .collect(java.util.stream.Collectors.toList());
@@ -120,6 +121,13 @@ public class ShowPlanningAiService {
          coherent show by generating a list of segments in JSON format.
 
         """);
+    if (context.isPremiumLiveEvent()) {
+      prompt.append(
+          """
+          **THIS IS A PREMIUM LIVE EVENT (PLE).** Apply PLE-specific booking rules (see below).
+
+          """);
+    }
     prompt.append("Here is the context for the show:\n");
 
     if (context.getShowTemplate() != null) {
@@ -177,44 +185,47 @@ public class ShowPlanningAiService {
                       .append("\n"));
     }
 
-    if (context.getRecentPromos() != null && !context.getRecentPromos().isEmpty()) {
-      prompt.append("Recent Promos (up to 10):\n");
-      context.getRecentPromos().stream()
-          .limit(10)
-          .forEach(
-              promo ->
-                  prompt
-                      .append("- Name: ")
-                      .append(promo.getName())
-                      .append(", Summary: ")
-                      .append(promo.getSummary())
-                      .append(", Participants: ")
-                      .append(String.join(", ", promo.getParticipants()))
-                      .append(", Show: ")
-                      .append(promo.getShowName())
-                      .append(", Date: ")
-                      .append(promo.getShowDate())
-                      .append("\n"));
-    }
     if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
-      prompt.append("Current Rivalries:\n");
+      prompt.append("Current Rivalries (heat ≥ 10 only):\n");
       context
           .getCurrentRivalries()
           .forEach(
-              rivalry ->
-                  prompt
-                      .append("- Name: ")
-                      .append(rivalry.getName())
-                      .append(", Participants: ")
-                      .append(String.join(", ", rivalry.getParticipants()))
-                      .append(", Heat: ")
-                      .append(rivalry.getHeat())
-                      .append(", Priority: ")
-                      .append(rivalry.getPriority())
-                      .append("\n"));
-      prompt.append("\n**Rivalry Resolution Rules:**\n");
-      prompt.append("- At 10 Heat: They must wrestle at the next PLE show\n");
-      prompt.append("- At 30 Heat → forced into High Heat Rule Match\n");
+              rivalry -> {
+                String classification;
+                if (rivalry.getHeat() >= 30) {
+                  classification = "STIPULATION_REQUIRED";
+                } else if (rivalry.getHeat() >= 20) {
+                  classification = "PLE_RESOLUTION_ELIGIBLE";
+                } else {
+                  classification = "MUST_BOOK";
+                }
+                prompt
+                    .append("- Id: ")
+                    .append(rivalry.getId())
+                    .append(", Name: ")
+                    .append(rivalry.getName())
+                    .append(", Participants: ")
+                    .append(String.join(", ", rivalry.getParticipants()))
+                    .append(", Heat: ")
+                    .append(rivalry.getHeat())
+                    .append(", Priority: ")
+                    .append(rivalry.getPriority())
+                    .append(", Classification: ")
+                    .append(classification)
+                    .append("\n");
+              });
+      prompt.append("\n**Rivalry Classification Rules:**\n");
+      prompt.append(
+          """
+          - MUST_BOOK (Heat 10-19): This rivalry MUST have a segment on this show. Book a match \
+          or a promo confrontation — do not skip it.
+          - PLE_RESOLUTION_ELIGIBLE (Heat 20-29): This rivalry is hot enough to headline a PLE. \
+          On a regular show, build tension with a confrontation, brawl, or non-finish match. \
+          On a PLE, give it a decisive match.
+          - STIPULATION_REQUIRED (Heat ≥ 30): This rivalry has reached maximum intensity. It MUST \
+          have a match with a stipulation from the Available Stipulation Matches list below. \
+          Use a decisive, no-DQ finish — do not end with a count-out or disqualification.
+          """);
       List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
       List<String> highHeatRuleDescriptions =
           highHeatRules.stream()
@@ -224,20 +235,6 @@ public class ShowPlanningAiService {
           .append("Available Stipulation Matches: ")
           .append(String.join(", ", highHeatRuleDescriptions))
           .append("\n\n");
-    }
-
-    if (context.getWrestlerHeats() != null && !context.getWrestlerHeats().isEmpty()) {
-      prompt.append("Wrestler Heat:\n");
-      context
-          .getWrestlerHeats()
-          .forEach(
-              heat ->
-                  prompt
-                      .append("- Wrestler: ")
-                      .append(heat.getWrestlerName())
-                      .append(", Heat: ")
-                      .append(heat.getHeat())
-                      .append("\n"));
     }
 
     if (context.getChampionships() != null && !context.getChampionships().isEmpty()) {
@@ -350,6 +347,19 @@ public class ShowPlanningAiService {
         - Within the same calendar week, avoid having a wrestler in more than one match. The\
          exception is for Premium Live Event (PLE) where this is not avoidable.
         """);
+    if (context.isPremiumLiveEvent()) {
+      prompt.append(
+          """
+
+          **PLE-Specific Booking Rules:**
+          - ALL rivalries at Heat ≥ 10 MUST have a match on this card — no deferral to a future show.
+          - ALL rivalries at Heat ≥ 30 MUST use a stipulation match from the Available Stipulation\
+           Matches list above.
+          - Every active championship MUST be defended on this card.
+          - Matches should have clear, decisive finishes — PLE is not the place for count-out or\
+           disqualification endings.
+          """);
+    }
 
     List<SegmentType> segmentTypes = segmentTypeService.findAll();
     List<String> segmentTypeDescriptions =
@@ -377,7 +387,7 @@ public class ShowPlanningAiService {
     if (!segmentTypes.isEmpty()) {
       prompt
           .append("  \"type\": \"string\", // e.g., \"")
-          .append(segmentTypes.get(0).getName())
+          .append(segmentTypes.getFirst().getName())
           .append("\"\n");
     } else {
       prompt.append("  \"type\": \"string\", // e.g., \"Match\"\n");
@@ -386,7 +396,10 @@ public class ShowPlanningAiService {
     prompt.append("  \"outcome\": \"string\",\n");
     prompt.append(
         "  \"notes\": \"string\", // Optional instructions/feedback for future AI narration\n");
-    prompt.append("  \"participants\": [\"string\"]\n");
+    prompt.append("  \"participants\": [\"string\"],\n");
+    prompt.append(
+        "  \"rivalryId\": number // Optional: the Id of the rivalry this match resolves; omit or"
+            + " null if not rivalry-driven\n");
     prompt.append("}\n");
     prompt.append("```\n\n");
     prompt

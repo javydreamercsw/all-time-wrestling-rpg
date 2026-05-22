@@ -155,6 +155,8 @@ class SegmentAdjudicationServiceTest {
     when(segment.getShow()).thenReturn(show);
     when(show.isPremiumLiveEvent()).thenReturn(false);
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+    // Default: no AI-tagged rivalry; tests that need it override this.
+    lenient().when(segment.getRivalryId()).thenReturn(null);
   }
 
   @Test
@@ -356,5 +358,62 @@ class SegmentAdjudicationServiceTest {
     // Should call awardFans for participants
     verify(wrestlerService).awardFans(eq(1L), anyLong(), anyLong());
     verify(wrestlerService).awardFans(eq(2L), anyLong(), anyLong());
+  }
+
+  @Test
+  void adjudicateMatch_aiTaggedRivalry_addsTargetedHeatOnRegularShow() {
+    when(segment.getRivalryId()).thenReturn(42L);
+    when(show.isPremiumLiveEvent()).thenReturn(false);
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(rivalryService).addHeat(eq(42L), eq(2), anyString());
+  }
+
+  @Test
+  void adjudicateMatch_aiTaggedRivalry_addsHigherHeatOnPle() {
+    when(segment.getRivalryId()).thenReturn(42L);
+    when(show.isPremiumLiveEvent()).thenReturn(true);
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(rivalryService).addHeat(eq(42L), eq(3), anyString());
+  }
+
+  @Test
+  void adjudicateMatch_aiTaggedRivalry_attemptsResolutionOnPle() {
+    com.github.javydreamercsw.management.domain.rivalry.Rivalry rivalry =
+        mock(com.github.javydreamercsw.management.domain.rivalry.Rivalry.class);
+    when(segment.getRivalryId()).thenReturn(42L);
+    when(show.isPremiumLiveEvent()).thenReturn(true);
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+    when(rivalryService.attemptResolution(anyLong(), anyInt(), anyInt()))
+        .thenReturn(
+            new com.github.javydreamercsw.management.service.resolution.ResolutionResult<>(
+                false, "not resolved", rivalry, 5, 6, 11));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(rivalryService).attemptResolution(eq(42L), anyInt(), anyInt());
+    // Generic pair-scan should NOT run when rivalryId is set
+    verify(rivalryService, never()).getRivalryBetweenWrestlers(anyLong(), anyLong());
+  }
+
+  @Test
+  void adjudicateMatch_noRivalryId_usesGenericPairScanOnPle() {
+    when(segment.getRivalryId()).thenReturn(null);
+    when(show.isPremiumLiveEvent()).thenReturn(true);
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+    when(rivalryService.getRivalryBetweenWrestlers(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Generic pair-scan must run for winner vs loser
+    verify(rivalryService).getRivalryBetweenWrestlers(eq(1L), eq(2L));
+    // Direct resolution must NOT be called with a specific id
+    verify(rivalryService, never()).attemptResolution(anyLong(), anyInt(), anyInt());
   }
 }

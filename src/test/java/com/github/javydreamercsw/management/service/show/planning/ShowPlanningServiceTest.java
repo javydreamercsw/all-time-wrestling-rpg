@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,11 +27,13 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -38,7 +41,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
@@ -77,7 +79,6 @@ class ShowPlanningServiceTest {
   @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
   @Mock private SegmentSummaryService segmentSummaryService;
   @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
-  @Mock private PromoBookingService promoBookingService;
   @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
   @Mock private Clock clock;
@@ -191,7 +192,6 @@ class ShowPlanningServiceTest {
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(List.of(activeWrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
-    when(rivalryService.getRivalriesForWrestler(anyLong())).thenReturn(new ArrayList<>());
     when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
     when(factionService.findAll()).thenReturn(new ArrayList<>());
     when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
@@ -266,5 +266,166 @@ class ShowPlanningServiceTest {
     // When & Then
     assertThrows(
         IllegalStateException.class, () -> showPlanningService.getShowPlanningContext(show));
+  }
+
+  @Test
+  void testGetShowPlanningContext_PleShowFlagsPropagated() {
+    // Given
+    ShowType pleShowType = new ShowType();
+    pleShowType.setName("Premium Live Event (PLE)");
+
+    ShowTemplate pleTemplate = new ShowTemplate();
+    pleTemplate.setShowType(pleShowType);
+    pleTemplate.setExpectedMatches(5);
+    pleTemplate.setExpectedPromos(2);
+
+    show.setTemplate(pleTemplate);
+
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ArgumentCaptor<ShowPlanningContext> contextCaptor =
+        ArgumentCaptor.forClass(ShowPlanningContext.class);
+
+    // When
+    showPlanningService.getShowPlanningContext(show);
+
+    // Then
+    verify(mapper).toDto(contextCaptor.capture());
+    assertTrue(contextCaptor.getValue().isPremiumLiveEvent());
+  }
+
+  @Test
+  void testGetShowPlanningContext_NonPleShowFlagsFalse() {
+    // Given — show has no template, isPremiumLiveEvent() returns false
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ArgumentCaptor<ShowPlanningContext> contextCaptor =
+        ArgumentCaptor.forClass(ShowPlanningContext.class);
+
+    // When
+    showPlanningService.getShowPlanningContext(show);
+
+    // Then
+    verify(mapper).toDto(contextCaptor.capture());
+    assertFalse(contextCaptor.getValue().isPremiumLiveEvent());
+  }
+
+  // --- validateCard tests ---
+
+  private Rivalry rivalryWithHeat(long id, String w1Name, String w2Name, int heat) {
+    Wrestler w1 = new Wrestler();
+    w1.setId(id * 10);
+    w1.setName(w1Name);
+    Wrestler w2 = new Wrestler();
+    w2.setId(id * 10 + 1);
+    w2.setName(w2Name);
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(id);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    rivalry.setHeat(heat);
+    return rivalry;
+  }
+
+  @Test
+  void validateCard_noActiveRivalries_returnsNoErrors() {
+    List<String> errors = showPlanningService.validateCard(List.of(), List.of());
+    assertTrue(errors.isEmpty());
+  }
+
+  @Test
+  void validateCard_rivalryBelowThreshold_notRequired() {
+    Rivalry cold = rivalryWithHeat(1L, "Alpha", "Beta", 9);
+    List<String> errors = showPlanningService.validateCard(List.of(), List.of(cold));
+    assertTrue(errors.isEmpty());
+  }
+
+  @Test
+  void validateCard_mustBookRivalry_missingFromCard_returnsError() {
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
+    List<String> errors = showPlanningService.validateCard(List.of(), List.of(hot));
+    assertEquals(1, errors.size());
+    assertTrue(errors.get(0).contains("Alpha"));
+    assertTrue(errors.get(0).contains("Beta"));
+    assertTrue(errors.get(0).contains("MUST_BOOK"));
+  }
+
+  @Test
+  void validateCard_mustBookRivalry_bookedByParticipantNames_noError() {
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    List<String> errors = showPlanningService.validateCard(List.of(seg), List.of(hot));
+    assertTrue(errors.isEmpty());
+  }
+
+  @Test
+  void validateCard_mustBookRivalry_bookedByRivalryId_noError() {
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setRivalryId(1L);
+    List<String> errors = showPlanningService.validateCard(List.of(seg), List.of(hot));
+    assertTrue(errors.isEmpty());
+  }
+
+  @Test
+  void validateCard_stipulationRequired_missingFromCard_returnsError() {
+    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
+    List<String> errors = showPlanningService.validateCard(List.of(), List.of(max));
+    assertEquals(1, errors.size());
+    assertTrue(errors.get(0).contains("MUST_BOOK"));
+  }
+
+  @Test
+  void validateCard_stipulationRequired_bookedWithoutStipulation_returnsError() {
+    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setRules(List.of());
+    List<String> errors = showPlanningService.validateCard(List.of(seg), List.of(max));
+    assertEquals(1, errors.size());
+    assertTrue(errors.get(0).contains("STIPULATION_REQUIRED"));
+  }
+
+  @Test
+  void validateCard_stipulationRequired_bookedWithStipulation_noError() {
+    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setRules(List.of("Steel Cage"));
+    List<String> errors = showPlanningService.validateCard(List.of(seg), List.of(max));
+    assertTrue(errors.isEmpty());
+  }
+
+  @Test
+  void approveSegments_withMustBookRivalryMissingFromCard_throws() {
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(hot));
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setParticipants(List.of("Charlie", "Delta"));
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Match");
+    when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(matchType));
+    when(wrestlerRepository.findByName(any())).thenReturn(Optional.empty());
+
+    assertThrows(
+        IllegalStateException.class, () -> showPlanningService.approveSegments(show, List.of(seg)));
   }
 }

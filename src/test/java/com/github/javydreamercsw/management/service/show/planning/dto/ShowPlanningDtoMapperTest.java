@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
@@ -28,7 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.show.planning.ShowPlanningWrestlerHeat;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ class ShowPlanningDtoMapperTest {
 
   @InjectMocks private ShowPlanningDtoMapper mapper;
 
+  @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
   @Mock private Segment segment;
   @Mock private Show show;
   @Mock private SegmentType segmentType;
@@ -164,56 +166,56 @@ class ShowPlanningDtoMapperTest {
   }
 
   @Test
-  void toDto_wrestlerHeat_mapsCorrectly() {
+  void toRosterEntryDto_mapsNameAndGender() {
     // Given
-    ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
-    heat.setWrestlerName("Wrestler One");
-    heat.setOpponentName("Wrestler Two");
-    heat.setHeat(75);
+    com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
+        com.github.javydreamercsw.management.domain.wrestler.Wrestler.builder().build();
+    wrestler.setName("John Doe");
+    wrestler.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
 
     // When
-    ShowPlanningWrestlerHeatDTO dto = mapper.toDto(heat);
+    ShowPlanningRosterEntryDTO dto = mapper.toRosterEntryDto(wrestler);
 
     // Then
     assertNotNull(dto);
-    assertEquals("Wrestler One", dto.getWrestlerName());
-    assertEquals("Wrestler Two", dto.getOpponentName());
-    assertEquals(75, dto.getHeat());
+    assertEquals("John Doe", dto.getName());
+    assertEquals("MALE", dto.getGender());
   }
 
   @Test
-  void toDto_wrestlerHeatWithZeroHeat_mapsCorrectly() {
+  void toRosterEntryDto_withDefaultState_mapsTierAndFans() {
     // Given
-    ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
-    heat.setWrestlerName("Wrestler One");
-    heat.setOpponentName("Wrestler Two");
-    heat.setHeat(0);
+    com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
+        com.github.javydreamercsw.management.domain.wrestler.Wrestler.builder().build();
+    wrestler.setName("Main Eventer");
+    wrestler.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE);
+    WrestlerState state = WrestlerState.builder().tier(WrestlerTier.MAIN_EVENTER).build();
+    state.setFans(5000L);
+    wrestler.getWrestlerStates().add(state);
 
     // When
-    ShowPlanningWrestlerHeatDTO dto = mapper.toDto(heat);
+    ShowPlanningRosterEntryDTO dto = mapper.toRosterEntryDto(wrestler);
 
     // Then
     assertNotNull(dto);
-    assertEquals("Wrestler One", dto.getWrestlerName());
-    assertEquals("Wrestler Two", dto.getOpponentName());
-    assertEquals(0, dto.getHeat());
+    assertEquals("Main Eventer", dto.getName());
+    assertEquals("FEMALE", dto.getGender());
+    assertEquals(WrestlerTier.MAIN_EVENTER, dto.getTier());
+    assertEquals(5000L, dto.getFans());
   }
 
   @Test
-  void toDto_wrestlerHeatWithHighHeat_mapsCorrectly() {
+  void toRosterEntryDto_nullGender_defaultsMale() {
     // Given
-    ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
-    heat.setWrestlerName("Main Eventer");
-    heat.setOpponentName("Top Heel");
-    heat.setHeat(100);
+    com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
+        com.github.javydreamercsw.management.domain.wrestler.Wrestler.builder().build();
+    wrestler.setName("Unknown");
+    wrestler.setGender(null);
 
     // When
-    ShowPlanningWrestlerHeatDTO dto = mapper.toDto(heat);
+    ShowPlanningRosterEntryDTO dto = mapper.toRosterEntryDto(wrestler);
 
     // Then
-    assertNotNull(dto);
-    assertEquals("Main Eventer", dto.getWrestlerName());
-    assertEquals("Top Heel", dto.getOpponentName());
-    assertEquals(100, dto.getHeat());
+    assertEquals("MALE", dto.getGender());
   }
 }

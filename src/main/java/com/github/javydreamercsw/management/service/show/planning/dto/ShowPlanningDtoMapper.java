@@ -24,7 +24,6 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
@@ -48,9 +47,10 @@ public class ShowPlanningDtoMapper {
     dto.setRecentSegments(
         context.getRecentSegments().stream().map(this::toDto).collect(Collectors.toList()));
     dto.setCurrentRivalries(
-        context.getCurrentRivalries().stream().map(this::toDto).collect(Collectors.toList()));
-    dto.setRecentPromos(
-        context.getRecentPromos().stream().map(this::toDto).collect(Collectors.toList()));
+        context.getCurrentRivalries().stream()
+            .filter(r -> r.getHeat() >= 10)
+            .map(this::toDto)
+            .collect(Collectors.toList()));
     dto.setShowTemplate(context.getShowTemplate());
     if (context.getChampionships() != null) {
       dto.setChampionships(
@@ -62,18 +62,14 @@ public class ShowPlanningDtoMapper {
     if (context.getFullRoster() != null) {
       dto.setFullRoster(
           context.getFullRoster().stream()
-              .map(WrestlerDTO::new)
-              .peek(wrestlerDto -> wrestlerDto.setMoveSet(null))
+              .map(this::toRosterEntryDto)
               .collect(Collectors.toList()));
-    }
-    if (context.getWrestlerHeats() != null) {
-      dto.setWrestlerHeats(
-          context.getWrestlerHeats().stream().map(this::toDto).collect(Collectors.toList()));
     }
     if (context.getFactions() != null) {
       dto.setFactions(context.getFactions().stream().map(this::toDto).collect(Collectors.toList()));
     }
     dto.setShowDate(context.getShowDate());
+    dto.setPremiumLiveEvent(context.isPremiumLiveEvent());
     return dto;
   }
 
@@ -194,13 +190,20 @@ public class ShowPlanningDtoMapper {
     return dto;
   }
 
-  public ShowPlanningWrestlerHeatDTO toDto(
-      @NonNull final com.github.javydreamercsw.management.service.show.planning.ShowPlanningWrestlerHeat
-              heat) {
-    ShowPlanningWrestlerHeatDTO dto = new ShowPlanningWrestlerHeatDTO();
-    dto.setWrestlerName(heat.getWrestlerName());
-    dto.setOpponentName(heat.getOpponentName());
-    dto.setHeat(heat.getHeat());
+  public ShowPlanningRosterEntryDTO toRosterEntryDto(@NonNull final Wrestler wrestler) {
+    ShowPlanningRosterEntryDTO dto = new ShowPlanningRosterEntryDTO();
+    dto.setName(wrestler.getName());
+    dto.setGender(wrestler.getGender() != null ? wrestler.getGender().name() : "MALE");
+    wrestler
+        .getDefaultState()
+        .ifPresent(
+            state -> {
+              dto.setTier(state.getTier());
+              dto.setFans(state.getFans());
+            });
+    if (wrestler.getAlignment() != null && wrestler.getAlignment().getAlignmentType() != null) {
+      dto.setAlignment(wrestler.getAlignment().getAlignmentType().name());
+    }
     return dto;
   }
 }

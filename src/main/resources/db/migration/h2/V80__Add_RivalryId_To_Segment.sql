@@ -1,0 +1,1 @@
+ALTER TABLE segment ADD COLUMN rivalry_id BIGINT DEFAULT NULL;
