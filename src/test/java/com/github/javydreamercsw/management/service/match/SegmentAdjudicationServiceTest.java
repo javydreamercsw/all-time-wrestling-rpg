@@ -17,11 +17,13 @@
 package com.github.javydreamercsw.management.service.match;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +55,8 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -238,6 +242,106 @@ class SegmentAdjudicationServiceTest {
   void testRivalryHeat() {
     segmentAdjudicationService.adjudicateMatch(segment);
     verify(rivalryService).addHeatBetweenWrestlers(eq(1L), eq(2L), eq(1), anyString());
+  }
+
+  @Test
+  void testTeammatesDoNotBuildRivalryHeat() {
+    Faction faction = mock(Faction.class);
+    when(faction.getId()).thenReturn(50L);
+
+    Wrestler w1 = mock(Wrestler.class);
+    Wrestler w2 = mock(Wrestler.class);
+    WrestlerState s1 = mock(WrestlerState.class);
+    WrestlerState s2 = mock(WrestlerState.class);
+
+    when(w1.getId()).thenReturn(10L);
+    when(w2.getId()).thenReturn(11L);
+    when(wrestlerService.getOrCreateState(eq(10L), anyLong())).thenReturn(s1);
+    when(wrestlerService.getOrCreateState(eq(11L), anyLong())).thenReturn(s2);
+    when(w1.getState(anyLong())).thenReturn(Optional.of(s1));
+    when(w2.getState(anyLong())).thenReturn(Optional.of(s2));
+    // Both wrestlers share the same faction
+    when(s1.getFaction()).thenReturn(faction);
+    when(s2.getFaction()).thenReturn(faction);
+
+    when(segment.getWrestlers()).thenReturn(List.of(w1, w2));
+    when(segment.getWinners()).thenReturn(List.of(w1));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Heat must NOT be added between teammates
+    verify(rivalryService, never()).addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString());
+    verify(rivalryService, never()).addHeatBetweenWrestlers(eq(11L), eq(10L), anyInt(), anyString());
+  }
+
+  @Test
+  void testOpponentsFromDifferentFactionsDoGetHeat() {
+    Faction factionA = mock(Faction.class);
+    Faction factionB = mock(Faction.class);
+    when(factionA.getId()).thenReturn(1L);
+    when(factionB.getId()).thenReturn(2L);
+
+    Wrestler w1 = mock(Wrestler.class);
+    Wrestler w2 = mock(Wrestler.class);
+    WrestlerState s1 = mock(WrestlerState.class);
+    WrestlerState s2 = mock(WrestlerState.class);
+
+    when(w1.getId()).thenReturn(10L);
+    when(w2.getId()).thenReturn(11L);
+    when(wrestlerService.getOrCreateState(eq(10L), anyLong())).thenReturn(s1);
+    when(wrestlerService.getOrCreateState(eq(11L), anyLong())).thenReturn(s2);
+    when(w1.getState(anyLong())).thenReturn(Optional.of(s1));
+    when(w2.getState(anyLong())).thenReturn(Optional.of(s2));
+    when(s1.getFaction()).thenReturn(factionA);
+    when(s2.getFaction()).thenReturn(factionB);
+
+    when(segment.getWrestlers()).thenReturn(List.of(w1, w2));
+    when(segment.getWinners()).thenReturn(List.of(w1));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(rivalryService).addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString());
+  }
+
+  @Test
+  void testPleResolutionTriggeredForNonStandardMatchType() {
+    Rivalry rivalry = mock(Rivalry.class);
+    when(rivalry.getId()).thenReturn(99L);
+    when(show.isPremiumLiveEvent()).thenReturn(true);
+    // Triple Threat — not in the explicit switch cases
+    when(segmentType.getName()).thenReturn("Triple Threat");
+
+    Wrestler w1 = mock(Wrestler.class);
+    Wrestler w2 = mock(Wrestler.class);
+    Wrestler w3 = mock(Wrestler.class);
+    when(w1.getId()).thenReturn(10L);
+    when(w2.getId()).thenReturn(11L);
+    when(w3.getId()).thenReturn(12L);
+
+    WrestlerState s1 = mock(WrestlerState.class);
+    WrestlerState s2 = mock(WrestlerState.class);
+    WrestlerState s3 = mock(WrestlerState.class);
+    when(wrestlerService.getOrCreateState(eq(10L), anyLong())).thenReturn(s1);
+    when(wrestlerService.getOrCreateState(eq(11L), anyLong())).thenReturn(s2);
+    when(wrestlerService.getOrCreateState(eq(12L), anyLong())).thenReturn(s3);
+    when(w1.getState(anyLong())).thenReturn(Optional.of(s1));
+    when(w2.getState(anyLong())).thenReturn(Optional.of(s2));
+    when(w3.getState(anyLong())).thenReturn(Optional.of(s3));
+
+    when(segment.getWrestlers()).thenReturn(List.of(w1, w2, w3));
+    when(segment.getWinners()).thenReturn(List.of(w1));
+
+    when(rivalryService.getRivalryBetweenWrestlers(anyLong(), anyLong()))
+        .thenReturn(Optional.of(rivalry));
+    when(rivalryService.attemptResolution(anyLong(), anyInt(), anyInt()))
+        .thenReturn(new ResolutionResult<>(true, "resolved", rivalry, 15, 18, 33));
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Winner (w1) should have resolution attempted against both opponents
+    verify(rivalryService).getRivalryBetweenWrestlers(eq(10L), eq(11L));
+    verify(rivalryService).getRivalryBetweenWrestlers(eq(10L), eq(12L));
   }
 
   @Test
