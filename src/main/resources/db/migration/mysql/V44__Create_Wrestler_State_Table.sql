@@ -21,10 +21,12 @@ CREATE TABLE IF NOT EXISTS wrestler_state (
     UNIQUE KEY uk_wrestler_universe (wrestler_id, universe_id)
 );
 
--- Populate wrestler_state from existing wrestler data for the Default Universe
-INSERT INTO wrestler_state
-(wrestler_id, universe_id, fans, tier, bumps, current_health, physical_condition, morale, management_stamina, faction_id, manager_id)
-SELECT
-w.wrestler_id, 1, w.fans, w.tier, w.bumps, w.current_health, w.physical_condition, w.morale, w.management_stamina, w.faction_id, w.manager_id
-FROM wrestler w
-WHERE NOT EXISTS (SELECT 1 FROM wrestler_state ws WHERE ws.wrestler_id = w.wrestler_id AND ws.universe_id = 1);
+-- Populate wrestler_state from existing wrestler data for the Default Universe.
+-- Conditional: skipped if wrestler.fans was already dropped by V52 (idempotent with V51).
+SET @s = IF(
+    (SELECT COUNT(*) FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = 'wrestler' AND column_name = 'fans') > 0,
+    'INSERT INTO wrestler_state (wrestler_id, universe_id, fans, tier, bumps, current_health, physical_condition, morale, management_stamina, faction_id, manager_id) SELECT w.wrestler_id, 1, w.fans, w.tier, w.bumps, w.current_health, w.physical_condition, w.morale, w.management_stamina, w.faction_id, w.manager_id FROM wrestler w WHERE NOT EXISTS (SELECT 1 FROM wrestler_state ws WHERE ws.wrestler_id = w.wrestler_id AND ws.universe_id = 1)',
+    'SELECT 1'
+);
+PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
