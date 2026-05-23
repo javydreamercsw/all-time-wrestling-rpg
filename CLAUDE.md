@@ -113,6 +113,39 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 - **Lombok:** `@Getter`/`@Setter`/`@Builder` etc. are standard. `lombok.config` adds `@Generated` to skip coverage for generated code.
 - **Tests:** unit (`*Test.java`) run with `mvn test`; integration (`*IT.java`) run with `-Pintegration-test`; E2E (`*E2ETest.java`) run with `-Pe2e`. Parallel test execution is disabled to avoid database conflicts.
 - **Test base classes:** extend `AbstractMockUserIntegrationTest`, `ManagementIntegrationTest`, or `AbstractRestControllerIT` as appropriate.
+
+### When to add each test type
+
+**Unit test (`*Test.java`)** — Add when:
+- Testing service/domain logic with mocked dependencies (Mockito)
+- Covering edge cases, validation rules, or pure calculations
+- Fast feedback with no I/O required
+
+**Integration test (`*IT.java`)** — Add when:
+- A service method changes how it interacts with the database or another Spring bean
+- A new validation path exists that the real Spring proxy (security, transaction, AOP) might affect differently than a mock
+- Testing REST controllers with `@SpringBootTest` + MockMvc
+
+**E2E test (`*E2ETest.java`)** — Add when:
+- A new Vaadin view is introduced or a significant UI workflow changes
+- Testing authentication, role-based rendering, or multi-step browser interactions
+- Verifying navigation, form submission, or real-time UI updates
+
+**Docs screenshot test (`*DocsE2ETest.java`)** — Add when:
+- A new feature or view is user-facing and should appear in the documentation site
+- A workflow changes significantly enough that existing screenshots are stale
+- Extend `AbstractE2ETest` (or `AbstractDocsE2ETest` if `data.initializer.enabled=true` is needed), call `documentFeature(category, title, description, screenshotName)` at the point you want captured
+- Run with: `mvn -Pgenerate-docs verify` → writes PNGs to `docs/screenshots/` and updates `docs/manifest.json`
+- Categories in use: Admin, Booker, Campaign, Community, Dashboards, Entities, Game Mechanics, AI Features, Players
+
+**Video docs test (`*VideoDocsE2ETest.java` or `*DocsE2ETest` + `@Tag("video")`)** — Add when:
+- The feature is complex enough that a walkthrough video aids understanding more than a screenshot
+- You need to show multi-step flows, scrolling, or transitions
+- Call `setVideoInfo(category, title, videoName)` before the test body, `captureCaption(text, dwellMs)` at key steps
+- Run with: `mvn -Pgenerate-videos verify` → writes MP4s to `docs/videos/` and updates `docs/video-manifest.json`
+- Optional TTS narration: add `-Dgenerate.video.voice=true`
+
+**Rule of thumb:** every significant new user-facing feature needs at minimum a docs screenshot test. Add a video test when the feature has a non-obvious multi-step workflow that a static screenshot cannot convey.
 - **DTOs:** use `*ResponseDTO` / `*DTO` classes for REST responses; map via MapStruct.
 - **ArchUnit:** architecture rules are enforced by tests in `*ArchTests.java`; violations fail the build.
 - **Flyway:** add new migrations as versioned SQL files in both `h2/` and `mysql/` directories when changing the schema.

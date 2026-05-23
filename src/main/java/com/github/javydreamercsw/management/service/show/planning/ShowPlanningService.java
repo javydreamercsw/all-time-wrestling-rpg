@@ -236,40 +236,53 @@ public class ShowPlanningService {
   }
 
   /**
-   * Validates that the proposed card covers all rivalries that are legally required.
-   *
-   * <p>Returns a list of human-readable error strings; empty means the card is valid.
+   * Returns active rivalries (heat ≥ 10) not covered by the given segments, sorted by heat
+   * descending. Useful for surfacing the highest-priority unbooked feuds in UI hints and dialogs.
+   */
+  public List<Rivalry> getUnbookedRivalriesByHeat(
+      @NonNull final List<ProposedSegment> proposedSegments) {
+    return getUnbookedRivalriesByHeat(proposedSegments, rivalryService.getActiveRivalries());
+  }
+
+  /**
+   * Returns rivalries (heat ≥ 10) not covered by the given segments from the supplied rivalry list,
+   * sorted by heat descending.
+   */
+  public List<Rivalry> getUnbookedRivalriesByHeat(
+      @NonNull final List<ProposedSegment> proposedSegments,
+      @NonNull final List<Rivalry> activeRivalries) {
+    return activeRivalries.stream()
+        .filter(r -> r.getHeat() >= 10)
+        .filter(r -> !isRivalryCovered(r, proposedSegments))
+        .sorted(Comparator.comparingInt(Rivalry::getHeat).reversed())
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Validates the proposed card against active rivalries.
    *
    * <ul>
-   *   <li>MUST_BOOK (heat 10-19): rivalry must appear in at least one segment.
-   *   <li>STIPULATION_REQUIRED (heat ≥ 30): rivalry must appear in a segment that carries at least
-   *       one match rule (stipulation).
+   *   <li>Warnings — MUST_BOOK (heat ≥ 10): rivalry not on the card. Advisory only; the booker may
+   *       acknowledge and proceed when a large roster makes full coverage impossible.
+   *   <li>Errors — STIPULATION_REQUIRED (heat ≥ 30): rivalry is on the card but has no match rule.
+   *       Must be fixed before approval.
    * </ul>
    */
-  public List<String> validateCard(
+  public CardValidationResult validateCard(
       @NonNull final List<ProposedSegment> proposedSegments,
       @NonNull final List<Rivalry> activeRivalries) {
     List<String> errors = new ArrayList<>();
+    List<String> warnings = new ArrayList<>();
 
     List<Rivalry> requiredRivalries =
-        activeRivalries.stream().filter(r -> r.getHeat() >= 10).collect(Collectors.toList());
+        activeRivalries.stream().filter(r -> r.getHeat() >= 10).toList();
 
     for (Rivalry rivalry : requiredRivalries) {
       String w1 = rivalry.getWrestler1().getName();
       String w2 = rivalry.getWrestler2().getName();
 
-      Optional<ProposedSegment> matchingSegment =
-          proposedSegments.stream()
-              .filter(
-                  s ->
-                      (rivalry.getId() != null && rivalry.getId().equals(s.getRivalryId()))
-                          || (s.getParticipants() != null
-                              && s.getParticipants().contains(w1)
-                              && s.getParticipants().contains(w2)))
-              .findFirst();
-
-      if (matchingSegment.isEmpty()) {
-        errors.add(
+      if (!isRivalryCovered(rivalry, proposedSegments)) {
+        warnings.add(
             "MUST_BOOK rivalry not on card: "
                 + w1
                 + " vs "
@@ -278,22 +291,49 @@ public class ShowPlanningService {
                 + rivalry.getHeat()
                 + ")");
       } else if (rivalry.getHeat() >= 30) {
-        ProposedSegment seg = matchingSegment.get();
-        boolean hasStipulation = seg.getRules() != null && !seg.getRules().isEmpty();
-        if (!hasStipulation) {
-          errors.add(
-              "STIPULATION_REQUIRED rivalry booked without a stipulation: "
-                  + w1
-                  + " vs "
-                  + w2
-                  + " (heat="
-                  + rivalry.getHeat()
-                  + ")");
-        }
+        Optional<ProposedSegment> matchingSegment = findCoveringSegment(rivalry, proposedSegments);
+        matchingSegment.ifPresent(
+            seg -> {
+              boolean hasStipulation = seg.getRules() != null && !seg.getRules().isEmpty();
+              if (!hasStipulation) {
+                errors.add(
+                    "STIPULATION_REQUIRED rivalry booked without a stipulation: "
+                        + w1
+                        + " vs "
+                        + w2
+                        + " (heat="
+                        + rivalry.getHeat()
+                        + ")");
+              }
+            });
       }
     }
 
-    return errors;
+    return new CardValidationResult(errors, warnings);
+  }
+
+  /** Convenience overload — validates against live active rivalries from the database. */
+  public CardValidationResult validateCard(@NonNull final List<ProposedSegment> proposedSegments) {
+    return validateCard(proposedSegments, rivalryService.getActiveRivalries());
+  }
+
+  private boolean isRivalryCovered(
+      final Rivalry rivalry, final List<ProposedSegment> proposedSegments) {
+    return findCoveringSegment(rivalry, proposedSegments).isPresent();
+  }
+
+  private Optional<ProposedSegment> findCoveringSegment(
+      final Rivalry rivalry, final List<ProposedSegment> proposedSegments) {
+    String w1 = rivalry.getWrestler1().getName();
+    String w2 = rivalry.getWrestler2().getName();
+    return proposedSegments.stream()
+        .filter(
+            s ->
+                (rivalry.getId() != null && rivalry.getId().equals(s.getRivalryId()))
+                    || (s.getParticipants() != null
+                        && s.getParticipants().contains(w1)
+                        && s.getParticipants().contains(w2)))
+        .findFirst();
   }
 
   @Transactional
@@ -310,13 +350,20 @@ public class ShowPlanningService {
               + "because showDate is not set.");
     }
 
-    List<String> cardErrors = validateCard(proposedSegments, rivalryService.getActiveRivalries());
-    if (!cardErrors.isEmpty()) {
+    CardValidationResult validation =
+        validateCard(proposedSegments, rivalryService.getActiveRivalries());
+    if (!validation.isValid()) {
       throw new IllegalStateException(
           "Show card validation failed for '"
               + show.getName()
               + "':\n"
-              + String.join("\n", cardErrors));
+              + String.join("\n", validation.getErrors()));
+    }
+    if (validation.hasWarnings()) {
+      log.warn(
+          "Approving card for '{}' with {} unbooked rivalry warnings",
+          show.getName(),
+          validation.getWarnings().size());
     }
 
     List<Segment> segmentsToSave = new ArrayList<>();

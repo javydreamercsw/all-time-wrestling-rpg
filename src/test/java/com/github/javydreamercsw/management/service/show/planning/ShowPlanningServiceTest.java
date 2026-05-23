@@ -343,63 +343,71 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_noActiveRivalries_returnsNoErrors() {
-    List<String> errors = showPlanningService.validateCard(List.of(), List.of());
-    assertTrue(errors.isEmpty());
+    CardValidationResult result = showPlanningService.validateCard(List.of(), List.of());
+    assertTrue(result.isValid());
+    assertFalse(result.hasWarnings());
   }
 
   @Test
   void validateCard_rivalryBelowThreshold_notRequired() {
     Rivalry cold = rivalryWithHeat(1L, "Alpha", "Beta", 9);
-    List<String> errors = showPlanningService.validateCard(List.of(), List.of(cold));
-    assertTrue(errors.isEmpty());
+    CardValidationResult result = showPlanningService.validateCard(List.of(), List.of(cold));
+    assertTrue(result.isValid());
+    assertFalse(result.hasWarnings());
   }
 
   @Test
-  void validateCard_mustBookRivalry_missingFromCard_returnsError() {
+  void validateCard_mustBookRivalry_missingFromCard_isWarningNotError() {
     Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
-    List<String> errors = showPlanningService.validateCard(List.of(), List.of(hot));
-    assertEquals(1, errors.size());
-    assertTrue(errors.get(0).contains("Alpha"));
-    assertTrue(errors.get(0).contains("Beta"));
-    assertTrue(errors.get(0).contains("MUST_BOOK"));
+    CardValidationResult result = showPlanningService.validateCard(List.of(), List.of(hot));
+    assertTrue(result.isValid(), "MUST_BOOK should be a warning, not a hard error");
+    assertTrue(result.hasWarnings());
+    assertEquals(1, result.getWarnings().size());
+    assertTrue(result.getWarnings().get(0).contains("Alpha"));
+    assertTrue(result.getWarnings().get(0).contains("Beta"));
+    assertTrue(result.getWarnings().get(0).contains("MUST_BOOK"));
   }
 
   @Test
-  void validateCard_mustBookRivalry_bookedByParticipantNames_noError() {
+  void validateCard_mustBookRivalry_bookedByParticipantNames_noWarning() {
     Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
     ProposedSegment seg = new ProposedSegment();
     seg.setParticipants(List.of("Alpha", "Beta"));
-    List<String> errors = showPlanningService.validateCard(List.of(seg), List.of(hot));
-    assertTrue(errors.isEmpty());
+    CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(hot));
+    assertTrue(result.isValid());
+    assertFalse(result.hasWarnings());
   }
 
   @Test
-  void validateCard_mustBookRivalry_bookedByRivalryId_noError() {
+  void validateCard_mustBookRivalry_bookedByRivalryId_noWarning() {
     Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
     ProposedSegment seg = new ProposedSegment();
     seg.setParticipants(List.of("Alpha", "Beta"));
     seg.setRivalryId(1L);
-    List<String> errors = showPlanningService.validateCard(List.of(seg), List.of(hot));
-    assertTrue(errors.isEmpty());
+    CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(hot));
+    assertTrue(result.isValid());
+    assertFalse(result.hasWarnings());
   }
 
   @Test
-  void validateCard_stipulationRequired_missingFromCard_returnsError() {
+  void validateCard_stipulationRequired_missingFromCard_isWarning() {
     Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
-    List<String> errors = showPlanningService.validateCard(List.of(), List.of(max));
-    assertEquals(1, errors.size());
-    assertTrue(errors.get(0).contains("MUST_BOOK"));
+    CardValidationResult result = showPlanningService.validateCard(List.of(), List.of(max));
+    assertTrue(result.isValid(), "Unbooked high-heat rivalry should be a warning, not an error");
+    assertTrue(result.hasWarnings());
+    assertTrue(result.getWarnings().get(0).contains("MUST_BOOK"));
   }
 
   @Test
-  void validateCard_stipulationRequired_bookedWithoutStipulation_returnsError() {
+  void validateCard_stipulationRequired_bookedWithoutStipulation_isError() {
     Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
     ProposedSegment seg = new ProposedSegment();
     seg.setParticipants(List.of("Alpha", "Beta"));
     seg.setRules(List.of());
-    List<String> errors = showPlanningService.validateCard(List.of(seg), List.of(max));
-    assertEquals(1, errors.size());
-    assertTrue(errors.get(0).contains("STIPULATION_REQUIRED"));
+    CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(max));
+    assertFalse(result.isValid(), "Booked rivalry without stipulation should be a hard error");
+    assertEquals(1, result.getErrors().size());
+    assertTrue(result.getErrors().get(0).contains("STIPULATION_REQUIRED"));
   }
 
   @Test
@@ -408,14 +416,17 @@ class ShowPlanningServiceTest {
     ProposedSegment seg = new ProposedSegment();
     seg.setParticipants(List.of("Alpha", "Beta"));
     seg.setRules(List.of("Steel Cage"));
-    List<String> errors = showPlanningService.validateCard(List.of(seg), List.of(max));
-    assertTrue(errors.isEmpty());
+    CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(max));
+    assertTrue(result.isValid());
+    assertFalse(result.hasWarnings());
   }
 
   @Test
-  void approveSegments_withMustBookRivalryMissingFromCard_throws() {
+  void approveSegments_withMustBookRivalryMissingFromCard_succeedsWithWarning() {
+    // MUST_BOOK violations are now warnings — approval should proceed
     Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(hot));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
@@ -424,6 +435,22 @@ class ShowPlanningServiceTest {
     matchType.setName("Match");
     when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(matchType));
     when(wrestlerRepository.findByName(any())).thenReturn(Optional.empty());
+
+    // Should NOT throw — unbooked rivalries are advisory only
+    showPlanningService.approveSegments(show, List.of(seg));
+    verify(segmentRepository).saveAll(any());
+  }
+
+  @Test
+  void approveSegments_withStipulationRequiredViolation_throws() {
+    // A rivalry on the card with heat >= 30 but no rules must still be a hard block
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 35);
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(hot));
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setRules(List.of()); // booked but no stipulation
 
     assertThrows(
         IllegalStateException.class, () -> showPlanningService.approveSegments(show, List.of(seg)));
