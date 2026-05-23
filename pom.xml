@@ -49,6 +49,9 @@
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.5</testcontainers.version>
+    <!-- npm packages for @vaadin/* components lag behind Maven releases. Set this to the latest
+         version actually published to npm. Update when npm catches up to vaadin.version. -->
+    <vaadin.npm.version>25.1.1</vaadin.npm.version>
     <vaadin.version>25.1.2</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
@@ -1139,7 +1142,7 @@
           </dependency>
         </dependencies>
       </plugin>
-      <!-- Keep frontend @vaadin/* versions aligned to ${vaadin.version} before Vaadin plugin runs -->
+      <!-- Keep frontend @vaadin/* versions aligned to ${vaadin.npm.version} before Vaadin plugin runs -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
@@ -1156,7 +1159,7 @@
               <workingDirectory>${project.basedir}</workingDirectory>
               <arguments>
                 <argument>${project.basedir}/scripts/sync-vaadin-overrides.cjs</argument>
-                <argument>${vaadin.version}</argument>
+                <argument>${vaadin.npm.version}</argument>
               </arguments>
             </configuration>
           </execution>
