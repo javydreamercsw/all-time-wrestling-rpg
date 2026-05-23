@@ -236,23 +236,23 @@ public class ShowPlanningService {
   }
 
   /**
-   * Validates that the proposed card covers all rivalries that are legally required.
-   *
-   * <p>Returns a list of human-readable error strings; empty means the card is valid.
+   * Validates the proposed card against active rivalries.
    *
    * <ul>
-   *   <li>MUST_BOOK (heat 10-19): rivalry must appear in at least one segment.
-   *   <li>STIPULATION_REQUIRED (heat ≥ 30): rivalry must appear in a segment that carries at least
-   *       one match rule (stipulation).
+   *   <li>Warnings — MUST_BOOK (heat ≥ 10): rivalry not on the card. Advisory only; the booker may
+   *       acknowledge and proceed when a large roster makes full coverage impossible.
+   *   <li>Errors — STIPULATION_REQUIRED (heat ≥ 30): rivalry is on the card but has no match rule.
+   *       Must be fixed before approval.
    * </ul>
    */
-  public List<String> validateCard(
+  public CardValidationResult validateCard(
       @NonNull final List<ProposedSegment> proposedSegments,
       @NonNull final List<Rivalry> activeRivalries) {
     List<String> errors = new ArrayList<>();
+    List<String> warnings = new ArrayList<>();
 
     List<Rivalry> requiredRivalries =
-        activeRivalries.stream().filter(r -> r.getHeat() >= 10).collect(Collectors.toList());
+        activeRivalries.stream().filter(r -> r.getHeat() >= 10).toList();
 
     for (Rivalry rivalry : requiredRivalries) {
       String w1 = rivalry.getWrestler1().getName();
@@ -269,7 +269,7 @@ public class ShowPlanningService {
               .findFirst();
 
       if (matchingSegment.isEmpty()) {
-        errors.add(
+        warnings.add(
             "MUST_BOOK rivalry not on card: "
                 + w1
                 + " vs "
@@ -293,7 +293,12 @@ public class ShowPlanningService {
       }
     }
 
-    return errors;
+    return new CardValidationResult(errors, warnings);
+  }
+
+  /** Convenience overload — validates against live active rivalries from the database. */
+  public CardValidationResult validateCard(@NonNull final List<ProposedSegment> proposedSegments) {
+    return validateCard(proposedSegments, rivalryService.getActiveRivalries());
   }
 
   @Transactional
@@ -310,13 +315,20 @@ public class ShowPlanningService {
               + "because showDate is not set.");
     }
 
-    List<String> cardErrors = validateCard(proposedSegments, rivalryService.getActiveRivalries());
-    if (!cardErrors.isEmpty()) {
+    CardValidationResult validation =
+        validateCard(proposedSegments, rivalryService.getActiveRivalries());
+    if (!validation.isValid()) {
       throw new IllegalStateException(
           "Show card validation failed for '"
               + show.getName()
               + "':\n"
-              + String.join("\n", cardErrors));
+              + String.join("\n", validation.getErrors()));
+    }
+    if (validation.hasWarnings()) {
+      log.warn(
+          "Approving card for '{}' with {} unbooked rivalry warnings",
+          show.getName(),
+          validation.getWarnings().size());
     }
 
     List<Segment> segmentsToSave = new ArrayList<>();

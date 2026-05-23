@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.CardValidationResult;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
@@ -42,12 +43,17 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -356,6 +362,82 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       return;
     }
 
+    CardValidationResult validation;
+    try {
+      validation = showPlanningService.validateCard(segments);
+    } catch (Exception e) {
+      log.error("Error validating card", e);
+      notificationService.showError("Failed to validate card: " + e.getMessage());
+      return;
+    }
+
+    if (!validation.isValid()) {
+      showValidationErrorDialog(validation.getErrors());
+      return;
+    }
+
+    if (validation.hasWarnings()) {
+      showMustBookWarningDialog(show, validation.getWarnings());
+    } else {
+      doApprove(show);
+    }
+  }
+
+  private void showValidationErrorDialog(final java.util.List<String> errors) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Card Validation Failed");
+
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    content.add(
+        new Paragraph(
+            "The following rivalries must have a stipulation before this card can be approved:"));
+
+    ListBox<String> errorList = new ListBox<>();
+    errorList.setItems(errors);
+    errorList.setHeight("200px");
+    content.add(errorList);
+
+    content.add(
+        new Span(
+            "Edit the affected segments and add a match rule (e.g. Steel Cage, Last Man Standing)"
+                + " for each rivalry listed above."));
+
+    Button closeButton = new Button("Close", e -> dialog.close());
+    closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    dialog.getFooter().add(closeButton);
+    dialog.add(content);
+    dialog.open();
+  }
+
+  private void showMustBookWarningDialog(final Show show, final java.util.List<String> warnings) {
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Unbooked Rivalries (" + warnings.size() + ")");
+
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    content.add(
+        new Paragraph(
+            warnings.size()
+                + " active rivalry/rivalries with heat ≥ 10 are not on this card."
+                + " A show can only cover a limited number of feuds — these will carry over"
+                + " to future shows."));
+
+    ListBox<String> warningList = new ListBox<>();
+    warningList.setItems(warnings);
+    warningList.setHeight("200px");
+    content.add(warningList);
+
+    dialog.add(content);
+    dialog.setCancelable(true);
+    dialog.setCancelText("Go Back");
+    dialog.setConfirmText("Approve Anyway");
+    dialog.setConfirmButtonTheme("primary success");
+    dialog.addConfirmListener(e -> doApprove(show));
+    dialog.open();
+  }
+
+  private void doApprove(final Show show) {
     try {
       showPlanningService.approveSegments(show, segments);
       notificationService.showSuccess("Segments created for " + show.getName());

@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -47,6 +48,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -65,6 +67,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
 
   @MockitoBean private SegmentRepository segmentRepository;
   @MockitoBean private RivalryService rivalryService;
+  @MockitoBean private SegmentTypeService segmentTypeService;
   @MockitoBean private TitleService titleService;
   @MockitoBean private ShowService showService;
   @MockitoBean private SegmentService segmentService;
@@ -398,6 +401,103 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     assertEquals("Test Title", championship.getChampionshipName());
     assertEquals("Champion", championship.getChampionName());
     assertEquals("Number One Contender", championship.getContenderName());
+  }
+
+  @Test
+  @WithMockUser(roles = "BOOKER")
+  void validateCard_mustBookRivalryMissing_isWarningNotError() {
+    Wrestler w1 = Wrestler.builder().build();
+    w1.setId(10L);
+    w1.setName("Alpha");
+    Wrestler w2 = Wrestler.builder().build();
+    w2.setId(11L);
+    w2.setName("Beta");
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(1L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    rivalry.setHeat(15);
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
+
+    CardValidationResult result = showPlanningService.validateCard(List.of());
+
+    assertTrue(result.isValid(), "MUST_BOOK should be a warning, not a hard error");
+    assertFalse(result.getWarnings().isEmpty());
+    assertTrue(result.getWarnings().get(0).contains("MUST_BOOK"));
+  }
+
+  @Test
+  @WithMockUser(roles = "BOOKER")
+  void validateCard_stipulationRequiredViolation_isHardError() {
+    Wrestler w1 = Wrestler.builder().build();
+    w1.setId(10L);
+    w1.setName("Alpha");
+    Wrestler w2 = Wrestler.builder().build();
+    w2.setId(11L);
+    w2.setName("Beta");
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(1L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    rivalry.setHeat(35);
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setRules(List.of()); // booked but no stipulation
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(seg));
+
+    assertFalse(result.isValid(), "Booked rivalry without stipulation must be a hard error");
+    assertFalse(result.getErrors().isEmpty());
+    assertTrue(result.getErrors().get(0).contains("STIPULATION_REQUIRED"));
+  }
+
+  @Test
+  @WithMockUser(roles = "BOOKER")
+  void approveSegments_withMustBookWarning_succeedsAndPersists() {
+    // MUST_BOOK violations must not block approval — they are advisory
+    Wrestler w1 = Wrestler.builder().build();
+    w1.setId(10L);
+    w1.setName("Alpha");
+    Wrestler w2 = Wrestler.builder().build();
+    w2.setId(11L);
+    w2.setName("Beta");
+    Wrestler charlie = Wrestler.builder().build();
+    charlie.setId(20L);
+    charlie.setName("Charlie");
+    Wrestler delta = Wrestler.builder().build();
+    delta.setId(21L);
+    delta.setName("Delta");
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(1L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    rivalry.setHeat(15); // MUST_BOOK threshold — but NOT on the card
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
+    when(segmentRepository.findByShow(any())).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Charlie")).thenReturn(Optional.of(charlie));
+    when(wrestlerRepository.findByName("Delta")).thenReturn(Optional.of(delta));
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Match");
+    when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(matchType));
+
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Test Show");
+    when(show.getId()).thenReturn(1L);
+    when(show.getShowDate()).thenReturn(LocalDate.now());
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setParticipants(List.of("Charlie", "Delta"));
+    seg.setWinners(List.of("Charlie"));
+
+    // Should not throw
+    showPlanningService.approveSegments(show, List.of(seg));
+
+    verify(segmentRepository).saveAll(any());
   }
 
   @Test
