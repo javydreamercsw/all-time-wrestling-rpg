@@ -236,6 +236,29 @@ public class ShowPlanningService {
   }
 
   /**
+   * Returns active rivalries (heat ≥ 10) not covered by the given segments, sorted by heat
+   * descending. Useful for surfacing the highest-priority unbooked feuds in UI hints and dialogs.
+   */
+  public List<Rivalry> getUnbookedRivalriesByHeat(
+      @NonNull final List<ProposedSegment> proposedSegments) {
+    return getUnbookedRivalriesByHeat(proposedSegments, rivalryService.getActiveRivalries());
+  }
+
+  /**
+   * Returns rivalries (heat ≥ 10) not covered by the given segments from the supplied rivalry list,
+   * sorted by heat descending.
+   */
+  public List<Rivalry> getUnbookedRivalriesByHeat(
+      @NonNull final List<ProposedSegment> proposedSegments,
+      @NonNull final List<Rivalry> activeRivalries) {
+    return activeRivalries.stream()
+        .filter(r -> r.getHeat() >= 10)
+        .filter(r -> !isRivalryCovered(r, proposedSegments))
+        .sorted(Comparator.comparingInt(Rivalry::getHeat).reversed())
+        .collect(Collectors.toList());
+  }
+
+  /**
    * Validates the proposed card against active rivalries.
    *
    * <ul>
@@ -258,17 +281,7 @@ public class ShowPlanningService {
       String w1 = rivalry.getWrestler1().getName();
       String w2 = rivalry.getWrestler2().getName();
 
-      Optional<ProposedSegment> matchingSegment =
-          proposedSegments.stream()
-              .filter(
-                  s ->
-                      (rivalry.getId() != null && rivalry.getId().equals(s.getRivalryId()))
-                          || (s.getParticipants() != null
-                              && s.getParticipants().contains(w1)
-                              && s.getParticipants().contains(w2)))
-              .findFirst();
-
-      if (matchingSegment.isEmpty()) {
+      if (!isRivalryCovered(rivalry, proposedSegments)) {
         warnings.add(
             "MUST_BOOK rivalry not on card: "
                 + w1
@@ -278,18 +291,21 @@ public class ShowPlanningService {
                 + rivalry.getHeat()
                 + ")");
       } else if (rivalry.getHeat() >= 30) {
-        ProposedSegment seg = matchingSegment.get();
-        boolean hasStipulation = seg.getRules() != null && !seg.getRules().isEmpty();
-        if (!hasStipulation) {
-          errors.add(
-              "STIPULATION_REQUIRED rivalry booked without a stipulation: "
-                  + w1
-                  + " vs "
-                  + w2
-                  + " (heat="
-                  + rivalry.getHeat()
-                  + ")");
-        }
+        Optional<ProposedSegment> matchingSegment = findCoveringSegment(rivalry, proposedSegments);
+        matchingSegment.ifPresent(
+            seg -> {
+              boolean hasStipulation = seg.getRules() != null && !seg.getRules().isEmpty();
+              if (!hasStipulation) {
+                errors.add(
+                    "STIPULATION_REQUIRED rivalry booked without a stipulation: "
+                        + w1
+                        + " vs "
+                        + w2
+                        + " (heat="
+                        + rivalry.getHeat()
+                        + ")");
+              }
+            });
       }
     }
 
@@ -299,6 +315,25 @@ public class ShowPlanningService {
   /** Convenience overload — validates against live active rivalries from the database. */
   public CardValidationResult validateCard(@NonNull final List<ProposedSegment> proposedSegments) {
     return validateCard(proposedSegments, rivalryService.getActiveRivalries());
+  }
+
+  private boolean isRivalryCovered(
+      final Rivalry rivalry, final List<ProposedSegment> proposedSegments) {
+    return findCoveringSegment(rivalry, proposedSegments).isPresent();
+  }
+
+  private Optional<ProposedSegment> findCoveringSegment(
+      final Rivalry rivalry, final List<ProposedSegment> proposedSegments) {
+    String w1 = rivalry.getWrestler1().getName();
+    String w2 = rivalry.getWrestler2().getName();
+    return proposedSegments.stream()
+        .filter(
+            s ->
+                (rivalry.getId() != null && rivalry.getId().equals(s.getRivalryId()))
+                    || (s.getParticipants() != null
+                        && s.getParticipants().contains(w1)
+                        && s.getParticipants().contains(w2)))
+        .findFirst();
   }
 
   @Transactional
