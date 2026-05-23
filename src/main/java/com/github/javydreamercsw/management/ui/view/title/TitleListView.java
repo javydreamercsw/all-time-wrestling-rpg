@@ -211,6 +211,9 @@ public class TitleListView extends Main {
   TitleFormDialog openCreateDialog() {
     Title newTitle = new Title();
     newTitle.setIsActive(true);
+    universeRepository
+        .findById(universeContextService.getCurrentUniverseId())
+        .ifPresent(newTitle::setUniverse);
     TitleFormDialog dialog =
         new TitleFormDialog(
             titleService,
