@@ -49,7 +49,10 @@
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.5</testcontainers.version>
-    <vaadin.version>25.1.1</vaadin.version>
+    <!-- npm packages for @vaadin/* components lag behind Maven releases. Set this to the latest
+         version actually published to npm. Update when npm catches up to vaadin.version. -->
+    <vaadin.npm.version>25.1.1</vaadin.npm.version>
+    <vaadin.version>25.1.2</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
@@ -79,7 +82,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.12.Final</version>
+        <version>4.2.14.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -254,12 +257,12 @@
     <dependency>
       <groupId>com.google.zxing</groupId>
       <artifactId>core</artifactId>
-      <version>3.5.3</version>
+      <version>3.5.4</version>
     </dependency>
     <dependency>
       <groupId>com.google.zxing</groupId>
       <artifactId>javase</artifactId>
-      <version>3.5.3</version>
+      <version>3.5.4</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -414,7 +417,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.21</version>
+      <version>11.0.22</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -431,7 +434,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.1.0</version>
+      <version>6.2.0-M2</version>
       <scope>test</scope>
     </dependency>
     <!-- Security -->
@@ -699,7 +702,15 @@
         <version>6.38.0</version>
         <configuration>
           <failOnDryRunResults>true</failOnDryRunResults>
+          <exclusions>
+            <exclusion>**/*.groovy</exclusion>
+            <exclusion>**/*.yml</exclusion>
+          </exclusions>
           <activeRecipes>
+            <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
+            <recipe>org.openrewrite.java.migrate.lombok.UseLombokGetter</recipe>
+            <recipe>org.openrewrite.java.migrate.lombok.UseLombokSetter</recipe>
+            <recipe>org.openrewrite.groovy.format.AutoFormat</recipe>
             <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLabels</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLocalVariables</recipe>
@@ -747,6 +758,11 @@
             <artifactId>rewrite-static-analysis</artifactId>
             <version>2.34.1</version>
             <scope>runtime</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-migrate-java</artifactId>
+            <version>3.34.0</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -1126,7 +1142,7 @@
           </dependency>
         </dependencies>
       </plugin>
-      <!-- Keep frontend @vaadin/* versions aligned to ${vaadin.version} before Vaadin plugin runs -->
+      <!-- Keep frontend @vaadin/* versions aligned to ${vaadin.npm.version} before Vaadin plugin runs -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
@@ -1143,7 +1159,7 @@
               <workingDirectory>${project.basedir}</workingDirectory>
               <arguments>
                 <argument>${project.basedir}/scripts/sync-vaadin-overrides.cjs</argument>
-                <argument>${vaadin.version}</argument>
+                <argument>${vaadin.npm.version}</argument>
               </arguments>
             </configuration>
           </execution>
