@@ -20,8 +20,7 @@ if (!vaadinVersion) {
   process.exit(2);
 }
 
-// Most @vaadin/* packages are at 25.1.0 even when Flow is 25.1.1
-const fallbackVaadinVersion = vaadinVersion === '25.1.1' ? '25.1.0' : (vaadinVersion || '25.1.0');
+const fallbackVaadinVersion = vaadinVersion || '25.1.0';
 
 const packageJsonPath = path.resolve(process.cwd(), 'package.json');
 if (!fs.existsSync(packageJsonPath)) {
@@ -44,14 +43,7 @@ const pinnedNpmVersions = {
   '@vaadin/common-frontend': '0.0.22',
   '@vaadin/vaadin-development-mode-detector': '2.0.7',
   '@vaadin/vaadin-usage-statistics': '2.1.3',
-
-  // Npm lagging / not published for 25.1.1
-  '@vaadin/aura': '25.1.0',
-  '@vaadin/react-components': '25.1.0',
-  '@vaadin/vaadin-lumo-styles': '25.1.0',
-  '@vaadin/vaadin-themable-mixin': '25.1.0',
   '@vaadin/router': '2.0.1',
-  '@vaadin/a11y-base': '25.1.0'
 };
 
 // Only these packages will be updated to the Maven Vaadin version automatically.
@@ -64,6 +56,15 @@ const resolveVaadinNpmVersion = (pkgName, currentVersion) => {
   if (pinnedNpmVersions[pkgName]) return pinnedNpmVersions[pkgName];
   if (syncToMavenVersionAllowList.has(pkgName)) return vaadinVersion;
   return fallbackVaadinVersion;
+};
+
+// For overrides: if the package is also a direct dependency, use a $ reference so the
+// override always tracks the dependency version and can never produce EOVERRIDE conflicts.
+const resolveVaadinOverrideVersion = (pkgName, currentVersion) => {
+  if (pkg.dependencies && pkg.dependencies[pkgName] !== undefined) {
+    return `$${pkgName}`;
+  }
+  return resolveVaadinNpmVersion(pkgName, currentVersion);
 };
 
 // Keep direct Vaadin deps aligned too (prevents EOVERRIDE conflicts with overrides)
@@ -83,7 +84,7 @@ if (pkg.vaadin && typeof pkg.vaadin === 'object') {
 // Sync/clean @vaadin/* overrides.
 for (const k of Object.keys(overrides)) {
   if (!k.startsWith('@vaadin/')) continue;
-  overrides[k] = resolveVaadinNpmVersion(k, overrides[k]);
+  overrides[k] = resolveVaadinOverrideVersion(k, overrides[k]);
 }
 
 // Add missing allowed packages to overrides ONLY if not in dependencies
@@ -103,7 +104,7 @@ if (pkg.vaadin && typeof pkg.vaadin === 'object') {
 
 for (const k of Array.from(allVaadinPackages)) {
   if (!pkg.dependencies[k]) {
-    overrides[k] = resolveVaadinNpmVersion(k, overrides[k]);
+    overrides[k] = resolveVaadinOverrideVersion(k, overrides[k]);
   }
 }
 
