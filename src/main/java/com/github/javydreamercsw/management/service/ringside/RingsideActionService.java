@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -132,11 +133,13 @@ public class RingsideActionService {
 
     // 1. Direct Manager
     if (state != null && state.getManager() != null) {
+      Hibernate.initialize(state.getManager());
       return state.getManager();
     }
 
     // 2. Faction Manager
     if (state != null && state.getFaction() != null && state.getFaction().getManager() != null) {
+      Hibernate.initialize(state.getFaction().getManager());
       return state.getFaction().getManager();
     }
 
