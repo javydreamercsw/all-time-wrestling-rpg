@@ -1,0 +1,12 @@
+#!/bin/sh
+# $3 is 1 for branch checkouts, 0 for file restores — skip file restores
+if [ "$3" != "1" ]; then
+  exit 0
+fi
+
+# Suppress deletion noise for the beads passive export in worktrees.
+# The file is kept tracked for recovery purposes; skip-worktree stops git
+# treating its absence in a worktree as a pending deletion.
+if git ls-files --error-unmatch .beads/issues.jsonl > /dev/null 2>&1; then
+  git update-index --skip-worktree .beads/issues.jsonl
+fi

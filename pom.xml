@@ -1149,6 +1149,22 @@
         <version>3.6.3</version>
         <executions>
           <execution>
+            <id>configure-git-hooks-path</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <executable>git</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <arguments>
+                <argument>config</argument>
+                <argument>core.hooksPath</argument>
+                <argument>.githooks</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
             <id>sync-vaadin-frontend-versions</id>
             <goals>
               <goal>exec</goal>
