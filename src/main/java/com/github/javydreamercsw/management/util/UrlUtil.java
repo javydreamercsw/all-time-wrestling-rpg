@@ -17,11 +17,16 @@
 package com.github.javydreamercsw.management.util;
 
 import com.vaadin.flow.server.VaadinServletRequest;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Collections;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public final class UrlUtil {
 
   public static String getBaseUrl() {
@@ -39,6 +44,10 @@ public final class UrlUtil {
   /**
    * Like getBaseUrl() but replaces localhost/127.0.0.1 with the machine's LAN IP so QR codes are
    * scannable from phones on the same network.
+   *
+   * <p>When called outside a Vaadin HTTP request (e.g. from a WebSocket click listener),
+   * VaadinServletRequest.getCurrent() returns null. In that case we derive the URL from the
+   * machine's first non-loopback IPv4 address so the generated QR code still works on the LAN.
    */
   public static String getNetworkUrl() {
     String override = System.getenv("QR_BASE_URL");
@@ -54,7 +63,40 @@ public final class UrlUtil {
         String contextPath = request.getHttpServletRequest().getContextPath();
         return scheme + "://" + forwardedHost + contextPath;
       }
+      // We have a real HTTP request — use it, but swap localhost for the LAN IP
+      String base = getBaseUrl();
+      String lanIp = getLanIpAddress();
+      if (lanIp != null) {
+        base = base.replace("localhost", lanIp).replace("127.0.0.1", lanIp);
+      }
+      return base;
     }
-    return getBaseUrl();
+    // No HTTP request context (called from a WebSocket/push thread) — build from LAN IP directly
+    String lanIp = getLanIpAddress();
+    if (lanIp != null) {
+      return "http://" + lanIp + ":8080";
+    }
+    return "http://localhost:8080";
+  }
+
+  /** Returns the first non-loopback site-local IPv4 address, or null if none found. */
+  static String getLanIpAddress() {
+    try {
+      for (NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+        if (!iface.isUp() || iface.isLoopback() || iface.isVirtual()) {
+          continue;
+        }
+        for (InetAddress addr : Collections.list(iface.getInetAddresses())) {
+          if (!addr.isLoopbackAddress()
+              && addr.isSiteLocalAddress()
+              && addr.getAddress().length == 4) { // IPv4 only
+            return addr.getHostAddress();
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Could not determine LAN IP address", e);
+    }
+    return null;
   }
 }
