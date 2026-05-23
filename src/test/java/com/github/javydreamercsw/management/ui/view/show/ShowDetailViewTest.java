@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -92,6 +93,7 @@ class ShowDetailViewTest {
   @Mock private SeasonService seasonService;
   @Mock private ShowTemplateService showTemplateService;
   @Mock private RivalryService rivalryService;
+  @Mock private ShowPlanningService showPlanningService;
   @Mock private SegmentNarrationConfig segmentNarrationConfig;
   @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   @Mock private Environment env;
@@ -163,6 +165,7 @@ class ShowDetailViewTest {
               seasonService,
               showTemplateService,
               rivalryService,
+              showPlanningService,
               segmentNarrationServiceFactory,
               segmentNarrationController,
               showController,
@@ -249,6 +252,7 @@ class ShowDetailViewTest {
               seasonService,
               showTemplateService,
               rivalryService,
+              showPlanningService,
               segmentNarrationServiceFactory,
               segmentNarrationController,
               showController,
