@@ -80,10 +80,20 @@ class ShowDetailQrCodeDocsE2ETest extends AbstractE2ETest {
     Wrestler w1 = ensureWrestler("QR Test Alpha");
     Wrestler w2 = ensureWrestler("QR Test Beta");
 
+    // Ensure a non-Promo segment type exists so the QR button is rendered.
+    // Do not rely on DataInitializer — DatabaseCleaner truncates segment_type before each test
+    // and DataInitializer's skipIfNotEmpty guard can prevent the reload. An invisible component
+    // inside a Vaadin Grid ComponentRenderer is never sent to the browser DOM, so
+    // waitForVaadinElement would time out if the type happened to be "Promo".
     SegmentType matchType =
         segmentTypeRepository
             .findByName("One on One")
-            .orElseGet(segmentTypeRepository.findAll()::getFirst);
+            .orElseGet(
+                () -> {
+                  SegmentType st = new SegmentType();
+                  st.setName("One on One");
+                  return segmentTypeRepository.save(st);
+                });
 
     testSegment = new Segment();
     testSegment.setShow(testShow);
@@ -96,7 +106,8 @@ class ShowDetailQrCodeDocsE2ETest extends AbstractE2ETest {
 
   @Test
   void qrShareButtonOpensDialogWithQrCodeImage() {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/show/" + testShow.getId());
+    driver.get(
+        "http://localhost:" + serverPort + getContextPath() + "/show-detail/" + testShow.getId());
     waitForVaadinClientToLoad();
 
     // Click the QR share button for the test segment
@@ -105,9 +116,8 @@ class ShowDetailQrCodeDocsE2ETest extends AbstractE2ETest {
     clickElement(qrButton);
     sleep(1500);
 
-    // Verify the dialog opened
-    WebElement dialog =
-        waitForVaadinElement(driver, By.cssSelector("vaadin-dialog-overlay[opened]"));
+    // Verify the dialog opened (Vaadin 25 uses vaadin-dialog[opened], not vaadin-dialog-overlay)
+    WebElement dialog = waitForVaadinElement(driver, By.cssSelector("vaadin-dialog[opened]"));
     assertTrue(dialog.isDisplayed(), "QR dialog should be open");
 
     // Verify the QR image is rendered
@@ -119,7 +129,7 @@ class ShowDetailQrCodeDocsE2ETest extends AbstractE2ETest {
         src != null && src.startsWith("data:image/png;base64,"), "QR should be a base64 PNG");
 
     // Verify the URL shown is not localhost (must be LAN-accessible)
-    WebElement urlLabel = dialog.findElement(By.cssSelector("vaadin-dialog-overlay span"));
+    WebElement urlLabel = dialog.findElement(By.cssSelector("span"));
     String displayedUrl = urlLabel.getText();
     assertFalse(
         displayedUrl.contains("localhost") || displayedUrl.contains("127.0.0.1"),
