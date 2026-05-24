@@ -109,6 +109,12 @@ class ShowDetailQrCodeDocsE2ETest extends AbstractE2ETest {
     driver.get(
         "http://localhost:" + serverPort + getContextPath() + "/show-detail/" + testShow.getId());
     waitForVaadinClientToLoad();
+    // Wait for the segments grid wrapper and data to render before looking for component-column
+    // buttons. This is required in production mode where Grid component columns render
+    // asynchronously after the Vaadin client reports idle. BookerJourneyE2ETest uses the same
+    // pattern successfully.
+    waitForVaadinElement(driver, By.id("segments-grid-wrapper"));
+    waitForGridToPopulate("segments-grid");
 
     // Click the QR share button for the test segment
     WebElement qrButton =
