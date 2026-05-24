@@ -381,6 +381,12 @@ jobs:
         if: github.ref_name != 'main'
         run: |
           echo "Syncing changes back to source branch: ${{ github.ref_name }}"
-          git checkout ${{ github.ref_name }}
+          # Fetch the latest remote state of the source branch. The initial
+          # checkout in this job is pinned to github.sha, but prepare_release
+          # pushes additional commits (docs, version bumps) to the branch after
+          # the workflow is triggered. Without fetching first, the local branch
+          # is behind origin and the subsequent push is rejected non-fast-forward.
+          git fetch origin ${{ github.ref_name }}
+          git checkout -B ${{ github.ref_name }} origin/${{ github.ref_name }}
           git merge origin/main --no-ff -m "chore: Sync main back to ${{ github.ref_name }} after release ${{ github.event.inputs.version }}"
           git push origin ${{ github.ref_name }}
