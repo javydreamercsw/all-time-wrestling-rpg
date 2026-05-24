@@ -1,248 +1,248 @@
 {
-  "videos" : [ {
-    "id" : "booker-journey-booker-full-show-lifecycle",
-    "category" : "Booker Journey",
-    "title" : "Full Show Lifecycle",
-    "description" : "Summary updated and reflected on the show card. Once you're happy with the card, you can finalize the show — which locks the card, triggers fan updates, and makes the results visible to players and viewers.",
-    "videoPath" : "videos/booker-full-show-lifecycle.mp4",
-    "order" : 0
+  "videos": [ {
+    "id": "booker-journey-booker-full-show-lifecycle",
+    "category": "Booker Journey",
+    "title": "Full Show Lifecycle",
+    "description": "Summary updated and reflected on the show card. Once you're happy with the card, you can finalize the show — which locks the card, triggers fan updates, and makes the results visible to players and viewers.",
+    "videoPath": "videos/booker-full-show-lifecycle.mp4",
+    "order": 0
   }, {
-    "id" : "game-mechanics-card-list-manage",
-    "category" : "Game Mechanics",
-    "title" : "Managing Cards",
-    "description" : "Card name updated in place — changes persist immediately with no page reload, keeping the editing flow smooth during show preparation. Updated cards are reflected in all decks that reference them automatically.",
-    "videoPath" : "videos/card-list-manage.mp4",
-    "order" : 0
+    "id": "game-mechanics-card-list-manage",
+    "category": "Game Mechanics",
+    "title": "Managing Cards",
+    "description": "Card name updated in place — changes persist immediately with no page reload, keeping the editing flow smooth during show preparation. Updated cards are reflected in all decks that reference them automatically.",
+    "videoPath": "videos/card-list-manage.mp4",
+    "order": 0
   }, {
-    "id" : "game-mechanics-create-card",
-    "category" : "Game Mechanics",
-    "title" : "Creating a Card",
-    "description" : "New card created — it appears in the grid immediately and is ready to be assigned stats, a card set, and rules for use in segments. Open the Edit dialog to configure health cost, stamina cost, and damage values.",
-    "videoPath" : "videos/create-card.mp4",
-    "order" : 0
+    "id": "game-mechanics-create-card",
+    "category": "Game Mechanics",
+    "title": "Creating a Card",
+    "description": "New card created — it appears in the grid immediately and is ready to be assigned stats, a card set, and rules for use in segments. Open the Edit dialog to configure health cost, stamina cost, and damage values.",
+    "videoPath": "videos/create-card.mp4",
+    "order": 0
   }, {
-    "id" : "player-dashboard-interactive-promo",
-    "category" : "Player Dashboard",
-    "title" : "Interactive Promo",
-    "description" : "The Silent One responds — AI-generated retort appears under the opponent's name. The full exchange is persisted to the segment narration and becomes part of the permanent show record, visible to all participants.",
-    "videoPath" : "videos/interactive-promo.mp4",
-    "order" : 0
+    "id": "player-dashboard-interactive-promo",
+    "category": "Player Dashboard",
+    "title": "Interactive Promo",
+    "description": "The Silent One responds — AI-generated retort appears under the opponent's name. The full exchange is persisted to the segment narration and becomes part of the permanent show record, visible to all participants.",
+    "videoPath": "videos/interactive-promo.mp4",
+    "order": 0
   }, {
-    "id" : "player-dashboard-player-match-narration",
-    "category" : "Player Dashboard",
-    "title" : "Match Narration",
-    "description" : "Generate Narration lets the player request an AI-written match story using their deck cards and the segment outcome. Only participants see this button — the result is stored on the segment and visible to everyone afterward.",
-    "videoPath" : "videos/player-match-narration.mp4",
-    "order" : 0
+    "id": "player-dashboard-player-match-narration",
+    "category": "Player Dashboard",
+    "title": "Match Narration",
+    "description": "Generate Narration lets the player request an AI-written match story using their deck cards and the segment outcome. Only participants see this button — the result is stored on the segment and visible to everyone afterward.",
+    "videoPath": "videos/player-match-narration.mp4",
+    "order": 0
   }, {
-    "id" : "season-management-automatic-show-creation",
-    "category" : "Season Management",
-    "title" : "Automatic Show Creation",
-    "description" : "The full season schedule — weekly shows and PLEs — is now ready to plan and book. Click any show to open its detail view and start adding segments and assigning wrestlers to the card.",
-    "videoPath" : "videos/automatic-show-creation.mp4",
-    "order" : 0
+    "id": "season-management-automatic-show-creation",
+    "category": "Season Management",
+    "title": "Automatic Show Creation",
+    "description": "The full season schedule — weekly shows and PLEs — is now ready to plan and book. Click any show to open its detail view and start adding segments and assigning wrestlers to the card.",
+    "videoPath": "videos/automatic-show-creation.mp4",
+    "order": 0
   }, {
-    "id" : "community-create-faction",
-    "category" : "Community",
-    "title" : "Creating a Faction",
-    "description" : "New faction appears in the grid — it's immediately available for member assignment and can be featured in feuds and storylines. Use the Members button to add wrestlers to the roster right away.",
-    "videoPath" : "videos/create-faction.mp4",
-    "order" : 0
+    "id": "community-create-faction",
+    "category": "Community",
+    "title": "Creating a Faction",
+    "description": "New faction appears in the grid — it's immediately available for member assignment and can be featured in feuds and storylines. Use the Members button to add wrestlers to the roster right away.",
+    "videoPath": "videos/create-faction.mp4",
+    "order": 0
   }, {
-    "id" : "community-faction-member-management",
-    "category" : "Community",
-    "title" : "Managing Faction Members",
-    "description" : "Wrestler added to the faction roster — the members grid updates instantly. Members can be removed at any time without affecting their match or feud history; faction membership is independent of past results.",
-    "videoPath" : "videos/faction-member-management.mp4",
-    "order" : 0
+    "id": "community-faction-member-management",
+    "category": "Community",
+    "title": "Managing Faction Members",
+    "description": "Wrestler added to the faction roster — the members grid updates instantly. Members can be removed at any time without affecting their match or feud history; faction membership is independent of past results.",
+    "videoPath": "videos/faction-member-management.mp4",
+    "order": 0
   }, {
-    "id" : "wrestler-profile-wrestler-title-history",
-    "category" : "Wrestler Profile",
-    "title" : "Championship Title History",
-    "description" : "The show detail view opens — you can review the full card and segment results from the night the title changed hands. All segments, participants, and AI-generated narration are preserved in the show record.",
-    "videoPath" : "videos/wrestler-title-history.mp4",
-    "order" : 0
+    "id": "wrestler-profile-wrestler-title-history",
+    "category": "Wrestler Profile",
+    "title": "Championship Title History",
+    "description": "The show detail view opens — you can review the full card and segment results from the night the title changed hands. All segments, participants, and AI-generated narration are preserved in the show record.",
+    "videoPath": "videos/wrestler-title-history.mp4",
+    "order": 0
   }, {
-    "id" : "wrestler-profile-wrestler-recent-matches",
-    "category" : "Wrestler Profile",
-    "title" : "Recent Match Log",
-    "description" : "Championship matches are highlighted — the title at stake is shown alongside the participants, giving a full picture of the wrestler's title history. This data feeds into the Championships accordion on the same profile.",
-    "videoPath" : "videos/wrestler-recent-matches.mp4",
-    "order" : 0
+    "id": "wrestler-profile-wrestler-recent-matches",
+    "category": "Wrestler Profile",
+    "title": "Recent Match Log",
+    "description": "Championship matches are highlighted — the title at stake is shown alongside the participants, giving a full picture of the wrestler's title history. This data feeds into the Championships accordion on the same profile.",
+    "videoPath": "videos/wrestler-recent-matches.mp4",
+    "order": 0
   }, {
-    "id" : "wrestler-profile-wrestler-feud-history",
-    "category" : "Wrestler Profile",
-    "title" : "Feud and Rivalry History",
-    "description" : "Feuds and rivalries are ranked by heat — high-heat storylines rise to the top, helping bookers identify which angles to push on upcoming shows. Each entry shows the current heat total accumulated across all events in that feud.",
-    "videoPath" : "videos/wrestler-feud-history.mp4",
-    "order" : 0
+    "id": "wrestler-profile-wrestler-feud-history",
+    "category": "Wrestler Profile",
+    "title": "Feud and Rivalry History",
+    "description": "Feuds and rivalries are ranked by heat — high-heat storylines rise to the top, helping bookers identify which angles to push on upcoming shows. Each entry shows the current heat total accumulated across all events in that feud.",
+    "videoPath": "videos/wrestler-feud-history.mp4",
+    "order": 0
   }, {
-    "id" : "roster-management-manage-wrestler-injuries",
-    "category" : "Roster Management",
-    "title" : "Managing Wrestler Injuries",
-    "description" : "The new injury appears in the grid — it will affect the wrestler's booking availability and appear in AI narration commentary until it is healed. Critical injuries are flagged prominently to alert bookers.",
-    "videoPath" : "videos/manage-wrestler-injuries.mp4",
-    "order" : 0
+    "id": "roster-management-manage-wrestler-injuries",
+    "category": "Roster Management",
+    "title": "Managing Wrestler Injuries",
+    "description": "The new injury appears in the grid — it will affect the wrestler's booking availability and appear in AI narration commentary until it is healed. Critical injuries are flagged prominently to alert bookers.",
+    "videoPath": "videos/manage-wrestler-injuries.mp4",
+    "order": 0
   }, {
-    "id" : "roster-management-edit-wrestler",
-    "category" : "Roster Management",
-    "title" : "Editing a Wrestler",
-    "description" : "Changes are saved immediately and reflected in the roster grid with no page reload. The updated name also propagates to any show segments or faction memberships that reference this wrestler.",
-    "videoPath" : "videos/edit-wrestler.mp4",
-    "order" : 0
+    "id": "roster-management-edit-wrestler",
+    "category": "Roster Management",
+    "title": "Editing a Wrestler",
+    "description": "Changes are saved immediately and reflected in the roster grid with no page reload. The updated name also propagates to any show segments or faction memberships that reference this wrestler.",
+    "videoPath": "videos/edit-wrestler.mp4",
+    "order": 0
   }, {
-    "id" : "roster-management-create-wrestler",
-    "category" : "Roster Management",
-    "title" : "Creating a Wrestler",
-    "description" : "The new wrestler appears in the roster immediately, ready to be booked into shows, assigned to factions, and given a card deck. The roster is sorted alphabetically by default for easy navigation.",
-    "videoPath" : "videos/create-wrestler.mp4",
-    "order" : 0
+    "id": "roster-management-create-wrestler",
+    "category": "Roster Management",
+    "title": "Creating a Wrestler",
+    "description": "The new wrestler appears in the roster immediately, ready to be booked into shows, assigned to factions, and given a card deck. The roster is sorted alphabetically by default for easy navigation.",
+    "videoPath": "videos/create-wrestler.mp4",
+    "order": 0
   }, {
-    "id" : "campaign-campaign-skill-upgrades",
-    "category" : "Campaign",
-    "title" : "Skill Upgrades",
-    "description" : "Purchasing Iron Man — each upgrade permanently boosts a stat for the rest of the campaign. Choose carefully; tokens are limited and upgrades cannot be reversed once purchased.",
-    "videoPath" : "videos/campaign-skill-upgrades.mp4",
-    "order" : 0
+    "id": "campaign-campaign-skill-upgrades",
+    "category": "Campaign",
+    "title": "Skill Upgrades",
+    "description": "Purchasing Iron Man — each upgrade permanently boosts a stat for the rest of the campaign. Choose carefully; tokens are limited and upgrades cannot be reversed once purchased.",
+    "videoPath": "videos/campaign-skill-upgrades.mp4",
+    "order": 0
   }, {
-    "id" : "campaign-campaign-backstage-actions",
-    "category" : "Campaign",
-    "title" : "Campaign Flow and Backstage Actions",
-    "description" : "Back on the Campaign Dashboard — Victory Points accumulate from backstage actions and match wins, driving chapter progression throughout the season. Reaching each VP threshold automatically transitions the story to the next chapter.",
-    "videoPath" : "videos/campaign-backstage-actions.mp4",
-    "order" : 0
+    "id": "campaign-campaign-backstage-actions",
+    "category": "Campaign",
+    "title": "Campaign Flow and Backstage Actions",
+    "description": "Back on the Campaign Dashboard — Victory Points accumulate from backstage actions and match wins, driving chapter progression throughout the season. Reaching each VP threshold automatically transitions the story to the next chapter.",
+    "videoPath": "videos/campaign-backstage-actions.mp4",
+    "order": 0
   }, {
-    "id" : "campaign-campaign-corporate-power-trip",
-    "category" : "Campaign",
-    "title" : "Corporate Power Trip Chapter",
-    "description" : "Corporate Power Trip triggers at 15 Victory Points — the player has earned enough momentum to challenge the establishment and climb to the top of the card. VP accumulates from match wins, backstage actions, and completed milestones.",
-    "videoPath" : "videos/campaign-corporate-power-trip.mp4",
-    "order" : 0
+    "id": "campaign-campaign-corporate-power-trip",
+    "category": "Campaign",
+    "title": "Corporate Power Trip Chapter",
+    "description": "Corporate Power Trip triggers at 15 Victory Points — the player has earned enough momentum to challenge the establishment and climb to the top of the card. VP accumulates from match wins, backstage actions, and completed milestones.",
+    "videoPath": "videos/campaign-corporate-power-trip.mp4",
+    "order": 0
   }, {
-    "id" : "campaign-campaign-gang-warfare",
-    "category" : "Campaign",
-    "title" : "Gang Warfare Chapter",
-    "description" : "Gang Warfare unlocks when factions collide for territory control — the chapter sets up a faction turf war storyline across multiple shows, with backstage actions that let the player recruit allies or sabotage rivals.",
-    "videoPath" : "videos/campaign-gang-warfare.mp4",
-    "order" : 0
+    "id": "campaign-campaign-gang-warfare",
+    "category": "Campaign",
+    "title": "Gang Warfare Chapter",
+    "description": "Gang Warfare unlocks when factions collide for territory control — the chapter sets up a faction turf war storyline across multiple shows, with backstage actions that let the player recruit allies or sabotage rivals.",
+    "videoPath": "videos/campaign-gang-warfare.mp4",
+    "order": 0
   }, {
-    "id" : "campaign-campaign-fighting-champion",
-    "category" : "Campaign",
-    "title" : "The Fighting Champion Chapter",
-    "description" : "The Fighting Champion chapter activates when the player holds a championship. The campaign tracks title reigns automatically and unlocks this chapter, presenting unique storyline choices available only to a defending champion.",
-    "videoPath" : "videos/campaign-fighting-champion.mp4",
-    "order" : 0
+    "id": "campaign-campaign-fighting-champion",
+    "category": "Campaign",
+    "title": "The Fighting Champion Chapter",
+    "description": "The Fighting Champion chapter activates when the player holds a championship. The campaign tracks title reigns automatically and unlocks this chapter, presenting unique storyline choices available only to a defending champion.",
+    "videoPath": "videos/campaign-fighting-champion.mp4",
+    "order": 0
   }, {
-    "id" : "game-mechanics-mechanic-decks-walkthrough",
-    "category" : "Game Mechanics",
-    "title" : "Decks Walkthrough",
-    "description" : "These move sets are what the AI draws from during match narration — a richer deck with varied move types leads to more dynamic and realistic commentary.",
-    "videoPath" : "videos/mechanic-decks-walkthrough.mp4",
-    "order" : 0
+    "id": "game-mechanics-mechanic-decks-walkthrough",
+    "category": "Game Mechanics",
+    "title": "Decks Walkthrough",
+    "description": "These move sets are what the AI draws from during match narration — a richer deck with varied move types leads to more dynamic and realistic commentary.",
+    "videoPath": "videos/mechanic-decks-walkthrough.mp4",
+    "order": 0
   }, {
-    "id" : "dashboards-dashboard-rankings-walkthrough",
-    "category" : "Dashboards",
-    "title" : "Wrestler Rankings",
-    "description" : "Wrestlers accumulate fans through wins, title matches, and fan reactions — losses and inactivity erode the fan base over time, creating natural momentum shifts that drive realistic storyline booking decisions.",
-    "videoPath" : "videos/dashboard-rankings-walkthrough.mp4",
-    "order" : 0
+    "id": "dashboards-dashboard-rankings-walkthrough",
+    "category": "Dashboards",
+    "title": "Wrestler Rankings",
+    "description": "Wrestlers accumulate fans through wins, title matches, and fan reactions — losses and inactivity erode the fan base over time, creating natural momentum shifts that drive realistic storyline booking decisions.",
+    "videoPath": "videos/dashboard-rankings-walkthrough.mp4",
+    "order": 0
   }, {
-    "id" : "game-mechanics-mechanic-cards-walkthrough",
-    "category" : "Game Mechanics",
-    "title" : "Cards Walkthrough",
-    "description" : "Card detail view shows health cost, stamina cost, damage type, and move category. These values are referenced directly by the match engine and AI narration when describing what happened in a segment.",
-    "videoPath" : "videos/mechanic-cards-walkthrough.mp4",
-    "order" : 0
+    "id": "game-mechanics-mechanic-cards-walkthrough",
+    "category": "Game Mechanics",
+    "title": "Cards Walkthrough",
+    "description": "Card detail view shows health cost, stamina cost, damage type, and move category. These values are referenced directly by the match engine and AI narration when describing what happened in a segment.",
+    "videoPath": "videos/mechanic-cards-walkthrough.mp4",
+    "order": 0
   }, {
-    "id" : "player-dashboard-player-go-to-match",
-    "category" : "Player Dashboard",
-    "title" : "Navigating to a Match",
-    "description" : "Match view loaded — shows the show name, match type, and participants. Players can submit results, request AI narration, or start an interactive promo depending on the segment type.",
-    "videoPath" : "videos/player-go-to-match.mp4",
-    "order" : 0
+    "id": "player-dashboard-player-go-to-match",
+    "category": "Player Dashboard",
+    "title": "Navigating to a Match",
+    "description": "Match view loaded — shows the show name, match type, and participants. Players can submit results, request AI narration, or start an interactive promo depending on the segment type.",
+    "videoPath": "videos/player-go-to-match.mp4",
+    "order": 0
   }, {
-    "id" : "player-dashboard-player-season-summary",
-    "category" : "Player Dashboard",
-    "title" : "Season Summary",
-    "description" : "Fan growth tracks audience gained or lost this season — wins and title feuds push it up, while losses and inactivity drag it down. The net change is displayed so players can see the impact of their booking outcomes.",
-    "videoPath" : "videos/player-season-summary.mp4",
-    "order" : 0
+    "id": "player-dashboard-player-season-summary",
+    "category": "Player Dashboard",
+    "title": "Season Summary",
+    "description": "Fan growth tracks audience gained or lost this season — wins and title feuds push it up, while losses and inactivity drag it down. The net change is displayed so players can see the impact of their booking outcomes.",
+    "videoPath": "videos/player-season-summary.mp4",
+    "order": 0
   }, {
-    "id" : "player-dashboard-player-dashboard-overview",
-    "category" : "Player Dashboard",
-    "title" : "Player Dashboard Overview",
-    "description" : "Inbox tab — booker messages, angle updates, and match announcements arrive here. Players stay informed about story directions and upcoming bookings without needing to contact the booker directly.",
-    "videoPath" : "videos/player-dashboard-overview.mp4",
-    "order" : 0
+    "id": "player-dashboard-player-dashboard-overview",
+    "category": "Player Dashboard",
+    "title": "Player Dashboard Overview",
+    "description": "Inbox tab — booker messages, angle updates, and match announcements arrive here. Players stay informed about story directions and upcoming bookings without needing to contact the booker directly.",
+    "videoPath": "videos/player-dashboard-overview.mp4",
+    "order": 0
   }, {
-    "id" : "player-dashboard-player-status-cards",
-    "category" : "Player Dashboard",
-    "title" : "Status Cards and Momentum",
-    "description" : "Momentum reflects all active status card bonuses — the effective stat shown here is exactly what the match engine uses when drawing cards in combat. Higher momentum increases the chance of landing powerful moves.",
-    "videoPath" : "videos/player-status-cards.mp4",
-    "order" : 0
+    "id": "player-dashboard-player-status-cards",
+    "category": "Player Dashboard",
+    "title": "Status Cards and Momentum",
+    "description": "Momentum reflects all active status card bonuses — the effective stat shown here is exactly what the match engine uses when drawing cards in combat. Higher momentum increases the chance of landing powerful moves.",
+    "videoPath": "videos/player-status-cards.mp4",
+    "order": 0
   }, {
-    "id" : "roster-management-gender-filtering-rankings",
-    "category" : "Roster Management",
-    "title" : "Gender Filtering in Rankings",
-    "description" : "Selecting FEMALE in the gender filter narrows the rankings to women's division wrestlers only. This also controls which names appear in the championship contender lists for gender-specific titles.",
-    "videoPath" : "videos/gender-filtering-rankings.mp4",
-    "order" : 0
+    "id": "roster-management-gender-filtering-rankings",
+    "category": "Roster Management",
+    "title": "Gender Filtering in Rankings",
+    "description": "Selecting FEMALE in the gender filter narrows the rankings to women's division wrestlers only. This also controls which names appear in the championship contender lists for gender-specific titles.",
+    "videoPath": "videos/gender-filtering-rankings.mp4",
+    "order": 0
   }, {
-    "id" : "roster-management-championship-contenders-tier-boundaries",
-    "category" : "Roster Management",
-    "title" : "Championship Contenders and Tier Boundaries",
-    "description" : "Women's division tier boundaries — each row shows the minimum and maximum fan count a wrestler needs to reach or hold that tier. Wrestlers are promoted or demoted automatically when their fan count crosses a boundary.",
-    "videoPath" : "videos/championship-contenders-tier-boundaries.mp4",
-    "order" : 0
+    "id": "roster-management-championship-contenders-tier-boundaries",
+    "category": "Roster Management",
+    "title": "Championship Contenders and Tier Boundaries",
+    "description": "Women's division tier boundaries — each row shows the minimum and maximum fan count a wrestler needs to reach or hold that tier. Wrestlers are promoted or demoted automatically when their fan count crosses a boundary.",
+    "videoPath": "videos/championship-contenders-tier-boundaries.mp4",
+    "order": 0
   }, {
-    "id" : "booker-journey-booker-set-main-event",
-    "category" : "Booker Journey",
-    "title" : "Set Main Event",
-    "description" : "This setting impacts the narration as well as the fans obtained by the participants!",
-    "videoPath" : "videos/booker-set-main-event.mp4",
-    "order" : 0
+    "id": "booker-journey-booker-set-main-event",
+    "category": "Booker Journey",
+    "title": "Set Main Event",
+    "description": "This setting impacts the narration as well as the fans obtained by the participants!",
+    "videoPath": "videos/booker-set-main-event.mp4",
+    "order": 0
   }, {
-    "id" : "booker-journey-booker-change-segment-order",
-    "category" : "Booker Journey",
-    "title" : "Change Segment Order",
-    "description" : "Reorder the segments using the up and down arrows.",
-    "videoPath" : "videos/booker-change-segment-order.mp4",
-    "order" : 0
+    "id": "booker-journey-booker-change-segment-order",
+    "category": "Booker Journey",
+    "title": "Change Segment Order",
+    "description": "Reorder the segments using the up and down arrows.",
+    "videoPath": "videos/booker-change-segment-order.mp4",
+    "order": 0
   }, {
-    "id" : "booker-journey-booker-narrate-summarize-segment",
-    "category" : "Booker Journey",
-    "title" : "Narrate and Summarize Segment",
-    "description" : "Summary is generated from the full narration.",
-    "videoPath" : "videos/booker-narrate-summarize-segment.mp4",
-    "order" : 0
+    "id": "booker-journey-booker-narrate-summarize-segment",
+    "category": "Booker Journey",
+    "title": "Narrate and Summarize Segment",
+    "description": "Summary is generated from the full narration.",
+    "videoPath": "videos/booker-narrate-summarize-segment.mp4",
+    "order": 0
   }, {
-    "id" : "season-management-full-fan-reset",
-    "category" : "Season Management",
-    "title" : "Full Fan Reset",
-    "description" : "All fan counts reset to 0 and tiers demoted to Rookie — the new season starts with a clean slate. Every wrestler must earn their way back up the card through wins, promos, and fan-building events.",
-    "videoPath" : "videos/full-fan-reset.mp4",
-    "order" : 0
+    "id": "season-management-full-fan-reset",
+    "category": "Season Management",
+    "title": "Full Fan Reset",
+    "description": "All fan counts reset to 0 and tiers demoted to Rookie — the new season starts with a clean slate. Every wrestler must earn their way back up the card through wins, promos, and fan-building events.",
+    "videoPath": "videos/full-fan-reset.mp4",
+    "order": 0
   }, {
-    "id" : "season-management-recalibrate-fans",
-    "category" : "Season Management",
-    "title" : "Recalibrate Fan Counts",
-    "description" : "Fan counts recalibrated — wrestlers retain their tier but excess fans are trimmed to the tier minimum, levelling the playing field. This creates a competitive reset without erasing the hierarchy built during the season.",
-    "videoPath" : "videos/recalibrate-fans.mp4",
-    "order" : 0
+    "id": "season-management-recalibrate-fans",
+    "category": "Season Management",
+    "title": "Recalibrate Fan Counts",
+    "description": "Fan counts recalibrated — wrestlers retain their tier but excess fans are trimmed to the tier minimum, levelling the playing field. This creates a competitive reset without erasing the hierarchy built during the season.",
+    "videoPath": "videos/recalibrate-fans.mp4",
+    "order": 0
   }, {
-    "id" : "season-management-reset-tier-boundaries",
-    "category" : "Season Management",
-    "title" : "Reset Tier Boundaries",
-    "description" : "Tier boundaries reset — all tiers now use their default fan requirements, ready for the new season. Wrestlers are automatically re-evaluated against the restored thresholds on the next ranking calculation.",
-    "videoPath" : "videos/reset-tier-boundaries.mp4",
-    "order" : 0
+    "id": "season-management-reset-tier-boundaries",
+    "category": "Season Management",
+    "title": "Reset Tier Boundaries",
+    "description": "Tier boundaries reset — all tiers now use their default fan requirements, ready for the new season. Wrestlers are automatically re-evaluated against the restored thresholds on the next ranking calculation.",
+    "videoPath": "videos/reset-tier-boundaries.mp4",
+    "order": 0
   }, {
-    "id" : "admin-data-transfer-full-wizard",
-    "category" : "Admin",
-    "title" : "MySQL Data Migration Wizard",
-    "description" : "Migration complete — all data is now in MySQL and verified. Restart the application with the MySQL Spring profile (spring.profiles.active=mysql) to run in production mode against the new database.",
-    "videoPath" : "videos/data-transfer-full-wizard.mp4",
-    "order" : 0
+    "id": "admin-data-transfer-full-wizard",
+    "category": "Admin",
+    "title": "MySQL Data Migration Wizard",
+    "description": "Migration complete — all data is now in MySQL and verified. Restart the application with the MySQL Spring profile (spring.profiles.active=mysql) to run in production mode against the new database.",
+    "videoPath": "videos/data-transfer-full-wizard.mp4",
+    "order": 0
   } ]
 }
