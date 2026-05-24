@@ -150,12 +150,12 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void loadCampaign() {
-    log.info("Loading campaign for current user...");
+    log.debug("Loading campaign for current user...");
     securityUtils
         .getAuthenticatedUser()
         .ifPresentOrElse(
             user -> {
-              log.info("Authenticated user: {}", user.getUsername());
+              log.debug("Authenticated user: {}", user.getUsername());
               com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
               java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
               Wrestler active =
@@ -165,16 +165,16 @@ public class CampaignDashboardView extends VerticalLayout {
                       .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
 
               if (active != null) {
-                log.info("Wrestler found: {}", active.getName());
+                log.debug("Wrestler found: {}", active.getName());
                 campaignService
                     .getCampaignForWrestler(active)
                     .ifPresentOrElse(
                         campaign -> {
-                          log.info("Active campaign found: {}", campaign.getId());
+                          log.debug("Active campaign found: {}", campaign.getId());
                           currentCampaign = campaign;
                         },
                         () ->
-                            log.info(
+                            log.debug(
                                 "No active campaign found for wrestler: {}", active.getName()));
               } else {
                 log.warn("No wrestler found for account: {}", user.getUsername());
