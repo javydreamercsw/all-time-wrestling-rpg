@@ -723,7 +723,6 @@
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateFields</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods</recipe>
             <recipe>org.openrewrite.xml.style.AutodetectDebug</recipe>
-            <recipe>org.openrewrite.staticanalysis.UnnecessaryThrows</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCatch</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments</recipe>
