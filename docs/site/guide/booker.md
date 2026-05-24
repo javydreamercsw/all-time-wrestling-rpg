@@ -2,6 +2,38 @@
 
 Welcome to the Booker guide. This documentation is automatically generated from the latest game features.
 
+## Show Planning — Stipulation Required Error
+
+When a rivalry with heat ≥ 30 is on the card but has no match rule (stipulation), approval is blocked. The error dialog lists each affected rivalry. Edit the segment and add a rule such as Steel Cage or Last Man Standing before approving.
+
+![Show Planning — Stipulation Required Error](/screenshots/booker-show-planning-stipulation-error.png)
+
+---
+
+## Show Planning — Proposed Card
+
+After the AI proposes segments, the booker reviews the card before approving. Rivalries with heat ≥ 10 that are not on the card will trigger an advisory when the Approve button is clicked.
+
+![Show Planning — Proposed Card](/screenshots/booker-show-planning-proposed-card.png)
+
+---
+
+## Show Planning — Unbooked Rivalries Warning
+
+When rivalries with heat ≥ 10 are not on the proposed card, a confirmation dialog lists each unbooked feud. The booker can go back and add them, or acknowledge and approve anyway — unbooked rivalries carry over to future shows.
+
+![Show Planning — Unbooked Rivalries Warning](/screenshots/booker-show-planning-must-book-warning.png)
+
+---
+
+## QR Code Match Share
+
+The QR share button on a match segment opens a dialog with a scannable QR code. The URL uses the machine's LAN IP address so phones on the same network can navigate directly to the match page.
+
+![QR Code Match Share](/screenshots/booker-show-detail-qr-code-share.png)
+
+---
+
 ## Dashboard with News Ticker
 
 Latest headlines and rumors are visible directly on the booker dashboard.
@@ -20,7 +52,7 @@ The Show Planning interface allows you to book matches and segments for an upcom
 
 ## Match Narration
 
-Bring your matches to life with AI-generated or manual narration. The Story Director uses match participants, rules, and outcomes to weave a compelling narrative of the action.
+Bring your matches to life with AI-generated or manual narration. The Story Director uses match participants, rules, and outcomes to weave a compelling narrative of the action. The new structured transcript format separates objective action from character-driven commentary.
 
 ![Match Narration](/screenshots/booker-match-narration.png)
 
@@ -31,6 +63,18 @@ Bring your matches to life with AI-generated or manual narration. The Story Dire
 View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.
 
 ![Show History](/screenshots/booker-show-history.png)
+
+---
+
+## Video Walkthroughs
+
+### Show Card Validation Walkthrough
+
+After the booker confirms, the segments are saved to the show. Each approved segment enters the adjudication pipeline — the match engine resolves outcomes, updates wrestler stats, and the AI generates narration ready for broadcast.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-show-planning-card-validation-walkthrough.mp4" type="video/mp4">
+</video>
 
 ---
 

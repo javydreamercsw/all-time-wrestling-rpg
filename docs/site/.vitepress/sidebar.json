@@ -140,6 +140,26 @@
     ]
   },
   {
+    "text": "Roster Management",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/roster-management"
+      }
+    ]
+  },
+  {
+    "text": "Season Management",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/season-management"
+      }
+    ]
+  },
+  {
     "text": "Uncategorized",
     "collapsed": false,
     "items": [

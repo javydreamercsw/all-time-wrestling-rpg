@@ -2,6 +2,14 @@
 
 Welcome to the Admin guide. This documentation is automatically generated from the latest game features.
 
+## Season Settings - Schedule Generation Confirmation
+
+The Season Settings tab showing the 'Generate Season Confirmation' button, before execution.
+
+![Season Settings - Schedule Generation Confirmation](/screenshots/admin-season-settings-confirmation.png)
+
+---
+
 ## Wrestler Relationships Management
 
 Manage the social fabric of your promotion. Define marriages, family ties, and deep friendships that influence chemistry, AI narration, and random backstage events.
@@ -76,7 +84,7 @@ Perform critical maintenance tasks such as manual tier recalculation and account
 
 ## Show Templates
 
-Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.
+Manage templates for your shows. You can define default match and promo counts, and now generate custom AI art for each template.
 
 ![Show Templates](/screenshots/admin-show-templates.png)
 
@@ -111,6 +119,18 @@ Manage the entire roster of wrestlers. Add new talent, edit existing stats, assi
 Group and toggle themed content sets. Enable or disable entire collections of wrestlers, teams, and factions to customize the available roster for matches and leagues.
 
 ![Expansion Management](/screenshots/admin-expansion-management.png)
+
+---
+
+## Video Walkthroughs
+
+### MySQL Data Migration Wizard
+
+Migration complete — all data is now in MySQL and verified. Restart the application with the MySQL Spring profile (spring.profiles.active=mysql) to run in production mode against the new database.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/data-transfer-full-wizard.mp4" type="video/mp4">
+</video>
 
 ---
 
