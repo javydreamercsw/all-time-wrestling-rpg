@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -46,6 +47,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -120,6 +122,7 @@ public class ShowDetailView extends Main
   private final SeasonService seasonService;
   private final ShowTemplateService showTemplateService;
   private final RivalryService rivalryService;
+  private final ShowPlanningService showPlanningService;
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final SegmentNarrationController segmentNarrationController;
   private final ShowController showController;
@@ -159,6 +162,7 @@ public class ShowDetailView extends Main
       final SeasonService seasonService,
       final ShowTemplateService showTemplateService,
       final RivalryService rivalryService,
+      final ShowPlanningService showPlanningService,
       final SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       final SegmentNarrationController segmentNarrationController,
       final ShowController showController,
@@ -183,6 +187,7 @@ public class ShowDetailView extends Main
     this.seasonService = seasonService;
     this.showTemplateService = showTemplateService;
     this.rivalryService = rivalryService;
+    this.showPlanningService = showPlanningService;
     this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
     this.segmentNarrationController = segmentNarrationController;
     this.showController = showController;
@@ -927,6 +932,40 @@ public class ShowDetailView extends Main
     dialog.setMaxWidth("90vw");
     dialog.setId("add-segment-dialog");
 
+    // --- Rivalry suggestions banner ---
+    VerticalLayout rivalryBanner = new VerticalLayout();
+    rivalryBanner.setSpacing(false);
+    rivalryBanner.setPadding(false);
+    rivalryBanner.setId("add-segment-rivalry-banner");
+    rivalryBanner.setVisible(false);
+
+    List<Rivalry> unbookedRivalries = showPlanningService.getUnbookedRivalriesByHeat(List.of());
+    if (!unbookedRivalries.isEmpty()) {
+      Span rivalryHint = new Span("Suggested feuds (by heat):");
+      rivalryHint.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.SMALL);
+      rivalryBanner.add(rivalryHint);
+      for (Rivalry r : unbookedRivalries) {
+        Button suggest =
+            new Button(
+                r.getWrestler1().getName()
+                    + " vs "
+                    + r.getWrestler2().getName()
+                    + "  (heat="
+                    + r.getHeat()
+                    + ")");
+        suggest.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        suggest.setId("suggest-rivalry-" + r.getId());
+        rivalryBanner.add(suggest);
+      }
+      rivalryBanner.setVisible(true);
+    }
+
+    // Advisory banner shown when selected participants have a hot rivalry without a stipulation
+    Span stipulationAdvisory = new Span();
+    stipulationAdvisory.setId("add-segment-stipulation-advisory");
+    stipulationAdvisory.addClassNames(LumoUtility.TextColor.ERROR, LumoUtility.FontSize.SMALL);
+    stipulationAdvisory.setVisible(false);
+
     // Form layout
     FormLayout formLayout = new FormLayout();
     formLayout.setResponsiveSteps(
@@ -1053,6 +1092,56 @@ public class ShowDetailView extends Main
     // Start with two empty teams
     addAddTeamRow.accept(new HashSet<>());
     addAddTeamRow.accept(new HashSet<>());
+
+    // Wire suggest-rivalry buttons: pre-fill team combos and evaluate advisory
+    for (Rivalry r : unbookedRivalries) {
+      rivalryBanner
+          .getChildren()
+          .filter(c -> c.getId().map(id -> id.equals("suggest-rivalry-" + r.getId())).orElse(false))
+          .findFirst()
+          .ifPresent(
+              c -> {
+                ((Button) c)
+                    .addClickListener(
+                        ev -> {
+                          if (addTeamCombos.size() >= 2) {
+                            addTeamCombos.get(0).setValue(Set.of(r.getWrestler1()));
+                            addTeamCombos.get(1).setValue(Set.of(r.getWrestler2()));
+                          }
+                          refreshAddWinners.run();
+                        });
+              });
+    }
+
+    // Evaluate stipulation advisory whenever participants change
+    Runnable checkStipulationAdvisory =
+        () -> {
+          List<String> selectedNames =
+              addTeamCombos.stream()
+                  .flatMap(c -> c.getValue().stream())
+                  .map(Wrestler::getName)
+                  .collect(Collectors.toList());
+          boolean hotRivalryNeedsStipulation =
+              rivalryService.getActiveRivalries().stream()
+                  .filter(r -> r.getHeat() >= 30)
+                  .anyMatch(
+                      r ->
+                          selectedNames.contains(r.getWrestler1().getName())
+                              && selectedNames.contains(r.getWrestler2().getName()));
+          if (hotRivalryNeedsStipulation && rulesCombo.getValue().isEmpty()) {
+            stipulationAdvisory.setText(
+                "These wrestlers have a high-heat rivalry (heat ≥30)."
+                    + " Consider adding a stipulation rule.");
+            stipulationAdvisory.setVisible(true);
+          } else {
+            stipulationAdvisory.setVisible(false);
+          }
+        };
+
+    for (MultiSelectComboBox<Wrestler> tc : addTeamCombos) {
+      tc.addValueChangeListener(e -> checkStipulationAdvisory.run());
+    }
+    rulesCombo.addValueChangeListener(e -> checkStipulationAdvisory.run());
 
     alignmentFilter.addValueChangeListener(
         e -> {
@@ -1199,7 +1288,8 @@ public class ShowDetailView extends Main
     buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
     buttonLayout.setWidthFull();
 
-    VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
+    VerticalLayout dialogLayout =
+        new VerticalLayout(rivalryBanner, stipulationAdvisory, formLayout, buttonLayout);
     dialogLayout.setSpacing(true);
     dialogLayout.setPadding(false);
     dialogLayout.setId("add-segment-dialog-layout");

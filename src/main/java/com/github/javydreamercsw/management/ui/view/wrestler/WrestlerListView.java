@@ -177,7 +177,12 @@ public class WrestlerListView extends Main {
                 return "";
               }
               String expansionCode = state.getManager().getExpansionCode();
-              if (!expansionService.getEnabledExpansionCodes().contains(expansionCode)) {
+              Set<String> enabled =
+                  universeContextService
+                      .getCurrentUniverse()
+                      .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+                      .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
+              if (!enabled.contains(expansionCode)) {
                 return "";
               }
               return state.getManager().getName();
@@ -263,7 +268,11 @@ public class WrestlerListView extends Main {
             .map(Wrestler::getId)
             .collect(Collectors.toSet());
 
-    Set<String> enabledCodes = new HashSet<>(expansionService.getEnabledExpansionCodes());
+    Set<String> enabledCodes =
+        universeContextService
+            .getCurrentUniverse()
+            .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+            .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
     Set<Long> excludedIds =
         universeContextService
             .getCurrentUniverse()

@@ -342,6 +342,20 @@ public class SegmentAdjudicationService {
           }
         });
 
+    // If the AI tagged a specific rivalry, boost its heat directly before the generic pair-scan.
+    if (segment.getRivalryId() != null) {
+      int targetedHeat = segment.getShow().isPremiumLiveEvent() ? 3 : 2;
+      rivalryService.addHeat(
+          segment.getRivalryId(),
+          targetedHeat,
+          "AI-booked segment: " + segment.getSegmentType().getName());
+      log.debug(
+          "Added {} heat to rivalry {} from AI-booked segment {}",
+          targetedHeat,
+          segment.getRivalryId(),
+          segment.getId());
+    }
+
     // Add heat to rivalries
     int heat = 1;
     String segmentTypeName = segment.getSegmentType().getName();
@@ -356,11 +370,20 @@ public class SegmentAdjudicationService {
     if (!"Abu Dhabi Rumble".equals(segment.getSegmentType().getName())) {
       for (int i = 0; i < participants.size(); i++) {
         for (int j = i + 1; j < participants.size(); j++) {
+          Wrestler wi = participants.get(i);
+          Wrestler wj = participants.get(j);
+          Faction fi = wi.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+          Faction fj = wj.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+          if (fi != null && fi.equals(fj)) {
+            log.debug(
+                "Skipping heat between teammates {} and {} (faction: {})",
+                wi.getName(),
+                wj.getName(),
+                fi.getName());
+            continue;
+          }
           rivalryService.addHeatBetweenWrestlers(
-              participants.get(i).getId(),
-              participants.get(j).getId(),
-              heat,
-              "From segment: " + segment.getSegmentType().getName());
+              wi.getId(), wj.getId(), heat, "From segment: " + segment.getSegmentType().getName());
         }
       }
     } else {
@@ -395,27 +418,38 @@ public class SegmentAdjudicationService {
           feudResolutionService.attemptFeudResolution(feud);
         }
       }
-      // Check if feuds should be resolved.
-      switch (segment.getSegmentType().getName()) {
-        case "Tag Team":
-          attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(2));
-          attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(3));
-          attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(2));
-          attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(3));
-          break;
-        case "Abu Dhabi Rumble":
-        case "One on One":
-        case "Free-for-All":
-          List<Wrestler> wrestlers = segment.getWrestlers();
-          if (!wrestlers.isEmpty()) {
-            Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
-            for (Wrestler other : wrestlers) {
-              if (!baseWrestler.equals(other)) {
-                attemptRivalryResolution(baseWrestler, other);
+      // If the AI tagged a specific rivalry, attempt resolution on it directly.
+      if (segment.getRivalryId() != null) {
+        DiceBag diceBag = new DiceBag(20);
+        rivalryService.attemptResolution(segment.getRivalryId(), diceBag.roll(), diceBag.roll());
+        log.info(
+            "Attempted resolution of AI-tagged rivalry {} after PLE segment {}",
+            segment.getRivalryId(),
+            segment.getId());
+      } else {
+        // Fall back to generic pair-scan when no rivalry was explicitly tagged.
+        switch (segment.getSegmentType().getName()) {
+          case "Tag Team":
+            attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(2));
+            attemptRivalryResolution(segment.getWrestlers().get(0), segment.getWrestlers().get(3));
+            attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(2));
+            attemptRivalryResolution(segment.getWrestlers().get(1), segment.getWrestlers().get(3));
+            break;
+          case "Abu Dhabi Rumble":
+          case "One on One":
+          case "Free-for-All":
+          default:
+            List<Wrestler> wrestlers = segment.getWrestlers();
+            if (!wrestlers.isEmpty()) {
+              Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
+              for (Wrestler other : wrestlers) {
+                if (!baseWrestler.equals(other)) {
+                  attemptRivalryResolution(baseWrestler, other);
+                }
               }
             }
-          }
-          break;
+            break;
+        }
       }
     }
 
@@ -784,11 +818,20 @@ public class SegmentAdjudicationService {
     for (Wrestler wrestler : segment.getWrestlers()) {
       WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
       int current = state.getPhysicalCondition();
-      state.setPhysicalCondition(Math.max(0, current - baseLoss));
+      int newCondition = Math.max(0, current - baseLoss);
+      state.setPhysicalCondition(newCondition);
       wrestlerService.save(wrestler);
       log.info(
           "Applied {}% wear and tear to {} in league {}. New condition: {}%",
-          baseLoss, wrestler.getName(), universeId, state.getPhysicalCondition());
+          baseLoss, wrestler.getName(), universeId, newCondition);
+
+      int bumpChance = Math.max(0, 75 - newCondition);
+      if (bumpChance > 0 && random.nextInt(100) < bumpChance) {
+        log.info(
+            "Wear-and-tear bump triggered for {} (condition: {}%, chance: {}%)",
+            wrestler.getName(), newCondition, bumpChance);
+        wrestlerService.addBump(wrestler.getId(), universeId);
+      }
 
       // Check for retirement
       retirementService.checkRetirement(wrestler, universeId);

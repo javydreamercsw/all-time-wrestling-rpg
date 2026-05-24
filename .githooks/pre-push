@@ -1,0 +1,39 @@
+#!/bin/sh
+
+##### SECRET SCAN START #####
+# Scan tracked .mv.db files for common API key patterns
+SECRET_PATTERNS="AIzaSy|sk-ant-api|sk-proj-|AKIA[0-9A-Z]{16}"
+DB_FILES=$(git ls-files '*.mv.db')
+if [ -n "$DB_FILES" ]; then
+    for db_file in $DB_FILES; do
+        if strings "$db_file" | grep -qE "$SECRET_PATTERNS"; then
+            echo 1>&2 "ERROR: Possible secret found in $db_file. Remove the secret before pushing."
+            strings "$db_file" | grep -oE "$SECRET_PATTERNS[^'\"[:space:]]*" 1>&2 || true
+            exit 1
+        fi
+    done
+fi
+##### SECRET SCAN END #####
+
+EXECUTOR="$(git rev-parse --show-toplevel)/mvnw"
+
+##### SPOTLESS + OPENREWRITE HOOK START #####
+# Apply spotless to give rewrite a clean base
+$EXECUTOR spotless:apply
+
+# Only run rewrite if .java files are being pushed — it scans all sources and is slow
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "origin/$BRANCH")
+if git diff --name-only HEAD "$UPSTREAM" 2>/dev/null | grep -q '\.java$'; then
+  # Skip spotless:check inside rewrite to avoid the circular spotless↔rewrite failure
+  $EXECUTOR rewrite:run -Dspotless.check.skip=true
+  # Re-apply spotless to fix any formatting that rewrite introduced
+  $EXECUTOR spotless:apply
+fi
+
+# If either tool changed anything, ask the developer to commit and re-push
+if ! git diff --quiet HEAD; then
+  echo 1>&2 "Automatic fixes applied. Review with 'git diff', commit the result, and re-push."
+  exit 1
+fi
+##### SPOTLESS + OPENREWRITE HOOK END #####

@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import java.io.IOException;
@@ -26,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.runtime.InvokerHelper;
@@ -35,7 +38,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class CampaignScriptService {
+
+  private final CampaignStateRepository campaignStateRepository;
+  private final ObjectMapper objectMapper;
 
   // Compiled script classes cached by snippet text to avoid per-call classloader creation.
   private final Map<String, Class<?>> compiledSnippetCache = new ConcurrentHashMap<>();
@@ -55,7 +62,8 @@ public class CampaignScriptService {
     }
 
     Map<String, Object> variables = new HashMap<>();
-    CampaignEffectContext context = new CampaignEffectContext(campaign);
+    CampaignEffectContext context =
+        new CampaignEffectContext(campaign, campaignStateRepository, objectMapper);
     variables.put("ctx", context);
 
     // Using Groovy's 'with' to allow calling methods on the context directly

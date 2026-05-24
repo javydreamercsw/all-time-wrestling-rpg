@@ -101,7 +101,7 @@
     "id": "campaign-campaign-skill-upgrades",
     "category": "Campaign",
     "title": "Skill Upgrades",
-    "description": "Purchasing Iron Man — each upgrade permanently boosts a stat for the rest of the campaign. Choose carefully; tokens are limited and upgrades cannot be reversed once purchased.",
+    "description": "The upgrade moves to Purchased Skills and takes effect immediately — maximum stamina increased by 2 for all future matches. The effective stats shown on your Player Dashboard update to reflect the new total.",
     "videoPath": "videos/campaign-skill-upgrades.mp4",
     "order": 0
   }, {
@@ -243,6 +243,20 @@
     "title": "MySQL Data Migration Wizard",
     "description": "Migration complete — all data is now in MySQL and verified. Restart the application with the MySQL Spring profile (spring.profiles.active=mysql) to run in production mode against the new database.",
     "videoPath": "videos/data-transfer-full-wizard.mp4",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-list-walkthrough",
+    "category": "Campaign",
+    "title": "Campaign List Walkthrough",
+    "description": "The Campaign Dashboard shows the wrestler's current chapter, alignment track, win/loss record, and available actions — giving admins full visibility into any player's campaign state.",
+    "videoPath": "videos/campaign-list-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "booker-booker-show-planning-card-validation-walkthrough",
+    "category": "Booker",
+    "title": "Show Card Validation Walkthrough",
+    "description": "After the booker confirms, the segments are saved to the show. Each approved segment enters the adjudication pipeline — the match engine resolves outcomes, updates wrestler stats, and the AI generates narration ready for broadcast.",
+    "videoPath": "videos/booker-show-planning-card-validation-walkthrough.mp4",
     "order": 0
   } ]
 }

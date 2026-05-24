@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 public class PollinationsImageGenerationService implements ImageGenerationService {
 
   private final AiSettingsService aiSettings;
+  private HttpClient httpClient;
 
   @Override
   public String generateImage(@NonNull final ImageRequest request) {
@@ -74,11 +75,7 @@ public class PollinationsImageGenerationService implements ImageGenerationServic
       // and then return it as a Data URI (Base64).
       log.debug("Using Pollinations API Key for generation.");
       try {
-        HttpClient client =
-            HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(aiSettings.getAiTimeout()))
-                .build();
+        HttpClient client = getHttpClient(aiSettings.getAiTimeout());
 
         HttpRequest httpRequest =
             HttpRequest.newBuilder()
@@ -112,6 +109,8 @@ public class PollinationsImageGenerationService implements ImageGenerationServic
               "Failed to generate image: HTTP " + response.statusCode() + " - " + url);
         }
 
+      } catch (AIServiceException e) {
+        throw e;
       } catch (Exception e) {
         log.error("Error generating image with Pollinations API Key", e);
         throw new AIServiceException(
@@ -121,6 +120,17 @@ public class PollinationsImageGenerationService implements ImageGenerationServic
 
     // Fallback to direct URL if no key (though it might be restricted)
     return url;
+  }
+
+  protected HttpClient getHttpClient(final int timeoutSeconds) {
+    if (httpClient == null) {
+      httpClient =
+          HttpClient.newBuilder()
+              .version(HttpClient.Version.HTTP_1_1)
+              .connectTimeout(Duration.ofSeconds(timeoutSeconds))
+              .build();
+    }
+    return httpClient;
   }
 
   @Override

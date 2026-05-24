@@ -251,28 +251,24 @@ public class Wrestler extends AbstractSyncableEntity<Long> {
             .orElse(null);
 
     int bumpsValue = state != null ? state.getBumps() : 0;
-    int condition = state != null ? state.getPhysicalCondition() : 100;
     int injuryPenalty = state != null ? state.getTotalInjuryPenalty() : 0;
 
-    // Physical condition penalty: -1 health for every 5% lost from 100%
-    // Capped at -5 health points.
-    int conditionPenalty = Math.min(5, (100 - condition) / 5);
-
-    int effective =
-        startingHealth + bonus - penalty - bumpsValue - injuryPenalty - conditionPenalty;
+    int effective = startingHealth + bonus - penalty - bumpsValue - injuryPenalty;
     return Math.max(1, effective); // Never go below 1
   }
 
   @JsonIgnore
   public Integer getEffectiveStartingStamina() {
     WrestlerAlignment alignment = getAlignment();
-    int bonus =
-        alignment != null
-                && alignment.getCampaign() != null
-                && alignment.getCampaign().getState() != null
-            ? alignment.getCampaign().getState().getCampaignStaminaBonus()
-            : 0;
-    return startingStamina + bonus;
+    int bonus = 0;
+    int penalty = 0;
+    if (alignment != null
+        && alignment.getCampaign() != null
+        && alignment.getCampaign().getState() != null) {
+      bonus = alignment.getCampaign().getState().getCampaignStaminaBonus();
+      penalty = alignment.getCampaign().getState().getStaminaPenalty();
+    }
+    return Math.max(1, startingStamina + bonus - penalty);
   }
 
   @JsonIgnore

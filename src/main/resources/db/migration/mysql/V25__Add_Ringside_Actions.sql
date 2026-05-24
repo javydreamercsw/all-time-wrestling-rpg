@@ -1,6 +1,6 @@
 CREATE TABLE ringside_action_type (
     ringside_action_type_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     increases_awareness BOOLEAN NOT NULL DEFAULT TRUE,
     can_cause_dq BOOLEAN NOT NULL DEFAULT TRUE,
     base_risk_multiplier DOUBLE NOT NULL DEFAULT 1.0,
@@ -12,7 +12,7 @@ CREATE TABLE ringside_action_type (
 
 CREATE TABLE ringside_action (
     ringside_action_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     description VARCHAR(1000),
     impact INT NOT NULL,
     risk INT NOT NULL,

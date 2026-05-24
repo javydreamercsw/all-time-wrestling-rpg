@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -33,10 +32,10 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -49,6 +48,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -67,6 +67,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
 
   @MockitoBean private SegmentRepository segmentRepository;
   @MockitoBean private RivalryService rivalryService;
+  @MockitoBean private SegmentTypeService segmentTypeService;
   @MockitoBean private TitleService titleService;
   @MockitoBean private ShowService showService;
   @MockitoBean private SegmentService segmentService;
@@ -404,115 +405,104 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
 
   @Test
   @WithMockUser(roles = "BOOKER")
-  void getShowPlanningContext_shouldIncludeWrestlerHeats() {
-    // Given
-    Show show = mock(Show.class);
-    when(show.getName()).thenReturn("Test Show");
-    when(show.getShowDate()).thenReturn(LocalDate.now());
-    when(show.getId()).thenReturn(1L);
-    when(show.getUniverse()).thenReturn(universe);
-    ShowType showType = new ShowType();
-    showType.setName("Regular Show Type");
-    showType.setExpectedMatches(5);
-    showType.setExpectedPromos(3);
-    when(show.getType()).thenReturn(showType);
+  void validateCard_mustBookRivalryMissing_isWarningNotError() {
+    Wrestler w1 = Wrestler.builder().build();
+    w1.setId(10L);
+    w1.setName("Alpha");
+    Wrestler w2 = Wrestler.builder().build();
+    w2.setId(11L);
+    w2.setName("Beta");
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(1L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    rivalry.setHeat(15);
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
 
-    // Create wrestlers with rivalries
-    Wrestler wrestler1 = Wrestler.builder().build();
-    wrestler1.setId(1L);
-    wrestler1.setName("Wrestler 1");
+    CardValidationResult result = showPlanningService.validateCard(List.of());
 
-    Wrestler wrestler2 = Wrestler.builder().build();
-    wrestler2.setId(2L);
-    wrestler2.setName("Wrestler 2");
-
-    Wrestler wrestler3 = Wrestler.builder().build();
-    wrestler3.setId(3L);
-    wrestler3.setName("Wrestler 3");
-
-    Wrestler wrestler4 = Wrestler.builder().build();
-    wrestler4.setId(4L);
-    wrestler4.setName("Wrestler 4");
-
-    // Create rivalries
-    Rivalry rivalry1 = new Rivalry();
-    rivalry1.setId(1L);
-    rivalry1.setWrestler1(wrestler1);
-    rivalry1.setWrestler2(wrestler2);
-    rivalry1.setHeat(75);
-
-    Rivalry rivalry2 = new Rivalry();
-    rivalry2.setId(2L);
-    rivalry2.setWrestler1(wrestler1);
-    rivalry2.setWrestler2(wrestler3);
-    rivalry2.setHeat(50);
-
-    // Mock the wrestler service to return our wrestlers
-    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
-        .thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3, wrestler4));
-
-    // Mock the rivalry service to return appropriate rivalries for each wrestler
-    when(rivalryService.getRivalriesForWrestler(1L)).thenReturn(Arrays.asList(rivalry1, rivalry2));
-    when(rivalryService.getRivalriesForWrestler(2L))
-        .thenReturn(Collections.singletonList(rivalry1));
-    when(rivalryService.getRivalriesForWrestler(3L))
-        .thenReturn(Collections.singletonList(rivalry2));
-    when(rivalryService.getRivalriesForWrestler(4L)).thenReturn(Collections.emptyList());
-
-    // Mock other dependencies
-    when(segmentRepository.findBySegmentDateBetween(any(), any()))
-        .thenReturn(Collections.emptyList());
-    when(rivalryService.getActiveRivalriesBetween(any(), any()))
-        .thenReturn(Collections.emptyList());
-    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
-    when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
-    when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
-    when(factionService.findAll()).thenReturn(Collections.emptyList());
-
-    // Act
-    ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
-
-    // Assert
-    assertNotNull(context);
-    assertNotNull(context.getWrestlerHeats(), "Wrestler heats should not be null");
-    assertFalse(context.getWrestlerHeats().isEmpty(), "Wrestler heats should not be empty");
-
-    // Should have 4 heat entries total (2 for wrestler1, 1 for wrestler2, 1 for wrestler3)
-    assertEquals(
-        4,
-        context.getWrestlerHeats().size(),
-        "Should have 4 wrestler heat entries: " + context.getWrestlerHeats());
-
-    // Verify wrestler1's heats
-    long wrestler1Heats =
-        context.getWrestlerHeats().stream()
-            .filter(h -> "Wrestler 1".equals(h.getWrestlerName()))
-            .count();
-    assertEquals(2, wrestler1Heats, "Wrestler 1 should have 2 feuds");
-
-    // Verify specific heat values
-    assertTrue(
-        context.getWrestlerHeats().stream()
-            .anyMatch(
-                h ->
-                    "Wrestler 1".equals(h.getWrestlerName())
-                        && "Wrestler 2".equals(h.getOpponentName())
-                        && h.getHeat() == 75),
-        "Should have heat entry for Wrestler 1 vs Wrestler 2 with heat 75");
-
-    assertTrue(
-        context.getWrestlerHeats().stream()
-            .anyMatch(
-                h ->
-                    "Wrestler 1".equals(h.getWrestlerName())
-                        && "Wrestler 3".equals(h.getOpponentName())
-                        && h.getHeat() == 50),
-        "Should have heat entry for Wrestler 1 vs Wrestler 3 with heat 50");
+    assertTrue(result.isValid(), "MUST_BOOK should be a warning, not a hard error");
+    assertFalse(result.getWarnings().isEmpty());
+    assertTrue(result.getWarnings().get(0).contains("MUST_BOOK"));
   }
 
   @Test
   @WithMockUser(roles = "BOOKER")
-  void getShowPlanningContext_shouldHandleWrestlersWithNoRivalries() {
+  void validateCard_stipulationRequiredViolation_isHardError() {
+    Wrestler w1 = Wrestler.builder().build();
+    w1.setId(10L);
+    w1.setName("Alpha");
+    Wrestler w2 = Wrestler.builder().build();
+    w2.setId(11L);
+    w2.setName("Beta");
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(1L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    rivalry.setHeat(35);
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setRules(List.of()); // booked but no stipulation
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(seg));
+
+    assertFalse(result.isValid(), "Booked rivalry without stipulation must be a hard error");
+    assertFalse(result.getErrors().isEmpty());
+    assertTrue(result.getErrors().get(0).contains("STIPULATION_REQUIRED"));
+  }
+
+  @Test
+  @WithMockUser(roles = "BOOKER")
+  void approveSegments_withMustBookWarning_succeedsAndPersists() {
+    // MUST_BOOK violations must not block approval — they are advisory
+    Wrestler w1 = Wrestler.builder().build();
+    w1.setId(10L);
+    w1.setName("Alpha");
+    Wrestler w2 = Wrestler.builder().build();
+    w2.setId(11L);
+    w2.setName("Beta");
+    Wrestler charlie = Wrestler.builder().build();
+    charlie.setId(20L);
+    charlie.setName("Charlie");
+    Wrestler delta = Wrestler.builder().build();
+    delta.setId(21L);
+    delta.setName("Delta");
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(1L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    rivalry.setHeat(15); // MUST_BOOK threshold — but NOT on the card
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
+    when(segmentRepository.findByShow(any())).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Charlie")).thenReturn(Optional.of(charlie));
+    when(wrestlerRepository.findByName("Delta")).thenReturn(Optional.of(delta));
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Match");
+    when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(matchType));
+
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Test Show");
+    when(show.getId()).thenReturn(1L);
+    when(show.getShowDate()).thenReturn(LocalDate.now());
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setParticipants(List.of("Charlie", "Delta"));
+    seg.setWinners(List.of("Charlie"));
+
+    // Should not throw
+    showPlanningService.approveSegments(show, List.of(seg));
+
+    verify(segmentRepository).saveAll(any());
+  }
+
+  @Test
+  @WithMockUser(roles = "BOOKER")
+  void getShowPlanningContext_shouldFilterRivalriesBelowHeat10() {
     // Given
     Show show = mock(Show.class);
     when(show.getName()).thenReturn("Test Show");
@@ -525,26 +515,33 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     showType.setExpectedPromos(3);
     when(show.getType()).thenReturn(showType);
 
-    // Create wrestlers with no rivalries
     Wrestler wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
     wrestler1.setName("Wrestler 1");
-    WrestlerState state = WrestlerState.builder().tier(WrestlerTier.MAIN_EVENTER).build();
-    wrestler1.getWrestlerStates().add(state);
+    Wrestler wrestler2 = Wrestler.builder().build();
+    wrestler2.setId(2L);
+    wrestler2.setName("Wrestler 2");
+    Wrestler wrestler3 = Wrestler.builder().build();
+    wrestler3.setId(3L);
+    wrestler3.setName("Wrestler 3");
 
-    // Mock the wrestler service to return our wrestler
+    Rivalry hotRivalry = new Rivalry();
+    hotRivalry.setId(1L);
+    hotRivalry.setWrestler1(wrestler1);
+    hotRivalry.setWrestler2(wrestler2);
+    hotRivalry.setHeat(15);
+
+    Rivalry coldRivalry = new Rivalry();
+    coldRivalry.setId(2L);
+    coldRivalry.setWrestler1(wrestler1);
+    coldRivalry.setWrestler2(wrestler3);
+    coldRivalry.setHeat(5);
+
+    when(rivalryService.getActiveRivalries()).thenReturn(Arrays.asList(hotRivalry, coldRivalry));
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
-        .thenReturn(Collections.singletonList(wrestler1));
-
-    // Mock the rivalry service to return empty list (no rivalries)
-    when(rivalryService.getRivalriesForWrestler(1L)).thenReturn(Collections.emptyList());
-
-    // Mock other dependencies
+        .thenReturn(Collections.emptyList());
     when(segmentRepository.findBySegmentDateBetween(any(), any()))
         .thenReturn(Collections.emptyList());
-    when(rivalryService.getActiveRivalriesBetween(any(), any()))
-        .thenReturn(Collections.emptyList());
-    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());
     when(segmentService.findById(anyLong())).thenReturn(Optional.empty());
     when(factionService.findAll()).thenReturn(Collections.emptyList());
@@ -552,11 +549,10 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     // Act
     ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
 
-    // Assert
+    // Assert: only the rivalry with heat >= 10 survives the mapper filter
     assertNotNull(context);
-    assertNotNull(context.getWrestlerHeats(), "Wrestler heats should not be null");
-    assertTrue(
-        context.getWrestlerHeats().isEmpty(),
-        "Wrestler heats should be empty when no rivalries exist");
+    assertNotNull(context.getCurrentRivalries());
+    assertEquals(1, context.getCurrentRivalries().size());
+    assertEquals(15, context.getCurrentRivalries().get(0).getHeat());
   }
 }

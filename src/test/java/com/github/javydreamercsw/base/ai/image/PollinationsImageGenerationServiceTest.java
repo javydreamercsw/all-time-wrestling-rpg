@@ -16,61 +16,160 @@
 */
 package com.github.javydreamercsw.base.ai.image;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class PollinationsImageGenerationServiceTest {
 
   @Mock private AiSettingsService aiSettingsService;
+  @Mock private HttpClient httpClient;
 
   private PollinationsImageGenerationService service;
 
   @BeforeEach
   void setUp() {
-    service = new PollinationsImageGenerationService(aiSettingsService);
+    service =
+        new PollinationsImageGenerationService(aiSettingsService) {
+          @Override
+          protected HttpClient getHttpClient(final int timeoutSeconds) {
+            return httpClient;
+          }
+        };
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
+    when(aiSettingsService.getPollinationsApiKey()).thenReturn("");
   }
 
+  // --- no-API-key path (returns URL directly) ---
+
   @Test
-  void testGenerateImage() {
+  void generateImage_noApiKey_returnsDirectUrl() {
     ImageGenerationService.ImageRequest request =
         ImageGenerationService.ImageRequest.builder().prompt("A wrestling champion").build();
 
     String result = service.generateImage(request);
 
-    assertEquals(
-        "https://gen.pollinations.ai/image/A+wrestling+champion?nologo=true&model=flux&width=1024&height=1024",
-        result);
+    assertThat(result)
+        .isEqualTo(
+            "https://gen.pollinations.ai/image/A+wrestling+champion?nologo=true&model=flux&width=1024&height=1024");
   }
 
   @Test
-  void testGenerateImageWithCustomSize() {
+  void generateImage_customSize_includesWidthHeight() {
     ImageGenerationService.ImageRequest request =
         ImageGenerationService.ImageRequest.builder().prompt("A belt").size("512x512").build();
 
     String result = service.generateImage(request);
 
-    assertEquals(
-        "https://gen.pollinations.ai/image/A+belt?nologo=true&model=flux&width=512&height=512",
-        result);
+    assertThat(result)
+        .isEqualTo(
+            "https://gen.pollinations.ai/image/A+belt?nologo=true&model=flux&width=512&height=512");
   }
 
   @Test
-  void testIsAvailable() {
+  void generateImage_customModel_includesModelParam() {
+    ImageGenerationService.ImageRequest request =
+        ImageGenerationService.ImageRequest.builder().prompt("A champion").model("turbo").build();
+
+    String result = service.generateImage(request);
+
+    assertThat(result).contains("model=turbo");
+  }
+
+  // --- API-key path (makes HTTP request) ---
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void generateImage_withApiKey_success_returnsDataUri() throws IOException, InterruptedException {
+    byte[] fakeImage = new byte[] {1, 2, 3, 4};
+    HttpResponse<byte[]> httpResponse = mock(HttpResponse.class);
+    when(httpResponse.statusCode()).thenReturn(200);
+    when(httpResponse.body()).thenReturn(fakeImage);
+    HttpHeaders headers = mock(HttpHeaders.class);
+    when(headers.firstValue("Content-Type")).thenReturn(Optional.of("image/png"));
+    when(httpResponse.headers()).thenReturn(headers);
+    when(aiSettingsService.getPollinationsApiKey()).thenReturn("poll-api-key");
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+        .thenReturn(httpResponse);
+
+    ImageGenerationService.ImageRequest request =
+        ImageGenerationService.ImageRequest.builder().prompt("A wrestler").build();
+
+    String result = service.generateImage(request);
+
+    assertThat(result).startsWith("data:image/png;base64,");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void generateImage_withApiKey_httpError_throwsAIServiceException()
+      throws IOException, InterruptedException {
+    HttpResponse<byte[]> httpResponse = mock(HttpResponse.class);
+    when(httpResponse.statusCode()).thenReturn(403);
+    when(aiSettingsService.getPollinationsApiKey()).thenReturn("poll-api-key");
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+        .thenReturn(httpResponse);
+
+    ImageGenerationService.ImageRequest request =
+        ImageGenerationService.ImageRequest.builder().prompt("A wrestler").build();
+
+    assertThatThrownBy(() -> service.generateImage(request))
+        .isInstanceOf(AIServiceException.class)
+        .satisfies(ex -> assertThat(((AIServiceException) ex).getStatusCode()).isEqualTo(403));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void generateImage_withApiKey_networkError_throwsAIServiceException500()
+      throws IOException, InterruptedException {
+    when(aiSettingsService.getPollinationsApiKey()).thenReturn("poll-api-key");
+    when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+        .thenThrow(new IOException("Connection reset"));
+
+    ImageGenerationService.ImageRequest request =
+        ImageGenerationService.ImageRequest.builder().prompt("A wrestler").build();
+
+    assertThatThrownBy(() -> service.generateImage(request))
+        .isInstanceOf(AIServiceException.class)
+        .satisfies(ex -> assertThat(((AIServiceException) ex).getStatusCode()).isEqualTo(500));
+  }
+
+  // --- isAvailable / getProviderName ---
+
+  @Test
+  void isAvailable_whenEnabled_returnsTrue() {
     when(aiSettingsService.isPollinationsEnabled()).thenReturn(true);
-    assertTrue(service.isAvailable());
+    assertThat(service.isAvailable()).isTrue();
   }
 
   @Test
-  void testGetProviderName() {
-    assertEquals("Pollinations", service.getProviderName());
+  void isAvailable_whenDisabled_returnsFalse() {
+    when(aiSettingsService.isPollinationsEnabled()).thenReturn(false);
+    assertThat(service.isAvailable()).isFalse();
+  }
+
+  @Test
+  void getProviderName_returnspollinations() {
+    assertThat(service.getProviderName()).isEqualTo("Pollinations");
   }
 }

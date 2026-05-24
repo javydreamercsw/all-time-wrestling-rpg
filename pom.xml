@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>2.0.0-RC1</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
@@ -49,7 +49,10 @@
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.5</testcontainers.version>
-    <vaadin.version>25.1.1</vaadin.version>
+    <!-- npm packages for @vaadin/* components lag behind Maven releases. Set this to the latest
+         version actually published to npm. Update when npm catches up to vaadin.version. -->
+    <vaadin.npm.version>25.1.1</vaadin.npm.version>
+    <vaadin.version>25.1.2</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
@@ -79,7 +82,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.12.Final</version>
+        <version>4.2.14.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -254,12 +257,12 @@
     <dependency>
       <groupId>com.google.zxing</groupId>
       <artifactId>core</artifactId>
-      <version>3.5.3</version>
+      <version>3.5.4</version>
     </dependency>
     <dependency>
       <groupId>com.google.zxing</groupId>
       <artifactId>javase</artifactId>
-      <version>3.5.3</version>
+      <version>3.5.4</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -414,7 +417,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.21</version>
+      <version>11.0.22</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -431,7 +434,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.1.0</version>
+      <version>6.2.0-M2</version>
       <scope>test</scope>
     </dependency>
     <!-- Security -->
@@ -578,6 +581,12 @@
       <artifactId>webdrivermanager</artifactId>
       <version>6.3.4</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-jdk14</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
@@ -699,14 +708,21 @@
         <version>6.38.0</version>
         <configuration>
           <failOnDryRunResults>true</failOnDryRunResults>
+          <exclusions>
+            <exclusion>**/*.groovy</exclusion>
+            <exclusion>**/*.yml</exclusion>
+          </exclusions>
           <activeRecipes>
+            <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
+            <recipe>org.openrewrite.java.migrate.lombok.UseLombokGetter</recipe>
+            <recipe>org.openrewrite.java.migrate.lombok.UseLombokSetter</recipe>
+            <recipe>org.openrewrite.groovy.format.AutoFormat</recipe>
             <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLabels</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedLocalVariables</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateFields</recipe>
             <recipe>org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods</recipe>
             <recipe>org.openrewrite.xml.style.AutodetectDebug</recipe>
-            <recipe>org.openrewrite.staticanalysis.UnnecessaryThrows</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCatch</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments</recipe>
@@ -747,6 +763,11 @@
             <artifactId>rewrite-static-analysis</artifactId>
             <version>2.34.1</version>
             <scope>runtime</scope>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-migrate-java</artifactId>
+            <version>3.34.0</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -863,7 +884,7 @@
             <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
           </excludes>
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.attach.allowAttachSelf=true -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -1014,6 +1035,7 @@
               <exclude>node/**</exclude>
               <exclude>docs/site/**</exclude>
               <exclude>src/main/resources/META-INF/resources/docs/**</exclude>
+              <exclude>src/main/bundles/**</exclude>
             </excludes>
           </markdown>
           <json>
@@ -1125,12 +1147,28 @@
           </dependency>
         </dependencies>
       </plugin>
-      <!-- Keep frontend @vaadin/* versions aligned to ${vaadin.version} before Vaadin plugin runs -->
+      <!-- Keep frontend @vaadin/* versions aligned to ${vaadin.npm.version} before Vaadin plugin runs -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.6.3</version>
         <executions>
+          <execution>
+            <id>configure-git-hooks-path</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <executable>git</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <arguments>
+                <argument>config</argument>
+                <argument>core.hooksPath</argument>
+                <argument>.githooks</argument>
+              </arguments>
+            </configuration>
+          </execution>
           <execution>
             <id>sync-vaadin-frontend-versions</id>
             <goals>
@@ -1142,7 +1180,7 @@
               <workingDirectory>${project.basedir}</workingDirectory>
               <arguments>
                 <argument>${project.basedir}/scripts/sync-vaadin-overrides.cjs</argument>
-                <argument>${vaadin.version}</argument>
+                <argument>${vaadin.npm.version}</argument>
               </arguments>
             </configuration>
           </execution>
@@ -1611,7 +1649,72 @@
               <includes>
                 <include>**/*E2ETest.java</include>
               </includes>
+              <excludes>
+                <!-- Docs/video tests run in the docs-e2e profile to avoid double-running -->
+                <exclude>**/*DocsE2ETest.java</exclude>
+              </excludes>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        docs-e2e: runs *DocsE2ETest.java (including *VideoDocsE2ETest.java) without
+        generating screenshots or videos.  Validates test logic on every CI push.
+        Artifact generation is gated behind generate.docs / generate.videos system
+        properties, which are only set by the generate-docs / generate-videos profiles
+        used in the release pipeline.
+      -->
+      <id>docs-e2e</id>
+      <properties>
+        <e2e.skipITs>false</e2e.skipITs>
+        <failsafe.exclude>nothing-to-exclude</failsafe.exclude>
+        <jacoco.docs-e2e.destFile>${project.build.directory}/jacoco-docs-e2e.exec</jacoco.docs-e2e.destFile>
+        <surefire.skip>true</surefire.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-agent-integration</id>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+                <configuration>
+                  <destFile>${jacoco.docs-e2e.destFile}</destFile>
+                  <propertyName>failsafeArgLine</propertyName>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <includes>
+                <!-- Matches both *DocsE2ETest.java and *VideoDocsE2ETest.java -->
+                <include>**/*DocsE2ETest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/*IT.java</exclude>
+                <exclude>**/*IntegrationTest.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <headless>${headless}</headless>
+              </systemPropertyVariables>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>

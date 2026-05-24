@@ -21,7 +21,7 @@ This setting impacts the narration as well as the fans obtained by the participa
 Summary updated and reflected on the show card. Once you're happy with the card, you can finalize the show — which locks the card, triggers fan updates, and makes the results visible to players and viewers.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="/videos/booker-full-show-lifecycle.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-full-show-lifecycle.mp4" type="video/mp4">
 </video>
 
 ---
@@ -31,7 +31,7 @@ Summary updated and reflected on the show card. Once you're happy with the card,
 This setting impacts the narration as well as the fans obtained by the participants!
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="/videos/booker-set-main-event.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-set-main-event.mp4" type="video/mp4">
 </video>
 
 ---
@@ -41,7 +41,7 @@ This setting impacts the narration as well as the fans obtained by the participa
 Reorder the segments using the up and down arrows.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="/videos/booker-change-segment-order.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-change-segment-order.mp4" type="video/mp4">
 </video>
 
 ---
@@ -51,7 +51,7 @@ Reorder the segments using the up and down arrows.
 Summary is generated from the full narration.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="/videos/booker-narrate-summarize-segment.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-narrate-summarize-segment.mp4" type="video/mp4">
 </video>
 
 ---

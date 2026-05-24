@@ -77,6 +77,12 @@ jobs:
           echo "$LATEST_H2" > src/main/resources/db/migration/h2/.released
           echo "$LATEST_MYSQL" > src/main/resources/db/migration/mysql/.released
 
+      - name: Generate migration checksums
+        run: bash scripts/generate-migration-checksums.sh
+
+      - name: Generate H2 reference snapshot
+        run: mvn -Pintegration-test verify -Dgenerate.h2.snapshot=true -Dit.test=GenerateH2SnapshotIT -Dsurefire.skip=true -DfailIfNoTests=false -Dspotless.check.skip=true
+
       - name: Format and Push initial changes
         run: |
           mvn spotless:apply
@@ -109,11 +115,21 @@ jobs:
       - name: Generate screenshots and manifest
         run: mvn -B spotless:apply verify -Pgenerate-docs -Dheadless=true
 
+      - name: Install ffmpeg (required for video generation)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+
       - name: Generate videos
-        run: mvn -B verify -Pgenerate-videos -Dheadless=true
+        run: mvn -B spotless:apply verify -Pgenerate-videos -Dheadless=true
 
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs
+        env:
+          # Videos are not committed to git (too large). Both the in-app embedded
+          # docs and the GitHub Pages site reference videos via this absolute URL
+          # so they work in all packaged artifacts without shipping the mp4 files.
+          GITHUB_PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
       - name: Build documentation for GitHub Pages
         run: |

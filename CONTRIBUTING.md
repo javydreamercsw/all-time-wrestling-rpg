@@ -90,30 +90,74 @@ mvn pmd:pmd
 
 ### Test Types
 
-1. **Unit Tests**: Test individual classes and methods
-2. **Integration Tests**: Test component interactions and database operations
-3. **End-to-End Tests**: Test complete user workflows
+| Type | Suffix | Profile | When to use |
+|---|---|---|---|
+| Unit | `*Test.java` | *(default)* | Service/domain logic, mocked deps, fast |
+| Integration | `*IT.java` | `-Pintegration-test` | Real Spring context, DB, REST controllers |
+| E2E | `*E2ETest.java` | `-Pe2e` | Full browser workflow, Vaadin UI |
+| Docs screenshot | `*DocsE2ETest.java` | `-Pgenerate-docs` | Document user-facing features with screenshots |
+| Docs video | `*DocsE2ETest.java` + `@Tag("video")` | `-Pgenerate-videos` | Walkthrough videos for complex workflows |
 
 ### Test Naming Conventions
 
 - Unit tests: `*Test.java`
 - Integration tests: `*IT.java` or `*IntegrationTest.java`
+- E2E tests: `*E2ETest.java`
+- Docs tests: `*DocsE2ETest.java`
 - Test methods: `should[ExpectedBehavior]When[StateUnderTest]`
 
-### Writing Tests
+### When to Add Tests
+
+**Unit test** — Add when writing or changing service/domain logic. Mock all external dependencies. Cover both the happy path and every error/edge-case branch.
+
+**Integration test** — Add when:
+- A service changes how it interacts with the database or another Spring bean
+- A new validation path may behave differently through Spring's proxy (security, transactions, AOP)
+- A REST controller endpoint is added or changed
+
+**E2E test** — Add when:
+- A new Vaadin view is introduced or a significant UI workflow changes
+- Testing role-based rendering, multi-step form flows, or real-time UI updates
+
+**Docs screenshot test** — Add when a new user-facing feature or view is implemented. Every significant feature should be documented with at least one screenshot.
+
+Base class: `AbstractE2ETest` (or `AbstractDocsE2ETest` when `data.initializer.enabled=true` is needed).
+Key method: `documentFeature(category, title, description, screenshotName)`
+Run: `mvn -Pgenerate-docs verify` → writes PNGs to `docs/screenshots/` and updates `docs/manifest.json`
+
+Available categories: Admin, Booker, Campaign, Community, Dashboards, Entities, Game Mechanics, AI Features, Players
+
+**Docs video test** — Add when a feature has a non-obvious multi-step workflow that a static screenshot cannot convey (e.g., drag-and-drop, wizard flows, real-time events).
+
+Annotate the test class or method with `@Tag("video")`.
+Key methods: `setVideoInfo(category, title, videoName)`, `captureCaption(text, dwellMs)`, `finishVideoCapture(...)`
+Run: `mvn -Pgenerate-videos verify` → writes MP4s to `docs/videos/` and updates `docs/video-manifest.json`
+Optional TTS narration: add `-Dgenerate.video.voice=true`
+
+### Running Tests
 
 ```bash
-# Run all tests
+# Unit tests
 mvn test
 
-# Run only unit tests
-mvn test -Dtest="*Test"
+# Run a single test class or method
+mvn test -Dtest=ClassName
+mvn test -Dtest=ClassName#testMethod
 
-# Run only integration tests
-mvn test -Dtest="*IT,*IntegrationTest"
+# Integration tests
+mvn -Pintegration-test verify
 
-# Run specific test class
-mvn test -Dtest="WrestlerServiceTest"
+# E2E tests (requires Chrome)
+mvn -Pe2e verify
+
+# Generate documentation screenshots
+mvn -Pgenerate-docs verify
+
+# Generate documentation videos
+mvn -Pgenerate-videos verify
+
+# Generate videos with TTS narration
+mvn -Pgenerate-videos verify -Dgenerate.video.voice=true
 ```
 
 ### Test Coverage Best Practices

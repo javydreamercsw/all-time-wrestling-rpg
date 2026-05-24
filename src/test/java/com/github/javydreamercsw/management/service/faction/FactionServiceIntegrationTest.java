@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.Arrays;
@@ -49,6 +50,7 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
   @Autowired private UniverseRepository universeRepository;
 
   @MockitoSpyBean private ExpansionService expansionService;
+  @MockitoSpyBean private UniverseContextService universeContextService;
   private Faction testFaction;
   private Wrestler testWrestler1;
   private Wrestler testWrestler2;
@@ -59,6 +61,8 @@ class FactionServiceIntegrationTest extends AbstractMockUserIntegrationTest {
     // Default mock behavior
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));
+    // Ensure no universe context is active so tests use the global expansionService mock
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
 
     // Create test wrestlers with all required fields
     testWrestler1 = wrestlerService.createWrestler("John Cena", true, null);

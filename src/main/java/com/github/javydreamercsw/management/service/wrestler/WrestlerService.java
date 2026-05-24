@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -75,6 +76,7 @@ public class WrestlerService {
       universeRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final UniverseContextService universeContextService;
+  private final UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
 
   @Autowired
   public WrestlerService(
@@ -93,7 +95,8 @@ public class WrestlerService {
       final com.github.javydreamercsw.management.domain.universe.UniverseRepository
           universeRepository,
       final WrestlerAlignmentRepository wrestlerAlignmentRepository,
-      final UniverseContextService universeContextService) {
+      final UniverseContextService universeContextService,
+      final UniverseWrestlerExclusionRepository wrestlerExclusionRepository) {
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.tierBoundaryRepository = tierBoundaryRepository;
@@ -108,6 +111,7 @@ public class WrestlerService {
     this.universeRepository = universeRepository;
     this.wrestlerAlignmentRepository = wrestlerAlignmentRepository;
     this.universeContextService = universeContextService;
+    this.wrestlerExclusionRepository = wrestlerExclusionRepository;
   }
 
   @Transactional
@@ -238,11 +242,21 @@ public class WrestlerService {
     final Long finalUniverseId =
         universeId != null ? universeId : universeContextService.getCurrentUniverseId();
 
+    // Load excluded wrestler IDs for this universe once, outside the stream.
+    // includedWrestlers acts as a force-include override (e.g. already-assigned segment
+    // participants) that bypasses both the exclusion list and all other filters.
+    final Set<Long> excludedIds =
+        wrestlerExclusionRepository.findExcludedWrestlerIdsByUniverseId(finalUniverseId);
+
     return wrestlerRepository.findAllByActiveTrue().stream()
         .filter(
             w -> {
               if (includedWrestlers != null && includedWrestlers.contains(w)) {
                 return true;
+              }
+
+              if (excludedIds.contains(w.getId())) {
+                return false;
               }
 
               boolean matchesAlignment = alignmentType == null;

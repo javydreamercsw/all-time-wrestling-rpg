@@ -30,7 +30,6 @@ import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.PromoBookingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
@@ -58,7 +57,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShowPlanningService {
   private final SegmentRepository segmentRepository;
   private final RivalryService rivalryService;
-  private final PromoBookingService promoBookingService;
   private final ShowPlanningDtoMapper mapper;
   private final Clock clock;
   private final TitleService titleService;
@@ -96,6 +94,7 @@ public class ShowPlanningService {
     // Get segments from the last 7 days
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     context.setShowDate(showDate);
+    context.setPremiumLiveEvent(show.isPremiumLiveEvent());
     Instant lastWeek = showDate.minus(7, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lastWeek, showDate);
     List<Segment> lastWeekSegments = segmentRepository.findBySegmentDateBetween(lastWeek, showDate);
@@ -123,18 +122,10 @@ public class ShowPlanningService {
 
     context.setRecentSegments(lastWeekSegments);
 
-    // Get current rivalries
+    // Get current rivalries (full list; heat filtering happens in ShowPlanningDtoMapper)
     List<Rivalry> currentRivalries = rivalryService.getActiveRivalries();
     log.debug("Found {} active rivalries", currentRivalries.size());
     context.setCurrentRivalries(currentRivalries);
-
-    // Get promos from the last month
-    List<Segment> lastWeekPromos =
-        lastWeekSegments.stream()
-            .filter(promoBookingService::isPromoSegment)
-            .collect(Collectors.toList());
-    log.debug("Found {} promos in the last month", lastWeekPromos.size());
-    context.setRecentPromos(lastWeekPromos);
 
     // Get show template
     ShowTemplate template = new ShowTemplate();
@@ -220,11 +211,6 @@ public class ShowPlanningService {
     log.debug("Found {} wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 
-    // Build wrestler heat map based on rivalries, also applying gender constraint to opponents
-    List<ShowPlanningWrestlerHeat> wrestlerHeats =
-        buildWrestlerHeats(allWrestlers, genderConstraint);
-    context.setWrestlerHeats(wrestlerHeats);
-
     // Get all factions, filtered by gender constraint
     List<Faction> allFactions =
         factionService.findAll().stream()
@@ -249,6 +235,107 @@ public class ShowPlanningService {
     return mapper.toDto(context);
   }
 
+  /**
+   * Returns active rivalries (heat ≥ 10) not covered by the given segments, sorted by heat
+   * descending. Useful for surfacing the highest-priority unbooked feuds in UI hints and dialogs.
+   */
+  public List<Rivalry> getUnbookedRivalriesByHeat(
+      @NonNull final List<ProposedSegment> proposedSegments) {
+    return getUnbookedRivalriesByHeat(proposedSegments, rivalryService.getActiveRivalries());
+  }
+
+  /**
+   * Returns rivalries (heat ≥ 10) not covered by the given segments from the supplied rivalry list,
+   * sorted by heat descending.
+   */
+  public List<Rivalry> getUnbookedRivalriesByHeat(
+      @NonNull final List<ProposedSegment> proposedSegments,
+      @NonNull final List<Rivalry> activeRivalries) {
+    return activeRivalries.stream()
+        .filter(r -> r.getHeat() >= 10)
+        .filter(r -> !isRivalryCovered(r, proposedSegments))
+        .sorted(Comparator.comparingInt(Rivalry::getHeat).reversed())
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Validates the proposed card against active rivalries.
+   *
+   * <ul>
+   *   <li>Warnings — MUST_BOOK (heat ≥ 10): rivalry not on the card. Advisory only; the booker may
+   *       acknowledge and proceed when a large roster makes full coverage impossible.
+   *   <li>Errors — STIPULATION_REQUIRED (heat ≥ 30): rivalry is on the card but has no match rule.
+   *       Must be fixed before approval.
+   * </ul>
+   */
+  public CardValidationResult validateCard(
+      @NonNull final List<ProposedSegment> proposedSegments,
+      @NonNull final List<Rivalry> activeRivalries) {
+    List<String> errors = new ArrayList<>();
+    List<String> warnings = new ArrayList<>();
+
+    List<Rivalry> requiredRivalries =
+        activeRivalries.stream().filter(r -> r.getHeat() >= 10).toList();
+
+    for (Rivalry rivalry : requiredRivalries) {
+      String w1 = rivalry.getWrestler1().getName();
+      String w2 = rivalry.getWrestler2().getName();
+
+      if (!isRivalryCovered(rivalry, proposedSegments)) {
+        warnings.add(
+            "MUST_BOOK rivalry not on card: "
+                + w1
+                + " vs "
+                + w2
+                + " (heat="
+                + rivalry.getHeat()
+                + ")");
+      } else if (rivalry.getHeat() >= 30) {
+        Optional<ProposedSegment> matchingSegment = findCoveringSegment(rivalry, proposedSegments);
+        matchingSegment.ifPresent(
+            seg -> {
+              boolean hasStipulation = seg.getRules() != null && !seg.getRules().isEmpty();
+              if (!hasStipulation) {
+                errors.add(
+                    "STIPULATION_REQUIRED rivalry booked without a stipulation: "
+                        + w1
+                        + " vs "
+                        + w2
+                        + " (heat="
+                        + rivalry.getHeat()
+                        + ")");
+              }
+            });
+      }
+    }
+
+    return new CardValidationResult(errors, warnings);
+  }
+
+  /** Convenience overload — validates against live active rivalries from the database. */
+  public CardValidationResult validateCard(@NonNull final List<ProposedSegment> proposedSegments) {
+    return validateCard(proposedSegments, rivalryService.getActiveRivalries());
+  }
+
+  private boolean isRivalryCovered(
+      final Rivalry rivalry, final List<ProposedSegment> proposedSegments) {
+    return findCoveringSegment(rivalry, proposedSegments).isPresent();
+  }
+
+  private Optional<ProposedSegment> findCoveringSegment(
+      final Rivalry rivalry, final List<ProposedSegment> proposedSegments) {
+    String w1 = rivalry.getWrestler1().getName();
+    String w2 = rivalry.getWrestler2().getName();
+    return proposedSegments.stream()
+        .filter(
+            s ->
+                (rivalry.getId() != null && rivalry.getId().equals(s.getRivalryId()))
+                    || (s.getParticipants() != null
+                        && s.getParticipants().contains(w1)
+                        && s.getParticipants().contains(w2)))
+        .findFirst();
+  }
+
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void approveSegments(
@@ -261,6 +348,22 @@ public class ShowPlanningService {
               + show.getId()
               + ") "
               + "because showDate is not set.");
+    }
+
+    CardValidationResult validation =
+        validateCard(proposedSegments, rivalryService.getActiveRivalries());
+    if (!validation.isValid()) {
+      throw new IllegalStateException(
+          "Show card validation failed for '"
+              + show.getName()
+              + "':\n"
+              + String.join("\n", validation.getErrors()));
+    }
+    if (validation.hasWarnings()) {
+      log.warn(
+          "Approving card for '{}' with {} unbooked rivalry warnings",
+          show.getName(),
+          validation.getWarnings().size());
     }
 
     List<Segment> segmentsToSave = new ArrayList<>();
@@ -281,6 +384,7 @@ public class ShowPlanningService {
       segment.setNarration(proposedSegment.getNarration());
       segment.setSummary(proposedSegment.getSummary());
       segment.setNotes(proposedSegment.getNotes());
+      segment.setRivalryId(proposedSegment.getRivalryId());
       segment.setSegmentOrder(currentSegmentCount + i + 1);
       segment.setIsTitleSegment(proposedSegment.getIsTitleSegment());
       if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
@@ -330,36 +434,5 @@ public class ShowPlanningService {
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
-  }
-
-  /**
-   * Builds wrestler heat information based on their active rivalries. For each wrestler, this
-   * creates entries for each opponent they're feuding with and the heat level of that feud.
-   */
-  private List<ShowPlanningWrestlerHeat> buildWrestlerHeats(
-      @NonNull final List<Wrestler> wrestlers, final Gender genderConstraint) {
-    List<ShowPlanningWrestlerHeat> wrestlerHeats = new ArrayList<>();
-
-    for (Wrestler wrestler : wrestlers) {
-      List<Rivalry> rivalries = rivalryService.getRivalriesForWrestler(wrestler.getId());
-      for (Rivalry rivalry : rivalries) {
-        Wrestler opponent = rivalry.getOpponent(wrestler);
-
-        // Skip opponents that don't match the gender constraint (avoiding cross-gender heat context
-        // for gender-locked shows)
-        if (genderConstraint != null && opponent.getGender() != genderConstraint) {
-          continue;
-        }
-
-        ShowPlanningWrestlerHeat heat = new ShowPlanningWrestlerHeat();
-        heat.setWrestlerName(wrestler.getName());
-        heat.setOpponentName(opponent.getName());
-        heat.setHeat(rivalry.getHeat());
-        wrestlerHeats.add(heat);
-      }
-    }
-
-    log.debug("Built {} wrestler heat entries from rivalries", wrestlerHeats.size());
-    return wrestlerHeats;
   }
 }

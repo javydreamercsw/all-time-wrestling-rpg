@@ -22,6 +22,8 @@ import static org.mockito.Mockito.*;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,6 +43,8 @@ class NpcServiceTest {
 
   @Mock private NpcRepository npcRepository;
   @Mock private ExpansionService expansionService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseSettingsService universeSettingsService;
   @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
 
   @InjectMocks private NpcService npcService;
@@ -55,6 +59,7 @@ class NpcServiceTest {
     npc.setNpcType("Referee");
     npc.setExpansionCode("BASE_GAME");
 
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     when(expansionService.getEnabledExpansionCodes()).thenReturn(Arrays.asList("BASE_GAME"));
   }
 

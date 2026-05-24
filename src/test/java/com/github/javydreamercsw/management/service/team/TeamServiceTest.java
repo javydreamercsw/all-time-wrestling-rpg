@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -52,6 +53,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 class TeamServiceTest extends ManagementIntegrationTest {
 
   @MockitoSpyBean private ExpansionService expansionService;
+  @MockitoSpyBean private UniverseContextService universeContextService;
   private Wrestler wrestler1;
   private Wrestler wrestler2;
   private Wrestler wrestler3;
@@ -93,6 +95,8 @@ class TeamServiceTest extends ManagementIntegrationTest {
     // Default mock behavior
     when(expansionService.getEnabledExpansionCodes())
         .thenReturn(Arrays.asList("BASE_GAME", "EXTREME"));
+    // Ensure no universe context is active so tests use the global expansionService mock
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
   }
 
   @Test

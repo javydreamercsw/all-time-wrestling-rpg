@@ -165,4 +165,42 @@ class WearAndTearAdjudicationTest {
 
     verify(wrestlerState, never()).setPhysicalCondition(anyInt());
   }
+
+  @Test
+  void testApplyWearAndTear_ConditionBumpRollFires() {
+    // condition=50 → newCondition=48 after baseLoss=2 → bumpChance=27
+    when(wrestlerState.getPhysicalCondition()).thenReturn(50);
+    when(random.nextInt(3)).thenReturn(1); // baseLoss = 2
+    when(random.nextInt(100)).thenReturn(10); // 10 < 27, roll succeeds
+    when(segment.isMainEvent()).thenReturn(false);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestlerService).addBump(eq(1L), anyLong());
+  }
+
+  @Test
+  void testApplyWearAndTear_ConditionBumpRollMisses() {
+    // condition=50 → newCondition=48 → bumpChance=27
+    when(wrestlerState.getPhysicalCondition()).thenReturn(50);
+    when(random.nextInt(3)).thenReturn(1); // baseLoss = 2
+    when(random.nextInt(100)).thenReturn(30); // 30 >= 27, roll misses
+    when(segment.isMainEvent()).thenReturn(false);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestlerService, never()).addBump(anyLong(), anyLong());
+  }
+
+  @Test
+  void testApplyWearAndTear_NoRollAbove75() {
+    // condition=80 → newCondition=78 → bumpChance=0
+    when(wrestlerState.getPhysicalCondition()).thenReturn(80);
+    when(random.nextInt(3)).thenReturn(1); // baseLoss = 2
+    when(segment.isMainEvent()).thenReturn(false);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestlerService, never()).addBump(anyLong(), anyLong());
+  }
 }

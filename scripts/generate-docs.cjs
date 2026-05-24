@@ -27,8 +27,22 @@ if (fs.existsSync(videoManifestPath)) {
   console.log('No video-manifest.json found — skipping video content');
 }
 
-// 1. Prepare Markdown directory
-if (!fs.existsSync(outputDir)) {
+// Base URL for video assets. In packaged artifacts (JAR/WAR/installer), the
+// embedded docs don't ship the mp4 files (too large for git). Instead, <video>
+// tags reference the GitHub Pages deployment so they work over the internet.
+// On GitHub Pages itself the absolute URL resolves to the same host.
+// Override via GITHUB_PAGES_BASE env var (set automatically in release.yml).
+const githubPagesBase = (process.env.GITHUB_PAGES_BASE || 'https://javydreamercsw.github.io/all-time-wrestling-rpg').replace(/\/$/, '');
+
+// 1. Prepare Markdown directory — clear stale files first so old video-only
+// categories don't leave orphaned .md files with broken <video> references.
+if (fs.existsSync(outputDir)) {
+  const existing = fs.readdirSync(outputDir).filter(f => f.endsWith('.md'));
+  existing.forEach(f => fs.rmSync(path.join(outputDir, f)));
+  if (existing.length > 0) {
+    console.log(`Cleared ${existing.length} stale guide file(s) from ${outputDir}`);
+  }
+} else {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
@@ -55,6 +69,25 @@ if (videoFeatures.length > 0 && fs.existsSync(videosDir)) {
     fs.copyFileSync(path.join(videosDir, file), path.join(vitepressVideosDir, file));
   });
   console.log(`Copied ${mp4Files.length} video(s) to VitePress public folder`);
+}
+
+// Filter videoFeatures to only those whose mp4 file was actually copied.
+// The video-manifest.json may contain stale entries from a previous full run;
+// if ffmpeg was unavailable (ENOENT) or only a subset of video tests ran, the
+// source files won't exist and Rollup would fail trying to resolve the missing
+// imports in the generated <video> tags.
+const copiedVideoNames = new Set(
+  fs.existsSync(vitepressVideosDir)
+    ? fs.readdirSync(vitepressVideosDir).filter(f => f.endsWith('.mp4'))
+    : []
+);
+const originalVideoCount = videoFeatures.length;
+videoFeatures = videoFeatures.filter(v => copiedVideoNames.has(path.basename(v.videoPath)));
+if (videoFeatures.length !== originalVideoCount) {
+  console.log(
+    `Video manifest filtered: ${videoFeatures.length}/${originalVideoCount} video(s) have actual files. ` +
+    `Skipping ${originalVideoCount - videoFeatures.length} stale or missing video(s).`
+  );
 }
 
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -117,7 +150,9 @@ Array.from(allCategories).sort().forEach(category => {
   if (catVideos.length > 0) {
     content += `## Video Walkthroughs\n\n`;
     catVideos.forEach(video => {
-      const videoPublicPath = `/videos/${path.basename(video.videoPath)}`;
+      // Use absolute GitHub Pages URL so the video works in both the
+      // online docs and the in-app embedded docs (where mp4s aren't shipped).
+      const videoPublicPath = `${githubPagesBase}/videos/${path.basename(video.videoPath)}`;
       content += `### ${video.title}\n\n`;
       if (video.description) {
         content += `${video.description}\n\n`;

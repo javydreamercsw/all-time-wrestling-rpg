@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.CardValidationResult;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
@@ -263,6 +265,89 @@ class ShowPlanningViewTest {
     List<ProposedSegment> items = proposedSegmentsGrid.getGenericDataView().getItems().toList();
     assertEquals(1, items.size());
     assertEquals("Match", items.get(0).getType());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_withValidCard_callsApproveSegments() {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setParticipants(List.of("A", "B"));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    // No errors, no warnings
+    when(showPlanningService.validateCard(any()))
+        .thenReturn(new CardValidationResult(List.of(), List.of()));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    verify(showPlanningService).approveSegments(eq(show), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_withHardError_doesNotCallApproveSegments() {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setParticipants(List.of("A", "B"));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    // Hard error — stipulation required
+    when(showPlanningService.validateCard(any()))
+        .thenReturn(
+            new CardValidationResult(List.of("STIPULATION_REQUIRED: A vs B (heat=35)"), List.of()));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    verify(showPlanningService, never()).approveSegments(any(), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_withWarningsOnly_doesNotImmediatelyCallApproveSegments() {
+    // When there are MUST_BOOK warnings, the view should show a confirmation dialog
+    // rather than immediately calling approveSegments
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setParticipants(List.of("A", "B"));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    // No errors, but warnings — booker must confirm
+    when(showPlanningService.validateCard(any()))
+        .thenReturn(
+            new CardValidationResult(List.of(), List.of("MUST_BOOK: Alpha vs Beta (heat=15)")));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    // approveSegments should NOT be called yet — dialog confirmation is pending
+    verify(showPlanningService, never()).approveSegments(any(), any());
   }
 
   @Test
