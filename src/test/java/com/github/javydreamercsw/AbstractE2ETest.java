@@ -189,7 +189,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         driver.findElement(By.id("logout-button"));
         log.debug("User {} is already logged in, skipping login flow.", currentUser);
       } catch (Exception e) {
-        log.info("Logout button not found for user {}, forcing re-login.", currentUser);
+        log.debug("Logout button not found for user {}, forcing re-login.", currentUser);
         needsLogin = true;
       }
     }
@@ -394,18 +394,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         loginWait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
 
         takeSequencedScreenshot("after-successful-login");
-        log.info("Login successful for user: {}", username);
+        log.debug("Login successful for user: {}", username);
         lastLoggedInUser = username;
         return; // Success!
       } catch (Exception e) {
         lastException = e;
         log.warn("Login attempt {}/{} failed: {}", attempt + 1, maxRetries, e.getMessage());
-        if (attempt < maxRetries) {
-          // Force a fresh navigation before retrying
-          try {
-            driver.get(loginUrl);
-          } catch (Exception ignored) {
-          }
+        // Force a fresh navigation before retrying
+        try {
+          driver.get(loginUrl);
+        } catch (Exception ignored) {
         }
         // Brief pause before retrying
         try {
