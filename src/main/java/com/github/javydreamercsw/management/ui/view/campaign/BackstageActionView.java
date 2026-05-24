@@ -93,7 +93,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
       if (backstageActionService
           .getBackstageEncounterService()
           .shouldTriggerEncounter(currentCampaign)) {
-        log.info("Rerouting to backstage encounter situation");
+        log.debug("Rerouting to backstage encounter situation");
         event.forwardTo(BackstageEncounterView.class);
         return;
       }
