@@ -1,15 +1,45 @@
 # Changelog
 
-## [v1.8.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.8.1) (2026-05-17)
+## [v2.0.0-RC1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.0.0-RC1) (2026-05-24)
 
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.8.1-RC2...v1.8.1)
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v1.8.1-RC2...v2.0.0-RC1)
 
 **Implemented enhancements:**
 
+- fix\(show-planning\): advisory MUST\_BOOK warnings, hard-block on STIPULATION\_REQUIRED, rivalry helpers, and test/doc coverage [\#317](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/317) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat: Flyway checksum safeguard, H2 migration integration test, and Vaadin 25.1.2 upgrade [\#316](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/316) ([javydreamercsw](https://github.com/javydreamercsw))
+- test\(ATW-8a4\): add unit tests for missing Notion sync outgoing services [\#315](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/315) ([javydreamercsw](https://github.com/javydreamercsw))
+-  feat\(ATW-nkx\): rivalry heat escalation and feud resolution pipeline [\#314](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/314) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(ATW-asl\): add unit tests for image generation services [\#311](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/311) ([javydreamercsw](https://github.com/javydreamercsw))
+- test: add unit tests for AI narration provider services \(ATW-cyv\) [\#310](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/310) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(ATW-xz4\): replace condition HP penalty with wear-and-tear bump roll [\#309](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/309) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(ATW-aq5\): wire CampaignEffectContext stubs to CampaignState and featureData [\#308](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/308) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(ATW-46y\): wire per-universe expansion settings to runtime content filtering [\#307](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/307) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(ATW-38r\): enforce per-universe wrestler exclusions in findAllFiltered [\#306](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/306) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(ATW-fzt\): auto-derive MenuService visibility from @RolesAllowed on route views [\#305](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/305) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(ATW-art\): CampaignListView with universe filtering and admin-only access [\#304](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/304) ([javydreamercsw](https://github.com/javydreamercsw))
+- fix\(ATW-ep5\): consistently filter Show, Title, League list views by current universe [\#303](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/303) ([javydreamercsw](https://github.com/javydreamercsw))
+- Feature: segment reorder ux [\#296](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/296) ([javydreamercsw](https://github.com/javydreamercsw))
+- Feature: Add Video Tutorials [\#295](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/295) ([javydreamercsw](https://github.com/javydreamercsw))
+- Feature: Increase test coverage [\#294](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/294) ([javydreamercsw](https://github.com/javydreamercsw))
+- Universe UI: Phase 3 — filter views by active universe \(ATW-2ja\) [\#293](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/293) ([javydreamercsw](https://github.com/javydreamercsw))
+- Universe UI: Full implementation — CRUD, membership, view filtering & per-universe settings [\#292](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/292) ([javydreamercsw](https://github.com/javydreamercsw))
 - fix\(ATW-131\): Fix QR code share URL for LAN access via Caddy reverse proxy [\#291](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/291) ([javydreamercsw](https://github.com/javydreamercsw))
+- Wrestler deprecation [\#289](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/289) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat: Implement Multi-Universe Architecture for Concurrent Playthroughs [\#252](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/252) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Fixed bugs:**
+
+- Fix/rivalry heat system [\#313](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/313) ([javydreamercsw](https://github.com/javydreamercsw))
+- fix\(ATW-5f0\): preserve HTTP error codes in image generation services [\#312](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/312) ([javydreamercsw](https://github.com/javydreamercsw))
 
 **Merged pull requests:**
 
+- fix\(qr\): use LAN IP in QR share URL when no HTTP request context is a… [\#318](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/318) ([javydreamercsw](https://github.com/javydreamercsw))
+- Build\(deps\): Bump io.swagger.core.v3:swagger-models-jakarta from 2.2.49 to 2.2.50 [\#301](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/301) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump com.diffplug.spotless:spotless-maven-plugin from 3.4.0 to 3.5.1 [\#300](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/300) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump selenium.version from 4.43.0 to 4.44.0 [\#298](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/298) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump io.swagger.core.v3:swagger-annotations-jakarta from 2.2.49 to 2.2.50 [\#297](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/297) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump org.panteleyev:jpackage-maven-plugin from 1.6.0 to 1.7.4 [\#288](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/288) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump org.openrewrite.recipe:rewrite-static-analysis from 2.33.1 to 2.34.1 [\#287](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/287) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump org.apache.maven.plugins:maven-assembly-plugin from 3.7.1 to 3.8.0 [\#286](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/286) ([dependabot[bot]](https://github.com/apps/dependabot))
@@ -253,7 +283,7 @@
 **Implemented enhancements:**
 
 - Prepare for release [\#67](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/67) ([javydreamercsw](https://github.com/javydreamercsw))
-- Bugfix: Handle incomplete AI responses and increase timeouts [\#66](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/66) ([javydreamercsw](https://github.com/javydreamercsw))
+-  Bugfix: Handle incomplete AI responses and increase timeouts [\#66](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/66) ([javydreamercsw](https://github.com/javydreamercsw))
 
 ## [v1.1.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.1.0) (2025-12-12)
 
@@ -280,5 +310,7 @@
 - Bump vaadin.version from 24.9.3 to 24.9.5 [\#31](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/31) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Prepare for release [\#30](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/30) ([javydreamercsw](https://github.com/javydreamercsw))
 - Release version 1.0.0 [\#4](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/4) ([javydreamercsw](https://github.com/javydreamercsw))
+
+
 
 \* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*

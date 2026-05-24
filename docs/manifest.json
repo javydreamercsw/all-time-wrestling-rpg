@@ -283,7 +283,7 @@
     "id": "admin-admin-show-templates",
     "category": "Admin",
     "title": "Show Templates",
-    "description": "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
+    "description": "Manage templates for your shows. You can define default match and promo counts, and now generate custom AI art for each template.",
     "imagePath": "screenshots/admin-show-templates.png",
     "order": 110
   }, {
@@ -481,7 +481,7 @@
     "id": "booker-booker-match-narration",
     "category": "Booker",
     "title": "Match Narration",
-    "description": "Bring your matches to life with AI-generated or manual narration. The Story Director uses match participants, rules, and outcomes to weave a compelling narrative of the action.",
+    "description": "Bring your matches to life with AI-generated or manual narration. The Story Director uses match participants, rules, and outcomes to weave a compelling narrative of the action. The new structured transcript format separates objective action from character-driven commentary.",
     "imagePath": "screenshots/booker-match-narration.png",
     "order": 390
   }, {
@@ -518,6 +518,62 @@
     "title": "Set Main Event",
     "description": "This setting impacts the narration as well as the fans obtained by the participants!.",
     "videoPath": "videos/booker-set-main-event.mp4",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-dashboard",
+    "category": "Campaign",
+    "title": "Campaign Dashboard",
+    "description": "Track your wrestler's progress through the campaign. The alignment track shows your current position between Face and Heel, while the dashboard displays available actions and victory points.",
+    "imagePath": "screenshots/campaign-dashboard.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-list",
+    "category": "Campaign",
+    "title": "Campaign List",
+    "description": "The Campaign List gives admins a bird's-eye view of every active and completed campaign across the promotion. Each row shows the wrestler, current status, start date, and a direct link to the campaign dashboard.",
+    "imagePath": "screenshots/campaign-list.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-list-universe-filter",
+    "category": "Campaign",
+    "title": "Campaign List – Universe Scope",
+    "description": "The campaign list is scoped to the currently selected universe. Switching universes in the top toolbar immediately updates the grid to show only the campaigns belonging to that universe, keeping multi-universe promotions cleanly separated.",
+    "imagePath": "screenshots/campaign-list-universe-filter.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-show-planning-stipulation-error",
+    "category": "Booker",
+    "title": "Show Planning — Stipulation Required Error",
+    "description": "When a rivalry with heat ≥ 30 is on the card but has no match rule (stipulation), approval is blocked. The error dialog lists each affected rivalry. Edit the segment and add a rule such as Steel Cage or Last Man Standing before approving.",
+    "imagePath": "screenshots/booker-show-planning-stipulation-error.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-show-planning-proposed-card",
+    "category": "Booker",
+    "title": "Show Planning — Proposed Card",
+    "description": "After the AI proposes segments, the booker reviews the card before approving. Rivalries with heat ≥ 10 that are not on the card will trigger an advisory when the Approve button is clicked.",
+    "imagePath": "screenshots/booker-show-planning-proposed-card.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-show-planning-must-book-warning",
+    "category": "Booker",
+    "title": "Show Planning — Unbooked Rivalries Warning",
+    "description": "When rivalries with heat ≥ 10 are not on the proposed card, a confirmation dialog lists each unbooked feud. The booker can go back and add them, or acknowledge and approve anyway — unbooked rivalries carry over to future shows.",
+    "imagePath": "screenshots/booker-show-planning-must-book-warning.png",
+    "order": 0
+  }, {
+    "id": "admin-admin-season-settings-confirmation",
+    "category": "Admin",
+    "title": "Season Settings - Schedule Generation Confirmation",
+    "description": "The Season Settings tab showing the 'Generate Season Confirmation' button, before execution.",
+    "imagePath": "screenshots/admin-season-settings-confirmation.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-show-detail-qr-code-share",
+    "category": "Booker",
+    "title": "QR Code Match Share",
+    "description": "The QR share button on a match segment opens a dialog with a scannable QR code. The URL uses the machine's LAN IP address so phones on the same network can navigate directly to the match page.",
+    "imagePath": "screenshots/booker-show-detail-qr-code-share.png",
     "order": 0
   } ]
 }
