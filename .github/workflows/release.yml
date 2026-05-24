@@ -112,6 +112,14 @@ jobs:
             --release-branch release/${{ github.event.inputs.version }} \
             --future-release v${{ github.event.inputs.version }}
 
+          # Extract only the current release section for the GitHub release body.
+          # CHANGELOG.md is cumulative (full project history) but the release body
+          # should only list what changed in this specific version.
+          # The generator writes each release as "## [vX.Y.Z] ..." so we grab
+          # everything from the first such heading up to (not including) the next.
+          awk '/^## \[/{count++; if(count==2) exit} count==1{print}' CHANGELOG.md \
+            > RELEASE_NOTES.md
+
       - name: Generate screenshots and manifest
         run: mvn -B spotless:apply verify -Pgenerate-docs -Dheadless=true
 
@@ -137,7 +145,6 @@ jobs:
           npm run docs:build
         env:
           BASE_URL: /${{ github.event.repository.name }}/
-          RELEASE_VERSION: ${{ github.event.inputs.version }}
 
       # --- 5. CLEANUP, COMMIT & PUSH PHASE ---
       - name: Format
@@ -152,7 +159,7 @@ jobs:
           fi
 
       - name: Upload Docs Artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/site/.vitepress/dist
 
@@ -197,7 +204,7 @@ jobs:
         with:
           tag_name: v${{ github.event.inputs.version }}
           name: Release v${{ github.event.inputs.version }}
-          body_path: CHANGELOG.md
+          body_path: RELEASE_NOTES.md
           draft: false
           prerelease: true
           make_latest: false
@@ -211,7 +218,7 @@ jobs:
     needs: build_and_release
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-2025]
         include:
           - os: ubuntu-latest
             type: DEB
@@ -219,7 +226,7 @@ jobs:
           - os: macos-latest
             type: DMG
             icon: src/main/resources/jpackage/mac/icon.icns
-          - os: windows-latest
+          - os: windows-2025
             type: MSI
             # CI uses a BMP-only ICO to avoid sporadic jpackage UpdateResource failures.
             icon: src/main/resources/jpackage/windows/icon-ci.ico
@@ -238,7 +245,7 @@ jobs:
           cache: 'maven'
 
       - name: Install WiX Toolset (Windows only)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2025'
         shell: bash
         run: |
           dotnet tool install --global wix --version 4.0.1
@@ -296,7 +303,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   approve_release:
     needs: [build_desktop_installers, deploy_pages]
@@ -317,7 +324,16 @@ jobs:
       - name: Mark Release as Final
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit v${{ github.event.inputs.version }} --prerelease=false
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if echo "$VERSION" | grep -iqE '\-rc[0-9]*$'; then
+            # Release candidate (e.g. 2.0.0-RC1, 2.0.0-RC2): remove prerelease
+            # flag so it appears as a normal release, but do NOT mark it latest.
+            gh release edit "v${VERSION}" --prerelease=false
+          else
+            # Final release (e.g. 2.0.0): remove prerelease flag and mark latest.
+            gh release edit "v${VERSION}" --prerelease=false --latest
+          fi
 
   build_and_publish_docker:
     needs: finalize_release
@@ -372,6 +388,12 @@ jobs:
         if: github.ref_name != 'main'
         run: |
           echo "Syncing changes back to source branch: ${{ github.ref_name }}"
-          git checkout ${{ github.ref_name }}
+          # Fetch the latest remote state of the source branch. The initial
+          # checkout in this job is pinned to github.sha, but prepare_release
+          # pushes additional commits (docs, version bumps) to the branch after
+          # the workflow is triggered. Without fetching first, the local branch
+          # is behind origin and the subsequent push is rejected non-fast-forward.
+          git fetch origin ${{ github.ref_name }}
+          git checkout -B ${{ github.ref_name }} origin/${{ github.ref_name }}
           git merge origin/main --no-ff -m "chore: Sync main back to ${{ github.ref_name }} after release ${{ github.event.inputs.version }}"
           git push origin ${{ github.ref_name }}
