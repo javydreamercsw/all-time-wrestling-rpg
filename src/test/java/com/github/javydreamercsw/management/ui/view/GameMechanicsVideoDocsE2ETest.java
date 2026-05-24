@@ -76,14 +76,21 @@ class GameMechanicsVideoDocsE2ETest extends AbstractDocsE2ETest {
             + " generating match narration and outcomes.",
         4000);
 
-    sleep(2000);
+    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 300)");
+    sleep(1500);
     captureCaption(
         "These move sets are what the AI draws from during match narration — a richer deck"
             + " with varied move types leads to more dynamic and realistic commentary.",
         3500);
 
-    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 300)");
-    sleep(1500);
+    ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0)");
+    sleep(1000);
+    captureCaption(
+        "A well-rounded deck includes both offensive moves and defensive counters."
+            + " Cards carry health cost, stamina cost, and damage values — the match"
+            + " engine draws from these to determine realistic in-ring outcomes.",
+        4000);
+    sleep(1000);
   }
 
   @Test
@@ -110,6 +117,12 @@ class GameMechanicsVideoDocsE2ETest extends AbstractDocsE2ETest {
         4000);
 
     ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0)");
+    sleep(1000);
+    captureCaption(
+        "Click any wrestler's name in the rankings to jump straight to their full profile"
+            + " — match history, rivalries, title reigns, and injury records are all one"
+            + " click away from this view.",
+        3500);
     sleep(1000);
   }
 }
