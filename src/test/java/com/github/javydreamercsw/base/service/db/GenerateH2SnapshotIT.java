@@ -121,21 +121,49 @@ class GenerateH2SnapshotIT {
         VALUES ('Test Faction', 'Reference snapshot faction', TRUE, CURRENT_TIMESTAMP)
         """);
 
-    stmt.execute(
-        """
-        INSERT INTO wrestler (name, starting_stamina, low_stamina, starting_health, low_health,
-          deck_size, creation_date, fans, tier, bumps, current_health, is_player, gender)
-        VALUES ('Reference Wrestler', 12, 2, 12, 2, 12, CURRENT_TIMESTAMP, 1000,
-          'ROOKIE', 0, 12, FALSE, 'MALE')
-        """);
-
-    stmt.execute(
-        """
-        INSERT INTO wrestler (name, starting_stamina, low_stamina, starting_health, low_health,
-          deck_size, creation_date, fans, tier, bumps, current_health, is_player, gender)
-        VALUES ('Reference Wrestler 2', 14, 3, 14, 3, 14, CURRENT_TIMESTAMP, 500,
-          'VETERAN', 2, 14, FALSE, 'FEMALE')
-        """);
+    if (releasedNum >= 82) {
+      // V82 dropped fans/tier/bumps/current_health from wrestler; those now live in wrestler_state
+      stmt.execute(
+          """
+          INSERT INTO wrestler (name, starting_stamina, low_stamina, starting_health, low_health,
+            deck_size, creation_date, is_player, gender)
+          VALUES ('Reference Wrestler', 12, 2, 12, 2, 12, CURRENT_TIMESTAMP, FALSE, 'MALE')
+          """);
+      stmt.execute(
+          """
+          INSERT INTO wrestler (name, starting_stamina, low_stamina, starting_health, low_health,
+            deck_size, creation_date, is_player, gender)
+          VALUES ('Reference Wrestler 2', 14, 3, 14, 3, 14, CURRENT_TIMESTAMP, FALSE, 'FEMALE')
+          """);
+      // universe row 1 exists after V81; insert state for each seed wrestler
+      stmt.execute(
+          """
+          INSERT INTO wrestler_state (wrestler_id, universe_id, fans, tier, bumps, current_health)
+          SELECT wrestler_id, 1, 1000, 'ROOKIE', 0, 12 FROM wrestler
+          WHERE name = 'Reference Wrestler'
+          """);
+      stmt.execute(
+          """
+          INSERT INTO wrestler_state (wrestler_id, universe_id, fans, tier, bumps, current_health)
+          SELECT wrestler_id, 1, 500, 'VETERAN', 2, 14 FROM wrestler
+          WHERE name = 'Reference Wrestler 2'
+          """);
+    } else {
+      stmt.execute(
+          """
+          INSERT INTO wrestler (name, starting_stamina, low_stamina, starting_health, low_health,
+            deck_size, creation_date, fans, tier, bumps, current_health, is_player, gender)
+          VALUES ('Reference Wrestler', 12, 2, 12, 2, 12, CURRENT_TIMESTAMP, 1000,
+            'ROOKIE', 0, 12, FALSE, 'MALE')
+          """);
+      stmt.execute(
+          """
+          INSERT INTO wrestler (name, starting_stamina, low_stamina, starting_health, low_health,
+            deck_size, creation_date, fans, tier, bumps, current_health, is_player, gender)
+          VALUES ('Reference Wrestler 2', 14, 3, 14, 3, 14, CURRENT_TIMESTAMP, 500,
+            'VETERAN', 2, 14, FALSE, 'FEMALE')
+          """);
+    }
 
     // injury_type — needed for injuries
     stmt.execute(
