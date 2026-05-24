@@ -152,7 +152,7 @@ jobs:
           fi
 
       - name: Upload Docs Artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/site/.vitepress/dist
 
@@ -211,7 +211,7 @@ jobs:
     needs: build_and_release
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-2025]
         include:
           - os: ubuntu-latest
             type: DEB
@@ -219,7 +219,7 @@ jobs:
           - os: macos-latest
             type: DMG
             icon: src/main/resources/jpackage/mac/icon.icns
-          - os: windows-latest
+          - os: windows-2025
             type: MSI
             # CI uses a BMP-only ICO to avoid sporadic jpackage UpdateResource failures.
             icon: src/main/resources/jpackage/windows/icon-ci.ico
@@ -238,7 +238,7 @@ jobs:
           cache: 'maven'
 
       - name: Install WiX Toolset (Windows only)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2025'
         shell: bash
         run: |
           dotnet tool install --global wix --version 4.0.1
@@ -296,7 +296,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   approve_release:
     needs: [build_desktop_installers, deploy_pages]
