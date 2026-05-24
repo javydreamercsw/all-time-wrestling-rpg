@@ -624,5 +624,12 @@
     "description": "Universes are the top-level containers for all promotion data — shows, wrestlers, titles, factions, and storylines all belong to a universe. An installation can run multiple universes simultaneously, each with its own independent roster, calendar, and championship lineage.",
     "imagePath": "screenshots/universe-list-overview.png",
     "order": 0
+  }, {
+    "id": "booker-show-calendar-overview",
+    "category": "Booker",
+    "title": "Show Calendar",
+    "description": "The Show Calendar provides a monthly view of every scheduled show in the promotion. Each show appears as a colour-coded event tile on its booked date. Click any tile to jump directly to that show's detail page. Navigate between months using the prev/next arrows, or click Today to snap back to the current date.",
+    "imagePath": "screenshots/show-calendar-overview.png",
+    "order": 0
   } ]
 }

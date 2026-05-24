@@ -16,7 +16,10 @@
 */
 package com.github.javydreamercsw.management.util.docs;
 
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,6 +37,14 @@ public class DocumentationManifest {
   private static final List<DocEntry> ENTRIES = new CopyOnWriteArrayList<>();
   private static final ObjectMapper MAPPER =
       new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+
+  /** Writer that produces Spotless-compatible JSON (no space before colon). */
+  private static final ObjectWriter WRITER =
+      MAPPER.writer(
+          new DefaultPrettyPrinter()
+              .withSeparators(
+                  Separators.createDefaultInstance()
+                      .withObjectFieldValueSpacing(Separators.Spacing.AFTER)));
 
   /**
    * Add a new entry to the manifest.
@@ -87,7 +98,7 @@ public class DocumentationManifest {
     ManifestWrapper wrapper = new ManifestWrapper();
     wrapper.setFeatures(getEntries());
 
-    MAPPER.writeValue(path.toFile(), wrapper);
+    WRITER.writeValue(path.toFile(), wrapper);
   }
 
   /** Inner wrapper class for JSON root structure. */

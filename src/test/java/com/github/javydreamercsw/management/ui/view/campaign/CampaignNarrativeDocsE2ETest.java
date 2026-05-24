@@ -102,8 +102,7 @@ class CampaignNarrativeDocsE2ETest extends AbstractDocsE2ETest {
         5000);
 
     boolean hasNarrative =
-        !driver.findElements(By.xpath("//h2[contains(., 'Story Director Offline')]")).isEmpty()
-                == false
+        driver.findElements(By.xpath("//h2[contains(., 'Story Director Offline')]")).isEmpty()
             && driver.getPageSource().contains("Story Director Offline");
 
     if (!hasNarrative) {

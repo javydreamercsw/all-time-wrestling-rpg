@@ -137,7 +137,7 @@ Your AI-generated adventures are preserved in the Story Journal. Here you can re
 The upgrade moves to Purchased Skills and takes effect immediately — maximum stamina increased by 2 for all future matches. The effective stats shown on your Player Dashboard update to reflect the new total.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-skill-upgrades.mp4" type="video/mp4">
+<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-skill-upgrades.mp4" type="video/mp4">
 </video>
 
 ---
@@ -147,7 +147,7 @@ The upgrade moves to Purchased Skills and takes effect immediately — maximum s
 Back on the Campaign Dashboard — Victory Points accumulate from backstage actions and match wins, driving chapter progression throughout the season. Reaching each VP threshold automatically transitions the story to the next chapter.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-backstage-actions.mp4" type="video/mp4">
+<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-backstage-actions.mp4" type="video/mp4">
 </video>
 
 ---
@@ -157,7 +157,7 @@ Back on the Campaign Dashboard — Victory Points accumulate from backstage acti
 Corporate Power Trip triggers at 15 Victory Points — the player has earned enough momentum to challenge the establishment and climb to the top of the card. VP accumulates from match wins, backstage actions, and completed milestones.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-corporate-power-trip.mp4" type="video/mp4">
+<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-corporate-power-trip.mp4" type="video/mp4">
 </video>
 
 ---
@@ -167,7 +167,7 @@ Corporate Power Trip triggers at 15 Victory Points — the player has earned eno
 Gang Warfare unlocks when factions collide for territory control — the chapter sets up a faction turf war storyline across multiple shows, with backstage actions that let the player recruit allies or sabotage rivals.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-gang-warfare.mp4" type="video/mp4">
+<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-gang-warfare.mp4" type="video/mp4">
 </video>
 
 ---
@@ -177,7 +177,7 @@ Gang Warfare unlocks when factions collide for territory control — the chapter
 The Fighting Champion chapter activates when the player holds a championship. The campaign tracks title reigns automatically and unlocks this chapter, presenting unique storyline choices available only to a defending champion.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-fighting-champion.mp4" type="video/mp4">
+<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-fighting-champion.mp4" type="video/mp4">
 </video>
 
 ---
@@ -187,7 +187,7 @@ The Fighting Champion chapter activates when the player holds a championship. Th
 The Campaign Dashboard shows the wrestler's current chapter, alignment track, win/loss record, and available actions — giving admins full visibility into any player's campaign state.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-list-walkthrough.mp4" type="video/mp4">
+<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-list-walkthrough.mp4" type="video/mp4">
 </video>
 
 ---

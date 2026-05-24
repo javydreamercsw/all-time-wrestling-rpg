@@ -19,7 +19,10 @@ package com.github.javydreamercsw;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
@@ -332,10 +335,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         log.info("Added new feature to manifest: {}", id);
       }
 
-      objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), manifest);
+      spotlessWriter(objectMapper).writeValue(manifestPath.toFile(), manifest);
     } catch (IOException e) {
       log.error("Failed to update documentation manifest", e);
     }
+  }
+
+  /**
+   * Returns an ObjectWriter that produces Spotless-compatible JSON (no space before the colon in
+   * object entries, e.g. {@code "key": "value"} rather than {@code "key" : "value"}).
+   */
+  private static ObjectWriter spotlessWriter(final ObjectMapper mapper) {
+    return mapper.writer(
+        new DefaultPrettyPrinter()
+            .withSeparators(
+                Separators.createDefaultInstance()
+                    .withObjectFieldValueSpacing(Separators.Spacing.AFTER)));
   }
 
   protected void login() {
@@ -1509,7 +1524,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         videos.add(newEntry);
       }
 
-      objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), manifest);
+      spotlessWriter(objectMapper).writeValue(manifestPath.toFile(), manifest);
     } catch (IOException e) {
       log.error("Failed to update video manifest", e);
     }
