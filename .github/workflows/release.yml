@@ -81,7 +81,7 @@ jobs:
         run: bash scripts/generate-migration-checksums.sh
 
       - name: Generate H2 reference snapshot
-        run: mvn -Pintegration-test verify -Dgenerate.h2.snapshot=true -Dtest=GenerateH2SnapshotIT -DfailIfNoTests=false -Dspotless.check.skip=true
+        run: mvn -Pintegration-test verify -Dgenerate.h2.snapshot=true -Dit.test=GenerateH2SnapshotIT -DfailIfNoTests=false -Dspotless.check.skip=true
 
       - name: Format and Push initial changes
         run: |
