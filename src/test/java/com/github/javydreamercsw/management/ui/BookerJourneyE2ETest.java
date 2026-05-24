@@ -512,7 +512,10 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
     Assertions.assertNotNull(viewShowDetails);
-    captureCaption("Lets update the order segments take place in our show.");
+    captureCaption(
+        "Show List — locate the show whose segment order needs adjusting and click"
+            + " View Details to open the segment planning view.",
+        3500);
     clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
@@ -523,7 +526,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
         ExpectedConditions.presenceOfAllElementsLocatedBy(
             By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
 
-    captureCaption("Reorder the segments using the up and down arrows.");
+    captureCaption(
+        "Show Detail — segments appear in their current scheduled order. Use the ↑ ↓"
+            + " arrow buttons on each row to reposition them. The new order is saved"
+            + " immediately without a separate save step.",
+        4500);
 
     // Click the down button on the first row
     WebElement downButton =
@@ -536,6 +543,15 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
+
+    wait.until(
+        ExpectedConditions.presenceOfAllElementsLocatedBy(
+            By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
+    captureCaption(
+        "Order updated — the opener is now in position 1 and the main event has moved to"
+            + " position 2. Adjustments take effect instantly and are reflected in the show"
+            + " card, match sequence, and AI narration context.",
+        4500);
 
     // Moved up
     Assertions.assertNotNull(firstSegment.getId());
@@ -692,8 +708,6 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
-    captureCaption("Lets set our main event match for our show!");
-
     // Navigate back to the list.
     navigateTo("show-list");
 
@@ -704,6 +718,10 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.elementToBeClickable(By.id("view-details-button-" + show.getId())));
     Assertions.assertNotNull(viewShowDetails);
+    captureCaption(
+        "Show List — click View Details on the target show to open the segment planning"
+            + " view where the main event can be designated.",
+        3500);
     clickElement(viewShowDetails);
 
     // Verify navigation to the show detail view (or planning view)
@@ -714,9 +732,17 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
     Assertions.assertNotNull(mainEventCheckbox);
     captureCaption(
-        "This setting impacts the narration as well as the fans obtained by the participants!");
+        "Show Detail — each segment row has a Main Event checkbox. Checking it marks"
+            + " this match as the headline bout, which boosts AI narration drama and"
+            + " applies a fan multiplier to both winner and loser.",
+        4500);
     clickElement(mainEventCheckbox);
 
     waitForVaadinClientToLoad();
+    captureCaption(
+        "Main event confirmed — the segment is now flagged as the night's headline."
+            + " When the show is finalised, the winner earns elevated fan gains and the"
+            + " AI narration treats this as the climax of the event.",
+        4000);
   }
 }

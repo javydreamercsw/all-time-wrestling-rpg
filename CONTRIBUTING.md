@@ -90,13 +90,13 @@ mvn pmd:pmd
 
 ### Test Types
 
-| Type | Suffix | Profile | When to use |
-|---|---|---|---|
-| Unit | `*Test.java` | *(default)* | Service/domain logic, mocked deps, fast |
-| Integration | `*IT.java` | `-Pintegration-test` | Real Spring context, DB, REST controllers |
-| E2E | `*E2ETest.java` | `-Pe2e` | Full browser workflow, Vaadin UI |
-| Docs screenshot | `*DocsE2ETest.java` | `-Pgenerate-docs` | Document user-facing features with screenshots |
-| Docs video | `*DocsE2ETest.java` + `@Tag("video")` | `-Pgenerate-videos` | Walkthrough videos for complex workflows |
+|      Type       |                Suffix                 |       Profile        |                  When to use                   |
+|-----------------|---------------------------------------|----------------------|------------------------------------------------|
+| Unit            | `*Test.java`                          | *(default)*          | Service/domain logic, mocked deps, fast        |
+| Integration     | `*IT.java`                            | `-Pintegration-test` | Real Spring context, DB, REST controllers      |
+| E2E             | `*E2ETest.java`                       | `-Pe2e`              | Full browser workflow, Vaadin UI               |
+| Docs screenshot | `*DocsE2ETest.java`                   | `-Pgenerate-docs`    | Document user-facing features with screenshots |
+| Docs video      | `*DocsE2ETest.java` + `@Tag("video")` | `-Pgenerate-videos`  | Walkthrough videos for complex workflows       |
 
 ### Test Naming Conventions
 

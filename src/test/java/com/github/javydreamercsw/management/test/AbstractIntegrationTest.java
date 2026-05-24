@@ -286,7 +286,7 @@ public abstract class AbstractIntegrationTest {
       if (originalAuth != null) {
         SecurityContextHolder.getContext().setAuthentication(originalAuth);
       } else {
-        log.info("Establishing default admin context for test execution...");
+        log.debug("Establishing default admin context for test execution...");
         loginAs("admin");
       }
     }
@@ -344,7 +344,7 @@ public abstract class AbstractIntegrationTest {
 
     // Final cache clear to be safe
     clearCache();
-    log.info("✨ Database cleanup and re-initialization complete.");
+    log.debug("✨ Database cleanup and re-initialization complete.");
 
     // Clear the entity manager
     if (entityManager != null) {

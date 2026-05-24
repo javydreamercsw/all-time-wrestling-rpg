@@ -283,7 +283,7 @@
     "id": "admin-admin-show-templates",
     "category": "Admin",
     "title": "Show Templates",
-    "description": "Manage templates for your shows. You can define default match and promo counts, and now generate custom AI art for each template.",
+    "description": "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
     "imagePath": "screenshots/admin-show-templates.png",
     "order": 110
   }, {
@@ -574,6 +574,62 @@
     "title": "QR Code Match Share",
     "description": "The QR share button on a match segment opens a dialog with a scannable QR code. The URL uses the machine's LAN IP address so phones on the same network can navigate directly to the match page.",
     "imagePath": "screenshots/booker-show-detail-qr-code-share.png",
+    "order": 0
+  }, {
+    "id": "player-dashboard-inbox-overview",
+    "category": "Player Dashboard",
+    "title": "Inbox — Event Feed",
+    "description": "The Inbox surfaces every automated event that affects your wrestlers — championship changes, injury reports, rivalry heat shifts, and achievement unlocks. Filter by event type or wrestler target to focus on what matters most. Unread items are highlighted; select any row to mark it read or act on it.",
+    "imagePath": "screenshots/inbox-overview.png",
+    "order": 0
+  }, {
+    "id": "entities-title-create-dialog",
+    "category": "Entities",
+    "title": "Create Championship Title",
+    "description": "Define a new championship: enter the name, select the tier and championship type, optionally restrict by gender, and upload a belt image. Once saved the title appears in the list and becomes available for match booking.",
+    "imagePath": "screenshots/title-create-dialog.png",
+    "order": 0
+  }, {
+    "id": "entities-title-list-overview",
+    "category": "Entities",
+    "title": "Championship Titles",
+    "description": "Manage every championship belt in the promotion. Each title has a configurable tier (controls contender eligibility), championship type, and gender restriction. The Challengers column lets bookers assign contenders inline without leaving the list view.",
+    "imagePath": "screenshots/title-list-overview.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-ability-tree",
+    "category": "Campaign",
+    "title": "Ability Tree",
+    "description": "The Ability Tree lets players spend Skill Tokens earned through campaign progress on permanent passive upgrades. Each ability card shows its name, effect, and token cost. Tokens are scarce — choose upgrades that suit your wrestler's style and the current campaign chapter.",
+    "imagePath": "screenshots/campaign-ability-tree.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-narrative",
+    "category": "Campaign",
+    "title": "Story Narrative",
+    "description": "The Story Narrative view drives your wrestler's campaign journey through AI-generated encounter text and branching choices. Each session presents a new situation — a backstage confrontation, a contract negotiation, or a pre-match promo challenge — and your decision shapes the storyline direction and campaign VP outcome.",
+    "imagePath": "screenshots/campaign-narrative.png",
+    "order": 0
+  }, {
+    "id": "admin-account-list-overview",
+    "category": "Admin",
+    "title": "Account Management",
+    "description": "Admins manage all user accounts from this view. Each row shows the account's username, email address, assigned roles, last login timestamp, and enabled/disabled status. Use Edit to change roles or reset credentials, and Delete to permanently remove an account.",
+    "imagePath": "screenshots/account-list-overview.png",
+    "order": 0
+  }, {
+    "id": "admin-universe-list-overview",
+    "category": "Admin",
+    "title": "Universe Management",
+    "description": "Universes are the top-level containers for all promotion data — shows, wrestlers, titles, factions, and storylines all belong to a universe. An installation can run multiple universes simultaneously, each with its own independent roster, calendar, and championship lineage.",
+    "imagePath": "screenshots/universe-list-overview.png",
+    "order": 0
+  }, {
+    "id": "booker-show-calendar-overview",
+    "category": "Booker",
+    "title": "Show Calendar",
+    "description": "The Show Calendar provides a monthly view of every scheduled show in the promotion. Each show appears as a colour-coded event tile on its booked date. Click any tile to jump directly to that show's detail page. Navigate between months using the prev/next arrows, or click Today to snap back to the current date.",
+    "imagePath": "screenshots/show-calendar-overview.png",
     "order": 0
   } ]
 }

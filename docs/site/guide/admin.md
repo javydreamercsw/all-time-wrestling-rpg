@@ -129,7 +129,7 @@ Group and toggle themed content sets. Enable or disable entire collections of wr
 Migration complete — all data is now in MySQL and verified. Restart the application with the MySQL Spring profile (spring.profiles.active=mysql) to run in production mode against the new database.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/data-transfer-full-wizard.mp4" type="video/mp4">
+<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/data-transfer-full-wizard.mp4" type="video/mp4">
 </video>
 
 ---

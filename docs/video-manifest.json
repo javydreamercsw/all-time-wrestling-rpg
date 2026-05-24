@@ -66,14 +66,14 @@
     "id": "wrestler-profile-wrestler-recent-matches",
     "category": "Wrestler Profile",
     "title": "Recent Match Log",
-    "description": "Championship matches are highlighted — the title at stake is shown alongside the participants, giving a full picture of the wrestler's title history. This data feeds into the Championships accordion on the same profile.",
+    "description": "Click the show name in any row to navigate directly to that show's detail view. From there you can review the full card, narration, and results for every segment on the night the match took place.",
     "videoPath": "videos/wrestler-recent-matches.mp4",
     "order": 0
   }, {
     "id": "wrestler-profile-wrestler-feud-history",
     "category": "Wrestler Profile",
     "title": "Feud and Rivalry History",
-    "description": "Feuds and rivalries are ranked by heat — high-heat storylines rise to the top, helping bookers identify which angles to push on upcoming shows. Each entry shows the current heat total accumulated across all events in that feud.",
+    "description": "Heat accumulates automatically from match outcomes, drama events, and promos. Booking a high-heat feud match on a big show accelerates the rise while keeping them apart lets the heat decay naturally over time.",
     "videoPath": "videos/wrestler-feud-history.mp4",
     "order": 0
   }, {
@@ -115,35 +115,35 @@
     "id": "campaign-campaign-corporate-power-trip",
     "category": "Campaign",
     "title": "Corporate Power Trip Chapter",
-    "description": "Corporate Power Trip triggers at 15 Victory Points — the player has earned enough momentum to challenge the establishment and climb to the top of the card. VP accumulates from match wins, backstage actions, and completed milestones.",
+    "description": "Use every Backstage Action to counter the Authority's interference. Smart positioning before each show can be the difference between a takeover and getting buried.",
     "videoPath": "videos/campaign-corporate-power-trip.mp4",
     "order": 0
   }, {
     "id": "campaign-campaign-gang-warfare",
     "category": "Campaign",
     "title": "Gang Warfare Chapter",
-    "description": "Gang Warfare unlocks when factions collide for territory control — the chapter sets up a faction turf war storyline across multiple shows, with backstage actions that let the player recruit allies or sabotage rivals.",
+    "description": "Recruit, train, and prepare between shows using Backstage Actions. Two actions per day let you build faction strength before the climactic showdown.",
     "videoPath": "videos/campaign-gang-warfare.mp4",
     "order": 0
   }, {
     "id": "campaign-campaign-fighting-champion",
     "category": "Campaign",
     "title": "The Fighting Champion Chapter",
-    "description": "The Fighting Champion chapter activates when the player holds a championship. The campaign tracks title reigns automatically and unlocks this chapter, presenting unique storyline choices available only to a defending champion.",
+    "description": "Use Backstage Actions before each show to train, cut promos, or attack rivals. Two actions are available per day — spend them wisely to enter each title defense at peak condition.",
     "videoPath": "videos/campaign-fighting-champion.mp4",
     "order": 0
   }, {
     "id": "game-mechanics-mechanic-decks-walkthrough",
     "category": "Game Mechanics",
     "title": "Decks Walkthrough",
-    "description": "These move sets are what the AI draws from during match narration — a richer deck with varied move types leads to more dynamic and realistic commentary.",
+    "description": "A well-rounded deck includes both offensive moves and defensive counters. Cards carry health cost, stamina cost, and damage values — the match engine draws from these to determine realistic in-ring outcomes.",
     "videoPath": "videos/mechanic-decks-walkthrough.mp4",
     "order": 0
   }, {
     "id": "dashboards-dashboard-rankings-walkthrough",
     "category": "Dashboards",
     "title": "Wrestler Rankings",
-    "description": "Wrestlers accumulate fans through wins, title matches, and fan reactions — losses and inactivity erode the fan base over time, creating natural momentum shifts that drive realistic storyline booking decisions.",
+    "description": "Click any wrestler's name in the rankings to jump straight to their full profile — match history, rivalries, title reigns, and injury records are all one click away from this view.",
     "videoPath": "videos/dashboard-rankings-walkthrough.mp4",
     "order": 0
   }, {
@@ -199,14 +199,14 @@
     "id": "booker-journey-booker-set-main-event",
     "category": "Booker Journey",
     "title": "Set Main Event",
-    "description": "This setting impacts the narration as well as the fans obtained by the participants!",
+    "description": "Main event confirmed — the segment is now flagged as the night's headline. When the show is finalised, the winner earns elevated fan gains and the AI narration treats this as the climax of the event.",
     "videoPath": "videos/booker-set-main-event.mp4",
     "order": 0
   }, {
     "id": "booker-journey-booker-change-segment-order",
     "category": "Booker Journey",
     "title": "Change Segment Order",
-    "description": "Reorder the segments using the up and down arrows.",
+    "description": "Order updated — the opener is now in position 1 and the main event has moved to position 2. Adjustments take effect instantly and are reflected in the show card, match sequence, and AI narration context.",
     "videoPath": "videos/booker-change-segment-order.mp4",
     "order": 0
   }, {
@@ -257,6 +257,97 @@
     "title": "Show Card Validation Walkthrough",
     "description": "After the booker confirms, the segments are saved to the show. Each approved segment enters the adjudication pipeline — the match engine resolves outcomes, updates wrestler stats, and the AI generates narration ready for broadcast.",
     "videoPath": "videos/booker-show-planning-card-validation-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "player-dashboard-inbox-walkthrough",
+    "category": "Player Dashboard",
+    "title": "Inbox Walkthrough",
+    "description": "Filtered to Championship Change events only — the feed now shows just the title activity for quick review. Clear the filter to return to the full event stream.",
+    "videoPath": "videos/inbox-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "entities-title-list-walkthrough",
+    "category": "Entities",
+    "title": "Championship Titles Walkthrough",
+    "description": "The Create Title dialog — Name and Tier are required. Tier controls which wrestlers are eligible to compete for it, and Championship Type determines whether it is a singles, tag team, or trios title.",
+    "videoPath": "videos/title-list-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "booker-show-calendar-walkthrough",
+    "category": "Booker",
+    "title": "Show Calendar Walkthrough",
+    "description": "Shows scheduled in future months appear here as soon as they're created in the Show List. Plan your entire PPV season at a glance — weekly shows, special events, and pay-per-view dates all land on the same calendar.",
+    "videoPath": "videos/show-calendar-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "leagues-league-lifecycle-walkthrough",
+    "category": "Leagues",
+    "title": "League Season — Full Lifecycle",
+    "description": "Switch to Rosters to see every player's drafted squad, or Show History to review every finalized event and its outcomes. The complete season record is preserved here after the league ends.",
+    "videoPath": "videos/league-lifecycle-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "leagues-draft-room-walkthrough",
+    "category": "Leagues",
+    "title": "The Draft Room",
+    "description": "Turn updated — the turn label now shows it's player1's pick. All participants see the same live board simultaneously, so there is no need to refresh. Each pick resolves within seconds of the button click.",
+    "videoPath": "videos/draft-room-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "dashboards-news-walkthrough",
+    "category": "Dashboards",
+    "title": "News & Rumors Walkthrough",
+    "description": "Admins and bookers can click Generate Monthly Synthesis to have the AI summarise the month's events into a single narrative dispatch, or Create News to manually write a headline that appears in the feed.",
+    "videoPath": "videos/news-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-ability-tree",
+    "category": "Campaign",
+    "title": "Skill Upgrades — Ability Tree",
+    "description": "Ability unlocked — the token balance drops and the upgrade is active. The match engine and AI narration will reference this ability when generating outcomes for future matches.",
+    "videoPath": "videos/campaign-ability-tree.mp4",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-narrative-walkthrough",
+    "category": "Campaign",
+    "title": "Story Narrative — AI Encounters",
+    "description": "Your choice is recorded and affects the storyline's direction. Choosing aggressively raises your Heel alignment; diplomatic choices push you toward Face. Some encounters trigger bonus matches or backstage events.",
+    "videoPath": "videos/campaign-narrative-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "general-manager-contract-management-walkthrough",
+    "category": "General Manager",
+    "title": "Contract Management Walkthrough",
+    "description": "Salary scales with a wrestler's fan base — Main Eventers command higher pay than Rookies. Monitor total payroll here to avoid overspending on roster depth at the expense of developing the next headliner.",
+    "videoPath": "videos/contract-management-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "general-manager-gm-dashboard-walkthrough",
+    "category": "General Manager",
+    "title": "GM Dashboard Walkthrough",
+    "description": "Exhausted or unhappy wrestlers underperform in matches and lose fans over time. Review this dashboard before booking shows to identify who needs rest and who is primed for a featured main-event spot.",
+    "videoPath": "videos/gm-dashboard-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "dashboards-hall-of-fame-walkthrough",
+    "category": "Dashboards",
+    "title": "Hall of Fame Walkthrough",
+    "description": "The Hall of Fame is global — every account in the system appears here. Use it to benchmark your career progress against other promoters and set long-term goals for the season.",
+    "videoPath": "videos/hall-of-fame-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "admin-account-list-walkthrough",
+    "category": "Admin",
+    "title": "Account Management Walkthrough",
+    "description": "New Account dialog — username and email are required; password is set on first login or by the admin. Roles can be combined: a Booker who also plays in leagues needs both the Booker and Player roles.",
+    "videoPath": "videos/account-list-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "admin-universe-list-walkthrough",
+    "category": "Admin",
+    "title": "Universe Management Walkthrough",
+    "description": "Create Universe dialog — name is required; type controls which game rules apply. Standard uses the default ATW ruleset; Fantasy enables league drafts; Historical locks the roster to a specific era.",
+    "videoPath": "videos/universe-list-walkthrough.mp4",
     "order": 0
   } ]
 }
