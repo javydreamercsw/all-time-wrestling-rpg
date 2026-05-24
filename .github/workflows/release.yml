@@ -125,6 +125,11 @@ jobs:
 
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs
+        env:
+          # Videos are not committed to git (too large). Both the in-app embedded
+          # docs and the GitHub Pages site reference videos via this absolute URL
+          # so they work in all packaged artifacts without shipping the mp4 files.
+          GITHUB_PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
       - name: Build documentation for GitHub Pages
         run: |

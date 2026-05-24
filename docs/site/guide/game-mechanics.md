@@ -71,7 +71,7 @@ Managers and faction members can swing the match in your favor. Perform ringside
 These move sets are what the AI draws from during match narration — a richer deck with varied move types leads to more dynamic and realistic commentary.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="/videos/mechanic-decks-walkthrough.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/mechanic-decks-walkthrough.mp4" type="video/mp4">
 </video>
 
 ---
@@ -81,7 +81,7 @@ These move sets are what the AI draws from during match narration — a richer d
 Card detail view shows health cost, stamina cost, damage type, and move category. These values are referenced directly by the match engine and AI narration when describing what happened in a segment.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="/videos/mechanic-cards-walkthrough.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/mechanic-cards-walkthrough.mp4" type="video/mp4">
 </video>
 
 ---

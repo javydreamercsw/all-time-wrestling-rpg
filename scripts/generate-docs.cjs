@@ -27,6 +27,13 @@ if (fs.existsSync(videoManifestPath)) {
   console.log('No video-manifest.json found — skipping video content');
 }
 
+// Base URL for video assets. In packaged artifacts (JAR/WAR/installer), the
+// embedded docs don't ship the mp4 files (too large for git). Instead, <video>
+// tags reference the GitHub Pages deployment so they work over the internet.
+// On GitHub Pages itself the absolute URL resolves to the same host.
+// Override via GITHUB_PAGES_BASE env var (set automatically in release.yml).
+const githubPagesBase = (process.env.GITHUB_PAGES_BASE || 'https://javydreamercsw.github.io/all-time-wrestling-rpg').replace(/\/$/, '');
+
 // 1. Prepare Markdown directory — clear stale files first so old video-only
 // categories don't leave orphaned .md files with broken <video> references.
 if (fs.existsSync(outputDir)) {
@@ -143,7 +150,9 @@ Array.from(allCategories).sort().forEach(category => {
   if (catVideos.length > 0) {
     content += `## Video Walkthroughs\n\n`;
     catVideos.forEach(video => {
-      const videoPublicPath = `/videos/${path.basename(video.videoPath)}`;
+      // Use absolute GitHub Pages URL so the video works in both the
+      // online docs and the in-app embedded docs (where mp4s aren't shipped).
+      const videoPublicPath = `${githubPagesBase}/videos/${path.basename(video.videoPath)}`;
       content += `### ${video.title}\n\n`;
       if (video.description) {
         content += `${video.description}\n\n`;
