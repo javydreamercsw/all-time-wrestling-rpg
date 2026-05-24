@@ -317,7 +317,16 @@ jobs:
       - name: Mark Release as Final
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit v${{ github.event.inputs.version }} --prerelease=false
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if echo "$VERSION" | grep -iqE '\-rc[0-9]*$'; then
+            # Release candidate (e.g. 2.0.0-RC1, 2.0.0-RC2): remove prerelease
+            # flag so it appears as a normal release, but do NOT mark it latest.
+            gh release edit "v${VERSION}" --prerelease=false
+          else
+            # Final release (e.g. 2.0.0): remove prerelease flag and mark latest.
+            gh release edit "v${VERSION}" --prerelease=false --latest
+          fi
 
   build_and_publish_docker:
     needs: finalize_release
