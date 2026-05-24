@@ -39,6 +39,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -52,6 +53,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 // Static import needed
 
 @Slf4j
+@Tag("video")
 public class LeagueDocsE2ETest extends AbstractE2ETest {
 
   @Autowired private AccountRepository accountRepository;
@@ -230,6 +232,219 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
         "League History",
         "Keep track of all shows and match results that occurred within the league.",
         "league-history-tab");
+  }
+
+  @Test
+  void testRecordDraftRoomWalkthrough() {
+    setVideoInfo("Leagues", "The Draft Room", "draft-room-walkthrough");
+
+    // Create a minimal league so we can reach the Draft Room
+    navigateTo("leagues");
+    waitForVaadinElement(driver, By.id("create-league-btn"));
+    clickElement(By.id("create-league-btn"));
+    waitForVaadinElement(driver, By.id("league-name-field"));
+
+    final String leagueName = "Draft Docs League " + System.currentTimeMillis();
+    WebElement nameField = driver.findElement(By.id("league-name-field"));
+    nameField.sendKeys(leagueName);
+    nameField.sendKeys(Keys.TAB);
+
+    WebElement maxPicksField = driver.findElement(By.id("league-max-picks-field"));
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].value = 1;"
+                + " arguments[0].dispatchEvent(new CustomEvent('input', { bubbles: true }));"
+                + " arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true }));",
+            maxPicksField);
+    maxPicksField.sendKeys(Keys.TAB);
+
+    clickElement(By.id("league-commissioner-plays-checkbox"));
+    selectFromVaadinMultiSelectComboBox(driver.findElement(By.id("participants-combo")), "player1");
+    clickElement(By.id("league-save-btn"));
+    waitForNotification("League saved successfully");
+
+    waitForGridToPopulate("league-grid");
+
+    captureCaption(
+        "League List — when a league shows PRE_DRAFT status, click the Draft Room button to"
+            + " begin the snake draft. The commissioner controls the pick order and can start"
+            + " the draft for all participants at once.",
+        4500);
+
+    League league = leagueRepository.findByName(leagueName).orElseThrow();
+    clickElement(By.id("league-draft-room-btn-" + league.getId()));
+    waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
+
+    captureCaption(
+        "Draft Room — the left panel lists all available wrestlers sorted alphabetically,"
+            + " with their tier, stamina, and health. The header shows the current round and"
+            + " pick number; the highlighted turn label shows whose pick it is.",
+        5000);
+
+    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 250)");
+    sleep(800);
+    captureCaption(
+        "Each row has a Draft button — click it to claim that wrestler for your roster."
+            + " The snake draft reverses pick order each round, so the last picker in"
+            + " round 1 picks first in round 2, balancing the selection.",
+        4500);
+
+    ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0)");
+    sleep(600);
+
+    // Make admin's pick
+    List<Wrestler> wrestlers =
+        new java.util.ArrayList<>(
+            wrestlerRepository.findAll().stream()
+                .filter(w -> Boolean.TRUE.equals(w.getActive()))
+                .toList());
+    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getName));
+    Wrestler w1 = wrestlers.get(0);
+    captureCaption(
+        "Click Draft to lock in your pick — the wrestler disappears from the available"
+            + " pool instantly and the Draft History panel on the right records the pick"
+            + " with round number, pick number, and the player who claimed them.",
+        4000);
+    clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
+    waitForVaadinClientToLoad();
+    sleep(800);
+
+    captureCaption(
+        "Turn updated — the turn label now shows it's player1's pick. All participants"
+            + " see the same live board simultaneously, so there is no need to refresh."
+            + " Each pick resolves within seconds of the button click.",
+        4500);
+
+    sleep(1500);
+  }
+
+  @Test
+  void testRecordLeagueLifecycleWalkthrough() {
+    setVideoInfo("Leagues", "League Season — Full Lifecycle", "league-lifecycle-walkthrough");
+
+    navigateTo("leagues");
+    waitForVaadinClientToLoad();
+
+    captureCaption(
+        "Leagues List — a promotion can run multiple simultaneous fantasy leagues. Each row"
+            + " shows the league name, status (PRE_DRAFT → ACTIVE → COMPLETED), commissioner,"
+            + " and max picks per player. The Create League button starts a new competition.",
+        5000);
+
+    // Show the Create League form
+    waitForVaadinElement(driver, By.id("create-league-btn"));
+    captureCaption(
+        "Click Create League to set up a new competition. Configure the league name, how many"
+            + " wrestlers each participant can draft, whether the commissioner plays, and which"
+            + " accounts are invited as league members.",
+        4500);
+
+    clickElement(By.id("create-league-btn"));
+    waitForVaadinElement(driver, By.id("league-name-field"));
+
+    captureCaption(
+        "Create League form — Name and Max Picks are required. Toggle 'Commissioner Plays'"
+            + " if the person running the league also wants a draft roster. Use the Participants"
+            + " combo to invite other accounts; they receive an inbox notification.",
+        4500);
+
+    // Create the league
+    final String leagueName = "Lifecycle Docs League " + System.currentTimeMillis();
+    WebElement nameField = driver.findElement(By.id("league-name-field"));
+    nameField.sendKeys(leagueName);
+    nameField.sendKeys(Keys.TAB);
+
+    WebElement maxPicksField = driver.findElement(By.id("league-max-picks-field"));
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "arguments[0].value = 1;"
+                + " arguments[0].dispatchEvent(new CustomEvent('input', { bubbles: true }));"
+                + " arguments[0].dispatchEvent(new CustomEvent('change', { bubbles: true }));",
+            maxPicksField);
+    maxPicksField.sendKeys(Keys.TAB);
+    clickElement(By.id("league-commissioner-plays-checkbox"));
+    selectFromVaadinMultiSelectComboBox(driver.findElement(By.id("participants-combo")), "player1");
+    clickElement(By.id("league-save-btn"));
+    waitForNotification("League saved successfully");
+
+    waitForGridToPopulate("league-grid");
+    captureCaption(
+        "League created — PRE_DRAFT status means the draft hasn't started yet. Open the"
+            + " Draft Room to pick rosters, then book league matches on shows and have"
+            + " players report results through their Inbox. The dashboard tracks standings.",
+        4500);
+
+    // Navigate into the draft room briefly to show it
+    League league = leagueRepository.findByName(leagueName).orElseThrow();
+    clickElement(By.id("league-draft-room-btn-" + league.getId()));
+    waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
+
+    captureCaption(
+        "Draft Room — once all rosters are filled the league moves to ACTIVE status."
+            + " Every drafted wrestler is tied to that league roster for the entire season;"
+            + " the owner books them in matches and earns points from wins and fan growth.",
+        4500);
+
+    // Make one pick so the draft completes (max picks = 1, commissioner + player1)
+    List<Wrestler> wrestlers =
+        new java.util.ArrayList<>(
+            wrestlerRepository.findAll().stream()
+                .filter(w -> Boolean.TRUE.equals(w.getActive()))
+                .toList());
+    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getName));
+    Wrestler w1 = wrestlers.get(0);
+    clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
+    waitForVaadinClientToLoad();
+    sleep(600);
+
+    // player1 picks
+    logout();
+    login("player1", "password123");
+    navigateTo("leagues");
+    clickElement(By.id("league-draft-room-btn-" + league.getId()));
+    waitForVaadinElement(driver, By.id("draft-view"));
+    waitForVaadinClientToLoad();
+    Wrestler w2 = wrestlers.get(1);
+    clickElement(By.id("draft-wrestler-btn-" + w2.getId()));
+    waitForPageSourceToContain("Draft Completed");
+    sleep(600);
+
+    // Back to admin to show dashboard
+    logout();
+    login("admin", "admin123");
+    navigateTo("leagues");
+    waitForGridToPopulate("league-grid");
+
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+    WebElement dashboardBtn =
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath("//vaadin-button[text()='Dashboard']")));
+    captureCaption(
+        "Once matches start being finalized the league moves to ACTIVE. Click Dashboard"
+            + " at any time to review the current standings, player rosters, and full"
+            + " show history for the season.",
+        4000);
+    clickElement(dashboardBtn);
+    waitForVaadinElement(driver, By.tagName("vaadin-tabs"));
+
+    captureCaption(
+        "League Dashboard — Standings tab shows each wrestler's win/loss/draw record and"
+            + " fan points accumulated through the season. Records update the moment a"
+            + " show is finalized, keeping all participants in sync.",
+        4500);
+
+    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 200)");
+    sleep(800);
+    captureCaption(
+        "Switch to Rosters to see every player's drafted squad, or Show History to review"
+            + " every finalized event and its outcomes. The complete season record is"
+            + " preserved here after the league ends.",
+        4000);
+
+    sleep(1500);
   }
 
   private void ensurePlayerAccount() {
