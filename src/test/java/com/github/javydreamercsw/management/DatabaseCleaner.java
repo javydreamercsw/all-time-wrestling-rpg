@@ -252,6 +252,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
       "campaign_state",
       "storyline_milestone",
       "campaign_storyline",
+      "campaign",
       "wrestler_relationship",
       "wrestler_state",
       "league_roster",

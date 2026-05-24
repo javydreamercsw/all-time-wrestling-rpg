@@ -39,7 +39,7 @@ class ShowCalendarDocsE2ETest extends AbstractDocsE2ETest {
   void testCaptureShowCalendarScreenshot() {
     navigateTo("show-calendar");
     waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.tagName("full-calendar"));
+    waitForVaadinElement(driver, By.tagName("vaadin-full-calendar"));
 
     documentFeature(
         "Booker",
@@ -57,7 +57,7 @@ class ShowCalendarDocsE2ETest extends AbstractDocsE2ETest {
 
     navigateTo("show-calendar");
     waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.tagName("full-calendar"));
+    waitForVaadinElement(driver, By.tagName("vaadin-full-calendar"));
 
     captureCaption(
         "Show Calendar — a monthly grid view of every booked show in the promotion."
@@ -68,10 +68,9 @@ class ShowCalendarDocsE2ETest extends AbstractDocsE2ETest {
 
     // Navigate to next month to demonstrate navigation
     try {
+      // The next-month button is the second icon-tertiary vaadin-button in the toolbar
       org.openqa.selenium.WebElement nextBtn =
-          waitForVaadinElement(
-              driver,
-              By.xpath("//button[contains(@class,'fc-next-button') or @title='Next month']"));
+          waitForVaadinElement(driver, By.xpath("(//vaadin-button[@theme='icon tertiary'])[2]"));
       captureCaption(
           "Use the Previous and Next arrows to page through months and plan ahead."
               + " The Today button snaps the view back to the current month — useful"
