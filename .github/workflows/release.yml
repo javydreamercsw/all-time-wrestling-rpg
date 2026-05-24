@@ -145,7 +145,6 @@ jobs:
           npm run docs:build
         env:
           BASE_URL: /${{ github.event.repository.name }}/
-          RELEASE_VERSION: ${{ github.event.inputs.version }}
 
       # --- 5. CLEANUP, COMMIT & PUSH PHASE ---
       - name: Format
