@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
@@ -182,6 +183,7 @@ class MatchViewTest extends AbstractViewTest {
 
     CustomUserDetails userDetails = mock(CustomUserDetails.class);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isBooker()).thenReturn(true);
     when(userDetails.getWrestler()).thenReturn(wrestler1);
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     lenient().when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler1));
@@ -239,18 +241,29 @@ class MatchViewTest extends AbstractViewTest {
     universe.setId(1L);
     universe.setName("Default");
 
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    playerAccount.setUsername("player1");
+
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setName("Test Wrestler 1");
     wrestler1.setId(1L);
+    wrestler1.setAccount(playerAccount);
     wrestler1
         .getWrestlerStates()
         .add(WrestlerState.builder().wrestler(wrestler1).universe(universe).build());
+
+    SegmentParticipant participant1 = new SegmentParticipant();
+    participant1.setSegment(segment);
+    participant1.setWrestler(wrestler1);
+    segment.getParticipants().add(participant1);
 
     CustomUserDetails userDetails = mock(CustomUserDetails.class);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
     when(securityUtils.isPlayer()).thenReturn(true);
     when(securityUtils.isBooker()).thenReturn(false);
     when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
     when(userDetails.getWrestler()).thenReturn(wrestler1);
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
 
@@ -262,7 +275,7 @@ class MatchViewTest extends AbstractViewTest {
 
     // Verify button text
     Button saveWinnersButton = _get(Button.class, spec -> spec.withId("save-winners-button"));
-    assertEquals("Save Results", saveWinnersButton.getText());
+    assertEquals("Submit Result", saveWinnersButton.getText());
 
     // Verify AI button hidden
     assertTrue(

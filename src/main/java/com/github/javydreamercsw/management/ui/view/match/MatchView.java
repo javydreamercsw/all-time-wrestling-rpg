@@ -599,7 +599,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       sideCol.add(new DashboardCard("Ringside Actions", actionComponentWrapper[0]));
     }
 
-    // Winners Section
+    // Determine roles once — used for several visibility decisions below
+    boolean isBookerOrAdmin = securityUtils.isBooker() || securityUtils.isAdmin();
+    boolean isPlayerOnly = securityUtils.isPlayer() && !isBookerOrAdmin;
+
+    // Winners / Match Result section — hidden for viewer-only accounts (PLAYER with no wrestler
+    // in this segment, e.g. a spectator who somehow navigates to the match page)
+    boolean isParticipatingPlayer =
+        isPlayerOnly
+            && wrestlers.stream()
+                .filter(java.util.Objects::nonNull)
+                .anyMatch(
+                    w -> {
+                      Long accountId = securityUtils.getCurrentAccountId().orElse(null);
+                      return accountId != null
+                          && w.getAccount() != null
+                          && accountId.equals(w.getAccount().getId());
+                    });
+    boolean canSubmitResult = isBookerOrAdmin || isParticipatingPlayer;
+
     DashboardCard winnersCard = new DashboardCard("Match Result");
     winnersComboBox = new MultiSelectComboBox<>("Select Winner(s)");
     winnersComboBox.setWidthFull();
@@ -613,18 +631,14 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 : List.of()));
     winnersComboBox.setId("winners-combobox");
 
-    String saveButtonText = "Adjudicate Match";
-    if (securityUtils.isPlayer() && !securityUtils.isBooker() && !securityUtils.isAdmin()) {
-      saveButtonText = "Save Results";
-      // If league match, it might be "Report Result" conceptually, but "Save Results" is fine.
-    }
-
+    String saveButtonText = isBookerOrAdmin ? "Adjudicate Match" : "Submit Result";
     Button saveWinnersButton = new Button(saveButtonText, event -> saveWinners());
     saveWinnersButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
     saveWinnersButton.setWidthFull();
     saveWinnersButton.setId("save-winners-button");
 
     winnersCard.add(winnersComboBox, saveWinnersButton);
+    winnersCard.setVisible(canSubmitResult);
     sideCol.add(winnersCard);
 
     mainContent.add(sideCol);
@@ -636,15 +650,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     VerticalLayout narrationContent = new VerticalLayout();
     narrationContent.setPadding(false);
 
-    feedbackArea = new TextArea(isPromo ? "Promo Notes" : "Generation Feedback");
+    String feedbackLabel;
+    String feedbackPlaceholder;
+    if (isBookerOrAdmin) {
+      feedbackLabel = isPromo ? "Promo Notes" : "Generation Feedback";
+      feedbackPlaceholder =
+          isPromo
+              ? "Provide bullet points or a general idea of the promo content..."
+              : "Provide specific details about the match (key spots, ringside actions, etc.) to"
+                  + " guide the AI...";
+    } else {
+      feedbackLabel = isPromo ? "Promo Notes" : "Match Notes";
+      feedbackPlaceholder =
+          isPromo
+              ? "Describe what happened in the promo..."
+              : "Describe what happened in the match (key spots, outcome details, etc.)...";
+    }
+    feedbackArea = new TextArea(feedbackLabel);
     feedbackArea.setWidthFull();
-    feedbackArea.setPlaceholder(
-        isPromo
-            ? "Provide bullet points or a general idea of the promo content..."
-            : """
-            Provide specific details about the match (key spots, ringside actions, etc.) to\
-             guide the AI...\
-            """);
+    feedbackArea.setPlaceholder(feedbackPlaceholder);
     feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
     feedbackArea.setId("feedback-area");
 
@@ -660,6 +684,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         new Button(isPromo ? "Save Transcript" : "Save Narration", event -> saveNarration());
     saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
     saveButton.setId("save-narration-button");
+    // Players read the generated narration but cannot edit or save it
+    saveButton.setVisible(isBookerOrAdmin);
+    narrationArea.setReadOnly(isPlayerOnly);
 
     commentaryComponent = new CommentaryComponent();
     updateCommentaryDisplay();
@@ -754,11 +781,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     narrationButtons.add(saveButton);
 
-    if (showGenerateButton) {
-      narrationContent.add(feedbackArea, commentaryComponent, narrationArea, narrationButtons);
-    } else {
-      narrationContent.add(commentaryComponent, narrationArea, narrationButtons);
+    // Show the feedback/notes area if: BOOKER/ADMIN (generation feedback), or participating player
+    // (match notes submitted with their result). Hide for viewer-only accounts.
+    boolean showFeedbackArea = isBookerOrAdmin || isParticipatingPlayer;
+    if (showFeedbackArea) {
+      narrationContent.add(feedbackArea);
     }
+    narrationContent.add(commentaryComponent, narrationArea, narrationButtons);
 
     narrationCard.add(narrationContent);
     add(narrationCard);
