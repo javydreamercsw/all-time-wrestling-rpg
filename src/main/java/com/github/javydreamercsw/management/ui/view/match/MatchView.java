@@ -414,7 +414,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     HorizontalLayout mainContent = new HorizontalLayout();
     mainContent.setWidthFull();
     mainContent.setMaxWidth("1200px");
-    mainContent.getStyle()
+    mainContent
+        .getStyle()
         .set("display", "flex")
         .set("flex-wrap", "wrap")
         .set("gap", "var(--lumo-space-m)")
