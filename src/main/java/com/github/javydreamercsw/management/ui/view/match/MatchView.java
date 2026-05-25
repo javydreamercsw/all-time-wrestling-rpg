@@ -75,11 +75,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility.Background;
 import com.vaadin.flow.theme.lumo.LumoUtility.BorderRadius;
-import com.vaadin.flow.theme.lumo.LumoUtility.FlexWrap;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
-import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
-import com.vaadin.flow.theme.lumo.LumoUtility.JustifyContent;
 import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
@@ -409,19 +406,29 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         segment.getSegmentType() != null
             && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
 
-    // Participants — full width so the card grid can tile across all available columns
     List<Wrestler> wrestlers = segment.getWrestlers();
     boolean isPlayerInMatch = playerWrestler != null && wrestlers.contains(playerWrestler);
     Long universeId = universeContextService.getCurrentUniverseId();
 
+    // Outer row: participants (grow) + side column (fixed 340px), wraps on mobile
+    HorizontalLayout mainContent = new HorizontalLayout();
+    mainContent.setWidthFull();
+    mainContent.setMaxWidth("1200px");
+    mainContent.getStyle()
+        .set("display", "flex")
+        .set("flex-wrap", "wrap")
+        .set("gap", "var(--lumo-space-m)")
+        .set("align-items", "flex-start");
+
+    // Participants — grows to fill remaining width; grid auto-tiles wrestler cards
     DashboardCard participantsCard = new DashboardCard("Participants");
-    participantsCard.setMaxWidth("1200px");
+    participantsCard.getStyle().set("flex", "1 1 500px");
 
     Div cardGrid = new Div();
     cardGrid
         .getStyle()
         .set("display", "grid")
-        .set("grid-template-columns", "repeat(auto-fill, minmax(280px, 1fr))")
+        .set("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))")
         .set("gap", "var(--lumo-space-m)")
         .set("width", "100%")
         .set("align-items", "start");
@@ -456,20 +463,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                           w, universeId, wrestlerService, injuryService, false)));
     }
     participantsCard.add(cardGrid);
-    add(participantsCard);
+    mainContent.add(participantsCard);
 
-    // Side-by-side row: rules/info on the left, adjudication on the right
-    HorizontalLayout mainContent = new HorizontalLayout();
-    mainContent.setWidthFull();
-    mainContent.setMaxWidth("1200px");
-    mainContent.addClassNames(FlexWrap.WRAP, Gap.MEDIUM, JustifyContent.CENTER);
-
-    // Right Column: Rules, Titles, and Adjudication
+    // Side column: rules, ringside actions, adjudication — fixed width, wraps below on mobile
     VerticalLayout sideCol = new VerticalLayout();
     sideCol.setPadding(false);
-    sideCol.setWidth("auto");
-    sideCol.setMinWidth("300px");
-    sideCol.setFlexGrow(1);
+    sideCol.getStyle().set("flex", "0 0 340px").set("min-width", "280px");
 
     // Rules & Titles
     DashboardCard infoCard = new DashboardCard("Match Info");
