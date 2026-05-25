@@ -25,9 +25,25 @@ permissions:
   actions: read
   security-events: write
 
+# Prevent duplicate runs when a push to release/** also syncs an open PR.
+# Each PR gets its own concurrency slot (keyed by PR number); direct pushes to
+# main/tags get their own slot (keyed by ref). New pushes cancel in-progress runs
+# within the same slot, so back-to-back commits to the same branch don't pile up.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-paths:
     runs-on: ubuntu-latest
+    # Skip the test pipeline for direct pushes to release/** branches — a PR event
+    # for the release→main PR already runs the full suite on the same commit. The
+    # docker-image-release-branch job (below) is not gated on check-paths, so it
+    # still fires on every push to release/** regardless of this condition.
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/')
     outputs:
       code_changed: ${{ steps.filter.outputs.code_changed }}
       notion_changed: ${{ steps.filter.outputs.notion_changed }}
