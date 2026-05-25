@@ -83,6 +83,9 @@ jobs:
       - name: Generate H2 reference snapshot
         run: mvn -Pintegration-test verify -Dgenerate.h2.snapshot=true -Dit.test=GenerateH2SnapshotIT -Dsurefire.skip=true -DfailIfNoTests=false -Dspotless.check.skip=true
 
+      - name: Generate MySQL reference snapshot
+        run: mvn -Pintegration-test verify -Dgenerate.mysql.snapshot=true -Dit.test=GenerateMysqlSnapshotIT -Dsurefire.skip=true -DfailIfNoTests=false -Dspotless.check.skip=true
+
       - name: Format and Push initial changes
         run: |
           mvn spotless:apply
