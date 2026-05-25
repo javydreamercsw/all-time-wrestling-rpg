@@ -409,27 +409,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         segment.getSegmentType() != null
             && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
 
-    // Main Content Grid
-    HorizontalLayout mainContent = new HorizontalLayout();
-    mainContent.setWidthFull();
-    mainContent.setMaxWidth("1200px");
-    mainContent.addClassNames(FlexWrap.WRAP, Gap.MEDIUM, JustifyContent.CENTER);
-
-    // Left Column: Participants
-    VerticalLayout participantsCol = new VerticalLayout();
-    participantsCol.setPadding(false);
-    participantsCol.setWidth("auto");
-    participantsCol.setMinWidth("300px");
-    participantsCol.setFlexGrow(1);
-
-    DashboardCard participantsCard = new DashboardCard("Participants");
+    // Participants — full width so the card grid can tile across all available columns
     List<Wrestler> wrestlers = segment.getWrestlers();
     boolean isPlayerInMatch = playerWrestler != null && wrestlers.contains(playerWrestler);
-
     Long universeId = universeContextService.getCurrentUniverseId();
 
+    DashboardCard participantsCard = new DashboardCard("Participants");
+    participantsCard.setMaxWidth("1200px");
+
     Div cardGrid = new Div();
-    cardGrid.getStyle()
+    cardGrid
+        .getStyle()
         .set("display", "grid")
         .set("grid-template-columns", "repeat(auto-fill, minmax(280px, 1fr))")
         .set("gap", "var(--lumo-space-m)")
@@ -466,7 +456,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                           w, universeId, wrestlerService, injuryService, false)));
     }
     participantsCard.add(cardGrid);
-    participantsCol.add(participantsCard);
+    add(participantsCard);
+
+    // Side-by-side row: rules/info on the left, adjudication on the right
+    HorizontalLayout mainContent = new HorizontalLayout();
+    mainContent.setWidthFull();
+    mainContent.setMaxWidth("1200px");
+    mainContent.addClassNames(FlexWrap.WRAP, Gap.MEDIUM, JustifyContent.CENTER);
 
     // Right Column: Rules, Titles, and Adjudication
     VerticalLayout sideCol = new VerticalLayout();
@@ -619,7 +615,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     winnersCard.add(winnersComboBox, saveWinnersButton);
     sideCol.add(winnersCard);
 
-    mainContent.add(participantsCol, sideCol);
+    mainContent.add(sideCol);
     add(mainContent);
 
     // Full Width: Narration Section
