@@ -73,6 +73,29 @@ class MarkdownShowCardFormatterTest {
   }
 
   @Test
+  void testMatchCounterSkipsPromoSegments() {
+    MarkdownShowCardFormatter formatter = new MarkdownShowCardFormatter();
+
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Test Show");
+    when(show.getShowDate()).thenReturn(null);
+    when(show.getArena()).thenReturn(null);
+
+    Segment match1 = buildSegment("Singles Match", "Alpha", "Beta");
+    Segment promo = buildSegment("Promo", "Champion");
+    Segment match2 = buildSegment("Tag Team Match", "Team A", "Team B");
+
+    String result = formatter.format(show, List.of(match1, promo, match2), false, false, false);
+
+    // Match counter resets at promo: Match 1 → Promo → Match 2
+    assertTrue(result.contains("### Match 1: Singles Match"), "first match should be Match 1");
+    assertTrue(result.contains("### Promo"), "promo should not carry a match number");
+    assertTrue(result.contains("### Match 2: Tag Team Match"), "second match should be Match 2");
+    assertTrue(!result.contains("### Match 2: Promo"), "promo must not be labelled as a match");
+    assertTrue(!result.contains("### Match 3:"), "there should be no Match 3");
+  }
+
+  @Test
   void testFormatWithMainEventAndNarration() {
     MarkdownShowCardFormatter formatter = new MarkdownShowCardFormatter();
 
@@ -104,5 +127,29 @@ class MarkdownShowCardFormatterTest {
 
     assertTrue(result.contains("**⭐ MAIN EVENT ⭐**"));
     assertTrue(result.contains("*Narration:* An intense battle unfolded."));
+  }
+
+  private Segment buildSegment(final String typeName, final String... wrestlerNames) {
+    Segment segment = mock(Segment.class);
+    SegmentType type = mock(SegmentType.class);
+    when(type.getName()).thenReturn(typeName);
+    when(segment.getSegmentType()).thenReturn(type);
+    when(segment.isMainEvent()).thenReturn(false);
+    when(segment.getIsTitleSegment()).thenReturn(false);
+    when(segment.hasSegmentRules()).thenReturn(false);
+    when(segment.getSummary()).thenReturn(null);
+    when(segment.getNarration()).thenReturn(null);
+    when(segment.getWinners()).thenReturn(Collections.emptyList());
+    List<Wrestler> wrestlers =
+        Arrays.stream(wrestlerNames)
+            .map(
+                name -> {
+                  Wrestler w = mock(Wrestler.class);
+                  when(w.getName()).thenReturn(name);
+                  return w;
+                })
+            .toList();
+    when(segment.getWrestlers()).thenReturn(wrestlers);
+    return segment;
   }
 }
