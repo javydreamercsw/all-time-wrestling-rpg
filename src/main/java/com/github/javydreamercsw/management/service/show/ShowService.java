@@ -487,7 +487,9 @@ public class ShowService {
               wrestlerService.healChance(resting.getId(), universeId);
             });
 
-    gameSettingService.saveCurrentGameDate(show.getShowDate().plusDays(1));
+    if (show.getShowDate() != null) {
+      gameSettingService.saveCurrentGameDate(show.getShowDate().plusDays(1));
+    }
 
     if ("SHOW".equals(gameSettingService.getNewsStrategy())) {
       newsGenerationService.generateNewsForShow(show);

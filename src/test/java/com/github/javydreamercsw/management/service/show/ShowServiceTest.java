@@ -705,6 +705,8 @@ class ShowServiceTest {
     verify(segmentAdjudicationService, times(1)).adjudicateMatch(pendingSegment);
     verify(segmentAdjudicationService, never()).adjudicateMatch(adjudicatedSegment);
     Assertions.assertEquals(AdjudicationStatus.ADJUDICATED, pendingSegment.getAdjudicationStatus());
+    // show has no date set — game date should not be updated
+    verify(gameSettingService, never()).saveCurrentGameDate(any());
   }
 
   @Test
@@ -746,5 +748,7 @@ class ShowServiceTest {
     verify(wrestlerService, times(1)).healChance(eq(wrestler2.getId()), anyLong());
     // wrestler1 participated → should NOT get a heal chance
     verify(wrestlerService, never()).healChance(eq(wrestler1.getId()), anyLong());
+    // show has no date set — game date should not be updated
+    verify(gameSettingService, never()).saveCurrentGameDate(any());
   }
 }
