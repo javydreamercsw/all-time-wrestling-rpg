@@ -726,7 +726,7 @@ class ShowServiceTest {
 
     showService.adjudicateShow(1L);
 
-    verify(gameSettingService).saveCurrentGameDate(showDate);
+    verify(gameSettingService).saveCurrentGameDate(showDate.plusDays(1));
     verify(eventPublisher).publishEvent(any(AdjudicationCompletedEvent.class));
     verify(newsGenerationService).rollForRumor();
   }
