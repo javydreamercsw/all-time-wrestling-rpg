@@ -73,10 +73,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.LumoUtility.AlignItems;
 import com.vaadin.flow.theme.lumo.LumoUtility.Background;
 import com.vaadin.flow.theme.lumo.LumoUtility.BorderRadius;
-import com.vaadin.flow.theme.lumo.LumoUtility.Display;
 import com.vaadin.flow.theme.lumo.LumoUtility.FlexWrap;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
@@ -431,7 +429,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     Long universeId = universeContextService.getCurrentUniverseId();
 
     Div cardGrid = new Div();
-    cardGrid.addClassNames(Display.FLEX, FlexWrap.WRAP, Gap.MEDIUM, AlignItems.START);
+    cardGrid.getStyle()
+        .set("display", "grid")
+        .set("grid-template-columns", "repeat(auto-fill, minmax(280px, 1fr))")
+        .set("gap", "var(--lumo-space-m)")
+        .set("width", "100%")
+        .set("align-items", "start");
 
     if (isPlayerInMatch) {
       cardGrid.add(
