@@ -1428,9 +1428,14 @@ public class ShowDetailView extends Main
           refreshWinners.run();
         };
 
-    // One team per existing wrestler; fall back to two empty teams for a new segment
-    for (Wrestler w : seg.getWrestlers()) {
-      addTeamRow.accept(new HashSet<>(Set.of(w)));
+    // Restore teams grouped by saved teamNumber; fall back to one row per wrestler for legacy data
+    java.util.Map<Integer, List<Wrestler>> existingTeams = seg.getWrestlersByTeam();
+    if (existingTeams.isEmpty()) {
+      for (Wrestler w : seg.getWrestlers()) {
+        addTeamRow.accept(new HashSet<>(Set.of(w)));
+      }
+    } else {
+      existingTeams.forEach((teamNum, wrestlers) -> addTeamRow.accept(new HashSet<>(wrestlers)));
     }
     if (teamCombos.isEmpty()) {
       addTeamRow.accept(new HashSet<>());
