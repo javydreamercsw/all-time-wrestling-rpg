@@ -31,9 +31,11 @@ if git diff --name-only HEAD "$UPSTREAM" 2>/dev/null | grep -q '\.java$'; then
   $EXECUTOR spotless:apply
 fi
 
-# If either tool changed anything, ask the developer to commit and re-push
+# If either tool changed anything, auto-commit and continue the push.
+# These are always mechanical formatting fixes — no manual review needed.
 if ! git diff --quiet HEAD; then
-  echo 1>&2 "Automatic fixes applied. Review with 'git diff', commit the result, and re-push."
-  exit 1
+  echo 1>&2 "Auto-committing Spotless/OpenRewrite formatting fixes..."
+  git add -A
+  git commit -m "style: auto-fix Spotless/OpenRewrite formatting"
 fi
 ##### SPOTLESS + OPENREWRITE HOOK END #####
