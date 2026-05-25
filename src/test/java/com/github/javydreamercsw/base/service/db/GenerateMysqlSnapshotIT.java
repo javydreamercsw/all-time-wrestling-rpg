@@ -18,7 +18,6 @@ package com.github.javydreamercsw.base.service.db;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -131,14 +130,9 @@ class GenerateMysqlSnapshotIT {
 
     if (dumpResult.getExitCode() != 0) {
       throw new IllegalStateException(
-          "mysqldump failed (exit "
-              + dumpResult.getExitCode()
-              + "): "
-              + dumpResult.getStderr());
+          "mysqldump failed (exit " + dumpResult.getExitCode() + "): " + dumpResult.getStderr());
     }
-    assertThat(dumpResult.getStdout())
-        .as("mysqldump output must not be blank")
-        .isNotBlank();
+    assertThat(dumpResult.getStdout()).as("mysqldump output must not be blank").isNotBlank();
 
     Files.writeString(outputFile, dumpResult.getStdout(), StandardCharsets.UTF_8);
 
@@ -153,8 +147,8 @@ class GenerateMysqlSnapshotIT {
    * populated data: NOT NULL columns, FK constraints, UNIQUE indexes.
    *
    * <p>At V51+, {@code wrestler} no longer carries fans/tier/bumps/current_health — those live in
-   * {@code wrestler_state}. The {@code universe} table was created in V51 with a default row
-   * (id=1, 'Default Universe'), so it is already present when this method runs.
+   * {@code wrestler_state}. The {@code universe} table was created in V51 with a default row (id=1,
+   * 'Default Universe'), so it is already present when this method runs.
    */
   private static void insertSeedData(Statement stmt, int releasedNum) throws Exception {
     // wrestler — core entity; schema at V52+ has no fans/tier/bumps columns

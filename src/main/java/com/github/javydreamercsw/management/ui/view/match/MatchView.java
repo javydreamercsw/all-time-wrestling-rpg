@@ -431,8 +431,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     Long universeId = universeContextService.getCurrentUniverseId();
 
     Div cardGrid = new Div();
-    cardGrid.addClassNames(
-        Display.FLEX, FlexWrap.WRAP, Gap.MEDIUM, AlignItems.START);
+    cardGrid.addClassNames(Display.FLEX, FlexWrap.WRAP, Gap.MEDIUM, AlignItems.START);
 
     if (isPlayerInMatch) {
       cardGrid.add(
