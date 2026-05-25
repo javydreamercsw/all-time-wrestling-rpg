@@ -89,6 +89,11 @@ public class MatchNarrationE2ETest extends AbstractE2ETest {
       accountRepository.saveAndFlush(playerAccount);
     }
 
+    // Link wrestler → account so MatchView's isParticipatingPlayer check resolves correctly
+    Account savedPlayerAccount = accountRepository.findByUsername("player1").orElseThrow();
+    playerWrestler.setAccount(savedPlayerAccount);
+    wrestlerService.save(playerWrestler);
+
     // Create Opponent
     Wrestler opponent = createTestWrestler("Opponent");
     wrestlerService.save(opponent);
