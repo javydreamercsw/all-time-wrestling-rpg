@@ -276,8 +276,8 @@ class MatchViewTest extends AbstractViewTest {
     // Simulate clicking save winners
     _click(saveWinnersButton);
 
-    // Verify adjudicateMatch was NOT called
-    verify(segmentAdjudicationService, never()).adjudicateMatch(any());
+    // Verify adjudicateMatch was NOT called (neither ID nor entity overload)
+    verify(segmentAdjudicationService, never()).adjudicateMatch(any(Long.class));
     // Verify updateSegment WAS called (to save winners)
     verify(segmentService, times(1)).updateSegment(any(Segment.class));
   }

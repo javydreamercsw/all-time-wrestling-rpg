@@ -1096,7 +1096,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         UI.getCurrent().navigate("campaign");
       } else if (securityUtils.isBooker() || securityUtils.isAdmin()) {
         // For standard matches, perform full adjudication (Booker/Admin only)
-        segmentAdjudicationService.adjudicateMatch(segment);
+        segmentAdjudicationService.adjudicateMatch(segment.getId());
         segment.setAdjudicationStatus(
             com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
         segmentService.updateSegment(segment);

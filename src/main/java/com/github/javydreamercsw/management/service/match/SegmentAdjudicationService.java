@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -90,6 +91,11 @@ public class SegmentAdjudicationService {
 
   @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy})
   private ShowService showService;
+
+  // Field-injected to avoid changing the constructor (unit tests build this service manually).
+  // Null-safe: when null (unit tests), reattach() is a no-op.
+  @Setter(onMethod_ = {@Autowired})
+  private SegmentRepository segmentRepository;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -168,6 +174,22 @@ public class SegmentAdjudicationService {
     this.wrestlerStatusService = wrestlerStatusService;
     this.universeContextService = universeContextService;
     this.random = random;
+  }
+
+  /**
+   * Adjudicates a segment by ID. Preferred entry point from UI callers (e.g. MatchView) that hold a
+   * detached {@link Segment} between Vaadin push events — passing the ID instead of the entity
+   * avoids {@code LazyInitializationException} on any lazy proxy (show, wrestlers, statuses, …).
+   * The segment is loaded fresh inside this {@code @Transactional} boundary.
+   */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
+  @Transactional
+  public void adjudicateMatch(@NonNull final Long segmentId) {
+    Segment segment =
+        segmentRepository
+            .findByIdWithDetails(segmentId)
+            .orElseThrow(() -> new IllegalArgumentException("Segment not found: " + segmentId));
+    adjudicateMatchInternal(segment, 1.0);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
