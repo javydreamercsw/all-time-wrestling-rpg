@@ -66,6 +66,7 @@ jobs:
               - 'tsconfig.json'
               - 'vite.config.ts'
               - 'scripts/sync-vaadin-overrides.cjs'
+              - '.github/workflows/**'
               - '!docs/**'
             notion_changed:
               - 'src/main/java/com/github/javydreamercsw/management/service/sync/**'
@@ -351,12 +352,14 @@ jobs:
         path: target/
 
     - name: Download integration test coverage data
+      if: needs.integration-tests.result == 'success'
       uses: actions/download-artifact@v8
       with:
         name: jacoco-it-exec
         path: target/
 
     - name: Download E2E test coverage data
+      if: needs.e2e-tests.result == 'success'
       uses: actions/download-artifact@v8
       with:
         name: jacoco-e2e-exec
