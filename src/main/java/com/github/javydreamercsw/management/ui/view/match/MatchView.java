@@ -229,8 +229,22 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         referees.get(new java.util.Random().nextInt(referees.size()));
     segment.setReferee(referee);
     segment.setRefereeAwarenessLevel(npcService.getAwareness(referee));
-    segment = segmentService.updateSegment(segment);
-    log.debug("Auto-assigned referee {} to segment {}", referee.getName(), segment.getId());
+    // Only persist the referee assignment when the current user has management rights.
+    // Calling updateSegment() as a PLAYER-role user on a league segment triggers an
+    // AuthorizationDeniedException (canUserUpdateSegment returns false for non-campaign,
+    // non-universe matches). We also intentionally do NOT reassign `segment` from the
+    // save result: the returned entity has Show as an uninitialized lazy proxy (session
+    // is closed after the @Transactional method returns), which would cause a
+    // LazyInitializationException in buildHeader(). The local `segment` reference already
+    // has Show eagerly loaded from findByIdWithDetails, so we reuse it as-is.
+    if (securityUtils.isAdmin() || securityUtils.isBooker()) {
+      segmentService.updateSegment(segment);
+      log.debug("Auto-assigned referee {} to segment {}", referee.getName(), segment.getId());
+    } else {
+      log.debug(
+          "Skipping referee persist for segment {} — current user lacks management role",
+          segment.getId());
+    }
   }
 
   private void buildView() {
