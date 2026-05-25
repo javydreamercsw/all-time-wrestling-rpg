@@ -56,6 +56,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -72,8 +73,10 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility.AlignItems;
 import com.vaadin.flow.theme.lumo.LumoUtility.Background;
 import com.vaadin.flow.theme.lumo.LumoUtility.BorderRadius;
+import com.vaadin.flow.theme.lumo.LumoUtility.Display;
 import com.vaadin.flow.theme.lumo.LumoUtility.FlexWrap;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
@@ -426,8 +429,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     boolean isPlayerInMatch = playerWrestler != null && wrestlers.contains(playerWrestler);
 
     Long universeId = universeContextService.getCurrentUniverseId();
+
+    Div cardGrid = new Div();
+    cardGrid.addClassNames(
+        Display.FLEX, FlexWrap.WRAP, Gap.MEDIUM, AlignItems.START);
+
     if (isPlayerInMatch) {
-      participantsCard.add(
+      cardGrid.add(
           new WrestlerSummaryCard(
               playerWrestler, universeId, wrestlerService, injuryService, true));
 
@@ -443,7 +451,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           .filter(w -> w != null && !w.equals(playerWrestler))
           .forEach(
               opponent ->
-                  participantsCard.add(
+                  cardGrid.add(
                       new WrestlerSummaryCard(
                           opponent, universeId, wrestlerService, injuryService, false, penalty)));
     } else {
@@ -451,10 +459,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           .filter(java.util.Objects::nonNull)
           .forEach(
               w ->
-                  participantsCard.add(
+                  cardGrid.add(
                       new WrestlerSummaryCard(
                           w, universeId, wrestlerService, injuryService, false)));
     }
+    participantsCard.add(cardGrid);
     participantsCol.add(participantsCard);
 
     // Right Column: Rules, Titles, and Adjudication
