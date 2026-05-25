@@ -200,6 +200,14 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               }
               Tooltip.forComponent(hp).setText(hpTooltip.toString());
 
+              // Low Health threshold — relevant for both player and NPC (triggers game effects)
+              int lowHealthValue = wrestlerWithDetails.getLowHealth();
+              Span lowHp = new Span("🔻 Low Health: " + lowHealthValue);
+              lowHp.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
+              // Turn red when the wrestler is already at or below the low-health threshold
+              lowHp.addClassNames(
+                  effectiveHp <= lowHealthValue ? TextColor.ERROR : TextColor.WARNING);
+
               Span stam =
                   new Span(
                       "⚡ Effective Stamina: " + wrestlerWithDetails.getEffectiveStartingStamina());
@@ -217,7 +225,17 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               mom.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
               hand.addClassNames(FontSize.XSMALL, FontWeight.BOLD);
 
-              mods.add(hp, stam, mom, hand);
+              mods.add(hp, lowHp, stam);
+
+              // Low Stamina threshold — only meaningful for the player (NPC stamina not exposed)
+              if (isPlayer) {
+                int lowStaminaValue = wrestlerWithDetails.getLowStamina();
+                Span lowStam = new Span("⚠️ Low Stamina: " + lowStaminaValue);
+                lowStam.addClassNames(FontSize.XSMALL, FontWeight.BOLD, TextColor.WARNING);
+                mods.add(lowStam);
+              }
+
+              mods.add(mom, hand);
 
               // Campaign Attributes (Only show if they have them set, defaults are 1)
               HorizontalLayout attrs = new HorizontalLayout();
