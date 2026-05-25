@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
@@ -229,22 +230,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         referees.get(new java.util.Random().nextInt(referees.size()));
     segment.setReferee(referee);
     segment.setRefereeAwarenessLevel(npcService.getAwareness(referee));
-    // Only persist the referee assignment when the current user has management rights.
-    // Calling updateSegment() as a PLAYER-role user on a league segment triggers an
-    // AuthorizationDeniedException (canUserUpdateSegment returns false for non-campaign,
-    // non-universe matches). We also intentionally do NOT reassign `segment` from the
-    // save result: the returned entity has Show as an uninitialized lazy proxy (session
-    // is closed after the @Transactional method returns), which would cause a
-    // LazyInitializationException in buildHeader(). The local `segment` reference already
-    // has Show eagerly loaded from findByIdWithDetails, so we reuse it as-is.
-    if (securityUtils.isAdmin() || securityUtils.isBooker()) {
-      segmentService.updateSegment(segment);
-      log.debug("Auto-assigned referee {} to segment {}", referee.getName(), segment.getId());
-    } else {
-      log.debug(
-          "Skipping referee persist for segment {} — current user lacks management role",
-          segment.getId());
-    }
+    // Persist the referee assignment as a system operation so it succeeds regardless
+    // of the viewing user's role. Calling updateSegment() directly would fail with
+    // AuthorizationDeniedException for PLAYER-role users on league matches
+    // (canUserUpdateSegment returns false when the segment is neither a campaign match
+    // nor a universe match). runAsAdmin() temporarily elevates the security context
+    // to ADMIN for the duration of the save, then restores the original context.
+    //
+    // We intentionally do NOT reassign `segment` from the return value: the
+    // @Transactional method closes the session on return, leaving Show as an
+    // uninitialized lazy proxy. The local reference already has Show eagerly loaded
+    // from findByIdWithDetails(), so we continue to use it as-is.
+    GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
+    log.debug("Auto-assigned referee {} to segment {}", referee.getName(), segment.getId());
   }
 
   private void buildView() {

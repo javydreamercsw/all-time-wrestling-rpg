@@ -76,6 +76,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class MatchViewTest extends AbstractViewTest {
@@ -345,6 +349,55 @@ class MatchViewTest extends AbstractViewTest {
 
     assertNull(segment.getReferee());
     verify(npcService, never()).findAllByType(any());
+  }
+
+  /**
+   * Verifies that a PLAYER-role viewer still gets a referee auto-assigned and that {@code
+   * segmentService.updateSegment} is called even when the security context only carries {@code
+   * ROLE_PLAYER}. In production the call goes through {@link
+   * com.github.javydreamercsw.base.security.GeneralSecurityUtils#runAsAdmin} which temporarily
+   * elevates the context; in this unit test the service is mocked (no real {@code @PreAuthorize}
+   * enforcement), so the test validates the code path and documenting the expected behaviour — the
+   * companion integration test {@code MatchViewAutoAssignRefereeIT} exercises the real security
+   * gate.
+   */
+  @Test
+  void autoAssignsRefereeForPlayerRoleUser_persistsViaRunAsAdmin() {
+    // Establish a PLAYER-only security context for the duration of this test.
+    UsernamePasswordAuthenticationToken playerAuth =
+        new UsernamePasswordAuthenticationToken(
+            "player", "password", List.of(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    SecurityContext playerContext = SecurityContextHolder.createEmptyContext();
+    playerContext.setAuthentication(playerAuth);
+    SecurityContextHolder.setContext(playerContext);
+
+    try {
+      Segment segment = buildMinimalMatchSegment(4L, "Singles Match");
+
+      Npc referee = new Npc();
+      referee.setName("Mike Chioda");
+
+      when(segmentService.findByIdWithDetails(4L)).thenReturn(Optional.of(segment));
+      when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+      when(npcService.getAwareness(referee)).thenReturn(80);
+      // Mock updateSegment to return the same segment (simulates a successful save)
+      when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+      when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+      BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+      when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "4"));
+
+      UI.getCurrent().add(matchView);
+      matchView.beforeEnter(event);
+
+      // Referee must be assigned on the in-memory segment regardless of viewer role.
+      assertEquals(referee, segment.getReferee());
+      assertEquals(80, segment.getRefereeAwarenessLevel());
+      // updateSegment must be called — the auto-assign is a system op, not gated on role.
+      verify(segmentService).updateSegment(segment);
+    } finally {
+      SecurityContextHolder.clearContext();
+    }
   }
 
   private Segment buildMinimalMatchSegment(final long id, final String typeName) {
