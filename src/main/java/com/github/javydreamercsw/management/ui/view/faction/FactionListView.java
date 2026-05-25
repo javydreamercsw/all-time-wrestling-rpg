@@ -264,7 +264,7 @@ public class FactionListView extends VerticalLayout {
 
   private void setupEditDialog() {
     editDialog = new Dialog();
-    editDialog.setWidth("500px");
+    editDialog.setWidth("min(500px, 95vw)");
 
     binder = new Binder<>(Faction.class);
     binder.forField(name).asRequired("Name is required").bind(Faction::getName, Faction::setName);
@@ -304,8 +304,8 @@ public class FactionListView extends VerticalLayout {
 
   private void openMembersDialog(final Faction faction) {
     Dialog dialog = new Dialog();
-    dialog.setWidth("800px");
-    dialog.setHeight("600px");
+    dialog.setWidth("min(800px, 95vw)");
+    dialog.setHeight("min(600px, 90vh)");
 
     // Fetch fresh faction data with members eagerly loaded
     Optional<Faction> updatedFaction = factionService.getFactionByIdWithMembers(faction.getId());

@@ -230,7 +230,7 @@ public class InjuryTypeListView extends Main {
 
   private void configureEditDialog() {
     editDialog = new Dialog();
-    editDialog.setWidth("600px");
+    editDialog.setWidth("min(600px, 95vw)");
     editDialog.setCloseOnEsc(true);
     editDialog.setCloseOnOutsideClick(false);
 

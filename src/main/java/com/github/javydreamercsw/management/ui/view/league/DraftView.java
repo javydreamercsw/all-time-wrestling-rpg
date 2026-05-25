@@ -156,16 +156,18 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
 
     HorizontalLayout mainLayout = new HorizontalLayout();
     mainLayout.setSizeFull();
+    mainLayout.getStyle().set("flex-wrap", "wrap").set("align-items", "flex-start");
 
-    // Available Wrestlers
+    // Available Wrestlers — grows to fill remaining width
     VerticalLayout availableLayout =
         new VerticalLayout(new H3("Available Wrestlers"), availableWrestlersGrid);
     availableLayout.setSizeFull();
+    availableLayout.getStyle().set("flex", "1 1 300px").set("min-width", "0");
     configureAvailableGrid();
 
-    // History
+    // History — fixed width, wraps below available grid on narrow screens
     VerticalLayout historyLayout = new VerticalLayout(new H3("Draft History"), pickHistoryGrid);
-    historyLayout.setWidth("400px");
+    historyLayout.getStyle().set("flex", "0 0 360px").set("min-width", "280px");
     historyLayout.setHeightFull();
     configureHistoryGrid();
 

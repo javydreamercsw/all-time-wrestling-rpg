@@ -103,7 +103,7 @@ public class DeckListView extends VerticalLayout {
   // Java
   private void openDeckEditor(@NonNull final Deck deck) {
     Dialog dialog = new Dialog();
-    dialog.setWidth("1000px");
+    dialog.setWidth("min(1000px, 95vw)");
 
     VerticalLayout layout = new VerticalLayout();
     Grid<DeckCard> cardGrid = new Grid<>(DeckCard.class, false);
@@ -243,7 +243,7 @@ public class DeckListView extends VerticalLayout {
 
   private void openDeckView(final Deck deck) {
     Dialog viewDialog = new Dialog();
-    viewDialog.setWidth("1000px");
+    viewDialog.setWidth("min(1000px, 95vw)");
     viewDialog.setHeaderTitle("Deck Details");
 
     VerticalLayout layout = new VerticalLayout();

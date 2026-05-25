@@ -74,7 +74,7 @@ public class EditShowNameDialog extends Dialog {
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
     dialogLayout.setSpacing(true);
     dialogLayout.setPadding(false);
-    dialogLayout.setWidth("400px");
+    dialogLayout.setWidth("min(400px, 95vw)");
 
     add(dialogLayout);
   }

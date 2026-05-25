@@ -325,7 +325,7 @@ public class ShowTemplateListView extends Main {
 
   private void setupEditDialog() {
     editDialog = new Dialog();
-    editDialog.setWidth("600px");
+    editDialog.setWidth("min(600px, 95vw)");
     editDialog.setMaxWidth("90vw");
     editDialog.setMaxHeight("80vh");
 

@@ -928,7 +928,7 @@ public class ShowDetailView extends Main
   private void openAddSegmentDialog(@NonNull final Show show) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Add Segment to " + show.getName());
-    dialog.setWidth("600px");
+    dialog.setWidth("min(600px, 95vw)");
     dialog.setMaxWidth("90vw");
     dialog.setId("add-segment-dialog");
 
@@ -1302,7 +1302,7 @@ public class ShowDetailView extends Main
     final Segment seg = segmentRepository.findById(segment.getId()).orElse(segment);
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Edit Segment for " + currentShow.getName());
-    dialog.setWidth("600px");
+    dialog.setWidth("min(600px, 95vw)");
     dialog.setMaxWidth("90vw");
     dialog.setId("edit-segment-dialog");
 

@@ -244,7 +244,7 @@ public class HolidayListView extends Main {
     holidayFormDialog = new HolidayFormDialog();
     editDialog = new Dialog();
     editDialog.add(holidayFormDialog);
-    editDialog.setWidth("600px");
+    editDialog.setWidth("min(600px, 95vw)");
     editDialog.setCloseOnEsc(true);
     editDialog.setCloseOnOutsideClick(false);
 

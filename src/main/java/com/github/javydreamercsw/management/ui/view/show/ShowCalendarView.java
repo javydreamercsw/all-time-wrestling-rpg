@@ -152,7 +152,6 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     upcomingShowsPanel = new VerticalLayout();
     upcomingShowsPanel.addClassNames(
         LumoUtility.Padding.MEDIUM, LumoUtility.Border.ALL, LumoUtility.BorderRadius.MEDIUM);
-    upcomingShowsPanel.setWidth("300px");
 
     // Main layout
     setSizeFull();
@@ -339,22 +338,19 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     HorizontalLayout mainContent = new HorizontalLayout();
     mainContent.setSizeFull();
     mainContent.setSpacing(true);
-    mainContent.addClassNames(LumoUtility.Width.FULL);
+    mainContent.addClassNames(LumoUtility.Width.FULL, LumoUtility.FlexWrap.WRAP);
 
     VerticalLayout calendarContainer = new VerticalLayout();
     calendarContainer.setSizeFull();
     calendarContainer.setSpacing(false);
     calendarContainer.setPadding(false);
-    calendarContainer.addClassNames(LumoUtility.Width.FULL);
+    calendarContainer.getStyle().set("flex", "1 1 400px").set("min-width", "0");
     calendarContainer.add(calendar);
 
-    // Make calendar take up most of the space
-    mainContent.add(calendarContainer, upcomingShowsPanel);
-    mainContent.setFlexGrow(3, calendarContainer); // Give calendar more space
-    mainContent.setFlexGrow(0, upcomingShowsPanel); // Keep sidebar fixed
+    // Sidebar: fixed width on large screens, full width below ~760px
+    upcomingShowsPanel.getStyle().set("flex", "0 0 320px").set("min-width", "280px");
 
-    // Ensure sidebar has a reasonable width
-    upcomingShowsPanel.setWidth("350px");
+    mainContent.add(calendarContainer, upcomingShowsPanel);
 
     add(mainContent);
   }

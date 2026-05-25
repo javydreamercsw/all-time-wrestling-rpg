@@ -123,7 +123,7 @@ public class NarrationDialog extends Dialog {
     this.universeContextService = universeContextService;
 
     setHeaderTitle("Generate Narration for: " + this.segment.getSegmentType().getName());
-    setWidth("800px");
+    setWidth("min(800px, 95vw)");
     setMaxWidth("90vw");
     setId("narration-dialog");
 

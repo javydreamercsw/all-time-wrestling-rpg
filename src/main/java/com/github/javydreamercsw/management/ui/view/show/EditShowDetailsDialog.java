@@ -190,7 +190,7 @@ public class EditShowDetailsDialog extends Dialog {
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
     dialogLayout.setSpacing(true);
     dialogLayout.setPadding(false);
-    dialogLayout.setWidth("600px");
+    dialogLayout.setWidth("min(600px, 95vw)");
 
     add(dialogLayout);
   }

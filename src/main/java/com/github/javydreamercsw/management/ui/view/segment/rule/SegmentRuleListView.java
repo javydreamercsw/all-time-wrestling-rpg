@@ -172,7 +172,7 @@ public class SegmentRuleListView extends Main {
   private void setupEditDialog(@NonNull final String headerTitle) {
     editDialog = new Dialog();
     editDialog.setHeaderTitle(headerTitle);
-    editDialog.setWidth("500px");
+    editDialog.setWidth("min(500px, 95vw)");
 
     TextField editName = new TextField("Name");
     editName.setWidthFull();

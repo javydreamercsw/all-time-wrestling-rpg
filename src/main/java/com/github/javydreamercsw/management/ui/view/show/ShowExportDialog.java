@@ -62,8 +62,8 @@ public class ShowExportDialog extends Dialog {
     setModality(ModalityMode.VISUAL);
     setDraggable(true);
     setResizable(true);
-    setWidth("700px");
-    setHeight("700px");
+    setWidth("min(700px, 95vw)");
+    setHeight("min(700px, 90vh)");
 
     formatSelector.setWidthFull();
     List<String> formats = exportService.getAvailableFormats();
