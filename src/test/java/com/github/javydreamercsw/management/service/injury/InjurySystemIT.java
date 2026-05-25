@@ -202,6 +202,55 @@ class InjurySystemIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @DisplayName("getTotalHealthPenaltyForWrestler sums active injury penalties only")
+  void shouldReturnTotalHealthPenaltyFromActiveInjuries() {
+    // Given - two active injuries and one healed injury
+    Injury active1 =
+        injuryService
+            .createInjury(
+                wrestler1.getId(),
+                universeId,
+                "Shoulder Injury",
+                "Dislocated Shoulder",
+                InjurySeverity.SEVERE,
+                "Test")
+            .orElseThrow();
+
+    Injury active2 =
+        injuryService
+            .createInjury(
+                wrestler1.getId(),
+                universeId,
+                "Knee Injury",
+                "Sprained Knee",
+                InjurySeverity.MINOR,
+                "Test")
+            .orElseThrow();
+
+    Injury healedInjury =
+        injuryService
+            .createInjury(
+                wrestler1.getId(),
+                universeId,
+                "Old Injury",
+                "Already healed",
+                InjurySeverity.MODERATE,
+                "Test")
+            .orElseThrow();
+    healedInjury.heal();
+    injuryRepository.save(healedInjury);
+
+    // When
+    int totalPenalty =
+        injuryService.getTotalHealthPenaltyForWrestler(wrestler1.getId(), universeId);
+
+    // Then - only active injuries contribute; healed injury is excluded
+    int expectedPenalty = active1.getHealthPenalty() + active2.getHealthPenalty();
+    assertThat(totalPenalty).isEqualTo(expectedPenalty);
+    assertThat(totalPenalty).isGreaterThan(0);
+  }
+
+  @Test
   @DisplayName("Should prevent healing when wrestler cannot afford cost")
   void shouldPreventHealingWhenWrestlerCannotAffordCost() {
     // Given - Create injury and ensure wrestler has insufficient fans

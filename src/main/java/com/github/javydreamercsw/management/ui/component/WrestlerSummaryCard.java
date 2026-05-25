@@ -136,10 +136,15 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                       && wrestlerWithDetails.getAlignment().getCampaign() != null
                       && wrestlerWithDetails.getAlignment().getCampaign().getState() != null;
 
+              int injuryPenalty =
+                  injuryService.getTotalHealthPenaltyForWrestler(
+                      wrestlerWithDetails.getId(), universeId);
+
               int effectiveHp =
                   Math.max(
                       1,
                       wrestlerWithDetails.getEffectiveStartingHealth(universeId)
+                          - injuryPenalty
                           - additionalPenalty);
 
               VerticalLayout mods = new VerticalLayout();
@@ -178,11 +183,6 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
               }
 
-              int injuryPenalty =
-                  wrestlerWithDetails
-                      .getDefaultState()
-                      .map(WrestlerState::getTotalInjuryPenalty)
-                      .orElse(0);
               if (injuryPenalty > 0) {
                 hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
               }
