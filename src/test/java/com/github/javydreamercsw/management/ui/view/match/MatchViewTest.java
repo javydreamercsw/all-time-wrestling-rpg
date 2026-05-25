@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.match;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -37,6 +38,7 @@ import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
@@ -274,5 +276,86 @@ class MatchViewTest extends AbstractViewTest {
     verify(segmentAdjudicationService, never()).adjudicateMatch(any());
     // Verify updateSegment WAS called (to save winners)
     verify(segmentService, times(1)).updateSegment(any(Segment.class));
+  }
+
+  @Test
+  void autoAssignsRefereeWhenNoneSet() {
+    Segment segment = buildMinimalMatchSegment(1L, "Singles Match");
+
+    Npc referee = new Npc();
+    referee.setName("Earl Hebner");
+
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+    when(npcService.getAwareness(referee)).thenReturn(75);
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertEquals(referee, segment.getReferee());
+    assertEquals(75, segment.getRefereeAwarenessLevel());
+    verify(segmentService).updateSegment(segment);
+  }
+
+  @Test
+  void doesNotOverwriteExistingReferee() {
+    Segment segment = buildMinimalMatchSegment(2L, "Tag Team Match");
+    Npc existingRef = new Npc();
+    existingRef.setName("Existing Ref");
+    segment.setReferee(existingRef);
+
+    Npc otherRef = new Npc();
+    otherRef.setName("Other Ref");
+
+    when(segmentService.findByIdWithDetails(2L)).thenReturn(Optional.of(segment));
+    lenient().when(npcService.findAllByType("Referee")).thenReturn(List.of(otherRef));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "2"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertEquals(existingRef, segment.getReferee());
+    verify(npcService, never()).getAwareness(any());
+  }
+
+  @Test
+  void doesNotAssignRefereeToPromoSegment() {
+    Segment segment = buildMinimalMatchSegment(3L, "Promo");
+
+    Npc referee = new Npc();
+    referee.setName("Some Ref");
+
+    when(segmentService.findByIdWithDetails(3L)).thenReturn(Optional.of(segment));
+    lenient().when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "3"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertNull(segment.getReferee());
+    verify(npcService, never()).findAllByType(any());
+  }
+
+  private Segment buildMinimalMatchSegment(final long id, final String typeName) {
+    Segment segment = new Segment();
+    segment.setId(id);
+    Show show = new Show();
+    show.setName("Test Show");
+    segment.setShow(show);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName(typeName);
+    segment.setSegmentType(segmentType);
+    return segment;
   }
 }

@@ -202,6 +202,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               "Found segment: {} with {} wrestlers",
               segment.getId(),
               wrestlers != null ? wrestlers.size() : "NULL");
+          autoAssignRefereeIfNeeded();
           buildView();
         } else {
           log.warn("Segment not found for id: {}", matchId);
@@ -212,6 +213,26 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       log.error("Error in MatchView.beforeEnter", e);
       add(new H2("Error displaying match details."));
     }
+  }
+
+  private void autoAssignRefereeIfNeeded() {
+    boolean isPromo =
+        segment.getSegmentType() != null
+            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+    if (isPromo || segment.getReferee() != null) {
+      return;
+    }
+    List<com.github.javydreamercsw.management.domain.npc.Npc> referees =
+        npcService.findAllByType("Referee");
+    if (referees.isEmpty()) {
+      return;
+    }
+    com.github.javydreamercsw.management.domain.npc.Npc referee =
+        referees.get(new java.util.Random().nextInt(referees.size()));
+    segment.setReferee(referee);
+    segment.setRefereeAwarenessLevel(npcService.getAwareness(referee));
+    segment = segmentService.updateSegment(segment);
+    log.debug("Auto-assigned referee {} to segment {}", referee.getName(), segment.getId());
   }
 
   private void buildView() {
