@@ -780,25 +780,16 @@ public class NarrationDialog extends Dialog {
         segment.setReferee(refereeField.getValue());
       }
       segmentService.updateSegment(segment);
-
-      getUI()
-          .ifPresent(
-              ui ->
-                  ui.access(
-                      () -> {
-                        notificationService.showSuccess("Narration saved successfully!");
-                        onSaveCallback.accept(segment);
-                        close();
-                      }));
+      notificationService.showSuccess("Narration saved successfully!");
+      try {
+        onSaveCallback.accept(segment);
+      } catch (Exception callbackEx) {
+        log.warn("Post-save callback failed (dialog will still close)", callbackEx);
+      }
+      close();
     } catch (Exception e) {
       log.error("Error saving narration", e);
-      getUI()
-          .ifPresent(
-              ui ->
-                  ui.access(
-                      () ->
-                          notificationService.showError(
-                              "Failed to save narration: " + e.getMessage())));
+      notificationService.showError("Failed to save narration: " + e.getMessage());
     }
   }
 
