@@ -123,7 +123,7 @@ public class GenericImageGenerationDialog extends Dialog {
         "Mock AI".equals(service.getProviderName()) ? "b64_json" : "url"; // Test base64 path
 
     String modelValue = modelField.getValue();
-    final String model = (modelValue != null && modelValue.trim().isEmpty()) ? null : modelValue;
+    final String model = modelValue != null && modelValue.trim().isEmpty() ? null : modelValue;
 
     ImageGenerationService.ImageRequest request =
         ImageGenerationService.ImageRequest.builder()
