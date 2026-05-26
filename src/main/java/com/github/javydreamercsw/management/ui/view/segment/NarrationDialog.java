@@ -781,16 +781,17 @@ public class NarrationDialog extends Dialog {
       }
       segmentService.updateSegment(segment);
       notificationService.showSuccess("Narration saved successfully!");
-      try {
-        onSaveCallback.accept(segment);
-      } catch (Exception callbackEx) {
-        log.warn("Post-save callback failed (dialog will still close)", callbackEx);
-      }
-      close();
     } catch (Exception e) {
       log.error("Error saving narration", e);
       notificationService.showError("Failed to save narration: " + e.getMessage());
+      return; // Keep dialog open so user can retry or copy their narration
     }
+    try {
+      onSaveCallback.accept(segment);
+    } catch (Exception callbackEx) {
+      log.warn("Post-save callback failed (dialog will still close)", callbackEx);
+    }
+    close();
   }
 
   private void handleNarrationResponse(final String response) {

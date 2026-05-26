@@ -643,9 +643,16 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             + " other NPCs.");
     clickElement(saveNarrationButton);
 
-    // Wait for the dialog to disappear
+    // Wait for the narration dialog to close. We check the `opened` attribute on the dialog's
+    // root element (set via setId("narration-dialog")) rather than generic CSS visibility,
+    // because the vaadin-dialog host element delegates its visual rendering to
+    // vaadin-dialog-overlay (teleported to <body>) and may not change its own display state.
+    // The CSS selector "#narration-dialog[opened]" only matches while the dialog is open;
+    // invisibilityOfElementLocated returns true when no element matches (attribute removed).
     WebDriverWait longWait = new WebDriverWait(driver, Duration.ofMinutes(1));
-    longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
+    longWait.until(
+        ExpectedConditions.invisibilityOfElementLocated(
+            By.cssSelector("#narration-dialog[opened]")));
 
     WebElement summaryButton =
         wait.until(
