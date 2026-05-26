@@ -25,22 +25,32 @@ import java.nio.file.StandardCopyOption;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 
 @Slf4j
-public class UITestWatcher implements AfterTestExecutionCallback {
+public class UITestWatcher implements AfterTestExecutionCallback, BeforeTestExecutionCallback {
+  private final Path outputRootDir;
+
+  /** Production constructor — uses the default {@code target/test-failures} directory. */
+  public UITestWatcher() {
+    this.outputRootDir = Paths.get("target", "test-failures");
+  }
+
+  /** Package-private constructor for tests — allows injecting a custom root directory. */
+  UITestWatcher(Path outputRootDir) {
+    this.outputRootDir = outputRootDir;
+  }
 
   @Override
-  public void afterTestExecution(final ExtensionContext context) throws Exception {
+  public void afterTestExecution(final ExtensionContext context) {
     Path outputDir =
-        Paths.get(
-            "target",
-            "test-failures",
-            context.getTestClass().get().getSimpleName(),
-            context.getRequiredTestMethod().getName());
+        outputRootDir
+            .resolve(context.getTestClass().get().getSimpleName())
+            .resolve(context.getRequiredTestMethod().getName());
     if (context.getExecutionException().isPresent()) {
       context
           .getTestInstance()
@@ -91,5 +101,10 @@ public class UITestWatcher implements AfterTestExecutionCallback {
         log.warn("Failed to clean up test artifact directory: {}", outputDir, e);
       }
     }
+  }
+
+  @Override
+  public void beforeTestExecution(ExtensionContext context) throws Exception {
+    FileUtils.deleteDirectory(outputRootDir.toFile());
   }
 }
