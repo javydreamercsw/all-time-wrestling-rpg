@@ -47,6 +47,7 @@ public class GenericImageGenerationDialog extends Dialog {
   private final TextArea promptArea;
   private final TextField modelField;
   private final Image previewImage;
+  private final Button generateButton;
   private final Button saveButton;
   private String currentImageData;
   private boolean isBase64;
@@ -93,7 +94,7 @@ public class GenericImageGenerationDialog extends Dialog {
     previewImage.setMaxWidth("100%");
     previewImage.setVisible(false);
 
-    Button generateButton = new Button("Generate", e -> generateImage());
+    generateButton = new Button("Generate", e -> generateImage());
     generateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     generateButton.setId("generate-image");
 
@@ -117,46 +118,58 @@ public class GenericImageGenerationDialog extends Dialog {
       return;
     }
 
-    try {
-      Notification.show("Generating image... This may take a moment.");
+    // Determine format on the UI thread before dispatching to background
+    final String format =
+        "Mock AI".equals(service.getProviderName()) ? "b64_json" : "url"; // Test base64 path
 
-      // Determine format based on provider?
-      // LocalAI often works well with URLs if accessible, or b64_json.
-      // Let's default to URL for now, but handle b64 if needed.
-      // OpenAI returns URLs.
-      String format = "url";
-      if ("Mock AI".equals(service.getProviderName())) {
-        format = "b64_json"; // Test base64 path
-      }
+    String modelValue = modelField.getValue();
+    final String model = (modelValue != null && modelValue.trim().isEmpty()) ? null : modelValue;
 
-      String model = modelField.getValue();
-      if (model != null && model.trim().isEmpty()) {
-        model = null;
-      }
+    ImageGenerationService.ImageRequest request =
+        ImageGenerationService.ImageRequest.builder()
+            .prompt(promptArea.getValue())
+            .responseFormat(format)
+            .model(model)
+            .build();
 
-      ImageGenerationService.ImageRequest request =
-          ImageGenerationService.ImageRequest.builder()
-              .prompt(promptArea.getValue())
-              .responseFormat(format)
-              .model(model)
-              .build();
+    Notification.show("Generating image... This may take a moment.");
+    generateButton.setEnabled(false);
+    saveButton.setEnabled(false);
+    com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
 
-      currentImageData = service.generateImage(request);
-      isBase64 = !"url".equals(format);
-
-      if (isBase64) {
-        previewImage.setSrc("data:image/png;base64," + currentImageData);
-      } else {
-        previewImage.setSrc(currentImageData);
-      }
-      previewImage.setVisible(true);
-      saveButton.setEnabled(true);
-
-    } catch (Exception e) {
-      log.error("Failed to generate image", e);
-      Notification.show("Generation failed: " + e.getMessage())
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
+    service
+        .generateImageAsync(request)
+        .thenAccept(
+            imageData ->
+                ui.access(
+                    () -> {
+                      currentImageData = imageData;
+                      isBase64 = !"url".equals(format);
+                      previewImage.setSrc(
+                          isBase64
+                              ? "data:image/png;base64," + currentImageData
+                              : currentImageData);
+                      previewImage.setVisible(true);
+                      generateButton.setEnabled(true);
+                      saveButton.setEnabled(true);
+                      ui.push();
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Failed to generate image", ex);
+              ui.access(
+                  () -> {
+                    Notification.show(
+                            "Generation failed: "
+                                + (ex.getCause() != null
+                                    ? ex.getCause().getMessage()
+                                    : ex.getMessage()))
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    generateButton.setEnabled(true);
+                    ui.push();
+                  });
+              return null;
+            });
   }
 
   private void saveImage() {

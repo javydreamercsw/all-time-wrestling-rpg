@@ -430,4 +430,11 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
     }
     return httpClient;
   }
+
+  @Override
+  @org.springframework.scheduling.annotation.Async
+  public java.util.concurrent.CompletableFuture<String> narrateSegmentAsync(
+      @NonNull final SegmentNarrationContext segmentContext) {
+    return java.util.concurrent.CompletableFuture.completedFuture(narrateSegment(segmentContext));
+  }
 }

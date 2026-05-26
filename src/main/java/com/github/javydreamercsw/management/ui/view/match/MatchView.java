@@ -127,6 +127,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private MultiSelectComboBox<Wrestler> winnersComboBox;
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
+  private Button aiGenerateButton;
 
   @Autowired
   public MatchView(
@@ -676,7 +677,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     narrationButtons.setWidthFull();
 
     String generateLabel = isPromo ? "Auto-Generate Promo (AI)" : "Generate Match Narration (AI)";
-    Button aiGenerateButton = new Button(generateLabel, event -> generateAiNarration());
+    aiGenerateButton = new Button(generateLabel, event -> generateAiNarration());
     aiGenerateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     aiGenerateButton.setId("ai-generate-narration-button");
 
@@ -1041,24 +1042,46 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 });
       }
 
-      String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);
-
-      if (generated != null && !generated.isEmpty()) {
-        getUI()
-            .ifPresent(
-                ui ->
-                    ui.access(
-                        () -> {
-                          narrationArea.setValue(generated);
-                          segment.setNarration(generated);
-                          segmentService.updateSegment(segment);
-                          updateCommentaryDisplay();
-                          notificationService.showSuccess("Narration generated!");
-                          ui.push();
-                        }));
-      }
+      com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+      aiGenerateButton.setEnabled(false);
+      narrationServiceFactory
+          .getBestAvailableService()
+          .narrateSegmentAsync(context)
+          .thenAccept(
+              generated -> {
+                if (generated != null && !generated.isEmpty()) {
+                  ui.access(
+                      () -> {
+                        narrationArea.setValue(generated);
+                        segment.setNarration(generated);
+                        segmentService.updateSegment(segment);
+                        updateCommentaryDisplay();
+                        notificationService.showSuccess("Narration generated!");
+                        aiGenerateButton.setEnabled(true);
+                        ui.push();
+                      });
+                } else {
+                  ui.access(
+                      () -> {
+                        aiGenerateButton.setEnabled(true);
+                        ui.push();
+                      });
+                }
+              })
+          .exceptionally(
+              ex -> {
+                log.error("Failed to generate AI narration", ex);
+                ui.access(
+                    () -> {
+                      notificationService.showAIServiceError(
+                          ex.getCause() != null ? ex.getCause() : ex);
+                      aiGenerateButton.setEnabled(true);
+                      ui.push();
+                    });
+                return null;
+              });
     } catch (Exception e) {
-      log.error("Failed to generate AI narration", e);
+      log.error("Failed to build narration context", e);
       notificationService.showAIServiceError(e);
     }
   }
