@@ -635,8 +635,14 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(generateNarrationButton);
     clickElement(generateNarrationButton);
 
+    // Wait for AI generation to complete. elementToBeClickable uses Selenium's isEnabled() which
+    // does not reliably track vaadin-button's custom `disabled` attribute on the web component
+    // host element. Using :not([disabled]) CSS selector ensures we detect the actual Vaadin state.
+    WebDriverWait aiWait = new WebDriverWait(driver, Duration.ofMinutes(1));
     WebElement saveNarrationButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("save-narration-button")));
+        aiWait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.cssSelector("#save-narration-button:not([disabled])")));
     Assertions.assertNotNull(saveNarrationButton);
     captureCaption(
         "Wrestler's decks are used as well as any provided input like participants, referees and"
