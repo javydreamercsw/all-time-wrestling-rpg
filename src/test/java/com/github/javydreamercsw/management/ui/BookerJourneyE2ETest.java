@@ -635,17 +635,37 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(generateNarrationButton);
     clickElement(generateNarrationButton);
 
+    // The segment has existing narration, so save-narration-button starts ENABLED before generate
+    // is clicked. We must wait for the full disabled→enabled cycle rather than just
+    // :not([disabled])
+    // which would return immediately (before showProgress(true) reaches the browser) and cause the
+    // click to fire on a still-disabled button.
+    // Step 1: wait for the button to become disabled (server processed the generate click).
+    WebDriverWait aiWait = new WebDriverWait(driver, Duration.ofMinutes(1));
+    aiWait.until(
+        ExpectedConditions.presenceOfElementLocated(
+            By.cssSelector("#save-narration-button[disabled]")));
+    // Step 2: wait for the button to become enabled again (AI generation complete).
     WebElement saveNarrationButton =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("save-narration-button")));
+        aiWait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.cssSelector("#save-narration-button:not([disabled])")));
     Assertions.assertNotNull(saveNarrationButton);
     captureCaption(
         "Wrestler's decks are used as well as any provided input like participants, referees and"
             + " other NPCs.");
     clickElement(saveNarrationButton);
 
-    // Wait for the dialog to disappear
+    // Wait for the narration dialog to close. We check the `opened` attribute on the dialog's
+    // root element (set via setId("narration-dialog")) rather than generic CSS visibility,
+    // because the vaadin-dialog host element delegates its visual rendering to
+    // vaadin-dialog-overlay (teleported to <body>) and may not change its own display state.
+    // The CSS selector "#narration-dialog[opened]" only matches while the dialog is open;
+    // invisibilityOfElementLocated returns true when no element matches (attribute removed).
     WebDriverWait longWait = new WebDriverWait(driver, Duration.ofMinutes(1));
-    longWait.until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
+    longWait.until(
+        ExpectedConditions.invisibilityOfElementLocated(
+            By.cssSelector("#narration-dialog[opened]")));
 
     WebElement summaryButton =
         wait.until(

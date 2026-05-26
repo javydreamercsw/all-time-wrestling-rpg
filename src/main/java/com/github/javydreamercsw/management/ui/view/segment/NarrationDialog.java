@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -53,12 +54,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 
 @Slf4j
 public class NarrationDialog extends Dialog {
@@ -324,37 +323,65 @@ public class NarrationDialog extends Dialog {
       return;
     }
 
-    showProgress(true);
+    SegmentNarrationService.SegmentNarrationContext context;
     try {
-      SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
-      log.debug("Sending narration context to AI: {}", context);
-
-      ResponseEntity<Map<String, Object>> response =
-          segmentNarrationController.narrateSegment(context);
-
-      if (response.getStatusCode().isError()) {
-        try {
-          JsonNode errorResponse = objectMapper.valueToTree(response.getBody());
-          if (errorResponse.has("alternativeProviders")) {
-            showRetryDialog(errorResponse);
-          } else {
-            showError(
-                "Failed to generate narration: "
-                    + errorResponse.path("error").asText("Unknown error"));
-          }
-        } catch (Exception ex) {
-          log.error("Error parsing error response", ex);
-          showError("Failed to generate narration: " + response);
-        }
-      } else {
-        handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
-      }
+      context = buildSegmentContext();
     } catch (Exception e) {
-      log.error("Error generating segment narration", e);
+      log.error("Error building narration context", e);
       notificationService.showAIServiceError(e);
-    } finally {
-      showProgress(false);
+      return;
     }
+    log.debug("Sending narration context to AI: {}", context);
+    showProgress(true);
+    UI ui = UI.getCurrent();
+
+    java.util.concurrent.CompletableFuture.supplyAsync(
+            () -> segmentNarrationController.narrateSegment(context))
+        .thenAccept(
+            response ->
+                ui.access(
+                    () -> {
+                      try {
+                        if (response.getStatusCode().isError()) {
+                          try {
+                            JsonNode errorResponse = objectMapper.valueToTree(response.getBody());
+                            if (errorResponse.has("alternativeProviders")) {
+                              showRetryDialog(errorResponse);
+                            } else {
+                              showError(
+                                  "Failed to generate narration: "
+                                      + errorResponse.path("error").asText("Unknown error"));
+                            }
+                          } catch (Exception ex) {
+                            log.error("Error parsing error response", ex);
+                            showError("Failed to generate narration: " + response);
+                          }
+                        } else {
+                          try {
+                            handleNarrationResponse(
+                                objectMapper.writeValueAsString(response.getBody()));
+                          } catch (JsonProcessingException e) {
+                            log.error("Error processing narration response", e);
+                            showError("Failed to process narration response.");
+                          }
+                        }
+                      } finally {
+                        showProgress(false);
+                        ui.push();
+                      }
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error generating segment narration", ex);
+              ui.access(
+                  () -> {
+                    notificationService.showAIServiceError(
+                        ex.getCause() != null ? ex.getCause() : ex);
+                    showProgress(false);
+                    ui.push();
+                  });
+              return null;
+            });
   }
 
   SegmentNarrationService.SegmentNarrationContext buildSegmentContext() {
@@ -682,45 +709,67 @@ public class NarrationDialog extends Dialog {
   }
 
   private void retryWithProvider(@NonNull final String provider) {
-    showProgress(true);
-
+    SegmentNarrationService.SegmentNarrationContext context;
     try {
-      SegmentNarrationService.SegmentNarrationContext context = buildSegmentContext();
-      log.info("Retrying narration with provider {} and context: {}", provider, context);
-
-      ResponseEntity<Map<String, Object>> response =
-          segmentNarrationController.narrateSegmentWithProvider(provider, context);
-
-      if (response.getStatusCode().isError()) {
-        try {
-          JsonNode errorResponse = objectMapper.valueToTree(response.getBody());
-          if (errorResponse.has("alternativeProviders")) {
-            showRetryDialog(errorResponse);
-          } else {
-            showError(
-                "Failed to generate narration: "
-                    + errorResponse.path("error").asText("Unknown error"));
-          }
-        } catch (Exception ex) {
-          log.error("Error parsing error response", ex);
-          showError("Failed to generate narration: " + response.toString());
-        }
-      } else if (response.getBody() != null) {
-        try {
-          handleNarrationResponse(objectMapper.writeValueAsString(response.getBody()));
-        } catch (JsonProcessingException e) {
-          log.error("Error processing response", e);
-          showError("Failed to process narration response.");
-        }
-      } else {
-        log.warn("Got an empty response from provider!");
-      }
+      context = buildSegmentContext();
     } catch (Exception e) {
-      log.error("Error retrying with provider: {}", provider, e);
+      log.error("Error building narration context for retry", e);
       notificationService.showAIServiceError(e);
-    } finally {
-      showProgress(false);
+      return;
     }
+    log.info("Retrying narration with provider {} and context: {}", provider, context);
+    showProgress(true);
+    UI ui = UI.getCurrent();
+
+    java.util.concurrent.CompletableFuture.supplyAsync(
+            () -> segmentNarrationController.narrateSegmentWithProvider(provider, context))
+        .thenAccept(
+            response ->
+                ui.access(
+                    () -> {
+                      try {
+                        if (response.getStatusCode().isError()) {
+                          try {
+                            JsonNode errorResponse = objectMapper.valueToTree(response.getBody());
+                            if (errorResponse.has("alternativeProviders")) {
+                              showRetryDialog(errorResponse);
+                            } else {
+                              showError(
+                                  "Failed to generate narration: "
+                                      + errorResponse.path("error").asText("Unknown error"));
+                            }
+                          } catch (Exception ex) {
+                            log.error("Error parsing error response", ex);
+                            showError("Failed to generate narration: " + response.toString());
+                          }
+                        } else if (response.getBody() != null) {
+                          try {
+                            handleNarrationResponse(
+                                objectMapper.writeValueAsString(response.getBody()));
+                          } catch (JsonProcessingException e) {
+                            log.error("Error processing response", e);
+                            showError("Failed to process narration response.");
+                          }
+                        } else {
+                          log.warn("Got an empty response from provider!");
+                        }
+                      } finally {
+                        showProgress(false);
+                        ui.push();
+                      }
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error retrying with provider: {}", provider, ex);
+              ui.access(
+                  () -> {
+                    notificationService.showAIServiceError(
+                        ex.getCause() != null ? ex.getCause() : ex);
+                    showProgress(false);
+                    ui.push();
+                  });
+              return null;
+            });
   }
 
   private void saveNarration() {
@@ -731,26 +780,18 @@ public class NarrationDialog extends Dialog {
         segment.setReferee(refereeField.getValue());
       }
       segmentService.updateSegment(segment);
-
-      getUI()
-          .ifPresent(
-              ui ->
-                  ui.access(
-                      () -> {
-                        notificationService.showSuccess("Narration saved successfully!");
-                        onSaveCallback.accept(segment);
-                        close();
-                      }));
+      notificationService.showSuccess("Narration saved successfully!");
     } catch (Exception e) {
       log.error("Error saving narration", e);
-      getUI()
-          .ifPresent(
-              ui ->
-                  ui.access(
-                      () ->
-                          notificationService.showError(
-                              "Failed to save narration: " + e.getMessage())));
+      notificationService.showError("Failed to save narration: " + e.getMessage());
+      return; // Keep dialog open so user can retry or copy their narration
     }
+    try {
+      onSaveCallback.accept(segment);
+    } catch (Exception callbackEx) {
+      log.warn("Post-save callback failed (dialog will still close)", callbackEx);
+    }
+    close();
   }
 
   private void handleNarrationResponse(final String response) {
