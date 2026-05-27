@@ -60,24 +60,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Download to a temp dir to avoid conflicts with any existing files
+          # in the workspace (e.g. git-committed videos/).
           gh run download ${{ github.event.inputs.videos_run_id }} \
             --name docs-videos \
-            --dir .
+            --dir /tmp/videos-artifact
 
       - name: Normalize video artifact structure
         if: ${{ github.event.inputs.videos_run_id != '' }}
         run: |
-          # Releases before the artifact-path fix uploaded MP4s without the
-          # docs/videos/ prefix so they land at ./ instead of docs/videos/.
           mkdir -p docs/videos
-          shopt -s nullglob
-          mp4s=(*.mp4)
-          if [ ${#mp4s[@]} -gt 0 ]; then
-            echo "Moving ${#mp4s[@]} MP4(s) from root to docs/videos/ (pre-fix artifact)"
-            mv *.mp4 docs/videos/
+          # Artifact structure varies by when the release ran:
+          #   pre-fix:  /tmp/videos-artifact/videos/<file>.mp4  (trailing-slash upload stripped docs/)
+          #   post-fix: /tmp/videos-artifact/docs/videos/<file>.mp4
+          if find /tmp/videos-artifact/docs/videos -name '*.mp4' -maxdepth 1 | grep -q .; then
+            echo "Post-fix artifact: copying from docs/videos/"
+            find /tmp/videos-artifact/docs/videos -name '*.mp4' -maxdepth 1 -exec cp {} docs/videos/ \;
+            [ -f /tmp/videos-artifact/docs/video-manifest.json ] && cp /tmp/videos-artifact/docs/video-manifest.json docs/
+          elif find /tmp/videos-artifact/videos -name '*.mp4' -maxdepth 1 | grep -q .; then
+            echo "Pre-fix artifact: copying from videos/"
+            find /tmp/videos-artifact/videos -name '*.mp4' -maxdepth 1 -exec cp {} docs/videos/ \;
+            [ -f /tmp/videos-artifact/video-manifest.json ] && cp /tmp/videos-artifact/video-manifest.json docs/
           else
-            echo "Videos already at docs/videos/ — no migration needed"
+            echo "No MP4s found in artifact — deploying without videos"
           fi
+          echo "Videos in docs/videos/: $(find docs/videos -name '*.mp4' | wc -l)"
 
       - name: Generate Markdown and build embedded docs
         run: node scripts/generate-docs.cjs
