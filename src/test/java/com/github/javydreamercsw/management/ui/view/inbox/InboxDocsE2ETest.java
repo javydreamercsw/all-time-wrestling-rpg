@@ -35,7 +35,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Tag("video")
 class InboxDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private InboxEventType championshipChange;
@@ -112,6 +111,7 @@ class InboxDocsE2ETest extends AbstractDocsE2ETest {
         "inbox-overview");
   }
 
+  @Tag("video")
   @Test
   void testRecordInboxWalkthrough() {
     setVideoInfo("Player Dashboard", "Inbox Walkthrough", "inbox-walkthrough");

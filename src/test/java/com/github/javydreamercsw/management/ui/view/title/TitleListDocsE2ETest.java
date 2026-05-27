@@ -34,7 +34,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Tag("video")
 class TitleListDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private TitleService titleService;
@@ -46,6 +45,7 @@ class TitleListDocsE2ETest extends AbstractDocsE2ETest {
     dataInitializer.init();
   }
 
+  @Tag("video")
   @Test
   void testRecordTitleListWalkthrough() {
     setVideoInfo("Entities", "Championship Titles Walkthrough", "title-list-walkthrough");

@@ -53,7 +53,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 // Static import needed
 
 @Slf4j
-@Tag("video")
 public class LeagueDocsE2ETest extends AbstractE2ETest {
 
   @Autowired private AccountRepository accountRepository;
@@ -234,6 +233,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
         "league-history-tab");
   }
 
+  @Tag("video")
   @Test
   void testRecordDraftRoomWalkthrough() {
     setVideoInfo("Leagues", "The Draft Room", "draft-room-walkthrough");
@@ -319,6 +319,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     sleep(1500);
   }
 
+  @Tag("video")
   @Test
   void testRecordLeagueLifecycleWalkthrough() {
     setVideoInfo("Leagues", "League Season — Full Lifecycle", "league-lifecycle-walkthrough");

@@ -25,7 +25,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Tag("video")
 class ShowCalendarDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private DataInitializer dataInitializer;
@@ -51,6 +50,7 @@ class ShowCalendarDocsE2ETest extends AbstractDocsE2ETest {
         "show-calendar-overview");
   }
 
+  @Tag("video")
   @Test
   void testRecordShowCalendarWalkthrough() {
     setVideoInfo("Booker", "Show Calendar Walkthrough", "show-calendar-walkthrough");
