@@ -335,7 +335,10 @@ jobs:
       needs.check-paths.outputs.code_changed == 'true' &&
       needs.build-and-unit-test.result == 'success' &&
       (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
-      (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped')
+      (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') &&
+      (needs.docs-e2e-tests.result == 'success' || needs.docs-e2e-tests.result == 'skipped') &&
+      (needs.validate-video-tests.result == 'success' || needs.validate-video-tests.result == 'skipped') &&
+      (needs.notion-e2e-tests.result == 'success' || needs.notion-e2e-tests.result == 'skipped')
     steps:
     - uses: actions/checkout@v6
     - name: Set up JDK 25
