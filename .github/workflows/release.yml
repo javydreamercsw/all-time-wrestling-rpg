@@ -362,7 +362,7 @@ jobs:
     needs: build_and_release
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2025]
+        os: [ubuntu-latest, macos-latest, windows-2025-vs2026]
         include:
           - os: ubuntu-latest
             type: DEB
@@ -370,7 +370,7 @@ jobs:
           - os: macos-latest
             type: DMG
             icon: src/main/resources/jpackage/mac/icon.icns
-          - os: windows-2025
+          - os: windows-2025-vs2026
             type: MSI
             # CI uses a BMP-only ICO to avoid sporadic jpackage UpdateResource failures.
             icon: src/main/resources/jpackage/windows/icon-ci.ico
@@ -389,7 +389,7 @@ jobs:
           cache: 'maven'
 
       - name: Install WiX Toolset (Windows only)
-        if: matrix.os == 'windows-2025'
+        if: matrix.os == 'windows-2025-vs2026'
         shell: bash
         run: |
           dotnet tool install --global wix --version 4.0.1
