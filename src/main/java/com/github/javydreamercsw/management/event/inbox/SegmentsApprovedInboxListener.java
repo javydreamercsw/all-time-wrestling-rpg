@@ -49,7 +49,7 @@ public class SegmentsApprovedInboxListener implements ApplicationListener<Segmen
 
   @Override
   public void onApplicationEvent(@NonNull final SegmentsApprovedEvent event) {
-    log.info("Received SegmentsApprovedEvent for show: {}", event.getShow().getName());
+    log.debug("Received SegmentsApprovedEvent for show: {}", event.getShow().getName());
     inboxService.createInboxItem(
         segmentsApproved,
         "Segments approved for show: %s".formatted(event.getShow().getName()),

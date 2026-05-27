@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.stream.Collectors;
@@ -50,10 +51,10 @@ public class FeudHeatChangeInboxListener implements ApplicationListener<FeudHeat
 
   @Override
   public void onApplicationEvent(@NonNull final FeudHeatChangeEvent event) {
-    log.info("Received FeudHeatChangeEvent for feud ID: {}", event.getFeudId());
+    log.debug("Received FeudHeatChangeEvent for feud ID: {}", event.getFeudId());
 
     String wrestlers =
-        event.getWrestlers().stream().map(w -> w.getName()).collect(Collectors.joining(", "));
+        event.getWrestlers().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
 
     String message =
         "Feud '%s' involving %s %s %d heat. New total: %d. Reason: %s"

@@ -49,7 +49,8 @@ public class RivalryContinuesInboxListener implements ApplicationListener<Rivalr
 
   @Override
   public void onApplicationEvent(@NonNull final RivalryContinuesEvent event) {
-    log.info("Received RivalryContinuesEvent for rivalry: {}", event.getRivalry().getDisplayName());
+    log.debug(
+        "Received RivalryContinuesEvent for rivalry: {}", event.getRivalry().getDisplayName());
     inboxService.createInboxItem(
         rivalryContinues,
         "Rivalry '%s' continues.".formatted(event.getRivalry().getDisplayName()),

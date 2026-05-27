@@ -21,12 +21,14 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class FanAdjudicationInboxListener implements ApplicationListener<FanAwardedEvent> {
 
   private final InboxService inboxService;
@@ -54,6 +56,8 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
                 event.getFanChange() > 0 ? "gained" : "lost",
                 Math.abs(event.getFanChange()),
                 event.getWrestlerState().getFans());
+
+    log.debug(message);
 
     inboxService.createInboxItem(
         fanAdjudication,
