@@ -73,20 +73,18 @@ jobs:
           # Artifact structure varies by when the release ran:
           #   pre-fix:  /tmp/videos-artifact/videos/<file>.mp4  (trailing-slash upload stripped docs/)
           #   post-fix: /tmp/videos-artifact/docs/videos/<file>.mp4
-          # Also copy video-manifest.json to docs/ if present.
-          shopt -s nullglob
-          if ls /tmp/videos-artifact/docs/videos/*.mp4 &>/dev/null; then
+          if find /tmp/videos-artifact/docs/videos -name '*.mp4' -maxdepth 1 | grep -q .; then
             echo "Post-fix artifact: copying from docs/videos/"
-            cp /tmp/videos-artifact/docs/videos/*.mp4 docs/videos/
+            find /tmp/videos-artifact/docs/videos -name '*.mp4' -maxdepth 1 -exec cp {} docs/videos/ \;
             [ -f /tmp/videos-artifact/docs/video-manifest.json ] && cp /tmp/videos-artifact/docs/video-manifest.json docs/
-          elif ls /tmp/videos-artifact/videos/*.mp4 &>/dev/null; then
+          elif find /tmp/videos-artifact/videos -name '*.mp4' -maxdepth 1 | grep -q .; then
             echo "Pre-fix artifact: copying from videos/"
-            cp /tmp/videos-artifact/videos/*.mp4 docs/videos/
+            find /tmp/videos-artifact/videos -name '*.mp4' -maxdepth 1 -exec cp {} docs/videos/ \;
             [ -f /tmp/videos-artifact/video-manifest.json ] && cp /tmp/videos-artifact/video-manifest.json docs/
           else
             echo "No MP4s found in artifact — deploying without videos"
           fi
-          echo "Videos in docs/videos/: $(ls docs/videos/*.mp4 2>/dev/null | wc -l)"
+          echo "Videos in docs/videos/: $(find docs/videos -name '*.mp4' | wc -l)"
 
       - name: Generate Markdown and build embedded docs
         run: node scripts/generate-docs.cjs
