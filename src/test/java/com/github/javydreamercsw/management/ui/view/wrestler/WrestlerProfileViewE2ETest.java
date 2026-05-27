@@ -205,6 +205,14 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             + " helping bookers identify which angles to push on upcoming shows. Each entry"
             + " shows the current heat total accumulated across all events in that feud.",
         4500);
+
+    ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.scrollBy(0, 200)");
+    sleep(800);
+    captureCaption(
+        "Heat accumulates automatically from match outcomes, drama events, and promos."
+            + " Booking a high-heat feud match on a big show accelerates the rise"
+            + " while keeping them apart lets the heat decay naturally over time.",
+        4000);
   }
 
   @Test
@@ -282,6 +290,14 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
         "Championship matches are highlighted — the title at stake is shown alongside"
             + " the participants, giving a full picture of the wrestler's title history."
             + " This data feeds into the Championships accordion on the same profile.",
+        4000);
+
+    ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.scrollBy(0, 200)");
+    sleep(800);
+    captureCaption(
+        "Click the show name in any row to navigate directly to that show's detail view."
+            + " From there you can review the full card, narration, and results for"
+            + " every segment on the night the match took place.",
         4000);
   }
 

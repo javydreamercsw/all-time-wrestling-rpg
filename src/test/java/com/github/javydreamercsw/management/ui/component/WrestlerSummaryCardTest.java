@@ -50,7 +50,9 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
             .id(1L)
             .name("Test Wrestler")
             .startingHealth(15)
+            .lowHealth(5)
             .startingStamina(15)
+            .lowStamina(4)
             .drive(1)
             .resilience(2)
             .charisma(3)
@@ -98,5 +100,29 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
     _get(card, Span.class, spec -> spec.withText("RES: 2"));
     _get(card, Span.class, spec -> spec.withText("CHA: 3"));
     _get(card, Span.class, spec -> spec.withText("BRL: 4"));
+  }
+
+  @Test
+  public void testPlayerCardShowsLowHealthAndLowStamina() {
+    WrestlerSummaryCard card =
+        new WrestlerSummaryCard(wrestler, 1L, wrestlerService, injuryService, true);
+
+    // Player card shows both thresholds
+    _get(card, Span.class, spec -> spec.withText("🔻 Low Health: 5"));
+    _get(card, Span.class, spec -> spec.withText("⚠️ Low Stamina: 4"));
+  }
+
+  @Test
+  public void testNpcCardShowsLowHealthButNotLowStamina() {
+    WrestlerSummaryCard card =
+        new WrestlerSummaryCard(wrestler, 1L, wrestlerService, injuryService, false);
+
+    // NPC card shows low-health (game effect threshold) but hides low-stamina
+    _get(card, Span.class, spec -> spec.withText("🔻 Low Health: 5"));
+
+    // Low Stamina must NOT appear for NPCs
+    org.junit.jupiter.api.Assertions.assertThrows(
+        AssertionError.class,
+        () -> _get(card, Span.class, spec -> spec.withText("⚠️ Low Stamina: 4")));
   }
 }

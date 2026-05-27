@@ -49,4 +49,3 @@ Keep track of all shows and match results that occurred within the league.
 ![League History](/screenshots/league-history-tab.png)
 
 ---
-

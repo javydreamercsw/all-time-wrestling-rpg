@@ -45,6 +45,22 @@ public interface ImageGenerationService {
    */
   boolean isAvailable();
 
+  /**
+   * Generates an image asynchronously, freeing the calling thread immediately.
+   *
+   * <p>Default implementation delegates to {@link #generateImage(ImageRequest)} via {@code
+   * supplyAsync}. Concrete implementations annotated with {@code @Async} will execute on a managed
+   * thread pool instead.
+   *
+   * @param request The image generation parameters.
+   * @return a {@link java.util.concurrent.CompletableFuture} that resolves to the image URL or
+   *     base64 data.
+   */
+  default java.util.concurrent.CompletableFuture<String> generateImageAsync(
+      @NonNull ImageRequest request) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> generateImage(request));
+  }
+
   @Getter
   @Builder
   class ImageRequest {

@@ -157,7 +157,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                     ? s.getShowDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
                     : "Unscheduled")
                 + ")");
-    showComboBox.setWidth("300px");
+    showComboBox.setWidth("min(300px, 95vw)");
 
     loadContextButton = new Button("Load Context", e -> loadContext());
     loadContextButton.setEnabled(false);
@@ -288,8 +288,9 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     HorizontalLayout mainLayout = new HorizontalLayout(leftSide, rightSide);
     mainLayout.setSizeFull();
-    mainLayout.setFlexGrow(1, leftSide);
-    mainLayout.setFlexGrow(2, rightSide);
+    mainLayout.getStyle().set("flex-wrap", "wrap").set("align-items", "flex-start");
+    leftSide.getStyle().set("flex", "1 1 300px").set("min-width", "0");
+    rightSide.getStyle().set("flex", "2 1 400px").set("min-width", "0");
 
     add(new ViewToolbar("Show Planning"), mainLayout);
   }

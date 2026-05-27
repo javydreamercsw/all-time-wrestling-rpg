@@ -52,11 +52,17 @@ public class MarkdownShowCardFormatter implements ShowCardFormatter {
 
     sb.append("\n## Match Card\n\n");
 
-    for (int i = 0; i < segments.size(); i++) {
-      Segment segment = segments.get(i);
-      sb.append("### Match ").append(i + 1).append(": ");
-      sb.append(
-          segment.getSegmentType() != null ? segment.getSegmentType().getName() : "Unknown Match");
+    int matchCounter = 0;
+    for (Segment segment : segments) {
+      String typeName =
+          segment.getSegmentType() != null ? segment.getSegmentType().getName() : "Unknown";
+      boolean isMatch = !"Promo".equalsIgnoreCase(typeName);
+      if (isMatch) {
+        matchCounter++;
+        sb.append("### Match ").append(matchCounter).append(": ").append(typeName);
+      } else {
+        sb.append("### ").append(typeName);
+      }
       sb.append("\n");
 
       if (segment.isMainEvent()) {

@@ -123,8 +123,8 @@ public class TeamFormDialog extends Dialog {
     setModality(ModalityMode.VISUAL);
     setDraggable(true);
     setResizable(true);
-    setWidth("600px");
-    setHeight("500px");
+    setWidth("min(600px, 95vw)");
+    setHeight("min(500px, 90vh)");
   }
 
   private void configureForm() {

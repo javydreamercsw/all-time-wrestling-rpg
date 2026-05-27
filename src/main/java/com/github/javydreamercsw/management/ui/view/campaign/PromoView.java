@@ -181,7 +181,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {
-            log.info("Generating promo context synchronously");
+            log.debug("Generating promo context synchronously");
             SmartPromoResponseDTO promoContext =
                 smartPromoService.generatePromoContext(playerWrestler, opponent);
             displayPromoContext(promoContext);
@@ -214,7 +214,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   }
 
   private void handleHookChoice(@NonNull final PromoHookDTO hook) {
-    log.info("Hook chosen: {}", hook.getLabel());
+    log.debug("Hook chosen: {}", hook.getLabel());
     showLoading(true);
     choicesContainer.removeAll();
     narrativeContainer.removeAll();
@@ -222,7 +222,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {
-            log.info("Processing promo hook synchronously: {}", hook.getLabel());
+            log.debug("Processing promo hook synchronously: {}", hook.getLabel());
             PromoOutcomeDTO outcome =
                 smartPromoService.processPromoHook(playerWrestler, opponent, hook, currentCampaign);
             displayOutcome(hook, outcome);
@@ -238,7 +238,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
 
   private void displayOutcome(
       @NonNull final PromoHookDTO hook, @NonNull final PromoOutcomeDTO outcome) {
-    log.info("Displaying outcome. Success: {}, SegmentID: {}", outcome.isSuccess(), segmentId);
+    log.debug("Displaying outcome. Success: {}, SegmentID: {}", outcome.isSuccess(), segmentId);
 
     // Clear containers to ensure a clean state for the outcome
     narrativeContainer.removeAll();
@@ -278,7 +278,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     narrativeContainer.add(resultLayout);
 
     if (segmentId != null) {
-      log.info("Updating segment {} with final narration", segmentId);
+      log.debug("Updating segment {} with final narration", segmentId);
       // Save to segment narration
       segmentService
           .findById(segmentId)
@@ -286,7 +286,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
               s -> {
                 s.setNarration(outcome.getFinalNarration());
                 segmentService.updateSegment(s);
-                log.info("Segment {} updated successfully", segmentId);
+                log.debug("Segment {} updated successfully", segmentId);
               },
               () -> log.warn("Segment {} not found for update", segmentId));
     }
@@ -308,7 +308,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
     finishBtn.setId("finish-promo-button");
     finishBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     choicesContainer.add(finishBtn);
-    log.info("Outcome display complete");
+    log.debug("Outcome display complete");
   }
 
   private void showLoading(final boolean loading) {

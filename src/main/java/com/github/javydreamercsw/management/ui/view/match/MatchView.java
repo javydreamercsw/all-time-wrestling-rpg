@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
@@ -56,6 +57,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -74,11 +76,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility.Background;
 import com.vaadin.flow.theme.lumo.LumoUtility.BorderRadius;
-import com.vaadin.flow.theme.lumo.LumoUtility.FlexWrap;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontSize;
 import com.vaadin.flow.theme.lumo.LumoUtility.FontWeight;
-import com.vaadin.flow.theme.lumo.LumoUtility.Gap;
-import com.vaadin.flow.theme.lumo.LumoUtility.JustifyContent;
 import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
@@ -128,6 +127,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private MultiSelectComboBox<Wrestler> winnersComboBox;
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
+  private Button aiGenerateButton;
 
   @Autowired
   public MatchView(
@@ -202,6 +202,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               "Found segment: {} with {} wrestlers",
               segment.getId(),
               wrestlers != null ? wrestlers.size() : "NULL");
+          autoAssignRefereeIfNeeded();
           buildView();
         } else {
           log.warn("Segment not found for id: {}", matchId);
@@ -212,6 +213,37 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       log.error("Error in MatchView.beforeEnter", e);
       add(new H2("Error displaying match details."));
     }
+  }
+
+  private void autoAssignRefereeIfNeeded() {
+    boolean isPromo =
+        segment.getSegmentType() != null
+            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+    if (isPromo || segment.getReferee() != null) {
+      return;
+    }
+    List<com.github.javydreamercsw.management.domain.npc.Npc> referees =
+        npcService.findAllByType("Referee");
+    if (referees.isEmpty()) {
+      return;
+    }
+    com.github.javydreamercsw.management.domain.npc.Npc referee =
+        referees.get(new java.util.Random().nextInt(referees.size()));
+    segment.setReferee(referee);
+    segment.setRefereeAwarenessLevel(npcService.getAwareness(referee));
+    // Persist the referee assignment as a system operation so it succeeds regardless
+    // of the viewing user's role. Calling updateSegment() directly would fail with
+    // AuthorizationDeniedException for PLAYER-role users on league matches
+    // (canUserUpdateSegment returns false when the segment is neither a campaign match
+    // nor a universe match). runAsAdmin() temporarily elevates the security context
+    // to ADMIN for the duration of the save, then restores the original context.
+    //
+    // We intentionally do NOT reassign `segment` from the return value: the
+    // @Transactional method closes the session on return, leaving Show as an
+    // uninitialized lazy proxy. The local reference already has Show eagerly loaded
+    // from findByIdWithDetails(), so we continue to use it as-is.
+    GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
+    log.debug("Auto-assigned referee {} to segment {}", referee.getName(), segment.getId());
   }
 
   private void buildView() {
@@ -387,26 +419,36 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         segment.getSegmentType() != null
             && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
 
-    // Main Content Grid
+    List<Wrestler> wrestlers = segment.getWrestlers();
+    boolean isPlayerInMatch = playerWrestler != null && wrestlers.contains(playerWrestler);
+    Long universeId = universeContextService.getCurrentUniverseId();
+
+    // Outer row: participants (grow) + side column (fixed 340px), wraps on mobile
     HorizontalLayout mainContent = new HorizontalLayout();
     mainContent.setWidthFull();
     mainContent.setMaxWidth("1200px");
-    mainContent.addClassNames(FlexWrap.WRAP, Gap.MEDIUM, JustifyContent.CENTER);
+    mainContent
+        .getStyle()
+        .set("display", "flex")
+        .set("flex-wrap", "wrap")
+        .set("gap", "var(--lumo-space-m)")
+        .set("align-items", "flex-start");
 
-    // Left Column: Participants
-    VerticalLayout participantsCol = new VerticalLayout();
-    participantsCol.setPadding(false);
-    participantsCol.setWidth("auto");
-    participantsCol.setMinWidth("300px");
-    participantsCol.setFlexGrow(1);
-
+    // Participants — grows to fill remaining width; grid auto-tiles wrestler cards
     DashboardCard participantsCard = new DashboardCard("Participants");
-    List<Wrestler> wrestlers = segment.getWrestlers();
-    boolean isPlayerInMatch = playerWrestler != null && wrestlers.contains(playerWrestler);
+    participantsCard.getStyle().set("flex", "1 1 500px");
 
-    Long universeId = universeContextService.getCurrentUniverseId();
+    Div cardGrid = new Div();
+    cardGrid
+        .getStyle()
+        .set("display", "grid")
+        .set("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))")
+        .set("gap", "var(--lumo-space-m)")
+        .set("width", "100%")
+        .set("align-items", "start");
+
     if (isPlayerInMatch) {
-      participantsCard.add(
+      cardGrid.add(
           new WrestlerSummaryCard(
               playerWrestler, universeId, wrestlerService, injuryService, true));
 
@@ -422,7 +464,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           .filter(w -> w != null && !w.equals(playerWrestler))
           .forEach(
               opponent ->
-                  participantsCard.add(
+                  cardGrid.add(
                       new WrestlerSummaryCard(
                           opponent, universeId, wrestlerService, injuryService, false, penalty)));
     } else {
@@ -430,18 +472,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           .filter(java.util.Objects::nonNull)
           .forEach(
               w ->
-                  participantsCard.add(
+                  cardGrid.add(
                       new WrestlerSummaryCard(
                           w, universeId, wrestlerService, injuryService, false)));
     }
-    participantsCol.add(participantsCard);
+    participantsCard.add(cardGrid);
+    mainContent.add(participantsCard);
 
-    // Right Column: Rules, Titles, and Adjudication
+    // Side column: rules, ringside actions, adjudication — fixed width, wraps below on mobile
     VerticalLayout sideCol = new VerticalLayout();
     sideCol.setPadding(false);
-    sideCol.setWidth("auto");
-    sideCol.setMinWidth("300px");
-    sideCol.setFlexGrow(1);
+    sideCol.getStyle().set("flex", "0 0 340px").set("min-width", "280px");
 
     // Rules & Titles
     DashboardCard infoCard = new DashboardCard("Match Info");
@@ -559,7 +600,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       sideCol.add(new DashboardCard("Ringside Actions", actionComponentWrapper[0]));
     }
 
-    // Winners Section
+    // Determine roles once — used for several visibility decisions below
+    boolean isBookerOrAdmin = securityUtils.isBooker() || securityUtils.isAdmin();
+    boolean isPlayerOnly = securityUtils.isPlayer() && !isBookerOrAdmin;
+
+    // Winners / Match Result section — hidden for viewer-only accounts (PLAYER with no wrestler
+    // in this segment, e.g. a spectator who somehow navigates to the match page)
+    boolean isParticipatingPlayer =
+        isPlayerOnly
+            && wrestlers.stream()
+                .filter(java.util.Objects::nonNull)
+                .anyMatch(
+                    w -> {
+                      Long accountId = securityUtils.getCurrentAccountId().orElse(null);
+                      return accountId != null
+                          && w.getAccount() != null
+                          && accountId.equals(w.getAccount().getId());
+                    });
+    boolean canSubmitResult = isBookerOrAdmin || isParticipatingPlayer;
+
     DashboardCard winnersCard = new DashboardCard("Match Result");
     winnersComboBox = new MultiSelectComboBox<>("Select Winner(s)");
     winnersComboBox.setWidthFull();
@@ -573,21 +632,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 : List.of()));
     winnersComboBox.setId("winners-combobox");
 
-    String saveButtonText = "Adjudicate Match";
-    if (securityUtils.isPlayer() && !securityUtils.isBooker() && !securityUtils.isAdmin()) {
-      saveButtonText = "Save Results";
-      // If league match, it might be "Report Result" conceptually, but "Save Results" is fine.
-    }
-
+    String saveButtonText = isBookerOrAdmin ? "Adjudicate Match" : "Submit Result";
     Button saveWinnersButton = new Button(saveButtonText, event -> saveWinners());
     saveWinnersButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
     saveWinnersButton.setWidthFull();
     saveWinnersButton.setId("save-winners-button");
 
     winnersCard.add(winnersComboBox, saveWinnersButton);
+    winnersCard.setVisible(canSubmitResult);
     sideCol.add(winnersCard);
 
-    mainContent.add(participantsCol, sideCol);
+    mainContent.add(sideCol);
     add(mainContent);
 
     // Full Width: Narration Section
@@ -596,15 +651,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     VerticalLayout narrationContent = new VerticalLayout();
     narrationContent.setPadding(false);
 
-    feedbackArea = new TextArea(isPromo ? "Promo Notes" : "Generation Feedback");
+    String feedbackLabel;
+    String feedbackPlaceholder;
+    if (isBookerOrAdmin) {
+      feedbackLabel = isPromo ? "Promo Notes" : "Generation Feedback";
+      feedbackPlaceholder =
+          isPromo
+              ? "Provide bullet points or a general idea of the promo content..."
+              : "Provide specific details about the match (key spots, ringside actions, etc.) to"
+                  + " guide the AI...";
+    } else {
+      feedbackLabel = isPromo ? "Promo Notes" : "Match Notes";
+      feedbackPlaceholder =
+          isPromo
+              ? "Describe what happened in the promo..."
+              : "Describe what happened in the match (key spots, outcome details, etc.)...";
+    }
+    feedbackArea = new TextArea(feedbackLabel);
     feedbackArea.setWidthFull();
-    feedbackArea.setPlaceholder(
-        isPromo
-            ? "Provide bullet points or a general idea of the promo content..."
-            : """
-            Provide specific details about the match (key spots, ringside actions, etc.) to\
-             guide the AI...\
-            """);
+    feedbackArea.setPlaceholder(feedbackPlaceholder);
     feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
     feedbackArea.setId("feedback-area");
 
@@ -612,7 +677,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     narrationButtons.setWidthFull();
 
     String generateLabel = isPromo ? "Auto-Generate Promo (AI)" : "Generate Match Narration (AI)";
-    Button aiGenerateButton = new Button(generateLabel, event -> generateAiNarration());
+    aiGenerateButton = new Button(generateLabel, event -> generateAiNarration());
     aiGenerateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     aiGenerateButton.setId("ai-generate-narration-button");
 
@@ -620,6 +685,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         new Button(isPromo ? "Save Transcript" : "Save Narration", event -> saveNarration());
     saveButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
     saveButton.setId("save-narration-button");
+    // Players read the generated narration but cannot edit or save it
+    saveButton.setVisible(isBookerOrAdmin);
+    narrationArea.setReadOnly(isPlayerOnly);
 
     commentaryComponent = new CommentaryComponent();
     updateCommentaryDisplay();
@@ -714,11 +782,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     narrationButtons.add(saveButton);
 
-    if (showGenerateButton) {
-      narrationContent.add(feedbackArea, commentaryComponent, narrationArea, narrationButtons);
-    } else {
-      narrationContent.add(commentaryComponent, narrationArea, narrationButtons);
+    // Show the feedback/notes area if: BOOKER/ADMIN (generation feedback), or participating player
+    // (match notes submitted with their result). Hide for viewer-only accounts.
+    boolean showFeedbackArea = isBookerOrAdmin || isParticipatingPlayer;
+    if (showFeedbackArea) {
+      narrationContent.add(feedbackArea);
     }
+    narrationContent.add(commentaryComponent, narrationArea, narrationButtons);
 
     narrationCard.add(narrationContent);
     add(narrationCard);
@@ -972,24 +1042,46 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 });
       }
 
-      String generated = narrationServiceFactory.getBestAvailableService().narrateSegment(context);
-
-      if (generated != null && !generated.isEmpty()) {
-        getUI()
-            .ifPresent(
-                ui ->
-                    ui.access(
-                        () -> {
-                          narrationArea.setValue(generated);
-                          segment.setNarration(generated);
-                          segmentService.updateSegment(segment);
-                          updateCommentaryDisplay();
-                          notificationService.showSuccess("Narration generated!");
-                          ui.push();
-                        }));
-      }
+      com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+      aiGenerateButton.setEnabled(false);
+      narrationServiceFactory
+          .getBestAvailableService()
+          .narrateSegmentAsync(context)
+          .thenAccept(
+              generated -> {
+                if (generated != null && !generated.isEmpty()) {
+                  ui.access(
+                      () -> {
+                        narrationArea.setValue(generated);
+                        segment.setNarration(generated);
+                        segmentService.updateSegment(segment);
+                        updateCommentaryDisplay();
+                        notificationService.showSuccess("Narration generated!");
+                        aiGenerateButton.setEnabled(true);
+                        ui.push();
+                      });
+                } else {
+                  ui.access(
+                      () -> {
+                        aiGenerateButton.setEnabled(true);
+                        ui.push();
+                      });
+                }
+              })
+          .exceptionally(
+              ex -> {
+                log.error("Failed to generate AI narration", ex);
+                ui.access(
+                    () -> {
+                      notificationService.showAIServiceError(
+                          ex.getCause() != null ? ex.getCause() : ex);
+                      aiGenerateButton.setEnabled(true);
+                      ui.push();
+                    });
+                return null;
+              });
     } catch (Exception e) {
-      log.error("Failed to generate AI narration", e);
+      log.error("Failed to build narration context", e);
       notificationService.showAIServiceError(e);
     }
   }
@@ -1056,7 +1148,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         UI.getCurrent().navigate("campaign");
       } else if (securityUtils.isBooker() || securityUtils.isAdmin()) {
         // For standard matches, perform full adjudication (Booker/Admin only)
-        segmentAdjudicationService.adjudicateMatch(segment);
+        segmentAdjudicationService.adjudicateMatch(segment.getId());
         segment.setAdjudicationStatus(
             com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
         segmentService.updateSegment(segment);

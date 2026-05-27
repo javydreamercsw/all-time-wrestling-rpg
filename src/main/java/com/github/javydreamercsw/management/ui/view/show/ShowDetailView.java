@@ -928,7 +928,7 @@ public class ShowDetailView extends Main
   private void openAddSegmentDialog(@NonNull final Show show) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Add Segment to " + show.getName());
-    dialog.setWidth("600px");
+    dialog.setWidth("min(600px, 95vw)");
     dialog.setMaxWidth("90vw");
     dialog.setId("add-segment-dialog");
 
@@ -1302,7 +1302,7 @@ public class ShowDetailView extends Main
     final Segment seg = segmentRepository.findById(segment.getId()).orElse(segment);
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Edit Segment for " + currentShow.getName());
-    dialog.setWidth("600px");
+    dialog.setWidth("min(600px, 95vw)");
     dialog.setMaxWidth("90vw");
     dialog.setId("edit-segment-dialog");
 
@@ -1428,9 +1428,14 @@ public class ShowDetailView extends Main
           refreshWinners.run();
         };
 
-    // One team per existing wrestler; fall back to two empty teams for a new segment
-    for (Wrestler w : seg.getWrestlers()) {
-      addTeamRow.accept(new HashSet<>(Set.of(w)));
+    // Restore teams grouped by saved teamNumber; fall back to one row per wrestler for legacy data
+    java.util.Map<Integer, List<Wrestler>> existingTeams = seg.getWrestlersByTeam();
+    if (existingTeams.isEmpty()) {
+      for (Wrestler w : seg.getWrestlers()) {
+        addTeamRow.accept(new HashSet<>(Set.of(w)));
+      }
+    } else {
+      existingTeams.forEach((teamNum, wrestlers) -> addTeamRow.accept(new HashSet<>(wrestlers)));
     }
     if (teamCombos.isEmpty()) {
       addTeamRow.accept(new HashSet<>());

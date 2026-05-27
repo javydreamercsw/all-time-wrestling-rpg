@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.match;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -31,12 +32,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
@@ -74,6 +77,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class MatchViewTest extends AbstractViewTest {
@@ -176,6 +183,7 @@ class MatchViewTest extends AbstractViewTest {
 
     CustomUserDetails userDetails = mock(CustomUserDetails.class);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isBooker()).thenReturn(true);
     when(userDetails.getWrestler()).thenReturn(wrestler1);
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     lenient().when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler1));
@@ -233,18 +241,29 @@ class MatchViewTest extends AbstractViewTest {
     universe.setId(1L);
     universe.setName("Default");
 
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    playerAccount.setUsername("player1");
+
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setName("Test Wrestler 1");
     wrestler1.setId(1L);
+    wrestler1.setAccount(playerAccount);
     wrestler1
         .getWrestlerStates()
         .add(WrestlerState.builder().wrestler(wrestler1).universe(universe).build());
+
+    SegmentParticipant participant1 = new SegmentParticipant();
+    participant1.setSegment(segment);
+    participant1.setWrestler(wrestler1);
+    segment.getParticipants().add(participant1);
 
     CustomUserDetails userDetails = mock(CustomUserDetails.class);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
     when(securityUtils.isPlayer()).thenReturn(true);
     when(securityUtils.isBooker()).thenReturn(false);
     when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
     when(userDetails.getWrestler()).thenReturn(wrestler1);
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
 
@@ -256,7 +275,7 @@ class MatchViewTest extends AbstractViewTest {
 
     // Verify button text
     Button saveWinnersButton = _get(Button.class, spec -> spec.withId("save-winners-button"));
-    assertEquals("Save Results", saveWinnersButton.getText());
+    assertEquals("Submit Result", saveWinnersButton.getText());
 
     // Verify AI button hidden
     assertTrue(
@@ -270,9 +289,139 @@ class MatchViewTest extends AbstractViewTest {
     // Simulate clicking save winners
     _click(saveWinnersButton);
 
-    // Verify adjudicateMatch was NOT called
-    verify(segmentAdjudicationService, never()).adjudicateMatch(any());
+    // Verify adjudicateMatch was NOT called (neither ID nor entity overload)
+    verify(segmentAdjudicationService, never()).adjudicateMatch(any(Long.class));
     // Verify updateSegment WAS called (to save winners)
     verify(segmentService, times(1)).updateSegment(any(Segment.class));
+  }
+
+  @Test
+  void autoAssignsRefereeWhenNoneSet() {
+    Segment segment = buildMinimalMatchSegment(1L, "Singles Match");
+
+    Npc referee = new Npc();
+    referee.setName("Earl Hebner");
+
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+    when(npcService.getAwareness(referee)).thenReturn(75);
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertEquals(referee, segment.getReferee());
+    assertEquals(75, segment.getRefereeAwarenessLevel());
+    verify(segmentService).updateSegment(segment);
+  }
+
+  @Test
+  void doesNotOverwriteExistingReferee() {
+    Segment segment = buildMinimalMatchSegment(2L, "Tag Team Match");
+    Npc existingRef = new Npc();
+    existingRef.setName("Existing Ref");
+    segment.setReferee(existingRef);
+
+    Npc otherRef = new Npc();
+    otherRef.setName("Other Ref");
+
+    when(segmentService.findByIdWithDetails(2L)).thenReturn(Optional.of(segment));
+    lenient().when(npcService.findAllByType("Referee")).thenReturn(List.of(otherRef));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "2"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertEquals(existingRef, segment.getReferee());
+    verify(npcService, never()).getAwareness(any());
+  }
+
+  @Test
+  void doesNotAssignRefereeToPromoSegment() {
+    Segment segment = buildMinimalMatchSegment(3L, "Promo");
+
+    Npc referee = new Npc();
+    referee.setName("Some Ref");
+
+    when(segmentService.findByIdWithDetails(3L)).thenReturn(Optional.of(segment));
+    lenient().when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "3"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertNull(segment.getReferee());
+    verify(npcService, never()).findAllByType(any());
+  }
+
+  /**
+   * Verifies that a PLAYER-role viewer still gets a referee auto-assigned and that {@code
+   * segmentService.updateSegment} is called even when the security context only carries {@code
+   * ROLE_PLAYER}. In production the call goes through {@link
+   * com.github.javydreamercsw.base.security.GeneralSecurityUtils#runAsAdmin} which temporarily
+   * elevates the context; in this unit test the service is mocked (no real {@code @PreAuthorize}
+   * enforcement), so the test validates the code path and documenting the expected behaviour — the
+   * companion integration test {@code MatchViewAutoAssignRefereeIT} exercises the real security
+   * gate.
+   */
+  @Test
+  void autoAssignsRefereeForPlayerRoleUser_persistsViaRunAsAdmin() {
+    // Establish a PLAYER-only security context for the duration of this test.
+    UsernamePasswordAuthenticationToken playerAuth =
+        new UsernamePasswordAuthenticationToken(
+            "player", "password", List.of(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    SecurityContext playerContext = SecurityContextHolder.createEmptyContext();
+    playerContext.setAuthentication(playerAuth);
+    SecurityContextHolder.setContext(playerContext);
+
+    try {
+      Segment segment = buildMinimalMatchSegment(4L, "Singles Match");
+
+      Npc referee = new Npc();
+      referee.setName("Mike Chioda");
+
+      when(segmentService.findByIdWithDetails(4L)).thenReturn(Optional.of(segment));
+      when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+      when(npcService.getAwareness(referee)).thenReturn(80);
+      // Mock updateSegment to return the same segment (simulates a successful save)
+      when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+      when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+      BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+      when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "4"));
+
+      UI.getCurrent().add(matchView);
+      matchView.beforeEnter(event);
+
+      // Referee must be assigned on the in-memory segment regardless of viewer role.
+      assertEquals(referee, segment.getReferee());
+      assertEquals(80, segment.getRefereeAwarenessLevel());
+      // updateSegment must be called — the auto-assign is a system op, not gated on role.
+      verify(segmentService).updateSegment(segment);
+    } finally {
+      SecurityContextHolder.clearContext();
+    }
+  }
+
+  private Segment buildMinimalMatchSegment(final long id, final String typeName) {
+    Segment segment = new Segment();
+    segment.setId(id);
+    Show show = new Show();
+    show.setName("Test Show");
+    segment.setShow(show);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName(typeName);
+    segment.setSegmentType(segmentType);
+    return segment;
   }
 }

@@ -146,7 +146,7 @@ public class SegmentTypeListView extends Main {
   private void setupEditDialog(final String headerTitle) {
     editDialog = new Dialog();
     editDialog.setHeaderTitle(headerTitle);
-    editDialog.setWidth("500px");
+    editDialog.setWidth("min(500px, 95vw)");
 
     editName = new TextField("Name");
     editName.setWidthFull();

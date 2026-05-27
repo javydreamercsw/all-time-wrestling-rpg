@@ -93,7 +93,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
       if (backstageActionService
           .getBackstageEncounterService()
           .shouldTriggerEncounter(currentCampaign)) {
-        log.info("Rerouting to backstage encounter situation");
+        log.debug("Rerouting to backstage encounter situation");
         event.forwardTo(BackstageEncounterView.class);
         return;
       }
@@ -182,7 +182,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
     VerticalLayout rightCol = new VerticalLayout();
     rightCol.setPadding(false);
     rightCol.setWidth("auto");
-    rightCol.setMinWidth("400px");
+    rightCol.setMinWidth("280px");
     rightCol.setFlexGrow(2);
 
     DashboardCard actionsCard = new DashboardCard("Available Actions");

@@ -10,6 +10,22 @@ The Season Settings tab showing the 'Generate Season Confirmation' button, befor
 
 ---
 
+## Account Management
+
+Admins manage all user accounts from this view. Each row shows the account's username, email address, assigned roles, last login timestamp, and enabled/disabled status. Use Edit to change roles or reset credentials, and Delete to permanently remove an account.
+
+![Account Management](/screenshots/account-list-overview.png)
+
+---
+
+## Universe Management
+
+Universes are the top-level containers for all promotion data — shows, wrestlers, titles, factions, and storylines all belong to a universe. An installation can run multiple universes simultaneously, each with its own independent roster, calendar, and championship lineage.
+
+![Universe Management](/screenshots/universe-list-overview.png)
+
+---
+
 ## Wrestler Relationships Management
 
 Manage the social fabric of your promotion. Define marriages, family ties, and deep friendships that influence chemistry, AI narration, and random backstage events.
@@ -84,7 +100,7 @@ Perform critical maintenance tasks such as manual tier recalculation and account
 
 ## Show Templates
 
-Manage templates for your shows. You can define default match and promo counts, and now generate custom AI art for each template.
+Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.
 
 ![Show Templates](/screenshots/admin-show-templates.png)
 
@@ -121,16 +137,3 @@ Group and toggle themed content sets. Enable or disable entire collections of wr
 ![Expansion Management](/screenshots/admin-expansion-management.png)
 
 ---
-
-## Video Walkthroughs
-
-### MySQL Data Migration Wizard
-
-Migration complete — all data is now in MySQL and verified. Restart the application with the MySQL Spring profile (spring.profiles.active=mysql) to run in production mode against the new database.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/data-transfer-full-wizard.mp4" type="video/mp4">
-</video>
-
----
-

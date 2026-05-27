@@ -67,6 +67,12 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
+    captureCaption(
+        "Create Faction dialog — enter a name to get started. Description and additional"
+            + " details can be filled in after creation via the Edit button. All factions"
+            + " are scoped to the active universe.",
+        3500);
+
     // Find the name field and enter a new faction name
     WebElement nameField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("edit-name")));
@@ -224,6 +230,11 @@ class FactionListViewE2ETest extends AbstractE2ETest {
         wait.until(
             ExpectedConditions.visibilityOfElementLocated(By.id("add-member-wrestler-combo")));
     Assertions.assertNotNull(wrestlerComboBox);
+    captureCaption(
+        "Members dialog — a searchable ComboBox lists all available wrestlers."
+            + " Type a name to filter, select the wrestler, then click Add Member."
+            + " The current roster is shown below so you can see who is already in the faction.",
+        4000);
     selectFromVaadinComboBox(wrestlerComboBox, wrestler.getName());
 
     // Click the "Add Member" button

@@ -65,8 +65,8 @@ public class RingsideActionComponent extends VerticalLayout {
     this.playerWrestler = playerWrestler;
     this.onActionPerformed = onActionPerformed;
 
-    setPadding(true);
-    setSpacing(true);
+    setPadding(false);
+    setSpacing(false);
     setWidthFull();
     addClassName("ringside-action-component");
 

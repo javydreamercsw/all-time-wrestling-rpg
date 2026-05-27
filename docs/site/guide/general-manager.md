@@ -17,4 +17,3 @@ View and manage active wrestler contracts. Salaries are dynamically tied to fan 
 ![Contract Management](/screenshots/admin-contract-management.png)
 
 ---
-

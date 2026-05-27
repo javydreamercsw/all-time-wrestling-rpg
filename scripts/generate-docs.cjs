@@ -91,7 +91,30 @@ if (videoFeatures.length !== originalVideoCount) {
 }
 
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-const features = manifest.features || [];
+let features = manifest.features || [];
+
+// Filter screenshot features to only those whose PNG was actually copied to the
+// VitePress public folder.  The manifest.json is committed to the repo and may
+// contain stale entries from a previous run — if a screenshot test fails (or
+// wasn't run) the PNG won't be in the artifact and VitePress would fail with an
+// UNRESOLVED_IMPORT error.  Mirror the same guard that already exists for videos.
+const copiedScreenshotNames = new Set(
+  fs.existsSync(vitepressPublicDir)
+    ? fs.readdirSync(vitepressPublicDir).filter(f => f.endsWith('.png'))
+    : []
+);
+const originalFeatureCount = features.length;
+features = features.filter(f => {
+  if (!f.imagePath) return true; // no image reference — always keep
+  return copiedScreenshotNames.has(path.basename(f.imagePath));
+});
+if (features.length !== originalFeatureCount) {
+  const skipped = originalFeatureCount - features.length;
+  console.warn(
+    `Screenshot manifest filtered: ${features.length}/${originalFeatureCount} feature(s) have actual PNG files. ` +
+    `Skipping ${skipped} stale or missing screenshot(s).`
+  );
+}
 
 // Group features by category
 const categories = {};

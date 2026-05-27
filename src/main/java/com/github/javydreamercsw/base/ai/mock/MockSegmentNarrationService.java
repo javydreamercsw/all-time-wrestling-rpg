@@ -92,7 +92,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       """;
     }
 
-    log.info("Mock AI generating segment narration (simulated processing time)");
+    log.debug("Mock AI generating segment narration (simulated processing time)");
     if (prompt.contains("Generate a compelling wrestling narration")) {
       return generateMockTextNarration(prompt);
     }
