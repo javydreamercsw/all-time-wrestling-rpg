@@ -168,7 +168,7 @@ jobs:
           name: docs-screenshots
           if-no-files-found: error
           path: |
-            docs/screenshots/
+            docs/screenshots
             docs/manifest.json
 
   # ---------------------------------------------------------------------------
@@ -219,7 +219,7 @@ jobs:
           name: docs-videos
           if-no-files-found: error
           path: |
-            docs/videos/
+            docs/videos
             docs/video-manifest.json
 
   # ---------------------------------------------------------------------------
