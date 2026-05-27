@@ -69,6 +69,9 @@ jobs:
           else
             echo "Branch release/${{ github.event.inputs.version }} does not exist, creating it from the current branch."
             git checkout -b "release/${{ github.event.inputs.version }}"
+            # Push immediately so the branch exists on GitHub before the changelog
+            # generator queries it via the API (it 404s on a branch that only exists locally).
+            git push -u origin "release/${{ github.event.inputs.version }}"
           fi
 
       - name: Update POM version
