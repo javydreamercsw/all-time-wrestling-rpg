@@ -133,4 +133,3 @@ Migration complete — all data is now in MySQL and verified. Restart the applic
 </video>
 
 ---
-

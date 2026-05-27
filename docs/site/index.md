@@ -32,5 +32,4 @@ For the best experience, use the **Native Installer** for your operating system.
 
 <DownloadLinks />
 
-* **Docker**: For advanced users. `docker pull javydreamercsw/all-time-wrestling-rpg`
-
+- **Docker**: For advanced users. `docker pull javydreamercsw/all-time-wrestling-rpg`

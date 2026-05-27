@@ -49,4 +49,3 @@ Feuds and rivalries are ranked by heat — high-heat storylines rise to the top,
 </video>
 
 ---
-

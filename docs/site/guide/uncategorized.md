@@ -7,4 +7,3 @@ Welcome to the Uncategorized guide. This documentation is automatically generate
 Segment description updated — the show card reflects the new summary immediately.
 
 ---
-

@@ -77,4 +77,3 @@ After the booker confirms, the segments are saved to the show. Each approved seg
 </video>
 
 ---
-

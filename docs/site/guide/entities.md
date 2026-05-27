@@ -33,4 +33,3 @@ Manage powerful wrestling groups. Factions bring together multiple wrestlers und
 ![Factions](/screenshots/entity-factions.png)
 
 ---
-

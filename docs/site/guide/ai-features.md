@@ -9,4 +9,3 @@ Experience the match through the eyes of unique commentator teams. Each commenta
 ![Dynamic Commentator Personas](/screenshots/ai-dynamic-commentary.png)
 
 ---
-

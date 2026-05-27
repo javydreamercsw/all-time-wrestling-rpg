@@ -25,4 +25,3 @@ Use the integrated AI tools to generate a unique portrait for your NPC based on 
 ![Generate NPC Image](/screenshots/npc-image-generation-dialog.png)
 
 ---
-

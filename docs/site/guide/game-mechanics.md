@@ -105,4 +105,3 @@ Card detail view shows health cost, stamina cost, damage type, and move category
 </video>
 
 ---
-

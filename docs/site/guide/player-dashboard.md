@@ -103,4 +103,3 @@ Momentum reflects all active status card bonuses — the effective stat shown he
 </video>
 
 ---
-

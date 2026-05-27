@@ -298,7 +298,10 @@ jobs:
           files: target/dist/*
 
   deploy_pages:
-    needs: [build_and_release, build_desktop_installers]
+    # Pages artifact was uploaded by prepare_release; the GitHub Release must
+    # exist (build_and_release) but we do NOT need to wait for desktop
+    # installers — deploying pages in parallel with installer builds saves ~15 min.
+    needs: [build_and_release]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

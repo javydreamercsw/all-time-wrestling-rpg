@@ -954,6 +954,23 @@
                 <spacesPerTab>4</spacesPerTab>
               </indent>
             </format>
+            <!-- VitePress docs site: use Prettier so YAML frontmatter is
+                 auto-corrected (indentation, closing delimiter). The main
+                 <markdown> block below excludes docs/site/** so there is
+                 no overlap. proseWrap=preserve avoids reflowing paragraph
+                 text while still fixing the frontmatter structure. -->
+            <format>
+              <includes>
+                <include>docs/site/**/*.md</include>
+              </includes>
+              <excludes>
+                <exclude>docs/site/node_modules/**</exclude>
+              </excludes>
+              <prettier>
+                <prettierVersion>3.3.3</prettierVersion>
+                <configFile>${project.basedir}/.prettierrc.docs.json</configFile>
+              </prettier>
+            </format>
           </formats>
           <!-- define a language-specific format -->
           <java>

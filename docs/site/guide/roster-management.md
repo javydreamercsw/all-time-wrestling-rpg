@@ -53,4 +53,3 @@ Women's division tier boundaries — each row shows the minimum and maximum fan 
 </video>
 
 ---
-

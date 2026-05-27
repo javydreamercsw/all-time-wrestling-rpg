@@ -45,4 +45,3 @@ Wrestlers accumulate fans through wins, title matches, and fan reactions — los
 </video>
 
 ---
-

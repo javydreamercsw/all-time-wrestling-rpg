@@ -191,4 +191,3 @@ The Campaign Dashboard shows the wrestler's current chapter, alignment track, wi
 </video>
 
 ---
-
