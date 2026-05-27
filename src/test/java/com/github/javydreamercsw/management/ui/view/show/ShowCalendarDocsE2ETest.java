@@ -39,6 +39,9 @@ class ShowCalendarDocsE2ETest extends AbstractDocsE2ETest {
     navigateTo("show-calendar");
     waitForVaadinClientToLoad();
     waitForVaadinElement(driver, By.tagName("vaadin-full-calendar"));
+    // Give the FullCalendar component a moment to render its event tiles
+    // after the custom element is present in the DOM.
+    sleep(1000);
 
     documentFeature(
         "Booker",

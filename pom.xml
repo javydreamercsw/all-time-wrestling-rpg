@@ -1596,6 +1596,10 @@
               </excludes>
               <systemPropertyVariables>
                 <headless>${headless}</headless>
+                <!-- Belt-and-suspenders: set generate.docs both in argLine and here
+                     so tests reliably receive it regardless of how Maven merges argLine
+                     configurations across the base and profile executions. -->
+                <generate.docs>true</generate.docs>
               </systemPropertyVariables>
             </configuration>
             <executions>
@@ -1634,6 +1638,9 @@
               <groups>video</groups>
               <systemPropertyVariables>
                 <headless>${headless}</headless>
+                <!-- Belt-and-suspenders: also set generate.videos here so tests
+                     reliably receive it regardless of argLine merge behaviour. -->
+                <generate.videos>true</generate.videos>
               </systemPropertyVariables>
             </configuration>
             <executions>
