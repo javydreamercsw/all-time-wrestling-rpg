@@ -10,6 +10,22 @@ Track formal tag team partnerships. Teams often have their own specific finishin
 
 ---
 
+## Create Championship Title
+
+Define a new championship: enter the name, select the tier and championship type, optionally restrict by gender, and upload a belt image. Once saved the title appears in the list and becomes available for match booking.
+
+![Create Championship Title](/screenshots/title-create-dialog.png)
+
+---
+
+## Championship Titles
+
+Manage every championship belt in the promotion. Each title has a configurable tier (controls contender eligibility), championship type, and gender restriction. The Challengers column lets bookers assign contenders inline without leaving the list view.
+
+![Championship Titles](/screenshots/title-list-overview.png)
+
+---
+
 ## Seasons
 
 Configure and track game seasons. Seasons group shows together and define the journey toward major year-end events.
