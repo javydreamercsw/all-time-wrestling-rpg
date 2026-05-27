@@ -1083,6 +1083,8 @@
               <exclude>**/package-lock.json</exclude>
               <exclude>**/generated/**</exclude>
               <exclude>.claude/**</exclude>
+              <!-- beads issue-tracker internal DB files — not project code -->
+              <exclude>.beads/**</exclude>
             </excludes>
             <jackson/>
           </json>
