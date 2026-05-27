@@ -1,0 +1,109 @@
+name: Redeploy Docs
+
+# Rebuilds and redeploys the GitHub Pages docs site from an existing
+# docs-videos artifact without re-running any E2E or screenshot tests.
+# Screenshots are committed to the repo; only videos need to be supplied
+# from a prior release run.
+#
+# Usage:
+#   1. Find the release workflow run ID that produced the docs-videos artifact
+#      (Actions tab → Create Release → copy the run ID from the URL).
+#   2. Trigger this workflow with the ref and run ID.
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or tag to check out (e.g. release/2.0.0)'
+        required: true
+        default: 'main'
+      videos_run_id:
+        description: 'Release workflow run ID whose docs-videos artifact to use (leave blank to skip videos)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Install docs site dependencies
+        run: npm ci
+        working-directory: docs/site
+
+      - name: Download docs-videos artifact from release run
+        if: ${{ github.event.inputs.videos_run_id != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download ${{ github.event.inputs.videos_run_id }} \
+            --name docs-videos \
+            --dir .
+
+      - name: Normalize video artifact structure
+        if: ${{ github.event.inputs.videos_run_id != '' }}
+        run: |
+          # Releases before the artifact-path fix uploaded MP4s without the
+          # docs/videos/ prefix so they land at ./ instead of docs/videos/.
+          mkdir -p docs/videos
+          shopt -s nullglob
+          mp4s=(*.mp4)
+          if [ ${#mp4s[@]} -gt 0 ]; then
+            echo "Moving ${#mp4s[@]} MP4(s) from root to docs/videos/ (pre-fix artifact)"
+            mv *.mp4 docs/videos/
+          else
+            echo "Videos already at docs/videos/ — no migration needed"
+          fi
+
+      - name: Generate Markdown and build embedded docs
+        run: node scripts/generate-docs.cjs
+        env:
+          GITHUB_PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+      - name: Build documentation for GitHub Pages
+        run: npm run docs:build
+        working-directory: docs/site
+        env:
+          BASE_URL: /${{ github.event.repository.name }}/
+
+      - name: Create .nojekyll
+        run: touch docs/site/.vitepress/dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/site/.vitepress/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
