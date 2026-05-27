@@ -946,6 +946,13 @@
                 <include>*.md</include>
                 <include>.gitignore</include>
               </includes>
+              <excludes>
+                <!-- Spotless downloads Prettier into target/ when a Prettier step
+                     is active; without this exclude the *.md glob picks up hundreds
+                     of third-party README/CHANGELOG files in node_modules and fails
+                     the endWithNewline check. -->
+                <exclude>target/**</exclude>
+              </excludes>
               <!-- define the steps to apply to those files -->
               <trimTrailingWhitespace/>
               <endWithNewline/>
@@ -964,6 +971,7 @@
                 <include>docs/site/**/*.md</include>
               </includes>
               <excludes>
+                <exclude>target/**</exclude>
                 <exclude>docs/site/node_modules/**</exclude>
               </excludes>
               <prettier>
