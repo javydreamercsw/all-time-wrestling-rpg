@@ -34,6 +34,22 @@ The campaign list is scoped to the currently selected universe. Switching univer
 
 ---
 
+## Ability Tree
+
+The Ability Tree lets players spend Skill Tokens earned through campaign progress on permanent passive upgrades. Each ability card shows its name, effect, and token cost. Tokens are scarce — choose upgrades that suit your wrestler's style and the current campaign chapter.
+
+![Ability Tree](/screenshots/campaign-ability-tree.png)
+
+---
+
+## Story Narrative
+
+The Story Narrative view drives your wrestler's campaign journey through AI-generated encounter text and branching choices. Each session presents a new situation — a backstage confrontation, a contract negotiation, or a pre-match promo challenge — and your decision shapes the storyline direction and campaign VP outcome.
+
+![Story Narrative](/screenshots/campaign-narrative.png)
+
+---
+
 ## Encounter Outcomes
 
 Every choice in a backstage encounter has a narrative outcome and mechanical consequences, such as alignment shifts or bonuses for your next match.
@@ -127,67 +143,5 @@ Take daily actions to improve your stats, recover from injuries, or build hype f
 Your AI-generated adventures are preserved in the Story Journal. Here you can review past storyline arcs and download them as JSON chapter files to share or preserve.
 
 ![Story Journal](/screenshots/campaign-story-journal.png)
-
----
-
-## Video Walkthroughs
-
-### Skill Upgrades
-
-The upgrade moves to Purchased Skills and takes effect immediately — maximum stamina increased by 2 for all future matches. The effective stats shown on your Player Dashboard update to reflect the new total.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-skill-upgrades.mp4" type="video/mp4">
-</video>
-
----
-
-### Campaign Flow and Backstage Actions
-
-Back on the Campaign Dashboard — Victory Points accumulate from backstage actions and match wins, driving chapter progression throughout the season. Reaching each VP threshold automatically transitions the story to the next chapter.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-backstage-actions.mp4" type="video/mp4">
-</video>
-
----
-
-### Corporate Power Trip Chapter
-
-Corporate Power Trip triggers at 15 Victory Points — the player has earned enough momentum to challenge the establishment and climb to the top of the card. VP accumulates from match wins, backstage actions, and completed milestones.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-corporate-power-trip.mp4" type="video/mp4">
-</video>
-
----
-
-### Gang Warfare Chapter
-
-Gang Warfare unlocks when factions collide for territory control — the chapter sets up a faction turf war storyline across multiple shows, with backstage actions that let the player recruit allies or sabotage rivals.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-gang-warfare.mp4" type="video/mp4">
-</video>
-
----
-
-### The Fighting Champion Chapter
-
-The Fighting Champion chapter activates when the player holds a championship. The campaign tracks title reigns automatically and unlocks this chapter, presenting unique storyline choices available only to a defending champion.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-fighting-champion.mp4" type="video/mp4">
-</video>
-
----
-
-### Campaign List Walkthrough
-
-The Campaign Dashboard shows the wrestler's current chapter, alignment track, win/loss record, and available actions — giving admins full visibility into any player's campaign state.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-list-walkthrough.mp4" type="video/mp4">
-</video>
 
 ---

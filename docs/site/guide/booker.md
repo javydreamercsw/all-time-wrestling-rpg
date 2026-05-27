@@ -65,15 +65,3 @@ View a complete history of all booked shows. Click on any show to view its detai
 ![Show History](/screenshots/booker-show-history.png)
 
 ---
-
-## Video Walkthroughs
-
-### Show Card Validation Walkthrough
-
-After the booker confirms, the segments are saved to the show. Each approved segment enters the adjudication pipeline — the match engine resolves outcomes, updates wrestler stats, and the AI generates narration ready for broadcast.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-<source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-show-planning-card-validation-walkthrough.mp4" type="video/mp4">
-</video>
-
----
