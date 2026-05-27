@@ -1627,23 +1627,23 @@ public class ShowDetailView extends Main
       final Segment segmentToUpdate) {
     Set<Wrestler> wrestlers =
         teamWrestlers.values().stream().flatMap(List::stream).collect(Collectors.toSet());
-    log.info("Validating and saving segment: {}", segmentToUpdate);
+    log.debug("Validating and saving segment: {}", segmentToUpdate);
     // Validation
     if (segmentType == null) {
-      log.warn("Validation failed: Segment type is null.");
+      log.debug("Validation failed: Segment type is null.");
       notificationService.showError("Please select a segment type");
       return false;
     }
 
     if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
       if (wrestlers.isEmpty()) {
-        log.warn("Validation failed: Wrestlers are null or empty for non-promo segment.");
+        log.debug("Validation failed: Wrestlers are null or empty for non-promo segment.");
         notificationService.showError("Please select at least one wrestler");
         return false;
       }
 
       if (wrestlers.size() < 2) {
-        log.warn("Validation failed: Less than two wrestlers for a non-promo match.");
+        log.debug("Validation failed: Less than two wrestlers for a non-promo match.");
         notificationService.showError("Please select at least two wrestlers for a match");
         return false;
       }
@@ -1652,7 +1652,7 @@ public class ShowDetailView extends Main
     if (winners != null) {
       for (Wrestler winner : winners) {
         if (!wrestlers.contains(winner)) {
-          log.warn("Validation failed: Winner is not among selected wrestlers.");
+          log.debug("Validation failed: Winner is not among selected wrestlers.");
           notificationService.showError("Winner must be one of the selected wrestlers");
           return false;
         }

@@ -103,7 +103,7 @@ public class SegmentTypeService {
       segmentTypeRepository.deleteById(id);
       log.debug("Deleted segment type with ID: {}", id);
     } else {
-      log.warn("Segment type with ID {} not found for deletion.", id);
+      log.debug("Segment type with ID {} not found for deletion.", id);
       throw new IllegalArgumentException("Segment type not found with ID: " + id);
     }
   }

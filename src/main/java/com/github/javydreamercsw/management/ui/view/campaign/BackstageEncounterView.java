@@ -156,7 +156,7 @@ public class BackstageEncounterView extends VerticalLayout {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {
-            log.info("Generating backstage situation synchronously");
+            log.debug("Generating backstage situation synchronously");
             CampaignEncounterResponseDTO encounter =
                 backstageEncounterService.generateBackstageEncounter(currentCampaign);
             displaySituation(encounter);
@@ -189,7 +189,7 @@ public class BackstageEncounterView extends VerticalLayout {
   }
 
   private void handleChoice(@NonNull final CampaignEncounterResponseDTO.Choice choice) {
-    log.info("Backstage choice chosen: {}", choice.getLabel());
+    log.debug("Backstage choice chosen: {}", choice.getLabel());
     showLoading(true);
     choicesContainer.removeAll();
     narrativeContainer.removeAll();
@@ -197,7 +197,7 @@ public class BackstageEncounterView extends VerticalLayout {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {
-            log.info("Processing backstage choice synchronously: {}", choice.getLabel());
+            log.debug("Processing backstage choice synchronously: {}", choice.getLabel());
             backstageEncounterService.recordBackstageChoice(currentCampaign, choice);
             displayOutcome(choice);
           } catch (Exception e) {
@@ -211,7 +211,7 @@ public class BackstageEncounterView extends VerticalLayout {
   }
 
   private void displayOutcome(@NonNull final CampaignEncounterResponseDTO.Choice choice) {
-    log.info("Displaying backstage situation outcome");
+    log.debug("Displaying backstage situation outcome");
 
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
@@ -252,7 +252,7 @@ public class BackstageEncounterView extends VerticalLayout {
     finishBtn.setId("finish-backstage-situation-button");
     finishBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     choicesContainer.add(finishBtn);
-    log.info("Backstage situation outcome display complete");
+    log.debug("Backstage situation outcome display complete");
   }
 
   private void showLoading(final boolean loading) {

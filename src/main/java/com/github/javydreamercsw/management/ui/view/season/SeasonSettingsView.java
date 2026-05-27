@@ -66,7 +66,7 @@ public class SeasonSettingsView extends VerticalLayout {
     this.seasonService = seasonService;
     this.universeContextService = universeContextService;
     this.notificationService = notificationService;
-    log.info("Creating SeasonSettingsView");
+    log.debug("Creating SeasonSettingsView");
     add(new H2("Season Management"));
 
     Button resetBoundariesButton =
