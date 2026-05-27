@@ -23,7 +23,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  prepare_release:
+  # ---------------------------------------------------------------------------
+  # 1. SETUP — version bump, migration metadata, snapshots, changelog.
+  #    Ends with a git push so downstream jobs check out a branch that already
+  #    has the versioned source.  No screenshots or videos here — those run in
+  #    parallel in the next stage.
+  # ---------------------------------------------------------------------------
+  setup_release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,7 +37,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # --- 1. SETUP PHASE ---
       - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
@@ -66,7 +71,6 @@ jobs:
             git checkout -b "release/${{ github.event.inputs.version }}"
           fi
 
-      # --- 2. METADATA UPDATE PHASE ---
       - name: Update POM version
         run: mvn versions:set -DnewVersion=${{ github.event.inputs.version }} -DgenerateBackupPoms=false
 
@@ -86,16 +90,6 @@ jobs:
       - name: Generate MySQL reference snapshot
         run: mvn -Pintegration-test verify -Dgenerate.mysql.snapshot=true -Dit.test=GenerateMysqlSnapshotIT -Dsurefire.skip=true -DfailIfNoTests=false -Dspotless.check.skip=true
 
-      - name: Format and Push initial changes
-        run: |
-          mvn spotless:apply
-          git add .
-          if ! git diff-index --quiet --cached HEAD; then
-            git commit -m "chore: Update version to ${{ github.event.inputs.version }} and migration metadata"
-            git push -u origin "release/${{ github.event.inputs.version }}"
-          fi
-
-      # --- 3. DEPENDENCY INSTALLATION ---
       - name: Install root and docs dependencies
         run: |
           npm install --legacy-peer-deps
@@ -104,7 +98,6 @@ jobs:
       - name: Install changelog generator
         run: gem install github_changelog_generator
 
-      # --- 4. ARTIFACT GENERATION PHASE ---
       - name: Generate Changelog
         run: |
           github_changelog_generator \
@@ -116,15 +109,98 @@ jobs:
             --future-release v${{ github.event.inputs.version }}
 
           # Extract only the current release section for the GitHub release body.
-          # CHANGELOG.md is cumulative (full project history) but the release body
-          # should only list what changed in this specific version.
-          # The generator writes each release as "## [vX.Y.Z] ..." so we grab
-          # everything from the first such heading up to (not including) the next.
           awk '/^## \[/{count++; if(count==2) exit} count==1{print}' CHANGELOG.md \
             > RELEASE_NOTES.md
 
+      - name: Format and Push initial changes
+        run: |
+          mvn spotless:apply
+          git add .
+          if ! git diff-index --quiet --cached HEAD; then
+            git commit -m "chore: Update version to ${{ github.event.inputs.version }} and migration metadata"
+            git push -u origin "release/${{ github.event.inputs.version }}"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # 2a. GENERATE SCREENSHOTS — runs in parallel with generate_videos.
+  #     Produces docs/screenshots/ and docs/manifest.json as a CI artifact;
+  #     does NOT commit anything (assemble_docs handles the single commit).
+  # ---------------------------------------------------------------------------
+  generate_screenshots:
+    needs: setup_release
+    runs-on: ubuntu-latest
+    env:
+      HEADLESS: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: release/${{ github.event.inputs.version }}
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v2
+
+      - name: Install root dependencies
+        run: npm install --legacy-peer-deps
+
       - name: Generate screenshots and manifest
         run: mvn -B spotless:apply verify -Pgenerate-docs -Dheadless=true
+
+      - name: Upload screenshots artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: docs-screenshots
+          if-no-files-found: error
+          path: |
+            docs/screenshots/
+            docs/manifest.json
+
+  # ---------------------------------------------------------------------------
+  # 2b. GENERATE VIDEOS — runs in parallel with generate_screenshots.
+  #     Produces docs/videos/ and docs/video-manifest.json as a CI artifact.
+  # ---------------------------------------------------------------------------
+  generate_videos:
+    needs: setup_release
+    runs-on: ubuntu-latest
+    env:
+      HEADLESS: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: release/${{ github.event.inputs.version }}
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v2
+
+      - name: Install root dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Install ffmpeg (required for video generation)
         run: |
@@ -133,6 +209,64 @@ jobs:
 
       - name: Generate videos
         run: mvn -B spotless:apply verify -Pgenerate-videos -Dheadless=true
+
+      - name: Upload videos artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: docs-videos
+          if-no-files-found: error
+          path: |
+            docs/videos/
+            docs/video-manifest.json
+
+  # ---------------------------------------------------------------------------
+  # 3. ASSEMBLE DOCS — waits for both parallel jobs, downloads their artifacts,
+  #    builds the embedded docs site and GitHub Pages, then makes one combined
+  #    docs commit.  Uploads the Pages artifact for deploy_pages.
+  # ---------------------------------------------------------------------------
+  assemble_docs:
+    needs: [generate_screenshots, generate_videos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: release/${{ github.event.inputs.version }}
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install root and docs dependencies
+        run: |
+          npm install --legacy-peer-deps
+          cd docs/site && npm install
+
+      - name: Download screenshots artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: docs-screenshots
+          path: .
+
+      - name: Download videos artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: docs-videos
+          path: .
 
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs
@@ -149,7 +283,6 @@ jobs:
         env:
           BASE_URL: /${{ github.event.repository.name }}/
 
-      # --- 5. CLEANUP, COMMIT & PUSH PHASE ---
       - name: Format
         run: mvn spotless:apply
 
@@ -166,8 +299,13 @@ jobs:
         with:
           path: docs/site/.vitepress/dist
 
+  # ---------------------------------------------------------------------------
+  # Everything below this line is unchanged in structure; only
+  # build_and_release.needs changes from prepare_release → assemble_docs.
+  # ---------------------------------------------------------------------------
+
   build_and_release:
-    needs: prepare_release
+    needs: assemble_docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -298,7 +436,7 @@ jobs:
           files: target/dist/*
 
   deploy_pages:
-    # Pages artifact was uploaded by prepare_release; the GitHub Release must
+    # Pages artifact was uploaded by assemble_docs; the GitHub Release must
     # exist (build_and_release) but we do NOT need to wait for desktop
     # installers — deploying pages in parallel with installer builds saves ~15 min.
     needs: [build_and_release]
@@ -395,7 +533,7 @@ jobs:
         run: |
           echo "Syncing changes back to source branch: ${{ github.ref_name }}"
           # Fetch the latest remote state of the source branch. The initial
-          # checkout in this job is pinned to github.sha, but prepare_release
+          # checkout in this job is pinned to github.sha, but setup_release
           # pushes additional commits (docs, version bumps) to the branch after
           # the workflow is triggered. Without fetching first, the local branch
           # is behind origin and the subsequent push is rejected non-fast-forward.
