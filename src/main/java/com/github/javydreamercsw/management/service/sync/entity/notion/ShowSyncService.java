@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +60,7 @@ public class ShowSyncService extends BaseSyncService {
   private final ShowTemplateService showTemplateService;
 
   @Autowired @Lazy private ShowSyncService self;
+  @Autowired @Lazy private ShowTypeSyncService showTypeSyncService;
 
   public ShowSyncService(
       final ObjectMapper objectMapper,
@@ -346,6 +348,15 @@ public class ShowSyncService extends BaseSyncService {
         showDTOs.size(),
         batchSize);
 
+    // Ensure ShowTypes are synced from Notion before building the local cache,
+    // so shows whose ShowType relation exists in Notion but not yet locally can be saved.
+    try {
+      showTypeSyncService.syncShowTypes("pre-show-sync-show-types");
+    } catch (Exception e) {
+      log.warn(
+          "Pre-sync of show types failed, proceeding with local data only: {}", e.getMessage());
+    }
+
     // Cache lookups for performance
     Map<String, ShowType> showTypes = new HashMap<>();
     Map<String, Season> seasons = new HashMap<>();
@@ -545,11 +556,17 @@ public class ShowSyncService extends BaseSyncService {
       }
 
       try {
-        LocalDate date = LocalDate.parse(dateStr);
+        // Notion sends ISO 8601 with timezone (e.g. 2026-01-12T00:00:00.000+00:00)
+        LocalDate date = OffsetDateTime.parse(dateStr).toLocalDate();
         return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
-      } catch (Exception e) {
-        log.warn("Failed to parse show date: {}", dateStr);
-        return null;
+      } catch (Exception e1) {
+        try {
+          LocalDate date = LocalDate.parse(dateStr);
+          return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (Exception e2) {
+          log.warn("Failed to parse show date: {}", dateStr);
+          return null;
+        }
       }
     }
     return null;

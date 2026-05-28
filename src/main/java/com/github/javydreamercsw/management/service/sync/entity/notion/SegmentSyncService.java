@@ -268,6 +268,8 @@ public class SegmentSyncService extends BaseSyncService {
       if (dateString.startsWith("@")) {
         dateString = dateString.substring(1);
       }
+      // Strip trailing time portion (e.g. " 12:00 AM") — keep only "MMMM d, yyyy"
+      dateString = dateString.replaceAll("(\\w+ \\d+, \\d{4}).*", "$1");
       try {
         // The date from Notion is in the format "MMMM d, yyyy"
         java.time.format.DateTimeFormatter formatter =
