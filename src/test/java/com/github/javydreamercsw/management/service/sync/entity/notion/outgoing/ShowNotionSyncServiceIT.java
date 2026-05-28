@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.extension.NotionTestCleanupExtension;
 import com.github.javydreamercsw.management.service.sync.entity.notion.ShowNotionSyncService;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -41,6 +42,7 @@ import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -49,6 +51,7 @@ import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@ExtendWith(NotionTestCleanupExtension.class)
 class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private ShowRepository showRepository;
@@ -71,6 +74,7 @@ class ShowNotionSyncServiceIT extends ManagementIntegrationTest {
 
     String newPageId = UUID.randomUUID().toString();
     when(newPage.getId()).thenReturn(newPageId);
+    NotionTestCleanupExtension.trackPageId(newPageId);
 
     when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
     when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);

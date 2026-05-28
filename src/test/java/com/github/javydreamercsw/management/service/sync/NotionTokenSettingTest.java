@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
+import com.github.javydreamercsw.management.annotation.NotionLiveTest;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
+@NotionLiveTest
 @TestPropertySource(properties = {"notion.sync.enabled=true", "test.mock.notion-handler=false"})
 class NotionTokenSettingTest extends AbstractMockUserIntegrationTest {
 

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.config.TestSecurityContextConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
@@ -104,6 +105,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -143,6 +145,15 @@ public abstract class AbstractIntegrationTest {
 
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
+
+  /**
+   * The shared NotionHandler mock provided by TestNotionConfiguration. Injected here so it can be
+   * reset before each test, preventing stub state from leaking across test classes that share the
+   * same Spring context. When a test class uses @MockitoBean NotionHandler, that bean replaces this
+   * one and is already reset automatically by Spring Boot's MockitoResetTestExecutionListener.
+   */
+  @Autowired(required = false)
+  protected NotionHandler sharedNotionHandlerMock;
 
   @Autowired protected AuthenticationContext authenticationContext;
   @Autowired protected ApplicationContext applicationContext;
@@ -253,6 +264,14 @@ public abstract class AbstractIntegrationTest {
   @BeforeEach
   public void baseSetUp() {
     log.debug("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
+
+    // Reset the shared NotionHandler mock so stub state does not leak across test classes that
+    // share the same Spring context. @MockitoBean tests manage their own mock lifecycle and are
+    // unaffected — Mockito.reset() on an already-fresh mock is a no-op.
+    if (sharedNotionHandlerMock != null
+        && Mockito.mockingDetails(sharedNotionHandlerMock).isMock()) {
+      Mockito.reset(sharedNotionHandlerMock);
+    }
 
     // 1. Capture original authentication
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
