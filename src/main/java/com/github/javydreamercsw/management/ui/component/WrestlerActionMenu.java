@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -67,7 +68,8 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull final SecurityUtils securityUtils,
       @NonNull @Qualifier("baseAccountService") final AccountService accountService,
       @NonNull final ImageStorageService imageStorageService,
-      @NonNull final UniverseContextService universeContextService) {
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final AlignmentService alignmentService) {
     this.accountService = accountService;
 
     Long universeId = universeContextService.getCurrentUniverseId();
@@ -115,7 +117,8 @@ public class WrestlerActionMenu extends MenuBar {
                       wrestler,
                       refreshProvider,
                       securityUtils,
-                      universeContextService);
+                      universeContextService,
+                      alignmentService);
               dialog.open();
             });
     editItem.addComponentAsFirst(new Icon(VaadinIcon.EDIT));

@@ -22,10 +22,14 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -51,6 +55,7 @@ public class WrestlerDialog extends Dialog {
   private final NpcService npcService;
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
+  private final AlignmentService alignmentService;
   private final Wrestler wrestler;
   private final Binder<Wrestler> binder = new Binder<>(Wrestler.class);
   private final SecurityUtils securityUtils;
@@ -63,7 +68,8 @@ public class WrestlerDialog extends Dialog {
       @NonNull final WrestlerStateRepository wrestlerStateRepository,
       @NonNull final Runnable onSave,
       @NonNull final SecurityUtils securityUtils,
-      @NonNull final UniverseContextService universeContextService) {
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final AlignmentService alignmentService) {
     this(
         wrestlerService,
         accountService,
@@ -73,7 +79,8 @@ public class WrestlerDialog extends Dialog {
         createDefaultWrestler(),
         onSave,
         securityUtils,
-        universeContextService);
+        universeContextService,
+        alignmentService);
     setHeaderTitle("Create Wrestler");
   }
 
@@ -101,13 +108,15 @@ public class WrestlerDialog extends Dialog {
       @NonNull final Wrestler wrestler,
       @NonNull final Runnable onSave,
       @NonNull final SecurityUtils securityUtils,
-      @NonNull final UniverseContextService universeContextService) {
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final AlignmentService alignmentService) {
     this.wrestlerService = wrestlerService;
     this.accountService = accountService;
     this.npcService = npcService;
     this.imageStorageService = imageStorageService;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.universeContextService = universeContextService;
+    this.alignmentService = alignmentService;
     this.wrestler = wrestler;
     this.securityUtils = securityUtils;
 
@@ -176,6 +185,34 @@ public class WrestlerDialog extends Dialog {
         com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.BASELINE);
     imageEditLayout.setWidthFull();
 
+    boolean canEditAlignment = securityUtils.isAdmin() || securityUtils.isBooker();
+    ComboBox<AlignmentType> alignmentTypeField = new ComboBox<>("Alignment");
+    alignmentTypeField.setItems(AlignmentType.values());
+    alignmentTypeField.setId("wrestler-dialog-alignment-type-field");
+    alignmentTypeField.setVisible(canEditAlignment);
+    alignmentTypeField.setValue(AlignmentType.NEUTRAL);
+
+    IntegerField alignmentLevelField = new IntegerField("Alignment Level (0-5)");
+    alignmentLevelField.setMin(0);
+    alignmentLevelField.setMax(5);
+    alignmentLevelField.setId("wrestler-dialog-alignment-level-field");
+    alignmentLevelField.setVisible(canEditAlignment);
+    alignmentLevelField.setValue(0);
+    alignmentLevelField.setEnabled(false);
+
+    if (canEditAlignment) {
+      Universe currentUniverse = universeContextService.getCurrentUniverse().orElse(null);
+      if (currentUniverse != null && this.wrestler.getId() != null) {
+        WrestlerAlignment existing =
+            alignmentService.getOrCreateUniverseAlignment(this.wrestler, currentUniverse);
+        alignmentTypeField.setValue(existing.getAlignmentType());
+        alignmentLevelField.setValue(existing.getLevel());
+        alignmentLevelField.setEnabled(existing.getAlignmentType() != AlignmentType.NEUTRAL);
+      }
+      alignmentTypeField.addValueChangeListener(
+          e -> alignmentLevelField.setEnabled(e.getValue() != AlignmentType.NEUTRAL));
+    }
+
     Checkbox isPlayerField = new Checkbox("Is Player");
     isPlayerField.setId("wrestler-dialog-is-player-field");
     isPlayerField.setReadOnly(!securityUtils.isAdmin() && !securityUtils.isBooker());
@@ -217,6 +254,8 @@ public class WrestlerDialog extends Dialog {
         lowStaminaField,
         descriptionField,
         imageEditLayout,
+        alignmentTypeField,
+        alignmentLevelField,
         isPlayerField,
         activeField,
         accountComboBox);
@@ -261,6 +300,21 @@ public class WrestlerDialog extends Dialog {
                             state.setManager(managerField.getValue());
                             wrestlerStateRepository.save(state);
                           });
+
+                  // Save universe-level alignment (Booker/Admin only)
+                  if (canEditAlignment && alignmentTypeField.getValue() != null) {
+                    universeContextService
+                        .getCurrentUniverse()
+                        .ifPresent(
+                            u ->
+                                alignmentService.setUniverseAlignment(
+                                    savedWrestler,
+                                    u,
+                                    alignmentTypeField.getValue(),
+                                    alignmentLevelField.getValue() != null
+                                        ? alignmentLevelField.getValue()
+                                        : 0));
+                  }
 
                   // Handle account assignment if isPlayer is true and an account is selected
                   if (isPlayerField.getValue()) {
