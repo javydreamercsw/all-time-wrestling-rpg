@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
@@ -96,6 +97,10 @@ public class SegmentAdjudicationService {
   // Null-safe: when null (unit tests), reattach() is a no-op.
   @Setter(onMethod_ = {@Autowired})
   private SegmentRepository segmentRepository;
+
+  // Field-injected for the same reason — null-safe, falls back to wrestler.getAlignment().
+  @Setter(onMethod_ = {@Autowired})
+  private AlignmentService alignmentService;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -603,30 +608,38 @@ public class SegmentAdjudicationService {
     }
   }
 
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment resolveAlignment(
+      final Wrestler wrestler, final Segment segment) {
+    if (alignmentService != null && segment.getShow().getUniverse() != null) {
+      return alignmentService.getOrCreateUniverseAlignment(
+          wrestler, segment.getShow().getUniverse());
+    }
+    return wrestler.getAlignment();
+  }
+
   private long applyVenueBonuses(
       final Segment segment, final Wrestler wrestler, final long amount) {
     double modifier = 1.0;
 
     // Arena Alignment Bias (+25%)
-    if (segment.getShow().getArena() != null
-        && wrestler.getAlignment() != null
-        && wrestler.getAlignment().getAlignmentType() != null) {
+    if (segment.getShow().getArena() != null) {
+      com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment effectiveAlignment =
+          resolveAlignment(wrestler, segment);
       com.github.javydreamercsw.management.domain.world.Arena arena = segment.getShow().getArena();
-      String wrestlerAlignment = wrestler.getAlignment().getAlignmentType().name();
-
-      boolean matches = false;
-      switch (arena.getAlignmentBias()) {
-        case FACE_FAVORABLE -> matches = "FACE".equals(wrestlerAlignment);
-        case HEEL_FAVORABLE -> matches = "HEEL".equals(wrestlerAlignment);
-        case ANARCHIC -> matches = true; // Everyone gets a boost in anarchy
-        case NEUTRAL -> matches = false;
-      }
-
-      if (matches) {
-        modifier += 0.25;
-        log.debug(
-            "Applying 25% Arena Bias bonus to {}. Arena: {}, Bias: {}",
-            wrestler.getName(), arena.getName(), arena.getAlignmentBias());
+      if (effectiveAlignment != null && effectiveAlignment.getAlignmentType() != null) {
+        String wrestlerAlignment = effectiveAlignment.getAlignmentType().name();
+        boolean matches = false;
+        switch (arena.getAlignmentBias()) {
+          case FACE_FAVORABLE -> matches = "FACE".equals(wrestlerAlignment);
+          case HEEL_FAVORABLE -> matches = "HEEL".equals(wrestlerAlignment);
+          case ANARCHIC -> matches = true; // Everyone gets a boost in anarchy
+        }
+        if (matches) {
+          modifier += 0.25;
+          log.debug(
+              "Applying 25% Arena Bias bonus to {}. Arena: {}, Bias: {}",
+              wrestler.getName(), arena.getName(), arena.getAlignmentBias());
+        }
       }
     }
 

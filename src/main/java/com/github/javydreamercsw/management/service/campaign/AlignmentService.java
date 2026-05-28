@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +41,34 @@ public class AlignmentService {
 
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final CampaignStateRepository campaignStateRepository;
+
+  public WrestlerAlignment getOrCreateUniverseAlignment(
+      @NonNull final Wrestler wrestler, @NonNull final Universe universe) {
+    return wrestlerAlignmentRepository
+        .findByWrestlerAndUniverse(wrestler, universe)
+        .orElseGet(
+            () -> {
+              WrestlerAlignment alignment =
+                  WrestlerAlignment.builder()
+                      .wrestler(wrestler)
+                      .universe(universe)
+                      .alignmentType(AlignmentType.NEUTRAL)
+                      .level(0)
+                      .build();
+              return wrestlerAlignmentRepository.save(alignment);
+            });
+  }
+
+  public WrestlerAlignment setUniverseAlignment(
+      @NonNull final Wrestler wrestler,
+      @NonNull final Universe universe,
+      @NonNull final AlignmentType type,
+      final int level) {
+    WrestlerAlignment alignment = getOrCreateUniverseAlignment(wrestler, universe);
+    alignment.setAlignmentType(type);
+    alignment.setLevel(Math.max(0, Math.min(5, level)));
+    return wrestlerAlignmentRepository.save(alignment);
+  }
 
   public void shiftAlignment(@NonNull final Campaign campaign, final int amount) {
     if (amount == 0) {
