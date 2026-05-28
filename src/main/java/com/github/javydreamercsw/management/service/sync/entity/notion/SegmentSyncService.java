@@ -381,6 +381,13 @@ public class SegmentSyncService extends BaseSyncService {
     }
 
     // Resolve Show
+    if (segmentDTO.getShowExternalId() == null) {
+      String errorMsg =
+          "Skipping segment %s: no Show relation found in Notion.".formatted(segmentDTO.getName());
+      log.warn(errorMsg);
+      messageConsumer.accept(errorMsg);
+      return false;
+    }
     Optional<Show> showOpt = showService.findByExternalId(segmentDTO.getShowExternalId());
     if (showOpt.isEmpty()) {
       String msg =
