@@ -53,10 +53,7 @@ public class SegmentNotionSyncService extends BaseNotionSyncService<Segment> {
           NotionPropertyBuilder.createRelationProperty(entity.getSegmentType().getExternalId()));
     }
 
-    if (entity.getSegmentDate() != null) {
-      properties.put(
-          "Date", NotionPropertyBuilder.createDateProperty(entity.getSegmentDate().toString()));
-    }
+    // "Date" is a formula in Notion derived from the Show relation — not writable directly.
 
     if (entity.getSegmentRules() != null && !entity.getSegmentRules().isEmpty()) {
       properties.put(

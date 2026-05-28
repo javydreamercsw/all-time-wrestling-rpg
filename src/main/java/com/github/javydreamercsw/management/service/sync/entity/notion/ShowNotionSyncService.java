@@ -92,4 +92,11 @@ public class ShowNotionSyncService extends BaseNotionSyncService<Show> {
     }
     return super.getEntityDisplayName(entity);
   }
+
+  @Override
+  protected boolean isNameBasedMatchingEnabled() {
+    // Shows repeat annually (same name, different year) so name alone is never a unique key.
+    // Require external_id to be set before updating a Notion page.
+    return false;
+  }
 }

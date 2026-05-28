@@ -151,8 +151,10 @@ public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
 
             String externalId = entity.getExternalId();
 
-            // If externalId is missing locally, try to match by name from Notion lookup
-            if ((externalId == null || externalId.isBlank())
+            // If externalId is missing locally, try to match by name from Notion lookup.
+            // Disabled for entities with non-unique names (e.g. shows repeat annually).
+            if (isNameBasedMatchingEnabled()
+                && (externalId == null || externalId.isBlank())
                 && notionLookup.containsKey(entityDisplayName)) {
               String potentialId = notionLookup.get(entityDisplayName);
               // Check if this ID is already used by another entity of the same type
@@ -378,5 +380,15 @@ public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
   protected String getEntityDisplayName(final T entity) {
     String name = entity.getName();
     return name != null ? name : entity.toString();
+  }
+
+  /**
+   * Whether to attempt matching an entity to an existing Notion page by display name when the
+   * entity has no external ID. Override to return {@code false} for entities whose names are not
+   * unique across time (e.g. shows that repeat annually), to prevent one year's page from being
+   * overwritten by a later year's entity.
+   */
+  protected boolean isNameBasedMatchingEnabled() {
+    return true;
   }
 }
