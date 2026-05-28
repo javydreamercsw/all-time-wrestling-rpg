@@ -146,11 +146,13 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     // Get all cell contents
     List<WebElement> cells = driver.findElements(By.tagName("vaadin-grid-cell-content"));
+    List<String> targets = List.of("Adam", "Ben", "Zack");
     List<String> namesInOrder =
         cells.stream()
             .map(WebElement::getText)
             .map(String::trim)
-            .filter(text -> "Adam".equals(text) || "Ben".equals(text) || "Zack".equals(text))
+            .map(text -> text.split("\\s+")[0])
+            .filter(targets::contains)
             .toList();
 
     assertEquals(3, namesInOrder.size(), "Should find all three wrestler names in the grid");

@@ -202,7 +202,7 @@ public class WrestlerDialog extends Dialog {
 
     if (canEditAlignment) {
       Universe currentUniverse = universeContextService.getCurrentUniverse().orElse(null);
-      if (currentUniverse != null) {
+      if (currentUniverse != null && this.wrestler.getId() != null) {
         WrestlerAlignment existing =
             alignmentService.getOrCreateUniverseAlignment(this.wrestler, currentUniverse);
         alignmentTypeField.setValue(existing.getAlignmentType());
