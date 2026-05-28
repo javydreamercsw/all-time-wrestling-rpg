@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.extension.NotionTestCleanupExtension;
 import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentNotionSyncService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
@@ -55,6 +56,7 @@ import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -63,6 +65,7 @@ import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@ExtendWith(NotionTestCleanupExtension.class)
 class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private SegmentRepository segmentRepository;
@@ -90,6 +93,7 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
 
     String newPageId = UUID.randomUUID().toString();
     when(newPage.getId()).thenReturn(newPageId);
+    NotionTestCleanupExtension.trackPageId(newPageId);
 
     when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
     when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
