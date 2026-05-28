@@ -187,7 +187,7 @@ jobs:
         cache: maven
 
     - name: Run Notion Integration Tests
-      run: mvn -B verify -Pnotion-it,coverage -Dsurefire.skip=true
+      run: mvn -B verify -Pnotion-it,coverage -Dsurefire.skip=true -Dnotion.live.tests.enabled=true
 
     - name: Upload notion integration test coverage data
       uses: actions/upload-artifact@v7

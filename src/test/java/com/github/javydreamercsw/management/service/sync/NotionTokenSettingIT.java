@@ -30,7 +30,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @NotionLiveTest
 @TestPropertySource(properties = {"notion.sync.enabled=true", "test.mock.notion-handler=false"})
-class NotionTokenSettingTest extends AbstractMockUserIntegrationTest {
+class NotionTokenSettingIT extends AbstractMockUserIntegrationTest {
 
   @Autowired private GameSettingService gameSettingService;
   @Autowired private NotionHandler notionHandler;
