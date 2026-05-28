@@ -52,6 +52,9 @@ class ShowSyncServiceIT extends ManagementIntegrationTest {
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeService showTypeService;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.sync.SyncSessionManager syncSessionManager;
+
   @MockitoBean private NotionHandler notionHandler;
   @MockitoBean private NotionPageDataExtractor notionPageDataExtractor;
 
@@ -60,6 +63,7 @@ class ShowSyncServiceIT extends ManagementIntegrationTest {
   @BeforeEach
   public void setUp() {
     clearAllRepositories();
+    syncSessionManager.clearSyncSession();
     mockedEnv = Mockito.mockStatic(EnvironmentVariableUtil.class);
     mockedEnv.when(EnvironmentVariableUtil::isNotionTokenAvailable).thenReturn(true);
   }
