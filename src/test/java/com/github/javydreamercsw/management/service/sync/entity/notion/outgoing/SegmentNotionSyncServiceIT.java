@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion.outgoing
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -211,10 +212,10 @@ class SegmentNotionSyncServiceIT extends ManagementIntegrationTest {
     assertEquals(
         segment.getSegmentType().getExternalId(),
         capturedRequest.getProperties().get("Segment Type").getRelation().get(0).getId());
-    assertEquals(
-        segment.getSegmentDate().truncatedTo(java.time.temporal.ChronoUnit.MILLIS),
-        Instant.parse(capturedRequest.getProperties().get("Date").getDate().getStart())
-            .truncatedTo(java.time.temporal.ChronoUnit.MILLIS));
+    // "Date" is a formula in Notion computed from the Show relation — must not be sent
+    assertNull(
+        capturedRequest.getProperties().get("Date"),
+        "Date is a read-only formula in Notion and must not be included in outgoing properties");
     assertEquals(
         segment.getSegmentRules().iterator().next().getExternalId(),
         capturedRequest.getProperties().get("Rules").getRelation().get(0).getId());

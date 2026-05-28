@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -84,6 +85,16 @@ class ShowNotionSyncServiceTest extends AbstractSyncTest {
     Show savedShow = showCaptor.getValue();
     assertNotNull(savedShow.getExternalId());
     assertNotNull(savedShow.getLastSync());
+  }
+
+  @Test
+  @DisplayName(
+      "Name-based page matching is disabled for shows to prevent annual recurrences overwriting"
+          + " each other")
+  void testNameBasedMatchingDisabled() {
+    assertFalse(
+        showNotionSyncService.isNameBasedMatchingEnabled(),
+        "Shows repeat annually; name-based matching must be disabled to prevent date corruption");
   }
 
   @Test
