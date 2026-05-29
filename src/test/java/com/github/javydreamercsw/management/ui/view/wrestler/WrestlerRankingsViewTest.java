@@ -14,18 +14,15 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.ui.view.faction;
+package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.faction.FactionService;
-import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -37,42 +34,36 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class FactionListViewTest extends AbstractViewTest {
+class WrestlerRankingsViewTest extends AbstractViewTest {
 
-  @Mock private FactionService factionService;
   @Mock private WrestlerService wrestlerService;
-  @Mock private NpcService npcService;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private TitleService titleService;
+  @Mock private TierBoundaryService tierBoundaryService;
   @Mock private UniverseContextService universeContextService;
-  @Mock private SecurityUtils securityUtils;
 
-  private FactionListView view;
+  private WrestlerRankingsView view;
 
   @BeforeEach
   void setup() {
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
-    when(factionService.findAllByUniverse(anyLong())).thenReturn(Collections.emptyList());
+    when(titleService.findAll()).thenReturn(Collections.emptyList());
     when(wrestlerService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
-    when(npcService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
-    when(securityUtils.canCreate()).thenReturn(true);
 
     view =
-        new FactionListView(
-            factionService,
+        new WrestlerRankingsView(
             wrestlerService,
-            npcService,
             wrestlerRepository,
-            securityUtils,
+            titleService,
+            tierBoundaryService,
             universeContextService);
     UI.getCurrent().add(view);
   }
 
   @Test
-  @DisplayName("Should render the faction grid")
+  @DisplayName("Should render the wrestler rankings grid")
   void shouldRenderGrid() {
-    Grid<?> grid = _get(view, Grid.class);
+    Grid<?> grid = _get(view, Grid.class, spec -> spec.withId("wrestler-rankings-grid"));
     assertTrue(grid.isVisible());
-    assertFalse(grid.getColumns().isEmpty());
   }
 }
