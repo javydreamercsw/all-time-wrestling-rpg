@@ -56,6 +56,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.BeforeEvent;
@@ -68,17 +69,13 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(MockitoExtension.class)
-class ShowDetailViewTest {
+class ShowDetailViewTest extends AbstractViewTest {
 
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
@@ -110,7 +107,7 @@ class ShowDetailViewTest {
 
   @BeforeEach
   public void setUp() {
-    MockitoAnnotations.openMocks(this);
+    // mocks initialized by AbstractViewTest.setupKaribu()
   }
 
   @Test
