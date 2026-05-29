@@ -68,7 +68,7 @@ public class NotionSyncScheduler {
       segmentRepository;
 
   @jakarta.annotation.PostConstruct
-  void seedLastSyncTimesFromDb() {
+  public void seedLastSyncTimesFromDb() {
     showRepository
         .findMaxLastSync()
         .ifPresent(
