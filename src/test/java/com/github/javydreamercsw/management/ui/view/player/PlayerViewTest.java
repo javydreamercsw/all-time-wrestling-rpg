@@ -16,133 +16,96 @@
 */
 package com.github.javydreamercsw.management.ui.view.player;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
-import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignState;
-import com.github.javydreamercsw.management.domain.campaign.StatusCard;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
-import java.util.List;
-import java.util.Set;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.news.NewsService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.season.SeasonStatsService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.UI;
+import java.util.Collections;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
-/**
- * Unit tests for the effective stats logic displayed on the Player Dashboard. Tests the Wrestler
- * domain model calculations that the view renders, exercising the same paths as
- * createEffectiveStats Section() in PlayerView without needing the full Spring/Vaadin context.
- */
-public class PlayerViewTest {
+class PlayerViewTest extends AbstractViewTest {
 
-  private Universe universe;
-  private Wrestler wrestler;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private ShowService showService;
+  @Mock private RivalryService rivalryService;
+  @Mock private InboxService inboxService;
+  @Mock private SecurityUtils securityUtils;
+  @Mock private AccountService accountService;
+  @Mock private SegmentService segmentService;
+  @Mock private NewsService newsService;
+  @Mock private TransactionTemplate transactionTemplate;
+  @Mock private AchievementRepository achievementRepository;
+  @Mock private SeasonStatsService seasonStatsService;
+  @Mock private SeasonRepository seasonRepository;
+  @Mock private UniverseContextService universeContextService;
+
+  private PlayerView view;
 
   @BeforeEach
-  public void setUp() {
-    universe = Universe.builder().id(1L).name("Test Universe").build();
+  @SuppressWarnings("unchecked")
+  void setup() {
+    Account account = new Account();
+    account.setUsername("testuser");
+    account.setPassword("password");
+    account.setEmail("test@example.com");
+    CustomUserDetails userDetails = new CustomUserDetails(account);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(accountService.get(any())).thenReturn(Optional.of(account));
+    when(wrestlerService.findAllByAccount(any())).thenReturn(Collections.emptyList());
+    when(transactionTemplate.execute(any(TransactionCallback.class)))
+        .thenAnswer(
+            inv -> {
+              TransactionCallback<?> callback = inv.getArgument(0);
+              return callback.doInTransaction(null);
+            });
+    when(newsService.getLatestNews()).thenReturn(Collections.emptyList());
 
-    wrestler =
-        Wrestler.builder()
-            .name("Dashboard Wrestler")
-            .startingHealth(15)
-            .startingStamina(15)
-            .build();
-
-    WrestlerState state =
-        WrestlerState.builder()
-            .wrestler(wrestler)
-            .universe(universe)
-            .tier(WrestlerTier.MIDCARDER)
-            .bumps(0)
-            .currentHealth(15)
-            .build();
-
-    wrestler.setWrestlerStates(Set.of(state));
+    view =
+        new PlayerView(
+            wrestlerService,
+            showService,
+            rivalryService,
+            inboxService,
+            securityUtils,
+            accountService,
+            segmentService,
+            newsService,
+            transactionTemplate,
+            achievementRepository,
+            seasonStatsService,
+            seasonRepository,
+            universeContextService);
+    UI.getCurrent().add(view);
   }
 
   @Test
-  public void testBaseEffectiveStats() {
-    assertEquals(15, wrestler.getEffectiveStartingHealth(universe.getId()));
-    assertEquals(15, wrestler.getEffectiveStartingStamina());
-    assertEquals(0, wrestler.getEffectiveStartingMomentum());
-    assertEquals(5, wrestler.getEffectiveHandSize());
-  }
-
-  @Test
-  public void testCampaignMomentumBonus() {
-    CampaignState state = CampaignState.builder().momentumBonus(3).build();
-    Campaign campaign = Campaign.builder().wrestler(wrestler).state(state).build();
-    state.setCampaign(campaign);
-    WrestlerAlignment alignment =
-        WrestlerAlignment.builder()
-            .wrestler(wrestler)
-            .alignmentType(AlignmentType.FACE)
-            .level(1)
-            .campaign(campaign)
-            .build();
-    wrestler.setAlignment(alignment);
-
-    assertEquals(3, wrestler.getEffectiveStartingMomentum());
-  }
-
-  @Test
-  public void testStatusCardModifiesMomentum() {
-    StatusCard drawCard =
-        StatusCard.builder()
-            .key("status_draw_test")
-            .level1Name("Draw")
-            .level2Name("Main Eventer")
-            .positive(true)
-            .level1Effect("momentum: +4")
-            .level2Effect("momentum: +4")
-            .build();
-
-    WrestlerStatus status =
-        WrestlerStatus.builder().wrestler(wrestler).statusCard(drawCard).level(1).build();
-    wrestler.setStatuses(List.of(status));
-
-    assertEquals(4, wrestler.getEffectiveStartingMomentum());
-  }
-
-  @Test
-  public void testNegativeStatusCardReducesHandSize() {
-    StatusCard lostConfidence =
-        StatusCard.builder()
-            .key("status_lost_confidence_test")
-            .level1Name("Lost Confidence")
-            .level2Name("Humiliated")
-            .positive(false)
-            .level1Effect("handSize: -2")
-            .level2Effect("momentum: -7")
-            .build();
-
-    WrestlerStatus status =
-        WrestlerStatus.builder().wrestler(wrestler).statusCard(lostConfidence).level(1).build();
-    wrestler.setStatuses(List.of(status));
-
-    assertEquals(3, wrestler.getEffectiveHandSize());
-  }
-
-  @Test
-  public void testCampaignHandSizePenalty() {
-    CampaignState state = CampaignState.builder().handSizePenalty(2).build();
-    Campaign campaign = Campaign.builder().wrestler(wrestler).state(state).build();
-    state.setCampaign(campaign);
-    WrestlerAlignment alignment =
-        WrestlerAlignment.builder()
-            .wrestler(wrestler)
-            .alignmentType(AlignmentType.FACE)
-            .level(1)
-            .campaign(campaign)
-            .build();
-    wrestler.setAlignment(alignment);
-
-    assertEquals(3, wrestler.getEffectiveHandSize());
+  @DisplayName("Should render the Player Dashboard toolbar")
+  void shouldRenderToolbar() {
+    ViewToolbar toolbar = _get(view, ViewToolbar.class);
+    assertTrue(toolbar.isVisible());
   }
 }

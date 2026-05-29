@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -58,10 +59,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
-class ShowPlanningViewTest {
+class ShowPlanningViewTest extends AbstractViewTest {
 
   @Mock private ShowService showService;
   @Mock private ShowPlanningService showPlanningService;
@@ -79,12 +79,10 @@ class ShowPlanningViewTest {
   @Mock private ArenaService arenaService;
   @Mock private NotificationService notificationService;
 
+  @Mock private UniverseContextService universeContextService;
+
   @BeforeEach
   public void setUp() {
-    aiFactory = mock(SegmentNarrationServiceFactory.class);
-    MockitoAnnotations.openMocks(this);
-    UniverseContextService universeContextService = mock(UniverseContextService.class);
-
     showPlanningView =
         new ShowPlanningView(
             showService,
@@ -102,10 +100,6 @@ class ShowPlanningViewTest {
             arenaService,
             notificationService,
             universeContextService);
-    // Mock the UI since we are not in a Vaadin environment
-    UI ui = mock(UI.class);
-    UI.setCurrent(ui);
-    when(ui.getUI()).thenReturn(Optional.of(ui));
   }
 
   @Test
@@ -365,16 +359,21 @@ class ShowPlanningViewTest {
         (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
     showComboBox.setValue(show);
 
-    // Mock the UI to capture the navigation call
+    // Temporarily swap Karibu UI with a mock to capture navigation calls
+    UI karibuUI = UI.getCurrent();
     UI ui = mock(UI.class);
     UI.setCurrent(ui);
 
-    // Get the button and click it
-    Button viewDetailsButton =
-        (Button) ReflectionTestUtils.getField(showPlanningView, "viewDetailsButton");
-    viewDetailsButton.click();
+    try {
+      // Get the button and click it
+      Button viewDetailsButton =
+          (Button) ReflectionTestUtils.getField(showPlanningView, "viewDetailsButton");
+      viewDetailsButton.click();
 
-    // Verify that navigate was called with the correct parameters
-    verify(ui).navigate(eq(ShowDetailView.class), eq(showId), any(QueryParameters.class));
+      // Verify that navigate was called with the correct parameters
+      verify(ui).navigate(eq(ShowDetailView.class), eq(showId), any(QueryParameters.class));
+    } finally {
+      UI.setCurrent(karibuUI);
+    }
   }
 }

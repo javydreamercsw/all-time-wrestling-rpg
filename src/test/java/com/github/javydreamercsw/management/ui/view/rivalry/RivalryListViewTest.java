@@ -14,65 +14,57 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.ui.view.faction;
+package com.github.javydreamercsw.management.ui.view.rivalry;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.faction.FactionService;
-import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.mapper.RivalryMapper;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.grid.Grid;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.data.domain.Page;
 
-class FactionListViewTest extends AbstractViewTest {
+class RivalryListViewTest extends AbstractViewTest {
 
-  @Mock private FactionService factionService;
+  @Mock private RivalryService rivalryService;
+  @Mock private RivalryRepository rivalryRepository;
   @Mock private WrestlerService wrestlerService;
-  @Mock private NpcService npcService;
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private RivalryMapper rivalryMapper;
 
-  private FactionListView view;
+  private RivalryListView view;
 
+  @SuppressWarnings("unchecked")
   @BeforeEach
   void setup() {
-    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
-    when(factionService.findAllByUniverse(anyLong())).thenReturn(Collections.emptyList());
-    when(wrestlerService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
-    when(npcService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
     when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
-    when(securityUtils.canCreate()).thenReturn(true);
+    when(rivalryService.getAllRivalriesWithWrestlers(any())).thenReturn(Page.empty());
+    when(rivalryService.getRivalryMapper()).thenReturn(rivalryMapper);
 
     view =
-        new FactionListView(
-            factionService,
-            wrestlerService,
-            npcService,
-            wrestlerRepository,
-            securityUtils,
-            universeContextService);
+        new RivalryListView(
+            rivalryService, rivalryRepository, wrestlerService, wrestlerRepository, securityUtils);
     UI.getCurrent().add(view);
   }
 
   @Test
-  @DisplayName("Should render the faction grid")
-  void shouldRenderGrid() {
-    Grid<?> grid = _get(view, Grid.class);
-    assertTrue(grid.isVisible());
-    assertFalse(grid.getColumns().isEmpty());
+  @DisplayName("Should render the Rivalry List toolbar")
+  void shouldRenderToolbar() {
+    ViewToolbar toolbar = _get(view, ViewToolbar.class);
+    assertTrue(toolbar.isVisible());
   }
 }

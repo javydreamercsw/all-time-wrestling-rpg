@@ -14,65 +14,57 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.ui.view.faction;
+package com.github.javydreamercsw.management.ui.view.league;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.faction.FactionService;
-import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
-import java.util.Collections;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class FactionListViewTest extends AbstractViewTest {
+class LeagueListViewTest extends AbstractViewTest {
 
-  @Mock private FactionService factionService;
-  @Mock private WrestlerService wrestlerService;
-  @Mock private NpcService npcService;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private UniverseContextService universeContextService;
+  @Mock private LeagueService leagueService;
+  @Mock private AccountService accountService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private LeagueMembershipRepository leagueMembershipRepository;
+  @Mock private UniverseContextService universeContextService;
 
-  private FactionListView view;
+  private LeagueListView view;
 
   @BeforeEach
   void setup() {
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
-    when(factionService.findAllByUniverse(anyLong())).thenReturn(Collections.emptyList());
-    when(wrestlerService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
-    when(npcService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
-    when(securityUtils.canCreate()).thenReturn(true);
-
     view =
-        new FactionListView(
-            factionService,
-            wrestlerService,
-            npcService,
-            wrestlerRepository,
+        new LeagueListView(
+            leagueService,
+            accountService,
             securityUtils,
+            wrestlerRepository,
+            leagueMembershipRepository,
             universeContextService);
     UI.getCurrent().add(view);
   }
 
   @Test
-  @DisplayName("Should render the faction grid")
-  void shouldRenderGrid() {
-    Grid<?> grid = _get(view, Grid.class);
+  @DisplayName("Should render the league grid")
+  void shouldRenderLeagueGrid() {
+    Grid<?> grid = _get(view, Grid.class, spec -> spec.withId("league-grid"));
     assertTrue(grid.isVisible());
-    assertFalse(grid.getColumns().isEmpty());
   }
 }

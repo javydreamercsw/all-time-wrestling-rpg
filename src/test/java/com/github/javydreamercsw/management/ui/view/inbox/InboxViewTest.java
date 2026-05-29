@@ -14,65 +14,60 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.ui.view.faction;
+package com.github.javydreamercsw.management.ui.view.inbox;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.faction.FactionService;
-import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.universe.UniverseContextService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import java.util.Collections;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.data.domain.Sort;
 
-class FactionListViewTest extends AbstractViewTest {
+class InboxViewTest extends AbstractViewTest {
 
-  @Mock private FactionService factionService;
-  @Mock private WrestlerService wrestlerService;
-  @Mock private NpcService npcService;
+  @Mock private InboxService inboxService;
+  @Mock private InboxEventTypeRegistry eventTypeRegistry;
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private UniverseContextService universeContextService;
+  @Mock private MatchFulfillmentService matchFulfillmentService;
   @Mock private SecurityUtils securityUtils;
 
-  private FactionListView view;
+  private InboxView view;
 
   @BeforeEach
   void setup() {
-    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
-    when(factionService.findAllByUniverse(anyLong())).thenReturn(Collections.emptyList());
-    when(wrestlerService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
-    when(npcService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
-    when(securityUtils.canCreate()).thenReturn(true);
-
+    when(wrestlerRepository.findAll(any(Sort.class))).thenReturn(Collections.emptyList());
+    when(eventTypeRegistry.getEventTypes()).thenReturn(Collections.emptyList());
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+    when(inboxService.search(any(), any(), any(), any(), any()))
+        .thenReturn(Collections.emptyList());
     view =
-        new FactionListView(
-            factionService,
-            wrestlerService,
-            npcService,
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
             wrestlerRepository,
-            securityUtils,
-            universeContextService);
+            matchFulfillmentService,
+            securityUtils);
     UI.getCurrent().add(view);
   }
 
   @Test
-  @DisplayName("Should render the faction grid")
+  @DisplayName("Should render the inbox grid")
   void shouldRenderGrid() {
     Grid<?> grid = _get(view, Grid.class);
     assertTrue(grid.isVisible());
-    assertFalse(grid.getColumns().isEmpty());
   }
 }
