@@ -34,6 +34,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -167,7 +168,32 @@ public class NotionSyncView extends Main {
     controlSection.setId("control-section");
     syncDirection = new ComboBox<>("Sync Direction");
     syncDirection.setItems(SyncDirection.values());
-    syncDirection.setValue(SyncDirection.INBOUND);
+    syncDirection.setValue(SyncDirection.OUTBOUND);
+    syncDirection.addValueChangeListener(
+        event -> {
+          if (SyncDirection.INBOUND.equals(event.getValue())
+              && SyncDirection.OUTBOUND.equals(event.getOldValue())) {
+            ConfirmDialog warning = new ConfirmDialog();
+            warning.setHeader("Switch to Inbound Sync?");
+            warning.setText(
+                """
+                Inbound sync pulls data FROM Notion INTO the local database, overwriting local \
+                values for every show it touches. Any local edits not yet pushed to Notion will \
+                be lost. Future shows will be updated too — including dates, types, and \
+                descriptions.
+
+                Use Inbound only when Notion is the authoritative source (e.g. initial setup or \
+                data recovery). For routine sync, keep Outbound so Notion reflects what is in \
+                the database.\
+                """);
+            warning.setCancelable(true);
+            warning.setCancelText("Keep Outbound");
+            warning.setConfirmText("Switch to Inbound");
+            warning.setConfirmButtonTheme("error primary");
+            warning.addCancelListener(e -> syncDirection.setValue(SyncDirection.OUTBOUND));
+            warning.open();
+          }
+        });
 
     syncAllButton = new Button("Sync All Entities", VaadinIcon.REFRESH.create());
     syncAllButton.setId("sync-all-button");

@@ -92,8 +92,16 @@ public class ShowPlanningAiService {
                     segment.setNarration(dto.getDescription());
                     segment.setSummary(dto.getOutcome());
                     segment.setNotes(dto.getNotes());
-                    segment.setParticipants(dto.getParticipants());
                     segment.setRivalryId(dto.getRivalryId());
+                    if (dto.getTeams() != null && !dto.getTeams().isEmpty()) {
+                      segment.setTeams(dto.getTeams());
+                      segment.setParticipants(
+                          dto.getTeams().stream()
+                              .flatMap(java.util.List::stream)
+                              .collect(java.util.stream.Collectors.toList()));
+                    } else {
+                      segment.setParticipants(dto.getParticipants());
+                    }
                     return segment;
                   })
               .collect(java.util.stream.Collectors.toList());
@@ -396,7 +404,11 @@ public class ShowPlanningAiService {
     prompt.append("  \"outcome\": \"string\",\n");
     prompt.append(
         "  \"notes\": \"string\", // Optional instructions/feedback for future AI narration\n");
-    prompt.append("  \"participants\": [\"string\"],\n");
+    prompt.append(
+        "  \"teams\": [[\"string\"]], // List of teams; each inner array is one team."
+            + " For a 1v1 match: [[\"WrestlerA\"],[\"WrestlerB\"]]."
+            + " For a tag match: [[\"A\",\"B\"],[\"C\",\"D\"]]."
+            + " For promos/non-match segments with no opposing sides: [[\"A\",\"B\",\"C\"]].\n");
     prompt.append(
         "  \"rivalryId\": number // Optional: the Id of the rivalry this match resolves; omit or"
             + " null if not rivalry-driven\n");
