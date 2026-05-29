@@ -23,7 +23,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.ai.notion.ShowPage;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.dto.ShowDTO;
@@ -168,20 +167,5 @@ class ShowSyncServiceTest extends AbstractSyncTest {
     Show saved = savedShowCaptor.getValue();
     assertThat(saved.getName()).isEqualTo("New Name");
     assertThat(saved.getLastSync()).isNotNull().isAfter(Instant.parse("2026-01-01T00:00:00Z"));
-  }
-
-  // ---------------------------------------------------------------------------
-  // Helper — kept private, referenced only from tests that build full ShowPage mocks
-  // ---------------------------------------------------------------------------
-
-  private ShowPage buildShowPage(
-      String id, String name, String lastEditedTime, String showTypeName) {
-    ShowPage page = org.mockito.Mockito.mock(ShowPage.class);
-    lenient().when(page.getId()).thenReturn(id);
-    lenient().when(page.getLast_edited_time()).thenReturn(lastEditedTime);
-    lenient()
-        .when(page.getRawProperties())
-        .thenReturn(Map.of("Name", name, "Show Type", showTypeName));
-    return page;
   }
 }

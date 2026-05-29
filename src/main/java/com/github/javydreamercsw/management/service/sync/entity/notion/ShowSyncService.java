@@ -242,7 +242,9 @@ public class ShowSyncService extends BaseSyncService {
               .filter(
                   p -> {
                     String notionEdited = p.getLast_edited_time();
-                    if (notionEdited == null) return false;
+                    if (notionEdited == null) {
+                      return false;
+                    }
                     try {
                       Instant notionEditedInstant = OffsetDateTime.parse(notionEdited).toInstant();
                       Instant localSync = localLastSyncMap.getOrDefault(p.getId(), Instant.EPOCH);
