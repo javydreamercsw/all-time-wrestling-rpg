@@ -130,6 +130,14 @@ public class TitleListView extends Main {
     grid.addColumn(Title::getChampionshipType).setHeader("Championship Type").setSortable(true);
     grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
     grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);
+    grid.addColumn(Title::getIncludeInRankings).setHeader("Rankings").setSortable(true);
+    grid.addColumn(
+            title ->
+                title.getDefenseFrequency() != null
+                    ? title.getDefenseFrequency() + " shows"
+                    : "Default")
+        .setHeader("Defense Freq.")
+        .setSortable(true);
 
     grid.addComponentColumn(
             title -> {
