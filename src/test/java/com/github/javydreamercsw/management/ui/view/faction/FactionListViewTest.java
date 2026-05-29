@@ -56,6 +56,7 @@ class FactionListViewTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private com.github.javydreamercsw.base.ai.image.ImageStorageService imageStorageService;
 
   private FactionListView factionListView;
   private List<Faction> testFactions;
@@ -79,6 +80,7 @@ class FactionListViewTest {
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
     when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.resolveFactionImage(any())).thenReturn("");
 
     // Mock WrestlerState for fans
     for (int i = 0; i < testWrestlers.size(); i++) {
@@ -97,7 +99,8 @@ class FactionListViewTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
+            universeContextService,
+            imageStorageService);
   }
 
   @Test
@@ -157,7 +160,8 @@ class FactionListViewTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
+            universeContextService,
+            imageStorageService);
 
     // Then
     assertNotNull(emptyView);
@@ -214,7 +218,8 @@ class FactionListViewTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
+            universeContextService,
+            imageStorageService);
 
     // Then
     assertNotNull(view);

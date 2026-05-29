@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view.faction;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -29,18 +31,23 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -48,6 +55,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -67,6 +76,7 @@ public class FactionListView extends VerticalLayout {
   private final WrestlerRepository wrestlerRepository;
   private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
+  private final ImageStorageService imageStorageService;
   private Dialog editDialog;
   private Faction editingFaction;
   private Binder<Faction> binder;
@@ -75,6 +85,11 @@ public class FactionListView extends VerticalLayout {
   final ComboBox<Wrestler> leader;
   final ComboBox<Npc> manager;
   final TextField alignment;
+  final Checkbox isActive;
+  final IntegerField affinity;
+  final TextField imageUrl;
+  final DatePicker formedDate;
+  final DatePicker disbandedDate;
   final Grid<Faction> factionGrid = new Grid<>(Faction.class, false);
   final Button createBtn;
 
@@ -85,13 +100,15 @@ public class FactionListView extends VerticalLayout {
       @NonNull final NpcService npcService,
       @NonNull final WrestlerRepository wrestlerRepository,
       @NonNull final SecurityUtils securityUtils,
-      @NonNull final UniverseContextService universeContextService) {
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final ImageStorageService imageStorageService) {
     this.factionService = factionService;
     this.wrestlerService = wrestlerService;
     this.npcService = npcService;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
     this.universeContextService = universeContextService;
+    this.imageStorageService = imageStorageService;
 
     // Create form components
     name = new TextField();
@@ -116,6 +133,23 @@ public class FactionListView extends VerticalLayout {
 
     alignment = new TextField("Alignment");
     alignment.setPlaceholder("e.g., Face, Heel...");
+
+    isActive = new Checkbox("Active");
+
+    affinity = new IntegerField("Affinity");
+    affinity.setTooltipText("Faction synergy score built through shared victories");
+    affinity.setWidthFull();
+
+    imageUrl = new TextField("Image URL");
+    imageUrl.setReadOnly(true);
+    imageUrl.setWidthFull();
+
+    formedDate = new DatePicker("Formed Date");
+    formedDate.setWidthFull();
+
+    disbandedDate = new DatePicker("Disbanded Date");
+    disbandedDate.setClearButtonVisible(true);
+    disbandedDate.setWidthFull();
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -160,6 +194,18 @@ public class FactionListView extends VerticalLayout {
   }
 
   private void configureGrid() {
+    factionGrid
+        .addComponentColumn(
+            faction -> {
+              Image image = new Image(factionService.resolveFactionImage(faction), "Faction Image");
+              image.setHeight("50px");
+              image.setWidth("50px");
+              image.addClassName(LumoUtility.BorderRadius.SMALL);
+              return image;
+            })
+        .setHeader("Art")
+        .setFlexGrow(0)
+        .setWidth("70px");
     factionGrid.addColumn(Faction::getName).setHeader("Name").setSortable(true).setFlexGrow(1);
     factionGrid
         .addColumn(f -> f.getLeader() != null ? f.getLeader().getName() : "None")
@@ -171,6 +217,7 @@ public class FactionListView extends VerticalLayout {
         .setSortable(true);
     factionGrid.addColumn(Faction::getMemberCount).setHeader("Members").setSortable(true);
     factionGrid.addColumn(Faction::getAlignment).setHeader("Alignment").setSortable(true);
+    factionGrid.addColumn(Faction::isActive).setHeader("Active").setSortable(true);
     factionGrid
         .addColumn(Faction::getAffinity)
         .setHeader("Synergy")
@@ -264,7 +311,8 @@ public class FactionListView extends VerticalLayout {
 
   private void setupEditDialog() {
     editDialog = new Dialog();
-    editDialog.setWidth("min(500px, 95vw)");
+    editDialog.setWidth("min(600px, 95vw)");
+    editDialog.setMaxHeight("85vh");
 
     binder = new Binder<>(Faction.class);
     binder.forField(name).asRequired("Name is required").bind(Faction::getName, Faction::setName);
@@ -272,8 +320,43 @@ public class FactionListView extends VerticalLayout {
     binder.bind(leader, Faction::getLeader, Faction::setLeader);
     binder.bind(manager, Faction::getManager, Faction::setManager);
     binder.bind(alignment, Faction::getAlignment, Faction::setAlignment);
+    binder.bind(isActive, Faction::isActive, Faction::setActive);
+    binder.bind(affinity, Faction::getAffinity, Faction::setAffinity);
+    binder.forField(imageUrl).bind(Faction::getImageUrl, Faction::setImageUrl);
+    binder
+        .forField(formedDate)
+        .withConverter(
+            ld -> ld != null ? ld.atStartOfDay(ZoneOffset.UTC).toInstant() : Instant.now(),
+            instant -> instant != null ? instant.atZone(ZoneOffset.UTC).toLocalDate() : null)
+        .bind(Faction::getFormedDate, Faction::setFormedDate);
+    binder
+        .forField(disbandedDate)
+        .withConverter(
+            ld -> ld != null ? ld.atStartOfDay(ZoneOffset.UTC).toInstant() : null,
+            instant -> instant != null ? instant.atZone(ZoneOffset.UTC).toLocalDate() : null)
+        .bind(Faction::getDisbandedDate, Faction::setDisbandedDate);
 
-    VerticalLayout layout = new VerticalLayout(name, description, leader, manager, alignment);
+    ImageUploadComponent imageUpload =
+        new ImageUploadComponent(imageStorageService, url -> imageUrl.setValue(url));
+    imageUpload.setUploadButtonText("Upload Image");
+    imageUpload.setVisible(securityUtils.canEdit());
+
+    HorizontalLayout imageRow = new HorizontalLayout(imageUrl, imageUpload);
+    imageRow.setAlignItems(FlexComponent.Alignment.BASELINE);
+    imageRow.setWidthFull();
+
+    VerticalLayout layout =
+        new VerticalLayout(
+            name,
+            description,
+            leader,
+            manager,
+            alignment,
+            isActive,
+            affinity,
+            imageRow,
+            formedDate,
+            disbandedDate);
     layout.setPadding(true);
     layout.setSpacing(true);
 
