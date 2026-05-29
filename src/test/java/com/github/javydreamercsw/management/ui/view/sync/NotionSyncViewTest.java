@@ -20,6 +20,10 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +34,8 @@ import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker;
 import com.github.javydreamercsw.management.service.sync.SyncProgressTracker.SyncProgress;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -54,6 +60,10 @@ class NotionSyncViewTest extends AbstractViewTest {
   @BeforeEach
   public void setup() {
     when(dependencyAnalyzer.getAutomaticSyncOrder()).thenReturn(List.of(SyncEntityType.WRESTLERS));
+    when(notionSyncScheduler.getSyncEntities()).thenReturn(List.of(SyncEntityType.WRESTLERS));
+    when(notionSyncScheduler.syncEntity(
+            eq(SyncEntityType.WRESTLERS), anyString(), any(SyncDirection.class)))
+        .thenReturn(BaseSyncService.SyncResult.success("wrestlers", 3, 0, 0));
 
     NotionSyncProperties.Scheduler scheduler = new NotionSyncProperties.Scheduler();
     scheduler.setInterval(3600000L);
@@ -70,7 +80,7 @@ class NotionSyncViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Should update progress and logs in the UI when sync is running")
+  @DisplayName("Should update progress and logs in the UI when sync all is running")
   void shouldUpdateUIProgressAndLogs() {
     Button syncAllButton = _get(Button.class, spec -> spec.withId("sync-all-button"));
 
@@ -84,11 +94,15 @@ class NotionSyncViewTest extends AbstractViewTest {
         .addProgressListener(listenerCaptor.capture());
     SyncProgressTracker.SyncProgressListener listener = listenerCaptor.getValue();
 
-    // Extract the operationId from the view's internal state or by capturing a call to
-    // triggerManualSync
+    // Capture the operation ID that triggerFullSync assigned (from startOperation call)
     ArgumentCaptor<String> opIdCaptor = ArgumentCaptor.forClass(String.class);
-    verify(notionSyncScheduler, timeout(5000)).triggerManualSync(opIdCaptor.capture());
+    verify(progressTracker, timeout(5000))
+        .startOperation(opIdCaptor.capture(), anyString(), anyInt());
     String operationId = opIdCaptor.getValue();
+
+    // Verify syncEntity was called (not the old triggerManualSync)
+    verify(notionSyncScheduler, timeout(5000))
+        .syncEntity(eq(SyncEntityType.WRESTLERS), anyString(), any(SyncDirection.class));
 
     SyncProgress progress = new SyncProgress(operationId, "Syncing...", 10);
     progress.setCurrentStep(5);
