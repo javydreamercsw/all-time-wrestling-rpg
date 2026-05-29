@@ -137,8 +137,7 @@ class ShowSyncServiceIT extends ManagementIntegrationTest {
                   return showTypeService.save(st);
                 });
 
-    when(notionHandler.getDatabasePageIds("Shows")).thenReturn(List.of(showId));
-    when(notionHandler.loadShowById(showId)).thenReturn(Optional.of(showPage));
+    when(notionHandler.loadAllShowsForSync()).thenReturn(List.of(showPage));
     when(notionPageDataExtractor.extractNameFromNotionPage(any())).thenReturn("Test Show 2026");
     when(notionPageDataExtractor.extractDescriptionFromNotionPage(any())).thenReturn("");
     when(notionPageDataExtractor.extractPropertyAsString(any(), eq("Show Type")))
