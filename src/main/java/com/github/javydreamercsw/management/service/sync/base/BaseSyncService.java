@@ -247,8 +247,8 @@ public abstract class BaseSyncService {
             .updateProgress(
                 operationId,
                 progressStep,
-                "%s %d/%d items (%.1f%%)"
-                    .formatted(description, processedCount, items.size(), progressPercent));
+                description.formatted(processedCount, items.size())
+                    + " (%.1f%%)".formatted(progressPercent));
 
         // Small delay between batches to be nice to the API
         if (endIndex < items.size()) {

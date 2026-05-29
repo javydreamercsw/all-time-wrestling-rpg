@@ -186,6 +186,9 @@ public interface SegmentRepository
   @Query("SELECT s.externalId FROM Segment s WHERE s.externalId IS NOT NULL")
   List<String> findAllExternalIds();
 
+  @Query("SELECT MAX(s.lastSync) FROM Segment s WHERE s.lastSync IS NOT NULL")
+  Optional<java.time.Instant> findMaxLastSync();
+
   List<Segment> findByShowOrderBySegmentOrderAsc(Show show);
 
   @Query(

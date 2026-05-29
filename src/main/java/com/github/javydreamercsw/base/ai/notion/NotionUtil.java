@@ -318,6 +318,16 @@ public class NotionUtil {
   }
 
   public <T> T executeWithRetry(final Supplier<T> action) {
+    return executeWithRetry(action, null);
+  }
+
+  /**
+   * Execute a Notion API call with retry logic. When a 429 is received, drains permits on the
+   * shared {@link NotionRateLimitService} so all concurrent threads pause — not just the one that
+   * hit the limit.
+   */
+  public <T> T executeWithRetry(
+      final Supplier<T> action, final NotionRateLimitService rateLimitService) {
     RetryPolicy<T> rateLimitPolicy =
         RetryPolicy.<T>builder()
             .handleIf(
@@ -337,7 +347,18 @@ public class NotionUtil {
                 })
             .withBackoff(1, 5, java.time.temporal.ChronoUnit.SECONDS)
             .withMaxRetries(3)
-            .onRetry(e -> log.warn("Rate limited by Notion API. Retrying...", e.getLastException()))
+            .onRetry(
+                e -> {
+                  log.warn("Rate limited by Notion API. Retrying...", e.getLastException());
+                  if (rateLimitService != null) {
+                    try {
+                      // Drain all permits so every concurrent thread pauses, not just this one
+                      rateLimitService.handle429Response(0);
+                    } catch (InterruptedException ie) {
+                      Thread.currentThread().interrupt();
+                    }
+                  }
+                })
             .build();
 
     RetryPolicy<T> serverRetryPolicy =
