@@ -33,6 +33,8 @@ import com.github.javydreamercsw.management.service.sync.SyncProgressTracker.Syn
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.progressbar.ProgressBar;
 import java.util.List;
@@ -126,5 +128,30 @@ class NotionSyncViewTest extends AbstractViewTest {
 
     Span statusLabel = _get(view, Span.class, spec -> spec.withText("Completed"));
     assertTrue(statusLabel.isVisible());
+  }
+
+  @Test
+  @DisplayName("Default sync direction should be OUTBOUND")
+  void defaultSyncDirectionIsOutbound() {
+    @SuppressWarnings("unchecked")
+    ComboBox<SyncDirection> directionCombo =
+        _get(ComboBox.class, spec -> spec.withCaption("Sync Direction"));
+    assertEquals(SyncDirection.OUTBOUND, directionCombo.getValue());
+  }
+
+  @Test
+  @DisplayName("Switching to INBOUND opens a warning confirm dialog")
+  void switchingToInboundShowsWarningDialog() {
+    @SuppressWarnings("unchecked")
+    ComboBox<SyncDirection> directionCombo =
+        _get(ComboBox.class, spec -> spec.withCaption("Sync Direction"));
+
+    assertEquals(SyncDirection.OUTBOUND, directionCombo.getValue());
+
+    directionCombo.setValue(SyncDirection.INBOUND);
+
+    // A ConfirmDialog should now be open warning about the consequences of INBOUND sync
+    ConfirmDialog dialog = _get(ConfirmDialog.class);
+    assertTrue(dialog.isOpened());
   }
 }
