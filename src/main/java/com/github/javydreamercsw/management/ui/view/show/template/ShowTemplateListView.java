@@ -235,6 +235,60 @@ public class ShowTemplateListView extends Main {
         .setSortable(true)
         .setFlexGrow(1);
 
+    // Commentary Team column
+    templateGrid
+        .addColumn(
+            template ->
+                template.getCommentaryTeam() != null ? template.getCommentaryTeam().getName() : "")
+        .setHeader("Commentary Team")
+        .setSortable(true)
+        .setFlexGrow(1);
+
+    // Recurrence column
+    templateGrid
+        .addColumn(
+            template ->
+                template.getRecurrenceType() != null
+                    ? template.getRecurrenceType().name()
+                    : RecurrenceType.NONE.name())
+        .setHeader("Recurrence")
+        .setSortable(true)
+        .setFlexGrow(1);
+
+    // Duration column
+    templateGrid
+        .addColumn(
+            template ->
+                template.getDurationDays() != null ? template.getDurationDays() + "d" : "1d")
+        .setHeader("Duration")
+        .setSortable(true)
+        .setFlexGrow(0)
+        .setWidth("90px");
+
+    // Expected Matches column
+    templateGrid
+        .addColumn(
+            template ->
+                template.getExpectedMatches() != null
+                    ? String.valueOf(template.getExpectedMatches())
+                    : "—")
+        .setHeader("Matches")
+        .setSortable(true)
+        .setFlexGrow(0)
+        .setWidth("90px");
+
+    // Expected Promos column
+    templateGrid
+        .addColumn(
+            template ->
+                template.getExpectedPromos() != null
+                    ? String.valueOf(template.getExpectedPromos())
+                    : "—")
+        .setHeader("Promos")
+        .setSortable(true)
+        .setFlexGrow(0)
+        .setWidth("80px");
+
     // Notion URL column (show if exists)
     templateGrid
         .addColumn(template -> template.getNotionUrl() != null ? "Yes" : "No")
@@ -611,7 +665,7 @@ public class ShowTemplateListView extends Main {
                 editingTemplate.getDescription(),
                 editingTemplate.getShowType().getName(),
                 editingTemplate.getNotionUrl(),
-                null,
+                editingTemplate.getImageUrl(),
                 editingTemplate.getCommentaryTeam() != null
                     ? editingTemplate.getCommentaryTeam().getName()
                     : null,
