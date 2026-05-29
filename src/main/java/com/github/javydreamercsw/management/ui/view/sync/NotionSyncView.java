@@ -325,24 +325,44 @@ public class NotionSyncView extends Main {
       return;
     }
 
+    SyncDirection direction = syncDirection.getValue();
     String operationId = "sync-all-" + System.currentTimeMillis();
+    List<SyncEntityType> entities = notionSyncScheduler.getSyncEntities();
 
     startSyncOperationWithProgress(
         "Syncing all entities...",
         operationId,
         () -> {
-          try {
-            List<NotionSyncService.SyncResult> results =
-                notionSyncScheduler.triggerManualSync(operationId);
-            return new SyncOperationResult(
-                true,
-                results.size(),
-                results.stream().mapToInt(NotionSyncService.SyncResult::getSyncedCount).sum(),
-                "All entities synced successfully");
-          } catch (Exception e) {
-            log.error("Full sync failed", e);
-            return new SyncOperationResult(false, 0, 0, "Sync failed: " + e.getMessage());
+          progressTracker.startOperation(operationId, "Full Notion Sync", entities.size());
+          int totalSynced = 0;
+          int errors = 0;
+          for (int i = 0; i < entities.size(); i++) {
+            SyncEntityType entity = entities.get(i);
+            progressTracker.updateProgress(
+                operationId,
+                i,
+                "Syncing " + entity.getKey() + " (" + (i + 1) + "/" + entities.size() + ")");
+            try {
+              NotionSyncService.SyncResult result =
+                  notionSyncScheduler.syncEntity(
+                      entity, operationId + "-" + entity.getKey(), direction);
+              if (result.isSuccess()) {
+                totalSynced += result.getSyncedCount();
+              } else {
+                errors++;
+              }
+            } catch (Exception e) {
+              log.error("Error syncing {}", entity.getKey(), e);
+              errors++;
+            }
           }
+          boolean success = errors == 0;
+          String msg =
+              success
+                  ? "All entities synced successfully"
+                  : (entities.size() - errors) + "/" + entities.size() + " entities synced";
+          progressTracker.completeOperation(operationId, success, msg, totalSynced);
+          return new SyncOperationResult(success, entities.size(), totalSynced, msg);
         });
   }
 
