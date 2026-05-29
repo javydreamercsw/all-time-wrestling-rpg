@@ -59,6 +59,39 @@ public class NotionSyncScheduler {
 
   private final SyncServiceDependencies syncServiceDependencies;
 
+  private final com.github.javydreamercsw.management.domain.show.ShowRepository showRepository;
+
+  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
+      wrestlerRepository;
+
+  private final com.github.javydreamercsw.management.domain.show.segment.SegmentRepository
+      segmentRepository;
+
+  @jakarta.annotation.PostConstruct
+  void seedLastSyncTimesFromDb() {
+    showRepository
+        .findMaxLastSync()
+        .ifPresent(
+            t ->
+                syncProperties.setLastSyncTime(
+                    SyncEntityType.SHOWS.getKey(),
+                    t.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()));
+    wrestlerRepository
+        .findMaxLastSync()
+        .ifPresent(
+            t ->
+                syncProperties.setLastSyncTime(
+                    SyncEntityType.WRESTLERS.getKey(),
+                    t.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()));
+    segmentRepository
+        .findMaxLastSync()
+        .ifPresent(
+            t ->
+                syncProperties.setLastSyncTime(
+                    SyncEntityType.SEGMENTS.getKey(),
+                    t.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()));
+  }
+
   /**
    * Gets the list of entities to sync using automatic dependency analysis. Analyzes entity
    *

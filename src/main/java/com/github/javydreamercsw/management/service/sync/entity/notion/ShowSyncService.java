@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -205,69 +206,88 @@ public class ShowSyncService extends BaseSyncService {
       List<String> localExternalIds = showService.getAllExternalIds();
       log.info("Found {} shows in the local database.", localExternalIds.size());
 
-      // Step 2: Get all Notion page IDs
+      // Step 2: Load ALL Notion show pages (includes last_edited_time for staleness check)
       syncServiceDependencies
           .getProgressTracker()
-          .updateProgress(operationId, 2, "Fetching Notion show IDs");
-      List<String> notionShowIds =
-          super.executeWithRateLimit(
-              () -> syncServiceDependencies.getNotionHandler().getDatabasePageIds("Shows"));
-      log.info("Found {} shows in Notion.", notionShowIds.size());
+          .updateProgress(operationId, 2, "Fetching Notion show pages");
+      List<ShowPage> allNotionPages;
+      try {
+        allNotionPages =
+            super.executeWithRateLimit(
+                () -> syncServiceDependencies.getNotionHandler().loadAllShowsForSync());
+      } catch (Exception e) {
+        log.error("Failed to load show pages from Notion", e);
+        return SyncResult.failure("shows", "Failed to load show pages: " + e.getMessage());
+      }
+      log.info("Found {} shows in Notion.", allNotionPages.size());
 
-      // Step 3: Calculate the difference
-      List<String> newShowIds =
-          notionShowIds.stream()
-              .filter(id -> !localExternalIds.contains(id))
+      // Step 3: Build local lastSync lookup for existing shows
+      Map<String, Instant> localLastSyncMap =
+          showService.findAllByExternalId(localExternalIds).stream()
+              .filter(s -> s.getExternalId() != null)
+              .collect(
+                  Collectors.toMap(
+                      Show::getExternalId,
+                      s -> s.getLastSync() != null ? s.getLastSync() : Instant.EPOCH));
+
+      // Step 4: Separate into new and stale pages
+      List<ShowPage> newPages =
+          allNotionPages.stream()
+              .filter(p -> !localExternalIds.contains(p.getId()))
               .collect(java.util.stream.Collectors.toList());
 
-      if (newShowIds.isEmpty()) {
-        log.info("No new shows to sync from Notion.");
+      List<ShowPage> stalePages =
+          allNotionPages.stream()
+              .filter(p -> localExternalIds.contains(p.getId()))
+              .filter(
+                  p -> {
+                    String notionEdited = p.getLast_edited_time();
+                    if (notionEdited == null) return false;
+                    try {
+                      Instant notionEditedInstant = OffsetDateTime.parse(notionEdited).toInstant();
+                      Instant localSync = localLastSyncMap.getOrDefault(p.getId(), Instant.EPOCH);
+                      return notionEditedInstant.isAfter(localSync);
+                    } catch (Exception e) {
+                      log.warn(
+                          "Could not parse last_edited_time '{}' for show page {}",
+                          notionEdited,
+                          p.getId());
+                      return false;
+                    }
+                  })
+              .collect(java.util.stream.Collectors.toList());
+
+      if (newPages.isEmpty() && stalePages.isEmpty()) {
+        log.info("No new or updated shows to sync from Notion.");
         syncServiceDependencies
             .getProgressTracker()
-            .completeOperation(operationId, true, "No new shows to sync.", 0);
+            .completeOperation(operationId, true, "No new or updated shows to sync.", 0);
         return SyncResult.success("shows", 0, 0, 0);
       }
-      log.info("Found {} new shows to sync from Notion.", newShowIds.size());
-
-      // Step 4: Load only the new ShowPage objects in parallel
-      syncServiceDependencies
-          .getProgressTracker()
-          .updateProgress(operationId, 3, "Loading new show pages from Notion");
-      List<ShowPage> showPages =
-          processWithControlledParallelism(
-              newShowIds,
-              id -> {
-                try {
-                  return syncServiceDependencies.getNotionHandler().loadShowById(id).orElse(null);
-                } catch (Exception e) {
-                  log.error("Failed to load show page for id: {}", id, e);
-                  return null;
-                }
-              },
-              10,
-              operationId,
-              3,
-              "Loaded");
-
-      List<ShowPage> validShowPages =
-          showPages.stream()
-              .filter(java.util.Objects::nonNull)
-              .collect(java.util.stream.Collectors.toList());
+      log.info(
+          "Found {} new shows and {} updated shows to sync from Notion.",
+          newPages.size(),
+          stalePages.size());
 
       // Step 5: Convert to DTOs
       syncServiceDependencies
           .getProgressTracker()
-          .updateProgress(operationId, 4, "Converting new shows to DTOs");
-      List<ShowDTO> showDTOs = convertShowPagesToDTO(validShowPages, operationId);
+          .updateProgress(operationId, 4, "Converting shows to DTOs");
+      List<ShowDTO> newDTOs = convertShowPagesToDTO(newPages, operationId);
+      List<ShowDTO> staleDTOs = convertShowPagesToDTO(stalePages, operationId);
 
       // Step 6: Save to database
       syncServiceDependencies
           .getProgressTracker()
-          .updateProgress(operationId, 5, "Saving new shows to database");
-      int savedCount = saveShowsToDatabase(showDTOs);
+          .updateProgress(operationId, 5, "Saving shows to database");
+      int newSaved = saveShowsToDatabase(newDTOs);
+      int staleSaved = saveShowsToDatabase(staleDTOs);
+      int totalProcessed = newPages.size() + stalePages.size();
+      int savedCount = newSaved + staleSaved;
+      int errorCount = totalProcessed - savedCount;
 
-      int errorCount = newShowIds.size() - savedCount;
-      log.info("✅ Synced {} new shows with {} errors", savedCount, errorCount);
+      log.info(
+          "✅ Synced {} new, {} updated shows with {} errors", newSaved, staleSaved, errorCount);
 
       boolean success = errorCount == 0;
       String message =
@@ -279,7 +299,7 @@ public class ShowSyncService extends BaseSyncService {
           .completeOperation(operationId, success, message, savedCount);
 
       if (success) {
-        return SyncResult.success("shows", savedCount, 0, errorCount);
+        return SyncResult.success("shows", newSaved, staleSaved, errorCount);
       } else {
         return SyncResult.failure("shows", message);
       }
@@ -524,6 +544,7 @@ public class ShowSyncService extends BaseSyncService {
       }
 
       // Save to database
+      show.setLastSync(java.time.Instant.now());
       showService.save(show);
 
       log.debug(

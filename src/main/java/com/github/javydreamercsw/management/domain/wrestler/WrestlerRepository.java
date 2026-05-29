@@ -84,6 +84,9 @@ public interface WrestlerRepository
   @Query("SELECT DISTINCT w.id FROM Wrestler w")
   List<Long> findAllIds();
 
+  @Query("SELECT MAX(w.lastSync) FROM Wrestler w WHERE w.lastSync IS NOT NULL")
+  Optional<java.time.Instant> findMaxLastSync();
+
   @Query("SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws WHERE w.id = :id")
   Optional<Wrestler> findByIdWithStates(@Param("id") Long id);
 

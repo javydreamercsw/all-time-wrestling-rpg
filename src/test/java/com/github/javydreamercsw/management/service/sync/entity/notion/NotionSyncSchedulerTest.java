@@ -22,6 +22,9 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.test.BaseTest;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
@@ -51,6 +54,9 @@ class NotionSyncSchedulerTest extends BaseTest {
   @Mock private SyncSessionManager syncSessionManager;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncLockService syncLockService;
+  @Mock private ShowRepository showRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private SegmentRepository segmentRepository;
 
   private NotionSyncScheduler notionSyncScheduler;
 
@@ -61,9 +67,19 @@ class NotionSyncSchedulerTest extends BaseTest {
     lenient().when(syncServiceDependencies.getSyncLockService()).thenReturn(syncLockService);
     lenient().when(syncLockService.acquireLock(anyString())).thenReturn(true);
     lenient().when(notionSyncService.isNotionHandlerAvailable()).thenReturn(true);
+    lenient().when(showRepository.findMaxLastSync()).thenReturn(java.util.Optional.empty());
+    lenient().when(wrestlerRepository.findMaxLastSync()).thenReturn(java.util.Optional.empty());
+    lenient().when(segmentRepository.findMaxLastSync()).thenReturn(java.util.Optional.empty());
     notionSyncScheduler =
         new NotionSyncScheduler(
-            notionSyncService, syncProperties, dependencyAnalyzer, null, syncServiceDependencies);
+            notionSyncService,
+            syncProperties,
+            dependencyAnalyzer,
+            null,
+            syncServiceDependencies,
+            showRepository,
+            wrestlerRepository,
+            segmentRepository);
   }
 
   @Test
