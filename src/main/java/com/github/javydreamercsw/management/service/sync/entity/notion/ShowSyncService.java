@@ -282,14 +282,21 @@ public class ShowSyncService extends BaseSyncService {
       syncServiceDependencies
           .getProgressTracker()
           .updateProgress(operationId, 5, "Saving shows to database");
-      int newSaved = saveShowsToDatabase(newDTOs);
-      int staleSaved = saveShowsToDatabase(staleDTOs);
+      SaveResult newResult = saveShowsToDatabase(newDTOs);
+      SaveResult staleResult = saveShowsToDatabase(staleDTOs);
+      int newSaved = newResult.saved();
+      int staleSaved = staleResult.saved();
+      int totalSkipped = newResult.skipped() + staleResult.skipped();
       int totalProcessed = newPages.size() + stalePages.size();
       int savedCount = newSaved + staleSaved;
-      int errorCount = totalProcessed - savedCount;
+      int errorCount = totalProcessed - savedCount - totalSkipped;
 
       log.info(
-          "✅ Synced {} new, {} updated shows with {} errors", newSaved, staleSaved, errorCount);
+          "✅ Synced {} new, {} updated shows with {} skipped, {} errors",
+          newSaved,
+          staleSaved,
+          totalSkipped,
+          errorCount);
 
       boolean success = errorCount == 0;
       String message =
@@ -357,13 +364,15 @@ public class ShowSyncService extends BaseSyncService {
     }
   }
 
+  private record SaveResult(int saved, int skipped) {}
+
   /** Saves the list of ShowDTO objects to the database. */
-  private int saveShowsToDatabase(@NonNull final List<ShowDTO> showDTOs) {
+  private SaveResult saveShowsToDatabase(@NonNull final List<ShowDTO> showDTOs) {
     return saveShowsToDatabaseWithBatching(showDTOs, 50);
   }
 
   /** Enhanced method to save shows to database with batch processing. */
-  private int saveShowsToDatabaseWithBatching(
+  private SaveResult saveShowsToDatabaseWithBatching(
       @NonNull final List<ShowDTO> showDTOs, final int batchSize) {
     log.info(
         "Starting database persistence for {} shows with batch size {}",
@@ -459,7 +468,7 @@ public class ShowSyncService extends BaseSyncService {
         savedCount,
         skippedCount,
         showDTOs.size());
-    return savedCount;
+    return new SaveResult(savedCount, skippedCount);
   }
 
   /** Process a single show with error handling. */
@@ -634,7 +643,7 @@ public class ShowSyncService extends BaseSyncService {
       }
 
       List<ShowDTO> showDTOs = convertShowPagesToDTO(List.of(showPage.get()), operationId);
-      int savedCount = saveShowsToDatabase(showDTOs);
+      int savedCount = saveShowsToDatabase(showDTOs).saved();
       String message = "Show sync completed successfully. Synced " + savedCount + " show.";
       log.info(message);
       syncServiceDependencies
