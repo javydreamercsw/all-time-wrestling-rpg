@@ -64,6 +64,9 @@ public class NotionHandler {
 
   private final NotionTokenProvider tokenProvider;
 
+  @Autowired(required = false)
+  private NotionRateLimitService rateLimitService;
+
   /**
    * Checks if the Notion token is available.
    *
@@ -902,6 +905,6 @@ public class NotionHandler {
   }
 
   public <T> T executeWithRetry(@NonNull final Supplier<T> action) {
-    return NotionUtil.executeWithRetry(action);
+    return NotionUtil.executeWithRetry(action, rateLimitService);
   }
 }

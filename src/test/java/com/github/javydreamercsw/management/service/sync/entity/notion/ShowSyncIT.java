@@ -32,7 +32,6 @@ import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -116,8 +115,7 @@ class ShowSyncIT extends ManagementIntegrationTest {
                 "Template",
                 showTemplate.getName()));
 
-    when(notionHandler.getDatabasePageIds("Shows")).thenReturn(List.of(showId));
-    when(notionHandler.loadShowById(showId)).thenReturn(Optional.of(showPage));
+    when(notionHandler.loadAllShowsForSync()).thenReturn(List.of(showPage));
 
     // When
     BaseSyncService.SyncResult result =

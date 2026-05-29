@@ -915,6 +915,7 @@ public class DataInitializer implements Initializable {
                       existingWrestler.setAlignment(
                           WrestlerAlignment.builder()
                               .wrestler(existingWrestler)
+                              .universe(universe)
                               .alignmentType(at)
                               .level(0)
                               .build());

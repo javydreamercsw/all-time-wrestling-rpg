@@ -189,6 +189,11 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
+  public List<Show> findAllByExternalId(final List<String> externalIds) {
+    return showRepository.findAllByExternalIdIn(externalIds);
+  }
+
+  @PreAuthorize("isAuthenticated()")
   public Page<Show> getAllShows(final Pageable pageable) {
     return showRepository.findAllBy(pageable);
   }

@@ -49,7 +49,7 @@ public class AchievementInboxListener implements ApplicationListener<Achievement
 
   @Override
   public void onApplicationEvent(@NonNull final AchievementUnlockedEvent event) {
-    log.info(
+    log.debug(
         "Received AchievementUnlockedEvent for account ID: {} - Achievement: {}",
         event.getAccountId(),
         event.getAchievementName());

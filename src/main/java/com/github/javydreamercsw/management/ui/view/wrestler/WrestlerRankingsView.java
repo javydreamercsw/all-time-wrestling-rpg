@@ -136,7 +136,7 @@ public class WrestlerRankingsView extends Main {
               tierBoundaryService.findAllByGender(event.getValue()).stream()
                   .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
                   .collect(Collectors.toList());
-          log.info(
+          log.debug(
               "Found {} tier boundaries to display for {}",
               tierBoundaries.size(),
               event.getValue());
@@ -147,7 +147,7 @@ public class WrestlerRankingsView extends Main {
         tierBoundaryService.findAllByGender(Gender.MALE).stream()
             .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
             .collect(Collectors.toList());
-    log.info("Found {} tier boundaries to display for MALE", tierBoundaries.size());
+    log.debug("Found {} tier boundaries to display for MALE", tierBoundaries.size());
     tierGrid.setItems(tierBoundaries);
 
     dialog.add(genderDialogComboBox, tierGrid);

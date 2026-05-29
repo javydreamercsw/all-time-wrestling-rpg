@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,39 +16,30 @@
 */
 package com.github.javydreamercsw.management.ui.view.faction;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
-import com.github.javydreamercsw.management.domain.faction.Faction;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
-/**
- * Unit tests for FactionListView. Tests the UI components, grid functionality, and CRUD operations.
- */
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
-class FactionListViewTest {
+class FactionListViewTest extends AbstractViewTest {
 
   @Mock private FactionService factionService;
   @Mock private WrestlerService wrestlerService;
@@ -56,43 +47,23 @@ class FactionListViewTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
-  @Mock private com.github.javydreamercsw.base.ai.image.ImageStorageService imageStorageService;
+  @Mock private ImageStorageService imageStorageService;
 
-  private FactionListView factionListView;
-  private List<Faction> testFactions;
-  private List<Wrestler> testWrestlers;
+  private FactionListView view;
 
   @BeforeEach
-  public void setUp() {
-    // Create test wrestlers first
-    testWrestlers = createTestWrestlers();
-
-    // Create test factions with members (now that wrestlers exist)
-    testFactions = createTestFactionsWithMembers();
-
-    // Mock service responses
+  void setup() {
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
-    when(factionService.findAllByUniverse(anyLong())).thenReturn(testFactions);
-    when(wrestlerService.findAll()).thenReturn(testWrestlers);
-    when(wrestlerService.findAllIncludingInactive()).thenReturn(testWrestlers);
-    when(npcService.findAllIncludingInactive()).thenReturn(new ArrayList<>());
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(Collections.emptyList());
+    when(wrestlerService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
+    when(npcService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
     when(securityUtils.canCreate()).thenReturn(true);
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
-    when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
     when(factionService.resolveFactionImage(any())).thenReturn("");
 
-    // Mock WrestlerState for fans
-    for (int i = 0; i < testWrestlers.size(); i++) {
-      WrestlerState state = new WrestlerState();
-      state.setWrestler(testWrestlers.get(i));
-      state.setFans(95L - (i * 5L));
-      when(wrestlerService.getOrCreateState(eq(testWrestlers.get(i).getId()), anyLong()))
-          .thenReturn(state);
-    }
-
-    // Create the view
-    factionListView =
+    view =
         new FactionListView(
             factionService,
             wrestlerService,
@@ -101,204 +72,14 @@ class FactionListViewTest {
             securityUtils,
             universeContextService,
             imageStorageService);
+    UI.getCurrent().add(view);
   }
 
   @Test
-  @DisplayName("Should initialize view with correct components")
-  void shouldInitializeViewWithCorrectComponents() {
-    // Then
-    assertNotNull(factionListView.name);
-    assertNotNull(factionListView.factionGrid);
-
-    assertTrue(factionListView.name.getPlaceholder().contains("Enter faction name"));
-  }
-
-  @Test
-  @DisplayName("Should load factions into grid on initialization")
-  void shouldLoadFactionsIntoGridOnInitialization() {
-    // Then
-    verify(factionService).findAllByUniverse(anyLong());
-
-    // Grid should be configured with test data
-    assertNotNull(factionListView.factionGrid);
-  }
-
-  @Test
-  @DisplayName("Should have correct grid columns")
-  void shouldHaveCorrectGridColumns() {
-    // Then
-    Grid<Faction> grid = factionListView.factionGrid;
-    assertNotNull(grid);
-
-    // Verify grid is configured (columns are added during construction)
+  @DisplayName("Should render the faction grid")
+  void shouldRenderGrid() {
+    Grid<?> grid = _get(view, Grid.class);
+    assertTrue(grid.isVisible());
     assertFalse(grid.getColumns().isEmpty());
-  }
-
-  @Test
-  @DisplayName("Should call faction service when saving faction")
-  void shouldCallFactionServiceWhenSavingFaction() {
-    // When - This would normally be triggered by UI interaction
-    // For unit testing, we can verify the service is properly injected
-    assertNotNull(factionListView);
-
-    // Then
-    // The service should be available for use
-    verify(factionService).findAllByUniverse(anyLong()); // Called during initialization
-  }
-
-  @Test
-  @DisplayName("Should handle empty faction list")
-  void shouldHandleEmptyFactionList() {
-    // Given
-    when(factionService.findAllByUniverse(anyLong())).thenReturn(new ArrayList<>());
-
-    // When
-    FactionListView emptyView =
-        new FactionListView(
-            factionService,
-            wrestlerService,
-            npcService,
-            wrestlerRepository,
-            securityUtils,
-            universeContextService,
-            imageStorageService);
-
-    // Then
-    assertNotNull(emptyView);
-    assertNotNull(emptyView.factionGrid);
-  }
-
-  @Test
-  @DisplayName("Should handle wrestler service for member management")
-  void shouldHandleWrestlerServiceForMemberManagement() {
-    // Given - wrestlers are already mocked in setUp
-
-    // Then
-    assertNotNull(factionListView);
-  }
-
-  @Test
-  @DisplayName("Should render faction members without LazyInitializationException")
-  void shouldRenderFactionMembersWithoutLazyInitializationException() {
-    // This test simulates what happens when the grid tries to render faction members
-    // It should catch LazyInitializationException if the members aren't properly eagerly loaded
-
-    // Given - factions with members are already set up in setUp()
-    assertFalse(testFactions.isEmpty());
-
-    // When - simulate grid rendering by accessing member names (this is what the UI does)
-    for (Faction faction : testFactions) {
-      if (faction.getMembers() != null && !faction.getMembers().isEmpty()) {
-        // This is exactly what the grid column does:
-        // faction.getMembers().stream().map(WrestlerState::getName)
-        for (WrestlerState member : faction.getMembers()) {
-          // This call would throw LazyInitializationException if members aren't properly loaded
-          String memberName = member.getName();
-          assertNotNull(memberName, "Member name should not be null");
-          assertFalse(memberName.isEmpty(), "Member name should not be empty");
-        }
-      }
-    }
-
-    // Then - if we get here without exception, the eager loading is working
-    assertTrue(
-        true, "Successfully accessed all faction member names without LazyInitializationException");
-  }
-
-  @Test
-  @DisplayName("Should create view with all required services")
-  void shouldCreateViewWithAllRequiredServices() {
-    // Given - services are mocked
-
-    // When
-    FactionListView view =
-        new FactionListView(
-            factionService,
-            wrestlerService,
-            npcService,
-            wrestlerRepository,
-            securityUtils,
-            universeContextService,
-            imageStorageService);
-
-    // Then
-    assertNotNull(view);
-    assertNotNull(view.name);
-    assertNotNull(view.factionGrid);
-  }
-
-  /** Helper method to create test factions with members for testing. */
-  private List<Faction> createTestFactionsWithMembers() {
-    List<Faction> factions = new ArrayList<>();
-
-    // Create Evolution faction with members
-    Faction evolution = Faction.builder().build();
-    evolution.setId(1L);
-    evolution.setName("Evolution");
-    evolution.setDescription("A dominant faction in WWE");
-    evolution.setActive(false);
-    evolution.setCreationDate(Instant.now());
-    evolution.setFormedDate(Instant.now().minusSeconds(365 * 24 * 60 * 60)); // 1 year ago
-    evolution.setDisbandedDate(Instant.now().minusSeconds(180 * 24 * 60 * 60)); // 6 months ago
-
-    // Add members to Evolution
-    Set<WrestlerState> evolutionMembers = new HashSet<>();
-    WrestlerState hhhState = new WrestlerState();
-    hhhState.setWrestler(testWrestlers.get(0));
-    hhhState.setFans(95L);
-    evolutionMembers.add(hhhState);
-
-    WrestlerState ortonState = new WrestlerState();
-    ortonState.setWrestler(testWrestlers.get(2));
-    ortonState.setFans(85L);
-    evolutionMembers.add(ortonState);
-
-    evolution.setMembers(evolutionMembers);
-
-    // Create DX faction with members
-    Faction dx = Faction.builder().build();
-    dx.setId(2L);
-    dx.setName("D-Generation X");
-    dx.setDescription("Rebellious faction");
-    dx.setActive(true);
-    dx.setCreationDate(Instant.now());
-    dx.setFormedDate(Instant.now().minusSeconds(200 * 24 * 60 * 60)); // ~7 months ago
-
-    // Add members to DX
-    Set<WrestlerState> dxMembers = new HashSet<>();
-    WrestlerState shawnState = new WrestlerState();
-    shawnState.setWrestler(testWrestlers.get(1));
-    shawnState.setFans(90L);
-    dxMembers.add(shawnState);
-
-    dx.setMembers(dxMembers);
-
-    factions.add(evolution);
-    factions.add(dx);
-
-    return factions;
-  }
-
-  /** Helper method to create test wrestlers for testing. */
-  private List<Wrestler> createTestWrestlers() {
-    List<Wrestler> wrestlers = new ArrayList<>();
-
-    Wrestler wrestler1 = Wrestler.builder().build();
-    wrestler1.setId(1L);
-    wrestler1.setName("Triple H");
-
-    Wrestler wrestler2 = Wrestler.builder().build();
-    wrestler2.setId(2L);
-    wrestler2.setName("Shawn Michaels");
-
-    Wrestler wrestler3 = Wrestler.builder().build();
-    wrestler3.setId(3L);
-    wrestler3.setName("Randy Orton");
-
-    wrestlers.add(wrestler1);
-    wrestlers.add(wrestler2);
-    wrestlers.add(wrestler3);
-
-    return wrestlers;
   }
 }

@@ -133,7 +133,7 @@ public class ShowBookingService {
     try {
       // Validate inputs
       if (segmentCount < 3 || segmentCount > 10) {
-        log.warn("Invalid segment count: {}. Must be between 3 and 10", segmentCount);
+        log.debug("Invalid segment count: {}. Must be between 3 and 10", segmentCount);
         return Optional.empty();
       }
 
@@ -147,7 +147,7 @@ public class ShowBookingService {
       // Get show type
       Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
       if (showTypeOpt.isEmpty()) {
-        log.warn("Show type not found: {}", showTypeName);
+        log.debug("Show type not found: {}", showTypeName);
         return Optional.empty();
       }
 
@@ -159,7 +159,7 @@ public class ShowBookingService {
           template = templateOpt.get();
           log.info("Using show template: {}", templateName);
         } else {
-          log.warn("Show template not found: {}", templateName);
+          log.debug("Show template not found: {}", templateName);
         }
       }
 
@@ -277,7 +277,7 @@ public class ShowBookingService {
         universeId);
 
     if (availableWrestlers.size() < 4) {
-      log.warn("Not enough wrestlers available for show booking");
+      log.debug("Not enough wrestlers available for show booking");
       return segments;
     }
 
@@ -306,7 +306,7 @@ public class ShowBookingService {
         new ArrayList<>(wrestlerService.findAllFiltered(null, null, universeId));
 
     if (availableWrestlers.size() < 6) {
-      log.warn("Not enough wrestlers available for PPV booking in universe {}", universeId);
+      log.debug("Not enough wrestlers available for PPV booking in universe {}", universeId);
       return segments;
     }
 
@@ -504,7 +504,7 @@ public class ShowBookingService {
       // Get one-on-one segment type from database
       Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName("One on One");
       if (segmentTypeOpt.isEmpty()) {
-        log.warn("One on One segment type not found in database");
+        log.debug("One on One segment type not found in database");
         return Optional.empty();
       }
 
@@ -543,7 +543,7 @@ public class ShowBookingService {
         // Fallback to One on One if specific type not found
         segmentTypeOpt = segmentTypeRepository.findByName("One on One");
         if (segmentTypeOpt.isEmpty()) {
-          log.warn("No suitable segment type found for multi-person segment");
+          log.debug("No suitable segment type found for multi-person segment");
           return Optional.empty();
         }
       }

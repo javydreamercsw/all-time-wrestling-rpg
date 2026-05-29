@@ -20,22 +20,52 @@ import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.base.ai.notion.NotionPropertyBuilder;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import notion.api.v1.model.pages.PageProperty;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class ShowNotionSyncService extends BaseNotionSyncService<Show> {
+
+  private final GameSettingService gameSettingService;
 
   public ShowNotionSyncService(
       final ShowRepository repository,
       final SyncServiceDependencies syncServiceDependencies,
-      final NotionApiExecutor notionApiExecutor) {
+      final NotionApiExecutor notionApiExecutor,
+      final GameSettingService gameSettingService) {
     super(repository, syncServiceDependencies, notionApiExecutor);
+    this.gameSettingService = gameSettingService;
+  }
+
+  @Override
+  protected List<Show> getEntitiesToSync(@NonNull final List<Show> all) {
+    LocalDate gameDate = gameSettingService.getCurrentGameDate();
+    if (gameDate == null) {
+      return all;
+    }
+    List<Show> eligible =
+        all.stream()
+            .filter(show -> show.getShowDate() == null || !show.getShowDate().isAfter(gameDate))
+            .collect(Collectors.toList());
+    int excluded = all.size() - eligible.size();
+    if (excluded > 0) {
+      log.info(
+          "⏩ Skipping {} future show(s) (show_date > game date {}) from outbound sync",
+          excluded,
+          gameDate);
+    }
+    return eligible;
   }
 
   @Override
@@ -91,5 +121,12 @@ public class ShowNotionSyncService extends BaseNotionSyncService<Show> {
       return "%s (%s)".formatted(entity.getName(), entity.getShowDate());
     }
     return super.getEntityDisplayName(entity);
+  }
+
+  @Override
+  protected boolean isNameBasedMatchingEnabled() {
+    // Shows repeat annually (same name, different year) so name alone is never a unique key.
+    // Require external_id to be set before updating a Notion page.
+    return false;
   }
 }

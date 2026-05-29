@@ -50,7 +50,7 @@ public class AdjudicationCompletedInboxListener
 
   @Override
   public void onApplicationEvent(@NonNull final AdjudicationCompletedEvent event) {
-    log.info("Received AdjudicationCompletedEvent for show: {}", event.getShow().getName());
+    log.debug("Received AdjudicationCompletedEvent for show: {}", event.getShow().getName());
     inboxService.createInboxItem(
         adjudicationCompleted,
         "Adjudication completed for show: %s".formatted(event.getShow().getName()),

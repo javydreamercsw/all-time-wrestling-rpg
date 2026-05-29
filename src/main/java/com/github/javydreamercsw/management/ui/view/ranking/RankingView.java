@@ -201,7 +201,7 @@ public class RankingView extends Main {
               tierBoundaryService.findAllByGender(event.getValue()).stream()
                   .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
                   .collect(Collectors.toList());
-          log.info(
+          log.debug(
               "Found {} tier boundaries for {} to display.",
               tierBoundaries.size(),
               event.getValue());
@@ -213,7 +213,7 @@ public class RankingView extends Main {
         tierBoundaryService.findAllByGender(Gender.MALE).stream()
             .sorted(Comparator.comparing(TierBoundary::getMinFans).reversed())
             .collect(Collectors.toList());
-    log.info("Found {} tier boundaries for MALE to display.", initialBoundaries.size());
+    log.debug("Found {} tier boundaries for MALE to display.", initialBoundaries.size());
     tierGrid.setItems(initialBoundaries);
 
     dialog.add(genderComboBox, tierGrid);

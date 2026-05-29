@@ -74,9 +74,9 @@ public class TierBoundaryService {
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public void resetTierBoundaries() {
-    log.info("Current boundaries: {}", tierBoundaryRepository.count());
+    log.debug("Current boundaries: {}", tierBoundaryRepository.count());
     tierBoundaryRepository.deleteAllInBatch();
-    log.info("Boundaries after delete: {}", tierBoundaryRepository.count());
+    log.debug("Boundaries after delete: {}", tierBoundaryRepository.count());
     List<TierBoundary> boundaries = new java.util.ArrayList<>();
     for (Gender gender : Gender.values()) {
       for (WrestlerTier tier : WrestlerTier.values()) {

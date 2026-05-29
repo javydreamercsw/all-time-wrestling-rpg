@@ -50,7 +50,7 @@ public class WrestlerBumpHealedInboxListener
 
   @Override
   public void onApplicationEvent(@NonNull final WrestlerBumpHealedEvent event) {
-    log.info(
+    log.debug(
         "Received WrestlerBumpHealedEvent for wrestler: {}", event.getWrestlerState().getName());
     inboxService.createInboxItem(
         wrestlerBumpHealed,

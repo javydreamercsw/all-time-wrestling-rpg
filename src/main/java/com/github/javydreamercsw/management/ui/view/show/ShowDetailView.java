@@ -142,6 +142,7 @@ public class ShowDetailView extends Main
   private Show currentShow;
   private Grid<Segment> segmentsGrid;
   private Button adjudicateButton;
+  private Button addSegmentButton;
   private Span noSegmentsMessage;
   private Segment draggedSegment;
 
@@ -553,12 +554,21 @@ public class ShowDetailView extends Main
                         == com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
     adjudicateButton.setEnabled(hasPendingSegments);
 
-    Button addSegmentBtn =
+    addSegmentButton =
         new Button("Add Segment", new Icon(VaadinIcon.PLUS), e -> openAddSegmentDialog(show));
-    addSegmentBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    addSegmentBtn.setId("add-segment-btn");
+    addSegmentButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    addSegmentButton.setId("add-segment-btn");
 
-    header.add(segmentsTitle, new HorizontalLayout(adjudicateButton, addSegmentBtn));
+    // Disable "Add Segment" only when all existing segments have been adjudicated
+    List<Segment> existingSegments = segmentRepository.findByShow(show);
+    boolean allAdjudicated =
+        !existingSegments.isEmpty()
+            && existingSegments.stream()
+                .allMatch(
+                    segment -> segment.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED);
+    addSegmentButton.setEnabled(!allAdjudicated);
+
+    header.add(segmentsTitle, new HorizontalLayout(adjudicateButton, addSegmentButton));
 
     // Get segments for this show
     List<Segment> segments = segmentRepository.findByShow(show);
@@ -1627,23 +1637,23 @@ public class ShowDetailView extends Main
       final Segment segmentToUpdate) {
     Set<Wrestler> wrestlers =
         teamWrestlers.values().stream().flatMap(List::stream).collect(Collectors.toSet());
-    log.info("Validating and saving segment: {}", segmentToUpdate);
+    log.debug("Validating and saving segment: {}", segmentToUpdate);
     // Validation
     if (segmentType == null) {
-      log.warn("Validation failed: Segment type is null.");
+      log.debug("Validation failed: Segment type is null.");
       notificationService.showError("Please select a segment type");
       return false;
     }
 
     if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
       if (wrestlers.isEmpty()) {
-        log.warn("Validation failed: Wrestlers are null or empty for non-promo segment.");
+        log.debug("Validation failed: Wrestlers are null or empty for non-promo segment.");
         notificationService.showError("Please select at least one wrestler");
         return false;
       }
 
       if (wrestlers.size() < 2) {
-        log.warn("Validation failed: Less than two wrestlers for a non-promo match.");
+        log.debug("Validation failed: Less than two wrestlers for a non-promo match.");
         notificationService.showError("Please select at least two wrestlers for a match");
         return false;
       }
@@ -1652,7 +1662,7 @@ public class ShowDetailView extends Main
     if (winners != null) {
       for (Wrestler winner : winners) {
         if (!wrestlers.contains(winner)) {
-          log.warn("Validation failed: Winner is not among selected wrestlers.");
+          log.debug("Validation failed: Winner is not among selected wrestlers.");
           notificationService.showError("Winner must be one of the selected wrestlers");
           return false;
         }
@@ -1713,9 +1723,11 @@ public class ShowDetailView extends Main
   }
 
   private void adjudicateShow(@NonNull final Show show) {
+    adjudicateButton.setEnabled(false);
+    addSegmentButton.setEnabled(false);
     showController.adjudicateShow(show.getId());
     notificationService.showSuccess("Fan adjudication completed!");
-    refreshSegmentsGrid(); // Call refreshSegmentsGrid instead of loadShow
+    refreshSegmentsGrid();
   }
 
   private void refreshSegmentsGrid() {
@@ -1731,13 +1743,21 @@ public class ShowDetailView extends Main
         noSegmentsMessage.setVisible(!hasSegments);
       }
 
-      // Re-enable/disable adjudicate button based on new segment status
+      // Re-enable/disable buttons based on adjudication state
       boolean hasPendingSegments =
           updatedSegments.stream()
               .anyMatch(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING);
+      boolean allAdjudicated =
+          !updatedSegments.isEmpty()
+              && updatedSegments.stream()
+                  .allMatch(
+                      segment -> segment.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED);
 
       if (adjudicateButton != null) {
         adjudicateButton.setEnabled(hasPendingSegments);
+      }
+      if (addSegmentButton != null) {
+        addSegmentButton.setEnabled(!allAdjudicated);
       }
     }
   }

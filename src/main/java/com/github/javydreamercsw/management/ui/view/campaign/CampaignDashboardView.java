@@ -198,7 +198,7 @@ public class CampaignDashboardView extends VerticalLayout {
             new Button(
                 "Start New Campaign (Debug)",
                 e -> {
-                  log.info("Debug Start Campaign button clicked");
+                  log.debug("Debug Start Campaign button clicked");
                   securityUtils
                       .getAuthenticatedUser()
                       .ifPresentOrElse(
@@ -404,7 +404,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 if (state.getCurrentPhase()
                     == com.github.javydreamercsw.management.domain.campaign.CampaignPhase
                         .POST_MATCH) {
-                  log.info("Navigating to post-match narrative.");
+                  log.debug("Navigating to post-match narrative.");
                 }
                 UI.getCurrent().navigate("campaign/narrative");
               }

@@ -32,7 +32,7 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class NotionRateLimitServiceTest {
 
-  private static final int BURST_CAPACITY = 10;
+  private static final int BURST_CAPACITY = 3;
 
   private NotionRateLimitService service;
 

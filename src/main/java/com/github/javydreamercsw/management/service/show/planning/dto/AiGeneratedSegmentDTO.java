@@ -30,5 +30,6 @@ public class AiGeneratedSegmentDTO {
   private String outcome;
   private String notes;
   private java.util.List<String> participants;
+  private java.util.List<java.util.List<String>> teams;
   private Long rivalryId;
 }

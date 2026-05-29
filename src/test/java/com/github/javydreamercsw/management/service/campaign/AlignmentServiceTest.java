@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -31,6 +33,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.ArrayList;
 import java.util.List;
@@ -614,5 +617,79 @@ class AlignmentServiceTest {
     // Only handleLevelChange saves, not updateAbilityCards
     verify(campaignStateRepository, times(1)).save(state);
     assertEquals(originalSize, state.getActiveCards().size());
+  }
+
+  // ==================== getOrCreateUniverseAlignment ====================
+
+  @Test
+  void getOrCreateUniverseAlignment_createsNeutralWhenNotFound() {
+    Universe universe = Universe.builder().name("Test Universe").build();
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
+
+    WrestlerAlignment result = alignmentService.getOrCreateUniverseAlignment(wrestler, universe);
+
+    assertNotNull(result);
+    assertEquals(AlignmentType.NEUTRAL, result.getAlignmentType());
+    assertEquals(0, result.getLevel());
+    verify(wrestlerAlignmentRepository).save(any(WrestlerAlignment.class));
+  }
+
+  @Test
+  void getOrCreateUniverseAlignment_returnsExistingRecord() {
+    Universe universe = Universe.builder().name("Test Universe").build();
+    WrestlerAlignment existing =
+        WrestlerAlignment.builder()
+            .wrestler(wrestler)
+            .universe(universe)
+            .alignmentType(AlignmentType.FACE)
+            .level(3)
+            .build();
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(existing));
+
+    WrestlerAlignment result = alignmentService.getOrCreateUniverseAlignment(wrestler, universe);
+
+    assertSame(existing, result);
+    verify(wrestlerAlignmentRepository, never()).save(any());
+  }
+
+  // ==================== setUniverseAlignment ====================
+
+  @Test
+  void setUniverseAlignment_persistsTypeAndLevel() {
+    Universe universe = Universe.builder().name("Test Universe").build();
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
+
+    WrestlerAlignment result =
+        alignmentService.setUniverseAlignment(wrestler, universe, AlignmentType.HEEL, 4);
+
+    assertEquals(AlignmentType.HEEL, result.getAlignmentType());
+    assertEquals(4, result.getLevel());
+  }
+
+  @Test
+  void setUniverseAlignment_clampsLevelToMaxFive() {
+    Universe universe = Universe.builder().name("Test Universe").build();
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
+
+    WrestlerAlignment result =
+        alignmentService.setUniverseAlignment(wrestler, universe, AlignmentType.FACE, 99);
+
+    assertEquals(5, result.getLevel());
+  }
+
+  @Test
+  void setUniverseAlignment_clampsLevelToMinZero() {
+    Universe universe = Universe.builder().name("Test Universe").build();
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
+
+    WrestlerAlignment result =
+        alignmentService.setUniverseAlignment(wrestler, universe, AlignmentType.HEEL, -3);
+
+    assertEquals(0, result.getLevel());
   }
 }

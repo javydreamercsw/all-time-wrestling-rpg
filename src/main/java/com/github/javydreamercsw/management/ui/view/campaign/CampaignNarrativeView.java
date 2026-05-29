@@ -199,7 +199,7 @@ public class CampaignNarrativeView extends VerticalLayout {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {
-            log.info("Generating encounter synchronously");
+            log.debug("Generating encounter synchronously");
             CampaignEncounterResponseDTO encounter =
                 encounterService.generateEncounter(currentCampaign);
             displayEncounter(encounter);
@@ -289,7 +289,7 @@ public class CampaignNarrativeView extends VerticalLayout {
     } else {
       // POST_MATCH or other narrative continuation
       // If it's not a match, the day should be over.
-      log.info("Non-match choice made, completing post-match to reset actions.");
+      log.debug("Non-match choice made, completing post-match to reset actions.");
       campaignService.completePostMatch(currentCampaign);
       Button continueBtn = new Button("Continue Story", e -> generateNextEncounter());
       choicesContainer.add(continueBtn);
