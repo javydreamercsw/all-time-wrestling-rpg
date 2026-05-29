@@ -90,7 +90,8 @@ public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
         int updated = 0;
         int errors = 0;
         List<T> entities =
-            ids == null || ids.isEmpty() ? repository.findAll() : repository.findAllById(ids);
+            getEntitiesToSync(
+                ids == null || ids.isEmpty() ? repository.findAll() : repository.findAllById(ids));
 
         syncServiceDependencies
             .getProgressTracker()
@@ -390,5 +391,14 @@ public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
    */
   protected boolean isNameBasedMatchingEnabled() {
     return true;
+  }
+
+  /**
+   * Hook for subclasses to filter the entity list before outbound sync. The default implementation
+   * returns all entities unchanged. Override to exclude entities that should not be pushed (e.g.
+   * shows whose date is beyond the current game date).
+   */
+  protected List<T> getEntitiesToSync(@NonNull final List<T> all) {
+    return all;
   }
 }

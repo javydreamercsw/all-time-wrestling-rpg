@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.sync.AbstractSyncTest;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -40,16 +41,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.Mock;
 
 class ShowNotionSyncServiceTest extends AbstractSyncTest {
   private ShowNotionSyncService showNotionSyncService;
   @Captor private ArgumentCaptor<Show> showCaptor;
+  @Mock private GameSettingService gameSettingService;
 
   @BeforeEach
   public void setUp() {
     super.setUp();
     showNotionSyncService =
-        new ShowNotionSyncService(showRepository, syncServiceDependencies, notionApiExecutor);
+        new ShowNotionSyncService(
+            showRepository, syncServiceDependencies, notionApiExecutor, gameSettingService);
   }
 
   @Test
@@ -119,5 +123,100 @@ class ShowNotionSyncServiceTest extends AbstractSyncTest {
     assertEquals(0, result.getUpdatedCount());
     assertEquals(0, result.getErrorCount());
     verify(showRepository, times(0)).save(any());
+  }
+
+  @Test
+  @DisplayName("Future shows are excluded from outbound sync when a game date is set")
+  void testFutureShowsExcludedFromOutboundSync() {
+    // Given
+    LocalDate gameDate = LocalDate.of(2026, 1, 15);
+    when(gameSettingService.getCurrentGameDate()).thenReturn(gameDate);
+
+    Show pastShow = new Show();
+    pastShow.setName("Past Show");
+    pastShow.setShowDate(LocalDate.of(2026, 1, 10));
+
+    Show todayShow = new Show();
+    todayShow.setName("Today Show");
+    todayShow.setShowDate(gameDate);
+
+    Show futureShow = new Show();
+    futureShow.setName("Future Show");
+    futureShow.setShowDate(LocalDate.of(2026, 1, 20));
+
+    NotionClient client = mock(NotionClient.class);
+    when(showRepository.findAll()).thenReturn(List.of(pastShow, todayShow, futureShow));
+    when(notionHandler.createNotionClient()).thenReturn(Optional.of(client));
+    when(notionHandler.getDatabaseId(anyString())).thenReturn("test_db_id");
+    Page page = mock(Page.class);
+    when(page.getId()).thenReturn(UUID.randomUUID().toString());
+    when(notionHandler.executeWithRetry(any())).thenReturn(page);
+
+    // When
+    var result = showNotionSyncService.syncToNotion(UUID.randomUUID().toString());
+
+    // Then — only pastShow and todayShow synced; futureShow skipped
+    assertNotNull(result);
+    assertEquals(2, result.getCreatedCount());
+    assertEquals(0, result.getErrorCount());
+  }
+
+  @Test
+  @DisplayName("Shows with no date and shows on or before game date are all synced")
+  void testShowsWithNullDateAlwaysIncluded() {
+    // Given
+    LocalDate gameDate = LocalDate.of(2026, 1, 15);
+    when(gameSettingService.getCurrentGameDate()).thenReturn(gameDate);
+
+    Show nullDateShow = new Show();
+    nullDateShow.setName("Undated Show");
+    nullDateShow.setShowDate(null);
+
+    Show pastShow = new Show();
+    pastShow.setName("Past Show");
+    pastShow.setShowDate(LocalDate.of(2025, 12, 1));
+
+    NotionClient client = mock(NotionClient.class);
+    when(showRepository.findAll()).thenReturn(List.of(nullDateShow, pastShow));
+    when(notionHandler.createNotionClient()).thenReturn(Optional.of(client));
+    when(notionHandler.getDatabaseId(anyString())).thenReturn("test_db_id");
+    Page page = mock(Page.class);
+    when(page.getId()).thenReturn(UUID.randomUUID().toString());
+    when(notionHandler.executeWithRetry(any())).thenReturn(page);
+
+    // When
+    var result = showNotionSyncService.syncToNotion(UUID.randomUUID().toString());
+
+    // Then — both shows included
+    assertNotNull(result);
+    assertEquals(2, result.getCreatedCount());
+    assertEquals(0, result.getErrorCount());
+  }
+
+  @Test
+  @DisplayName("All shows synced when no game date is configured")
+  void testAllShowsSyncedWhenNoGameDate() {
+    // Given — game date not set
+    when(gameSettingService.getCurrentGameDate()).thenReturn(null);
+
+    Show futureShow = new Show();
+    futureShow.setName("Future Show");
+    futureShow.setShowDate(LocalDate.now().plusYears(1));
+
+    NotionClient client = mock(NotionClient.class);
+    when(showRepository.findAll()).thenReturn(List.of(futureShow));
+    when(notionHandler.createNotionClient()).thenReturn(Optional.of(client));
+    when(notionHandler.getDatabaseId(anyString())).thenReturn("test_db_id");
+    Page page = mock(Page.class);
+    when(page.getId()).thenReturn(UUID.randomUUID().toString());
+    when(notionHandler.executeWithRetry(any())).thenReturn(page);
+
+    // When
+    var result = showNotionSyncService.syncToNotion(UUID.randomUUID().toString());
+
+    // Then — future show still synced because no game date is configured
+    assertNotNull(result);
+    assertEquals(1, result.getCreatedCount());
+    assertEquals(0, result.getErrorCount());
   }
 }
