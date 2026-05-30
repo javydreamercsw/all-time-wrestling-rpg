@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -36,7 +37,6 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -62,7 +62,7 @@ public class TitleFormDialog extends Dialog {
   private final TextField imageUrl;
   private final Image previewImage;
   private final Button saveButton;
-  private final IntegerField defenseFrequency;
+  private final ComboBox<DefenseFrequencyType> defenseFrequencyType;
   private final TextArea effectScript;
 
   public TitleFormDialog(
@@ -103,12 +103,13 @@ public class TitleFormDialog extends Dialog {
     isActive.setReadOnly(!securityUtils.canEdit());
     Checkbox includeInRankings = new Checkbox("Include in Rankings");
     includeInRankings.setReadOnly(!securityUtils.canEdit());
-    defenseFrequency = new IntegerField("Defense Frequency (shows)");
-    defenseFrequency.setMin(1);
-    defenseFrequency.setClearButtonVisible(true);
-    defenseFrequency.setPlaceholder("Default");
-    defenseFrequency.setReadOnly(!securityUtils.canEdit());
-    defenseFrequency.setWidthFull();
+    defenseFrequencyType = new ComboBox<>("Defense Frequency");
+    defenseFrequencyType.setItems(DefenseFrequencyType.values());
+    defenseFrequencyType.setItemLabelGenerator(DefenseFrequencyType::getDisplayName);
+    defenseFrequencyType.setClearButtonVisible(true);
+    defenseFrequencyType.setPlaceholder("No requirement");
+    defenseFrequencyType.setReadOnly(!securityUtils.canEdit());
+    defenseFrequencyType.setWidthFull();
     effectScript = new TextArea("Effect Script");
     effectScript.setPlaceholder("Optional script run when this title is defended");
     effectScript.setReadOnly(!securityUtils.canEdit());
@@ -156,7 +157,8 @@ public class TitleFormDialog extends Dialog {
     binder.bind(isActive, Title::getIsActive, Title::setIsActive);
     binder.bind(includeInRankings, Title::getIncludeInRankings, Title::setIncludeInRankings);
     binder.forField(imageUrl).bind(Title::getImageUrl, Title::setImageUrl);
-    binder.bind(defenseFrequency, Title::getDefenseFrequency, Title::setDefenseFrequency);
+    binder.bind(
+        defenseFrequencyType, Title::getDefenseFrequencyType, Title::setDefenseFrequencyType);
     binder.bind(effectScript, Title::getEffectScript, Title::setEffectScript);
 
     Runnable populateChampions =
@@ -197,7 +199,7 @@ public class TitleFormDialog extends Dialog {
             championshipType,
             isActive,
             includeInRankings,
-            defenseFrequency,
+            defenseFrequencyType,
             champion,
             imageLayout,
             effectScript);

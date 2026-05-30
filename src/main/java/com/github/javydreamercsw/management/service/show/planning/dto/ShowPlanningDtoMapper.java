@@ -149,7 +149,7 @@ public class ShowPlanningDtoMapper {
               .map(Wrestler::getName)
               .collect(Collectors.joining(" & ")));
     }
-    dto.setDefenseFrequency(championship.getTitle().getDefenseFrequency());
+    dto.setDefenseFrequencyType(championship.getTitle().getEffectiveDefenseFrequencyType());
     dto.setDaysSinceLastDefense(championship.getDaysSinceLastDefense());
     return dto;
   }

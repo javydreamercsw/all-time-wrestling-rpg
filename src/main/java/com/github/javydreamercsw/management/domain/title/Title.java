@@ -79,8 +79,9 @@ public class Title extends AbstractSyncableEntity<Long> {
   @Column(name = "image_url")
   private String imageUrl;
 
-  @Column(name = "defense_frequency")
-  private Integer defenseFrequency;
+  @Column(name = "defense_frequency_type")
+  @Enumerated(EnumType.STRING)
+  private DefenseFrequencyType defenseFrequencyType;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
@@ -163,6 +164,19 @@ public class Title extends AbstractSyncableEntity<Long> {
 
   public boolean isTopTier() {
     return getTier() == WrestlerTier.MAIN_EVENTER;
+  }
+
+  public DefenseFrequencyType getEffectiveDefenseFrequencyType() {
+    if (defenseFrequencyType != null) {
+      return defenseFrequencyType;
+    }
+    if (tier == WrestlerTier.MAIN_EVENTER) {
+      return DefenseFrequencyType.PLE;
+    }
+    if (tier == WrestlerTier.MIDCARDER) {
+      return DefenseFrequencyType.BI_WEEKLY;
+    }
+    return DefenseFrequencyType.WEEKLY;
   }
 
   public String getDisplayName() {

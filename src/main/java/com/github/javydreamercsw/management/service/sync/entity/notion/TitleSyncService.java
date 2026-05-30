@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.notion.TitlePage;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
@@ -188,7 +189,12 @@ public class TitleSyncService extends BaseSyncService {
           title.setIsActive(titlePage.getIsActive());
         }
         if (titlePage.getDefenseFrequency() != null) {
-          title.setDefenseFrequency(titlePage.getDefenseFrequency());
+          int weeks = titlePage.getDefenseFrequency();
+          DefenseFrequencyType freq =
+              weeks <= 1
+                  ? DefenseFrequencyType.WEEKLY
+                  : weeks <= 2 ? DefenseFrequencyType.BI_WEEKLY : DefenseFrequencyType.PLE;
+          title.setDefenseFrequencyType(freq);
         }
 
         syncServiceDependencies.getTitleRepository().save(title);

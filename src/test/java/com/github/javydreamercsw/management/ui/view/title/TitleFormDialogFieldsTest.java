@@ -21,12 +21,13 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
-import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,11 +70,14 @@ class TitleFormDialogFieldsTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("defenseFrequency and effectScript fields should exist in TitleFormDialog")
-  void defenseFrequencyAndEffectScriptFieldsExist() {
-    IntegerField defenseFrequency =
-        (IntegerField) ReflectionTestUtils.getField(dialog, "defenseFrequency");
-    assertNotNull(defenseFrequency, "defenseFrequency field should not be null");
+  @DisplayName(
+      "defenseFrequencyType ComboBox and effectScript TextArea should exist in TitleFormDialog")
+  void defenseFrequencyTypeAndEffectScriptFieldsExist() {
+    @SuppressWarnings("unchecked")
+    ComboBox<DefenseFrequencyType> defenseFrequencyType =
+        (ComboBox<DefenseFrequencyType>)
+            ReflectionTestUtils.getField(dialog, "defenseFrequencyType");
+    assertNotNull(defenseFrequencyType, "defenseFrequencyType field should not be null");
 
     TextArea effectScript = (TextArea) ReflectionTestUtils.getField(dialog, "effectScript");
     assertNotNull(effectScript, "effectScript field should not be null");
