@@ -213,6 +213,43 @@ public class WrestlerDialog extends Dialog {
           e -> alignmentLevelField.setEnabled(e.getValue() != AlignmentType.NEUTRAL));
     }
 
+    boolean canEditCampaignAttrs = securityUtils.isAdmin() || securityUtils.isBooker();
+    IntegerField driveField = new IntegerField("Drive (1-6)");
+    driveField.setId("wrestler-dialog-drive-field");
+    driveField.setMin(1);
+    driveField.setMax(6);
+    driveField.setValue(1);
+    driveField.setStepButtonsVisible(true);
+    driveField.setVisible(canEditCampaignAttrs);
+    driveField.setReadOnly(!canEditCampaignAttrs);
+
+    IntegerField resilienceField = new IntegerField("Resilience (1-6)");
+    resilienceField.setId("wrestler-dialog-resilience-field");
+    resilienceField.setMin(1);
+    resilienceField.setMax(6);
+    resilienceField.setValue(1);
+    resilienceField.setStepButtonsVisible(true);
+    resilienceField.setVisible(canEditCampaignAttrs);
+    resilienceField.setReadOnly(!canEditCampaignAttrs);
+
+    IntegerField charismaField = new IntegerField("Charisma (1-6)");
+    charismaField.setId("wrestler-dialog-charisma-field");
+    charismaField.setMin(1);
+    charismaField.setMax(6);
+    charismaField.setValue(1);
+    charismaField.setStepButtonsVisible(true);
+    charismaField.setVisible(canEditCampaignAttrs);
+    charismaField.setReadOnly(!canEditCampaignAttrs);
+
+    IntegerField brawlField = new IntegerField("Brawl (1-6)");
+    brawlField.setId("wrestler-dialog-brawl-field");
+    brawlField.setMin(1);
+    brawlField.setMax(6);
+    brawlField.setValue(1);
+    brawlField.setStepButtonsVisible(true);
+    brawlField.setVisible(canEditCampaignAttrs);
+    brawlField.setReadOnly(!canEditCampaignAttrs);
+
     Checkbox isPlayerField = new Checkbox("Is Player");
     isPlayerField.setId("wrestler-dialog-is-player-field");
     isPlayerField.setReadOnly(!securityUtils.isAdmin() && !securityUtils.isBooker());
@@ -256,6 +293,10 @@ public class WrestlerDialog extends Dialog {
         imageEditLayout,
         alignmentTypeField,
         alignmentLevelField,
+        driveField,
+        resilienceField,
+        charismaField,
+        brawlField,
         isPlayerField,
         activeField,
         accountComboBox);
@@ -275,6 +316,10 @@ public class WrestlerDialog extends Dialog {
         .bind(Wrestler::getStartingStamina, Wrestler::setStartingStamina);
     binder.forField(lowStaminaField).bind(Wrestler::getLowStamina, Wrestler::setLowStamina);
     binder.forField(descriptionField).bind(Wrestler::getDescription, Wrestler::setDescription);
+    binder.forField(driveField).bind(Wrestler::getDrive, Wrestler::setDrive);
+    binder.forField(resilienceField).bind(Wrestler::getResilience, Wrestler::setResilience);
+    binder.forField(charismaField).bind(Wrestler::getCharisma, Wrestler::setCharisma);
+    binder.forField(brawlField).bind(Wrestler::getBrawl, Wrestler::setBrawl);
     binder.forField(isPlayerField).bind(Wrestler::getIsPlayer, Wrestler::setIsPlayer);
     binder.forField(activeField).bind(Wrestler::getActive, Wrestler::setActive);
 

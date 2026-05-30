@@ -354,6 +354,45 @@ public class ShowService {
       final Long universeId,
       final Long commentaryTeamId,
       final Long arenaId) {
+    return updateShow(
+        id,
+        name,
+        description,
+        showTypeId,
+        showDate,
+        seasonId,
+        templateId,
+        universeId,
+        commentaryTeamId,
+        arenaId,
+        null,
+        null,
+        null);
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = {
+        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
+        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
+      },
+      allEntries = true)
+  public Optional<Show> updateShow(
+      final Long id,
+      final String name,
+      final String description,
+      final Long showTypeId,
+      final LocalDate showDate,
+      final Long seasonId,
+      final Long templateId,
+      final Long universeId,
+      final Long commentaryTeamId,
+      final Long arenaId,
+      final Long leagueId,
+      final Integer attendance,
+      final java.math.BigDecimal gateRevenue) {
 
     return showRepository
         .findById(id)
@@ -434,6 +473,24 @@ public class ShowService {
                             () -> new IllegalArgumentException("Arena not found: " + arenaId)));
               } else {
                 show.setArena(null);
+              }
+
+              if (leagueId != null) {
+                show.setLeague(
+                    leagueRepository
+                        .findById(leagueId)
+                        .orElseThrow(
+                            () -> new IllegalArgumentException("League not found: " + leagueId)));
+              } else {
+                show.setLeague(null);
+              }
+
+              if (attendance != null) {
+                show.setAttendance(attendance);
+              }
+
+              if (gateRevenue != null) {
+                show.setGateRevenue(gateRevenue);
               }
 
               return showRepository.saveAndFlush(show);

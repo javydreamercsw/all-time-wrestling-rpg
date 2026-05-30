@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -148,6 +149,7 @@ public class ShowDetailView extends Main
 
   private final NotificationService notificationService;
   private final ShowExportService exportService;
+  private final LeagueRepository leagueRepository;
 
   @Autowired
   public ShowDetailView(
@@ -175,7 +177,8 @@ public class ShowDetailView extends Main
       final ArenaService arenaService,
       final WrestlerRelationshipService relationshipService,
       final NotificationService notificationService,
-      final ShowExportService exportService) {
+      final ShowExportService exportService,
+      final LeagueRepository leagueRepository) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -201,6 +204,7 @@ public class ShowDetailView extends Main
     this.relationshipService = relationshipService;
     this.notificationService = notificationService;
     this.exportService = exportService;
+    this.leagueRepository = leagueRepository;
     initializeComponents();
   }
 
@@ -475,6 +479,7 @@ public class ShowDetailView extends Main
                         universeRepository,
                         commentaryTeamRepository,
                         arenaService,
+                        leagueRepository,
                         show)
                     .open());
     editDetailsButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);

@@ -55,6 +55,7 @@ class FactionFormValidationTest {
   @Mock private NpcService npcService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseContextService universeContextService;
+  @Mock private com.github.javydreamercsw.base.ai.image.ImageStorageService imageStorageService;
   @Mock private SecurityUtils securityUtils;
 
   private FactionListView factionListView;
@@ -73,6 +74,7 @@ class FactionFormValidationTest {
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.canDelete()).thenReturn(true);
     when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
+    when(factionService.resolveFactionImage(any())).thenReturn("");
 
     // Mock WrestlerState for fans
     WrestlerState state1 = new WrestlerState();
@@ -90,7 +92,8 @@ class FactionFormValidationTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
+            universeContextService,
+            imageStorageService);
   }
 
   @Test

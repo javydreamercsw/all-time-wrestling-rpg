@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.ui.view.faction;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -32,6 +34,8 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +49,7 @@ class FactionListViewTest extends AbstractViewTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private ImageStorageService imageStorageService;
 
   private FactionListView view;
 
@@ -56,6 +61,9 @@ class FactionListViewTest extends AbstractViewTest {
     when(npcService.findAllIncludingInactive()).thenReturn(Collections.emptyList());
     when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
     when(securityUtils.canCreate()).thenReturn(true);
+    when(securityUtils.canEdit()).thenReturn(true);
+    when(securityUtils.canDelete()).thenReturn(true);
+    when(factionService.resolveFactionImage(any())).thenReturn("");
 
     view =
         new FactionListView(
@@ -64,7 +72,8 @@ class FactionListViewTest extends AbstractViewTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
+            universeContextService,
+            imageStorageService);
     UI.getCurrent().add(view);
   }
 
@@ -74,5 +83,18 @@ class FactionListViewTest extends AbstractViewTest {
     Grid<?> grid = _get(view, Grid.class);
     assertTrue(grid.isVisible());
     assertFalse(grid.getColumns().isEmpty());
+  }
+
+  @Test
+  @DisplayName("Grid should show Art and Active columns")
+  void gridShouldHaveArtAndActiveColumns() {
+    Grid<?> grid = _get(view, Grid.class);
+    List<String> headers =
+        grid.getColumns().stream()
+            .map(Grid.Column::getHeaderText)
+            .filter(h -> h != null && !h.isEmpty())
+            .collect(Collectors.toList());
+    assertTrue(headers.contains("Art"));
+    assertTrue(headers.contains("Active"));
   }
 }

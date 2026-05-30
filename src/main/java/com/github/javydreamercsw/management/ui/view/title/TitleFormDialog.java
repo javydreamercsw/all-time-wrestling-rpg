@@ -36,6 +36,7 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -61,6 +62,8 @@ public class TitleFormDialog extends Dialog {
   private final TextField imageUrl;
   private final Image previewImage;
   private final Button saveButton;
+  private final IntegerField defenseFrequency;
+  private final TextArea effectScript;
 
   public TitleFormDialog(
       @NonNull final TitleService titleService,
@@ -100,6 +103,16 @@ public class TitleFormDialog extends Dialog {
     isActive.setReadOnly(!securityUtils.canEdit());
     Checkbox includeInRankings = new Checkbox("Include in Rankings");
     includeInRankings.setReadOnly(!securityUtils.canEdit());
+    defenseFrequency = new IntegerField("Defense Frequency (shows)");
+    defenseFrequency.setMin(1);
+    defenseFrequency.setClearButtonVisible(true);
+    defenseFrequency.setPlaceholder("Default");
+    defenseFrequency.setReadOnly(!securityUtils.canEdit());
+    defenseFrequency.setWidthFull();
+    effectScript = new TextArea("Effect Script");
+    effectScript.setPlaceholder("Optional script run when this title is defended");
+    effectScript.setReadOnly(!securityUtils.canEdit());
+    effectScript.setWidthFull();
     champion = new MultiSelectComboBox<>("Champion(s)");
     champion.setItemLabelGenerator(
         w ->
@@ -143,6 +156,8 @@ public class TitleFormDialog extends Dialog {
     binder.bind(isActive, Title::getIsActive, Title::setIsActive);
     binder.bind(includeInRankings, Title::getIncludeInRankings, Title::setIncludeInRankings);
     binder.forField(imageUrl).bind(Title::getImageUrl, Title::setImageUrl);
+    binder.bind(defenseFrequency, Title::getDefenseFrequency, Title::setDefenseFrequency);
+    binder.bind(effectScript, Title::getEffectScript, Title::setEffectScript);
 
     Runnable populateChampions =
         () -> {
@@ -182,9 +197,13 @@ public class TitleFormDialog extends Dialog {
             championshipType,
             isActive,
             includeInRankings,
+            defenseFrequency,
             champion,
-            imageLayout);
+            imageLayout,
+            effectScript);
+    formLayout.setColspan(description, 2);
     formLayout.setColspan(imageLayout, 2);
+    formLayout.setColspan(effectScript, 2);
     add(formLayout);
 
     saveButton =

@@ -147,6 +147,8 @@ class ShowDetailViewTest extends AbstractViewTest {
       Set<Wrestler> wrestlers = new HashSet<>(Arrays.asList(wrestler1, wrestler2));
 
       ShowExportService exportService = mock(ShowExportService.class);
+      com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository =
+          mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class);
 
       ShowDetailView showDetailView =
           new ShowDetailView(
@@ -174,7 +176,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               arenaService,
               relationshipService,
               notificationService,
-              exportService);
+              exportService,
+              leagueRepository);
       java.util.Map<Integer, java.util.List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
       teamMap.put(1, List.of(wrestler1));
       teamMap.put(2, List.of(wrestler2));
@@ -234,6 +237,8 @@ class ShowDetailViewTest extends AbstractViewTest {
       when(segmentRepository.findByShow(any(Show.class))).thenReturn(initialSegments);
 
       ShowExportService exportService = mock(ShowExportService.class);
+      com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository =
+          mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class);
 
       ShowDetailView showDetailView =
           new ShowDetailView(
@@ -261,7 +266,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               arenaService,
               relationshipService,
               notificationService,
-              exportService);
+              exportService,
+              leagueRepository);
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());
