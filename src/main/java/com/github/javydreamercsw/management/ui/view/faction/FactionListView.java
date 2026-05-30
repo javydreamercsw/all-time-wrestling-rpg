@@ -461,9 +461,7 @@ public class FactionListView extends VerticalLayout {
         e -> {
           Wrestler selected = wrestlerCombo.getValue();
           if (selected != null) {
-            WrestlerState state = wrestlerService.getOrCreateState(selected.getId(), universeId);
-            loadedFaction.addMember(state);
-            factionService.save(loadedFaction);
+            factionService.addMemberToFaction(loadedFaction.getId(), selected.getId());
             dialog.close();
             openMembersDialog(loadedFaction);
             refreshGrid();
