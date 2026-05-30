@@ -30,7 +30,10 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.grid.Grid;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,5 +74,22 @@ class ShowTemplateListViewTest extends AbstractViewTest {
   void shouldRenderToolbar() {
     ViewToolbar toolbar = _get(view, ViewToolbar.class);
     assertTrue(toolbar.isVisible());
+  }
+
+  @Test
+  @DisplayName(
+      "Grid should have Commentary Team, Recurrence, Duration, Matches, and Promos columns")
+  void shouldHaveNewGridColumns() {
+    Grid<?> grid = _get(view, Grid.class);
+    List<String> headers =
+        grid.getColumns().stream()
+            .map(Grid.Column::getHeaderText)
+            .filter(h -> h != null && !h.isEmpty())
+            .collect(Collectors.toList());
+    assertTrue(headers.contains("Commentary Team"));
+    assertTrue(headers.contains("Recurrence"));
+    assertTrue(headers.contains("Duration"));
+    assertTrue(headers.contains("Matches"));
+    assertTrue(headers.contains("Promos"));
   }
 }

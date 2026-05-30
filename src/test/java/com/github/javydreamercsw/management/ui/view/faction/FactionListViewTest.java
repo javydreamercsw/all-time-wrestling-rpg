@@ -34,6 +34,8 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -81,5 +83,18 @@ class FactionListViewTest extends AbstractViewTest {
     Grid<?> grid = _get(view, Grid.class);
     assertTrue(grid.isVisible());
     assertFalse(grid.getColumns().isEmpty());
+  }
+
+  @Test
+  @DisplayName("Grid should show Art and Active columns")
+  void gridShouldHaveArtAndActiveColumns() {
+    Grid<?> grid = _get(view, Grid.class);
+    List<String> headers =
+        grid.getColumns().stream()
+            .map(Grid.Column::getHeaderText)
+            .filter(h -> h != null && !h.isEmpty())
+            .collect(Collectors.toList());
+    assertTrue(headers.contains("Art"));
+    assertTrue(headers.contains("Active"));
   }
 }
