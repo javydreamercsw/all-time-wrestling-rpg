@@ -227,6 +227,8 @@ public class EditShowDetailsDialog extends Dialog {
     dialogLayout.setPadding(false);
     dialogLayout.setWidth("min(600px, 95vw)");
 
+    setMaxHeight("85vh");
+    getElement().getStyle().set("overflow-y", "auto");
     add(dialogLayout);
   }
 
