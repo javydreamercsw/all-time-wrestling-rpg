@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.title;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import org.junit.jupiter.api.Test;
 
 class TitleDefenseFrequencyTest {
@@ -51,5 +52,34 @@ class TitleDefenseFrequencyTest {
   void pleIsOverdueAfterTwentyEightDays() {
     assertTrue(DefenseFrequencyType.PLE.isOverdue(28));
     assertFalse(DefenseFrequencyType.PLE.isOverdue(27));
+  }
+
+  @Test
+  void effectiveFrequencyUsesExplicitValueWhenSet() {
+    Title title = new Title();
+    title.setTier(WrestlerTier.MAIN_EVENTER);
+    title.setDefenseFrequencyType(DefenseFrequencyType.WEEKLY);
+    assertEquals(DefenseFrequencyType.WEEKLY, title.getEffectiveDefenseFrequencyType());
+  }
+
+  @Test
+  void effectiveFrequencyDefaultsToPlEForMainEventer() {
+    Title title = new Title();
+    title.setTier(WrestlerTier.MAIN_EVENTER);
+    assertEquals(DefenseFrequencyType.PLE, title.getEffectiveDefenseFrequencyType());
+  }
+
+  @Test
+  void effectiveFrequencyDefaultsToBiWeeklyForMidcarder() {
+    Title title = new Title();
+    title.setTier(WrestlerTier.MIDCARDER);
+    assertEquals(DefenseFrequencyType.BI_WEEKLY, title.getEffectiveDefenseFrequencyType());
+  }
+
+  @Test
+  void effectiveFrequencyDefaultsToWeeklyForOtherTiers() {
+    Title title = new Title();
+    title.setTier(WrestlerTier.CONTENDER);
+    assertEquals(DefenseFrequencyType.WEEKLY, title.getEffectiveDefenseFrequencyType());
   }
 }

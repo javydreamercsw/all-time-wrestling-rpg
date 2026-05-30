@@ -166,6 +166,19 @@ public class Title extends AbstractSyncableEntity<Long> {
     return getTier() == WrestlerTier.MAIN_EVENTER;
   }
 
+  public DefenseFrequencyType getEffectiveDefenseFrequencyType() {
+    if (defenseFrequencyType != null) {
+      return defenseFrequencyType;
+    }
+    if (tier == WrestlerTier.MAIN_EVENTER) {
+      return DefenseFrequencyType.PLE;
+    }
+    if (tier == WrestlerTier.MIDCARDER) {
+      return DefenseFrequencyType.BI_WEEKLY;
+    }
+    return DefenseFrequencyType.WEEKLY;
+  }
+
   public String getDisplayName() {
     if (isVacant()) {
       return name + " (Vacant)";
