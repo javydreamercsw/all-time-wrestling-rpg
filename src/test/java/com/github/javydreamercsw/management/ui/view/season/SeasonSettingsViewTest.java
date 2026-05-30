@@ -17,7 +17,8 @@
 package com.github.javydreamercsw.management.ui.view.season;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.javydreamercsw.base.ui.service.NotificationService;
@@ -66,9 +67,33 @@ class SeasonSettingsViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("View should contain action Buttons")
+  @DisplayName("View should contain exactly 4 action buttons")
   void actionButtonsExist() {
     List<Button> buttons = _find(view, Button.class);
-    assertFalse(buttons.isEmpty(), "Expected at least one Button in SeasonSettingsView");
+    assertEquals(
+        4,
+        buttons.size(),
+        "Expected 4 buttons: reset boundaries, recalibrate fans, reset fans, generate schedule");
+  }
+
+  @Test
+  @DisplayName("reset-boundaries-button should exist")
+  void resetBoundariesButtonHasId() {
+    Button btn = _get(view, Button.class, spec -> spec.withId("reset-boundaries-button"));
+    assertNotNull(btn, "reset-boundaries-button should be present");
+  }
+
+  @Test
+  @DisplayName("full-reset-button should exist")
+  void fullResetButtonHasId() {
+    Button btn = _get(view, Button.class, spec -> spec.withId("full-reset-button"));
+    assertNotNull(btn, "full-reset-button should be present");
+  }
+
+  @Test
+  @DisplayName("generate-schedule-button should exist")
+  void generateScheduleButtonHasId() {
+    Button btn = _get(view, Button.class, spec -> spec.withId("generate-schedule-button"));
+    assertNotNull(btn, "generate-schedule-button should be present");
   }
 }

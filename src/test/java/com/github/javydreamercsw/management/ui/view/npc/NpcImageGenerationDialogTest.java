@@ -25,10 +25,13 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.component.textfield.TextField;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class NpcImageGenerationDialogTest extends AbstractViewTest {
 
@@ -57,5 +60,20 @@ class NpcImageGenerationDialogTest extends AbstractViewTest {
   @DisplayName("NpcImageGenerationDialog should construct without throwing")
   void dialogConstructs() {
     assertNotNull(dialog, "NpcImageGenerationDialog should not be null");
+  }
+
+  @Test
+  @DisplayName("promptArea TextArea should exist and contain NPC name")
+  void promptAreaContainsNpcName() {
+    TextArea promptArea = (TextArea) ReflectionTestUtils.getField(dialog, "promptArea");
+    assertNotNull(promptArea, "promptArea should not be null");
+    assertNotNull(promptArea.getValue(), "promptArea should have a pre-populated prompt");
+  }
+
+  @Test
+  @DisplayName("modelField TextField should exist")
+  void modelFieldExists() {
+    TextField modelField = (TextField) ReflectionTestUtils.getField(dialog, "modelField");
+    assertNotNull(modelField, "modelField should not be null");
   }
 }
