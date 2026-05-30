@@ -433,11 +433,15 @@ public class ShowTemplateListView extends Main {
     editExpectedMatches.setWidthFull();
     editExpectedMatches.setPlaceholder("Use show type default");
     editExpectedMatches.setClearButtonVisible(true);
+    editExpectedMatches.setMin(1);
+    editExpectedMatches.setStepButtonsVisible(true);
 
     editExpectedPromos = new IntegerField("Expected Promos");
     editExpectedPromos.setWidthFull();
     editExpectedPromos.setPlaceholder("Use show type default");
     editExpectedPromos.setClearButtonVisible(true);
+    editExpectedPromos.setMin(1);
+    editExpectedPromos.setStepButtonsVisible(true);
 
     editDurationDays = new IntegerField("Duration (Days)");
     editDurationDays.setWidthFull();
@@ -583,9 +587,13 @@ public class ShowTemplateListView extends Main {
     binder.forField(editImageUrl).bind(ShowTemplate::getImageUrl, ShowTemplate::setImageUrl);
     binder
         .forField(editExpectedMatches)
+        .withConverter(
+            presentation -> presentation, // Integer → Integer (no-op, but allows null)
+            model -> model)
         .bind(ShowTemplate::getExpectedMatches, ShowTemplate::setExpectedMatches);
     binder
         .forField(editExpectedPromos)
+        .withConverter(presentation -> presentation, model -> model)
         .bind(ShowTemplate::getExpectedPromos, ShowTemplate::setExpectedPromos);
     binder
         .forField(editDurationDays)
