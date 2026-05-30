@@ -133,9 +133,9 @@ public class TitleListView extends Main {
     grid.addColumn(Title::getIncludeInRankings).setHeader("Rankings").setSortable(true);
     grid.addColumn(
             title ->
-                title.getDefenseFrequency() != null
-                    ? title.getDefenseFrequency() + " shows"
-                    : "Default")
+                title.getDefenseFrequencyType() != null
+                    ? title.getDefenseFrequencyType().getDisplayName()
+                    : "None")
         .setHeader("Defense Freq.")
         .setSortable(true);
 

@@ -73,10 +73,11 @@ public class TitleNotionSyncService extends BaseNotionSyncService<Title> {
     properties.put("Active", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
     properties.put("Status", NotionPropertyBuilder.createCheckboxProperty(entity.getIsActive()));
 
-    if (entity.getDefenseFrequency() != null) {
+    if (entity.getDefenseFrequencyType() != null) {
       properties.put(
           "Defense Cadence (weeks)",
-          NotionPropertyBuilder.createNumberProperty(entity.getDefenseFrequency().doubleValue()));
+          NotionPropertyBuilder.createNumberProperty(
+              (double) entity.getDefenseFrequencyType().getDays() / 7));
     }
 
     // Current Champion relation

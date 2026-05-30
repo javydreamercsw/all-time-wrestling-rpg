@@ -79,8 +79,9 @@ public class Title extends AbstractSyncableEntity<Long> {
   @Column(name = "image_url")
   private String imageUrl;
 
-  @Column(name = "defense_frequency")
-  private Integer defenseFrequency;
+  @Column(name = "defense_frequency_type")
+  @Enumerated(EnumType.STRING)
+  private DefenseFrequencyType defenseFrequencyType;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;

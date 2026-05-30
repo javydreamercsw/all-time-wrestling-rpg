@@ -259,9 +259,13 @@ public class ShowPlanningAiService {
                       .append(", Contender: ")
                       .append(championship.getContenderName())
                       .append(", Defense Frequency: ")
-                      .append(championship.getDefenseFrequency())
-                      .append(" days, Days since last defense: ")
+                      .append(
+                          championship.getDefenseFrequencyType() != null
+                              ? championship.getDefenseFrequencyType().getDisplayName()
+                              : "None")
+                      .append(", Days since last defense: ")
                       .append(championship.getDaysSinceLastDefense())
+                      .append(championship.isOverdue() ? " (OVERDUE)" : "")
                       .append("\n"));
     }
 

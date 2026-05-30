@@ -14,24 +14,28 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.show.planning.dto;
+package com.github.javydreamercsw.management.domain.title;
 
-import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Data
-public class ShowPlanningChampionshipDTO {
-  private String championshipName;
-  private String championName;
-  private String contenderName;
-  private DefenseFrequencyType defenseFrequencyType;
-  private Long daysSinceLastDefense;
+/** How often a title must be defended. */
+@Getter
+@RequiredArgsConstructor
+public enum DefenseFrequencyType {
+  WEEKLY("Weekly", 7),
+  BI_WEEKLY("Bi-Weekly", 14),
+  PLE("PLE (Monthly)", 28);
 
-  /** True when the title is past its defense cadence threshold. */
-  public boolean isOverdue() {
-    if (defenseFrequencyType == null || daysSinceLastDefense == null) {
-      return false;
-    }
-    return defenseFrequencyType.isOverdue(daysSinceLastDefense);
+  private final String displayName;
+  private final int days;
+
+  /**
+   * Returns true when the title is considered overdue for a defense.
+   *
+   * @param daysSinceLastDefense days elapsed since the last defense
+   */
+  public boolean isOverdue(final long daysSinceLastDefense) {
+    return daysSinceLastDefense >= days;
   }
 }
