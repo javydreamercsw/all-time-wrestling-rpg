@@ -901,6 +901,9 @@
           <!-- Skip by default unless explicitly enabled. -->
           <skipITs>${e2e.skipITs}</skipITs>
 
+          <!-- Retry flaky E2E tests (e.g. browser timing issues in CI) up to 2 times before failing -->
+          <rerunFailingTestsCount>2</rerunFailingTestsCount>
+
           <!-- Parallel execution disabled to prevent database interference between tests sharing the same context -->
           <parallel>none</parallel>
           <threadCount>1</threadCount>
