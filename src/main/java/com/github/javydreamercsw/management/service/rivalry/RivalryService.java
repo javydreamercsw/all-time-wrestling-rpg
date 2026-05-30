@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.event.HeatChangeEvent;
 import com.github.javydreamercsw.management.event.RivalryCompletedEvent;
 import com.github.javydreamercsw.management.event.RivalryContinuesEvent;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
@@ -54,6 +55,7 @@ public class RivalryService {
   @Autowired @Getter private RivalryMapper rivalryMapper;
   @Autowired private Clock clock;
   @Autowired private ApplicationEventPublisher eventPublisher;
+  @Autowired private GameSettingService gameSettingService;
 
   /** Create a new rivalry between two wrestlers. */
   @PreAuthorize(
@@ -152,7 +154,7 @@ public class RivalryService {
     return rivalryOpt.flatMap(rivalry -> addHeat(rivalry.getId(), heatGain, reason));
   }
 
-  /** Attempt to resolve a rivalry with dice rolls. */
+  /** Attempt to resolve a rivalry at a PLE (uses the configured PLE threshold). */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
@@ -162,6 +164,24 @@ public class RivalryService {
       @NonNull final Long rivalryId,
       @NonNull final Integer wrestler1Roll,
       @NonNull final Integer wrestler2Roll) {
+    return attemptResolution(
+        rivalryId,
+        wrestler1Roll,
+        wrestler2Roll,
+        gameSettingService.getRivalryResolutionThresholdPle());
+  }
+
+  /** Attempt to resolve a rivalry with an explicit threshold. */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
+      allEntries = true)
+  public ResolutionResult<Rivalry> attemptResolution(
+      @NonNull final Long rivalryId,
+      @NonNull final Integer wrestler1Roll,
+      @NonNull final Integer wrestler2Roll,
+      final int threshold) {
     Optional<Rivalry> rivalryOpt = rivalryRepository.findById(rivalryId);
 
     if (rivalryOpt.isEmpty()) {
@@ -181,12 +201,11 @@ public class RivalryService {
           0);
     }
 
-    // Use provided rolls or generate random ones
     int roll1 = wrestler1Roll;
     int roll2 = wrestler2Roll;
     int total = roll1 + roll2;
 
-    boolean resolved = rivalry.attemptResolution(roll1, roll2);
+    boolean resolved = rivalry.attemptResolution(roll1, roll2, threshold);
 
     if (resolved) {
       rivalry.endRivalry("Rivalry resolved successfully");
