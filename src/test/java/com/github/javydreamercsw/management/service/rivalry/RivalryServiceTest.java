@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.HeatChangeEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
@@ -56,12 +57,14 @@ class RivalryServiceTest {
   @Mock private Clock clock;
   @Mock private Random random;
   @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private GameSettingService gameSettingService;
 
   @InjectMocks private RivalryService rivalryService;
 
   @BeforeEach
   public void setUp() {
     lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
+    lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
   }
 
   @Test

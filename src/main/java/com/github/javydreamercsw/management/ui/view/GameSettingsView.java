@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -168,6 +169,102 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
+    // ── Rivalry Configuration ──────────────────────────────────────────────────
+    IntegerField pleThreshold = new IntegerField("PLE Resolution Threshold (2d20 must exceed)");
+    pleThreshold.setMin(2);
+    pleThreshold.setMax(40);
+    pleThreshold.setStepButtonsVisible(true);
+    pleThreshold.setValue(gameSettingService.getRivalryResolutionThresholdPle());
+    pleThreshold.addValueChangeListener(
+        event -> {
+          gameSettingService.setRivalryResolutionThresholdPle(event.getValue());
+          Notification.show("PLE resolution threshold updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    IntegerField regularThreshold =
+        new IntegerField("Regular Show Resolution Threshold (2d20 must exceed)");
+    regularThreshold.setMin(2);
+    regularThreshold.setMax(40);
+    regularThreshold.setStepButtonsVisible(true);
+    regularThreshold.setValue(gameSettingService.getRivalryResolutionThresholdRegular());
+    regularThreshold.addValueChangeListener(
+        event -> {
+          gameSettingService.setRivalryResolutionThresholdRegular(event.getValue());
+          Notification.show("Regular show resolution threshold updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    Checkbox resolutionOnRegular =
+        new Checkbox("Allow rivalry resolution on regular (non-PLE) shows");
+    resolutionOnRegular.setValue(gameSettingService.isRivalryResolutionOnRegularShowsEnabled());
+    resolutionOnRegular.addValueChangeListener(
+        event -> {
+          gameSettingService.setRivalryResolutionOnRegularShowsEnabled(event.getValue());
+          Notification.show(
+                  "Regular show resolution " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    IntegerField maxDuration = new IntegerField("Max Rivalry Duration (days, 0 = unlimited)");
+    maxDuration.setMin(0);
+    maxDuration.setStepButtonsVisible(true);
+    maxDuration.setValue(gameSettingService.getRivalryMaxDurationDays());
+    maxDuration.addValueChangeListener(
+        event -> {
+          gameSettingService.setRivalryMaxDurationDays(event.getValue());
+          Notification.show(
+                  event.getValue() == 0
+                      ? "Max rivalry duration disabled"
+                      : "Max rivalry duration set to " + event.getValue() + " days")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    Checkbox heatDecayEnabled = new Checkbox("Enable automatic heat decay");
+    heatDecayEnabled.setValue(gameSettingService.isRivalryHeatDecayEnabled());
+    heatDecayEnabled.addValueChangeListener(
+        event -> {
+          gameSettingService.setRivalryHeatDecayEnabled(event.getValue());
+          Notification.show("Heat decay " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    IntegerField decayAmount = new IntegerField("Heat decay per interval");
+    decayAmount.setMin(1);
+    decayAmount.setMax(10);
+    decayAmount.setStepButtonsVisible(true);
+    decayAmount.setValue(gameSettingService.getRivalryHeatDecayPerInterval());
+    decayAmount.addValueChangeListener(
+        event -> {
+          gameSettingService.setRivalryHeatDecayPerInterval(event.getValue());
+          Notification.show("Heat decay amount updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    IntegerField decayInterval = new IntegerField("Heat decay interval (days)");
+    decayInterval.setMin(1);
+    decayInterval.setMax(30);
+    decayInterval.setStepButtonsVisible(true);
+    decayInterval.setValue(gameSettingService.getRivalryHeatDecayIntervalDays());
+    decayInterval.addValueChangeListener(
+        event -> {
+          gameSettingService.setRivalryHeatDecayIntervalDays(event.getValue());
+          Notification.show("Heat decay interval updated to: " + event.getValue() + " days")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    VerticalLayout rivalrySection =
+        new VerticalLayout(
+            new H3("Rivalry Configuration"),
+            pleThreshold,
+            regularThreshold,
+            resolutionOnRegular,
+            maxDuration,
+            heatDecayEnabled,
+            decayAmount,
+            decayInterval);
+    rivalrySection.setPadding(false);
+
     VerticalLayout layout =
         new VerticalLayout(
             gameDatePicker,
@@ -176,7 +273,8 @@ public class GameSettingsView extends VerticalLayout {
             aiNewsEnabled,
             wearAndTearEnabled,
             rumorChance,
-            newsStrategy);
+            newsStrategy,
+            rivalrySection);
 
     add(layout);
   }

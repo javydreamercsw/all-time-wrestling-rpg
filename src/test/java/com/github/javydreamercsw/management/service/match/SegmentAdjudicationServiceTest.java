@@ -113,6 +113,9 @@ class SegmentAdjudicationServiceTest {
   @BeforeEach
   public void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
+    lenient().when(gameSettingService.isRivalryResolutionOnRegularShowsEnabled()).thenReturn(false);
+    lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
+    lenient().when(gameSettingService.getRivalryResolutionThresholdRegular()).thenReturn(35);
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             rivalryService,
@@ -389,14 +392,14 @@ class SegmentAdjudicationServiceTest {
     when(segment.getRivalryId()).thenReturn(42L);
     when(show.isPremiumLiveEvent()).thenReturn(true);
     when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
-    when(rivalryService.attemptResolution(anyLong(), anyInt(), anyInt()))
+    when(rivalryService.attemptResolution(anyLong(), anyInt(), anyInt(), anyInt()))
         .thenReturn(
             new com.github.javydreamercsw.management.service.resolution.ResolutionResult<>(
                 false, "not resolved", rivalry, 5, 6, 11));
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(rivalryService).attemptResolution(eq(42L), anyInt(), anyInt());
+    verify(rivalryService).attemptResolution(eq(42L), anyInt(), anyInt(), anyInt());
     // Generic pair-scan should NOT run when rivalryId is set
     verify(rivalryService, never()).getRivalryBetweenWrestlers(anyLong(), anyLong());
   }
@@ -414,6 +417,6 @@ class SegmentAdjudicationServiceTest {
     // Generic pair-scan must run for winner vs loser
     verify(rivalryService).getRivalryBetweenWrestlers(eq(1L), eq(2L));
     // Direct resolution must NOT be called with a specific id
-    verify(rivalryService, never()).attemptResolution(anyLong(), anyInt(), anyInt());
+    verify(rivalryService, never()).attemptResolution(anyLong(), anyInt(), anyInt(), anyInt());
   }
 }
