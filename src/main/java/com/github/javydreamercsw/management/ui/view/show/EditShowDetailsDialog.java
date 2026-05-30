@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -41,6 +43,8 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.BigDecimalField;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.binder.Binder;
 import java.util.Comparator;
@@ -57,6 +61,7 @@ public class EditShowDetailsDialog extends Dialog {
   private final UniverseRepository universeRepository;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
+  private final LeagueRepository leagueRepository;
   private final Show show;
   private final Binder<Show> binder = new Binder<>(Show.class);
 
@@ -67,7 +72,10 @@ public class EditShowDetailsDialog extends Dialog {
   private final ComboBox<Universe> universeField = new ComboBox<>("Universe");
   private final ComboBox<CommentaryTeam> commentaryTeamField = new ComboBox<>("Commentary Team");
   private final ComboBox<Arena> arenaField = new ComboBox<>("Arena");
+  private final ComboBox<League> leagueField = new ComboBox<>("League");
   private final DatePicker showDateField = new DatePicker("Show Date");
+  private final IntegerField attendanceField = new IntegerField("Attendance");
+  private final BigDecimalField gateRevenueField = new BigDecimalField("Gate Revenue");
 
   public EditShowDetailsDialog(
       @NonNull final ShowService showService,
@@ -77,6 +85,7 @@ public class EditShowDetailsDialog extends Dialog {
       @NonNull final UniverseRepository universeRepository,
       @NonNull final CommentaryTeamRepository commentaryTeamRepository,
       @NonNull final com.github.javydreamercsw.management.service.world.ArenaService arenaService,
+      @NonNull final LeagueRepository leagueRepository,
       @NonNull final Show show) {
     this.showService = showService;
     this.showTypeService = showTypeService;
@@ -85,6 +94,7 @@ public class EditShowDetailsDialog extends Dialog {
     this.universeRepository = universeRepository;
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.arenaService = arenaService;
+    this.leagueRepository = leagueRepository;
     this.show = show;
 
     setHeaderTitle("Edit Show Details");
@@ -155,6 +165,24 @@ public class EditShowDetailsDialog extends Dialog {
     showDateField.setClearButtonVisible(true);
     showDateField.setWidthFull();
 
+    leagueField.setItems(
+        leagueRepository.findAll().stream()
+            .sorted(Comparator.comparing(League::getName))
+            .collect(Collectors.toList()));
+    leagueField.setItemLabelGenerator(League::getName);
+    leagueField.setValue(show.getLeague());
+    leagueField.setClearButtonVisible(true);
+    leagueField.setWidthFull();
+
+    attendanceField.setMin(0);
+    attendanceField.setValue(show.getAttendance() != null ? show.getAttendance() : 0);
+    attendanceField.setWidthFull();
+
+    gateRevenueField.setValue(
+        show.getGateRevenue() != null ? show.getGateRevenue() : java.math.BigDecimal.ZERO);
+    gateRevenueField.setPrefixComponent(new com.vaadin.flow.component.html.Span("$"));
+    gateRevenueField.setWidthFull();
+
     // Bind fields
     binder.bind(descriptionField, Show::getDescription, Show::setDescription);
     binder.bind(typeField, Show::getType, Show::setType);
@@ -163,7 +191,10 @@ public class EditShowDetailsDialog extends Dialog {
     binder.bind(universeField, Show::getUniverse, Show::setUniverse);
     binder.bind(commentaryTeamField, Show::getCommentaryTeam, Show::setCommentaryTeam);
     binder.bind(arenaField, Show::getArena, Show::setArena);
+    binder.bind(leagueField, Show::getLeague, Show::setLeague);
     binder.bind(showDateField, Show::getShowDate, Show::setShowDate);
+    binder.bind(attendanceField, Show::getAttendance, Show::setAttendance);
+    binder.bind(gateRevenueField, Show::getGateRevenue, Show::setGateRevenue);
 
     // Buttons
     Button saveButton = new Button("Save", e -> saveShowDetails());
@@ -184,7 +215,11 @@ public class EditShowDetailsDialog extends Dialog {
             universeField,
             commentaryTeamField,
             arenaField,
-            showDateField);
+            leagueField,
+            showDateField,
+            attendanceField,
+            gateRevenueField);
+    formLayout.setColspan(descriptionField, 2);
     formLayout.setWidthFull();
 
     VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
@@ -208,7 +243,10 @@ public class EditShowDetailsDialog extends Dialog {
             templateField.getValue() != null ? templateField.getValue().getId() : null,
             universeField.getValue() != null ? universeField.getValue().getId() : null,
             commentaryTeamField.getValue() != null ? commentaryTeamField.getValue().getId() : null,
-            arenaField.getValue() != null ? arenaField.getValue().getId() : null);
+            arenaField.getValue() != null ? arenaField.getValue().getId() : null,
+            leagueField.getValue() != null ? leagueField.getValue().getId() : null,
+            attendanceField.getValue(),
+            gateRevenueField.getValue());
         Notification.show(
                 "Show details updated successfully!", 3000, Notification.Position.BOTTOM_END)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
