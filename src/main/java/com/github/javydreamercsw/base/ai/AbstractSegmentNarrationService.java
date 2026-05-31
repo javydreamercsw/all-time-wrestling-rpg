@@ -32,7 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public abstract class AbstractSegmentNarrationService implements SegmentNarrationService {
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper = new ObjectMapper();
   private volatile HttpClient httpClient;
 
   @Autowired(required = false)
