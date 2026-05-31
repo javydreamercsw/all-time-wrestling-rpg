@@ -36,11 +36,9 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
-import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
+import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
@@ -73,7 +71,6 @@ public class ShowService {
   private final ShowTemplateRepository showTemplateRepository;
   private final UniverseRepository universeRepository;
   private final LeagueRepository leagueRepository;
-  private final WrestlerStateRepository wrestlerStateRepository;
   private final Clock clock;
   private final SegmentAdjudicationService segmentAdjudicationService;
   private final SegmentRepository segmentRepository;
@@ -86,9 +83,7 @@ public class ShowService {
   private final LegacyService legacyService;
   private final SecurityUtils securityUtils;
   private final ArenaRepository arenaRepository;
-  private final SalaryCalculator salaryCalculator;
-  private final com.github.javydreamercsw.management.service.wrestler.RetirementService
-      retirementService;
+  private final GmModeService gmModeService;
 
   ShowService(
       final ShowRepository showRepository,
@@ -97,7 +92,6 @@ public class ShowService {
       final ShowTemplateRepository showTemplateRepository,
       final UniverseRepository universeRepository,
       final LeagueRepository leagueRepository,
-      final WrestlerStateRepository wrestlerStateRepository,
       final Clock clock,
       final SegmentAdjudicationService segmentAdjudicationService,
       final SegmentRepository segmentRepository,
@@ -110,16 +104,13 @@ public class ShowService {
       final LegacyService legacyService,
       final SecurityUtils securityUtils,
       final ArenaRepository arenaRepository,
-      final SalaryCalculator salaryCalculator,
-      final com.github.javydreamercsw.management.service.wrestler.RetirementService
-          retirementService) {
+      final GmModeService gmModeService) {
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
     this.showTemplateRepository = showTemplateRepository;
     this.universeRepository = universeRepository;
     this.leagueRepository = leagueRepository;
-    this.wrestlerStateRepository = wrestlerStateRepository;
     this.clock = clock;
     this.segmentAdjudicationService = segmentAdjudicationService;
     this.segmentRepository = segmentRepository;
@@ -132,8 +123,7 @@ public class ShowService {
     this.legacyService = legacyService;
     this.securityUtils = securityUtils;
     this.arenaRepository = arenaRepository;
-    this.salaryCalculator = salaryCalculator;
-    this.retirementService = retirementService;
+    this.gmModeService = gmModeService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -563,96 +553,9 @@ public class ShowService {
         .getAuthenticatedUser()
         .ifPresent(details -> legacyService.incrementShowsBooked(details.getAccount()));
 
-    processGmModeUpdates(show, participatingWrestlerIds);
+    gmModeService.processShowUpdates(show, participatingWrestlerIds);
 
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
-  }
-
-  private void processGmModeUpdates(final Show show, final Set<Long> participatingWrestlerIds) {
-    if (show.getUniverse() == null) {
-      return;
-    }
-
-    League league = leagueRepository.findByUniverse(show.getUniverse()).orElse(null);
-    if (league == null) {
-      return;
-    }
-
-    Long universeId = show.getUniverse().getId();
-
-    java.math.BigDecimal totalExpenses = java.math.BigDecimal.ZERO;
-    java.math.BigDecimal totalRevenue = java.math.BigDecimal.ZERO;
-
-    double averageRating =
-        segmentRepository.findByShow(show).stream()
-            .mapToDouble(s -> s.getSegmentRating() != null ? s.getSegmentRating() : 0)
-            .average()
-            .orElse(0.0);
-
-    if (show.getArena() != null && show.getArena().getCapacity() != null) {
-      totalRevenue =
-          java.math.BigDecimal.valueOf(show.getArena().getCapacity())
-              .multiply(java.math.BigDecimal.valueOf(averageRating / 100.0))
-              .multiply(new java.math.BigDecimal("10.00"));
-    }
-
-    List<Wrestler> allWrestlers = wrestlerRepository.findAll();
-    for (Wrestler w : allWrestlers) {
-      boolean participated = participatingWrestlerIds.contains(w.getId());
-
-      WrestlerState state = wrestlerService.getOrCreateState(w.getId(), universeId);
-
-      int currentStamina =
-          state.getManagementStamina() != null ? state.getManagementStamina() : 100;
-      if (participated) {
-        state.setManagementStamina(
-            Math.max(0, currentStamina - (10 + new java.util.Random().nextInt(11))));
-      } else {
-        state.setManagementStamina(
-            Math.min(100, currentStamina + (15 + new java.util.Random().nextInt(11))));
-      }
-
-      int currentMorale = state.getMorale() != null ? state.getMorale() : 100;
-      if (participated) {
-        state.setMorale(Math.min(100, currentMorale + 2));
-      } else if (state.getTier().ordinal()
-          >= com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MIDCARDER.ordinal()) {
-        state.setMorale(Math.max(0, currentMorale - 5));
-      }
-
-      wrestlerStateRepository.save(state);
-
-      if (participated) {
-        totalExpenses = totalExpenses.add(salaryCalculator.calculateWeeklySalary(w));
-      }
-
-      // Check for retirement
-      retirementService.checkRetirement(w, universeId);
-    }
-
-    java.math.BigDecimal currentBudget =
-        league.getBudget() != null ? league.getBudget() : java.math.BigDecimal.ZERO;
-    league.setBudget(currentBudget.add(totalRevenue).subtract(totalExpenses));
-
-    List<WrestlerState> leagueStates =
-        wrestlerStateRepository.findAll().stream()
-            .filter(s -> s.getUniverse().equals(show.getUniverse()))
-            .toList();
-
-    if (!leagueStates.isEmpty()) {
-      double avgMorale =
-          leagueStates.stream().mapToInt(WrestlerState::getMorale).average().orElse(100.0);
-      league.setLockerRoomMorale((int) avgMorale);
-    }
-
-    leagueRepository.save(league);
-
-    log.info(
-        "GM Mode Update for {}: Revenue: {}, Expenses: {}, New Budget: {}",
-        show.getName(),
-        totalRevenue,
-        totalExpenses,
-        league.getBudget());
   }
 
   @PreAuthorize("isAuthenticated()")
