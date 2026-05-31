@@ -58,10 +58,12 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
 
       if (Boolean.TRUE.equals(segment.getIsTitleSegment())) {
         sb.append(" 🏆");
-        if (!segment.getTitles().isEmpty()) {
-          String titles =
-              segment.getTitles().stream().map(Title::getName).collect(Collectors.joining(", "));
-          sb.append(" (").append(titles).append(")");
+        for (Title title : segment.getTitles()) {
+          String champions = title.getCurrentChampionsAsString();
+          sb.append("\n  📌 ").append(title.getName());
+          if (!champions.isBlank()) {
+            sb.append(" (champ: ").append(champions).append(")");
+          }
         }
       }
 

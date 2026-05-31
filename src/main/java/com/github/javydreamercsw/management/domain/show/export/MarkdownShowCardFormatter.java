@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.show.export;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,6 +72,14 @@ public class MarkdownShowCardFormatter implements ShowCardFormatter {
 
       if (Boolean.TRUE.equals(segment.getIsTitleSegment())) {
         sb.append("**CHAMPIONSHIP MATCH**\n");
+        for (Title title : segment.getTitles()) {
+          String champions = title.getCurrentChampionsAsString();
+          sb.append("**Title:** ").append(title.getName());
+          if (!champions.isBlank()) {
+            sb.append(" — Champion: ").append(champions);
+          }
+          sb.append("\n");
+        }
       }
 
       String participants =
