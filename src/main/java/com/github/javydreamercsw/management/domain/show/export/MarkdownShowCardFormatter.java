@@ -73,7 +73,7 @@ public class MarkdownShowCardFormatter implements ShowCardFormatter {
       if (Boolean.TRUE.equals(segment.getIsTitleSegment())) {
         sb.append("**CHAMPIONSHIP MATCH**\n");
         for (Title title : segment.getTitles()) {
-          String champions = title.getCurrentChampionsAsString();
+          String champions = title.getChampionNames();
           sb.append("**Title:** ").append(title.getName());
           if (!champions.isBlank()) {
             sb.append(" — Champion: ").append(champions);

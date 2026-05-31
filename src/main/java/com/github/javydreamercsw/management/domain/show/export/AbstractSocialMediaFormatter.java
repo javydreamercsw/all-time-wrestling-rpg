@@ -59,7 +59,7 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
       if (Boolean.TRUE.equals(segment.getIsTitleSegment())) {
         sb.append(" 🏆");
         for (Title title : segment.getTitles()) {
-          String champions = title.getCurrentChampionsAsString();
+          String champions = title.getChampionNames();
           sb.append("\n  📌 ").append(title.getName());
           if (!champions.isBlank()) {
             sb.append(" (champ: ").append(champions).append(")");
