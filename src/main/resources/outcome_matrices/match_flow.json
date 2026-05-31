@@ -4,363 +4,363 @@
   "description": "Controls the ebb and flow of match momentum",
   "entries": [ {
     "diceRoll": 1,
-    "templateText": "UNDERDOG absorbs a brutal shot from FAVORED and fires back with three unanswered strikes — the crowd comes alive.",
+    "templateText": "{WRESTLER_2} absorbs a brutal shot from {WRESTLER_1} and fires back with three unanswered strikes — the crowd comes alive.",
     "fanDelta": 600
   }, {
     "diceRoll": 2,
-    "templateText": "FAVORED pulls the referee between themselves and UNDERDOG, using the distraction to land a low blow.",
+    "templateText": "{WRESTLER_1} pulls the referee between themselves and {WRESTLER_2}, using the distraction to land a low blow.",
     "heatDelta": 3,
     "fanDelta": -400
   }, {
     "diceRoll": 3,
-    "templateText": "UNDERDOG ducks a clothesline from FAVORED and hits a lightning-fast spinning heel kick, completely shifting the momentum.",
+    "templateText": "{WRESTLER_2} ducks a clothesline from {WRESTLER_1} and hits a lightning-fast spinning heel kick, completely shifting the momentum.",
     "fanDelta": 700
   }, {
     "diceRoll": 4,
-    "templateText": "FAVORED is trapped in the corner but explodes out with a desperate lariat, catching UNDERDOG flat-footed.",
+    "templateText": "{WRESTLER_1} is trapped in the corner but explodes out with a desperate lariat, catching {WRESTLER_2} flat-footed.",
     "fanDelta": -300
   }, {
     "diceRoll": 5,
-    "templateText": "UNDERDOG catches FAVORED off guard with an athletic springboard dropkick, sending both wrestlers to the canvas.",
+    "templateText": "{WRESTLER_2} catches {WRESTLER_1} off guard with an athletic springboard dropkick, sending both wrestlers to the canvas.",
     "fanDelta": 500
   }, {
     "diceRoll": 6,
-    "templateText": "FAVORED unloads a string of heavy chops that echoes through the arena, shutting down a brief comeback by UNDERDOG.",
+    "templateText": "{WRESTLER_1} unloads a string of heavy chops that echoes through the arena, shutting down a brief comeback by {WRESTLER_2}.",
     "fanDelta": -400
   }, {
     "diceRoll": 7,
-    "templateText": "UNDERDOG reverses a suplex attempt from FAVORED, planting them hard and rallying the crowd for a counter-attack.",
+    "templateText": "{WRESTLER_2} reverses a suplex attempt from {WRESTLER_1}, planting them hard and rallying the crowd for a counter-attack.",
     "fanDelta": 800,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 8,
-    "templateText": "FAVORED completely shuts down the high-flying style of UNDERDOG with a brutal, mid-air interception.",
+    "templateText": "{WRESTLER_1} completely shuts down the high-flying style of {WRESTLER_2} with a brutal, mid-air interception.",
     "fanDelta": -500
   }, {
     "diceRoll": 9,
-    "templateText": "FAVORED hides a pair of brass knuckles in their trunks, blasting UNDERDOG when the referee's vision is obscured.",
+    "templateText": "{WRESTLER_1} hides a pair of brass knuckles in their trunks, blasting {WRESTLER_2} when the referee's vision is obscured.",
     "heatDelta": 4,
     "fanDelta": -600
   }, {
     "diceRoll": 10,
-    "templateText": "FAVORED uses the ring ropes for illegal leverage during a pin attempt on UNDERDOG, desperately trying to steal a win.",
+    "templateText": "{WRESTLER_1} uses the ring ropes for illegal leverage during a pin attempt on {WRESTLER_2}, desperately trying to steal a win.",
     "heatDelta": 3,
     "fanDelta": -500
   }, {
     "diceRoll": 11,
-    "templateText": "FAVORED detaches the turnbuckle pad while the referee is distracted, looking to ram UNDERDOG into the exposed steel.",
+    "templateText": "{WRESTLER_1} detaches the turnbuckle pad while the referee is distracted, looking to ram {WRESTLER_2} into the exposed steel.",
     "heatDelta": 3
   }, {
     "diceRoll": 12,
-    "templateText": "FAVORED blatantly rakes the eyes of UNDERDOG to escape an disadvantageous position in the center of the ring.",
+    "templateText": "{WRESTLER_1} blatantly rakes the eyes of {WRESTLER_2} to escape an disadvantageous position in the center of the ring.",
     "heatDelta": 2,
     "fanDelta": -300
   }, {
     "diceRoll": 13,
-    "templateText": "FAVORED chokes UNDERDOG with the camera cable at ringside, letting go at the absolute last second of the referee's five-count.",
+    "templateText": "{WRESTLER_1} chokes {WRESTLER_2} with the camera cable at ringside, letting go at the absolute last second of the referee's five-count.",
     "heatDelta": 4,
     "fanDelta": -550
   }, {
     "diceRoll": 14,
-    "templateText": "FAVORED pulls a handful of tights during a rollup on UNDERDOG, forcing a frantic, narrow escape.",
+    "templateText": "{WRESTLER_1} pulls a handful of tights during a rollup on {WRESTLER_2}, forcing a frantic, narrow escape.",
     "heatDelta": 2,
     "fanDelta": -400
   }, {
     "diceRoll": 15,
-    "templateText": "FAVORED sprays an unknown substance directly into the eyes of UNDERDOG while the referee is clearing technical gear from the ring.",
+    "templateText": "{WRESTLER_1} sprays an unknown substance directly into the eyes of {WRESTLER_2} while the referee is clearing technical gear from the ring.",
     "heatDelta": 5,
     "fanDelta": -700,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 16,
-    "templateText": "FAVORED hits a beautiful brainbuster on UNDERDOG, but UNDERDOG kicks out at 2.9, causing the stadium to erupt.",
+    "templateText": "{WRESTLER_1} hits a beautiful brainbuster on {WRESTLER_2}, but {WRESTLER_2} kicks out at 2.9, causing the stadium to erupt.",
     "fanDelta": 1000,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 17,
-    "templateText": "FAVORED secures a deep roll-up on UNDERDOG, but UNDERDOG powers out at the absolute last microsecond.",
+    "templateText": "{WRESTLER_1} secures a deep roll-up on {WRESTLER_2}, but {WRESTLER_2} powers out at the absolute last microsecond.",
     "fanDelta": 600
   }, {
     "diceRoll": 18,
-    "templateText": "FAVORED lands a devastating top-rope elbow drop, but UNDERDOG gets a shoulder up just before the three-count.",
+    "templateText": "{WRESTLER_1} lands a devastating top-rope elbow drop, but {WRESTLER_2} gets a shoulder up just before the three-count.",
     "fanDelta": 900
   }, {
     "diceRoll": 19,
-    "templateText": "FAVORED covers UNDERDOG with a lazy, arrogant one-hand press, allowing UNDERDOG to easily kick out and build fire.",
+    "templateText": "{WRESTLER_1} covers {WRESTLER_2} with a lazy, arrogant one-hand press, allowing {WRESTLER_2} to easily kick out and build fire.",
     "fanDelta": 500,
     "heatDelta": 2
   }, {
     "diceRoll": 20,
-    "templateText": "FAVORED delivers a textbook powerbomb to UNDERDOG, but the subsequent slow cover allows for a highly dramatic near-fall.",
+    "templateText": "{WRESTLER_1} delivers a textbook powerbomb to {WRESTLER_2}, but the subsequent slow cover allows for a highly dramatic near-fall.",
     "fanDelta": 750
   }, {
     "diceRoll": 21,
-    "templateText": "FAVORED scales the ropes to deliver a victory pose before pinning UNDERDOG, giving UNDERDOG enough time to survive the cover.",
+    "templateText": "{WRESTLER_1} scales the ropes to deliver a victory pose before pinning {WRESTLER_2}, giving {WRESTLER_2} enough time to survive the cover.",
     "fanDelta": -400,
     "heatDelta": 1
   }, {
     "diceRoll": 22,
-    "templateText": "FAVORED locks in a crossface that looks like the end, but UNDERDOG dramatically scratches and claws to touch the bottom rope.",
+    "templateText": "{WRESTLER_1} locks in a crossface that looks like the end, but {WRESTLER_2} dramatically scratches and claws to touch the bottom rope.",
     "fanDelta": 850,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 23,
-    "templateText": "An accidental collision knocks the referee out cold, leaving FAVORED and UNDERDOG completely on their own without an official.",
+    "templateText": "An accidental collision knocks the referee out cold, leaving {WRESTLER_1} and {WRESTLER_2} completely on their own without an official.",
     "tvGradeDelta": 1
   }, {
     "diceRoll": 24,
-    "templateText": "The referee is slow to get into position, costing FAVORED a clear three-count over a totally incapacitated UNDERDOG.",
+    "templateText": "The referee is slow to get into position, costing {WRESTLER_1} a clear three-count over a totally incapacitated {WRESTLER_2}.",
     "heatDelta": 2,
     "fanDelta": -300
   }, {
     "diceRoll": 25,
-    "templateText": "The referee catches FAVORED trying to use a foreign object on UNDERDOG, throwing the weapon out and issuing a final warning.",
+    "templateText": "The referee catches {WRESTLER_1} trying to use a foreign object on {WRESTLER_2}, throwing the weapon out and issuing a final warning.",
     "fanDelta": 400
   }, {
     "diceRoll": 26,
-    "templateText": "FAVORED gets into a heated face-to-face argument with the referee, giving UNDERDOG plenty of time to shake off the damage.",
+    "templateText": "{WRESTLER_1} gets into a heated face-to-face argument with the referee, giving {WRESTLER_2} plenty of time to shake off the damage.",
     "heatDelta": 2
   }, {
     "diceRoll": 27,
-    "templateText": "A disputed count by the referee leads to total confusion in the ring, allowing UNDERDOG to sneak in a quick rollup on FAVORED.",
+    "templateText": "A disputed count by the referee leads to total confusion in the ring, allowing {WRESTLER_2} to sneak in a quick rollup on {WRESTLER_1}.",
     "fanDelta": 600
   }, {
     "diceRoll": 28,
-    "templateText": "The referee misses a blatant low blow from FAVORED on UNDERDOG because they were busy handling a distraction on the apron.",
+    "templateText": "The referee misses a blatant low blow from {WRESTLER_1} on {WRESTLER_2} because they were busy handling a distraction on the apron.",
     "heatDelta": 4,
     "fanDelta": -650
   }, {
     "diceRoll": 29,
-    "templateText": "An aggressive manager jumps onto the apron, breaking up a submission hold that UNDERDOG had locked tight on FAVORED.",
+    "templateText": "An aggressive manager jumps onto the apron, breaking up a submission hold that {WRESTLER_2} had locked tight on {WRESTLER_1}.",
     "heatDelta": 3,
     "fanDelta": -500
   }, {
     "diceRoll": 30,
-    "templateText": "A rival faction member sprints down the ramp, tripping UNDERDOG from the floor while FAVORED hits the ropes.",
+    "templateText": "A rival faction member sprints down the ramp, tripping {WRESTLER_2} from the floor while {WRESTLER_1} hits the ropes.",
     "heatDelta": 4,
     "fanDelta": -600
   }, {
     "diceRoll": 31,
-    "templateText": "An ally of UNDERDOG rushes the ring to neutralize outside interference, keeping the playing field level against FAVORED.",
+    "templateText": "An ally of {WRESTLER_2} rushes the ring to neutralize outside interference, keeping the playing field level against {WRESTLER_1}.",
     "fanDelta": 800
   }, {
     "diceRoll": 32,
-    "templateText": "FAVORED profits from a sudden distraction at the entranceway, allowing them to blindside an unfocused UNDERDOG.",
+    "templateText": "{WRESTLER_1} profits from a sudden distraction at the entranceway, allowing them to blindside an unfocused {WRESTLER_2}.",
     "heatDelta": 2,
     "fanDelta": -350
   }, {
     "diceRoll": 33,
-    "templateText": "The tag team partner of FAVORED sneaks a heavy metal chair into the ring while the referee deals with UNDERDOG.",
+    "templateText": "The tag team partner of {WRESTLER_1} sneaks a heavy metal chair into the ring while the referee deals with {WRESTLER_2}.",
     "heatDelta": 4,
     "fanDelta": -500
   }, {
     "diceRoll": 34,
-    "templateText": "An uninvited superstar walks out to the stage, completely distracting both FAVORED and UNDERDOG as the match grinds to a halt.",
+    "templateText": "An uninvited superstar walks out to the stage, completely distracting both {WRESTLER_1} and {WRESTLER_2} as the match grinds to a halt.",
     "tvGradeDelta": -1
   }, {
     "diceRoll": 35,
-    "templateText": "FAVORED whips UNDERDOG violently into the ringside steel steps, sending a sickening thud through the entire arena floor.",
+    "templateText": "{WRESTLER_1} whips {WRESTLER_2} violently into the ringside steel steps, sending a sickening thud through the entire arena floor.",
     "heatDelta": 3,
     "fanDelta": -400,
     "injuryCaused": true
   }, {
     "diceRoll": 36,
-    "templateText": "UNDERDOG side-steps a charging FAVORED, sending FAVORED crashing shoulder-first directly into the unyielding steel ring post.",
+    "templateText": "{WRESTLER_2} side-steps a charging {WRESTLER_1}, sending {WRESTLER_1} crashing shoulder-first directly into the unyielding steel ring post.",
     "fanDelta": 700,
     "injuryCaused": true
   }, {
     "diceRoll": 37,
-    "templateText": "FAVORED launches UNDERDOG over the barricade into the timekeeper's area, smashing equipment and scattered chairs.",
+    "templateText": "{WRESTLER_1} launches {WRESTLER_2} over the barricade into the timekeeper's area, smashing equipment and scattered chairs.",
     "heatDelta": 4,
     "injuryCaused": true
   }, {
     "diceRoll": 38,
-    "templateText": "UNDERDOG reverses a move on the apron, dropping FAVORED spine-first onto the hardest part of the ring frame.",
+    "templateText": "{WRESTLER_2} reverses a move on the apron, dropping {WRESTLER_1} spine-first onto the hardest part of the ring frame.",
     "fanDelta": 900,
     "tvGradeDelta": 1,
     "injuryCaused": true
   }, {
     "diceRoll": 39,
-    "templateText": "FAVORED clears off the announcer's table, looking to finish UNDERDOG off with a high-impact slam through the plastic surface.",
+    "templateText": "{WRESTLER_1} clears off the announcer's table, looking to finish {WRESTLER_2} off with a high-impact slam through the plastic surface.",
     "heatDelta": 5,
     "fanDelta": -500
   }, {
     "diceRoll": 40,
-    "templateText": "Both FAVORED and UNDERDOG tumble over the top rope together, landing heavily on the protective floor mats outside.",
+    "templateText": "Both {WRESTLER_1} and {WRESTLER_2} tumble over the top rope together, landing heavily on the protective floor mats outside.",
     "injuryCaused": true
   }, {
     "diceRoll": 41,
-    "templateText": "UNDERDOG locks in a textbook sleeper hold on FAVORED, and the crowd chants wildly as the arm of FAVORED drops twice.",
+    "templateText": "{WRESTLER_2} locks in a textbook sleeper hold on {WRESTLER_1}, and the crowd chants wildly as the arm of {WRESTLER_1} drops twice.",
     "fanDelta": 800,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 42,
-    "templateText": "UNDERDOG locks a surprise sharpshooter center ring, forcing FAVORED into a desperate crawl toward the safety of the ropes.",
+    "templateText": "{WRESTLER_2} locks a surprise sharpshooter center ring, forcing {WRESTLER_1} into a desperate crawl toward the safety of the ropes.",
     "fanDelta": 700
   }, {
     "diceRoll": 43,
-    "templateText": "FAVORED resists an armbar from UNDERDOG, utilizing brute physical strength to lift and slam them down to break the hold.",
+    "templateText": "{WRESTLER_1} resists an armbar from {WRESTLER_2}, utilizing brute physical strength to lift and slam them down to break the hold.",
     "fanDelta": -300
   }, {
     "diceRoll": 44,
-    "templateText": "UNDERDOG traps the ankle of FAVORED in a high-torque submission, causing FAVORED to agonizingly scream out in pain.",
+    "templateText": "{WRESTLER_2} traps the ankle of {WRESTLER_1} in a high-torque submission, causing {WRESTLER_1} to agonizingly scream out in pain.",
     "fanDelta": 650
   }, {
     "diceRoll": 45,
-    "templateText": "FAVORED attempts to use a submission hold, but UNDERDOG expertly counters it into a quick, close pinfall attempt.",
+    "templateText": "{WRESTLER_1} attempts to use a submission hold, but {WRESTLER_2} expertly counters it into a quick, close pinfall attempt.",
     "fanDelta": 550
   }, {
     "diceRoll": 46,
-    "templateText": "FAVORED lands awkwardly on their ankle after a top-rope maneuver, clutching the joint as the referee checks for a real injury.",
+    "templateText": "{WRESTLER_1} lands awkwardly on their ankle after a top-rope maneuver, clutching the joint as the referee checks for a real injury.",
     "injuryCaused": true
   }, {
     "diceRoll": 47,
-    "templateText": "UNDERDOG is visibly dazed after a stiff strike from FAVORED, prompting the ringside physician to briefly monitor the situation.",
+    "templateText": "{WRESTLER_2} is visibly dazed after a stiff strike from {WRESTLER_1}, prompting the ringside physician to briefly monitor the situation.",
     "heatDelta": 2
   }, {
     "diceRoll": 48,
-    "templateText": "FAVORED targets a heavily bandaged ribs area on UNDERDOG, causing UNDERDOG to double over in absolute agony.",
+    "templateText": "{WRESTLER_1} targets a heavily bandaged ribs area on {WRESTLER_2}, causing {WRESTLER_2} to double over in absolute agony.",
     "heatDelta": 3,
     "fanDelta": -450
   }, {
     "diceRoll": 49,
-    "templateText": "A bad landing out on the concrete floor leaves UNDERDOG completely motionless, building massive tension throughout the arena.",
+    "templateText": "A bad landing out on the concrete floor leaves {WRESTLER_2} completely motionless, building massive tension throughout the arena.",
     "injuryCaused": true
   }, {
     "diceRoll": 50,
-    "templateText": "The medical staff rushes the apron after a scary head drop spot between FAVORED and UNDERDOG, slowing the match pace to a crawl.",
+    "templateText": "The medical staff rushes the apron after a scary head drop spot between {WRESTLER_1} and {WRESTLER_2}, slowing the match pace to a crawl.",
     "tvGradeDelta": -1
   }, {
     "diceRoll": 51,
-    "templateText": "The live crowd starts a deafening, unified chant for UNDERDOG, visibly fueling them to power out of a lengthy chinlock from FAVORED.",
+    "templateText": "The live crowd starts a deafening, unified chant for {WRESTLER_2}, visibly fueling them to power out of a lengthy chinlock from {WRESTLER_1}.",
     "fanDelta": 900
   }, {
     "diceRoll": 52,
-    "templateText": "The hostile arena atmosphere completely rattles FAVORED, causing them to botch a standard running maneuver on UNDERDOG.",
+    "templateText": "The hostile arena atmosphere completely rattles {WRESTLER_1}, causing them to botch a standard running maneuver on {WRESTLER_2}.",
     "fanDelta": 400,
     "tvGradeDelta": -1
   }, {
     "diceRoll": 53,
-    "templateText": "UNDERDOG stands up and feeds directly off the massive crowd energy, absorbing right-hand strikes from FAVORED without flinching.",
+    "templateText": "{WRESTLER_2} stands up and feeds directly off the massive crowd energy, absorbing right-hand strikes from {WRESTLER_1} without flinching.",
     "fanDelta": 1100,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 54,
-    "templateText": "FAVORED aggressively goads the crowd, drawing massive boos that mask a sudden, opportunistic counter-strike from UNDERDOG.",
+    "templateText": "{WRESTLER_1} aggressively goads the crowd, drawing massive boos that mask a sudden, opportunistic counter-strike from {WRESTLER_2}.",
     "heatDelta": 2,
     "fanDelta": -400
   }, {
     "diceRoll": 55,
-    "templateText": "A stadium-wide dueling chant creates an incredibly epic big-match atmosphere as FAVORED and UNDERDOG trade heavy blows center ring.",
+    "templateText": "A stadium-wide dueling chant creates an incredibly epic big-match atmosphere as {WRESTLER_1} and {WRESTLER_2} trade heavy blows center ring.",
     "tvGradeDelta": 1
   }, {
     "diceRoll": 56,
-    "templateText": "UNDERDOG pulls off a breathtaking desperation dropkick out of the corner, catching a charging FAVORED square in the jaw.",
+    "templateText": "{WRESTLER_2} pulls off a breathtaking desperation dropkick out of the corner, catching a charging {WRESTLER_1} square in the jaw.",
     "fanDelta": 700
   }, {
     "diceRoll": 57,
-    "templateText": "FAVORED is running hot, but UNDERDOG catches them out of nowhere with a desperation DDT, leaving both wrestlers laid out flat.",
+    "templateText": "{WRESTLER_1} is running hot, but {WRESTLER_2} catches them out of nowhere with a desperation DDT, leaving both wrestlers laid out flat.",
     "fanDelta": 600
   }, {
     "diceRoll": 58,
-    "templateText": "UNDERDOG hits a wild, high-stakes dive over the top rope, crashing blindly into FAVORED to stop a slow defeat.",
+    "templateText": "{WRESTLER_2} hits a wild, high-stakes dive over the top rope, crashing blindly into {WRESTLER_1} to stop a slow defeat.",
     "fanDelta": 950,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 59,
-    "templateText": "FAVORED dominates for minutes until UNDERDOG hits a desperation low blow while the referee's view is entirely blocked.",
+    "templateText": "{WRESTLER_1} dominates for minutes until {WRESTLER_2} hits a desperation low blow while the referee's view is entirely blocked.",
     "heatDelta": 3,
     "fanDelta": 400
   }, {
     "diceRoll": 60,
-    "templateText": "UNDERDOG uses a sudden jawbreaker to instantly break out of an overwhelming, heavy power hold applied by FAVORED.",
+    "templateText": "{WRESTLER_2} uses a sudden jawbreaker to instantly break out of an overwhelming, heavy power hold applied by {WRESTLER_1}.",
     "fanDelta": 500
   }, {
     "diceRoll": 61,
-    "templateText": "UNDERDOG fights through a wave of exhaustion to nail FAVORED with an overhead belly-to-belly suplex into the turnbuckle.",
+    "templateText": "{WRESTLER_2} fights through a wave of exhaustion to nail {WRESTLER_1} with an overhead belly-to-belly suplex into the turnbuckle.",
     "fanDelta": 800
   }, {
     "diceRoll": 62,
-    "templateText": "FAVORED attempts a high-risk splash, but UNDERDOG gets their knees up, inflicting immense damage to the midsection of FAVORED.",
+    "templateText": "{WRESTLER_1} attempts a high-risk splash, but {WRESTLER_2} gets their knees up, inflicting immense damage to the midsection of {WRESTLER_1}.",
     "fanDelta": 650
   }, {
     "diceRoll": 63,
-    "templateText": "FAVORED applies a grueling bearhug, systematically wearing down the core strength and breathing capability of UNDERDOG.",
+    "templateText": "{WRESTLER_1} applies a grueling bearhug, systematically wearing down the core strength and breathing capability of {WRESTLER_2}.",
     "fanDelta": -300
   }, {
     "diceRoll": 64,
-    "templateText": "UNDERDOG lands a flurry of quick, tactical kicks to the legs of FAVORED, successfully cutting the bigger wrestler down to size.",
+    "templateText": "{WRESTLER_2} lands a flurry of quick, tactical kicks to the legs of {WRESTLER_1}, successfully cutting the bigger wrestler down to size.",
     "fanDelta": 500
   }, {
     "diceRoll": 65,
-    "templateText": "FAVORED uses an aggressive, illegal hair pull to drag UNDERDOG back down to the canvas during a crucial vertical base scramble.",
+    "templateText": "{WRESTLER_1} uses an aggressive, illegal hair pull to drag {WRESTLER_2} back down to the canvas during a crucial vertical base scramble.",
     "heatDelta": 2,
     "fanDelta": -350
   }, {
     "diceRoll": 66,
-    "templateText": "UNDERDOG executes a textbook sunset flip from the second rope, securing a highly convincing, fast two-count on FAVORED.",
+    "templateText": "{WRESTLER_2} executes a textbook sunset flip from the second rope, securing a highly convincing, fast two-count on {WRESTLER_1}.",
     "fanDelta": 750
   }, {
     "diceRoll": 67,
-    "templateText": "FAVORED throws UNDERDOG over the top rope, but UNDERDOG skins the cat to pull themselves back in, shocking an unaware FAVORED.",
+    "templateText": "{WRESTLER_1} throws {WRESTLER_2} over the top rope, but {WRESTLER_2} skins the cat to pull themselves back in, shocking an unaware {WRESTLER_1}.",
     "fanDelta": 850,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 68,
-    "templateText": "FAVORED systematically targets the left arm of UNDERDOG, slamming it repeatedly against the hard edge of the ring apron.",
+    "templateText": "{WRESTLER_1} systematically targets the left arm of {WRESTLER_2}, slamming it repeatedly against the hard edge of the ring apron.",
     "heatDelta": 3,
     "injuryCaused": true
   }, {
     "diceRoll": 69,
-    "templateText": "UNDERDOG hits a desperation enzuigiri that rocks FAVORED, sending FAVORED stumbling through the ropes out to the floor.",
+    "templateText": "{WRESTLER_2} hits a desperation enzuigiri that rocks {WRESTLER_1}, sending {WRESTLER_1} stumbling through the ropes out to the floor.",
     "fanDelta": 600
   }, {
     "diceRoll": 70,
-    "templateText": "FAVORED lands a massive running big boot that sends the mouthguard of UNDERDOG flying across the ringside area.",
+    "templateText": "{WRESTLER_1} lands a massive running big boot that sends the mouthguard of {WRESTLER_2} flying across the ringside area.",
     "fanDelta": -400
   }, {
     "diceRoll": 71,
-    "templateText": "UNDERDOG uses a back body drop to send an overaggressive FAVORED flying high over the ropes onto a group of security personnel.",
+    "templateText": "{WRESTLER_2} uses a back body drop to send an overaggressive {WRESTLER_1} flying high over the ropes onto a group of security personnel.",
     "fanDelta": 900,
     "tvGradeDelta": 1
   }, {
     "diceRoll": 72,
-    "templateText": "FAVORED locks a sleeper hold on UNDERDOG, using the referee's body position to mask their fingers actively gripping the illegal tights.",
+    "templateText": "{WRESTLER_1} locks a sleeper hold on {WRESTLER_2}, using the referee's body position to mask their fingers actively gripping the illegal tights.",
     "heatDelta": 3,
     "fanDelta": -450
   }, {
     "diceRoll": 73,
-    "templateText": "UNDERDOG hits a series of rapid-fire clotheslines, bringing the entire stadium audience to their feet as FAVORED stumbles.",
+    "templateText": "{WRESTLER_2} hits a series of rapid-fire clotheslines, bringing the entire stadium audience to their feet as {WRESTLER_1} stumbles.",
     "fanDelta": 800
   }, {
     "diceRoll": 74,
-    "templateText": "FAVORED attempts a simple vertical suplex, but their lower back spasms, causing them to drop UNDERDOG awkwardly.",
+    "templateText": "{WRESTLER_1} attempts a simple vertical suplex, but their lower back spasms, causing them to drop {WRESTLER_2} awkwardly.",
     "tvGradeDelta": -1
   }, {
     "diceRoll": 75,
-    "templateText": "UNDERDOG slides between the legs of FAVORED, executing a lightning-fast schoolboy pin that almost ends the match right here.",
+    "templateText": "{WRESTLER_2} slides between the legs of {WRESTLER_1}, executing a lightning-fast schoolboy pin that almost ends the match right here.",
     "fanDelta": 700
   }, {
     "diceRoll": 76,
-    "templateText": "FAVORED bites the forehead of UNDERDOG while trapped in a tight corner lockup, drawing a stern admonishment from the official.",
+    "templateText": "{WRESTLER_1} bites the forehead of {WRESTLER_2} while trapped in a tight corner lockup, drawing a stern admonishment from the official.",
     "heatDelta": 2,
     "fanDelta": -300
   }, {
     "diceRoll": 77,
-    "templateText": "UNDERDOG connects with a spectacular diving crossbody, but FAVORED uses the momentum to roll through and attempt a pin of their own.",
+    "templateText": "{WRESTLER_2} connects with a spectacular diving crossbody, but {WRESTLER_1} uses the momentum to roll through and attempt a pin of their own.",
     "fanDelta": -200
   }, {
     "diceRoll": 78,
-    "templateText": "FAVORED drives their knee repeatedly into the skull of UNDERDOG while UNDERDOG is helplessly trapped in the ring ropes.",
+    "templateText": "{WRESTLER_1} drives their knee repeatedly into the skull of {WRESTLER_2} while {WRESTLER_2} is helplessly trapped in the ring ropes.",
     "heatDelta": 3,
     "fanDelta": -500
   }, {
     "diceRoll": 79,
-    "templateText": "UNDERDOG unloads a fierce desperate headbutt that stuns both competitors, leaving them sagging against the turnbuckles to recover.",
+    "templateText": "{WRESTLER_2} unloads a fierce desperate headbutt that stuns both competitors, leaving them sagging against the turnbuckles to recover.",
     "fanDelta": 500
   }, {
     "diceRoll": 80,
-    "templateText": "FAVORED mocks the signature taunt of UNDERDOG, immediately turning around into a devastating, explosive lariat from a furious UNDERDOG.",
+    "templateText": "{WRESTLER_1} mocks the signature taunt of {WRESTLER_2}, immediately turning around into a devastating, explosive lariat from a furious {WRESTLER_2}.",
     "fanDelta": 1100,
     "heatDelta": 3,
     "tvGradeDelta": 1

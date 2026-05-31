@@ -6,10 +6,10 @@ Generate **80 unique HIGHLIGHT_REEL entries** covering the full spectrum of live
 
 ## Placeholders
 
-- `FAVORED` = the wrestler with the spotlight / segment focus
-- `UNDERDOG` = the wrestler who responds to or is affected by the moment
+- `{WRESTLER_1}` = the wrestler with the spotlight / segment focus
+- `{WRESTLER_2}` = the wrestler who responds to or is affected by the moment
 
-Not every entry needs both — a return or solo spotlight entry may only reference `FAVORED`. Use the placeholder exactly.
+Not every entry needs both — a return or solo spotlight entry may only reference `{WRESTLER_1}`. Use the placeholder exactly.
 
 ## Effect guidelines
 
@@ -28,9 +28,9 @@ Aim for a mix across these types:
 2. **Debut** — an unknown or NXT/development talent makes their main roster entrance
 3. **Contract signing** — goes smoothly, or dramatically goes off the rails
 4. **Title presentation ceremony** — celebration interrupted or not
-5. **Fan interaction** — FAVORED connects with (or alienates) ringside fans
+5. **Fan interaction** — {WRESTLER_1} connects with (or alienates) ringside fans
 6. **Big screen reveal** — footage, video message, or exclusive interview airs on the screen
-7. **Impromptu challenge** — FAVORED calls out UNDERDOG right now, forcing an unscheduled match
+7. **Impromptu challenge** — {WRESTLER_1} calls out {WRESTLER_2} right now, forcing an unscheduled match
 8. **Celebrity guest** — a non-wrestler presence creates an unexpected moment
 9. **Crowd takes over** — the live crowd hijacks the segment with chants or reactions
 10. **Segment disrupted** — outside interference, power outage, brawl spills in from backstage
@@ -47,13 +47,13 @@ Output a single valid JSON object in exactly this structure. Use sequential `dic
   "entries": [
     {
       "diceRoll": 1,
-      "templateText": "The arena goes dark and FAVORED's music hits — a surprise return that brings the crowd to its feet.",
+      "templateText": "The arena goes dark and {WRESTLER_1}'s music hits — a surprise return that brings the crowd to its feet.",
       "fanDelta": 2500,
       "tvGradeDelta": 1
     },
     {
       "diceRoll": 2,
-      "templateText": "FAVORED approaches ringside and hands their championship belt to a young fan in the front row, a moment that defines the night.",
+      "templateText": "{WRESTLER_1} approaches ringside and hands their championship belt to a young fan in the front row, a moment that defines the night.",
       "fanDelta": 1800
     }
   ]

@@ -62,14 +62,15 @@ class OutcomeMatrixServiceTest {
     entry.setMatrix(matrix);
     entry.setDiceRoll(12);
     entry.setTemplateText(
-        "FAVORED wrestler talks trash about UNDERDOG, increase Grudge Grade 1 point.");
+        "{WRESTLER_1} wrestler talks trash about {WRESTLER_2}, increase Grudge Grade 1 point.");
     entry.setGrudgeGradeDelta(1);
 
     when(matrixRepository.findById(1L)).thenReturn(Optional.of(matrix));
     when(entryRepository.findByMatrixAndDiceRoll(matrix, 12)).thenReturn(Optional.of(entry));
 
     Optional<OutcomeMatrixResult> result =
-        service.resolveRoll(1L, 12, Map.of("FAVORED", "El Fuego", "UNDERDOG", "The Ghost"));
+        service.resolveRoll(
+            1L, 12, Map.of("{WRESTLER_1}", "El Fuego", "{WRESTLER_2}", "The Ghost"));
 
     assertThat(result).isPresent();
     assertThat(result.get().renderedText())
@@ -120,7 +121,7 @@ class OutcomeMatrixServiceTest {
     entry.setId(12L);
     entry.setMatrix(matrix);
     entry.setDiceRoll(23);
-    entry.setTemplateText("UNDERDOG wrestler livid after opponent makes belittling comments.");
+    entry.setTemplateText("{WRESTLER_2} wrestler livid after opponent makes belittling comments.");
 
     when(matrixRepository.findById(1L)).thenReturn(Optional.of(matrix));
     when(entryRepository.findByMatrixAndDiceRoll(matrix, 23)).thenReturn(Optional.of(entry));
@@ -129,6 +130,6 @@ class OutcomeMatrixServiceTest {
 
     assertThat(result).isPresent();
     assertThat(result.get().renderedText())
-        .isEqualTo("UNDERDOG wrestler livid after opponent makes belittling comments.");
+        .isEqualTo("{WRESTLER_2} wrestler livid after opponent makes belittling comments.");
   }
 }

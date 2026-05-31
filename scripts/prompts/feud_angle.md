@@ -6,15 +6,15 @@ Generate **100 unique FEUD_ANGLE entries** covering the full dramatic range of w
 
 ## Placeholders
 
-- `FAVORED` = the dominant/heel/higher-momentum wrestler in this moment
-- `UNDERDOG` = the face/lower-momentum wrestler being targeted or challenged
+- `{WRESTLER_1}` = the dominant/heel/higher-momentum wrestler in this moment
+- `{WRESTLER_2}` = the face/lower-momentum wrestler being targeted or challenged
 
-Use both in every entry unless the event is clearly about one person only (e.g., a character decision entry may only reference FAVORED). Always use the placeholder exactly — no "the FAVORED" or "a UNDERDOG."
+Use both in every entry unless the event is clearly about one person only (e.g., a character decision entry may only reference {WRESTLER_1}). Always use the placeholder exactly — no "the {WRESTLER_1}" or "a {WRESTLER_2}."
 
 ## Effect guidelines
 
 - `heatDelta`: rivalry heat between the two wrestlers. Low confrontation = 1–2. Heated argument = 3–4. Physical attack or major betrayal = 5–8.
-- `fanDelta`: fan count change for FAVORED. Heel acts lose fans (negative). Face moments gain fans (positive). Neutral/ambiguous = omit.
+- `fanDelta`: fan count change for {WRESTLER_1}. Heel acts lose fans (negative). Face moments gain fans (positive). Neutral/ambiguous = omit.
 - `grudgeGradeDelta`: how much the grudge between them escalates. Minor incident = 1. Major escalation = 2–3. Use sparingly.
 - `injuryCaused`: only `true` for entries that explicitly involve a physical attack severe enough to risk injury.
 
@@ -46,13 +46,13 @@ Output a single valid JSON object in exactly this structure. Use sequential `dic
   "entries": [
     {
       "diceRoll": 1,
-      "templateText": "FAVORED publicly accuses UNDERDOG of stealing their spotlight, demanding a match to settle it once and for all.",
+      "templateText": "{WRESTLER_1} publicly accuses {WRESTLER_2} of stealing their spotlight, demanding a match to settle it once and for all.",
       "heatDelta": 3,
       "fanDelta": -200
     },
     {
       "diceRoll": 2,
-      "templateText": "UNDERDOG reveals footage of FAVORED cheating in their last encounter, sending the locker room into chaos.",
+      "templateText": "{WRESTLER_2} reveals footage of {WRESTLER_1} cheating in their last encounter, sending the locker room into chaos.",
       "heatDelta": 4,
       "grudgeGradeDelta": 1
     }

@@ -12,22 +12,22 @@ Each file in this directory is a prompt you can paste directly into an AI agent 
 
 ## Placeholders
 
-| Placeholder |                             Meaning                              |
-|-------------|------------------------------------------------------------------|
-| `FAVORED`   | The dominant/heel/higher-momentum wrestler in the current moment |
-| `UNDERDOG`  | The face/lower-momentum wrestler who is being challenged         |
+|  Placeholder   |                             Meaning                              |
+|----------------|------------------------------------------------------------------|
+| `{WRESTLER_1}` | The dominant/heel/higher-momentum wrestler in the current moment |
+| `{WRESTLER_2}` | The face/lower-momentum wrestler who is being challenged         |
 
 Both placeholders are substituted at runtime by `OutcomeMatrixService.resolveRoll()`.
 
 ## Effect fields (all optional)
 
-|       Field        |  Type   |                                Meaning                                 |
-|--------------------|---------|------------------------------------------------------------------------|
-| `heatDelta`        | int     | Heat added between FAVORED and UNDERDOG (positive = more rivalry heat) |
-| `fanDelta`         | long    | Fan count change for the primary wrestler (positive = gain fans)       |
-| `tvGradeDelta`     | int     | TV grade steps (+1 = up one letter, -1 = down one letter)              |
-| `grudgeGradeDelta` | int     | Grudge grade steps between the two wrestlers                           |
-| `injuryCaused`     | boolean | Whether this outcome triggers an injury check                          |
+|       Field        |  Type   |                                     Meaning                                     |
+|--------------------|---------|---------------------------------------------------------------------------------|
+| `heatDelta`        | int     | Heat added between {WRESTLER_1} and {WRESTLER_2} (positive = more rivalry heat) |
+| `fanDelta`         | long    | Fan count change for the primary wrestler (positive = gain fans)                |
+| `tvGradeDelta`     | int     | TV grade steps (+1 = up one letter, -1 = down one letter)                       |
+| `grudgeGradeDelta` | int     | Grudge grade steps between the two wrestlers                                    |
+| `injuryCaused`     | boolean | Whether this outcome triggers an injury check                                   |
 
 Omit any field that should have no effect (do not include nulls or zeros).
 

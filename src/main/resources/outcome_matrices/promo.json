@@ -2,467 +2,386 @@
   "name": "Promo",
   "category": "PROMO",
   "description": "Outcomes from promo segments affecting crowd reaction and grades",
-  "entries": [
-    {
-      "diceRoll": 1,
-      "templateText": "FAVORED grabs the mic and cuts a blistering promo declaring they are done waiting — UNDERDOG gets a title match next week or FAVORED walks.",
-      "heatDelta": 3,
-      "fanDelta": 800
-    },
-    {
-      "diceRoll": 2,
-      "templateText": "FAVORED's promo falls flat as the crowd chants for UNDERDOG throughout, completely undercutting the moment.",
-      "fanDelta": -600,
-      "tvGradeDelta": -1
-    },
-    {
-      "diceRoll": 3,
-      "templateText": "FAVORED stands on the announcer's desk, hoisting their championship gear and issuing a worldwide open challenge to anyone in the back.",
-      "fanDelta": 1100,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 4,
-      "templateText": "FAVORED demands a microphone, pointing directly at the champion's locker room and vowing to take everything they hold dear.",
-      "heatDelta": 2,
-      "fanDelta": 750
-    },
-    {
-      "diceRoll": 5,
-      "templateText": "FAVORED interrupts a championship celebration, listing every single shortcut the titleholder took to keep the gold.",
-      "heatDelta": 3,
-      "fanDelta": 900
-    },
-    {
-      "diceRoll": 6,
-      "templateText": "FAVORED cuts an intense, pre-taped vignette from the streets of their hometown, promising a championship reign built on raw sacrifice.",
-      "fanDelta": 1200
-    },
-    {
-      "diceRoll": 7,
-      "templateText": "FAVORED guarantees victory in the upcoming title bout, bringing out an actual contract to force a high-stakes signature from the champion.",
-      "heatDelta": 2,
-      "fanDelta": 650
-    },
-    {
-      "diceRoll": 8,
-      "templateText": "FAVORED lays down their ultimate ultimatum: a championship match at the grandest event of the year, or they tear the division apart.",
-      "fanDelta": 1000,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 9,
-      "templateText": "FAVORED targets the champion's lineage, claiming the gold was handed to them on a silver platter rather than truly earned.",
-      "heatDelta": 3,
-      "fanDelta": -500
-    },
-    {
-      "diceRoll": 10,
-      "templateText": "FAVORED lists every legend they've conquered, making it crystal clear that the reigning champion is merely the next victim on the list.",
-      "fanDelta": -600
-    },
-    {
-      "diceRoll": 11,
-      "templateText": "FAVORED absolutely dismantles UNDERDOG verbally, exposing their biggest career failures in a cold, calculated verbal takedown.",
-      "heatDelta": 2,
-      "fanDelta": -700,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 12,
-      "templateText": "FAVORED uses inside knowledge to mock the personal life of UNDERDOG, leaving them visibly shaken and speechless center ring.",
-      "heatDelta": 3,
-      "fanDelta": -850
-    },
-    {
-      "diceRoll": 13,
-      "templateText": "FAVORED brings up old developmental footage of UNDERDOG, laughing at how little talent they had then and how little they have now.",
-      "heatDelta": 2,
-      "fanDelta": -600
-    },
-    {
-      "diceRoll": 14,
-      "templateText": "FAVORED systematically breaks down the wrestling style of UNDERDOG, calling them an unoriginal, over-hyped indie cosplay act.",
-      "heatDelta": 3,
-      "fanDelta": -800
-    },
-    {
-      "diceRoll": 15,
-      "templateText": "FAVORED informs UNDERDOG that they are nothing more than a transitional opponent meant to pad a real superstar's win-loss record.",
-      "heatDelta": 2,
-      "fanDelta": -650
-    },
-    {
-      "diceRoll": 16,
-      "templateText": "FAVORED delivers an incredibly harsh truth bomb regarding the crowd's fading interest in UNDERDOG, drawing a stunned gasp from the arena.",
-      "heatDelta": 3,
-      "fanDelta": -750,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 17,
-      "templateText": "FAVORED calls UNDERDOG a spineless coward who hides behind faction members because they can't survive a single one-on-one encounter.",
-      "heatDelta": 2,
-      "fanDelta": 850
-    },
-    {
-      "diceRoll": 18,
-      "templateText": "FAVORED brings out a custom highlight reel showcasing every time UNDERDOG has tapped out or fallen short on the big stage.",
-      "heatDelta": 3,
-      "fanDelta": -900
-    },
-    {
-      "diceRoll": 19,
-      "templateText": "UNDERDOG completely interrupts a lengthy monologue from FAVORED, hitting them with a brilliant, lightning-fast comeback line that leaves FAVORED stuttering.",
-      "fanDelta": 1400,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 20,
-      "templateText": "UNDERDOG fires back at the arrogant claims of FAVORED, delivering a passionate, throat-tearing promo that brings the entire arena to its feet.",
-      "fanDelta": 1600,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 21,
-      "templateText": "UNDERDOG exposes a major hypocrisy in the career of FAVORED, completely turning the live audience against the self-proclaimed hero.",
-      "fanDelta": 1100
-    },
-    {
-      "diceRoll": 22,
-      "templateText": "UNDERDOG stands toe-to-toe with FAVORED, telling them to stop talking about past accolades and actually fight right now.",
-      "heatDelta": 4,
-      "fanDelta": 1300
-    },
-    {
-      "diceRoll": 23,
-      "templateText": "UNDERDOG delivers a short, incredibly punchy response that makes FAVORED look completely foolish and over-rehearsed.",
-      "fanDelta": 1000
-    },
-    {
-      "diceRoll": 24,
-      "templateText": "UNDERDOG commands the microphone, reminding FAVORED exactly who built this division while FAVORED was sitting on the sidelines.",
-      "fanDelta": 1200
-    },
-    {
-      "diceRoll": 25,
-      "templateText": "UNDERDOG drops the mic entirely, staring deep into the eyes of a ranting FAVORED with complete, unbothered confidence.",
-      "fanDelta": 950
-    },
-    {
-      "diceRoll": 26,
-      "templateText": "UNDERDOG uses a brilliant chant to get twenty thousand fans actively mocking FAVORED out of the building.",
-      "fanDelta": 1500,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 27,
-      "templateText": "FAVORED delivers an exceptionally emotional speech about overcoming adversity, beautifully connecting with every single fan in attendance.",
-      "fanDelta": 1800,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 28,
-      "templateText": "FAVORED takes a moment to thank the local city, seamlessly transitioning into a high-energy rallying cry that electrifies the stadium.",
-      "fanDelta": 1500
-    },
-    {
-      "diceRoll": 29,
-      "templateText": "FAVORED speaks directly to a young fan in the front row, promising to bring the championship home for everyone who ever felt left behind.",
-      "fanDelta": 1400
-    },
-    {
-      "diceRoll": 30,
-      "templateText": "FAVORED leads the entire arena in a massive, thunderous catchphrase chant that completely echoes through the broadcast audio.",
-      "fanDelta": 2000,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 31,
-      "templateText": "FAVORED uses their incredible charisma to turn an otherwise standard interview segment into a massive, arena-wide party atmosphere.",
-      "fanDelta": 1300
-    },
-    {
-      "diceRoll": 32,
-      "templateText": "FAVORED acknowledges their past mistakes on the microphone, earning a deep, genuine wave of respect and applause from the audience.",
-      "fanDelta": 1200
-    },
-    {
-      "diceRoll": 33,
-      "templateText": "FAVORED speaks from the heart about their grueling path to the roster, prompting a massive standing ovation across all seating sections.",
-      "fanDelta": 1700
-    },
-    {
-      "diceRoll": 34,
-      "templateText": "FAVORED delivers a masterclass in crowd manipulation, having the fans hanging on every single syllable they utter.",
-      "fanDelta": 1600
-    },
-    {
-      "diceRoll": 35,
-      "templateText": "FAVORED attempts to cut a deeply villainous heel promo, but their insult toward UNDERDOG is so incredibly cool that the crowd starts cheering instead.",
-      "fanDelta": 800,
-      "tvGradeDelta": -1
-    },
-    {
-      "diceRoll": 36,
-      "templateText": "FAVORED tries to draw cheap heat by insulting the local sports team, but the crowd completely drowns them out with a massive chant for UNDERDOG.",
-      "fanDelta": 900
-    },
-    {
-      "diceRoll": 37,
-      "templateText": "FAVORED spends minutes bragging about their expensive lifestyle, only for the crowd to erupt into a loud chant labeling them completely boring.",
-      "fanDelta": -400,
-      "tvGradeDelta": -1
-    },
-    {
-      "diceRoll": 38,
-      "templateText": "FAVORED demands absolute silence from the audience, which immediately prompts a stadium-wide, chaotic singing chant that derails the entire script.",
-      "fanDelta": 500
-    },
-    {
-      "diceRoll": 39,
-      "templateText": "FAVORED insults the integrity of UNDERDOG, but the crowd response is so overwhelmingly supportive of UNDERDOG that FAVORED visibly loses their temper.",
-      "heatDelta": 2,
-      "fanDelta": 700
-    },
-    {
-      "diceRoll": 40,
-      "templateText": "FAVORED tries to explain their treacherous actions from last week, but the crowd's deafening refusal to listen completely ruins the explanation.",
-      "fanDelta": -500
-    },
-    {
-      "diceRoll": 41,
-      "templateText": "A controversial, unscripted social media video posted by FAVORED surfaces on the titan screen, exposing a massive secret alliance.",
-      "heatDelta": 3,
-      "tvGradeDelta": 1,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 42,
-      "templateText": "UNDERDOG leaks a series of private, highly toxic text messages sent by FAVORED, completely shattering the pristine public image of FAVORED.",
-      "heatDelta": 2,
-      "fanDelta": -800
-    },
-    {
-      "diceRoll": 43,
-      "templateText": "FAVORED goes live on social media from an unauthorized location, trashing management and threatening to hijack tonight's broadcast.",
-      "fanDelta": 1100,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 44,
-      "templateText": "A viral training video posted by UNDERDOG gains immense mainstream traction, generating massive fan support ahead of the match with FAVORED.",
-      "fanDelta": 900
-    },
-    {
-      "diceRoll": 45,
-      "templateText": "FAVORED starts an aggressive, online trending campaign that successfully makes UNDERDOG the absolute laughingstock of the internet.",
-      "heatDelta": 1,
-      "fanDelta": -500
-    },
-    {
-      "diceRoll": 46,
-      "templateText": "A wild, multi-platform internet flame war between FAVORED and UNDERDOG reaches a boiling point, forcing the promotion to address it on air.",
-      "heatDelta": 3
-    },
-    {
-      "diceRoll": 47,
-      "templateText": "FAVORED posts an incredibly disrespectful video from inside the training facility of UNDERDOG, defacing their personal property.",
-      "heatDelta": 3,
-      "fanDelta": -700,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 48,
-      "templateText": "An anonymous account leaks footage of FAVORED training with a banned foreign object, drawing heavy scrutiny from the fan base.",
-      "fanDelta": -600
-    },
-    {
-      "diceRoll": 49,
-      "templateText": "During a tense backstage sit-down interview, FAVORED drops a massive bombshell revealing that UNDERDOG actively tried to get them fired.",
-      "heatDelta": 3,
-      "fanDelta": -400,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 50,
-      "templateText": "An exclusive media scrum interview goes completely off the rails as FAVORED flips a table and storms out after a question about UNDERDOG.",
-      "heatDelta": 2,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 51,
-      "templateText": "FAVORED breaks character slightly during a late-night talk show appearance, delivering a deeply authentic warning straight to UNDERDOG.",
-      "fanDelta": 1000
-    },
-    {
-      "diceRoll": 52,
-      "templateText": "A legendary broadcast journalist conducts a hard-hitting interview with UNDERDOG, perfectly highlighting their struggle against an oppressive FAVORED.",
-      "fanDelta": 1200
-    },
-    {
-      "diceRoll": 53,
-      "templateText": "Backstage cameras capture FAVORED having an incredibly intense, closed-door argument with their long-time personal trainer.",
-      "tvGradeDelta": -1
-    },
-    {
-      "diceRoll": 54,
-      "templateText": "FAVORED interrupts a routine broadcast update, commandeering the microphone to reveal a shocking injury status report regarding UNDERDOG.",
-      "heatDelta": 2
-    },
-    {
-      "diceRoll": 55,
-      "templateText": "A special documentary chronicle tracks the intense preparation of FAVORED, making their upcoming match feel like an absolute historic event.",
-      "fanDelta": 900,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 56,
-      "templateText": "FAVORED crashes a corporate sponsor presentation backstage, demanding that their face be placed on every piece of promotional material.",
-      "fanDelta": -500
-    },
-    {
-      "diceRoll": 57,
-      "templateText": "FAVORED calls out the General Manager directly, claiming the entire corporate system is actively rigged to prevent them from becoming champion.",
-      "fanDelta": 1300,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 58,
-      "templateText": "FAVORED refuses to compete tonight, calling the corporate executives completely incompetent until their exact financial demands are met.",
-      "fanDelta": -700
-    },
-    {
-      "diceRoll": 59,
-      "templateText": "FAVORED tears up a formal disciplinary memo live on television, completely defying an official suspension order from management.",
-      "fanDelta": 1500,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 60,
-      "templateText": "FAVORED brings an actual lawyer into the ring, threatening a massive, company-wide lawsuit if they are forced to wrestle UNDERDOG tonight.",
-      "heatDelta": 2,
-      "fanDelta": -650
-    },
-    {
-      "diceRoll": 61,
-      "templateText": "FAVORED sits down in the center of the ring, staging a complete broadcast protest until the Board of Directors grants them a meeting.",
-      "fanDelta": -400
-    },
-    {
-      "diceRoll": 62,
-      "templateText": "FAVORED targets the authority figure's past career, delivering a blistering verbal takedown of their failed run as an active competitor.",
-      "fanDelta": 1100
-    },
-    {
-      "diceRoll": 63,
-      "templateText": "FAVORED attacks an official corporate spokesperson on the microphone, completely crossing the line into total corporate insubordination.",
-      "fanDelta": -600
-    },
-    {
-      "diceRoll": 64,
-      "templateText": "FAVORED hijacks the production truck, cutting off the executive producer's audio feed to broadcast their own raw, unfiltered manifesto.",
-      "fanDelta": 1400,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 65,
-      "templateText": "FAVORED invokes the legendary history of the territory, delivering a deeply traditional, old-school promo centered on fighting honor and respect.",
-      "fanDelta": 1200
-    },
-    {
-      "diceRoll": 66,
-      "templateText": "FAVORED brings out a Hall of Fame veteran to endorse them, cementing their status as the true, hand-picked future of the entire industry.",
-      "fanDelta": 1500,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 67,
-      "templateText": "FAVORED claims that the current generation of wrestlers has completely gone soft, vowing to bring back a brutal style of old-school discipline.",
-      "fanDelta": -500
-    },
-    {
-      "diceRoll": 68,
-      "templateText": "FAVORED delivers an incredibly powerful tribute promo honoring a fallen legend, uniting the roster and the fans in a beautiful moment.",
-      "fanDelta": 1900,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 69,
-      "templateText": "FAVORED talks about their twenty-year career, stating that their upcoming match with UNDERDOG is a matter of securing their ultimate legacy.",
-      "fanDelta": 1100
-    },
-    {
-      "diceRoll": 70,
-      "templateText": "FAVORED openly mocks a legendary veteran who is sitting at ringside, completely disrespecting the rich history of the business.",
-      "heatDelta": 3,
-      "fanDelta": -900,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 71,
-      "templateText": "FAVORED compares their current historic championship reign to the greatest icons of the past, claiming they've already surpassed every single one.",
-      "fanDelta": -700
-    },
-    {
-      "diceRoll": 72,
-      "templateText": "FAVORED delivers a chilling promo about what it truly means to be a professional wrestler, earning a rare nod of respect from their worst critics.",
-      "fanDelta": 1300
-    },
-    {
-      "diceRoll": 73,
-      "templateText": "The verbal battle between FAVORED and UNDERDOG becomes so incredibly intense that they drop their microphones and immediately start swinging fists.",
-      "heatDelta": 5,
-      "grudgeGradeDelta": 2,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 74,
-      "templateText": "FAVORED blindsides UNDERDOG with a microphone shot right to the head mid-sentence, initiating a wild, chaotic ring-clearing brawl.",
-      "heatDelta": 4,
-      "fanDelta": -750,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 75,
-      "templateText": "A massive face-to-face promo segment completely breaks down as twenty locker room security guards swarm the ring to keep FAVORED and UNDERDOG apart.",
-      "heatDelta": 4,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 76,
-      "templateText": "FAVORED attempts to attack UNDERDOG during their entrance promo, leading to an incredibly frantic brawl that spills all over the concrete floor.",
-      "heatDelta": 5,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 77,
-      "templateText": "A tense contract signing promo dissolves into absolute chaos as FAVORED throws UNDERDOG directly through the heavy wooden signing table.",
-      "heatDelta": 6,
-      "fanDelta": -800,
-      "grudgeGradeDelta": 2,
-      "tvGradeDelta": 1
-    },
-    {
-      "diceRoll": 78,
-      "templateText": "UNDERDOG ducks a surprise attack from FAVORED at the end of a promo, hitting their finisher to stand tall over a broken FAVORED.",
-      "heatDelta": 4,
-      "fanDelta": 1400
-    },
-    {
-      "diceRoll": 79,
-      "templateText": "A heated back-and-forth verbal argument escalates until FAVORED's entire stable rushes the ring, initiating a brutal numbers-game assault on UNDERDOG.",
-      "heatDelta": 5,
-      "fanDelta": -600,
-      "grudgeGradeDelta": 1
-    },
-    {
-      "diceRoll": 80,
-      "templateText": "FAVORED and UNDERDOG lock eyes, throw their microphones over the top rope, and launch into a vicious hockey-style punch exchange as the crowd goes insane.",
-      "heatDelta": 6,
-      "fanDelta": 1100,
-      "grudgeGradeDelta": 2,
-      "tvGradeDelta": 1
-    }
-  ]
+  "entries": [ {
+    "diceRoll": 1,
+    "templateText": "{WRESTLER_1} grabs the mic and cuts a blistering promo declaring they are done waiting — {WRESTLER_2} gets a title match next week or {WRESTLER_1} walks.",
+    "heatDelta": 3,
+    "fanDelta": 800
+  }, {
+    "diceRoll": 2,
+    "templateText": "{WRESTLER_1}'s promo falls flat as the crowd chants for {WRESTLER_2} throughout, completely undercutting the moment.",
+    "fanDelta": -600,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 3,
+    "templateText": "{WRESTLER_1} stands on the announcer's desk, hoisting their championship gear and issuing a worldwide open challenge to anyone in the back.",
+    "fanDelta": 1100,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 4,
+    "templateText": "{WRESTLER_1} demands a microphone, pointing directly at the champion's locker room and vowing to take everything they hold dear.",
+    "heatDelta": 2,
+    "fanDelta": 750
+  }, {
+    "diceRoll": 5,
+    "templateText": "{WRESTLER_1} interrupts a championship celebration, listing every single shortcut the titleholder took to keep the gold.",
+    "heatDelta": 3,
+    "fanDelta": 900
+  }, {
+    "diceRoll": 6,
+    "templateText": "{WRESTLER_1} cuts an intense, pre-taped vignette from the streets of their hometown, promising a championship reign built on raw sacrifice.",
+    "fanDelta": 1200
+  }, {
+    "diceRoll": 7,
+    "templateText": "{WRESTLER_1} guarantees victory in the upcoming title bout, bringing out an actual contract to force a high-stakes signature from the champion.",
+    "heatDelta": 2,
+    "fanDelta": 650
+  }, {
+    "diceRoll": 8,
+    "templateText": "{WRESTLER_1} lays down their ultimate ultimatum: a championship match at the grandest event of the year, or they tear the division apart.",
+    "fanDelta": 1000,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 9,
+    "templateText": "{WRESTLER_1} targets the champion's lineage, claiming the gold was handed to them on a silver platter rather than truly earned.",
+    "heatDelta": 3,
+    "fanDelta": -500
+  }, {
+    "diceRoll": 10,
+    "templateText": "{WRESTLER_1} lists every legend they've conquered, making it crystal clear that the reigning champion is merely the next victim on the list.",
+    "fanDelta": -600
+  }, {
+    "diceRoll": 11,
+    "templateText": "{WRESTLER_1} absolutely dismantles {WRESTLER_2} verbally, exposing their biggest career failures in a cold, calculated verbal takedown.",
+    "heatDelta": 2,
+    "fanDelta": -700,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 12,
+    "templateText": "{WRESTLER_1} uses inside knowledge to mock the personal life of {WRESTLER_2}, leaving them visibly shaken and speechless center ring.",
+    "heatDelta": 3,
+    "fanDelta": -850
+  }, {
+    "diceRoll": 13,
+    "templateText": "{WRESTLER_1} brings up old developmental footage of {WRESTLER_2}, laughing at how little talent they had then and how little they have now.",
+    "heatDelta": 2,
+    "fanDelta": -600
+  }, {
+    "diceRoll": 14,
+    "templateText": "{WRESTLER_1} systematically breaks down the wrestling style of {WRESTLER_2}, calling them an unoriginal, over-hyped indie cosplay act.",
+    "heatDelta": 3,
+    "fanDelta": -800
+  }, {
+    "diceRoll": 15,
+    "templateText": "{WRESTLER_1} informs {WRESTLER_2} that they are nothing more than a transitional opponent meant to pad a real superstar's win-loss record.",
+    "heatDelta": 2,
+    "fanDelta": -650
+  }, {
+    "diceRoll": 16,
+    "templateText": "{WRESTLER_1} delivers an incredibly harsh truth bomb regarding the crowd's fading interest in {WRESTLER_2}, drawing a stunned gasp from the arena.",
+    "heatDelta": 3,
+    "fanDelta": -750,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 17,
+    "templateText": "{WRESTLER_1} calls {WRESTLER_2} a spineless coward who hides behind faction members because they can't survive a single one-on-one encounter.",
+    "heatDelta": 2,
+    "fanDelta": 850
+  }, {
+    "diceRoll": 18,
+    "templateText": "{WRESTLER_1} brings out a custom highlight reel showcasing every time {WRESTLER_2} has tapped out or fallen short on the big stage.",
+    "heatDelta": 3,
+    "fanDelta": -900
+  }, {
+    "diceRoll": 19,
+    "templateText": "{WRESTLER_2} completely interrupts a lengthy monologue from {WRESTLER_1}, hitting them with a brilliant, lightning-fast comeback line that leaves {WRESTLER_1} stuttering.",
+    "fanDelta": 1400,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 20,
+    "templateText": "{WRESTLER_2} fires back at the arrogant claims of {WRESTLER_1}, delivering a passionate, throat-tearing promo that brings the entire arena to its feet.",
+    "fanDelta": 1600,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 21,
+    "templateText": "{WRESTLER_2} exposes a major hypocrisy in the career of {WRESTLER_1}, completely turning the live audience against the self-proclaimed hero.",
+    "fanDelta": 1100
+  }, {
+    "diceRoll": 22,
+    "templateText": "{WRESTLER_2} stands toe-to-toe with {WRESTLER_1}, telling them to stop talking about past accolades and actually fight right now.",
+    "heatDelta": 4,
+    "fanDelta": 1300
+  }, {
+    "diceRoll": 23,
+    "templateText": "{WRESTLER_2} delivers a short, incredibly punchy response that makes {WRESTLER_1} look completely foolish and over-rehearsed.",
+    "fanDelta": 1000
+  }, {
+    "diceRoll": 24,
+    "templateText": "{WRESTLER_2} commands the microphone, reminding {WRESTLER_1} exactly who built this division while {WRESTLER_1} was sitting on the sidelines.",
+    "fanDelta": 1200
+  }, {
+    "diceRoll": 25,
+    "templateText": "{WRESTLER_2} drops the mic entirely, staring deep into the eyes of a ranting {WRESTLER_1} with complete, unbothered confidence.",
+    "fanDelta": 950
+  }, {
+    "diceRoll": 26,
+    "templateText": "{WRESTLER_2} uses a brilliant chant to get twenty thousand fans actively mocking {WRESTLER_1} out of the building.",
+    "fanDelta": 1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 27,
+    "templateText": "{WRESTLER_1} delivers an exceptionally emotional speech about overcoming adversity, beautifully connecting with every single fan in attendance.",
+    "fanDelta": 1800,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 28,
+    "templateText": "{WRESTLER_1} takes a moment to thank the local city, seamlessly transitioning into a high-energy rallying cry that electrifies the stadium.",
+    "fanDelta": 1500
+  }, {
+    "diceRoll": 29,
+    "templateText": "{WRESTLER_1} speaks directly to a young fan in the front row, promising to bring the championship home for everyone who ever felt left behind.",
+    "fanDelta": 1400
+  }, {
+    "diceRoll": 30,
+    "templateText": "{WRESTLER_1} leads the entire arena in a massive, thunderous catchphrase chant that completely echoes through the broadcast audio.",
+    "fanDelta": 2000,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 31,
+    "templateText": "{WRESTLER_1} uses their incredible charisma to turn an otherwise standard interview segment into a massive, arena-wide party atmosphere.",
+    "fanDelta": 1300
+  }, {
+    "diceRoll": 32,
+    "templateText": "{WRESTLER_1} acknowledges their past mistakes on the microphone, earning a deep, genuine wave of respect and applause from the audience.",
+    "fanDelta": 1200
+  }, {
+    "diceRoll": 33,
+    "templateText": "{WRESTLER_1} speaks from the heart about their grueling path to the roster, prompting a massive standing ovation across all seating sections.",
+    "fanDelta": 1700
+  }, {
+    "diceRoll": 34,
+    "templateText": "{WRESTLER_1} delivers a masterclass in crowd manipulation, having the fans hanging on every single syllable they utter.",
+    "fanDelta": 1600
+  }, {
+    "diceRoll": 35,
+    "templateText": "{WRESTLER_1} attempts to cut a deeply villainous heel promo, but their insult toward {WRESTLER_2} is so incredibly cool that the crowd starts cheering instead.",
+    "fanDelta": 800,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 36,
+    "templateText": "{WRESTLER_1} tries to draw cheap heat by insulting the local sports team, but the crowd completely drowns them out with a massive chant for {WRESTLER_2}.",
+    "fanDelta": 900
+  }, {
+    "diceRoll": 37,
+    "templateText": "{WRESTLER_1} spends minutes bragging about their expensive lifestyle, only for the crowd to erupt into a loud chant labeling them completely boring.",
+    "fanDelta": -400,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 38,
+    "templateText": "{WRESTLER_1} demands absolute silence from the audience, which immediately prompts a stadium-wide, chaotic singing chant that derails the entire script.",
+    "fanDelta": 500
+  }, {
+    "diceRoll": 39,
+    "templateText": "{WRESTLER_1} insults the integrity of {WRESTLER_2}, but the crowd response is so overwhelmingly supportive of {WRESTLER_2} that {WRESTLER_1} visibly loses their temper.",
+    "heatDelta": 2,
+    "fanDelta": 700
+  }, {
+    "diceRoll": 40,
+    "templateText": "{WRESTLER_1} tries to explain their treacherous actions from last week, but the crowd's deafening refusal to listen completely ruins the explanation.",
+    "fanDelta": -500
+  }, {
+    "diceRoll": 41,
+    "templateText": "A controversial, unscripted social media video posted by {WRESTLER_1} surfaces on the titan screen, exposing a massive secret alliance.",
+    "heatDelta": 3,
+    "tvGradeDelta": 1,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 42,
+    "templateText": "{WRESTLER_2} leaks a series of private, highly toxic text messages sent by {WRESTLER_1}, completely shattering the pristine public image of {WRESTLER_1}.",
+    "heatDelta": 2,
+    "fanDelta": -800
+  }, {
+    "diceRoll": 43,
+    "templateText": "{WRESTLER_1} goes live on social media from an unauthorized location, trashing management and threatening to hijack tonight's broadcast.",
+    "fanDelta": 1100,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 44,
+    "templateText": "A viral training video posted by {WRESTLER_2} gains immense mainstream traction, generating massive fan support ahead of the match with {WRESTLER_1}.",
+    "fanDelta": 900
+  }, {
+    "diceRoll": 45,
+    "templateText": "{WRESTLER_1} starts an aggressive, online trending campaign that successfully makes {WRESTLER_2} the absolute laughingstock of the internet.",
+    "heatDelta": 1,
+    "fanDelta": -500
+  }, {
+    "diceRoll": 46,
+    "templateText": "A wild, multi-platform internet flame war between {WRESTLER_1} and {WRESTLER_2} reaches a boiling point, forcing the promotion to address it on air.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 47,
+    "templateText": "{WRESTLER_1} posts an incredibly disrespectful video from inside the training facility of {WRESTLER_2}, defacing their personal property.",
+    "heatDelta": 3,
+    "fanDelta": -700,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 48,
+    "templateText": "An anonymous account leaks footage of {WRESTLER_1} training with a banned foreign object, drawing heavy scrutiny from the fan base.",
+    "fanDelta": -600
+  }, {
+    "diceRoll": 49,
+    "templateText": "During a tense backstage sit-down interview, {WRESTLER_1} drops a massive bombshell revealing that {WRESTLER_2} actively tried to get them fired.",
+    "heatDelta": 3,
+    "fanDelta": -400,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 50,
+    "templateText": "An exclusive media scrum interview goes completely off the rails as {WRESTLER_1} flips a table and storms out after a question about {WRESTLER_2}.",
+    "heatDelta": 2,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 51,
+    "templateText": "{WRESTLER_1} breaks character slightly during a late-night talk show appearance, delivering a deeply authentic warning straight to {WRESTLER_2}.",
+    "fanDelta": 1000
+  }, {
+    "diceRoll": 52,
+    "templateText": "A legendary broadcast journalist conducts a hard-hitting interview with {WRESTLER_2}, perfectly highlighting their struggle against an oppressive {WRESTLER_1}.",
+    "fanDelta": 1200
+  }, {
+    "diceRoll": 53,
+    "templateText": "Backstage cameras capture {WRESTLER_1} having an incredibly intense, closed-door argument with their long-time personal trainer.",
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 54,
+    "templateText": "{WRESTLER_1} interrupts a routine broadcast update, commandeering the microphone to reveal a shocking injury status report regarding {WRESTLER_2}.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 55,
+    "templateText": "A special documentary chronicle tracks the intense preparation of {WRESTLER_1}, making their upcoming match feel like an absolute historic event.",
+    "fanDelta": 900,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 56,
+    "templateText": "{WRESTLER_1} crashes a corporate sponsor presentation backstage, demanding that their face be placed on every piece of promotional material.",
+    "fanDelta": -500
+  }, {
+    "diceRoll": 57,
+    "templateText": "{WRESTLER_1} calls out the General Manager directly, claiming the entire corporate system is actively rigged to prevent them from becoming champion.",
+    "fanDelta": 1300,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 58,
+    "templateText": "{WRESTLER_1} refuses to compete tonight, calling the corporate executives completely incompetent until their exact financial demands are met.",
+    "fanDelta": -700
+  }, {
+    "diceRoll": 59,
+    "templateText": "{WRESTLER_1} tears up a formal disciplinary memo live on television, completely defying an official suspension order from management.",
+    "fanDelta": 1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 60,
+    "templateText": "{WRESTLER_1} brings an actual lawyer into the ring, threatening a massive, company-wide lawsuit if they are forced to wrestle {WRESTLER_2} tonight.",
+    "heatDelta": 2,
+    "fanDelta": -650
+  }, {
+    "diceRoll": 61,
+    "templateText": "{WRESTLER_1} sits down in the center of the ring, staging a complete broadcast protest until the Board of Directors grants them a meeting.",
+    "fanDelta": -400
+  }, {
+    "diceRoll": 62,
+    "templateText": "{WRESTLER_1} targets the authority figure's past career, delivering a blistering verbal takedown of their failed run as an active competitor.",
+    "fanDelta": 1100
+  }, {
+    "diceRoll": 63,
+    "templateText": "{WRESTLER_1} attacks an official corporate spokesperson on the microphone, completely crossing the line into total corporate insubordination.",
+    "fanDelta": -600
+  }, {
+    "diceRoll": 64,
+    "templateText": "{WRESTLER_1} hijacks the production truck, cutting off the executive producer's audio feed to broadcast their own raw, unfiltered manifesto.",
+    "fanDelta": 1400,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 65,
+    "templateText": "{WRESTLER_1} invokes the legendary history of the territory, delivering a deeply traditional, old-school promo centered on fighting honor and respect.",
+    "fanDelta": 1200
+  }, {
+    "diceRoll": 66,
+    "templateText": "{WRESTLER_1} brings out a Hall of Fame veteran to endorse them, cementing their status as the true, hand-picked future of the entire industry.",
+    "fanDelta": 1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 67,
+    "templateText": "{WRESTLER_1} claims that the current generation of wrestlers has completely gone soft, vowing to bring back a brutal style of old-school discipline.",
+    "fanDelta": -500
+  }, {
+    "diceRoll": 68,
+    "templateText": "{WRESTLER_1} delivers an incredibly powerful tribute promo honoring a fallen legend, uniting the roster and the fans in a beautiful moment.",
+    "fanDelta": 1900,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 69,
+    "templateText": "{WRESTLER_1} talks about their twenty-year career, stating that their upcoming match with {WRESTLER_2} is a matter of securing their ultimate legacy.",
+    "fanDelta": 1100
+  }, {
+    "diceRoll": 70,
+    "templateText": "{WRESTLER_1} openly mocks a legendary veteran who is sitting at ringside, completely disrespecting the rich history of the business.",
+    "heatDelta": 3,
+    "fanDelta": -900,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 71,
+    "templateText": "{WRESTLER_1} compares their current historic championship reign to the greatest icons of the past, claiming they've already surpassed every single one.",
+    "fanDelta": -700
+  }, {
+    "diceRoll": 72,
+    "templateText": "{WRESTLER_1} delivers a chilling promo about what it truly means to be a professional wrestler, earning a rare nod of respect from their worst critics.",
+    "fanDelta": 1300
+  }, {
+    "diceRoll": 73,
+    "templateText": "The verbal battle between {WRESTLER_1} and {WRESTLER_2} becomes so incredibly intense that they drop their microphones and immediately start swinging fists.",
+    "heatDelta": 5,
+    "grudgeGradeDelta": 2,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 74,
+    "templateText": "{WRESTLER_1} blindsides {WRESTLER_2} with a microphone shot right to the head mid-sentence, initiating a wild, chaotic ring-clearing brawl.",
+    "heatDelta": 4,
+    "fanDelta": -750,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 75,
+    "templateText": "A massive face-to-face promo segment completely breaks down as twenty locker room security guards swarm the ring to keep {WRESTLER_1} and {WRESTLER_2} apart.",
+    "heatDelta": 4,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 76,
+    "templateText": "{WRESTLER_1} attempts to attack {WRESTLER_2} during their entrance promo, leading to an incredibly frantic brawl that spills all over the concrete floor.",
+    "heatDelta": 5,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 77,
+    "templateText": "A tense contract signing promo dissolves into absolute chaos as {WRESTLER_1} throws {WRESTLER_2} directly through the heavy wooden signing table.",
+    "heatDelta": 6,
+    "fanDelta": -800,
+    "grudgeGradeDelta": 2,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 78,
+    "templateText": "{WRESTLER_2} ducks a surprise attack from {WRESTLER_1} at the end of a promo, hitting their finisher to stand tall over a broken {WRESTLER_1}.",
+    "heatDelta": 4,
+    "fanDelta": 1400
+  }, {
+    "diceRoll": 79,
+    "templateText": "A heated back-and-forth verbal argument escalates until {WRESTLER_1}'s entire stable rushes the ring, initiating a brutal numbers-game assault on {WRESTLER_2}.",
+    "heatDelta": 5,
+    "fanDelta": -600,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 80,
+    "templateText": "{WRESTLER_1} and {WRESTLER_2} lock eyes, throw their microphones over the top rope, and launch into a vicious hockey-style punch exchange as the crowd goes insane.",
+    "heatDelta": 6,
+    "fanDelta": 1100,
+    "grudgeGradeDelta": 2,
+    "tvGradeDelta": 1
+  } ]
 }

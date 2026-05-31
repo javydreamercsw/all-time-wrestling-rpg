@@ -6,10 +6,10 @@ Generate **80 unique PROMO entries** covering the full range of promo segment ou
 
 ## Placeholders
 
-- `FAVORED` = the wrestler cutting the promo or with the mic advantage in this moment
-- `UNDERDOG` = the target of the promo, or the wrestler being called out / responded to
+- `{WRESTLER_1}` = the wrestler cutting the promo or with the mic advantage in this moment
+- `{WRESTLER_2}` = the target of the promo, or the wrestler being called out / responded to
 
-Not every entry needs both — a solo promo entry may only reference `FAVORED`. Use the placeholder exactly as written.
+Not every entry needs both — a solo promo entry may only reference `{WRESTLER_1}`. Use the placeholder exactly as written.
 
 ## Effect guidelines
 
@@ -23,14 +23,14 @@ Omit any field that has no effect.
 ## Tone variety
 
 Aim for a mix across these types (roughly 10 entries each):
-1. **Championship callout** — FAVORED demands a title shot, issues an open challenge, or declares themselves next
-2. **Verbal beatdown** — FAVORED dismantles UNDERDOG verbally, leaving them humiliated
-3. **Comeback promo** — UNDERDOG gets the better of FAVORED, crowd goes wild
-4. **Crowd connection** — FAVORED turns a serious moment into a crowd-popping speech
-5. **Heel promo backfires** — FAVORED cuts a great heel promo but the crowd starts cheering UNDERDOG
+1. **Championship callout** — {WRESTLER_1} demands a title shot, issues an open challenge, or declares themselves next
+2. **Verbal beatdown** — {WRESTLER_1} dismantles {WRESTLER_2} verbally, leaving them humiliated
+3. **Comeback promo** — {WRESTLER_2} gets the better of {WRESTLER_1}, crowd goes wild
+4. **Crowd connection** — {WRESTLER_1} turns a serious moment into a crowd-popping speech
+5. **Heel promo backfires** — {WRESTLER_1} cuts a great heel promo but the crowd starts cheering {WRESTLER_2}
 6. **Social media angle** — a tweet, video post, or livestream revelation creates chaos
 7. **Interview reveal** — a backstage or press interview drops a bombshell
-8. **Authority challenge** — FAVORED goes after management or the system itself
+8. **Authority challenge** — {WRESTLER_1} goes after management or the system itself
 9. **Legacy/respect promo** — past history, career achievements, or veteran status invoked
 10. **Segment breakdown** — promo escalates to a physical confrontation before security separates them
 
@@ -46,13 +46,13 @@ Output a single valid JSON object in exactly this structure. Use sequential `dic
   "entries": [
     {
       "diceRoll": 1,
-      "templateText": "FAVORED grabs the mic and cuts a blistering promo declaring they are done waiting — UNDERDOG gets a title match next week or FAVORED walks.",
+      "templateText": "{WRESTLER_1} grabs the mic and cuts a blistering promo declaring they are done waiting — {WRESTLER_2} gets a title match next week or {WRESTLER_1} walks.",
       "heatDelta": 3,
       "fanDelta": 800
     },
     {
       "diceRoll": 2,
-      "templateText": "FAVORED's promo falls flat as the crowd chants for UNDERDOG throughout, completely undercutting the moment.",
+      "templateText": "{WRESTLER_1}'s promo falls flat as the crowd chants for {WRESTLER_2} throughout, completely undercutting the moment.",
       "fanDelta": -600,
       "tvGradeDelta": -1
     }
