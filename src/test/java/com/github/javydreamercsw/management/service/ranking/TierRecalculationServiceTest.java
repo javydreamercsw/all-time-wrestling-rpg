@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.ranking;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,7 +35,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,13 +98,6 @@ class TierRecalculationServiceTest {
               return boundary;
             });
 
-    when(tierBoundaryService.findAll())
-        .thenAnswer(
-            invocation ->
-                inMemoryTierBoundaries.values().stream()
-                    .flatMap(m -> m.values().stream())
-                    .collect(Collectors.toList()));
-
     when(tierBoundaryService.findAllByGender(any(Gender.class)))
         .thenAnswer(
             invocation -> {
@@ -120,19 +111,6 @@ class TierRecalculationServiceTest {
               WrestlerTier tier = invocation.getArgument(0);
               Gender gender = invocation.getArgument(1);
               return Optional.ofNullable(inMemoryTierBoundaries.get(gender).get(tier));
-            });
-
-    when(tierBoundaryService.findTierForFans(anyLong(), any(Gender.class)))
-        .thenAnswer(
-            invocation -> {
-              long fans = invocation.getArgument(0);
-              Gender gender = invocation.getArgument(1);
-              return inMemoryTierBoundaries.get(gender).values().stream()
-                  .sorted((b1, b2) -> b2.getMinFans().compareTo(b1.getMinFans()))
-                  .filter(b -> fans >= b.getMinFans() && fans <= b.getMaxFans())
-                  .map(TierBoundary::getTier)
-                  .findFirst()
-                  .orElse(null);
             });
 
     when(wrestlerStateRepository.save(any(WrestlerState.class)))

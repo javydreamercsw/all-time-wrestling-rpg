@@ -217,7 +217,7 @@ public class NewsGenerationService {
     }
   }
 
-  @Transactional(readOnly = true)
+  @Transactional
   public void rollForRumor() {
     if (!gameSettingService.isAiNewsEnabled()) {
       return;
