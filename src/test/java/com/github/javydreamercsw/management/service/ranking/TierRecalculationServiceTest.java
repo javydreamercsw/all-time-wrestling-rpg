@@ -53,6 +53,7 @@ class TierRecalculationServiceTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
   @Mock private TierBoundaryService tierBoundaryService;
+  @Mock private TierDistributionConfig tierDistributionConfig;
 
   @InjectMocks private TierRecalculationService tierRecalculationService;
 
@@ -115,6 +116,12 @@ class TierRecalculationServiceTest {
 
     when(wrestlerStateRepository.save(any(WrestlerState.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+
+    when(tierDistributionConfig.getIcon()).thenReturn(0.05);
+    when(tierDistributionConfig.getMainEventer()).thenReturn(0.15);
+    when(tierDistributionConfig.getMidcarder()).thenReturn(0.25);
+    when(tierDistributionConfig.getContender()).thenReturn(0.25);
+    when(tierDistributionConfig.getRiser()).thenReturn(0.20);
   }
 
   @Test

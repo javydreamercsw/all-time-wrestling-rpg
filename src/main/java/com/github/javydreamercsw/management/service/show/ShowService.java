@@ -709,17 +709,25 @@ public class ShowService {
                 })
             .sum();
 
-    int baseAttendance = (int) (totalFanWeight / 2);
+    int baseAttendance =
+        (int) (totalFanWeight / ShowEconomicsConstants.FAN_WEIGHT_ATTENDANCE_DIVISOR);
 
-    double showMultiplier = show.isPremiumLiveEvent() ? 1.5 : 1.0;
+    double showMultiplier =
+        show.isPremiumLiveEvent()
+            ? ShowEconomicsConstants.PREMIUM_EVENT_MULTIPLIER
+            : ShowEconomicsConstants.BASE_TRAIT_MULTIPLIER;
 
-    double traitMultiplier = 1.0;
+    double traitMultiplier = ShowEconomicsConstants.BASE_TRAIT_MULTIPLIER;
     if (show.getArena() != null && !show.getArena().getEnvironmentalTraits().isEmpty()) {
       long matchingTraits =
           show.getArena().getEnvironmentalTraits().stream()
               .filter(trait -> traitMatchesCard(trait, segments))
               .count();
-      traitMultiplier = 1.0 + Math.min(matchingTraits * 0.05, 0.20);
+      traitMultiplier =
+          ShowEconomicsConstants.BASE_TRAIT_MULTIPLIER
+              + Math.min(
+                  matchingTraits * ShowEconomicsConstants.TRAIT_BONUS_PER_MATCH,
+                  ShowEconomicsConstants.MAX_TRAIT_BONUS);
     }
 
     int projected = (int) (baseAttendance * showMultiplier * traitMultiplier);
@@ -730,8 +738,8 @@ public class ShowService {
 
     java.math.BigDecimal ticketPrice =
         show.isPremiumLiveEvent()
-            ? new java.math.BigDecimal("75.00")
-            : new java.math.BigDecimal("25.00");
+            ? ShowEconomicsConstants.PREMIUM_TICKET_PRICE
+            : ShowEconomicsConstants.STANDARD_TICKET_PRICE;
     java.math.BigDecimal gateRevenue =
         ticketPrice.multiply(java.math.BigDecimal.valueOf(finalAttendance));
 
