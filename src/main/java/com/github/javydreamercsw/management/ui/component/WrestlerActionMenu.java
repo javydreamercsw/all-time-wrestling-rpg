@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -60,6 +61,7 @@ public class WrestlerActionMenu extends MenuBar {
       @NonNull final Wrestler wrestler,
       @NonNull final WrestlerService wrestlerService,
       @NonNull final InjuryService injuryService,
+      @NonNull final InjuryTypeService injuryTypeService,
       @NonNull final NpcService npcService,
       @NonNull final CampaignService campaignService,
       @NonNull final WrestlerStateRepository wrestlerStateRepository,
@@ -267,7 +269,12 @@ public class WrestlerActionMenu extends MenuBar {
             e -> {
               InjuryDialog dialog =
                   new InjuryDialog(
-                      wrestler, universeId, injuryService, refreshProvider, securityUtils);
+                      wrestler,
+                      universeId,
+                      injuryService,
+                      injuryTypeService,
+                      refreshProvider,
+                      securityUtils);
               dialog.setId("injury-dialog");
               dialog.open();
             });

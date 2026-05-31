@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -47,6 +48,7 @@ class WrestlerListViewTest extends AbstractViewTest {
 
   @Mock private WrestlerService wrestlerService;
   @Mock private InjuryService injuryService;
+  @Mock private InjuryTypeService injuryTypeService;
   @Mock private NpcService npcService;
   @Mock private ExpansionService expansionService;
   @Mock private UniverseSettingsService universeSettingsService;
@@ -75,6 +77,7 @@ class WrestlerListViewTest extends AbstractViewTest {
         new WrestlerListView(
             wrestlerService,
             injuryService,
+            injuryTypeService,
             npcService,
             expansionService,
             universeSettingsService,

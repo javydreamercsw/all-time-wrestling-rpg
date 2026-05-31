@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
@@ -61,6 +62,7 @@ class WrestlerProfileViewTest extends AbstractViewTest {
   @Mock private RivalryService rivalryService;
   @Mock private SeasonService seasonService;
   @Mock private InjuryService injuryService;
+  @Mock private InjuryTypeService injuryTypeService;
   @Mock private NpcService npcService;
   @Mock private AccountService accountService;
   @Mock private CampaignService campaignService;
@@ -91,6 +93,7 @@ class WrestlerProfileViewTest extends AbstractViewTest {
             rivalryService,
             seasonService,
             injuryService,
+            injuryTypeService,
             npcService,
             accountService,
             campaignService,

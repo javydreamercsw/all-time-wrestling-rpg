@@ -373,6 +373,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     injuryService.createInjury(
         wrestler.getId(),
         defaultUniverse.getId(),
+        null,
         "Bruised Ribs",
         "Slightly bruised ribs.",
         InjurySeverity.MINOR,
@@ -383,6 +384,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             .createInjury(
                 wrestler.getId(),
                 defaultUniverse.getId(),
+                null,
                 "Twisted Ankle",
                 "Twisted his ankle.",
                 InjurySeverity.MODERATE,

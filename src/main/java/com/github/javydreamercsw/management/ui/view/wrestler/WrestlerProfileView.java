@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -105,6 +106,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final MultiWrestlerFeudService multiWrestlerFeudService;
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
+  private final InjuryTypeService injuryTypeService;
   private final AccountService accountService;
   private final NpcService npcService;
   private final CampaignService campaignService;
@@ -155,6 +157,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final RivalryService rivalryService,
       final SeasonService seasonService,
       final InjuryService injuryService,
+      final InjuryTypeService injuryTypeService,
       final NpcService npcService,
       @Qualifier("baseAccountService") final AccountService accountService,
       final CampaignService campaignService,
@@ -176,6 +179,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.multiWrestlerFeudService = multiWrestlerFeudService;
     this.rivalryService = rivalryService;
     this.injuryService = injuryService;
+    this.injuryTypeService = injuryTypeService;
     this.npcService = npcService;
     this.accountService = accountService;
     this.campaignService = campaignService;
@@ -335,6 +339,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               wrestler,
               wrestlerService,
               injuryService,
+              injuryTypeService,
               npcService,
               campaignService,
               wrestlerStateRepository,

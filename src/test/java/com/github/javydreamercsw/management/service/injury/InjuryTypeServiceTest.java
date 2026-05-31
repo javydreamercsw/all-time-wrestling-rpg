@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import java.util.Optional;
@@ -34,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class InjuryTypeServiceTest {
 
   @Mock private InjuryTypeRepository injuryTypeRepository;
+  @Mock private InjuryRepository injuryRepository;
   @InjectMocks private InjuryTypeService injuryTypeService;
 
   private InjuryType injuryType;
@@ -113,7 +115,8 @@ class InjuryTypeServiceTest {
 
   @Test
   void testDeleteInjuryType_success() {
-    when(injuryTypeRepository.existsById(1L)).thenReturn(true);
+    when(injuryTypeRepository.findById(1L)).thenReturn(Optional.of(injuryType));
+    when(injuryRepository.countByInjuryType(injuryType)).thenReturn(0L);
     doNothing().when(injuryTypeRepository).deleteById(1L);
     boolean result = injuryTypeService.deleteInjuryType(1L);
     assertThat(result).isTrue();
@@ -121,17 +124,18 @@ class InjuryTypeServiceTest {
 
   @Test
   void testDeleteInjuryType_notFound() {
-    when(injuryTypeRepository.existsById(99L)).thenReturn(false);
+    when(injuryTypeRepository.findById(99L)).thenReturn(Optional.empty());
     boolean result = injuryTypeService.deleteInjuryType(99L);
     assertThat(result).isFalse();
   }
 
   @Test
-  void testDeleteInjuryType_exception() {
-    when(injuryTypeRepository.existsById(1L)).thenReturn(true);
-    doThrow(new RuntimeException("DB error")).when(injuryTypeRepository).deleteById(1L);
+  void testDeleteInjuryType_blockedByReferences() {
+    when(injuryTypeRepository.findById(1L)).thenReturn(Optional.of(injuryType));
+    when(injuryRepository.countByInjuryType(injuryType)).thenReturn(3L);
     assertThatThrownBy(() -> injuryTypeService.deleteInjuryType(1L))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Cannot delete injury type");
+        .hasMessageContaining("Cannot delete injury type")
+        .hasMessageContaining("3 injury record(s)");
   }
 }

@@ -133,11 +133,11 @@ class DataMigrationServiceTest {
 
       stmt.execute(
           """
-          MERGE INTO injury (injury_id, wrestler_id, universe_id, name, description, severity,\
-           health_penalty, healing_cost, is_active, injury_date, creation_date, updated_at)\
-           KEY(injury_id) VALUES (10, 10, 10, 'Migration Torn ACL', 'Migration Torn ACL',\
-           'SEVERE', 2, 100, true, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(),\
-           CURRENT_TIMESTAMP())\
+          MERGE INTO injury (injury_id, wrestler_id, universe_id, injury_type_id, name,\
+           description, severity, health_penalty, healing_cost, is_active, injury_date,\
+           creation_date, updated_at) KEY(injury_id) VALUES (10, 10, 10, 10,\
+           'Migration Torn ACL', 'Migration Torn ACL', 'SEVERE', 2, 100, true,\
+           CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())\
           """);
     }
   }

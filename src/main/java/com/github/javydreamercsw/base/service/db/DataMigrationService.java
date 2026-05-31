@@ -1838,19 +1838,21 @@ public class DataMigrationService {
   private void migrateInjuries(
       @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
+    Long legacyTypeId = resolveLegacyInjuryTypeId(targetConnection);
+
     String sql =
         """
-        INSERT INTO injury (INJURY_ID, WRESTLER_ID, NAME, DESCRIPTION, SEVERITY, \
-        HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, \
+        INSERT INTO injury (INJURY_ID, WRESTLER_ID, INJURY_TYPE_ID, NAME, DESCRIPTION, SEVERITY,\
+         HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, \
         INJURY_NOTES, CREATION_DATE, EXTERNAL_ID, UNIVERSE_ID) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
-                SELECT INJURY_ID, WRESTLER_ID, NAME, DESCRIPTION, SEVERITY, HEALTH_PENALTY,\
-                 IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, INJURY_NOTES,\
+                SELECT INJURY_ID, WRESTLER_ID, INJURY_TYPE_ID, NAME, DESCRIPTION, SEVERITY,\
+                 HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, INJURY_NOTES,\
                  CREATION_DATE, EXTERNAL_ID, UNIVERSE_ID FROM injury\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
@@ -1859,21 +1861,23 @@ public class DataMigrationService {
       while (resultSet.next()) {
         targetStatement.setLong(1, resultSet.getLong("INJURY_ID"));
         targetStatement.setLong(2, resultSet.getLong("WRESTLER_ID"));
-        targetStatement.setString(3, resultSet.getString("NAME"));
-        targetStatement.setString(4, resultSet.getString("DESCRIPTION"));
-        targetStatement.setString(5, resultSet.getString("SEVERITY"));
-        targetStatement.setInt(6, resultSet.getInt("HEALTH_PENALTY"));
-        targetStatement.setBoolean(7, resultSet.getBoolean("IS_ACTIVE"));
-        targetStatement.setTimestamp(8, resultSet.getTimestamp("INJURY_DATE"));
-        targetStatement.setTimestamp(9, resultSet.getTimestamp("HEALED_DATE"));
-        targetStatement.setLong(10, resultSet.getLong("HEALING_COST"));
-        targetStatement.setString(11, resultSet.getString("INJURY_NOTES"));
-        targetStatement.setTimestamp(12, resultSet.getTimestamp("CREATION_DATE"));
-        targetStatement.setString(13, resultSet.getString("EXTERNAL_ID"));
+        Object typeIdObj = resultSet.getObject("INJURY_TYPE_ID");
+        targetStatement.setLong(3, typeIdObj != null ? (Long) typeIdObj : legacyTypeId);
+        targetStatement.setString(4, resultSet.getString("NAME"));
+        targetStatement.setString(5, resultSet.getString("DESCRIPTION"));
+        targetStatement.setString(6, resultSet.getString("SEVERITY"));
+        targetStatement.setInt(7, resultSet.getInt("HEALTH_PENALTY"));
+        targetStatement.setBoolean(8, resultSet.getBoolean("IS_ACTIVE"));
+        targetStatement.setTimestamp(9, resultSet.getTimestamp("INJURY_DATE"));
+        targetStatement.setTimestamp(10, resultSet.getTimestamp("HEALED_DATE"));
+        targetStatement.setLong(11, resultSet.getLong("HEALING_COST"));
+        targetStatement.setString(12, resultSet.getString("INJURY_NOTES"));
+        targetStatement.setTimestamp(13, resultSet.getTimestamp("CREATION_DATE"));
+        targetStatement.setString(14, resultSet.getString("EXTERNAL_ID"));
         if (resultSet.getObject("UNIVERSE_ID") != null) {
-          targetStatement.setLong(14, resultSet.getLong("UNIVERSE_ID"));
+          targetStatement.setLong(15, resultSet.getLong("UNIVERSE_ID"));
         } else {
-          targetStatement.setObject(14, null);
+          targetStatement.setObject(15, null);
         }
         targetStatement.addBatch();
         count++;
@@ -1886,6 +1890,20 @@ public class DataMigrationService {
         log.debug("Migrated {} Injuries", count);
       }
     }
+  }
+
+  private Long resolveLegacyInjuryTypeId(@NonNull final Connection targetConnection)
+      throws SQLException {
+    try (Statement stmt = targetConnection.createStatement();
+        ResultSet rs =
+            stmt.executeQuery(
+                "SELECT injury_type_id FROM injury_type WHERE injury_name = 'Legacy Injury'")) {
+      if (rs.next()) {
+        return rs.getLong(1);
+      }
+    }
+    throw new IllegalStateException(
+        "Legacy Injury sentinel not found in target — run Flyway migrations first.");
   }
 
   private void migrateTeams(

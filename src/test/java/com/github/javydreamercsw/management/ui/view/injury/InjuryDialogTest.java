@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.grid.Grid;
 import java.util.Collections;
@@ -37,6 +38,7 @@ import org.mockito.Mock;
 class InjuryDialogTest extends AbstractViewTest {
 
   @Mock private InjuryService injuryService;
+  @Mock private InjuryTypeService injuryTypeService;
   @Mock private SecurityUtils securityUtils;
 
   private InjuryDialog dialog;
@@ -52,7 +54,8 @@ class InjuryDialogTest extends AbstractViewTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler");
 
-    dialog = new InjuryDialog(wrestler, 1L, injuryService, () -> {}, securityUtils);
+    dialog =
+        new InjuryDialog(wrestler, 1L, injuryService, injuryTypeService, () -> {}, securityUtils);
   }
 
   @Test
