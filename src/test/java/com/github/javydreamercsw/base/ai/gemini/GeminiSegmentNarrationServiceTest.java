@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.management.service.performance.PerformanceMonitoringService;
@@ -41,12 +42,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class GeminiSegmentNarrationServiceTest {
 
   @Mock private AiSettingsService aiSettingsService;
-  @Mock private GeminiConfigProperties geminiConfigProperties;
   @Mock private Environment environment;
   @Mock private HttpClient httpClient;
   @Mock private PerformanceMonitoringService performanceMonitoringService;
@@ -56,12 +57,13 @@ class GeminiSegmentNarrationServiceTest {
   @BeforeEach
   void setUp() {
     service =
-        new GeminiSegmentNarrationService(geminiConfigProperties, environment, aiSettingsService) {
+        new GeminiSegmentNarrationService(environment, aiSettingsService) {
           @Override
-          protected HttpClient getHttpClient(final int timeout) {
+          protected synchronized HttpClient getHttpClient(final int timeout) {
             return httpClient;
           }
         };
+    ReflectionTestUtils.setField(service, "objectMapper", new ObjectMapper());
     service.setPerformanceMonitoringService(performanceMonitoringService);
   }
 
@@ -79,7 +81,7 @@ class GeminiSegmentNarrationServiceTest {
   void isAvailable_enabledWithKey_returnsTrue() {
     when(aiSettingsService.isGeminiEnabled()).thenReturn(true);
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
-    when(geminiConfigProperties.getApiKey()).thenReturn("AIzaSy-test-key");
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-test-key");
 
     assertTrue(service.isAvailable());
   }
@@ -95,7 +97,7 @@ class GeminiSegmentNarrationServiceTest {
   void isAvailable_noApiKey_returnsFalse() {
     when(aiSettingsService.isGeminiEnabled()).thenReturn(true);
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
-    when(geminiConfigProperties.getApiKey()).thenReturn("");
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("");
 
     assertFalse(service.isAvailable());
   }
@@ -104,7 +106,7 @@ class GeminiSegmentNarrationServiceTest {
   void isAvailable_nullApiKey_returnsFalse() {
     when(aiSettingsService.isGeminiEnabled()).thenReturn(true);
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
-    when(geminiConfigProperties.getApiKey()).thenReturn(null);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn(null);
 
     assertFalse(service.isAvailable());
   }
@@ -135,11 +137,11 @@ class GeminiSegmentNarrationServiceTest {
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
     when(httpResponse.headers()).thenReturn(emptyHeaders());
-    when(geminiConfigProperties.getModelName()).thenReturn("gemini-2.5-flash");
-    when(geminiConfigProperties.getApiUrl())
+    when(aiSettingsService.getGeminiModelName()).thenReturn("gemini-2.5-flash");
+    when(aiSettingsService.getGeminiApiUrl())
         .thenReturn("https://generativelanguage.googleapis.com/v1beta/models/");
-    when(geminiConfigProperties.getApiKey()).thenReturn("AIzaSy-test-key");
-    when(geminiConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -165,11 +167,11 @@ class GeminiSegmentNarrationServiceTest {
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
     when(httpResponse.headers()).thenReturn(emptyHeaders());
-    when(geminiConfigProperties.getModelName()).thenReturn("gemini-2.5-flash");
-    when(geminiConfigProperties.getApiUrl())
+    when(aiSettingsService.getGeminiModelName()).thenReturn("gemini-2.5-flash");
+    when(aiSettingsService.getGeminiApiUrl())
         .thenReturn("https://generativelanguage.googleapis.com/v1beta/models/");
-    when(geminiConfigProperties.getApiKey()).thenReturn("AIzaSy-test-key");
-    when(geminiConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -185,11 +187,11 @@ class GeminiSegmentNarrationServiceTest {
     when(httpResponse.statusCode()).thenReturn(403);
     when(httpResponse.body()).thenReturn("{\"error\": \"API key invalid\"}");
     when(httpResponse.headers()).thenReturn(emptyHeaders());
-    when(geminiConfigProperties.getModelName()).thenReturn("gemini-2.5-flash");
-    when(geminiConfigProperties.getApiUrl())
+    when(aiSettingsService.getGeminiModelName()).thenReturn("gemini-2.5-flash");
+    when(aiSettingsService.getGeminiApiUrl())
         .thenReturn("https://generativelanguage.googleapis.com/v1beta/models/");
-    when(geminiConfigProperties.getApiKey()).thenReturn("bad-key");
-    when(geminiConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("bad-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -209,11 +211,11 @@ class GeminiSegmentNarrationServiceTest {
     when(httpResponse.body())
         .thenReturn("{\"error\": {\"code\": 429, \"message\": \"Resource exhausted\"}}");
     when(httpResponse.headers()).thenReturn(emptyHeaders());
-    when(geminiConfigProperties.getModelName()).thenReturn("gemini-2.5-flash");
-    when(geminiConfigProperties.getApiUrl())
+    when(aiSettingsService.getGeminiModelName()).thenReturn("gemini-2.5-flash");
+    when(aiSettingsService.getGeminiApiUrl())
         .thenReturn("https://generativelanguage.googleapis.com/v1beta/models/");
-    when(geminiConfigProperties.getApiKey()).thenReturn("AIzaSy-test-key");
-    when(geminiConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -224,11 +226,11 @@ class GeminiSegmentNarrationServiceTest {
   @SuppressWarnings("unchecked")
   void generateText_timeoutException_throwsAIServiceExceptionWith504()
       throws IOException, InterruptedException {
-    when(geminiConfigProperties.getModelName()).thenReturn("gemini-2.5-flash");
-    when(geminiConfigProperties.getApiUrl())
+    when(aiSettingsService.getGeminiModelName()).thenReturn("gemini-2.5-flash");
+    when(aiSettingsService.getGeminiApiUrl())
         .thenReturn("https://generativelanguage.googleapis.com/v1beta/models/");
-    when(geminiConfigProperties.getApiKey()).thenReturn("AIzaSy-test-key");
-    when(geminiConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenThrow(new HttpTimeoutException("Connection timed out"));
 
@@ -256,11 +258,11 @@ class GeminiSegmentNarrationServiceTest {
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
     when(httpResponse.headers()).thenReturn(emptyHeaders());
-    when(geminiConfigProperties.getModelName()).thenReturn("gemini-2.5-flash");
-    when(geminiConfigProperties.getApiUrl())
+    when(aiSettingsService.getGeminiModelName()).thenReturn("gemini-2.5-flash");
+    when(aiSettingsService.getGeminiApiUrl())
         .thenReturn("https://generativelanguage.googleapis.com/v1beta/models/");
-    when(geminiConfigProperties.getApiKey()).thenReturn("AIzaSy-test-key");
-    when(geminiConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -282,11 +284,11 @@ class GeminiSegmentNarrationServiceTest {
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
     when(httpResponse.headers()).thenReturn(emptyHeaders());
-    when(geminiConfigProperties.getModelName()).thenReturn("gemini-2.5-flash");
-    when(geminiConfigProperties.getApiUrl())
+    when(aiSettingsService.getGeminiModelName()).thenReturn("gemini-2.5-flash");
+    when(aiSettingsService.getGeminiApiUrl())
         .thenReturn("https://generativelanguage.googleapis.com/v1beta/models/");
-    when(geminiConfigProperties.getApiKey()).thenReturn("AIzaSy-test-key");
-    when(geminiConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -309,11 +311,11 @@ class GeminiSegmentNarrationServiceTest {
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
     when(httpResponse.headers()).thenReturn(emptyHeaders());
-    when(geminiConfigProperties.getModelName()).thenReturn("gemini-2.5-flash");
-    when(geminiConfigProperties.getApiUrl())
+    when(aiSettingsService.getGeminiModelName()).thenReturn("gemini-2.5-flash");
+    when(aiSettingsService.getGeminiApiUrl())
         .thenReturn("https://generativelanguage.googleapis.com/v1beta/models/");
-    when(geminiConfigProperties.getApiKey()).thenReturn("AIzaSy-abc123");
-    when(geminiConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-abc123");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
 
     org.mockito.ArgumentCaptor<HttpRequest> requestCaptor =
         org.mockito.ArgumentCaptor.forClass(HttpRequest.class);

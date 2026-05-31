@@ -18,7 +18,6 @@ package com.github.javydreamercsw.base.ai.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
-import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -48,23 +47,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class OpenAISegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private final ObjectMapper objectMapper;
-  private final OpenAIConfigProperties openAIConfigProperties;
+  @Autowired private ObjectMapper objectMapper;
   private final Environment environment;
-  private final SegmentNarrationConfig segmentNarrationConfig;
   private final AiSettingsService aiSettingsService;
 
   @Autowired
   public OpenAISegmentNarrationService(
-      final OpenAIConfigProperties openAIConfigProperties,
-      final Environment environment,
-      final SegmentNarrationConfig segmentNarrationConfig,
-      final AiSettingsService aiSettingsService) {
+      final Environment environment, final AiSettingsService aiSettingsService) {
     this.aiSettingsService = aiSettingsService;
-    this.objectMapper = new ObjectMapper();
     this.environment = environment;
-    this.segmentNarrationConfig = segmentNarrationConfig;
-    this.openAIConfigProperties = openAIConfigProperties;
   }
 
   @Override
@@ -74,13 +65,12 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
 
   @Override
   public String getProviderName() {
+    String model = getModel();
+    String premiumModel = aiSettingsService.getOpenAIPremiumModel();
     return "OpenAI "
-        + (getModel() == null
+        + (model == null
             ? "Unknown"
-            : openAIConfigProperties.getPremiumModel() != null
-                    && getModel().contains(openAIConfigProperties.getPremiumModel())
-                ? "GPT-4"
-                : "GPT-3.5"); // Use configured premium model
+            : premiumModel != null && model.contains(premiumModel) ? "GPT-4" : "GPT-3.5");
   }
 
   @Override
@@ -95,18 +85,11 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
     return apiKey != null && !apiKey.trim().isEmpty();
   }
 
-  @Override
-  public String generateText(@NonNull final String prompt) {
-    return callOpenAI(prompt);
-  }
-
   public String getModel() {
-    // Allow model configuration via environment variable
     String configuredModel = aiSettingsService.getOpenAIPremiumModel();
-    // Use configured default model
     return configuredModel != null && !configuredModel.trim().isEmpty()
         ? configuredModel.trim()
-        : openAIConfigProperties.getDefaultModel();
+        : aiSettingsService.getOpenAIDefaultModel();
   }
 
   /** Makes a call to the OpenAI API with the given prompt. */
@@ -130,7 +113,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
                   Map.of("role", "system", "content", getSystemMessage(prompt)),
                   Map.of("role", "user", "content", prompt)),
               "max_tokens",
-              openAIConfigProperties.getMaxTokens(), // Use configured max tokens
+              aiSettingsService.getOpenAIMaxTokens(),
               "temperature",
               0.8, // Good balance for creative storytelling
               "top_p",
@@ -146,16 +129,15 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
       // Create HTTP request
       HttpRequest request =
           HttpRequest.newBuilder()
-              .uri(URI.create(openAIConfigProperties.getApiUrl())) // Use configured API URL
+              .uri(URI.create(aiSettingsService.getOpenAIApiUrl()))
               .header("Content-Type", "application/json")
               .header("Authorization", "Bearer " + aiSettingsService.getOpenAIApiKey())
-              .timeout(Duration.ofSeconds(segmentNarrationConfig.getAi().getTimeout()))
+              .timeout(Duration.ofSeconds(aiSettingsService.getAiTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
-      // Send request and get response
       HttpResponse<String> response =
-          getHttpClient(segmentNarrationConfig.getAi().getTimeout())
+          getHttpClient(aiSettingsService.getAiTimeout())
               .send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
@@ -231,8 +213,8 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
    * @return true if using GPT-4, false if using GPT-3.5
    */
   public boolean isUsingPremiumModel() {
-    return openAIConfigProperties.getPremiumModel() != null
-        && getModel().contains(openAIConfigProperties.getPremiumModel());
+    String premiumModel = aiSettingsService.getOpenAIPremiumModel();
+    return premiumModel != null && getModel().contains(premiumModel);
   }
 
   /**
