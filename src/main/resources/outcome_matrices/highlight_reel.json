@@ -1,0 +1,403 @@
+{
+  "name": "Highlight Reel",
+  "category": "HIGHLIGHT_REEL",
+  "description": "TV segment narrative outcomes affecting Grudge and TV Grades",
+  "entries": [ {
+    "diceRoll": 1,
+    "templateText": "The arena lights drop to pitch black and FAVORED makes a shocking, unannounced return from injury, sending the crowd into an absolute frenzy.",
+    "fanDelta": 3000,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 2,
+    "templateText": "FAVORED bursts through the crowd during a standard match, marking an explosive return from suspension to clear the ring.",
+    "fanDelta": 2200,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 3,
+    "templateText": "An iconic theme song echoes out of the PA system as FAVORED steps onto the stage after months away, shocking the wrestling world.",
+    "fanDelta": 2800,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 4,
+    "templateText": "FAVORED hits the ring disguised as a camera operator, pulling off their mask to reveal their return by blindsiding UNDERDOG.",
+    "fanDelta": -1200,
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 5,
+    "templateText": "FAVORED stands on the entrance ramp, pointing directly at the championship banner to declare their long-awaited return to active competition.",
+    "fanDelta": 1500
+  }, {
+    "diceRoll": 6,
+    "templateText": "FAVORED returns during an interview segment, silently walking down the ramp to lock eyes with an incredibly stunned UNDERDOG.",
+    "fanDelta": 1800,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 7,
+    "templateText": "The countdown clock expires and FAVORED makes an unadvertised return, completely changing the landscape of the main event picture.",
+    "fanDelta": 2600,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 8,
+    "templateText": "FAVORED makes a dramatic return via the arena rafters, dropping down to rescue UNDERDOG from an overwhelming numbers game.",
+    "fanDelta": 2400,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 9,
+    "templateText": "A sleek vignette concludes with FAVORED stepping through the curtain, marking a high-profile, incredibly hyped roster debut.",
+    "fanDelta": 1600
+  }, {
+    "diceRoll": 10,
+    "templateText": "FAVORED makes an unannounced debut from the developmental brand, instantly laying out UNDERDOG with a thunderous signature strike.",
+    "fanDelta": -800,
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 11,
+    "templateText": "The international standout FAVORED debuts by walking right down to ringside and staring intensely at the reigning champion.",
+    "fanDelta": 1200
+  }, {
+    "diceRoll": 12,
+    "templateText": "FAVORED debuts by hijacking the microphone during a commercial break, cutting an incredibly sharp promo that introduces their persona.",
+    "fanDelta": -600
+  }, {
+    "diceRoll": 13,
+    "templateText": "A mysterious, highly stylized entrance video plays as FAVORED makes an ominous main roster debut that leaves the arena completely silent.",
+    "fanDelta": -500
+  }, {
+    "diceRoll": 14,
+    "templateText": "FAVORED makes a surprise debut by interrupting a standard squash match, annihilating both competitors to make an immediate statement.",
+    "fanDelta": 1400,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 15,
+    "templateText": "FAVORED and UNDERDOG sit across from each other, calmly signing the contract for their upcoming championship match before shaking hands.",
+    "fanDelta": 1000
+  }, {
+    "diceRoll": 16,
+    "templateText": "The contract signing quickly breaks down; FAVORED hoists UNDERDOG up and drives them directly through the mahogany table.",
+    "fanDelta": -1400,
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 17,
+    "templateText": "FAVORED signs the contract with their own blood, presenting a terrifying visual display of psychological warfare to UNDERDOG.",
+    "fanDelta": -1000,
+    "heatDelta": 3,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 18,
+    "templateText": "UNDERDOG signs the document, but FAVORED flips the heavy table directly onto them, initiating a chaotic, wild ringside brawl.",
+    "fanDelta": -1100,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 19,
+    "templateText": "FAVORED refuses to sign the contract, ripping the paperwork to shreds right in front of an incredibly frustrated UNDERDOG.",
+    "fanDelta": -700,
+    "heatDelta": 2
+  }, {
+    "diceRoll": 20,
+    "templateText": "FAVORED locks UNDERDOG inside a submission hold right on top of the unsigned contract, forcing an executive official to intervene.",
+    "fanDelta": -1300,
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 21,
+    "templateText": "An executive official presents FAVORED with a brand-new, customized championship belt during a lavish, pyro-heavy ring ceremony.",
+    "fanDelta": -1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 22,
+    "templateText": "FAVORED is celebrating their new title when UNDERDOG drops from the ceiling, snatching the gold away before sprinting into the crowd.",
+    "fanDelta": 2000,
+    "heatDelta": 5,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 23,
+    "templateText": "FAVORED hosts a massive title presentation filled with balloons and champagne, completely mocking the hard work of UNDERDOG.",
+    "fanDelta": -1200,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 24,
+    "templateText": "During a championship presentation, UNDERDOG walks out and uses a spray can to deface the new title belt held by FAVORED.",
+    "fanDelta": 1800,
+    "heatDelta": 4,
+    "grudgeGradeDelta": 2
+  }, {
+    "diceRoll": 25,
+    "templateText": "FAVORED hits a brutal low blow on the legend presenting the championship belt, drawing intense, deafening heat from the live arena.",
+    "fanDelta": -1500,
+    "heatDelta": 5,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 26,
+    "templateText": "FAVORED stops their own title ceremony to call out UNDERDOG, demanding they look directly at the gold they will never win.",
+    "fanDelta": -900,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 27,
+    "templateText": "FAVORED approaches the guardrail, taking off their signature sunglasses and handing them directly to a crying child in the front row.",
+    "fanDelta": 1900
+  }, {
+    "diceRoll": 28,
+    "templateText": "FAVORED slaps a cup of soda out of a fan's hand, actively berating the ringside crowd until arena security forces them back.",
+    "fanDelta": -1400,
+    "heatDelta": 2
+  }, {
+    "diceRoll": 29,
+    "templateText": "FAVORED celebrates a massive victory by jumping deep into the crowd, surfing the wave of ecstatic fans at ringside.",
+    "fanDelta": 2500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 30,
+    "templateText": "FAVORED gets right into the face of a vocal fan, using their microphone to completely humiliate them on live international television.",
+    "fanDelta": -1100
+  }, {
+    "diceRoll": 31,
+    "templateText": "FAVORED pulls an enthusiastic fan over the guardrail to dance in the ring, creating a highly memorable, feel-good television moment.",
+    "fanDelta": 1700
+  }, {
+    "diceRoll": 32,
+    "templateText": "FAVORED uses an innocent fan as a human shield to successfully dodge a flying crossbody attempt from a desperate UNDERDOG.",
+    "fanDelta": -1500,
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 33,
+    "templateText": "The TitanTron screen flashes to a dark, hidden camera feed showing FAVORED systematically destroying the locker room of UNDERDOG.",
+    "fanDelta": -1200,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 34,
+    "templateText": "UNDERDOG cuts a live video promo from a remote hospital bed, vowing absolute, unmitigated vengeance against a smirking FAVORED.",
+    "fanDelta": 1500,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 35,
+    "templateText": "FAVORED plays exclusive, highly embarrassing archival training footage on the big screen to completely ruin the segment of UNDERDOG.",
+    "fanDelta": -900,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 36,
+    "templateText": "The big screen reveals a shocking live parking lot feed showing FAVORED getting jumped by a masked group of rogue individuals.",
+    "fanDelta": 1100,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 37,
+    "templateText": "FAVORED hacks the arena broadcast signal, playing an ominous video message that counts down the exact days left in the career of UNDERDOG.",
+    "fanDelta": -1000,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 38,
+    "templateText": "A mysterious satellite broadcast interrupts the show, revealing that FAVORED has been secretly communicating with a rival promotion's management.",
+    "fanDelta": -1300,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 39,
+    "templateText": "FAVORED storms down to the ring in civilian clothes, grabs a microphone, and issues an open, impromptu challenge to anyone in the back.",
+    "fanDelta": 1600
+  }, {
+    "diceRoll": 40,
+    "templateText": "FAVORED challenges UNDERDOG to a match right this second, catching UNDERDOG completely off-guard as referees rush to start the bout.",
+    "fanDelta": 2100,
+    "heatDelta": 4,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 41,
+    "templateText": "UNDERDOG answers an open challenge from FAVORED, charging down the ramp to start an incredibly fast-paced, unscheduled television match.",
+    "fanDelta": 1800,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 42,
+    "templateText": "FAVORED lays out an impromptu challenge, but aggressively attacks UNDERDOG during their entrance before the bell can officially ring.",
+    "fanDelta": -1100,
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 43,
+    "templateText": "FAVORED issues an impromptu challenge, then immediately chickens out and leaves the arena the moment UNDERDOG steps onto the stage.",
+    "fanDelta": -1000,
+    "heatDelta": 2
+  }, {
+    "diceRoll": 44,
+    "templateText": "A mainstream Hollywood action movie star sits front row, standing up to cheer loudly as FAVORED executes their signature pose.",
+    "fanDelta": 1400
+  }, {
+    "diceRoll": 45,
+    "templateText": "FAVORED gets physical with a guest celebrity musician at ringside, causing a massive mainstream media moment as security separates them.",
+    "fanDelta": -1200,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 46,
+    "templateText": "A champion professional athlete from the local city team steps over the guardrail to hand a weapon directly to UNDERDOG.",
+    "fanDelta": 2500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 47,
+    "templateText": "FAVORED insults a guest celebrity chef sitting at ringside, getting a face full of food in a highly embarrassing televised botch.",
+    "fanDelta": -800
+  }, {
+    "diceRoll": 48,
+    "templateText": "FAVORED manages to convince a guest celebrity influencer to join their faction, creating an incredibly polarizing pop-culture alliance.",
+    "fanDelta": -1100
+  }, {
+    "diceRoll": 49,
+    "templateText": "The live crowd begins a deafening, unified chant that completely drowns out the scripted, corporate promo being delivered by FAVORED.",
+    "fanDelta": -1400,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 50,
+    "templateText": "The arena audience initiates a massive, synchronized crowd wave, completely ignoring a highly flat, unengaging segment featuring FAVORED.",
+    "fanDelta": -500,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 51,
+    "templateText": "An organic, stadium-wide chant for UNDERDOG forces FAVORED to break character and visually lose their temper in the center of the ring.",
+    "fanDelta": 1300,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 52,
+    "templateText": "The crowd violently boos a forced corporate announcement by FAVORED, completely hijacking the television segment with intense hostility.",
+    "fanDelta": -1500
+  }, {
+    "diceRoll": 53,
+    "templateText": "A bizarre, funny crowd chant goes highly viral online, instantly turning a standard mid-card promo by FAVORED into a memorable segment.",
+    "fanDelta": 1100
+  }, {
+    "diceRoll": 54,
+    "templateText": "The arena lights totally fail during a promo, and the crowd uses their cell phone flashlights to create a breathtaking visual spectacle for FAVORED.",
+    "fanDelta": 2000,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 55,
+    "templateText": "A massive backstage brawl between multiple factions spills right into the arena, completely disrupting the ongoing interview of FAVORED.",
+    "fanDelta": 1500
+  }, {
+    "diceRoll": 56,
+    "templateText": "The stable representing FAVORED completely cuts off the power grid to the arena, executing a brutal, pitch-black ambush on UNDERDOG.",
+    "fanDelta": -1300,
+    "heatDelta": 5,
+    "grudgeGradeDelta": 2,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 57,
+    "templateText": "FAVORED has their promo completely disrupted by a shower of red liquid pouring down from the arena ceiling, destroying their expensive suit.",
+    "fanDelta": 1800,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 58,
+    "templateText": "An invading stable from a rival wrestling company jumps the barricade, completely ruining the high-profile segment of FAVORED.",
+    "fanDelta": 1200,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 59,
+    "templateText": "FAVORED sees their in-ring celebration completely ruined when a rogue truck crashes directly into the staging area backstage.",
+    "fanDelta": -600,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 60,
+    "templateText": "FAVORED goes on a highly emotional, unscripted rant against management, dropping the microphone and walking out as the segment ends early.",
+    "fanDelta": 2200,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 61,
+    "templateText": "FAVORED presents a spectacular, highly coordinated fireworks display to open the broadcast, instantly setting an energetic tone for the night.",
+    "fanDelta": 1600
+  }, {
+    "diceRoll": 62,
+    "templateText": "FAVORED is brutally attacked by a masked assailant during a routine commercial break, leaving them bleeding heavily on the entrance ramp.",
+    "fanDelta": -1000,
+    "grudgeGradeDelta": 1,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 63,
+    "templateText": "FAVORED brings out a legendary Hall of Famer to announce them as their new official manager, creating an iconic television image.",
+    "fanDelta": 2500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 64,
+    "templateText": "FAVORED stumbles over their lines badly during an intense promo, leading to a loud, embarrassing 'You botched it!' chant from the arena.",
+    "fanDelta": -800,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 65,
+    "templateText": "FAVORED targets the local sports team of the host city, causing an immediate, incredibly hostile wave of uniform boos.",
+    "fanDelta": -1300
+  }, {
+    "diceRoll": 66,
+    "templateText": "FAVORED cuts a deeply moving, completely genuine promo about their real-life recovery journey, gaining massive universal respect.",
+    "fanDelta": 2700,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 67,
+    "templateText": "FAVORED acts incredibly arrogant, throwing their official merchandise directly into a nearby ringside trash can while laughing.",
+    "fanDelta": -1100,
+    "heatDelta": 2
+  }, {
+    "diceRoll": 68,
+    "templateText": "UNDERDOG uses a massive steel pipe to smash up the luxury sports car belonging to FAVORED live in the arena parking lot.",
+    "fanDelta": 2400,
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 69,
+    "templateText": "FAVORED enters the arena riding a massive, high-powered military vehicle, generating a truly unforgettable visual entrance.",
+    "fanDelta": 2300,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 70,
+    "templateText": "An intense, multi-man locker room brawl requires the active intervention of the entire local police force to separate FAVORED and UNDERDOG.",
+    "fanDelta": 1400,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 71,
+    "templateText": "FAVORED stands victoriously on top of a 15-foot ladder center ring, holding a briefcase high as pyro explodes directly behind them.",
+    "fanDelta": 1700
+  }, {
+    "diceRoll": 72,
+    "templateText": "FAVORED completely refuses to compete in their scheduled match, walking out of the building to a cascade of heavy arena boos.",
+    "fanDelta": -1200,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 73,
+    "templateText": "FAVORED completely saves a failing, low-energy segment by executing a spectacular, unscripted dive off the top of the video screen.",
+    "fanDelta": 2800,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 74,
+    "templateText": "FAVORED targets the elderly, beloved broadcast commentator at ringside, flipping their desk over in a disgusting display of power.",
+    "fanDelta": -1500,
+    "heatDelta": 5,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 75,
+    "templateText": "UNDERDOG introduces a highly popular, returning gimmick persona from their past, blowing the roof completely off the live stadium.",
+    "fanDelta": 2900,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 76,
+    "templateText": "FAVORED gets trapped inside a descending steel cage while a vengeful UNDERDOG slowly walks down the ramp carrying a heavy weapon.",
+    "fanDelta": 1900,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 77,
+    "templateText": "FAVORED throws an incredible, massive celebration party featuring live musical performers, completely elevating the production level of the show.",
+    "fanDelta": 1600
+  }, {
+    "diceRoll": 78,
+    "templateText": "FAVORED hits a brutal running dropkick that sends UNDERDOG crashing directly through the thick plastic protective ringside barricade.",
+    "fanDelta": -1000,
+    "heatDelta": 4,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 79,
+    "templateText": "FAVORED delivers a highly memorable, legendary comedic insult that instantly trends worldwide, completely ruining the serious persona of UNDERDOG.",
+    "fanDelta": 2100,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 80,
+    "templateText": "FAVORED stands completely alone in the center of a dark ring as a single spotlight focuses on them, cementing their status as the face of the brand.",
+    "fanDelta": 2200
+  } ]
+}

@@ -1,0 +1,279 @@
+{
+  "name": "Finisher",
+  "category": "FINISHER",
+  "description": "Determines outcomes when a wrestler goes for a finishing move",
+  "entries": [ {
+    "diceRoll": 1,
+    "templateText": "FAVORED connects with their finisher dead center — UNDERDOG crumbles and the referee counts a clean three.",
+    "fanDelta": 2000
+  }, {
+    "diceRoll": 2,
+    "templateText": "FAVORED hits their finisher flawlessly from the top rope, turning UNDERDOG inside out for the definitive victory.",
+    "fanDelta": 2500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 3,
+    "templateText": "FAVORED hooks the arms of UNDERDOG and plants them deep into the canvas with their finisher, securing an immediate pin.",
+    "fanDelta": 1800
+  }, {
+    "diceRoll": 4,
+    "templateText": "FAVORED delivers their finisher with devastating impact, knocking UNDERDOG completely unconscious to win the match.",
+    "fanDelta": 2200
+  }, {
+    "diceRoll": 5,
+    "templateText": "FAVORED hoists UNDERDOG up, walks around the ring to show off, and blasts them with their finisher for a dominant win.",
+    "fanDelta": -1500,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 6,
+    "templateText": "FAVORED catches a mid-air UNDERDOG and seamlessly transitions into their finisher, ending the match in absolute style.",
+    "fanDelta": 3000,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 7,
+    "templateText": "FAVORED locks in their submission finisher, wrenching back with maximum torque until UNDERDOG has no choice but to tap out.",
+    "fanDelta": 1700
+  }, {
+    "diceRoll": 8,
+    "templateText": "FAVORED strikes with blinding speed, hitting their running finisher on UNDERDOG to capture the standard three-count.",
+    "fanDelta": 1900
+  }, {
+    "diceRoll": 9,
+    "templateText": "FAVORED cuts off a desperation comeback by UNDERDOG, hitting their finisher out of nowhere to pick up the win.",
+    "fanDelta": 1600
+  }, {
+    "diceRoll": 10,
+    "templateText": "FAVORED hits their signature high-impact finisher, pinning UNDERDOG while staring directly at the commentary table.",
+    "fanDelta": -1200,
+    "heatDelta": 2
+  }, {
+    "diceRoll": 11,
+    "templateText": "FAVORED hits the finisher, but UNDERDOG gets a shoulder up at 2.99, causing the entire arena to explode in disbelief.",
+    "fanDelta": 1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 12,
+    "templateText": "FAVORED hits their finisher flush, but UNDERDOG gets their foot onto the bottom rope at the absolute last microsecond.",
+    "fanDelta": 1200
+  }, {
+    "diceRoll": 13,
+    "templateText": "FAVORED delivers the finisher, but a sluggish cover allows UNDERDOG to dramatically kick out at two and a half.",
+    "fanDelta": 1000
+  }, {
+    "diceRoll": 14,
+    "templateText": "FAVORED covers after their finisher, but UNDERDOG powerfully powers out of the pin, shocking FAVORED to their core.",
+    "fanDelta": 1400,
+    "heatDelta": 2
+  }, {
+    "diceRoll": 15,
+    "templateText": "FAVORED plants UNDERDOG with their finisher, but UNDERDOG kicks out and instantly fires up, fueling a massive crowd chant.",
+    "fanDelta": 1800,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 16,
+    "templateText": "FAVORED scales the ropes to mock the fans before covering, giving UNDERDOG just enough recovery time to kick out at two.",
+    "fanDelta": -1100,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 17,
+    "templateText": "FAVORED looks down in absolute shock as UNDERDOG barely twitches a shoulder off the canvas to break up the three-count.",
+    "fanDelta": 1100
+  }, {
+    "diceRoll": 18,
+    "templateText": "FAVORED hits their finisher, but UNDERDOG absorbs the impact and kicks out at one, completely paralyzing FAVORED with fear.",
+    "fanDelta": 2000,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 19,
+    "templateText": "FAVORED tries for a lazy one-hand cover after their finisher, and UNDERDOG dramatically kicks out to keep their hopes alive.",
+    "fanDelta": -1000
+  }, {
+    "diceRoll": 20,
+    "templateText": "FAVORED connects with the finisher, but UNDERDOG acts on pure survival instinct, rolling a shoulder up just as the referee's hand falls.",
+    "fanDelta": 1300
+  }, {
+    "diceRoll": 21,
+    "templateText": "FAVORED hoists them up, but UNDERDOG slips down their back, trapping the leg and locking in a devastating submission hold.",
+    "fanDelta": -1200
+  }, {
+    "diceRoll": 22,
+    "templateText": "FAVORED jumps for their finisher, but UNDERDOG counters in mid-air, rolling over into a deep, agonizing armbar.",
+    "fanDelta": -1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 23,
+    "templateText": "FAVORED attempts their submission finisher, but UNDERDOG counters the grip and applies their own signature chokehold instead.",
+    "fanDelta": -1400,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 24,
+    "templateText": "FAVORED charges forward, but UNDERDOG side-steps the finisher, grabbing the ankle and applying an ankle lock center ring.",
+    "fanDelta": -1100
+  }, {
+    "diceRoll": 25,
+    "templateText": "FAVORED hooks the arms, but UNDERDOG uses a massive back body drop to counter, immediately transitioning into a submission.",
+    "fanDelta": -1000
+  }, {
+    "diceRoll": 26,
+    "templateText": "FAVORED tries to apply their finisher, but UNDERDOG rolls through the momentum, locking in a high-torque leg lace.",
+    "fanDelta": -900
+  }, {
+    "diceRoll": 27,
+    "templateText": "FAVORED sets up the finisher, but UNDERDOG catches the arm, spinning underneath into a crossface that leaves FAVORED screaming.",
+    "fanDelta": -1300
+  }, {
+    "diceRoll": 28,
+    "templateText": "FAVORED runs into the corner for their finisher, but UNDERDOG catches them, slamming them down and locking in a sharpshooter.",
+    "fanDelta": -1200
+  }, {
+    "diceRoll": 29,
+    "templateText": "UNDERDOG taunts FAVORED, hits them with their own finisher, and stands tall as the crowd roars at the ultimate disrespect.",
+    "fanDelta": -1500,
+    "heatDelta": 4,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 30,
+    "templateText": "FAVORED is stunned as UNDERDOG perfectly executes the finisher of FAVORED, nearly securing a shocking pinfall victory.",
+    "fanDelta": -1400,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 31,
+    "templateText": "UNDERDOG ducks a clothesline and hits a textbook imitation of the finisher of FAVORED, sending a clear psychological message.",
+    "fanDelta": -1200,
+    "heatDelta": 2
+  }, {
+    "diceRoll": 32,
+    "templateText": "FAVORED sets up their move, but UNDERDOG reverses it and hits the finisher of FAVORED on them instead, leaving them dazed.",
+    "fanDelta": -1300,
+    "heatDelta": 3
+  }, {
+    "diceRoll": 33,
+    "templateText": "UNDERDOG steals the spotlight by locking FAVORED in their own signature submission finisher, mocking them mercilessly.",
+    "fanDelta": -1100,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 34,
+    "templateText": "FAVORED misses a strike, allowing UNDERDOG to lift them up and hit the finisher of FAVORED directly onto the hard canvas.",
+    "fanDelta": -1400
+  }, {
+    "diceRoll": 35,
+    "templateText": "UNDERDOG plays possum, then surprises an overconfident FAVORED by delivering the finisher of FAVORED to a massive crowd pop.",
+    "fanDelta": -1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 36,
+    "templateText": "FAVORED takes too long setting up, enabling UNDERDOG to counter and execute a flawless version of the finisher of FAVORED.",
+    "fanDelta": -1300
+  }, {
+    "diceRoll": 37,
+    "templateText": "FAVORED whiffs completely on their high-flying finisher, crashing violently through the announcer's table at ringside.",
+    "fanDelta": -800,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 38,
+    "templateText": "FAVORED tries for their finisher, but UNDERDOG moves out of the way, causing FAVORED to smash into the steel ring post.",
+    "fanDelta": -700,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 39,
+    "templateText": "FAVORED slips on the top rope while attempting their finisher, landing awkwardly and clutching their knee in agonizing pain.",
+    "fanDelta": -600,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 40,
+    "templateText": "FAVORED charges for their finisher but misses completely, tumbling over the top rope and splatting hard onto the concrete floor.",
+    "fanDelta": -500,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 41,
+    "templateText": "FAVORED springboards for their finisher, but a technical botch causes them to crash face-first into the canvas.",
+    "fanDelta": -400
+  }, {
+    "diceRoll": 42,
+    "templateText": "FAVORED goes for the finisher, but their body gives out from exhaustion, causing them to collapse short of hitting UNDERDOG.",
+    "fanDelta": -300
+  }, {
+    "diceRoll": 43,
+    "templateText": "FAVORED throws a running strike that UNDERDOG ducks, causing FAVORED to crash chest-first into the turnbuckle.",
+    "fanDelta": -400
+  }, {
+    "diceRoll": 44,
+    "templateText": "FAVORED attempts their submission finisher, but completely loses their grip, giving UNDERDOG an open lane to recover.",
+    "fanDelta": -300
+  }, {
+    "diceRoll": 45,
+    "templateText": "An aggressive manager jumps onto the apron to distract FAVORED, causing them to break their hold and miss hitting UNDERDOG.",
+    "fanDelta": -800,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 46,
+    "templateText": "A rival wrestler storms the ring, distracting FAVORED just long enough for UNDERDOG to roll them up from behind.",
+    "fanDelta": -1000,
+    "heatDelta": 5
+  }, {
+    "diceRoll": 47,
+    "templateText": "The lights flash dramatically in the arena, breaking the focus of FAVORED and ruining their finisher attempt on UNDERDOG.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 48,
+    "templateText": "An associate of UNDERDOG grabs the leg of FAVORED from outside, stalling the finisher and swinging the match's momentum.",
+    "fanDelta": -900,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 49,
+    "templateText": "FAVORED argues with a loud fan at ringside, completely blowing their window of opportunity to hit the finisher on UNDERDOG.",
+    "fanDelta": -600,
+    "heatDelta": 2
+  }, {
+    "diceRoll": 50,
+    "templateText": "An illegal weapon is tossed into the ring, distracting FAVORED and allowing UNDERDOG to hit a low blow out of the referee's sight.",
+    "fanDelta": -1100,
+    "heatDelta": 5,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 51,
+    "templateText": "FAVORED is distracted by a referee bump, turning around right into a sudden, opportunistic steel chair shot from UNDERDOG.",
+    "fanDelta": -1200,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 52,
+    "templateText": "Music plays over the PA system to distract FAVORED, giving UNDERDOG a massive opening to escape the finisher.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 53,
+    "templateText": "UNDERDOG counters the finisher with a desperation lariat that leaves both wrestlers completely wiped out on the canvas.",
+    "fanDelta": -700
+  }, {
+    "diceRoll": 54,
+    "templateText": "UNDERDOG uses a sudden jawbreaker to break out of the finisher of FAVORED, buying precious seconds to breathe.",
+    "fanDelta": -600
+  }, {
+    "diceRoll": 55,
+    "templateText": "UNDERDOG throws a blind, wild elbow that strikes FAVORED right in the eye, breaking up the finisher sequence instantly.",
+    "fanDelta": -800
+  }, {
+    "diceRoll": 56,
+    "templateText": "UNDERDOG drops down and hits a desperation low blow while the referee's back is turned, completely neutralizing FAVORED.",
+    "fanDelta": -1300,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 57,
+    "templateText": "Both wrestlers charge the ropes and execute simultaneous crossbody blocks, resulting in a dramatic double-down.",
+    "fanDelta": 1000,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 58,
+    "templateText": "A massive mid-air collision occurs as both wrestlers attempt running finishers at the exact same moment, knocking both out cold.",
+    "fanDelta": 1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 59,
+    "templateText": "Both wrestlers hit high-impact strikes at the same time, falling backward onto the canvas as the referee begins a double ten-count.",
+    "fanDelta": 900
+  }, {
+    "diceRoll": 60,
+    "templateText": "Both wrestlers collapse from sheer physical exhaustion after a grueling chain of countered finishers, unable to cover each other.",
+    "fanDelta": 1100,
+    "tvGradeDelta": 1
+  } ]
+}

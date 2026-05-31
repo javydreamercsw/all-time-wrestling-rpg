@@ -1600,8 +1600,12 @@ public class DataInitializer implements Initializable {
           matrix = outcomeMatrixService.createMatrix(matrix);
 
           if (dto.getEntries() != null) {
+            Map<Integer, OutcomeMatrixEntry> existingByRoll =
+                outcomeMatrixService.getEntries(matrix.getId()).stream()
+                    .collect(Collectors.toMap(OutcomeMatrixEntry::getDiceRoll, e -> e));
             for (OutcomeMatrixEntryImportDTO entryDto : dto.getEntries()) {
-              OutcomeMatrixEntry entry = new OutcomeMatrixEntry();
+              OutcomeMatrixEntry entry =
+                  existingByRoll.getOrDefault(entryDto.getDiceRoll(), new OutcomeMatrixEntry());
               entry.setDiceRoll(entryDto.getDiceRoll());
               entry.setTemplateText(entryDto.getTemplateText());
               entry.setHeatDelta(entryDto.getHeatDelta());
@@ -1610,7 +1614,11 @@ public class DataInitializer implements Initializable {
               entry.setGrudgeGradeDelta(entryDto.getGrudgeGradeDelta());
               entry.setInjuryCaused(entryDto.isInjuryCaused());
               // Redirect resolved in second pass
-              outcomeMatrixService.addEntry(matrix.getId(), entry);
+              if (entry.getId() == null) {
+                outcomeMatrixService.addEntry(matrix.getId(), entry);
+              } else {
+                outcomeMatrixService.updateEntry(entry);
+              }
             }
           }
         } catch (IOException e) {

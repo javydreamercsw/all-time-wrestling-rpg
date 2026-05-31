@@ -1,0 +1,529 @@
+{
+  "name": "Feud Angle",
+  "category": "FEUD_ANGLE",
+  "description": "Storyline developments that drive ongoing rivalries and generate dramatic twists",
+  "entries": [ {
+    "diceRoll": 1,
+    "templateText": "FAVORED hits UNDERDOG with a steel chair during a tag team match, shattering their alliance in front of a stunned arena.",
+    "heatDelta": 7,
+    "fanDelta": -500,
+    "grudgeGradeDelta": 2,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 2,
+    "templateText": "FAVORED leaves UNDERDOG alone in the ring to be systematically destroyed by a rival stable, walking up the ramp with a smirk.",
+    "heatDelta": 5,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 3,
+    "templateText": "FAVORED grabs a microphone and reveals they only teamed with UNDERDOG to keep them away from the championship picture.",
+    "heatDelta": 4,
+    "fanDelta": -250
+  }, {
+    "diceRoll": 4,
+    "templateText": "During a victory celebration, FAVORED blindsides UNDERDOG, hitting their finisher and throwing their merchandise into the crowd.",
+    "heatDelta": 6,
+    "fanDelta": -400,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 5,
+    "templateText": "FAVORED secretly cuts a deal behind the back of UNDERDOG, resulting in UNDERDOG losing their contract or title opportunity.",
+    "heatDelta": 5,
+    "fanDelta": -350
+  }, {
+    "diceRoll": 6,
+    "templateText": "FAVORED targets the previously injured limb of UNDERDOG during what was supposed to be a friendly exhibition match.",
+    "heatDelta": 6,
+    "fanDelta": -400,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 7,
+    "templateText": "UNDERDOG extends a hand in mutual respect, but FAVORED spits in their face and delivers a low blow.",
+    "heatDelta": 5,
+    "fanDelta": -300,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 8,
+    "templateText": "FAVORED takes a bribe from a rival faction to completely eliminate UNDERDOG from an upcoming high-stakes battle royal.",
+    "heatDelta": 4,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 9,
+    "templateText": "FAVORED convinces the tag team partner of UNDERDOG to turn on them, leaving UNDERDOG completely isolated in the locker room.",
+    "heatDelta": 6,
+    "fanDelta": -450
+  }, {
+    "diceRoll": 10,
+    "templateText": "FAVORED reveals they have been the anonymous mastermind behind the recent string of backstage attacks on UNDERDOG.",
+    "heatDelta": 7,
+    "fanDelta": -500,
+    "grudgeGradeDelta": 2
+  }, {
+    "diceRoll": 11,
+    "templateText": "FAVORED saves UNDERDOG from a brutal post-match beatdown, shocking the crowd and signaling an unexpected alliance.",
+    "heatDelta": 3,
+    "fanDelta": 400
+  }, {
+    "diceRoll": 12,
+    "templateText": "UNDERDOG offers an alliance to FAVORED against a common enemy, and FAVORED reluctantly nods, sealing it with a tense handshake.",
+    "heatDelta": 2,
+    "fanDelta": 200
+  }, {
+    "diceRoll": 13,
+    "templateText": "FAVORED and UNDERDOG find themselves forced to team up by management, discovering an eerie, high-impact chemical synergy in the ring.",
+    "heatDelta": 2,
+    "fanDelta": 300
+  }, {
+    "diceRoll": 14,
+    "templateText": "FAVORED clears the ring to stand shoulder-to-shoulder with UNDERDOG as an invading faction tries to take over the show.",
+    "heatDelta": 3,
+    "fanDelta": 500
+  }, {
+    "diceRoll": 15,
+    "templateText": "FAVORED buys out the contract of an indy standout, establishing a powerful new mentorship alliance over UNDERDOG.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 16,
+    "templateText": "FAVORED steps into the line of fire to take a weapon shot meant for UNDERDOG, establishing a powerful baseline of trust.",
+    "heatDelta": 2,
+    "fanDelta": 450
+  }, {
+    "diceRoll": 17,
+    "templateText": "FAVORED and UNDERDOG exchange a silent, respectful look after surviving a brutal multi-man ladder match together.",
+    "heatDelta": 1,
+    "fanDelta": 150
+  }, {
+    "diceRoll": 18,
+    "templateText": "FAVORED rescues the family member of UNDERDOG from an aggressive backstage interview, earning unexpected gratitude.",
+    "heatDelta": 2,
+    "fanDelta": 350
+  }, {
+    "diceRoll": 19,
+    "templateText": "FAVORED invites UNDERDOG into their exclusive inner circle, offering them a level of protection they desperately need.",
+    "heatDelta": 2,
+    "fanDelta": -150
+  }, {
+    "diceRoll": 20,
+    "templateText": "FAVORED and UNDERDOG cut a joint promo, vowing to put aside their historic blood feud to clean up a corrupt locker room.",
+    "heatDelta": 3,
+    "fanDelta": 400
+  }, {
+    "diceRoll": 21,
+    "templateText": "FAVORED makes deeply personal comments regarding the legendary wrestling family of UNDERDOG, calling them a disgrace to the legacy.",
+    "heatDelta": 4,
+    "fanDelta": -250,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 22,
+    "templateText": "FAVORED targets the real-life physical limitations or age of UNDERDOG, mocking their dream of one last championship run.",
+    "heatDelta": 4,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 23,
+    "templateText": "FAVORED defaces a historic trophy or championship belt belonging to UNDERDOG, throwing it into a trash can live on television.",
+    "heatDelta": 5,
+    "fanDelta": -400,
+    "grudgeGradeDelta": 2
+  }, {
+    "diceRoll": 24,
+    "templateText": "FAVORED brings up an embarrassing, untelevised training incident from years ago to completely humiliate UNDERDOG.",
+    "heatDelta": 3,
+    "fanDelta": -150
+  }, {
+    "diceRoll": 25,
+    "templateText": "FAVORED targets the hometown crowd of UNDERDOG, insulting their way of life to draw a massive visceral reaction from the audience.",
+    "heatDelta": 4,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 26,
+    "templateText": "FAVORED breaks into the private locker room of UNDERDOG, destroying their personal belongings and leaving a threatening note.",
+    "heatDelta": 5,
+    "fanDelta": -350,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 27,
+    "templateText": "FAVORED interrupts a heartfelt retirement tribute or hall of fame announcement for UNDERDOG with mocking laughter.",
+    "heatDelta": 5,
+    "fanDelta": -450,
+    "grudgeGradeDelta": 2
+  }, {
+    "diceRoll": 28,
+    "templateText": "FAVORED claims that UNDERDOG only got their job due to backstage politics and nepotism rather than actual talent.",
+    "heatDelta": 3,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 29,
+    "templateText": "FAVORED corners the real-life spouse or partner of UNDERDOG at ringside, using them as a human shield during a tense confrontation.",
+    "heatDelta": 6,
+    "fanDelta": -500,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 30,
+    "templateText": "FAVORED tracks down UNDERDOG at a local gym or training facility, turning a private workout into a highly personal brawl.",
+    "heatDelta": 5,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 31,
+    "templateText": "FAVORED ambushes UNDERDOG in the parking lot, throwing them into the side of a production truck before security can intervene.",
+    "heatDelta": 6,
+    "fanDelta": -400,
+    "grudgeGradeDelta": 1,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 32,
+    "templateText": "FAVORED attacks UNDERDOG from behind during their entrance, hitting a devastating suplex directly onto the cold steel ramp.",
+    "heatDelta": 6,
+    "fanDelta": -350,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 33,
+    "templateText": "FAVORED uses a hidden foreign object to blindside UNDERDOG during a commercial break, leaving them bleeding in the center of the ring.",
+    "heatDelta": 7,
+    "fanDelta": -450,
+    "grudgeGradeDelta": 2,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 34,
+    "templateText": "FAVORED attacks UNDERDOG with a heavy camera tripod during a routine backstage interview segment.",
+    "heatDelta": 5,
+    "fanDelta": -300,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 35,
+    "templateText": "FAVORED pulls the referee in front of a spear from UNDERDOG, then uses the chaos to deliver a brutal, unpunished low blow.",
+    "heatDelta": 5,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 36,
+    "templateText": "FAVORED traps the ankle of UNDERDOG inside a folding steel chair and leaps off the second rope, looking to break the limb.",
+    "heatDelta": 8,
+    "fanDelta": -500,
+    "grudgeGradeDelta": 2,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 37,
+    "templateText": "FAVORED puts UNDERDOG through the announcer's table with a high-flying driving maneuver after the closing bell has already rung.",
+    "heatDelta": 6,
+    "fanDelta": -400,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 38,
+    "templateText": "FAVORED chokes out UNDERDOG using a stray television cable until locker room officials storm the ring to pull them away.",
+    "heatDelta": 7,
+    "fanDelta": -450,
+    "grudgeGradeDelta": 1,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 39,
+    "templateText": "FAVORED hides among the arena security staff, revealing themselves at the last second to initiate a fierce, unexpected beatdown on UNDERDOG.",
+    "heatDelta": 5,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 40,
+    "templateText": "FAVORED attacks UNDERDOG in the catering area, throwing them through a heavily laden table in front of horrified locker room peers.",
+    "heatDelta": 6,
+    "fanDelta": -350,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 41,
+    "templateText": "FAVORED and UNDERDOG are separated by a massive wall of thirty security guards before a single physical blow can be landed.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 42,
+    "templateText": "FAVORED exits the ring and walks away from a tense confrontation, completely ignoring the heated challenges of UNDERDOG.",
+    "heatDelta": 1,
+    "fanDelta": -100
+  }, {
+    "diceRoll": 43,
+    "templateText": "An elder statesman of the business steps in to mediate a brewing locker room war between FAVORED and UNDERDOG.",
+    "heatDelta": 1
+  }, {
+    "diceRoll": 44,
+    "templateText": "FAVORED and UNDERDOG agree to a temporary truce to ensure their upcoming high-profile multi-man match isn't completely ruined.",
+    "heatDelta": 1,
+    "fanDelta": 100
+  }, {
+    "diceRoll": 45,
+    "templateText": "A massive pull-apart brawl between FAVORED and UNDERDOG ends with both men cooling down in separate local law enforcement holding cells.",
+    "heatDelta": 2,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 46,
+    "templateText": "FAVORED offers a public, corporate apology to UNDERDOG under intense pressure from the promotion's legal department.",
+    "heatDelta": 1,
+    "fanDelta": -150
+  }, {
+    "diceRoll": 47,
+    "templateText": "UNDERDOG tries to ambush FAVORED, but FAVORED anticipates the move, slipping out the side door just in time.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 48,
+    "templateText": "FAVORED and UNDERDOG sign a strict, legally binding contract prohibiting them from touching each other until the scheduled pay-per-view.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 49,
+    "templateText": "A technical glitch or arena power outage cuts off a highly volatile ring confrontation between FAVORED and UNDERDOG.",
+    "heatDelta": 1
+  }, {
+    "diceRoll": 50,
+    "templateText": "FAVORED chooses to pay a hefty financial fine to management rather than face UNDERDOG in an unsanctioned street fight tonight.",
+    "heatDelta": 2,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 51,
+    "templateText": "FAVORED uses an exclusive contract loophole to strip UNDERDOG of their number one contender status.",
+    "heatDelta": 4,
+    "fanDelta": -250
+  }, {
+    "diceRoll": 52,
+    "templateText": "FAVORED hires a high-priced corporate legal team to file a restraining order against UNDERDOG, barring them from the building.",
+    "heatDelta": 3,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 53,
+    "templateText": "FAVORED forces UNDERDOG to sign a humiliating contract stipulating that if UNDERDOG loses, they must leave the territory forever.",
+    "heatDelta": 5,
+    "fanDelta": -300,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 54,
+    "templateText": "FAVORED buys out the lucrative merchandise rights of UNDERDOG, effectively controlling all of their career revenue streams.",
+    "heatDelta": 4,
+    "fanDelta": -350
+  }, {
+    "diceRoll": 55,
+    "templateText": "FAVORED offers UNDERDOG a massive, life-changing sum of cash to simply lay down and throw their upcoming title match.",
+    "heatDelta": 3,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 56,
+    "templateText": "FAVORED orchestrates a complex corporate buyout of the training school where UNDERDOG originally learned the wrestling business.",
+    "heatDelta": 4,
+    "fanDelta": -150
+  }, {
+    "diceRoll": 57,
+    "templateText": "FAVORED leverages a private bounty contract, offering cash to any wrestler who can successfully take out UNDERDOG.",
+    "heatDelta": 5,
+    "fanDelta": -300,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 58,
+    "templateText": "FAVORED manipulates the official rules, adding a highly dangerous, career-threatening stipulation to their match with UNDERDOG.",
+    "heatDelta": 4,
+    "fanDelta": -250
+  }, {
+    "diceRoll": 59,
+    "templateText": "FAVORED holds the active contract of UNDERDOG over their head, forcing them to act as a personal, subservient locker room servant.",
+    "heatDelta": 5,
+    "fanDelta": -400,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 60,
+    "templateText": "FAVORED uses political leverage with TV executives to cut off the live broadcast signal right as UNDERDOG begins an explosive exposé.",
+    "heatDelta": 4,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 61,
+    "templateText": "FAVORED rejects the cheers of the crowd, kicking a fan's sign and declaring that the audience is completely unworthy of their talent.",
+    "heatDelta": 2,
+    "fanDelta": -500
+  }, {
+    "diceRoll": 62,
+    "templateText": "FAVORED undergoes a profound crisis of conscience, refusing to use a steel chair offered by a corrupt manager to finish a match.",
+    "heatDelta": 2,
+    "fanDelta": 400
+  }, {
+    "diceRoll": 63,
+    "templateText": "FAVORED adopts a completely new, sinister, dark persona, abandoning all previous moral codes to achieve victory.",
+    "heatDelta": 3,
+    "fanDelta": -400
+  }, {
+    "diceRoll": 64,
+    "templateText": "FAVORED snaps after a frustrating loss, laying out the referee and local ringside staff in an unhinged, violent breakdown.",
+    "heatDelta": 4,
+    "fanDelta": -450
+  }, {
+    "diceRoll": 65,
+    "templateText": "FAVORED cuts a deeply emotional promo about sacrificing their family life for the business, showing a raw, human side.",
+    "heatDelta": 1,
+    "fanDelta": 300
+  }, {
+    "diceRoll": 66,
+    "templateText": "FAVORED embraces an ultra-patriotic or localized persona, instantly cementing themselves as a massive regional favorite.",
+    "heatDelta": 1,
+    "fanDelta": 500
+  }, {
+    "diceRoll": 67,
+    "templateText": "FAVORED aligns with an infamous, manipulative manager, selling out their long-held core values for a shot at true gold.",
+    "heatDelta": 3,
+    "fanDelta": -350
+  }, {
+    "diceRoll": 68,
+    "templateText": "FAVORED breaks down in tears after a hard-fought match, finally earning the true, undying respect of the wrestling locker room.",
+    "heatDelta": 1,
+    "fanDelta": 450
+  }, {
+    "diceRoll": 69,
+    "templateText": "FAVORED targets a beloved, defenseless veteran trainer backstage, proving they will cross any moral line to get noticed.",
+    "heatDelta": 5,
+    "fanDelta": -500,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 70,
+    "templateText": "FAVORED boldly vacates a secondary title, stating they have completely outgrown it and are moving on to much bigger targets.",
+    "heatDelta": 2,
+    "fanDelta": -250
+  }, {
+    "diceRoll": 71,
+    "templateText": "The crowd completely hijacks a live in-ring promo by FAVORED, chanting the name of UNDERDOG so loudly that the segment is derailed.",
+    "heatDelta": 3,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 72,
+    "templateText": "A group of rowdy fans at ringside hands a weapon to UNDERDOG, allowing them to successfully repel an aggressive attack from FAVORED.",
+    "heatDelta": 3,
+    "fanDelta": 350
+  }, {
+    "diceRoll": 73,
+    "templateText": "FAVORED tries to jump the guardrail to attack a fan, but UNDERDOG storms out of the back to prevent a massive disaster.",
+    "heatDelta": 4,
+    "fanDelta": -400
+  }, {
+    "diceRoll": 74,
+    "templateText": "The entire live arena audience turns their backs on FAVORED during their entrance, executing a highly organized, eerie silent protest.",
+    "heatDelta": 2,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 75,
+    "templateText": "Fans throw trash into the ring as FAVORED stands victoriously over a broken, battered, and completely defenseless UNDERDOG.",
+    "heatDelta": 5,
+    "fanDelta": -500,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 76,
+    "templateText": "UNDERDOG gets heavily mobbed by enthusiastic fans during a spectacular crowd-surfing entrance, infuriating a watching FAVORED.",
+    "heatDelta": 2,
+    "fanDelta": 400
+  }, {
+    "diceRoll": 77,
+    "templateText": "FAVORED destroys a handmade sign held by a young fan in the front row, drawing an immediate, intense wave of nuclear heat.",
+    "heatDelta": 3,
+    "fanDelta": -450
+  }, {
+    "diceRoll": 78,
+    "templateText": "The arena crowd initiates a deafening, stadium-wide standing ovation for UNDERDOG following a deeply heartbreaking, narrow loss.",
+    "heatDelta": 1,
+    "fanDelta": 500
+  }, {
+    "diceRoll": 79,
+    "templateText": "FAVORED uses a plant in the live audience to trip UNDERDOG during a crucial, high-stakes over-the-top-rope dive.",
+    "heatDelta": 4,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 80,
+    "templateText": "The crowd organizes a massive, thunderous arena chant that exposes a deeply embarrassing secret regarding the past of FAVORED.",
+    "heatDelta": 3,
+    "fanDelta": -150
+  }, {
+    "diceRoll": 81,
+    "templateText": "The General Manager forces FAVORED to defend their coveted championship against UNDERDOG in tonight's main event.",
+    "heatDelta": 3,
+    "fanDelta": 250
+  }, {
+    "diceRoll": 82,
+    "templateText": "FAVORED is caught on a hot mic plotting with the corrupt promotion Commissioner to completely screw UNDERDOG out of a title.",
+    "heatDelta": 5,
+    "fanDelta": -400,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 83,
+    "templateText": "The Authority Figure suspends FAVORED indefinitely for their unchecked, violent backstage conduct against UNDERDOG.",
+    "heatDelta": 3,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 84,
+    "templateText": "The corporate board strips FAVORED of their executive power, instantly leveling the playing field for a grateful UNDERDOG.",
+    "heatDelta": 2,
+    "fanDelta": 300
+  }, {
+    "diceRoll": 85,
+    "templateText": "An aggressive Authority Figure bans the signature finishing maneuver of UNDERDOG, heavily favoring FAVORED in their upcoming bout.",
+    "heatDelta": 4,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 86,
+    "templateText": "The General Manager assigns a highly biased special guest referee to ensure FAVORED retains their title against UNDERDOG.",
+    "heatDelta": 4,
+    "fanDelta": -250
+  }, {
+    "diceRoll": 87,
+    "templateText": "UNDERDOG produces a secret corporate document that completely overrules the unfair match stipulations set by FAVORED.",
+    "heatDelta": 3,
+    "fanDelta": 350
+  }, {
+    "diceRoll": 88,
+    "templateText": "The Authority Figure forces FAVORED and UNDERDOG to participate in a mandatory, highly tense corporate couples counseling segment.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 89,
+    "templateText": "Management locks FAVORED and UNDERDOG inside a steel cage together, refusing to let them out until a contract is signed.",
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 90,
+    "templateText": "The promotion's owner personally reverses a corrupt referee decision, awarding a hard-fought, emotional victory back to UNDERDOG.",
+    "heatDelta": 3,
+    "fanDelta": 400
+  }, {
+    "diceRoll": 91,
+    "templateText": "FAVORED leaks private, highly compromising locker room text messages from UNDERDOG to a major online wrestling dirt sheet.",
+    "heatDelta": 4,
+    "fanDelta": -250
+  }, {
+    "diceRoll": 92,
+    "templateText": "UNDERDOG posts an explosive, unedited training video on social media, completely exposing the flawed defensive strategy of FAVORED.",
+    "heatDelta": 3,
+    "fanDelta": 200
+  }, {
+    "diceRoll": 93,
+    "templateText": "FAVORED hijacks a high-profile sports morning talk show, completely trashing the athletic reputation of UNDERDOG on live network TV.",
+    "heatDelta": 4,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 94,
+    "templateText": "A viral podcaster releases a tell-all audio interview detailing a toxic, long-hidden backstage history between FAVORED and UNDERDOG.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 95,
+    "templateText": "FAVORED cuts an intense, unauthorized live stream promo from the actual front yard of the private home of UNDERDOG.",
+    "heatDelta": 6,
+    "fanDelta": -450,
+    "grudgeGradeDelta": 2
+  }, {
+    "diceRoll": 96,
+    "templateText": "UNDERDOG appears unexpectedly on a rival promotion's broadcast, openly mocking the creative direction and leadership of FAVORED.",
+    "heatDelta": 4,
+    "fanDelta": 300
+  }, {
+    "diceRoll": 97,
+    "templateText": "FAVORED pays for a massive, highly insulting promotional billboard directly outside the local wrestling school run by UNDERDOG.",
+    "heatDelta": 3,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 98,
+    "templateText": "A heavily edited, highly damaging hype video package airs, making UNDERDOG look completely foolish while glorifying FAVORED.",
+    "heatDelta": 3,
+    "fanDelta": -150
+  }, {
+    "diceRoll": 99,
+    "templateText": "FAVORED brings an award-winning mainstream Hollywood celebrity to ringside to completely overshadow the big moment of UNDERDOG.",
+    "heatDelta": 3,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 100,
+    "templateText": "An anonymous whistleblower sends a massive cache of highly incriminating video files detailing years of cheating by FAVORED directly to UNDERDOG.",
+    "heatDelta": 5,
+    "fanDelta": 400,
+    "grudgeGradeDelta": 1
+  } ]
+}
