@@ -25,6 +25,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -136,7 +138,7 @@ public class CampaignChapterService {
     return criteriaList.stream().allMatch(c -> isCriteriaMet(c, state));
   }
 
-  private boolean isCriteriaMet(
+  boolean isCriteriaMet(
       @NonNull final ChapterCriteriaDTO criteria, @NonNull final CampaignState state) {
     // Check Victory Points
     if (criteria.getMinVictoryPoints() != null
@@ -233,10 +235,30 @@ public class CampaignChapterService {
     }
 
     // Check Completed Chapters
-    return criteria.getRequiredCompletedChapterIds() == null
-        || new HashSet<>(state.getCompletedChapterIds())
-            .containsAll(criteria.getRequiredCompletedChapterIds());
+    if (criteria.getRequiredCompletedChapterIds() != null
+        && !new HashSet<>(state.getCompletedChapterIds())
+            .containsAll(criteria.getRequiredCompletedChapterIds())) {
+      return false;
+    }
 
-    // TODO: Implement customEvaluationScript logic using Groovy
+    // Groovy custom script — runs only when all built-in checks have already passed
+    String script = criteria.getCustomEvaluationScript();
+    if (script != null && !script.isBlank()) {
+      return evaluateGroovyScript(script, state);
+    }
+
+    return true;
+  }
+
+  boolean evaluateGroovyScript(@NonNull final String script, @NonNull final CampaignState state) {
+    try {
+      Binding binding = new Binding();
+      binding.setVariable("state", state);
+      Object result = new GroovyShell(binding).evaluate(script);
+      return Boolean.TRUE.equals(result);
+    } catch (Exception e) {
+      log.warn("Groovy script evaluation failed — treating as false: {}", e.getMessage());
+      return false;
+    }
   }
 }
