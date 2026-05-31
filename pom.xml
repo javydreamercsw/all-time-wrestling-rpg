@@ -890,7 +890,7 @@
             <exclude>com/github/javydreamercsw/base/ai/notion/NotionHandlerTeamsIT.java</exclude>
           </excludes>
           <!-- JVM arguments for better performance and JaCoCo coverage -->
-          <argLine>@{surefireArgLine} -Xmx2g -XX:+EnableDynamicAgentLoading -Djdk.attach.allowAttachSelf=true -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
+          <argLine>@{surefireArgLine} -Xmx3g -XX:+EnableDynamicAgentLoading -Djdk.attach.allowAttachSelf=true -Djdk.instrument.traceUsage=false -Dspring.profiles.active=test -Dflyway.cleanDisabled=false</argLine>
         </configuration>
       </plugin>
       <plugin>
