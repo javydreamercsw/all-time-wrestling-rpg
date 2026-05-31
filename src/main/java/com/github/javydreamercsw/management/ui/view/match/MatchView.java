@@ -420,8 +420,22 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
 
     List<Wrestler> wrestlers = segment.getWrestlers();
-    boolean isPlayerInMatch = playerWrestler != null && wrestlers.contains(playerWrestler);
     Long universeId = universeContextService.getCurrentUniverseId();
+
+    // Collect all wrestler IDs owned by the current account so that accounts with multiple
+    // wrestlers in the same match have each of their wrestlers marked as "player" cards.
+    Long currentAccountId = securityUtils.getCurrentAccountId().orElse(null);
+    java.util.Set<Long> playerWrestlerIds =
+        wrestlers.stream()
+            .filter(java.util.Objects::nonNull)
+            .filter(
+                w ->
+                    currentAccountId != null
+                        && w.getAccount() != null
+                        && currentAccountId.equals(w.getAccount().getId()))
+            .map(Wrestler::getId)
+            .collect(java.util.stream.Collectors.toSet());
+    boolean isPlayerInMatch = !playerWrestlerIds.isEmpty();
 
     // Outer row: participants (grow) + side column (fixed 340px), wraps on mobile
     HorizontalLayout mainContent = new HorizontalLayout();
@@ -447,35 +461,31 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         .set("width", "100%")
         .set("align-items", "start");
 
-    if (isPlayerInMatch) {
-      cardGrid.add(
-          new WrestlerSummaryCard(
-              playerWrestler, universeId, wrestlerService, injuryService, true));
-
-      // Fetch player campaign to get opponent penalty
-      int opponentPenalty = 0;
+    // Opponent penalty: derived from the active wrestler's campaign (primary player wrestler)
+    int opponentPenalty = 0;
+    if (isPlayerInMatch && playerWrestler != null) {
       var playerCampaignOpt = campaignRepository.findActiveByWrestler(playerWrestler);
       if (playerCampaignOpt.isPresent() && playerCampaignOpt.get().getState() != null) {
         opponentPenalty = playerCampaignOpt.get().getState().getOpponentHealthPenalty();
       }
-      final int penalty = opponentPenalty;
-
-      wrestlers.stream()
-          .filter(w -> w != null && !w.equals(playerWrestler))
-          .forEach(
-              opponent ->
-                  cardGrid.add(
-                      new WrestlerSummaryCard(
-                          opponent, universeId, wrestlerService, injuryService, false, penalty)));
-    } else {
-      wrestlers.stream()
-          .filter(java.util.Objects::nonNull)
-          .forEach(
-              w ->
-                  cardGrid.add(
-                      new WrestlerSummaryCard(
-                          w, universeId, wrestlerService, injuryService, false)));
     }
+    final int penalty = opponentPenalty;
+
+    wrestlers.stream()
+        .filter(java.util.Objects::nonNull)
+        .forEach(
+            w -> {
+              boolean isThisWrestlerPlayer =
+                  isPlayerInMatch && playerWrestlerIds.contains(w.getId());
+              cardGrid.add(
+                  new WrestlerSummaryCard(
+                      w,
+                      universeId,
+                      wrestlerService,
+                      injuryService,
+                      isThisWrestlerPlayer,
+                      isThisWrestlerPlayer ? 0 : penalty));
+            });
     participantsCard.add(cardGrid);
     mainContent.add(participantsCard);
 
@@ -720,7 +730,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       narrationButtons.add(aiGenerateButton);
     }
 
-    Long currentAccountId = securityUtils.getCurrentAccountId().orElse(null);
     Wrestler roleplayWrestler = playerWrestler;
     if (roleplayWrestler == null && currentAccountId != null) {
       roleplayWrestler =
