@@ -259,9 +259,15 @@ public class OutcomeMatrixService {
       return DramaEventSeverity.MAJOR;
     }
     if (entry.getHeatDelta() != null) {
-      if (entry.getHeatDelta() > 3) return DramaEventSeverity.NEGATIVE;
-      if (entry.getHeatDelta() > 0) return DramaEventSeverity.NEUTRAL;
-      if (entry.getHeatDelta() < 0) return DramaEventSeverity.POSITIVE;
+      if (entry.getHeatDelta() > 3) {
+        return DramaEventSeverity.NEGATIVE;
+      }
+      if (entry.getHeatDelta() > 0) {
+        return DramaEventSeverity.NEUTRAL;
+      }
+      if (entry.getHeatDelta() < 0) {
+        return DramaEventSeverity.POSITIVE;
+      }
     }
     return DramaEventSeverity.NEUTRAL;
   }
