@@ -231,7 +231,9 @@ public class OutcomeMatrixFormDialog extends Dialog {
   }
 
   private String truncate(final String text, final int maxLen) {
-    if (text == null) return "";
+    if (text == null) {
+      return "";
+    }
     return text.length() <= maxLen ? text : text.substring(0, maxLen) + "…";
   }
 

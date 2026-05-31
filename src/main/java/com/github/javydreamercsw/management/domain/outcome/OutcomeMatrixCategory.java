@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.outcome;
 
+import lombok.Getter;
+
 /** Categories of outcome charts, indicating when during gameplay they apply. */
 public enum OutcomeMatrixCategory {
   MATCH_FLOW("Match Flow", "Controls the ebb and flow of match momentum"),
@@ -25,20 +27,12 @@ public enum OutcomeMatrixCategory {
   HIGHLIGHT_REEL("Highlight Reel", "TV segment narrative outcomes affecting Grudge and TV Grades"),
   PROMO("Promo", "Outcomes from promo segments affecting crowd reaction and grades");
 
-  private final String displayName;
-  private final String description;
+  @Getter private final String displayName;
+  @Getter private final String description;
 
   OutcomeMatrixCategory(final String displayName, final String description) {
     this.displayName = displayName;
     this.description = description;
-  }
-
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public String getDescription() {
-    return description;
   }
 
   @Override

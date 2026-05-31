@@ -83,8 +83,8 @@ public class OutcomeMatrixEntryFormDialog extends Dialog {
         outcomeMatrixService.getEntries(matrix.getId()).stream()
             .map(OutcomeMatrixEntry::getDiceRoll)
             .collect(Collectors.toSet());
-    for (int tens = 1; tens <= 6; tens++) {
-      for (int units = 1; units <= 6; units++) {
+    for (int tens = 1; tens < 6 + 1; tens++) {
+      for (int units = 1; units < 6 + 1; units++) {
         int roll = tens * 10 + units;
         if (!used.contains(roll)) {
           diceRollField.setValue(roll);
