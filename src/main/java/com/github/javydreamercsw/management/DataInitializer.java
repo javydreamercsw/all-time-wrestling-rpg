@@ -34,6 +34,9 @@ import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
@@ -58,6 +61,8 @@ import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.dto.FactionImportDTO;
 import com.github.javydreamercsw.management.dto.LocationImportDTO;
 import com.github.javydreamercsw.management.dto.NpcDTO;
+import com.github.javydreamercsw.management.dto.OutcomeMatrixEntryImportDTO;
+import com.github.javydreamercsw.management.dto.OutcomeMatrixImportDTO;
 import com.github.javydreamercsw.management.dto.RelationshipImportDTO;
 import com.github.javydreamercsw.management.dto.RingsideActionDTO;
 import com.github.javydreamercsw.management.dto.RingsideActionTypeDTO;
@@ -80,6 +85,7 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.outcome.OutcomeMatrixService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
@@ -153,6 +159,7 @@ public class DataInitializer implements Initializable {
   private final RingsideActionDataService ringsideActionDataService;
   private final ResourcePatternResolver resourcePatternResolver;
   private final ObjectMapper objectMapper;
+  private final OutcomeMatrixService outcomeMatrixService;
 
   @Autowired
   public DataInitializer(
@@ -191,7 +198,8 @@ public class DataInitializer implements Initializable {
       final ArenaRepository arenaRepository,
       final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final OutcomeMatrixService outcomeMatrixService) {
     this.enabled = enabled;
     this.skipIfNotEmpty = skipIfNotEmpty;
     this.showTemplateService = showTemplateService;
@@ -226,6 +234,7 @@ public class DataInitializer implements Initializable {
     this.arenaRepository = arenaRepository;
     this.relationshipService = relationshipService;
     this.objectMapper = objectMapper;
+    this.outcomeMatrixService = outcomeMatrixService;
   }
 
   public void init() {
@@ -260,6 +269,7 @@ public class DataInitializer implements Initializable {
     syncCommentaryTeamsFromFile();
     loadAchievements();
     syncRingsideActions();
+    syncOutcomeMatricesFromFiles();
     log.debug("Data initialization complete.");
   }
 
@@ -1555,6 +1565,113 @@ public class DataInitializer implements Initializable {
       }
     } else {
       log.warn("Relationships file not found: {}", resource.getPath());
+    }
+  }
+
+  void syncOutcomeMatricesFromFiles() {
+    if (skipIfNotEmpty && outcomeMatrixService.count() > 0) {
+      return;
+    }
+    try {
+      Resource[] resources =
+          resourcePatternResolver.getResources("classpath*:outcome_matrices/*.json");
+      // First pass: create or update all matrices (without redirect FKs)
+      for (Resource res : resources) {
+        if (!res.exists()) {
+          continue;
+        }
+        log.debug("Loading outcome matrix from file: {}", res.getFilename());
+        try (var is = res.getInputStream()) {
+          OutcomeMatrixImportDTO dto =
+              objectMapper.readValue(is, new TypeReference<OutcomeMatrixImportDTO>() {});
+          OutcomeMatrix matrix =
+              outcomeMatrixService.getByName(dto.getName()).orElseGet(OutcomeMatrix::new);
+          matrix.setName(dto.getName());
+          matrix.setDescription(dto.getDescription());
+          try {
+            matrix.setCategory(OutcomeMatrixCategory.valueOf(dto.getCategory()));
+          } catch (IllegalArgumentException e) {
+            log.warn(
+                "Unknown OutcomeMatrixCategory '{}' in file {}",
+                dto.getCategory(),
+                res.getFilename());
+            continue;
+          }
+          matrix = outcomeMatrixService.createMatrix(matrix);
+
+          if (dto.getEntries() != null) {
+            Map<Integer, OutcomeMatrixEntry> existingByRoll =
+                outcomeMatrixService.getEntries(matrix.getId()).stream()
+                    .collect(Collectors.toMap(OutcomeMatrixEntry::getDiceRoll, e -> e));
+            for (OutcomeMatrixEntryImportDTO entryDto : dto.getEntries()) {
+              OutcomeMatrixEntry entry =
+                  existingByRoll.getOrDefault(entryDto.getDiceRoll(), new OutcomeMatrixEntry());
+              entry.setDiceRoll(entryDto.getDiceRoll());
+              entry.setTemplateText(entryDto.getTemplateText());
+              entry.setHeatDelta(entryDto.getHeatDelta());
+              entry.setFanDelta(entryDto.getFanDelta());
+              entry.setTvGradeDelta(entryDto.getTvGradeDelta());
+              entry.setGrudgeGradeDelta(entryDto.getGrudgeGradeDelta());
+              entry.setInjuryCaused(entryDto.isInjuryCaused());
+              // Redirect resolved in second pass
+              if (entry.getId() == null) {
+                outcomeMatrixService.addEntry(matrix.getId(), entry);
+              } else {
+                outcomeMatrixService.updateEntry(entry);
+              }
+            }
+          }
+        } catch (IOException e) {
+          log.error("Error loading outcome matrix from file {}", res.getFilename(), e);
+        }
+      }
+
+      // Second pass: wire redirect FKs by name
+      for (Resource res : resources) {
+        if (!res.exists()) {
+          continue;
+        }
+        try (var is = res.getInputStream()) {
+          OutcomeMatrixImportDTO dto =
+              objectMapper.readValue(is, new TypeReference<OutcomeMatrixImportDTO>() {});
+          if (dto.getEntries() == null) {
+            continue;
+          }
+          OutcomeMatrix matrix = outcomeMatrixService.getByName(dto.getName()).orElse(null);
+          if (matrix == null) {
+            continue;
+          }
+          for (OutcomeMatrixEntryImportDTO entryDto : dto.getEntries()) {
+            if (entryDto.getRedirectToMatrix() == null) {
+              continue;
+            }
+            outcomeMatrixService.getEntries(matrix.getId()).stream()
+                .filter(e -> e.getDiceRoll() == entryDto.getDiceRoll())
+                .findFirst()
+                .ifPresent(
+                    entry -> {
+                      outcomeMatrixService
+                          .getByName(entryDto.getRedirectToMatrix())
+                          .ifPresentOrElse(
+                              target -> {
+                                entry.setRedirectToMatrix(target);
+                                outcomeMatrixService.updateEntry(entry);
+                              },
+                              () ->
+                                  log.warn(
+                                      "Redirect matrix '{}' not found for entry roll={} in '{}'",
+                                      entryDto.getRedirectToMatrix(),
+                                      entryDto.getDiceRoll(),
+                                      dto.getName()));
+                    });
+          }
+        } catch (IOException e) {
+          log.error("Error wiring redirects for file {}", res.getFilename(), e);
+        }
+      }
+      log.debug("Outcome matrix loading complete.");
+    } catch (IOException e) {
+      log.error("Error resolving outcome_matrices resources", e);
     }
   }
 }

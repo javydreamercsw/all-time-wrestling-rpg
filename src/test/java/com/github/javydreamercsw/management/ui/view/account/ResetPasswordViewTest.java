@@ -88,9 +88,9 @@ class ResetPasswordViewTest extends AbstractViewTest {
 
     view.beforeEnter(event);
 
-    PasswordField newPw = _get(view, PasswordField.class, spec -> spec.withCaption("New Password"));
+    PasswordField newPw = _get(view, PasswordField.class, spec -> spec.withLabel("New Password"));
     PasswordField confirmPw =
-        _get(view, PasswordField.class, spec -> spec.withCaption("Confirm New Password"));
+        _get(view, PasswordField.class, spec -> spec.withLabel("Confirm New Password"));
     newPw.setValue("ValidPass1!");
     confirmPw.setValue("ValidPass1!");
 

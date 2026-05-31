@@ -1,0 +1,395 @@
+{
+  "name": "Post-Match Scenario",
+  "category": "POST_MATCH",
+  "description": "Events that occur after a match concludes",
+  "entries": [ {
+    "diceRoll": 1,
+    "templateText": "{WRESTLER_1} extends a hand to {WRESTLER_2} after the bell — {WRESTLER_2} hesitates, then accepts. The crowd gives a standing ovation.",
+    "fanDelta": 900,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 2,
+    "templateText": "{WRESTLER_1} grabs a chair and drives it into {WRESTLER_2}'s spine three times after the bell, standing over them as the crowd rains down boos.",
+    "heatDelta": 6,
+    "fanDelta": -800,
+    "grudgeGradeDelta": 2,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 3,
+    "templateText": "{WRESTLER_1} stands center ring, raising the hand of {WRESTLER_2} in a profound display of mutual respect that unites the entire arena.",
+    "fanDelta": 1200
+  }, {
+    "diceRoll": 4,
+    "templateText": "{WRESTLER_2} offers a handshake, but {WRESTLER_1} simply looks down, nods with quiet respect, and exits the ring to allow {WRESTLER_2} the spotlight.",
+    "fanDelta": 700
+  }, {
+    "diceRoll": 5,
+    "templateText": "{WRESTLER_1} and {WRESTLER_2} share an emotional embrace in the center of the ring, putting an end to months of bitter animosity.",
+    "fanDelta": 1100,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 6,
+    "templateText": "{WRESTLER_1} raises a hand in victory, but {WRESTLER_2} pulls them down into a desperate, tearful hug of appreciation.",
+    "fanDelta": 800
+  }, {
+    "diceRoll": 7,
+    "templateText": "{WRESTLER_1} helps a battered {WRESTLER_2} to their feet, raising their arm to ensure the crowd rewards the incredible effort.",
+    "fanDelta": 1000
+  }, {
+    "diceRoll": 8,
+    "templateText": "{WRESTLER_1} bows to {WRESTLER_2} before leaving the ring, a striking cultural sign of respect that leaves the fans cheering wildly.",
+    "fanDelta": 950
+  }, {
+    "diceRoll": 9,
+    "templateText": "{WRESTLER_1} refuses to break their submission hold after the bell, forcing three referees to physically tear them away from a screaming {WRESTLER_2}.",
+    "heatDelta": 5,
+    "fanDelta": -600,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 10,
+    "templateText": "{WRESTLER_1} mounts a completely helpless {WRESTLER_2} after the match, raining down a barrage of vicious, uninhibited closed-fist strikes.",
+    "heatDelta": 6,
+    "fanDelta": -700,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 11,
+    "templateText": "{WRESTLER_1} traps the neck of {WRESTLER_2} inside a steel chair and prepares to jump from the ropes before security swarms the ring.",
+    "heatDelta": 7,
+    "fanDelta": -900,
+    "grudgeGradeDelta": 2,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 12,
+    "templateText": "{WRESTLER_1} drags an unconscious {WRESTLER_2} to the ringside floor, executing a brutal powerbomb directly onto the exposed concrete.",
+    "heatDelta": 8,
+    "fanDelta": -1000,
+    "grudgeGradeDelta": 2,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 13,
+    "templateText": "{WRESTLER_1} uses a pair of medical scissors to cut away at the wrestling gear of {WRESTLER_2}, completely humiliating them after the bell.",
+    "heatDelta": 4,
+    "fanDelta": -500
+  }, {
+    "diceRoll": 14,
+    "templateText": "{WRESTLER_1} locks {WRESTLER_2} in a pair of handcuffs, leaving them completely defenseless against a slow, systematic post-match beatdown.",
+    "heatDelta": 7,
+    "fanDelta": -850,
+    "tvGradeDelta": 1,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 15,
+    "templateText": "{WRESTLER_1} takes a microphone and mocks the family of a broken {WRESTLER_2} while actively stomping on their chest.",
+    "heatDelta": 5,
+    "fanDelta": -650
+  }, {
+    "diceRoll": 16,
+    "templateText": "{WRESTLER_1} celebrates their victory by grabbing a heavy championship belt and blasting {WRESTLER_2} square in the skull with it.",
+    "heatDelta": 5,
+    "fanDelta": -750,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 17,
+    "templateText": "As {WRESTLER_1} stands over {WRESTLER_2}, a thunderous new theme song plays and a dominant surprise challenger emerges on the ramp to lock eyes with {WRESTLER_1}.",
+    "heatDelta": 3,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 18,
+    "templateText": "{WRESTLER_1} is blindsided during their victory celebration by a returning top-tier superstar, blowing the roof completely off the building.",
+    "fanDelta": -400,
+    "grudgeGradeDelta": 1,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 19,
+    "templateText": "A mysterious masked figure climbs over the guardrail, wiping out both {WRESTLER_1} and {WRESTLER_2} before vanishing into the crowd.",
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 20,
+    "templateText": "{WRESTLER_1} calls out the champion, but a surprise challenger sprints from the back to attack {WRESTLER_1}, stealing their spotlight.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 21,
+    "templateText": "An international standout makes their presence known, walking down the aisle to hand a formal challenge document directly to {WRESTLER_1}.",
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 22,
+    "templateText": "A massive faction leader stands on the stage, gesturing to the back as four heavy enforcers surround a victorious {WRESTLER_1}.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 23,
+    "templateText": "The ring announcer declares that because of this victory, {WRESTLER_1} has officially earned a guaranteed world championship match next week.",
+    "fanDelta": 1400,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 24,
+    "templateText": "An official broadcast graphic confirms that the win by {WRESTLER_1} shifts the championship landscape, forcing {WRESTLER_2} out of the title picture completely.",
+    "fanDelta": -300
+  }, {
+    "diceRoll": 25,
+    "templateText": "{WRESTLER_1} grabs the microphone and demands that management immediately authorize their championship match for the upcoming premium event.",
+    "fanDelta": 600
+  }, {
+    "diceRoll": 26,
+    "templateText": "The champion walks down the ramp, raises the gold high over a victorious {WRESTLER_1}, and sets the stage for an epic collision.",
+    "fanDelta": 800,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 27,
+    "templateText": "{WRESTLER_1} demands a microphone, warning the current titleholder that their historic reign is officially on borrowed time.",
+    "fanDelta": 500
+  }, {
+    "diceRoll": 28,
+    "templateText": "Management announces backstage that this devastating loss forces {WRESTLER_2} to start at the absolute bottom of the divisional rankings.",
+    "fanDelta": -200
+  }, {
+    "diceRoll": 29,
+    "templateText": "{WRESTLER_1} celebrates by offering a clean handshake to {WRESTLER_2}, but suddenly delivers a brutal clothesline, executing a shocking heel turn.",
+    "heatDelta": 6,
+    "fanDelta": -1500,
+    "grudgeGradeDelta": 2,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 30,
+    "templateText": "{WRESTLER_1} looks at their own tag team partner, contemplates for a long moment, and suddenly hits them with their finishing maneuver.",
+    "heatDelta": 5,
+    "fanDelta": -1200,
+    "grudgeGradeDelta": 2
+  }, {
+    "diceRoll": 31,
+    "templateText": "{WRESTLER_1} goes to use a weapon on {WRESTLER_2} after the bell, but stops, throws the weapon away, and embraces the cheers of the crowd.",
+    "fanDelta": 1300,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 32,
+    "templateText": "{WRESTLER_1} aggressively shoves their own manager to the canvas, completely severing ties to the delight of the live audience.",
+    "fanDelta": 1100
+  }, {
+    "diceRoll": 33,
+    "templateText": "{WRESTLER_1} walks up the ramp alone, completely ignoring the celebration antics of their villainous stablemates in a clear face tease.",
+    "fanDelta": 600
+  }, {
+    "diceRoll": 34,
+    "templateText": "{WRESTLER_1} takes a fan's pro-face sign and rips it up after the bell, cementing a dark alignment shift that stuns the arena.",
+    "heatDelta": 3,
+    "fanDelta": -800
+  }, {
+    "diceRoll": 35,
+    "templateText": "The manager of {WRESTLER_1} enters the ring, presenting them with a heavy iron pipe to inflict further post-match damage on {WRESTLER_2}.",
+    "heatDelta": 4,
+    "fanDelta": -400
+  }, {
+    "diceRoll": 36,
+    "templateText": "The faction representing {WRESTLER_1} floods the ring, lifting {WRESTLER_1} onto their shoulders to celebrate a highly coordinated, dominant victory.",
+    "fanDelta": -500
+  }, {
+    "diceRoll": 37,
+    "templateText": "The manager of {WRESTLER_2} slaps them across the face after the loss, abandoning them in the center of the ring to a chorus of boos.",
+    "fanDelta": 300,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 38,
+    "templateText": "The stable of {WRESTLER_1} initiates a brutal four-on-one beatdown on {WRESTLER_2} until lockers room faces rush out to clear the ring.",
+    "heatDelta": 6,
+    "fanDelta": -600,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 39,
+    "templateText": "{WRESTLER_1} is berated by their own stable leader for not finishing {WRESTLER_2} fast enough, creating deep, visible cracks in the faction.",
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 40,
+    "templateText": "The manager of {WRESTLER_1} handles the post-match interview, completely taking credit for the victory while a frustrated {WRESTLER_1} looks on.",
+    "heatDelta": 1
+  }, {
+    "diceRoll": 41,
+    "templateText": "{WRESTLER_2} sits center ring in complete, stunned silence for several minutes, staring at their hands as the weight of the loss sinks in.",
+    "fanDelta": 400
+  }, {
+    "diceRoll": 42,
+    "templateText": "{WRESTLER_2} breaks down in visible tears on the ramp, completely overwhelmed by an emotional, heartbreaking defeat.",
+    "fanDelta": 500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 43,
+    "templateText": "{WRESTLER_2} completely snaps after the bell, destroying ringside equipment and tearing apart the commentary desk in a blind rage.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 44,
+    "templateText": "{WRESTLER_2} gets a microphone and tells the crowd that if they cannot beat {WRESTLER_1}, they may have to seriously consider retirement.",
+    "fanDelta": 600,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 45,
+    "templateText": "{WRESTLER_2} slowly walks through the backstage curtain, completely refusing to answer any questions from waiting media reporters.",
+    "fanDelta": -100
+  }, {
+    "diceRoll": 46,
+    "templateText": "{WRESTLER_2} demands that the referee restart the match, completely unable to accept the reality of the official pinfall decision.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 47,
+    "templateText": "{WRESTLER_2} grabs a microphone before {WRESTLER_1} can leave, demanding a rematch right here, right now, under no-disqualification rules.",
+    "heatDelta": 4,
+    "fanDelta": 700
+  }, {
+    "diceRoll": 48,
+    "templateText": "{WRESTLER_1} laughs off a frantic rematch demand from {WRESTLER_2}, walking up the ramp while making a dismissive, insulting gesture.",
+    "heatDelta": 3,
+    "fanDelta": -400
+  }, {
+    "diceRoll": 49,
+    "templateText": "{WRESTLER_2} blocks the exit ramp, stating they will not leave the building until {WRESTLER_1} signs a contract for a definitive rematch.",
+    "heatDelta": 3,
+    "fanDelta": 500
+  }, {
+    "diceRoll": 50,
+    "templateText": "{WRESTLER_1} agrees to a rematch, but only on the condition that {WRESTLER_2} puts their actual wrestling career on the line.",
+    "heatDelta": 4,
+    "grudgeGradeDelta": 1,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 51,
+    "templateText": "{WRESTLER_2} ambushes {WRESTLER_1} during their post-match interview backstage, screaming that their business is far from finished.",
+    "heatDelta": 5,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 52,
+    "templateText": "{WRESTLER_1} brutally cuts off a rematch plea by hitting {WRESTLER_2} with a microphone, leaving them bleeding in the center of the ring.",
+    "heatDelta": 5,
+    "fanDelta": -600,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 53,
+    "templateText": "The General Manager appears on the stage, ruling that because of the controversial finish, {WRESTLER_1} must face {WRESTLER_2} again next week.",
+    "fanDelta": 800
+  }, {
+    "diceRoll": 54,
+    "templateText": "The Authority Figure enters the ring to strip {WRESTLER_1} of their win due to blatant post-match insubordination and violence.",
+    "heatDelta": 4,
+    "fanDelta": -500
+  }, {
+    "diceRoll": 55,
+    "templateText": "The Commissioner announces that {WRESTLER_1} is officially fined ten thousand dollars for an excessive post-match assault on {WRESTLER_2}.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 56,
+    "templateText": "The General Manager sets an immediate, high-stakes Iron Man stipulation for the inevitable rematch between {WRESTLER_1} and {WRESTLER_2}.",
+    "fanDelta": 900,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 57,
+    "templateText": "An executive official bans the manager of {WRESTLER_1} from the entire arena property following a chaotic post-match ringside incident.",
+    "fanDelta": 600
+  }, {
+    "diceRoll": 58,
+    "templateText": "The Authority Figure orders security to lock down the arena to prevent {WRESTLER_1} from escaping a furious, vengeful {WRESTLER_2}.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 59,
+    "templateText": "The live crowd completely hijacks the post-match segment, chanting the name of a completely different superstar to reject the win by {WRESTLER_1}.",
+    "fanDelta": -700,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 60,
+    "templateText": "A massive wave of trash coordinates from the stands into the ring as {WRESTLER_1} stands arrogantly over a completely broken {WRESTLER_2}.",
+    "heatDelta": 5,
+    "fanDelta": -900
+  }, {
+    "diceRoll": 61,
+    "templateText": "The entire stadium executes a massive, unified chant that perfectly echoes the signature catchphrase of a victorious {WRESTLER_1}.",
+    "fanDelta": 1500,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 62,
+    "templateText": "Fans jump the barricade to celebrate with {WRESTLER_1}, creating an organic, chaotic scene that production struggles to control.",
+    "fanDelta": 1300
+  }, {
+    "diceRoll": 63,
+    "templateText": "A massive, hostile arena chant targeting the performance of {WRESTLER_1} completely ruins the intended post-match broadcast audio.",
+    "fanDelta": -500,
+    "tvGradeDelta": -1
+  }, {
+    "diceRoll": 64,
+    "templateText": "The arena crowd gives {WRESTLER_2} a massive, emotional standing ovation as they limp up the ramp, completely validating the effort.",
+    "fanDelta": 400
+  }, {
+    "diceRoll": 65,
+    "templateText": "{WRESTLER_1} celebrates by hoisting a giant customized flag center ring, completely igniting the hometown crowd into an absolute frenzy.",
+    "fanDelta": 1100
+  }, {
+    "diceRoll": 66,
+    "templateText": "{WRESTLER_1} attempts a post-match assault, but {WRESTLER_2} completely counters, hitting their finisher to send the crowd home happy.",
+    "fanDelta": 900,
+    "heatDelta": 4
+  }, {
+    "diceRoll": 67,
+    "templateText": "{WRESTLER_1} pours a bottle of cheap beer over a defeated {WRESTLER_2}, drawing a massive, visceral wave of nuclear heat from the crowd.",
+    "heatDelta": 4,
+    "fanDelta": -700
+  }, {
+    "diceRoll": 68,
+    "templateText": "Medical personnel carry a completely motionless {WRESTLER_2} out on a stretcher, leaving a somber, intensely serious atmosphere in the arena.",
+    "heatDelta": 5,
+    "grudgeGradeDelta": 2,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 69,
+    "templateText": "{WRESTLER_1} climbs to the top turnbuckle, hoisting the championship gold high into the air as beautiful pyro explodes all around the ring.",
+    "fanDelta": 1400
+  }, {
+    "diceRoll": 70,
+    "templateText": "{WRESTLER_1} and {WRESTLER_2} refuse to stop fighting after the bell, spilling out into the crowd and brawling all the way up into the arena concourse.",
+    "heatDelta": 5,
+    "grudgeGradeDelta": 1,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 71,
+    "templateText": "{WRESTLER_1} forces the ring announcer at ringside to repeatedly declare them the absolute greatest competitor of all time.",
+    "heatDelta": 2,
+    "fanDelta": -400
+  }, {
+    "diceRoll": 72,
+    "templateText": "{WRESTLER_1} locks {WRESTLER_2} in a brutal, post-match submission hold using a heavy steel chain wrapped tightly around their neck.",
+    "heatDelta": 6,
+    "fanDelta": -800,
+    "grudgeGradeDelta": 1,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 73,
+    "templateText": "{WRESTLER_1} approaches the commentary desk, grabs a headset, and cuts an incredibly intense, unscripted promo directly into the camera lens.",
+    "fanDelta": 700,
+    "tvGradeDelta": 1
+  }, {
+    "diceRoll": 74,
+    "templateText": "{WRESTLER_2} uses a sudden, desperate low blow to completely neutralize a victorious {WRESTLER_1} during their high-energy celebration.",
+    "heatDelta": 4,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 75,
+    "templateText": "{WRESTLER_1} aggressively shoves a ringside photographer to the ground, showing an unstable, volatile temper after a narrow win.",
+    "heatDelta": 3,
+    "fanDelta": -500
+  }, {
+    "diceRoll": 76,
+    "templateText": "{WRESTLER_1} leaves the ring immediately after the bell, completely refusing to celebrate or acknowledge the massive cheers of the fans.",
+    "fanDelta": -200
+  }, {
+    "diceRoll": 77,
+    "templateText": "{WRESTLER_1} invites a young fan from the front row into the ring to share in a highly memorable, heart-warming victory celebration.",
+    "fanDelta": 1300
+  }, {
+    "diceRoll": 78,
+    "templateText": "{WRESTLER_1} spits directly onto the face of a fallen {WRESTLER_2} before walking away, a disgusting act that seals their toxic rivalry.",
+    "heatDelta": 5,
+    "fanDelta": -700,
+    "grudgeGradeDelta": 1
+  }, {
+    "diceRoll": 79,
+    "templateText": "{WRESTLER_2} attempts a desperate post-match handshake, but a cold, completely unblinking {WRESTLER_1} turns around and walks away without a word.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 80,
+    "templateText": "{WRESTLER_1} and {WRESTLER_2} collapse completely from total exhaustion, lying flat on their backs side-by-side as the broadcast fades to black.",
+    "tvGradeDelta": 1
+  } ]
+}

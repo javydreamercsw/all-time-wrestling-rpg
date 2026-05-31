@@ -1,0 +1,177 @@
+{
+  "name": "Rivalry Escalation",
+  "category": "FEUD_ANGLE",
+  "description": "Determines how an ongoing rivalry between two wrestlers shifts in a given week. Roll d66 and apply the result to both wrestlers involved.",
+  "entries": [ {
+    "diceRoll": 11,
+    "templateText": "{WRESTLER_1} and {WRESTLER_2} exchange cold looks backstage but nothing escalates. The tension lingers.",
+    "heatDelta": 1
+  }, {
+    "diceRoll": 12,
+    "templateText": "{WRESTLER_1} dismisses {WRESTLER_2} in a post-show interview, calling the rivalry one-sided.",
+    "heatDelta": 1,
+    "fanDelta": -200
+  }, {
+    "diceRoll": 13,
+    "templateText": "Locker room sources report {WRESTLER_1} and {WRESTLER_2} are deliberately avoiding each other. Nothing to see yet."
+  }, {
+    "diceRoll": 14,
+    "templateText": "{WRESTLER_2} brushes off recent losses to {WRESTLER_1}, insisting the rivalry is far from over.",
+    "heatDelta": 1
+  }, {
+    "diceRoll": 15,
+    "templateText": "Management warns both {WRESTLER_1} and {WRESTLER_2} to keep things professional ahead of the next show. Tension eases slightly.",
+    "heatDelta": -1
+  }, {
+    "diceRoll": 16,
+    "templateText": "A hallway confrontation between {WRESTLER_1} and {WRESTLER_2} is defused by roster members before it escalates.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 21,
+    "templateText": "{WRESTLER_1} questions {WRESTLER_2}'s commitment in a locker room meeting. The tension spills out and fans pick up on it.",
+    "heatDelta": 2,
+    "fanDelta": 300
+  }, {
+    "diceRoll": 22,
+    "templateText": "{WRESTLER_2} accepts a new challenge from {WRESTLER_1} but insists on stipulations that favor them.",
+    "heatDelta": 1
+  }, {
+    "diceRoll": 23,
+    "templateText": "A war of words erupts between {WRESTLER_1} and {WRESTLER_2} after their latest encounter. Fans are taking sides.",
+    "heatDelta": 2,
+    "fanDelta": 400
+  }, {
+    "diceRoll": 24,
+    "templateText": "{WRESTLER_1} makes a point of upstaging {WRESTLER_2}'s segment, drawing heat from the crowd.",
+    "heatDelta": 2,
+    "fanDelta": -300
+  }, {
+    "diceRoll": 25,
+    "templateText": "{WRESTLER_2} reveals they have been keeping a detailed record of every slight from {WRESTLER_1}. The rivalry deepens.",
+    "heatDelta": 2
+  }, {
+    "diceRoll": 26,
+    "templateText": "Management offers both {WRESTLER_1} and {WRESTLER_2} an incentive to settle their differences. Neither accepts.",
+    "heatDelta": 1
+  }, {
+    "diceRoll": 31,
+    "templateText": "{WRESTLER_1} publicly tears apart {WRESTLER_2}'s recent excuses in front of the roster. The crowd reaction is strong.",
+    "heatDelta": 3,
+    "fanDelta": -600
+  }, {
+    "diceRoll": 32,
+    "templateText": "A confrontation at the venue entrance forces security to step between {WRESTLER_1} and {WRESTLER_2}.",
+    "heatDelta": 3
+  }, {
+    "diceRoll": 33,
+    "templateText": "{WRESTLER_2} accuses {WRESTLER_1} of backstage politicking. The accusation spreads fast and fans notice.",
+    "heatDelta": 3,
+    "fanDelta": -700
+  }, {
+    "diceRoll": 34,
+    "templateText": "{WRESTLER_1} interferes in an unrelated match to send a message to {WRESTLER_2}. The crowd reacts strongly.",
+    "heatDelta": 4,
+    "fanDelta": -1000
+  }, {
+    "diceRoll": 35,
+    "templateText": "A physical altercation between {WRESTLER_1} and {WRESTLER_2} breaks out during a contract signing. A table is destroyed.",
+    "heatDelta": 4
+  }, {
+    "diceRoll": 36,
+    "templateText": "{WRESTLER_1} ambushes {WRESTLER_2} leaving the building. The attack is caught on camera and broadcast everywhere.",
+    "heatDelta": 5,
+    "fanDelta": -1500
+  }, {
+    "diceRoll": 41,
+    "templateText": "{WRESTLER_2} delivers an emotional in-ring promo vowing revenge on {WRESTLER_1}. Crowd reacts with genuine intensity.",
+    "heatDelta": 4,
+    "fanDelta": -1200
+  }, {
+    "diceRoll": 42,
+    "templateText": "{WRESTLER_1} challenges {WRESTLER_2} to settle this in a stipulation match. The challenge is formally accepted.",
+    "heatDelta": 3,
+    "fanDelta": 1500
+  }, {
+    "diceRoll": 43,
+    "templateText": "Both {WRESTLER_1} and {WRESTLER_2} declare they want this rivalry over for good. Fan interest in the feud spikes.",
+    "heatDelta": 2,
+    "fanDelta": 1500
+  }, {
+    "diceRoll": 44,
+    "templateText": "Surprising moment: {WRESTLER_1} and {WRESTLER_2} briefly shake hands after a hard-fought match. Crowd doesn't quite know what to make of it.",
+    "heatDelta": -1,
+    "fanDelta": 2000
+  }, {
+    "diceRoll": 45,
+    "templateText": "{WRESTLER_2} turns the tide on {WRESTLER_1} with a reversal that reshapes the entire rivalry narrative.",
+    "heatDelta": 3,
+    "fanDelta": 1000
+  }, {
+    "diceRoll": 46,
+    "templateText": "A returning veteran aligns with {WRESTLER_2}, tilting the rivalry balance. {WRESTLER_1} is caught completely off guard.",
+    "heatDelta": 3,
+    "fanDelta": -800
+  }, {
+    "diceRoll": 51,
+    "templateText": "{WRESTLER_1} takes an unexpected loss to {WRESTLER_2}, generating sympathy heat that energizes both sides of the crowd.",
+    "heatDelta": 2,
+    "fanDelta": 2000
+  }, {
+    "diceRoll": 52,
+    "templateText": "{WRESTLER_2} receives unexpected support from several locker room veterans in their feud with {WRESTLER_1}.",
+    "heatDelta": 1,
+    "fanDelta": 1500
+  }, {
+    "diceRoll": 53,
+    "templateText": "The rivalry between {WRESTLER_1} and {WRESTLER_2} earns fan recognition as the feud of the month. Both gain momentum.",
+    "heatDelta": -1,
+    "fanDelta": 2500
+  }, {
+    "diceRoll": 54,
+    "templateText": "{WRESTLER_1} makes a public appeal to end things with {WRESTLER_2}. {WRESTLER_2} refuses on the spot, raising the stakes.",
+    "heatDelta": 4,
+    "fanDelta": -1000
+  }, {
+    "diceRoll": 55,
+    "templateText": "{WRESTLER_1} turns on {WRESTLER_2} at the worst possible moment. Fan sentiment shifts sharply.",
+    "heatDelta": 5,
+    "fanDelta": -2000
+  }, {
+    "diceRoll": 56,
+    "templateText": "Management officially books a blow-off match and announces the terms publicly. Fan anticipation reaches new heights.",
+    "heatDelta": 2,
+    "fanDelta": 3000
+  }, {
+    "diceRoll": 61,
+    "templateText": "{WRESTLER_2} exposes a long-hidden secret about {WRESTLER_1} during a live segment. The revelation reshapes the entire feud.",
+    "heatDelta": 6,
+    "fanDelta": -3000
+  }, {
+    "diceRoll": 62,
+    "templateText": "{WRESTLER_1} launches a full assault on {WRESTLER_2} in front of a sold-out arena. Security is overwhelmed.",
+    "heatDelta": 7,
+    "fanDelta": -2000,
+    "injuryCaused": true
+  }, {
+    "diceRoll": 63,
+    "templateText": "The rivalry between {WRESTLER_1} and {WRESTLER_2} reaches a fever pitch. Both vow it ends at the next premium event.",
+    "heatDelta": 8,
+    "fanDelta": 4000
+  }, {
+    "diceRoll": 64,
+    "templateText": "A mid-show betrayal by {WRESTLER_1} leaves {WRESTLER_2} blindsided in front of everyone. Both careers are changed.",
+    "heatDelta": 9,
+    "fanDelta": -5000
+  }, {
+    "diceRoll": 65,
+    "templateText": "{WRESTLER_2}'s allies abandon them mid-feud, leaving {WRESTLER_1} standing tall. The rivalry heat is at its peak.",
+    "heatDelta": 8,
+    "fanDelta": -4000
+  }, {
+    "diceRoll": 66,
+    "templateText": "{WRESTLER_1} and {WRESTLER_2} brawl through the entire arena in an unscheduled confrontation. Both are suspended pending investigation.",
+    "heatDelta": 10,
+    "fanDelta": 5000,
+    "injuryCaused": true
+  } ]
+}

@@ -73,6 +73,7 @@ import com.github.javydreamercsw.management.service.commentator.CommentaryServic
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.outcome.OutcomeMatrixService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
@@ -140,6 +141,7 @@ class DataInitializerTest {
   @Mock private LocationRepository locationRepository;
   @Mock private ArenaRepository arenaRepository;
   @Mock private WrestlerRelationshipService relationshipService;
+  @Mock private OutcomeMatrixService outcomeMatrixService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
@@ -180,7 +182,8 @@ class DataInitializerTest {
             locationRepository,
             arenaRepository,
             relationshipService,
-            objectMapper);
+            objectMapper,
+            outcomeMatrixService);
 
     // Common setup for many tests: ensure resources are found
     Resource mockResource = mock(Resource.class);
@@ -246,7 +249,8 @@ class DataInitializerTest {
             locationRepository,
             arenaRepository,
             relationshipService,
-            objectMapper);
+            objectMapper,
+            outcomeMatrixService);
 
     disabledInitializer.init();
     verify(gameSettingService, never()).findById(anyString());

@@ -149,7 +149,7 @@ class NotionSyncViewTest extends AbstractViewTest {
   void defaultSyncDirectionIsOutbound() {
     @SuppressWarnings("unchecked")
     ComboBox<SyncDirection> directionCombo =
-        _get(ComboBox.class, spec -> spec.withCaption("Sync Direction"));
+        _get(ComboBox.class, spec -> spec.withLabel("Sync Direction"));
     assertEquals(SyncDirection.OUTBOUND, directionCombo.getValue());
   }
 
@@ -158,7 +158,7 @@ class NotionSyncViewTest extends AbstractViewTest {
   void switchingToInboundShowsWarningDialog() {
     @SuppressWarnings("unchecked")
     ComboBox<SyncDirection> directionCombo =
-        _get(ComboBox.class, spec -> spec.withCaption("Sync Direction"));
+        _get(ComboBox.class, spec -> spec.withLabel("Sync Direction"));
 
     assertEquals(SyncDirection.OUTBOUND, directionCombo.getValue());
 
