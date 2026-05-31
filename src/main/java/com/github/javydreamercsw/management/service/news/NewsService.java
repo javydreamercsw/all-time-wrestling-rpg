@@ -34,7 +34,7 @@ public class NewsService {
 
   @Transactional(readOnly = true)
   public List<NewsItem> getLatestNews() {
-    return newsRepository.findTop10ByOrderByPublishDateDesc();
+    return getAllNews().stream().limit(10).toList();
   }
 
   @Transactional(readOnly = true)
