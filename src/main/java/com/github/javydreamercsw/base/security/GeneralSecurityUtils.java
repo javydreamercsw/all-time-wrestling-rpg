@@ -125,7 +125,6 @@ public final class GeneralSecurityUtils {
           log.trace("Non-enum role provided: {}", role);
         }
 
-        authorities.add(new SimpleGrantedAuthority(cleanRole));
         authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
       }
       account.setRoles(accountRoles);
