@@ -37,6 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EventAggregationService {
 
+  static final int SUMMARY_WINDOW_DAYS = 30;
+  static final int MAX_KEY_SEGMENTS = 20;
+
   private final SegmentRepository segmentRepository;
   private final TitleReignRepository titleReignRepository;
 
@@ -52,18 +55,11 @@ public class EventAggregationService {
   @Transactional(readOnly = true)
   public MonthlySummary getMonthlySummary() {
     Instant now = Instant.now();
-    Instant oneMonthAgo = now.minus(30, ChronoUnit.DAYS);
+    Instant oneMonthAgo = now.minus(SUMMARY_WINDOW_DAYS, ChronoUnit.DAYS);
 
-    List<Segment> segments =
-        segmentRepository.findAll().stream()
-            .filter(
-                s -> s.getSegmentDate().isAfter(oneMonthAgo) && s.getSegmentDate().isBefore(now))
-            .toList();
+    List<Segment> segments = segmentRepository.findBySegmentDateBetween(oneMonthAgo, now);
 
-    List<TitleReign> titleChanges =
-        titleReignRepository.findAll().stream()
-            .filter(r -> r.getStartDate().isAfter(oneMonthAgo) && r.getStartDate().isBefore(now))
-            .toList();
+    List<TitleReign> titleChanges = titleReignRepository.findByStartDateBetween(oneMonthAgo, now);
 
     return MonthlySummary.builder()
         .segments(segments)
@@ -98,11 +94,10 @@ public class EventAggregationService {
 
     if (!summary.getSegments().isEmpty()) {
       sb.append("KEY MATCH RESULTS:\n");
-      // Filter for important segments only to avoid overwhelming AI
       List<Segment> importantSegments =
           summary.getSegments().stream()
               .filter(s -> s.getIsTitleSegment() || s.isMainEvent())
-              .limit(20)
+              .limit(MAX_KEY_SEGMENTS)
               .toList();
 
       for (Segment s : importantSegments) {

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.news;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -48,7 +49,6 @@ class EventAggregationServiceTest {
   @InjectMocks private EventAggregationService eventAggregationService;
 
   private Segment recentSegment;
-  private Segment oldSegment;
   private TitleReign recentTitleChange;
 
   @BeforeEach
@@ -70,16 +70,10 @@ class EventAggregationServiceTest {
     recentSegment.setShow(show);
     recentSegment.setSegmentType(segmentType);
     recentSegment.setIsTitleSegment(true);
-    // Add winner as a participant then mark as winner
     SegmentParticipant participant = new SegmentParticipant();
     participant.setWrestler(winner);
     participant.setIsWinner(true);
     recentSegment.getParticipants().add(participant);
-
-    oldSegment = new Segment();
-    oldSegment.setSegmentDate(now.minus(60, ChronoUnit.DAYS));
-    oldSegment.setShow(show);
-    oldSegment.setSegmentType(segmentType);
 
     Title title = new Title();
     title.setName("World Heavyweight Championship");
@@ -92,8 +86,10 @@ class EventAggregationServiceTest {
 
   @Test
   void getMonthlySummary_returnsSegmentsWithinLastMonth() {
-    when(segmentRepository.findAll()).thenReturn(List.of(recentSegment, oldSegment));
-    when(titleReignRepository.findAll()).thenReturn(List.of());
+    when(segmentRepository.findBySegmentDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of(recentSegment));
+    when(titleReignRepository.findByStartDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of());
 
     EventAggregationService.MonthlySummary summary = eventAggregationService.getMonthlySummary();
 
@@ -104,8 +100,10 @@ class EventAggregationServiceTest {
 
   @Test
   void getMonthlySummary_returnsTitleChangesWithinLastMonth() {
-    when(segmentRepository.findAll()).thenReturn(List.of());
-    when(titleReignRepository.findAll()).thenReturn(List.of(recentTitleChange));
+    when(segmentRepository.findBySegmentDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of());
+    when(titleReignRepository.findByStartDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of(recentTitleChange));
 
     EventAggregationService.MonthlySummary summary = eventAggregationService.getMonthlySummary();
 
@@ -115,8 +113,10 @@ class EventAggregationServiceTest {
 
   @Test
   void getMonthlySummary_hasStartAndEndDates() {
-    when(segmentRepository.findAll()).thenReturn(List.of());
-    when(titleReignRepository.findAll()).thenReturn(List.of());
+    when(segmentRepository.findBySegmentDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of());
+    when(titleReignRepository.findByStartDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of());
 
     EventAggregationService.MonthlySummary summary = eventAggregationService.getMonthlySummary();
 
@@ -127,8 +127,10 @@ class EventAggregationServiceTest {
 
   @Test
   void formatMonthlySummary_withTitleChange_includesTitleInfo() {
-    when(segmentRepository.findAll()).thenReturn(List.of());
-    when(titleReignRepository.findAll()).thenReturn(List.of(recentTitleChange));
+    when(segmentRepository.findBySegmentDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of());
+    when(titleReignRepository.findByStartDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of(recentTitleChange));
 
     EventAggregationService.MonthlySummary summary = eventAggregationService.getMonthlySummary();
     String formatted = eventAggregationService.formatMonthlySummary(summary);
@@ -140,8 +142,10 @@ class EventAggregationServiceTest {
 
   @Test
   void formatMonthlySummary_withTitleSegment_includesMatchResults() {
-    when(segmentRepository.findAll()).thenReturn(List.of(recentSegment));
-    when(titleReignRepository.findAll()).thenReturn(List.of());
+    when(segmentRepository.findBySegmentDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of(recentSegment));
+    when(titleReignRepository.findByStartDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of());
 
     EventAggregationService.MonthlySummary summary = eventAggregationService.getMonthlySummary();
     String formatted = eventAggregationService.formatMonthlySummary(summary);
@@ -152,8 +156,10 @@ class EventAggregationServiceTest {
 
   @Test
   void formatMonthlySummary_empty_showsOnlyPeriod() {
-    when(segmentRepository.findAll()).thenReturn(List.of());
-    when(titleReignRepository.findAll()).thenReturn(List.of());
+    when(segmentRepository.findBySegmentDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of());
+    when(titleReignRepository.findByStartDateBetween(any(Instant.class), any(Instant.class)))
+        .thenReturn(List.of());
 
     EventAggregationService.MonthlySummary summary = eventAggregationService.getMonthlySummary();
     String formatted = eventAggregationService.formatMonthlySummary(summary);
