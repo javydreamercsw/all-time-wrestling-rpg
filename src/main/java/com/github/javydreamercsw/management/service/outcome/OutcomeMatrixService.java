@@ -26,10 +26,12 @@ import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixResult;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,8 @@ public class OutcomeMatrixService {
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
   private final DramaEventService dramaEventService;
+  private final WrestlerService wrestlerService;
+  private final Random random;
 
   @Autowired
   public OutcomeMatrixService(
@@ -54,12 +58,16 @@ public class OutcomeMatrixService {
       final OutcomeMatrixEntryRepository entryRepository,
       final RivalryService rivalryService,
       final InjuryService injuryService,
-      final DramaEventService dramaEventService) {
+      final DramaEventService dramaEventService,
+      final WrestlerService wrestlerService,
+      final Random random) {
     this.matrixRepository = matrixRepository;
     this.entryRepository = entryRepository;
     this.rivalryService = rivalryService;
     this.injuryService = injuryService;
     this.dramaEventService = dramaEventService;
+    this.wrestlerService = wrestlerService;
+    this.random = random;
   }
 
   // -------------------------------------------------------------------------
@@ -185,6 +193,35 @@ public class OutcomeMatrixService {
   }
 
   /**
+   * Picks a random entry from a chart matching the given category and resolves template variables.
+   * Useful for drama-event generation and post-match narrative where the specific roll is
+   * irrelevant. Returns empty if no matrix or no entries exist for the category.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<OutcomeMatrixResult> resolveRandomRoll(
+      @NonNull final OutcomeMatrixCategory category, @NonNull final Map<String, String> variables) {
+
+    List<OutcomeMatrix> matrices = matrixRepository.findByCategory(category);
+    if (matrices.isEmpty()) {
+      log.warn("No outcome matrix found for category {}", category);
+      return Optional.empty();
+    }
+
+    OutcomeMatrix matrix = matrices.get(random.nextInt(matrices.size()));
+    List<OutcomeMatrixEntry> entries = entryRepository.findByMatrixOrderByDiceRollAsc(matrix);
+    if (entries.isEmpty()) {
+      log.warn("No entries in outcome matrix '{}' (id={})", matrix.getName(), matrix.getId());
+      return Optional.empty();
+    }
+
+    OutcomeMatrixEntry entry = entries.get(random.nextInt(entries.size()));
+    String rendered = substituteVariables(entry.getTemplateText(), variables);
+    OutcomeMatrix redirect = entry.isRedirect() ? entry.getRedirectToMatrix() : null;
+    return Optional.of(new OutcomeMatrixResult(entry, rendered, redirect));
+  }
+
+  /**
    * Applies mechanical effects from a resolved entry and records a DramaEvent for history/inbox.
    * Callers who have the rendered narrative text should use the overload that accepts it.
    */
@@ -224,6 +261,17 @@ public class OutcomeMatrixService {
     if (entry.getHeatDelta() != null && secondaryWrestlerId != null) {
       rivalryService.addHeatBetweenWrestlers(
           primaryWrestlerId, secondaryWrestlerId, entry.getHeatDelta(), reason);
+    }
+
+    if (entry.getFanDelta() != null && entry.getFanDelta() != 0) {
+      wrestlerService.awardFans(primaryWrestlerId, universeId, entry.getFanDelta());
+    }
+
+    if (entry.getGrudgeGradeDelta() != null && entry.getGrudgeGradeDelta() != 0) {
+      log.debug(
+          "grudgeGradeDelta={} noted for wrestler {} (no target entity yet)",
+          entry.getGrudgeGradeDelta(),
+          primaryWrestlerId);
     }
 
     if (entry.isInjuryCaused()) {
