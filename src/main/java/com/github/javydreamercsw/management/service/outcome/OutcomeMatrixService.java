@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.outcome;
 
+import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix;
 import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
 import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry;
@@ -184,8 +185,8 @@ public class OutcomeMatrixService {
   }
 
   /**
-   * Applies mechanical effects from a resolved entry: heat change, injury creation, and a
-   * DramaEvent record. Caller provides wrestler context that was not available at template time.
+   * Applies mechanical effects from a resolved entry and records a DramaEvent for history/inbox.
+   * Callers who have the rendered narrative text should use the overload that accepts it.
    */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
@@ -194,8 +195,26 @@ public class OutcomeMatrixService {
       @NonNull final Long primaryWrestlerId,
       final Long secondaryWrestlerId,
       @NonNull final Long universeId) {
+    applyEffects(entry, primaryWrestlerId, secondaryWrestlerId, universeId, null);
+  }
 
-    if (!entry.hasEffects()) {
+  /**
+   * Applies mechanical effects from a resolved entry and records a DramaEvent for history/inbox.
+   * The {@code renderedText} is stored as the DramaEvent description so the narrative is queryable
+   * later. Redirect entries are skipped — the final resolved entry creates the record.
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public void applyEffects(
+      @NonNull final OutcomeMatrixEntry entry,
+      @NonNull final Long primaryWrestlerId,
+      final Long secondaryWrestlerId,
+      @NonNull final Long universeId,
+      final String renderedText) {
+
+    boolean hasText = renderedText != null && !renderedText.isBlank();
+
+    if (!entry.hasEffects() && !hasText) {
       return;
     }
 
@@ -210,11 +229,42 @@ public class OutcomeMatrixService {
     if (entry.isInjuryCaused()) {
       injuryService.createInjuryFromBumps(primaryWrestlerId, universeId);
     }
+
+    // Redirect entries defer DramaEvent creation to the final resolved entry.
+    if (!entry.isRedirect()) {
+      String description =
+          hasText
+              ? renderedText
+              : "Outcome chart: " + entry.getMatrix().getName() + " roll " + entry.getDiceRoll();
+      String title = entry.getMatrix().getName() + " — Roll " + entry.getDiceRoll();
+
+      dramaEventService.createOutcomeMatrixEvent(
+          primaryWrestlerId,
+          secondaryWrestlerId,
+          universeId,
+          title,
+          description,
+          deriveSeverity(entry),
+          entry.getHeatDelta(),
+          entry.isInjuryCaused());
+    }
   }
 
   // -------------------------------------------------------------------------
   // Internal helpers
   // -------------------------------------------------------------------------
+
+  private DramaEventSeverity deriveSeverity(final OutcomeMatrixEntry entry) {
+    if (entry.isInjuryCaused()) {
+      return DramaEventSeverity.MAJOR;
+    }
+    if (entry.getHeatDelta() != null) {
+      if (entry.getHeatDelta() > 3) return DramaEventSeverity.NEGATIVE;
+      if (entry.getHeatDelta() > 0) return DramaEventSeverity.NEUTRAL;
+      if (entry.getHeatDelta() < 0) return DramaEventSeverity.POSITIVE;
+    }
+    return DramaEventSeverity.NEUTRAL;
+  }
 
   private String substituteVariables(final String template, final Map<String, String> variables) {
     String result = template;

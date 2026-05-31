@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -127,7 +128,9 @@ public class DramaEventService {
     event.setIsProcessed(false);
     event.setCreationDate(Instant.now(clock));
 
-    return Optional.of(dramaEventRepository.save(event));
+    DramaEvent saved = dramaEventRepository.save(event);
+    eventPublisher.publishEvent(new DramaEventCreatedEvent(this, saved));
+    return Optional.of(saved);
   }
 
   /** Generate a random drama event for a wrestler. */
@@ -194,6 +197,10 @@ public class DramaEventService {
         injuryService.createInjuryFromBumps(
             event.getPrimaryWrestler().getId(), event.getUniverse().getId());
       }
+      case OUTCOME_MATRIX_RESULT -> {
+        // Effects already applied eagerly in OutcomeMatrixService.applyEffects(); nothing to do.
+        log.debug("OUTCOME_MATRIX_RESULT event {} was pre-processed; skipping.", event.getId());
+      }
         // Add other cases as needed
     }
 
@@ -246,4 +253,78 @@ public class DramaEventService {
   public int getActiveInjuryCount(@NonNull final Long wrestlerId, @NonNull final Long universeId) {
     return injuryService.getActiveInjuriesForWrestler(wrestlerId, universeId).size();
   }
+
+  /**
+   * Create a drama event record for an outcome matrix roll result. The event is pre-marked as
+   * processed because mechanical effects are applied eagerly by
+   * OutcomeMatrixService.applyEffects().
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<DramaEvent> createOutcomeMatrixEvent(
+      @NonNull final Long primaryWrestlerId,
+      final Long secondaryWrestlerId,
+      final Long universeId,
+      @NonNull final String title,
+      @NonNull final String description,
+      @NonNull final DramaEventSeverity severity,
+      final Integer heatImpact,
+      final boolean injuryCaused) {
+
+    Wrestler primary =
+        wrestlerRepository
+            .findById(primaryWrestlerId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Wrestler not found: " + primaryWrestlerId));
+
+    DramaEvent event = new DramaEvent();
+    event.setPrimaryWrestler(primary);
+
+    if (secondaryWrestlerId != null) {
+      wrestlerRepository.findById(secondaryWrestlerId).ifPresent(event::setSecondaryWrestler);
+    }
+    if (universeId != null) {
+      universeRepository.findById(universeId).ifPresent(event::setUniverse);
+    }
+
+    event.setEventType(DramaEventType.OUTCOME_MATRIX_RESULT);
+    event.setSeverity(severity);
+    event.setTitle(title);
+    event.setDescription(description);
+    event.setHeatImpact(heatImpact);
+    event.setInjuryCaused(injuryCaused);
+    event.setIsProcessed(true);
+    event.setProcessedDate(Instant.now(clock));
+    event.setProcessingNotes("Applied via OutcomeMatrixService.applyEffects()");
+    event.setEventDate(Instant.now(clock));
+    event.setCreationDate(Instant.now(clock));
+
+    DramaEvent saved = dramaEventRepository.save(event);
+    eventPublisher.publishEvent(new DramaEventCreatedEvent(this, saved));
+    return Optional.of(saved);
+  }
+
+  /**
+   * Delete processed events older than {@code processedRetentionDays} days and unprocessed events
+   * older than {@code unprocessedRetentionDays} days.
+   */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  public DramaEventCleanupResult purgeOldEvents(
+      final int processedRetentionDays, final int unprocessedRetentionDays) {
+    Instant processedCutoff = Instant.now(clock).minus(processedRetentionDays, ChronoUnit.DAYS);
+    Instant unprocessedCutoff = Instant.now(clock).minus(unprocessedRetentionDays, ChronoUnit.DAYS);
+
+    int processed = dramaEventRepository.deleteProcessedOlderThan(processedCutoff);
+    int unprocessed = dramaEventRepository.deleteUnprocessedOlderThan(unprocessedCutoff);
+
+    log.info(
+        "DramaEvent cleanup: deleted {} processed (>{}d), {} unprocessed (>{}d)",
+        processed,
+        processedRetentionDays,
+        unprocessed,
+        unprocessedRetentionDays);
+    return new DramaEventCleanupResult(processed, unprocessed);
+  }
+
+  public record DramaEventCleanupResult(int processedDeleted, int unprocessedDeleted) {}
 }

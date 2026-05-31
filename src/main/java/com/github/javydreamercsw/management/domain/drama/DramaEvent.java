@@ -211,6 +211,7 @@ public class DramaEvent extends AbstractEntity<Long> {
       case CAMPAIGN_RIVAL -> "🤼";
       case CAMPAIGN_OUTSIDER -> "👤";
       case RELATIONSHIP_MILESTONE -> "💍";
+      case OUTCOME_MATRIX_RESULT -> "🎲";
     };
   }
 

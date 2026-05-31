@@ -69,7 +69,10 @@ public enum DramaEventType {
 
   /** Relationship milestones: Anniversaries, personal growth, family news */
   RELATIONSHIP_MILESTONE(
-      "Relationship Milestone", "Key moments in wrestler's personal relationships");
+      "Relationship Milestone", "Key moments in wrestler's personal relationships"),
+
+  /** Result from rolling on an outcome matrix (mechanical game chart result). */
+  OUTCOME_MATRIX_RESULT("Outcome Matrix Result", "Result of a dice roll on a game chart");
 
   private final String displayName;
 
@@ -102,7 +105,8 @@ public enum DramaEventType {
           CHAMPIONSHIP_CHALLENGE,
           CAMPAIGN_RIVAL,
           CAMPAIGN_OUTSIDER,
-          RELATIONSHIP_MILESTONE ->
+          RELATIONSHIP_MILESTONE,
+          OUTCOME_MATRIX_RESULT ->
           true;
       case SOCIAL_MEDIA_DRAMA,
           INJURY_INCIDENT,
@@ -125,7 +129,8 @@ public enum DramaEventType {
           CHAMPIONSHIP_CHALLENGE,
           MEDIA_CONTROVERSY,
           CAMPAIGN_RIVAL,
-          CAMPAIGN_OUTSIDER ->
+          CAMPAIGN_OUTSIDER,
+          OUTCOME_MATRIX_RESULT ->
           true;
       case INJURY_INCIDENT,
           FAN_INTERACTION,
@@ -157,7 +162,8 @@ public enum DramaEventType {
           RETIREMENT_TEASE,
           CHAMPIONSHIP_CHALLENGE,
           PERSONAL_ISSUE,
-          CAMPAIGN_RIVAL ->
+          CAMPAIGN_RIVAL,
+          OUTCOME_MATRIX_RESULT ->
           false;
     };
   }
@@ -165,7 +171,7 @@ public enum DramaEventType {
   /** Check if this event type can cause injuries. */
   public boolean canCauseInjury() {
     return switch (this) {
-      case BACKSTAGE_INCIDENT, INJURY_INCIDENT, CAMPAIGN_OUTSIDER -> true;
+      case BACKSTAGE_INCIDENT, INJURY_INCIDENT, CAMPAIGN_OUTSIDER, OUTCOME_MATRIX_RESULT -> true;
       case SOCIAL_MEDIA_DRAMA,
           FAN_INTERACTION,
           CONTRACT_DISPUTE,
