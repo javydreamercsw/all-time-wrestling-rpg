@@ -68,8 +68,7 @@ class AiSettingsViewTest extends AbstractViewTest {
   @Test
   @DisplayName("Should render the auto provider checkbox")
   void shouldRenderAutoProviderCheckbox() {
-    Checkbox checkbox =
-        _get(view, Checkbox.class, spec -> spec.withCaption("Auto Select Provider"));
+    Checkbox checkbox = _get(view, Checkbox.class, spec -> spec.withLabel("Auto Select Provider"));
     assertTrue(checkbox.isVisible());
   }
 }
