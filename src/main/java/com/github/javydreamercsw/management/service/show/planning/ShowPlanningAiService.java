@@ -102,6 +102,15 @@ public class ShowPlanningAiService {
                     } else {
                       segment.setParticipants(dto.getParticipants());
                     }
+                    if (dto.getTeamIds() != null && !dto.getTeamIds().isEmpty()) {
+                      segment.setTeamIds(dto.getTeamIds());
+                      segment.setParticipantIds(
+                          dto.getTeamIds().stream()
+                              .flatMap(java.util.List::stream)
+                              .collect(java.util.stream.Collectors.toList()));
+                    } else if (dto.getParticipantIds() != null) {
+                      segment.setParticipantIds(dto.getParticipantIds());
+                    }
                     return segment;
                   })
               .collect(java.util.stream.Collectors.toList());
@@ -276,7 +285,9 @@ public class ShowPlanningAiService {
           .forEach(
               wrestler ->
                   prompt
-                      .append("- Name: ")
+                      .append("- Id: ")
+                      .append(wrestler.getId())
+                      .append(", Name: ")
                       .append(wrestler.getName())
                       .append(", Gender: ")
                       .append(wrestler.getGender())
@@ -409,10 +420,14 @@ public class ShowPlanningAiService {
     prompt.append(
         "  \"notes\": \"string\", // Optional instructions/feedback for future AI narration\n");
     prompt.append(
-        "  \"teams\": [[\"string\"]], // List of teams; each inner array is one team."
+        "  \"teams\": [[\"string\"]], // List of teams by name; each inner array is one team."
             + " For a 1v1 match: [[\"WrestlerA\"],[\"WrestlerB\"]]."
             + " For a tag match: [[\"A\",\"B\"],[\"C\",\"D\"]]."
             + " For promos/non-match segments with no opposing sides: [[\"A\",\"B\",\"C\"]].\n");
+    prompt.append(
+        "  \"teamIds\": [[number]], // REQUIRED: same structure as teams but using the wrestler Id"
+            + " from the Full Roster. Must match the teams array exactly."
+            + " For a 1v1 match: [[101],[202]]. For a tag match: [[101,102],[203,204]].\n");
     prompt.append(
         "  \"rivalryId\": number // Optional: the Id of the rivalry this match resolves; omit or"
             + " null if not rivalry-driven\n");

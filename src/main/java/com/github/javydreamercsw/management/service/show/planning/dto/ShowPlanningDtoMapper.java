@@ -192,6 +192,7 @@ public class ShowPlanningDtoMapper {
 
   public ShowPlanningRosterEntryDTO toRosterEntryDto(@NonNull final Wrestler wrestler) {
     ShowPlanningRosterEntryDTO dto = new ShowPlanningRosterEntryDTO();
+    dto.setId(wrestler.getId());
     dto.setName(wrestler.getName());
     dto.setGender(wrestler.getGender() != null ? wrestler.getGender().name() : "MALE");
     wrestler
