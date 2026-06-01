@@ -88,7 +88,15 @@ public class AccountService {
     String incomingPassword = entity.getPassword();
     String originalEncodedPassword = original.getPassword();
 
-    if (passwordEncoder.matches(incomingPassword, originalEncodedPassword)) {
+    boolean alreadyEncoded =
+        incomingPassword.startsWith("$2a$")
+            || incomingPassword.startsWith("$2b$")
+            || incomingPassword.startsWith("$2y$");
+    if (alreadyEncoded) {
+      // Password is a bcrypt hash — keep it as-is (unchanged or pre-encoded by a trusted caller).
+      entity.setPassword(incomingPassword);
+    } else if (passwordEncoder.matches(incomingPassword, originalEncodedPassword)) {
+      // Caller passed the correct plaintext password unchanged; keep stored hash.
       entity.setPassword(originalEncodedPassword);
     } else {
       if (!CustomPasswordValidator.isValid(incomingPassword)) {
