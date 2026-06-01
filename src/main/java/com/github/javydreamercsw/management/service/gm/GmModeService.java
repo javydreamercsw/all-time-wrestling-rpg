@@ -134,7 +134,7 @@ public class GmModeService {
 
     leagueRepository.save(league);
 
-    log.info(
+    log.debug(
         "GM Mode Update for {}: Revenue: {}, Expenses: {}, New Budget: {}",
         show.getName(),
         totalRevenue,
