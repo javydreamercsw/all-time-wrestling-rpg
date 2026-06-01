@@ -223,6 +223,19 @@ public class SegmentAdjudicationService {
 
   @Transactional
   private void adjudicateMatchInternal(@NonNull final Segment segment, final double multiplier) {
+    // Process match fulfillment first so that a player-reported winner is reflected
+    // in the winners/losers lists used by every downstream method.
+    matchFulfillmentRepository
+        .findBySegment(segment)
+        .ifPresent(
+            fulfillment -> {
+              if (fulfillment.getReportedWinner() != null && segment.getWinners().isEmpty()) {
+                segment.setWinners(List.of(fulfillment.getReportedWinner()));
+              }
+              fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.FINALIZED);
+              matchFulfillmentRepository.save(fulfillment);
+            });
+
     List<Wrestler> winners = segment.getWinners();
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
@@ -254,18 +267,6 @@ public class SegmentAdjudicationService {
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> winners,
       @NonNull final List<Wrestler> losers) {
-    // Check for league fulfillment
-    matchFulfillmentRepository
-        .findBySegment(segment)
-        .ifPresent(
-            fulfillment -> {
-              if (fulfillment.getReportedWinner() != null && segment.getWinners().isEmpty()) {
-                segment.setWinners(List.of(fulfillment.getReportedWinner()));
-              }
-              fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.FINALIZED);
-              matchFulfillmentRepository.save(fulfillment);
-            });
-
     // Update League Stats if applicable — check show.getLeague() first, then fall back to
     // the universe-based lookup for shows that were associated via universe rather than directly.
     com.github.javydreamercsw.management.domain.league.League effectiveLeague =
