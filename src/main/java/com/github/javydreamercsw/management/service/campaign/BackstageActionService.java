@@ -150,8 +150,11 @@ public class BackstageActionService {
         }
         break;
       case RECOVERY:
+        Long recoveryUniverseId =
+            campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
         var activeInjuries =
-            injuryService.getActiveInjuriesForWrestler(campaign.getWrestler().getId());
+            injuryService.getActiveInjuriesForWrestler(
+                campaign.getWrestler().getId(), recoveryUniverseId);
         int currentBumps =
             campaign.getWrestler().getDefaultState().map(WrestlerState::getBumps).orElse(0);
 

@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -47,4 +48,15 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
 
   List<WrestlerState> findByUniverseIdAndTier(
       Long universeId, com.github.javydreamercsw.base.domain.wrestler.WrestlerTier tier);
+
+  @Modifying
+  @Query(
+      "UPDATE WrestlerState s SET s.fans = 0, s.tier ="
+          + " com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ROOKIE WHERE"
+          + " s.universe.id = :universeId")
+  int resetFansAndTierByUniverseId(@Param("universeId") Long universeId);
+
+  @Modifying
+  @Query("UPDATE WrestlerState s SET s.physicalCondition = 100 WHERE s.universe.id = :universeId")
+  int resetPhysicalConditionByUniverseId(@Param("universeId") Long universeId);
 }

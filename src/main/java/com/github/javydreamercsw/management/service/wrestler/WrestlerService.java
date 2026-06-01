@@ -138,14 +138,6 @@ public class WrestlerService {
     return wrestlerRepository.findById(id);
   }
 
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Wrestler> findByIdWithInjuries(@NonNull final Long id) {
-    // In current implementation, injuries are part of state, so this might need careful handling.
-    // For now, return the basic wrestler entity.
-    return wrestlerRepository.findById(id);
-  }
-
   /** Find wrestler by ID and fetch injuries and status cards. */
   @PreAuthorize("isAuthenticated()")
   @Transactional(readOnly = true)
@@ -390,9 +382,13 @@ public class WrestlerService {
    * @return The updated state, or empty if not found
    */
   @Transactional
-  @CacheEvict(
-      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
-      allEntries = true)
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
+        @CacheEvict(
+            value = CacheConfig.WRESTLER_STATS_CACHE,
+            key = "#wrestlerId + ':' + #universeId")
+      })
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<WrestlerState> awardFans(
       @NonNull final Long wrestlerId, @NonNull final Long universeId, @NonNull final Long fans) {
@@ -431,9 +427,13 @@ public class WrestlerService {
    * @return The updated state, or empty if not found
    */
   @Transactional
-  @CacheEvict(
-      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
-      allEntries = true)
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
+        @CacheEvict(
+            value = CacheConfig.WRESTLER_STATS_CACHE,
+            key = "#wrestlerId + ':' + #universeId")
+      })
   public Optional<WrestlerState> addBump(
       @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);
@@ -457,9 +457,13 @@ public class WrestlerService {
    * @return The updated state, or empty if not found
    */
   @Transactional
-  @CacheEvict(
-      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
-      allEntries = true)
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
+        @CacheEvict(
+            value = CacheConfig.WRESTLER_STATS_CACHE,
+            key = "#wrestlerId + ':' + #universeId")
+      })
   public Optional<WrestlerState> healBump(
       @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);
@@ -483,9 +487,13 @@ public class WrestlerService {
    * @return The updated state, or empty if not found
    */
   @Transactional
-  @CacheEvict(
-      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
-      allEntries = true)
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
+        @CacheEvict(
+            value = CacheConfig.WRESTLER_STATS_CACHE,
+            key = "#wrestlerId + ':' + #universeId")
+      })
   public Optional<WrestlerState> healChance(
       @NonNull final Long wrestlerId,
       @NonNull final Long universeId,
@@ -681,14 +689,11 @@ public class WrestlerService {
    * @param universeId The universe ID
    */
   @Transactional
+  @CacheEvict(
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
+      allEntries = true)
   public void resetAllFanCountsToZero(@NonNull final Long universeId) {
-    List<Wrestler> wrestlers = findAll();
-    for (Wrestler w : wrestlers) {
-      WrestlerState state = getOrCreateState(w.getId(), universeId);
-      state.setFans(0L);
-      state.setTier(WrestlerTier.ROOKIE);
-      wrestlerStateRepository.save(state);
-    }
+    wrestlerStateRepository.resetFansAndTierByUniverseId(universeId);
     log.info("Reset all wrestler fan counts to 0 and tier to ROOKIE in universe {}.", universeId);
   }
 
@@ -714,11 +719,9 @@ public class WrestlerService {
    * @param universeId The universe ID
    */
   @Transactional
+  @CacheEvict(value = CacheConfig.WRESTLER_STATS_CACHE, allEntries = true)
   public void resetAllWearAndTear(@NonNull final Long universeId) {
-    List<Wrestler> wrestlers = findAll();
-    for (Wrestler w : wrestlers) {
-      resetWearAndTear(w.getId(), universeId);
-    }
+    wrestlerStateRepository.resetPhysicalConditionByUniverseId(universeId);
     log.info("Reset physical condition for all wrestlers to 100% in universe {}.", universeId);
   }
 }

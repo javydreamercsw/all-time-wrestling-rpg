@@ -295,27 +295,6 @@ public class InjuryService {
         .orElse(List.of());
   }
 
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<Injury> getActiveInjuriesForWrestler(@NonNull final Long wrestlerId) {
-    return getActiveInjuriesForWrestler(wrestlerId, 1L);
-  }
-
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<Injury> getAllInjuriesForWrestler(@NonNull final Long wrestlerId) {
-    return getAllInjuriesForWrestler(wrestlerId, 1L);
-  }
-
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public InjuryStats getInjuryStatsForWrestler(final Long wrestlerId) {
-    return getInjuryStatsForWrestler(wrestlerId, 1L);
-  }
-
   /** Get injuries by severity. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
