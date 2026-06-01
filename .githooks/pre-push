@@ -31,11 +31,16 @@ if git diff --name-only HEAD "$UPSTREAM" 2>/dev/null | grep -q '\.java$'; then
   $EXECUTOR spotless:apply
 fi
 
-# If either tool changed anything, auto-commit and continue the push.
-# These are always mechanical formatting fixes — no manual review needed.
+# If either tool changed anything, commit the fixes and abort the push.
+# Git has already resolved HEAD's SHA before invoking this hook, so a new
+# commit created here would not be included in the push that triggered it.
+# Aborting with exit 1 ensures the formatting commit is at the tip on the
+# next push — just re-run "git push".
 if ! git diff --quiet HEAD; then
-  echo 1>&2 "Auto-committing Spotless/OpenRewrite formatting fixes..."
+  echo 1>&2 "Spotless/OpenRewrite applied formatting fixes. Committing them now."
   git add -A
   git commit -m "style: auto-fix Spotless/OpenRewrite formatting"
+  echo 1>&2 "Re-run 'git push' to include the formatting commit."
+  exit 1
 fi
 ##### SPOTLESS + OPENREWRITE HOOK END #####
