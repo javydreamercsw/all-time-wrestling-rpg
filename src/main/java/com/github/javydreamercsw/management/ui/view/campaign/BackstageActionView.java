@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -57,6 +58,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
   private final BackstageActionService backstageActionService;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
+  private final WrestlerStatsService wrestlerStatsService;
   private final InjuryService injuryService;
   private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
@@ -69,6 +71,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
       final BackstageActionService backstageActionService,
       final WrestlerRepository wrestlerRepository,
       final WrestlerService wrestlerService,
+      final WrestlerStatsService wrestlerStatsService,
       final InjuryService injuryService,
       final UniverseContextService universeContextService,
       final SecurityUtils securityUtils,
@@ -76,6 +79,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
     this.backstageActionService = backstageActionService;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerService = wrestlerService;
+    this.wrestlerStatsService = wrestlerStatsService;
     this.injuryService = injuryService;
     this.universeContextService = universeContextService;
     this.securityUtils = securityUtils;
@@ -167,7 +171,8 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
             universeContextService.getCurrentUniverseId(),
             wrestlerService,
             injuryService,
-            true));
+            true,
+            wrestlerStatsService));
 
     Span actionsCount = new Span("Actions taken today: " + state.getActionsTaken() + " / 2");
     actionsCount.addClassNames(

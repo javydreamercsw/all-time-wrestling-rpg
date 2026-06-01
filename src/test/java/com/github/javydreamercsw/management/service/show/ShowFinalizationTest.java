@@ -45,13 +45,11 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
-import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
+import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
-import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -78,7 +76,6 @@ class ShowFinalizationTest {
   @Mock private UniverseRepository universeRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private LeagueRepository leagueRepository;
-  @Mock private WrestlerStateRepository wrestlerStateRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
@@ -90,9 +87,8 @@ class ShowFinalizationTest {
   @Mock private ArenaRepository arenaRepository;
   @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private WrestlerContractRepository contractRepository;
-  @Mock private SalaryCalculator salaryCalculator;
+  @Mock private GmModeService gmModeService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
-  @Mock private RetirementService retirementService;
 
   private ShowService showService;
 
@@ -106,7 +102,6 @@ class ShowFinalizationTest {
             showTemplateRepository,
             universeRepository,
             leagueRepository,
-            wrestlerStateRepository,
             java.time.Clock.systemUTC(),
             segmentAdjudicationService,
             segmentRepository,
@@ -119,8 +114,7 @@ class ShowFinalizationTest {
             legacyService,
             securityUtils,
             arenaRepository,
-            salaryCalculator,
-            retirementService);
+            gmModeService);
 
     when(showRepository.save(any(Show.class))).thenAnswer(inv -> inv.getArgument(0));
   }

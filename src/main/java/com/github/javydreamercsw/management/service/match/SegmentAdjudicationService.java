@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -214,6 +215,7 @@ public class SegmentAdjudicationService {
   }
 
   /** Called by CampaignService where the player security context cannot be elevated. */
+  @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER', 'PLAYER')")
   @Transactional
   public void adjudicateMatchForCampaign(@NonNull final Segment segment, final double multiplier) {
     adjudicateMatchInternal(segment, multiplier);
@@ -221,7 +223,8 @@ public class SegmentAdjudicationService {
 
   @Transactional
   private void adjudicateMatchInternal(@NonNull final Segment segment, final double multiplier) {
-    // Check for league fulfillment
+    // Process match fulfillment first so that a player-reported winner is reflected
+    // in the winners/losers lists used by every downstream method.
     matchFulfillmentRepository
         .findBySegment(segment)
         .ifPresent(
@@ -237,6 +240,33 @@ public class SegmentAdjudicationService {
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
 
+    applyLeagueStats(segment, winners, losers);
+    processRewards(segment, multiplier);
+    applyOutcomeMatrix(segment, winners, losers);
+    applyRatingAndNoise(segment);
+    applyWearAndTear(segment);
+    applyRingsideActions(segment);
+    applyTitleChange(segment, winners, losers);
+
+    Long universeId =
+        segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
+
+    applyFactionAffinity(segment, winners, universeId);
+    applyHeatToRivaltiesAndFeuds(segment, segment.getWrestlers(), universeId);
+    resolveRivalriesAndFeuds(segment, winners);
+    triggerAchievements(segment, winners);
+
+    if (showService != null) {
+      showService.finalizeShowIfComplete(segment.getShow());
+    }
+
+    evaluateStatusCards(segment, winners, segment.getWrestlers());
+  }
+
+  private void applyLeagueStats(
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final List<Wrestler> losers) {
     // Update League Stats if applicable — check show.getLeague() first, then fall back to
     // the universe-based lookup for shows that were associated via universe rather than directly.
     com.github.javydreamercsw.management.domain.league.League effectiveLeague =
@@ -279,47 +309,55 @@ public class SegmentAdjudicationService {
         }
       }
     }
+  }
 
-    // Apply standard rewards (Multiplier 1.0 for normal league play)
-    processRewards(segment, multiplier);
-
-    // Roll on outcome matrix chart for post-match narrative and side effects
-    if (outcomeMatrixService != null && !segment.getWrestlers().isEmpty()) {
-      OutcomeMatrixCategory category =
-          "Promo".equals(segment.getSegmentType().getName())
-              ? OutcomeMatrixCategory.PROMO
-              : OutcomeMatrixCategory.MATCH_FLOW;
-      Map<String, String> chartVars = new HashMap<>();
-      Wrestler chartPrimary = winners.isEmpty() ? segment.getWrestlers().get(0) : winners.get(0);
-      chartVars.put("{WRESTLER_1}", chartPrimary.getName());
-      if (segment.getWrestlers().size() > 1) {
-        Wrestler chartOpponent = losers.isEmpty() ? segment.getWrestlers().get(1) : losers.get(0);
-        chartVars.put("{WRESTLER_2}", chartOpponent.getName());
-      }
-      Long chartUniverseId =
-          segment.getShow().getUniverse() != null
-              ? segment.getShow().getUniverse().getId()
-              : universeContextService.getCurrentUniverseId();
-      if (chartUniverseId != null) {
-        final Long chartPrimaryId = chartPrimary.getId();
-        final Long chartSecondaryId =
-            segment.getWrestlers().size() > 1
-                ? (losers.isEmpty() ? segment.getWrestlers().get(1).getId() : losers.get(0).getId())
-                : null;
-        final Long finalChartUniverseId = chartUniverseId;
-        outcomeMatrixService
-            .resolveRandomRoll(category, chartVars)
-            .ifPresent(
-                result ->
-                    outcomeMatrixService.applyEffects(
-                        result.entry(),
-                        chartPrimaryId,
-                        chartSecondaryId,
-                        finalChartUniverseId,
-                        result.renderedText()));
-      }
+  private void applyOutcomeMatrix(
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final List<Wrestler> losers) {
+    if (outcomeMatrixService == null || segment.getWrestlers().isEmpty()) {
+      return;
     }
+    OutcomeMatrixCategory category =
+        SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())
+            ? OutcomeMatrixCategory.PROMO
+            : OutcomeMatrixCategory.MATCH_FLOW;
+    Map<String, String> chartVars = new HashMap<>();
+    Wrestler chartPrimary = winners.isEmpty() ? segment.getWrestlers().get(0) : winners.get(0);
+    chartVars.put("{WRESTLER_1}", chartPrimary.getName());
+    Wrestler chartOpponent = null;
+    if (segment.getWrestlers().size() > 1) {
+      // Pick the opponent: prefer the first loser, but if losers is empty or only contains the
+      // primary (promo with no declared winner), fall back to the second wrestler in the list.
+      chartOpponent =
+          losers.stream()
+              .filter(w -> !w.equals(chartPrimary))
+              .findFirst()
+              .orElse(segment.getWrestlers().get(1));
+      chartVars.put("{WRESTLER_2}", chartOpponent.getName());
+    }
+    Long chartUniverseId =
+        segment.getShow().getUniverse() != null
+            ? segment.getShow().getUniverse().getId()
+            : universeContextService.getCurrentUniverseId();
+    if (chartUniverseId != null) {
+      final Long chartPrimaryId = chartPrimary.getId();
+      final Long chartSecondaryId = chartOpponent != null ? chartOpponent.getId() : null;
+      final Long finalChartUniverseId = chartUniverseId;
+      outcomeMatrixService
+          .resolveRandomRoll(category, chartVars)
+          .ifPresent(
+              result ->
+                  outcomeMatrixService.applyEffects(
+                      result.entry(),
+                      chartPrimaryId,
+                      chartSecondaryId,
+                      finalChartUniverseId,
+                      result.renderedText()));
+    }
+  }
 
+  private void applyRatingAndNoise(@NonNull final Segment segment) {
     // Update segment rating
     double chemistryBonus = relationshipService.calculateChemistryBonus(segment.getWrestlers());
     int baseRating = calculateBaseRating();
@@ -329,12 +367,11 @@ public class SegmentAdjudicationService {
     // Set crowd noise level (Rating with some random variance)
     int noiseVariance = random.nextInt(11) - 5; // -5 to +5
     segment.setCrowdNoiseLevel(Math.clamp(finalRating + noiseVariance, 0, 100));
+  }
 
-    // Apply wear and tear
-    applyWearAndTear(segment);
-
+  private void applyRingsideActions(@NonNull final Segment segment) {
     // Automated Ringside Actions
-    if (!"Promo".equals(segment.getSegmentType().getName())) {
+    if (!SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
       for (Wrestler w : segment.getWrestlers()) {
         Object supporter = ringsideActionService.getBestSupporter(segment, w);
         if (supporter != null) {
@@ -342,8 +379,13 @@ public class SegmentAdjudicationService {
         }
       }
     }
+  }
 
-    if (!"Promo".equals(segment.getSegmentType().getName())) {
+  private void applyTitleChange(
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final List<Wrestler> losers) {
+    if (!SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
       if (segment.getIsTitleSegment()) {
         for (Title title : segment.getTitles()) {
           List<Wrestler> currentChampions = title.getCurrentChampions();
@@ -358,13 +400,15 @@ public class SegmentAdjudicationService {
         }
       }
     }
+  }
 
+  private void applyFactionAffinity(
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final Long universeId) {
     // Faction Affinity Logic
     Map<Long, Integer> factionParticipants = new HashMap<>();
     Map<Long, Integer> factionWinners = new HashMap<>();
-
-    Long universeId =
-        segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
 
     for (Wrestler participant : segment.getWrestlers()) {
       Faction faction =
@@ -401,7 +445,7 @@ public class SegmentAdjudicationService {
             }
 
             // Promo bonus: +1 for shared spotlight
-            if ("Promo".equals(segment.getSegmentType().getName())) {
+            if (SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
               affinityGain += 1;
             }
 
@@ -410,7 +454,12 @@ public class SegmentAdjudicationService {
             }
           }
         });
+  }
 
+  private void applyHeatToRivaltiesAndFeuds(
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> participants,
+      @NonNull final Long universeId) {
     // If the AI tagged a specific rivalry, boost its heat directly before the generic pair-scan.
     if (segment.getRivalryId() != null) {
       int targetedHeat = segment.getShow().isPremiumLiveEvent() ? 3 : 2;
@@ -428,15 +477,14 @@ public class SegmentAdjudicationService {
     // Add heat to rivalries
     int heat = 1;
     String segmentTypeName = segment.getSegmentType().getName();
-    if ("Promo".equals(segmentTypeName)) {
+    if (SegmentTypeNames.PROMO.equals(segmentTypeName)) {
       heat = 4;
     }
 
-    List<Wrestler> participants = segment.getWrestlers();
     // Skip all-pairs heat addition for Rumbles to avoid performance issues,
     // excessive rivalry creation, and because determining eliminations from
     // narration is complex. Bookers can manage these rivalries manually.
-    if (!"Abu Dhabi Rumble".equals(segment.getSegmentType().getName())) {
+    if (!SegmentTypeNames.ABU_DHABI_RUMBLE.equals(segment.getSegmentType().getName())) {
       for (int i = 0; i < participants.size(); i++) {
         for (int j = i + 1; j < participants.size(); j++) {
           Wrestler wi = participants.get(i);
@@ -477,7 +525,10 @@ public class SegmentAdjudicationService {
             feud.getId(), heat, "From segment: " + segment.getSegmentType().getName());
       }
     }
+  }
 
+  private void resolveRivalriesAndFeuds(
+      @NonNull final Segment segment, @NonNull final List<Wrestler> winners) {
     // Attempt to resolve feuds and rivalries after qualifying matches.
     // PLEs always trigger; regular shows only when the setting is enabled.
     boolean isPle = segment.getShow().isPremiumLiveEvent();
@@ -516,7 +567,7 @@ public class SegmentAdjudicationService {
       } else {
         // Fall back to generic pair-scan when no rivalry was explicitly tagged.
         switch (segment.getSegmentType().getName()) {
-          case "Tag Team":
+          case SegmentTypeNames.TAG_TEAM:
             attemptRivalryResolution(
                 segment.getWrestlers().get(0), segment.getWrestlers().get(2), threshold);
             attemptRivalryResolution(
@@ -526,8 +577,8 @@ public class SegmentAdjudicationService {
             attemptRivalryResolution(
                 segment.getWrestlers().get(1), segment.getWrestlers().get(3), threshold);
             break;
-          case "Abu Dhabi Rumble":
-          case "One on One":
+          case SegmentTypeNames.ABU_DHABI_RUMBLE:
+          case SegmentTypeNames.ONE_ON_ONE:
           case "Free-for-All":
           default:
             List<Wrestler> wrestlers = segment.getWrestlers();
@@ -543,7 +594,10 @@ public class SegmentAdjudicationService {
         }
       }
     }
+  }
 
+  private void triggerAchievements(
+      @NonNull final Segment segment, @NonNull final List<Wrestler> winners) {
     // Trigger Achievements
     List<String> achievementKeys = new ArrayList<>();
     achievementKeys.add(segment.getSegmentType().getName());
@@ -561,7 +615,7 @@ public class SegmentAdjudicationService {
         }
 
         if (winners.contains(participant)
-            && "Abu Dhabi Rumble".equals(segment.getSegmentType().getName())) {
+            && SegmentTypeNames.ABU_DHABI_RUMBLE.equals(segment.getSegmentType().getName())) {
           legacyService.unlockAchievement(participant.getAccount(), "RUMBLE_WINNER");
         }
 
@@ -573,11 +627,12 @@ public class SegmentAdjudicationService {
         }
       }
     }
+  }
 
-    if (showService != null) {
-      showService.finalizeShowIfComplete(segment.getShow());
-    }
-
+  private void evaluateStatusCards(
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final List<Wrestler> participants) {
     // Evaluate Status Card triggers
     if (wrestlerStatusService.isStatusMechanicEnabled()) {
       for (Wrestler participant : participants) {
@@ -602,7 +657,7 @@ public class SegmentAdjudicationService {
     DiceBag d20 = new DiceBag(random, new int[] {20});
     int roll = d20.roll();
 
-    if (!"Promo".equals(segment.getSegmentType().getName())) {
+    if (!SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
       handleMatchRewards(segment, winners, losers, roll, difficultyMultiplier);
     } else {
       handlePromoRewards(segment, roll, difficultyMultiplier);
@@ -891,7 +946,7 @@ public class SegmentAdjudicationService {
   }
 
   private void applyWearAndTear(@NonNull final Segment segment) {
-    if ("Promo".equals(segment.getSegmentType().getName())
+    if (SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())
         || !gameSettingService.isWearAndTearEnabled()) {
       return;
     }

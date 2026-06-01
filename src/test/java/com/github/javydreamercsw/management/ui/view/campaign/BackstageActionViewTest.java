@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -48,6 +49,7 @@ class BackstageActionViewTest extends AbstractViewTest {
   @Mock private BackstageActionService backstageActionService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private InjuryService injuryService;
   @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
@@ -70,6 +72,7 @@ class BackstageActionViewTest extends AbstractViewTest {
             backstageActionService,
             wrestlerRepository,
             wrestlerService,
+            wrestlerStatsService,
             injuryService,
             universeContextService,
             securityUtils,
@@ -107,6 +110,7 @@ class BackstageActionViewTest extends AbstractViewTest {
             backstageActionService,
             wrestlerRepository,
             wrestlerService,
+            wrestlerStatsService,
             injuryService,
             universeContextService,
             securityUtils,

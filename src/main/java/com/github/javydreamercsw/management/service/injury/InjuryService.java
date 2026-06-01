@@ -220,11 +220,10 @@ public class InjuryService {
     int roll = diceRoll != null ? diceRoll : random.nextInt(6) + 1;
     boolean success = injury.getSeverity().isHealingSuccessful(roll);
 
-    // Spend the fans regardless of success
-    state.setFans(state.getFans() - injury.getHealingCost());
-    wrestlerStateRepository.saveAndFlush(state);
-
+    // Only spend fans when the healing roll succeeds
     if (success) {
+      state.setFans(state.getFans() - injury.getHealingCost());
+      wrestlerStateRepository.saveAndFlush(state);
       injury.heal();
       injuryRepository.saveAndFlush(injury);
       eventPublisher.publishEvent(new WrestlerInjuryHealedEvent(this, state, injury));
@@ -236,7 +235,7 @@ public class InjuryService {
             : "Healing attempt failed (Rolled: %d, Needed: %d+)"
                 .formatted(roll, injury.getSeverity().getHealingSuccessThreshold());
 
-    return new HealingResult(success, message, injury, roll, true);
+    return new HealingResult(success, message, injury, roll, success);
   }
 
   /** Force heal an injury (Admin only). Bypasses dice roll check by ensuring a successful roll. */
@@ -294,27 +293,6 @@ public class InjuryService {
         .findById(wrestlerId)
         .map(w -> injuryRepository.findByWrestlerAndUniverse(w, universe))
         .orElse(List.of());
-  }
-
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<Injury> getActiveInjuriesForWrestler(@NonNull final Long wrestlerId) {
-    return getActiveInjuriesForWrestler(wrestlerId, 1L);
-  }
-
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<Injury> getAllInjuriesForWrestler(@NonNull final Long wrestlerId) {
-    return getAllInjuriesForWrestler(wrestlerId, 1L);
-  }
-
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public InjuryStats getInjuryStatsForWrestler(final Long wrestlerId) {
-    return getInjuryStatsForWrestler(wrestlerId, 1L);
   }
 
   /** Get injuries by severity. */

@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -65,6 +66,7 @@ public class NarrationDialog extends Dialog {
   private final Segment segment;
   private final ObjectMapper objectMapper;
   private final WrestlerService wrestlerService;
+  private final WrestlerStatsService wrestlerStatsService;
   private final ShowService showService;
   private final SegmentService segmentService;
   private final RivalryService rivalryService;
@@ -106,7 +108,8 @@ public class NarrationDialog extends Dialog {
       final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
       final UniverseContextService universeContextService,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
+      final WrestlerStatsService wrestlerStatsService) {
     this.segmentService = segmentService;
     this.segment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
     this.objectMapper = new ObjectMapper();
@@ -120,6 +123,7 @@ public class NarrationDialog extends Dialog {
     this.ringsideActionService = ringsideActionService;
     this.relationshipService = relationshipService;
     this.universeContextService = universeContextService;
+    this.wrestlerStatsService = wrestlerStatsService;
 
     setHeaderTitle("Generate Narration for: " + this.segment.getSegmentType().getName());
     setWidth("min(800px, 95vw)");
@@ -243,7 +247,7 @@ public class NarrationDialog extends Dialog {
         byTeam = this.segment.getWrestlersByTeam();
     if (byTeam.isEmpty()) {
       // Fallback for legacy data: one row per wrestler, each in their own team
-      wrestlerService
+      wrestlerStatsService
           .findAllBySegment(this.segment, universeContextService.getCurrentUniverseId())
           .forEach(this::addTeamSelector);
     } else {
@@ -253,7 +257,7 @@ public class NarrationDialog extends Dialog {
                 wrestlers.stream()
                     .map(
                         w ->
-                            wrestlerService
+                            wrestlerStatsService
                                 .findByIdAsDTO(
                                     w.getId(), universeContextService.getCurrentUniverseId())
                                 .orElseGet(() -> new WrestlerDTO(w)))
@@ -289,7 +293,7 @@ public class NarrationDialog extends Dialog {
     wrestlersCombo.setItemLabelGenerator(WrestlerDTO::getName);
     wrestlersCombo.setWidthFull();
     wrestlersCombo.setItems(
-        wrestlerService.findAllAsDTO(universeContextService.getCurrentUniverseId()).stream()
+        wrestlerStatsService.findAllAsDTO(universeContextService.getCurrentUniverseId()).stream()
             .sorted(Comparator.comparing(WrestlerDTO::getName))
             .collect(Collectors.toList()));
     wrestlersCombo.setValue(new HashSet<>(wrestlers));
@@ -634,7 +638,7 @@ public class NarrationDialog extends Dialog {
     List<SegmentNarrationService.WrestlerContext> wrestlerContexts = new ArrayList<>();
     // Use transactional DTO fetching for wrestlers
     List<WrestlerDTO> wrestlers =
-        wrestlerService.findAllBySegment(
+        wrestlerStatsService.findAllBySegment(
             loadedSegment, universeContextService.getCurrentUniverseId());
     for (WrestlerDTO wrestler : wrestlers) {
       SegmentNarrationService.WrestlerContext wc = new SegmentNarrationService.WrestlerContext();

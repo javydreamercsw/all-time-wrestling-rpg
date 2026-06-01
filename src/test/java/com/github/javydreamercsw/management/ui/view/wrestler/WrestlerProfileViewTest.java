@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +55,7 @@ import org.springframework.data.domain.Page;
 class WrestlerProfileViewTest extends AbstractViewTest {
 
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private TitleService titleService;
   @Mock private RankingService rankingService;
@@ -85,6 +87,7 @@ class WrestlerProfileViewTest extends AbstractViewTest {
     view =
         new WrestlerProfileView(
             wrestlerService,
+            wrestlerStatsService,
             wrestlerRepository,
             titleService,
             rankingService,

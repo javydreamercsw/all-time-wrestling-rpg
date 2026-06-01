@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -55,6 +56,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
@@ -118,6 +120,7 @@ public class ShowDetailView extends Main
   private final SegmentRuleRepository segmentRuleRepository;
   private final NpcService npcService;
   private final WrestlerService wrestlerService;
+  private final WrestlerStatsService wrestlerStatsService;
   private final TitleService titleService;
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
@@ -160,6 +163,7 @@ public class ShowDetailView extends Main
       final SegmentRuleRepository segmentRuleRepository,
       final NpcService npcService,
       final WrestlerService wrestlerService,
+      final WrestlerStatsService wrestlerStatsService,
       final TitleService titleService,
       final ShowTypeService showTypeService,
       final SeasonService seasonService,
@@ -186,6 +190,7 @@ public class ShowDetailView extends Main
     this.segmentRuleRepository = segmentRuleRepository;
     this.npcService = npcService;
     this.wrestlerService = wrestlerService;
+    this.wrestlerStatsService = wrestlerStatsService;
     this.titleService = titleService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
@@ -893,7 +898,8 @@ public class ShowDetailView extends Main
                   ringsideActionService,
                   relationshipService,
                   universeContextService,
-                  notificationService);
+                  notificationService,
+                  wrestlerStatsService);
           dialog.open();
         });
 
@@ -910,7 +916,8 @@ public class ShowDetailView extends Main
     deleteButton.addClickListener(e -> deleteSegment(segment));
 
     SegmentType segmentType = segment.getSegmentType();
-    boolean isMatch = segmentType != null && !"Promo".equalsIgnoreCase(segmentType.getName());
+    boolean isMatch =
+        segmentType != null && !SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName());
     Button qrButton = new Button(new Icon(VaadinIcon.QRCODE));
     qrButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     qrButton.setTooltipText("Share Match QR Code");
@@ -1650,7 +1657,7 @@ public class ShowDetailView extends Main
       return false;
     }
 
-    if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
+    if (!SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName())) {
       if (wrestlers.isEmpty()) {
         log.debug("Validation failed: Wrestlers are null or empty for non-promo segment.");
         notificationService.showError("Please select at least one wrestler");

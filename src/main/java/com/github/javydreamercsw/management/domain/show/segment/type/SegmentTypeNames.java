@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,19 +14,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.show.planning.dto;
+package com.github.javydreamercsw.management.domain.show.segment.type;
 
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import lombok.Data;
+public final class SegmentTypeNames {
 
-/** Booking-relevant wrestler summary for AI show planning. Omits bios, stats, and move sets. */
-@Data
-public class ShowPlanningRosterEntryDTO {
-  private Long id;
-  private String name;
-  private String gender;
-  private WrestlerTier tier;
-  private Long fans;
-  private String alignment;
-  private boolean injured;
+  public static final String PROMO = "Promo";
+  public static final String ONE_ON_ONE = "One on One";
+  public static final String TAG_TEAM = "Tag Team";
+  public static final String ABU_DHABI_RUMBLE = "Abu Dhabi Rumble";
+
+  private SegmentTypeNames() {}
 }

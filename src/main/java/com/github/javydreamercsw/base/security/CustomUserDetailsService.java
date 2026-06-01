@@ -65,10 +65,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                   throw new UsernameNotFoundException("No user found with username: " + username);
                 });
 
-    // Force load roles to ensure they are available in the session
-    if (account.getId() != null) {
-      account.getRoles().size();
-    }
     // Check if account lock has expired and unlock if necessary
     if (!account.isAccountNonLocked() && account.isLockExpired()) {
       account = accountUnlockService.unlockAndReloadAccount(account.getUsername()); // Pass username
@@ -82,7 +78,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     if (wrestler == null) {
-      java.util.List<Wrestler> wrestlers = wrestlerRepository.findAllByAccount(account);
+      java.util.List<Wrestler> wrestlers =
+          wrestlerRepository.findAllByAccount(account).stream()
+              .sorted(java.util.Comparator.comparing(Wrestler::getId))
+              .toList();
       if (!wrestlers.isEmpty()) {
         wrestler = wrestlers.get(0);
         account.setActiveWrestlerId(wrestler.getId());
@@ -115,6 +114,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 LocalDateTime lockUntil = LocalDateTime.now().plusMinutes(15);
                 account.lockUntil(lockUntil);
                 log.warn("Account locked until {} for user: {}", lockUntil, username);
+                log.warn("[AUDIT] Account locked: username={} until={}", username, lockUntil);
               }
 
               accountRepository.save(account);

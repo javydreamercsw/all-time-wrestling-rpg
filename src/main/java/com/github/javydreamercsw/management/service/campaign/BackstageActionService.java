@@ -150,8 +150,11 @@ public class BackstageActionService {
         }
         break;
       case RECOVERY:
+        Long recoveryUniverseId =
+            campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
         var activeInjuries =
-            injuryService.getActiveInjuriesForWrestler(campaign.getWrestler().getId());
+            injuryService.getActiveInjuriesForWrestler(
+                campaign.getWrestler().getId(), recoveryUniverseId);
         int currentBumps =
             campaign.getWrestler().getDefaultState().map(WrestlerState::getBumps).orElse(0);
 
@@ -277,8 +280,7 @@ public class BackstageActionService {
     }
     try {
       Map<String, Object> data =
-          objectMapper.readValue(
-              state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
+          objectMapper.readValue(state.getFeatureData(), new TypeReference<>() {});
       Object value = data.remove(key);
       if (value == null) {
         return 0;
@@ -337,7 +339,7 @@ public class BackstageActionService {
       segmentRuleRepository.findByName("Promo").ifPresent(segment::addSegmentRule);
 
       campaignService.saveSegment(segment);
-      log.info("Created promo segment for campaign {}", campaign.getId());
+      log.debug("Created promo segment for campaign {}", campaign.getId());
     } catch (Exception e) {
       log.error("Failed to create promo segment", e);
     }

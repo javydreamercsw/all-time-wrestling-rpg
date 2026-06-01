@@ -152,7 +152,7 @@ public class SegmentRuleListView extends Main {
   }
 
   private void refreshGrid() {
-    segmentRuleGrid.setItems(segmentRuleService.getAllRules());
+    segmentRuleGrid.setItems(segmentRuleService.findAll());
   }
 
   private void openCreateDialog() {

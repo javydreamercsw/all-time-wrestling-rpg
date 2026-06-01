@@ -42,7 +42,7 @@ class SegmentRuleListViewTest extends AbstractViewTest {
 
   @BeforeEach
   void setup() {
-    when(segmentRuleService.getAllRules()).thenReturn(Collections.emptyList());
+    when(segmentRuleService.findAll()).thenReturn(Collections.emptyList());
     when(securityUtils.canCreate()).thenReturn(true);
     view = new SegmentRuleListView();
     ReflectionTestUtils.setField(view, "segmentRuleService", segmentRuleService);

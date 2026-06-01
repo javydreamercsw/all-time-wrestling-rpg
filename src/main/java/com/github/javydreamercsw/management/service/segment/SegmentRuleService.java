@@ -42,19 +42,6 @@ public class SegmentRuleService {
   @Autowired private SegmentRuleRepository segmentRuleRepository;
 
   /**
-   * Get all active segment rules.
-   *
-   * @return List of active segment rules
-   */
-  @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
-      key = "'allActive'")
-  public List<SegmentRule> getAllActiveRules() {
-    return segmentRuleRepository.findAll();
-  }
-
-  /**
    * Find a segment rule by name.
    *
    * @param name The name of the segment rule
@@ -191,19 +178,6 @@ public class SegmentRuleService {
       key = "#id")
   public Optional<SegmentRule> findById(@NonNull final Long id) {
     return segmentRuleRepository.findById(id);
-  }
-
-  /**
-   * Get all segment rules (including inactive ones).
-   *
-   * @return List of all segment rules
-   */
-  @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
-      key = "'all'")
-  public List<SegmentRule> getAllRules() {
-    return segmentRuleRepository.findAll();
   }
 
   /**

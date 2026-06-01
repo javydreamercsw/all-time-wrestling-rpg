@@ -19,28 +19,29 @@ package com.github.javydreamercsw.base.security;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AccountUnlockService {
 
   private final AccountRepository accountRepository;
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public Account unlockAndReloadAccount(final String username) { // Changed to take username
+  public Account unlockAndReloadAccount(final String username) {
     return accountRepository
-        .findByUsername(username) // Find by username directly
+        .findByUsername(username)
         .map(
             acc -> {
               acc.resetFailedAttempts();
-              return accountRepository.save(acc);
+              Account saved = accountRepository.save(acc);
+              log.warn("[AUDIT] Account unlocked (lock expired): username={}", username);
+              return saved;
             })
-        .orElseThrow(
-            () ->
-                new RuntimeException(
-                    "Account not found for unlock: " + username)); // Updated error message
+        .orElseThrow(() -> new RuntimeException("Account not found for unlock: " + username));
   }
 }

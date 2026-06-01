@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import java.util.Collections;
@@ -50,6 +51,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class PlayerViewTest extends AbstractViewTest {
 
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private ShowService showService;
   @Mock private RivalryService rivalryService;
   @Mock private InboxService inboxService;
@@ -87,6 +89,7 @@ class PlayerViewTest extends AbstractViewTest {
     view =
         new PlayerView(
             wrestlerService,
+            wrestlerStatsService,
             showService,
             rivalryService,
             inboxService,

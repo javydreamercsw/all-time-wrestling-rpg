@@ -16,15 +16,20 @@
 */
 package com.github.javydreamercsw.management.service.wrestler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.WrestlerRetiredEvent;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +37,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class RetirementServiceTest {
@@ -48,6 +54,8 @@ class RetirementServiceTest {
 
   @BeforeEach
   public void setUp() {
+    ReflectionTestUtils.setField(retirementService, "objectMapper", new ObjectMapper());
+
     wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Old Timer");
@@ -88,5 +96,65 @@ class RetirementServiceTest {
     state.setPhysicalCondition(0);
     retirementService.checkRetirement(wrestler, 1L);
     verify(wrestlerRepository, never()).save(any());
+  }
+
+  @Test
+  void retireWrestler_withActiveCampaign_setsRetiredFlagInFeatureData() throws Exception {
+    CampaignState campaignState = new CampaignState();
+    campaignState.setFeatureData("{\"chapter\": 2}");
+    Campaign campaign = new Campaign();
+    campaign.setState(campaignState);
+    when(campaignRepository.findActiveByWrestler(wrestler)).thenReturn(Optional.of(campaign));
+    when(campaignRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    retirementService.retireWrestler(wrestler, "Injured");
+
+    ObjectMapper mapper = new ObjectMapper();
+    var map =
+        mapper.readValue(
+            campaignState.getFeatureData(),
+            new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+    assertThat(map).containsEntry("retired", true);
+    assertThat(map).containsKey("chapter"); // existing keys preserved
+  }
+
+  @Test
+  void retireWrestler_withNullFeatureData_setsRetiredFlag() throws Exception {
+    CampaignState campaignState = new CampaignState();
+    campaignState.setFeatureData(null);
+    Campaign campaign = new Campaign();
+    campaign.setState(campaignState);
+    when(campaignRepository.findActiveByWrestler(wrestler)).thenReturn(Optional.of(campaign));
+    when(campaignRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    retirementService.retireWrestler(wrestler, "Injured");
+
+    ObjectMapper mapper = new ObjectMapper();
+    var map =
+        mapper.readValue(
+            campaignState.getFeatureData(),
+            new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+    assertThat(map).containsEntry("retired", true);
+  }
+
+  @Test
+  void retireWrestler_withNestedJsonFeatureData_doesNotCorrupt() throws Exception {
+    // Regression: old string replace would corrupt nested JSON like {"a": {"b": 1}}
+    CampaignState campaignState = new CampaignState();
+    campaignState.setFeatureData("{\"nested\": {\"key\": \"value\"}}");
+    Campaign campaign = new Campaign();
+    campaign.setState(campaignState);
+    when(campaignRepository.findActiveByWrestler(wrestler)).thenReturn(Optional.of(campaign));
+    when(campaignRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    retirementService.retireWrestler(wrestler, "Worn out");
+
+    ObjectMapper mapper = new ObjectMapper();
+    var map =
+        mapper.readValue(
+            campaignState.getFeatureData(),
+            new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+    assertThat(map).containsEntry("retired", true);
+    assertThat(map).containsKey("nested"); // nested structure preserved
   }
 }

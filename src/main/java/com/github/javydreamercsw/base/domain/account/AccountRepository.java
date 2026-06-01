@@ -66,4 +66,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
    */
   @Query("SELECT a FROM Account a LEFT JOIN FETCH a.roles WHERE a.username = :username")
   Optional<Account> findByUsernameWithRoles(@Param("username") String username);
+
+  @Query(
+      "SELECT a FROM Account a WHERE a.id NOT IN "
+          + "(SELECT DISTINCT w.account.id FROM Wrestler w WHERE w.account IS NOT NULL)")
+  java.util.List<Account> findAccountsWithNoAssignedWrestler();
 }

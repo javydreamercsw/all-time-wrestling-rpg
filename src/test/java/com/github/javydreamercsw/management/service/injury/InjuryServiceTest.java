@@ -309,14 +309,14 @@ class InjuryServiceTest {
     // When - Roll 2 (should fail for MINOR injury with threshold 3)
     InjuryService.HealingResult result = injuryService.attemptHealing(1L, 2);
 
-    // Then
+    // Then — fans are NOT spent when the roll fails (ACID fix ATW-t6ss)
     assertThat(result.success()).isFalse();
     assertThat(result.message()).isEqualTo("Healing attempt failed (Rolled: 2, Needed: 3+)");
     assertThat(result.diceRoll()).isEqualTo(2);
-    assertThat(result.fansSpent()).isTrue();
+    assertThat(result.fansSpent()).isFalse();
     assertThat(injury.getIsActive()).isTrue(); // Still active
-    assertThat(state.getFans()).isEqualTo(45_000L); // Fans still spent
-    verify(wrestlerStateRepository).saveAndFlush(state);
+    assertThat(state.getFans()).isEqualTo(50_000L); // Fans preserved on failure
+    verify(wrestlerStateRepository, never()).saveAndFlush(state);
   }
 
   @Test

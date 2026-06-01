@@ -22,15 +22,21 @@ import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomPasswordValidator;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -39,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service("managementAccountService")
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class AccountService {
 
   private final AccountRepository accountRepository;
@@ -58,7 +65,9 @@ public class AccountService {
             .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
     Account account = new Account(username, passwordEncoder.encode(password), email);
     account.setRoles(new java.util.HashSet<>(Set.of(role)));
-    return accountRepository.save(account);
+    Account saved = accountRepository.save(account);
+    log.info("[AUDIT] Account created: username={} role={}", username, roleName);
+    return saved;
   }
 
   public Optional<Account> get(final Long id) {
@@ -79,27 +88,22 @@ public class AccountService {
     String incomingPassword = entity.getPassword();
     String originalEncodedPassword = original.getPassword();
 
-    // Check if a new plaintext password is provided (not starting with $2a$ and doesn't match
-    // original encoded)
-    if (!incomingPassword.startsWith("$2a$")
-        && !passwordEncoder.matches(incomingPassword, originalEncodedPassword)) {
+    boolean alreadyEncoded =
+        incomingPassword.startsWith("$2a$")
+            || incomingPassword.startsWith("$2b$")
+            || incomingPassword.startsWith("$2y$");
+    if (alreadyEncoded) {
+      // Password is a bcrypt hash — keep it as-is (unchanged or pre-encoded by a trusted caller).
+      entity.setPassword(incomingPassword);
+    } else if (passwordEncoder.matches(incomingPassword, originalEncodedPassword)) {
+      // Caller passed the correct plaintext password unchanged; keep stored hash.
+      entity.setPassword(originalEncodedPassword);
+    } else {
       if (!CustomPasswordValidator.isValid(incomingPassword)) {
         throw new IllegalArgumentException("Password is not valid.");
       }
+      log.warn("[AUDIT] Password changed for account id={}", entity.getId());
       entity.setPassword(passwordEncoder.encode(incomingPassword));
-    }
-    // Check if a new encoded password is provided (starts with $2a$ and is different from original
-    // encoded)
-    else if (incomingPassword.startsWith("$2a$")
-        && !incomingPassword.equals(originalEncodedPassword)) {
-      // Assuming if an encoded password is provided directly, it's intended to be set.
-      // No plaintext validation needed for already encoded passwords.
-      entity.setPassword(incomingPassword);
-    }
-    // Otherwise, password hasn't changed or is the same encoded password, keep original encoded
-    // password
-    else {
-      entity.setPassword(originalEncodedPassword);
     }
 
     return accountRepository.save(entity);
@@ -189,6 +193,23 @@ public class AccountService {
             .findById(accountId)
             .orElseThrow(() -> new IllegalArgumentException("Account not found."));
     account.setActiveWrestlerId(wrestlerId);
-    return accountRepository.save(account);
+    Account saved = accountRepository.save(account);
+
+    // Refresh SecurityContext so the in-memory CustomUserDetails reflects the new active wrestler
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null
+        && currentAuth.getPrincipal() instanceof CustomUserDetails details
+        && details.getId() != null
+        && details.getId().equals(accountId)) {
+      Wrestler newWrestler =
+          wrestlerId != null ? wrestlerRepository.findById(wrestlerId).orElse(null) : null;
+      CustomUserDetails refreshed = new CustomUserDetails(saved, newWrestler);
+      Authentication newAuth =
+          new UsernamePasswordAuthenticationToken(
+              refreshed, currentAuth.getCredentials(), currentAuth.getAuthorities());
+      SecurityContextHolder.getContext().setAuthentication(newAuth);
+    }
+
+    return saved;
   }
 }

@@ -43,19 +43,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GeminiSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private final ObjectMapper objectMapper;
-  private final GeminiConfigProperties geminiConfigProperties;
+  @Autowired private ObjectMapper objectMapper;
   private final Environment environment;
   private final AiSettingsService aiSettingsService;
 
-  @Autowired // Autowire the configuration properties
+  @Autowired
   public GeminiSegmentNarrationService(
-      final GeminiConfigProperties geminiConfigProperties,
-      final Environment environment,
-      final AiSettingsService aiSettingsService) {
+      final Environment environment, final AiSettingsService aiSettingsService) {
     this.aiSettingsService = aiSettingsService;
-    this.objectMapper = new ObjectMapper();
-    this.geminiConfigProperties = geminiConfigProperties;
     this.environment = environment;
   }
 
@@ -77,24 +72,18 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
     if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
       return false;
     }
-    String apiKey = geminiConfigProperties.getApiKey();
+    String apiKey = aiSettingsService.getGeminiApiKey();
     return apiKey != null && !apiKey.trim().isEmpty();
-  }
-
-  @Override
-  public String generateText(@NonNull final String prompt) {
-    return callGemini(prompt);
   }
 
   /** Makes a call to the Gemini API with the given prompt. */
   private String callGemini(@NonNull final String prompt) {
     try {
-      // Use configured API URL and model name
-      String modelName = geminiConfigProperties.getModelName();
-      String apiUrl = geminiConfigProperties.getApiUrl();
+      String modelName = aiSettingsService.getGeminiModelName();
+      String apiUrl = aiSettingsService.getGeminiApiUrl();
       String fullApiUrl = apiUrl + modelName + ":generateContent";
 
-      String apiKey = geminiConfigProperties.getApiKey();
+      String apiKey = aiSettingsService.getGeminiApiKey();
       if (apiKey != null) {
         apiKey = apiKey.trim();
       }
@@ -165,12 +154,12 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
           HttpRequest.newBuilder()
               .uri(URI.create(url))
               .header("Content-Type", "application/json")
-              .timeout(Duration.ofSeconds(geminiConfigProperties.getTimeout()))
+              .timeout(Duration.ofSeconds(aiSettingsService.getAiTimeout()))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
       // Send request and get response
       HttpResponse<String> response =
-          getHttpClient(geminiConfigProperties.getTimeout())
+          getHttpClient(aiSettingsService.getAiTimeout())
               .send(request, HttpResponse.BodyHandlers.ofString());
 
       log.debug("Gemini API Response Status: {}", response.statusCode());

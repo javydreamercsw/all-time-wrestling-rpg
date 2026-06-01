@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -297,14 +298,14 @@ public class CampaignService {
     }
 
     // 3. Create Segment
-    String finalTypeName = actualTypeName != null ? actualTypeName : "One on One";
+    String finalTypeName = actualTypeName != null ? actualTypeName : SegmentTypeNames.ONE_ON_ONE;
     SegmentType type =
         segmentTypeRepository
             .findByName(finalTypeName)
             .orElseGet(
                 () ->
                     segmentTypeRepository
-                        .findByName("One on One")
+                        .findByName(SegmentTypeNames.ONE_ON_ONE)
                         .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
 
     Segment newSegment = new Segment();
@@ -342,7 +343,7 @@ public class CampaignService {
     addParticipant(segment, player);
 
     // Tag Team Logic
-    if ("Tag Team".equalsIgnoreCase(type.getName())) {
+    if (SegmentTypeNames.TAG_TEAM.equalsIgnoreCase(type.getName())) {
       // Player Partner
       Long partnerId = getFeatureValue(state, KEY_PARTNER_ID, Long.class, null);
       if (partnerId != null) {
@@ -803,11 +804,11 @@ public class CampaignService {
 
   public SegmentType getPromoSegmentType() {
     return segmentTypeRepository
-        .findByName("Promo")
+        .findByName(SegmentTypeNames.PROMO)
         .orElseGet(
             () ->
                 segmentTypeRepository
-                    .findByName("One on One")
+                    .findByName(SegmentTypeNames.ONE_ON_ONE)
                     .orElseGet(
                         () -> {
                           var all = segmentTypeRepository.findAll();
@@ -816,7 +817,7 @@ public class CampaignService {
                           }
                           // Last resort: create it
                           SegmentType st = new SegmentType();
-                          st.setName("Promo");
+                          st.setName(SegmentTypeNames.PROMO);
                           st.setDescription("Standard Promo");
                           return segmentTypeRepository.save(st);
                         }));

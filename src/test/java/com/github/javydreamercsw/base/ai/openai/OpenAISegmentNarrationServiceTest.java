@@ -25,8 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
-import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.management.service.performance.PerformanceMonitoringService;
 import java.io.IOException;
@@ -42,43 +42,37 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class OpenAISegmentNarrationServiceTest {
 
   @Mock private AiSettingsService aiSettingsService;
-  @Mock private OpenAIConfigProperties openAIConfigProperties;
   @Mock private Environment environment;
-  @Mock private SegmentNarrationConfig segmentNarrationConfig;
   @Mock private HttpClient httpClient;
   @Mock private PerformanceMonitoringService performanceMonitoringService;
 
-  private SegmentNarrationConfig.AI aiConfig;
   private OpenAISegmentNarrationService service;
 
   @BeforeEach
   void setUp() {
-    aiConfig = new SegmentNarrationConfig.AI();
-    when(segmentNarrationConfig.getAi()).thenReturn(aiConfig);
-
     service =
-        new OpenAISegmentNarrationService(
-            openAIConfigProperties, environment, segmentNarrationConfig, aiSettingsService) {
+        new OpenAISegmentNarrationService(environment, aiSettingsService) {
           @Override
-          protected HttpClient getHttpClient(final int timeout) {
+          protected synchronized HttpClient getHttpClient(final int timeout) {
             return httpClient;
           }
         };
+    ReflectionTestUtils.setField(service, "objectMapper", new ObjectMapper());
     service.setPerformanceMonitoringService(performanceMonitoringService);
   }
 
   @Test
   void getProviderName_defaultModel_returnsGpt35() {
-    // getModel() returns the default when premium setting is not the premium model
-    when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
+    // getModel() falls back to default; premiumModel "gpt-4" is not contained in "gpt-3.5-turbo"
+    when(aiSettingsService.getOpenAIPremiumModel()).thenReturn(null);
+    when(aiSettingsService.getOpenAIDefaultModel()).thenReturn("gpt-3.5-turbo");
 
     assertEquals("OpenAI GPT-3.5", service.getProviderName());
   }
@@ -86,7 +80,6 @@ class OpenAISegmentNarrationServiceTest {
   @Test
   void getProviderName_premiumModel_returnsGpt4() {
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
 
     assertEquals("OpenAI GPT-4", service.getProviderName());
   }
@@ -94,8 +87,7 @@ class OpenAISegmentNarrationServiceTest {
   @Test
   void getProviderName_nullModel_returnsUnknown() {
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn(null);
-    when(openAIConfigProperties.getDefaultModel()).thenReturn(null);
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
+    when(aiSettingsService.getOpenAIDefaultModel()).thenReturn(null);
 
     assertEquals("OpenAI Unknown", service.getProviderName());
   }
@@ -148,8 +140,7 @@ class OpenAISegmentNarrationServiceTest {
     // callOpenAI checks isAvailable() first — which itself checks isOpenAIEnabled
     // We need to also set up for the isAvailable call path
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
+    when(aiSettingsService.getOpenAIDefaultModel()).thenReturn("gpt-3.5-turbo");
 
     AIServiceException ex =
         assertThrows(AIServiceException.class, () -> service.generateText("Narrate a match"));
@@ -178,11 +169,10 @@ class OpenAISegmentNarrationServiceTest {
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
     when(aiSettingsService.getOpenAIApiKey()).thenReturn("sk-test-key");
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getApiUrl())
+    when(aiSettingsService.getOpenAIApiUrl())
         .thenReturn("https://api.openai.com/v1/chat/completions");
-    when(openAIConfigProperties.getMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getOpenAIMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -201,11 +191,10 @@ class OpenAISegmentNarrationServiceTest {
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
     when(aiSettingsService.getOpenAIApiKey()).thenReturn("invalid-key");
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getApiUrl())
+    when(aiSettingsService.getOpenAIApiUrl())
         .thenReturn("https://api.openai.com/v1/chat/completions");
-    when(openAIConfigProperties.getMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getOpenAIMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -227,11 +216,10 @@ class OpenAISegmentNarrationServiceTest {
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
     when(aiSettingsService.getOpenAIApiKey()).thenReturn("sk-test-key");
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getApiUrl())
+    when(aiSettingsService.getOpenAIApiUrl())
         .thenReturn("https://api.openai.com/v1/chat/completions");
-    when(openAIConfigProperties.getMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getOpenAIMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -246,11 +234,10 @@ class OpenAISegmentNarrationServiceTest {
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
     when(aiSettingsService.getOpenAIApiKey()).thenReturn("sk-test-key");
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getApiUrl())
+    when(aiSettingsService.getOpenAIApiUrl())
         .thenReturn("https://api.openai.com/v1/chat/completions");
-    when(openAIConfigProperties.getMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getOpenAIMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenThrow(new HttpTimeoutException("Connection timed out"));
 
@@ -281,11 +268,10 @@ class OpenAISegmentNarrationServiceTest {
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
     when(aiSettingsService.getOpenAIApiKey()).thenReturn("sk-test-key");
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getApiUrl())
+    when(aiSettingsService.getOpenAIApiUrl())
         .thenReturn("https://api.openai.com/v1/chat/completions");
-    when(openAIConfigProperties.getMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getOpenAIMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -310,11 +296,10 @@ class OpenAISegmentNarrationServiceTest {
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
     when(aiSettingsService.getOpenAIApiKey()).thenReturn("sk-test-key");
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getApiUrl())
+    when(aiSettingsService.getOpenAIApiUrl())
         .thenReturn("https://api.openai.com/v1/chat/completions");
-    when(openAIConfigProperties.getMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getOpenAIMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -326,17 +311,14 @@ class OpenAISegmentNarrationServiceTest {
   @Test
   void isUsingPremiumModel_withPremiumModel_returnsTrue() {
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
 
     assertTrue(service.isUsingPremiumModel());
   }
 
   @Test
   void isUsingPremiumModel_withDefaultModel_returnsFalse() {
-    when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4-turbo");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
+    when(aiSettingsService.getOpenAIPremiumModel()).thenReturn(null);
+    when(aiSettingsService.getOpenAIDefaultModel()).thenReturn("gpt-3.5-turbo");
 
     assertFalse(service.isUsingPremiumModel());
   }
@@ -344,17 +326,14 @@ class OpenAISegmentNarrationServiceTest {
   @Test
   void getCostPer1KTokens_premiumModel_returnsHigherCost() {
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
 
     assertEquals(10.0, service.getCostPer1KTokens(), 0.001);
   }
 
   @Test
   void getCostPer1KTokens_defaultModel_returnsLowerCost() {
-    when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4-turbo");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
+    when(aiSettingsService.getOpenAIPremiumModel()).thenReturn(null);
+    when(aiSettingsService.getOpenAIDefaultModel()).thenReturn("gpt-3.5-turbo");
 
     assertEquals(0.50, service.getCostPer1KTokens(), 0.001);
   }
@@ -369,7 +348,7 @@ class OpenAISegmentNarrationServiceTest {
   @Test
   void getModel_withEmptyConfig_returnsDefaultModel() {
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("  ");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
+    when(aiSettingsService.getOpenAIDefaultModel()).thenReturn("gpt-3.5-turbo");
 
     assertEquals("gpt-3.5-turbo", service.getModel());
   }
@@ -392,11 +371,10 @@ class OpenAISegmentNarrationServiceTest {
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
     when(aiSettingsService.getOpenAIApiKey()).thenReturn("sk-abc123");
     when(aiSettingsService.getOpenAIPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getDefaultModel()).thenReturn("gpt-3.5-turbo");
-    when(openAIConfigProperties.getPremiumModel()).thenReturn("gpt-4");
-    when(openAIConfigProperties.getApiUrl())
+    when(aiSettingsService.getOpenAIApiUrl())
         .thenReturn("https://api.openai.com/v1/chat/completions");
-    when(openAIConfigProperties.getMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getOpenAIMaxTokens()).thenReturn(1000);
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
 
     org.mockito.ArgumentCaptor<HttpRequest> requestCaptor =
         org.mockito.ArgumentCaptor.forClass(HttpRequest.class);

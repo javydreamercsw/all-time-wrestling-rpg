@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -320,9 +321,9 @@ public class ShowBookingService {
     int multiPersonSegments = Math.max(1, segmentCount / 5);
     segments.addAll(bookMultiPersonSegments(show, availableWrestlers, multiPersonSegments));
 
-    // 3. Fill remaining slots with quality singles segments
+    // 3. Fill remaining slots with singles segments
     int remainingSegments = segmentCount - segments.size();
-    segments.addAll(bookQualitySegments(show, availableWrestlers, remainingSegments));
+    segments.addAll(bookRandomSegments(show, availableWrestlers, remainingSegments));
 
     return segments;
   }
@@ -451,13 +452,6 @@ public class ShowBookingService {
     return segments;
   }
 
-  /** Book quality segments for PPV fill-in slots. */
-  private List<Segment> bookQualitySegments(
-      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
-    // For now, same as random segments but could be enhanced with tier matching
-    return bookRandomSegments(show, availableWrestlers, maxSegments);
-  }
-
   /** Generate promo segments for a regular show. */
   private List<Segment> generatePromosForShow(final Show show, final int segmentCount) {
     Long universeId =
@@ -502,7 +496,8 @@ public class ShowBookingService {
       final String stipulation) {
     try {
       // Get one-on-one segment type from database
-      Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName("One on One");
+      Optional<SegmentType> segmentTypeOpt =
+          segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
       if (segmentTypeOpt.isEmpty()) {
         log.debug("One on One segment type not found in database");
         return Optional.empty();
@@ -534,14 +529,10 @@ public class ShowBookingService {
       }
 
       // Get appropriate segment type from database
-      String segmentTypeName =
-          participants.size() == 3
-              ? "Free-for-All"
-              : "Free-for-All"; // Use Free-for-All for multi-person
-      Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName(segmentTypeName);
+      Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName("Free-for-All");
       if (segmentTypeOpt.isEmpty()) {
         // Fallback to One on One if specific type not found
-        segmentTypeOpt = segmentTypeRepository.findByName("One on One");
+        segmentTypeOpt = segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
         if (segmentTypeOpt.isEmpty()) {
           log.debug("No suitable segment type found for multi-person segment");
           return Optional.empty();
@@ -554,7 +545,7 @@ public class ShowBookingService {
       // Resolve the segment
       Segment result =
           npcSegmentResolutionService.resolveMultiTeamSegment(
-              teams, segmentTypeOpt.get(), show, segmentTypeName + " Segment");
+              teams, segmentTypeOpt.get(), show, "Free-for-All Segment");
 
       return Optional.of(result);
 
