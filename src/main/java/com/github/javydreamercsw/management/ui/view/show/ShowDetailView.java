@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -915,7 +916,8 @@ public class ShowDetailView extends Main
     deleteButton.addClickListener(e -> deleteSegment(segment));
 
     SegmentType segmentType = segment.getSegmentType();
-    boolean isMatch = segmentType != null && !"Promo".equalsIgnoreCase(segmentType.getName());
+    boolean isMatch =
+        segmentType != null && !SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName());
     Button qrButton = new Button(new Icon(VaadinIcon.QRCODE));
     qrButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     qrButton.setTooltipText("Share Match QR Code");
@@ -1655,7 +1657,7 @@ public class ShowDetailView extends Main
       return false;
     }
 
-    if (!"Promo".equalsIgnoreCase(segmentType.getName())) {
+    if (!SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName())) {
       if (wrestlers.isEmpty()) {
         log.debug("Validation failed: Wrestlers are null or empty for non-promo segment.");
         notificationService.showError("Please select at least one wrestler");

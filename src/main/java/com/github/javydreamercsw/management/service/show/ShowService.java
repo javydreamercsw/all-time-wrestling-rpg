@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -524,7 +525,7 @@ public class ShowService {
         .forEach(
             segment -> {
               segmentAdjudicationService.adjudicateMatch(segment);
-              if (!"Promo".equals(segment.getSegmentType().getName())) {
+              if (!SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
                 segment.getWrestlers().forEach(w -> participatingWrestlerIds.add(w.getId()));
               }
               segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);

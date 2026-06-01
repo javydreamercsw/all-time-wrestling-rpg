@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.show.export;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
@@ -57,7 +58,7 @@ public class MarkdownShowCardFormatter implements ShowCardFormatter {
     for (Segment segment : segments) {
       String typeName =
           segment.getSegmentType() != null ? segment.getSegmentType().getName() : "Unknown";
-      boolean isMatch = !"Promo".equalsIgnoreCase(typeName);
+      boolean isMatch = !SegmentTypeNames.PROMO.equalsIgnoreCase(typeName);
       if (isMatch) {
         matchCounter++;
         sb.append("### Match ").append(matchCounter).append(": ").append(typeName);

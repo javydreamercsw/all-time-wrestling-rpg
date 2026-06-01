@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -495,7 +496,8 @@ public class ShowBookingService {
       final String stipulation) {
     try {
       // Get one-on-one segment type from database
-      Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName("One on One");
+      Optional<SegmentType> segmentTypeOpt =
+          segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
       if (segmentTypeOpt.isEmpty()) {
         log.debug("One on One segment type not found in database");
         return Optional.empty();
@@ -530,7 +532,7 @@ public class ShowBookingService {
       Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName("Free-for-All");
       if (segmentTypeOpt.isEmpty()) {
         // Fallback to One on One if specific type not found
-        segmentTypeOpt = segmentTypeRepository.findByName("One on One");
+        segmentTypeOpt = segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
         if (segmentTypeOpt.isEmpty()) {
           log.debug("No suitable segment type found for multi-person segment");
           return Optional.empty();

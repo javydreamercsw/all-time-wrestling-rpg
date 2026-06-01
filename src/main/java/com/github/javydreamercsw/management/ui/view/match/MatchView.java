@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -222,7 +223,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void autoAssignRefereeIfNeeded() {
     boolean isPromo =
         segment.getSegmentType() != null
-            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
     if (isPromo || segment.getReferee() != null) {
       return;
     }
@@ -263,7 +264,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     boolean isPromo =
         segment.getSegmentType() != null
-            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
 
     // Initialize narrationArea
     narrationArea = new TextArea(isPromo ? "Promo Transcript" : "Match Story");
@@ -421,7 +422,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void buildMatchInterface(final Wrestler playerWrestler) {
     boolean isPromo =
         segment.getSegmentType() != null
-            && "Promo".equalsIgnoreCase(segment.getSegmentType().getName());
+            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
 
     List<Wrestler> wrestlers = segment.getWrestlers();
     Long universeId = universeContextService.getCurrentUniverseId();
@@ -974,7 +975,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
       String feedback = feedbackArea.getValue();
       String segmentType = segment.getSegmentType().getName();
-      boolean isPromo = "Promo".equalsIgnoreCase(segmentType);
+      boolean isPromo = SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType);
 
       String instructions =
           "Narrate a compelling "
