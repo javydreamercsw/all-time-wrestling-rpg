@@ -325,8 +325,15 @@ public class SegmentAdjudicationService {
     Map<String, String> chartVars = new HashMap<>();
     Wrestler chartPrimary = winners.isEmpty() ? segment.getWrestlers().get(0) : winners.get(0);
     chartVars.put("{WRESTLER_1}", chartPrimary.getName());
+    Wrestler chartOpponent = null;
     if (segment.getWrestlers().size() > 1) {
-      Wrestler chartOpponent = losers.isEmpty() ? segment.getWrestlers().get(1) : losers.get(0);
+      // Pick the opponent: prefer the first loser, but if losers is empty or only contains the
+      // primary (promo with no declared winner), fall back to the second wrestler in the list.
+      chartOpponent =
+          losers.stream()
+              .filter(w -> !w.equals(chartPrimary))
+              .findFirst()
+              .orElse(segment.getWrestlers().get(1));
       chartVars.put("{WRESTLER_2}", chartOpponent.getName());
     }
     Long chartUniverseId =
@@ -335,10 +342,7 @@ public class SegmentAdjudicationService {
             : universeContextService.getCurrentUniverseId();
     if (chartUniverseId != null) {
       final Long chartPrimaryId = chartPrimary.getId();
-      final Long chartSecondaryId =
-          segment.getWrestlers().size() > 1
-              ? (losers.isEmpty() ? segment.getWrestlers().get(1).getId() : losers.get(0).getId())
-              : null;
+      final Long chartSecondaryId = chartOpponent != null ? chartOpponent.getId() : null;
       final Long finalChartUniverseId = chartUniverseId;
       outcomeMatrixService
           .resolveRandomRoll(category, chartVars)
