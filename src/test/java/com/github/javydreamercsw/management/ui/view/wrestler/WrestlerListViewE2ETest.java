@@ -460,7 +460,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
-    // Fill the form
+    // Fill the form — injury type is required
+    selectFromVaadinComboBox("create-injury-type", "Legacy Injury");
+
     WebElement nameField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-name")));
 

@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -40,6 +41,7 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import com.github.javydreamercsw.management.service.outcome.OutcomeMatrixService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
@@ -102,6 +104,9 @@ public class SegmentAdjudicationService {
   // Field-injected for the same reason — null-safe, falls back to wrestler.getAlignment().
   @Setter(onMethod_ = {@Autowired})
   private AlignmentService alignmentService;
+
+  @Setter(onMethod_ = {@Autowired})
+  private OutcomeMatrixService outcomeMatrixService;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -224,6 +229,7 @@ public class SegmentAdjudicationService {
 
     applyLeagueStats(segment, winners, losers);
     processRewards(segment, multiplier);
+    applyOutcomeMatrix(segment, winners, losers);
     applyRatingAndNoise(segment);
     applyWearAndTear(segment);
     applyRingsideActions(segment);
@@ -301,6 +307,48 @@ public class SegmentAdjudicationService {
                   });
         }
       }
+    }
+  }
+
+  private void applyOutcomeMatrix(
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final List<Wrestler> losers) {
+    if (outcomeMatrixService == null || segment.getWrestlers().isEmpty()) {
+      return;
+    }
+    OutcomeMatrixCategory category =
+        SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())
+            ? OutcomeMatrixCategory.PROMO
+            : OutcomeMatrixCategory.MATCH_FLOW;
+    Map<String, String> chartVars = new HashMap<>();
+    Wrestler chartPrimary = winners.isEmpty() ? segment.getWrestlers().get(0) : winners.get(0);
+    chartVars.put("{WRESTLER_1}", chartPrimary.getName());
+    if (segment.getWrestlers().size() > 1) {
+      Wrestler chartOpponent = losers.isEmpty() ? segment.getWrestlers().get(1) : losers.get(0);
+      chartVars.put("{WRESTLER_2}", chartOpponent.getName());
+    }
+    Long chartUniverseId =
+        segment.getShow().getUniverse() != null
+            ? segment.getShow().getUniverse().getId()
+            : universeContextService.getCurrentUniverseId();
+    if (chartUniverseId != null) {
+      final Long chartPrimaryId = chartPrimary.getId();
+      final Long chartSecondaryId =
+          segment.getWrestlers().size() > 1
+              ? (losers.isEmpty() ? segment.getWrestlers().get(1).getId() : losers.get(0).getId())
+              : null;
+      final Long finalChartUniverseId = chartUniverseId;
+      outcomeMatrixService
+          .resolveRandomRoll(category, chartVars)
+          .ifPresent(
+              result ->
+                  outcomeMatrixService.applyEffects(
+                      result.entry(),
+                      chartPrimaryId,
+                      chartSecondaryId,
+                      finalChartUniverseId,
+                      result.renderedText()));
     }
   }
 

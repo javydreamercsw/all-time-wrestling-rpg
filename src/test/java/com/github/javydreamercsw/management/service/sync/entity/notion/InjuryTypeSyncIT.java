@@ -149,8 +149,11 @@ class InjuryTypeSyncIT extends ManagementIntegrationTest {
 
     log.info("✅ Sync result: {} injury types synced", result.getSyncedCount());
 
-    // Verify database state
-    List<InjuryType> allInjuryTypes = injuryTypeRepository.findAll();
+    // Verify database state — exclude the sentinel "Legacy Injury" seeded by migration V89
+    List<InjuryType> allInjuryTypes =
+        injuryTypeRepository.findAll().stream()
+            .filter(it -> !"Legacy Injury".equals(it.getInjuryName()))
+            .toList();
     assertThat(allInjuryTypes).hasSize(2);
 
     InjuryType headInjury =
@@ -188,7 +191,12 @@ class InjuryTypeSyncIT extends ManagementIntegrationTest {
                     notionSyncService.syncInjuryTypes(
                         "second-sync-operation", SyncDirection.INBOUND));
     assertThat(secondResult.isSuccess()).isTrue();
-    assertThat(injuryTypeRepository.findAll()).hasSize(2); // No new injuries
+    // No new injuries synced — still 2 Notion-sourced types (plus the V89 sentinel)
+    assertThat(
+            injuryTypeRepository.findAll().stream()
+                .filter(it -> !"Legacy Injury".equals(it.getInjuryName()))
+                .toList())
+        .hasSize(2);
 
     InjuryType updatedHeadInjury =
         injuryTypeRepository

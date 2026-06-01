@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -29,6 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.outcome.OutcomeMatrixService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityNotFoundException;
@@ -36,9 +38,11 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -67,6 +71,9 @@ public class DramaEventService {
   private final Clock clock;
   private final Random random;
   private final ApplicationEventPublisher eventPublisher;
+
+  @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy})
+  private OutcomeMatrixService outcomeMatrixService;
 
   @Autowired
   public DramaEventService(
@@ -137,28 +144,56 @@ public class DramaEventService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Optional<DramaEvent> generateRandomDramaEvent(
       @NonNull final Long wrestlerId, @NonNull final Long universeId) {
-    // Basic implementation for generating random events
     Wrestler wrestler =
         wrestlerRepository
             .findById(wrestlerId)
             .orElseThrow(
                 () -> new EntityNotFoundException("Wrestler not found with id: " + wrestlerId));
 
-    // Choose random event type and severity
     DramaEventType[] types = DramaEventType.values();
     DramaEventType type = types[random.nextInt(types.length)];
 
     DramaEventSeverity[] severities = DramaEventSeverity.values();
     DramaEventSeverity severity = severities[random.nextInt(severities.length)];
 
-    return createDramaEvent(
-        wrestlerId,
-        null,
-        type,
-        severity,
-        "Random Event: " + type.getDisplayName(),
-        "Auto-generated drama event for " + wrestler.getName(),
-        universeId);
+    String title = "Random Event: " + type.getDisplayName();
+    String description = "Auto-generated drama event for " + wrestler.getName();
+
+    if (outcomeMatrixService != null) {
+      Optional<OutcomeMatrixCategory> category = toOutcomeCategory(type);
+      if (category.isPresent()) {
+        Optional<String> narrative =
+            outcomeMatrixService
+                .resolveRandomRoll(category.get(), Map.of("{WRESTLER_1}", wrestler.getName()))
+                .map(r -> r.renderedText());
+        if (narrative.isPresent()) {
+          title = type.getDisplayName() + ": " + wrestler.getName();
+          description = narrative.get();
+        }
+      }
+    }
+
+    return createDramaEvent(wrestlerId, null, type, severity, title, description, universeId);
+  }
+
+  private Optional<OutcomeMatrixCategory> toOutcomeCategory(final DramaEventType type) {
+    return switch (type) {
+      case INJURY_INCIDENT -> Optional.of(OutcomeMatrixCategory.MATCH_FLOW);
+      case SURPRISE_RETURN, RETIREMENT_TEASE, CHAMPIONSHIP_CHALLENGE ->
+          Optional.of(OutcomeMatrixCategory.POST_MATCH);
+      case FAN_INTERACTION -> Optional.of(OutcomeMatrixCategory.HIGHLIGHT_REEL);
+      case SOCIAL_MEDIA_DRAMA, MEDIA_CONTROVERSY -> Optional.of(OutcomeMatrixCategory.PROMO);
+      case BACKSTAGE_INCIDENT,
+          CONTRACT_DISPUTE,
+          BETRAYAL,
+          ALLIANCE_FORMED,
+          PERSONAL_ISSUE,
+          CAMPAIGN_RIVAL,
+          CAMPAIGN_OUTSIDER,
+          RELATIONSHIP_MILESTONE ->
+          Optional.of(OutcomeMatrixCategory.FEUD_ANGLE);
+      default -> Optional.empty();
+    };
   }
 
   /** Process all unprocessed drama events. */

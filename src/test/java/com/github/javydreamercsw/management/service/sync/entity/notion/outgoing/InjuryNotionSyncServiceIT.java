@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.extension.NotionTestCleanupExtension;
@@ -52,6 +53,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private InjuryRepository injuryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
   @Autowired private InjuryNotionSyncService injuryNotionSyncService;
 
   @MockitoBean private NotionHandler notionHandler;
@@ -87,7 +89,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     wrestler.setExternalId(UUID.randomUUID().toString());
     wrestlerRepository.save(wrestler);
 
-    // Create a new Injury
+    // Create a new Injury — must have a non-null injuryType (FK constraint)
     Injury injury = new Injury();
     injury.setName("Concussion");
     injury.setSeverity(InjurySeverity.SEVERE);
@@ -98,6 +100,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     injury.setInjuryDate(Instant.now());
     injury.setInjuryNotes("Got hit with a chair");
     injury.setWrestler(wrestler);
+    injuryTypeRepository.findByInjuryName("Legacy Injury").ifPresent(injury::setInjuryType);
     injuryRepository.save(injury);
 
     // Sync to Notion for the first time
