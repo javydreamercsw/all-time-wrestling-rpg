@@ -631,5 +631,12 @@
     "description": "The Show Calendar provides a monthly view of every scheduled show in the promotion. Each show appears as a colour-coded event tile on its booked date. Click any tile to jump directly to that show's detail page. Navigate between months using the prev/next arrows, or click Today to snap back to the current date.",
     "imagePath": "screenshots/show-calendar-overview.png",
     "order": 0
+  }, {
+    "id": "entities-export-universe-data",
+    "category": "Entities",
+    "title": "Export Universe Data",
+    "description": "Export wrestler state, injuries, rivalries, title reigns, alignments and relationships to CSV or JSON",
+    "imagePath": "screenshots/export-universe-data.png",
+    "order": 0
   } ]
 }

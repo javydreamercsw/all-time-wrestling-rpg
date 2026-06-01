@@ -1,13 +1,52 @@
 # Changelog
 
-## [v2.0.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.0.0) (2026-05-27)
+## [v2.1.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.1.0) (2026-06-01)
 
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.0.0-RC1...v2.0.0)
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.1.0...v2.1.0)
+
+**Implemented enhancements:**
+
+- feat\(ATW-zie1\): export universe wrestler data to CSV and JSON [\#342](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/342) ([javydreamercsw](https://github.com/javydreamercsw))
+- refactor: service layer cleanup — reduce God classes, fix bugs, and extract constants [\#341](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/341) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat: outcome matrix wiring, season fan snapshots, Groovy criteria, and housekeeping [\#340](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/340) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(outcome-matrix\): add database-backed dice-roll chart lookup system \(ATW-dgy9\) [\#339](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/339) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(title-defense\): replace integer defense frequency with DefenseFrequencyType enum \(ATW-w3l6\) [\#338](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/338) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(rivalry-lifecycle\): configurable rivalry resolution, decay, and max duration \(ATW-u6sy\) [\#337](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/337) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(entity-ui\): audit and fix missing/non-editable fields across entity management views [\#336](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/336) ([javydreamercsw](https://github.com/javydreamercsw))
+- feat\(karibu-tests\): add Karibu unit tests for all views \(ATW-bse\) [\#335](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/335) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Fixed bugs:**
+
+- fix\(notion-sync\): fix Notion sync reliability — date parsing, show corruption prevention, NPE, and rate limiting [\#334](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/334) ([javydreamercsw](https://github.com/javydreamercsw))
+- fix\(notion-tests\): guard live tests and add cleanup extension \(\#331\) [\#333](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/333) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- feat\(alignment\): spread wrestler alignment to universe/booker modes [\#332](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/332) ([javydreamercsw](https://github.com/javydreamercsw))
+
+## [v2.1.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.1.0) (2026-05-27)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.0.0...v2.1.0)
 
 **Implemented enhancements:**
 
 - feat: non-blocking AI narration and image generation \(ATW-44p\) [\#330](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/330) ([javydreamercsw](https://github.com/javydreamercsw))
 - feat: granular CI path filters to skip E2E/integration tests on unrelated changes \(ATW-8rj\) [\#325](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/325) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Build\(deps\): Bump org.openrewrite.recipe:rewrite-migrate-java from 3.34.0 to 3.35.0 [\#324](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/324) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.openrewrite.maven:rewrite-maven-plugin from 6.38.0 to 6.40.0 [\#323](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/323) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump org.openrewrite.recipe:rewrite-static-analysis from 2.34.1 to 2.35.0 [\#322](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/322) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump com.github.oshi:oshi-core from 7.1.0 to 7.2.1 [\#321](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/321) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Add docs E2E coverage for undocumented views and add validate-videos CI job [\#319](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/319) ([javydreamercsw](https://github.com/javydreamercsw))
+
+## [v2.0.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.0.0) (2026-05-24)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.0.0-RC1...v2.0.0)
+
+**Implemented enhancements:**
+
 - fix\(show-planning\): advisory MUST\_BOOK warnings, hard-block on STIPULATION\_REQUIRED, rivalry helpers, and test/doc coverage [\#317](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/317) ([javydreamercsw](https://github.com/javydreamercsw))
 - feat: Flyway checksum safeguard, H2 migration integration test, and Vaadin 25.1.2 upgrade [\#316](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/316) ([javydreamercsw](https://github.com/javydreamercsw))
 - test\(ATW-8a4\): add unit tests for missing Notion sync outgoing services [\#315](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/315) ([javydreamercsw](https://github.com/javydreamercsw))
@@ -26,11 +65,6 @@
 
 **Merged pull requests:**
 
-- Build\(deps\): Bump org.openrewrite.recipe:rewrite-migrate-java from 3.34.0 to 3.35.0 [\#324](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/324) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Build\(deps-dev\): Bump org.openrewrite.maven:rewrite-maven-plugin from 6.38.0 to 6.40.0 [\#323](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/323) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Build\(deps\): Bump org.openrewrite.recipe:rewrite-static-analysis from 2.34.1 to 2.35.0 [\#322](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/322) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Build\(deps\): Bump com.github.oshi:oshi-core from 7.1.0 to 7.2.1 [\#321](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/321) ([dependabot[bot]](https://github.com/apps/dependabot))
-- Add docs E2E coverage for undocumented views and add validate-videos CI job [\#319](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/319) ([javydreamercsw](https://github.com/javydreamercsw))
 - fix\(qr\): use LAN IP in QR share URL when no HTTP request context is a… [\#318](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/318) ([javydreamercsw](https://github.com/javydreamercsw))
 
 ## [v2.0.0-RC1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.0.0-RC1) (2026-05-20)
