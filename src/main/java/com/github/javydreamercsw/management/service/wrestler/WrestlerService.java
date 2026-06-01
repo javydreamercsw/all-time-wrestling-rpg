@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
-import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
@@ -30,7 +29,6 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRep
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -50,7 +48,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -68,8 +65,6 @@ public class WrestlerService {
   private final TierRecalculationService tierRecalculationService;
   private final DefaultImageService imageService;
   private final LegacyService legacyService;
-  private final com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
-  private final com.github.javydreamercsw.management.service.title.TitleService titleService;
   private final com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
   private final SecurityUtils securityUtils;
   private final com.github.javydreamercsw.management.domain.universe.UniverseRepository
@@ -87,9 +82,6 @@ public class WrestlerService {
       final TierRecalculationService tierRecalculationService,
       final DefaultImageService imageService,
       final LegacyService legacyService,
-      @Lazy
-          final com.github.javydreamercsw.management.service.segment.SegmentService segmentService,
-      @Lazy final com.github.javydreamercsw.management.service.title.TitleService titleService,
       @Lazy final com.github.javydreamercsw.management.service.injury.InjuryService injuryService,
       final SecurityUtils securityUtils,
       final com.github.javydreamercsw.management.domain.universe.UniverseRepository
@@ -104,8 +96,6 @@ public class WrestlerService {
     this.tierRecalculationService = tierRecalculationService;
     this.imageService = imageService;
     this.legacyService = legacyService;
-    this.segmentService = segmentService;
-    this.titleService = titleService;
     this.injuryService = injuryService;
     this.securityUtils = securityUtils;
     this.universeRepository = universeRepository;
@@ -584,69 +574,6 @@ public class WrestlerService {
   public boolean spendFans(
       @NonNull final Long wrestlerId, @NonNull final Long universeId, @NonNull final Long cost) {
     return awardFans(wrestlerId, universeId, -cost).isPresent();
-  }
-
-  @Transactional(readOnly = true)
-  public List<WrestlerDTO> findAllAsDTO(@NonNull final Long universeId) {
-    return findAll().stream().map(w -> toDTO(w, universeId)).toList();
-  }
-
-  /**
-   * Find a wrestler as a DTO in a specific universe.
-   *
-   * @param id The wrestler ID
-   * @param universeId The universe ID
-   * @return Optional DTO
-   */
-  @Transactional(readOnly = true)
-  public Optional<WrestlerDTO> findByIdAsDTO(
-      @NonNull final Long id, @NonNull final Long universeId) {
-    return wrestlerRepository.findById(id).map(w -> toDTO(w, universeId));
-  }
-
-  /**
-   * Find all wrestlers in a specific segment as DTOs for a specific universe.
-   *
-   * @param segment The segment
-   * @param universeId The universe ID
-   * @return List of DTOs
-   */
-  @Transactional(readOnly = true)
-  public List<WrestlerDTO> findAllBySegment(
-      @NonNull final com.github.javydreamercsw.management.domain.show.segment.Segment segment,
-      @NonNull final Long universeId) {
-    return wrestlerRepository.findAllBySegment(segment).stream()
-        .map(w -> toDTO(w, universeId))
-        .toList();
-  }
-
-  private WrestlerDTO toDTO(final Wrestler wrestler, final Long universeId) {
-    WrestlerState state = getOrCreateState(wrestler.getId(), universeId);
-    return new WrestlerDTO(state);
-  }
-
-  /**
-   * Get basic statistics for a wrestler in a specific universe.
-   *
-   * @param wrestlerId The ID of the wrestler
-   * @param universeId The ID of the universe
-   * @return A map of stat names to values
-   */
-  @Cacheable(value = CacheConfig.WRESTLER_STATS_CACHE, key = "#wrestlerId + ':' + #universeId")
-  @Transactional(readOnly = true)
-  public Optional<WrestlerStats> getWrestlerStats(
-      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
-    Wrestler wrestler =
-        wrestlerRepository
-            .findById(wrestlerId)
-            .orElseThrow(() -> new IllegalArgumentException("Wrestler not found: " + wrestlerId));
-
-    WrestlerStats stats = new WrestlerStats();
-    stats.setWins(segmentService.countWinsByWrestler(wrestler, universeId));
-    stats.setLosses(segmentService.countLossesByWrestler(wrestler, universeId));
-    stats.setTitlesHeld((long) titleService.findTitlesByChampion(wrestler, universeId).size());
-
-    return Optional.of(stats);
   }
 
   /**

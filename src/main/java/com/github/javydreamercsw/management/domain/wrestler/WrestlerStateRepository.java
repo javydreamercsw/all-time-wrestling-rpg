@@ -49,14 +49,14 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
   List<WrestlerState> findByUniverseIdAndTier(
       Long universeId, com.github.javydreamercsw.base.domain.wrestler.WrestlerTier tier);
 
-  @Modifying
+  @Modifying(clearAutomatically = true)
   @Query(
       "UPDATE WrestlerState s SET s.fans = 0, s.tier ="
           + " com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ROOKIE WHERE"
           + " s.universe.id = :universeId")
   int resetFansAndTierByUniverseId(@Param("universeId") Long universeId);
 
-  @Modifying
+  @Modifying(clearAutomatically = true)
   @Query("UPDATE WrestlerState s SET s.physicalCondition = 100 WHERE s.universe.id = :universeId")
   int resetPhysicalConditionByUniverseId(@Param("universeId") Long universeId);
 }

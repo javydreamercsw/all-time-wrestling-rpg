@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
@@ -44,7 +45,17 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
       @NonNull final WrestlerService wrestlerService,
       @NonNull final InjuryService injuryService,
       final boolean isPlayer) {
-    this(wrestler, universeId, wrestlerService, injuryService, isPlayer, 0);
+    this(wrestler, universeId, wrestlerService, injuryService, isPlayer, 0, null);
+  }
+
+  public WrestlerSummaryCard(
+      @NonNull final Wrestler wrestler,
+      @NonNull final Long universeId,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      final boolean isPlayer,
+      final WrestlerStatsService wrestlerStatsService) {
+    this(wrestler, universeId, wrestlerService, injuryService, isPlayer, 0, wrestlerStatsService);
   }
 
   public WrestlerSummaryCard(
@@ -54,6 +65,17 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
       @NonNull final InjuryService injuryService,
       final boolean isPlayer,
       final int additionalPenalty) {
+    this(wrestler, universeId, wrestlerService, injuryService, isPlayer, additionalPenalty, null);
+  }
+
+  public WrestlerSummaryCard(
+      @NonNull final Wrestler wrestler,
+      @NonNull final Long universeId,
+      @NonNull final WrestlerService wrestlerService,
+      @NonNull final InjuryService injuryService,
+      final boolean isPlayer,
+      final int additionalPenalty,
+      final WrestlerStatsService wrestlerStatsService) {
     getContent().setPadding(true);
     getContent().setSpacing(false);
 
@@ -88,7 +110,9 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
 
     try {
       Optional<WrestlerStats> stats =
-          wrestlerService.getWrestlerStats(wrestler.getId(), universeId);
+          wrestlerStatsService != null
+              ? wrestlerStatsService.getWrestlerStats(wrestler.getId(), universeId)
+              : Optional.empty();
       if (stats.isPresent()) {
         WrestlerStats wrestlerStats = stats.get();
         statsRow.add(new Span("Wins: " + wrestlerStats.getWins()));

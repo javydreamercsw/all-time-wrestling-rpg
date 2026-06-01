@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
@@ -97,6 +98,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   private final SegmentService segmentService;
   private final WrestlerService wrestlerService;
+  private final WrestlerStatsService wrestlerStatsService;
   private final InjuryService injuryService;
   private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
@@ -133,6 +135,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   public MatchView(
       final SegmentService segmentService,
       final WrestlerService wrestlerService,
+      final WrestlerStatsService wrestlerStatsService,
       final InjuryService injuryService,
       final UniverseContextService universeContextService,
       final SecurityUtils securityUtils,
@@ -158,6 +161,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
+    this.wrestlerStatsService = wrestlerStatsService;
     this.injuryService = injuryService;
     this.universeContextService = universeContextService;
     this.securityUtils = securityUtils;
@@ -484,7 +488,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       wrestlerService,
                       injuryService,
                       isThisWrestlerPlayer,
-                      isThisWrestlerPlayer ? 0 : penalty));
+                      isThisWrestlerPlayer ? 0 : penalty,
+                      wrestlerStatsService));
             });
     participantsCard.add(cardGrid);
     mainContent.add(participantsCard);

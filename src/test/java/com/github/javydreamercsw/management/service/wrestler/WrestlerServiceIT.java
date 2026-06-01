@@ -76,6 +76,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
   @Autowired private TierBoundaryRepository tierBoundaryRepository;
 
   @Autowired private TierBoundaryService tierBoundaryService;
+  @Autowired private WrestlerStatsService wrestlerStatsService;
 
   private static final Long DEFAULT_UNIVERSE_ID = 1L;
 
@@ -122,7 +123,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
 
     // When
     Optional<WrestlerStats> statsOpt =
-        wrestlerService.getWrestlerStats(wrestler.getId(), defaultUniverse.getId());
+        wrestlerStatsService.getWrestlerStats(wrestler.getId(), defaultUniverse.getId());
 
     // Then
     Assertions.assertTrue(statsOpt.isPresent());

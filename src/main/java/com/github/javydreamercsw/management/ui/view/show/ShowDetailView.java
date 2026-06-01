@@ -55,6 +55,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
@@ -118,6 +119,7 @@ public class ShowDetailView extends Main
   private final SegmentRuleRepository segmentRuleRepository;
   private final NpcService npcService;
   private final WrestlerService wrestlerService;
+  private final WrestlerStatsService wrestlerStatsService;
   private final TitleService titleService;
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
@@ -160,6 +162,7 @@ public class ShowDetailView extends Main
       final SegmentRuleRepository segmentRuleRepository,
       final NpcService npcService,
       final WrestlerService wrestlerService,
+      final WrestlerStatsService wrestlerStatsService,
       final TitleService titleService,
       final ShowTypeService showTypeService,
       final SeasonService seasonService,
@@ -186,6 +189,7 @@ public class ShowDetailView extends Main
     this.segmentRuleRepository = segmentRuleRepository;
     this.npcService = npcService;
     this.wrestlerService = wrestlerService;
+    this.wrestlerStatsService = wrestlerStatsService;
     this.titleService = titleService;
     this.showTypeService = showTypeService;
     this.seasonService = seasonService;
@@ -893,7 +897,8 @@ public class ShowDetailView extends Main
                   ringsideActionService,
                   relationshipService,
                   universeContextService,
-                  notificationService);
+                  notificationService,
+                  wrestlerStatsService);
           dialog.open();
         });
 

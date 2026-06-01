@@ -56,6 +56,7 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
@@ -84,6 +85,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private TitleService titleService;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private ShowTypeService showTypeService;
@@ -159,6 +161,7 @@ class ShowDetailViewTest extends AbstractViewTest {
               segmentRuleRepository,
               npcService,
               wrestlerService,
+              wrestlerStatsService,
               titleService,
               showTypeService,
               seasonService,
@@ -249,6 +252,7 @@ class ShowDetailViewTest extends AbstractViewTest {
               segmentRuleRepository,
               npcService,
               wrestlerService,
+              wrestlerStatsService,
               titleService,
               showTypeService,
               seasonService,

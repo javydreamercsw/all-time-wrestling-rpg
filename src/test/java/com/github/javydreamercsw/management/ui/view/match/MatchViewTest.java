@@ -62,6 +62,7 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -87,6 +88,7 @@ class MatchViewTest extends AbstractViewTest {
 
   @Mock private SegmentService segmentService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private SecurityUtils securityUtils;
   @Mock private CampaignService campaignService;
   @Mock private CampaignRepository campaignRepository;
@@ -119,6 +121,7 @@ class MatchViewTest extends AbstractViewTest {
         new MatchView(
             segmentService,
             wrestlerService,
+            wrestlerStatsService,
             injuryService,
             universeContextService,
             securityUtils,

@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
@@ -99,6 +100,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private record FeudHistoryItem(String name, int heat) {}
 
   private final WrestlerService wrestlerService;
+  private final WrestlerStatsService wrestlerStatsService;
   private final WrestlerRepository wrestlerRepository;
   private final TitleService titleService;
   private final RankingService rankingService;
@@ -149,6 +151,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   @Autowired
   public WrestlerProfileView(
       final WrestlerService wrestlerService,
+      final WrestlerStatsService wrestlerStatsService,
       final WrestlerRepository wrestlerRepository,
       final TitleService titleService,
       final RankingService rankingService,
@@ -172,6 +175,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final WrestlerStateRepository wrestlerStateRepository,
       final AlignmentService alignmentService) {
     this.wrestlerService = wrestlerService;
+    this.wrestlerStatsService = wrestlerStatsService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
     this.rankingService = rankingService;
@@ -361,7 +365,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
       // Fetch and display wrestler stats
       Optional<WrestlerStats> stats =
-          wrestlerService.getWrestlerStats(wrestler.getId(), universeId);
+          wrestlerStatsService.getWrestlerStats(wrestler.getId(), universeId);
       statsLayout.removeAll();
       statsLayout.add(new H3("Career Stats (Universe Context)"));
 
