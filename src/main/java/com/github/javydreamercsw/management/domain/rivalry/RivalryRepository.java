@@ -124,4 +124,12 @@ public interface RivalryRepository
       """)
   List<Rivalry> findActiveRivalriesBetween(
       @Param("startDate") Instant startDate, @Param("endDate") Instant endDate);
+
+  /** Find all rivalries (active and ended) involving a specific wrestler. */
+  @Query(
+      """
+      SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2\
+       WHERE r.wrestler1 = :wrestler OR r.wrestler2 = :wrestler\
+      """)
+  List<Rivalry> findAllForWrestler(@Param("wrestler") Wrestler wrestler);
 }
