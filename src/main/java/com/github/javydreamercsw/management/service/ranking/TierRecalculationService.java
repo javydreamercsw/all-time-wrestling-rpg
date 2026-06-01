@@ -46,6 +46,7 @@ public class TierRecalculationService implements RankingService {
   private final WrestlerStateRepository wrestlerStateRepository;
   private final TierBoundaryService tierBoundaryService;
   private final UniverseContextService universeContextService;
+  private final TierDistributionConfig tierDistributionConfig;
 
   @Override
   public void recalculateRanking(final List<WrestlerData> wrestlersData) {
@@ -80,20 +81,16 @@ public class TierRecalculationService implements RankingService {
           continue;
         }
 
-        // Define percentile distribution for tiers
+        // Percentile distribution for tiers — configurable via atw.ranking.tier-distribution.*
         Map<WrestlerTier, Double> tierDistribution = new EnumMap<>(WrestlerTier.class);
-        tierDistribution.put(WrestlerTier.ICON, 0.05); // Top 5%
-        tierDistribution.put(WrestlerTier.MAIN_EVENTER, 0.15); // Next 15%
-        tierDistribution.put(WrestlerTier.MIDCARDER, 0.25); // Next 25%
-        tierDistribution.put(WrestlerTier.CONTENDER, 0.25); // Next 25%
-        tierDistribution.put(WrestlerTier.RISER, 0.20); // Next 20%
-        // The rest are rookies
+        tierDistribution.put(WrestlerTier.ICON, tierDistributionConfig.getIcon());
+        tierDistribution.put(WrestlerTier.MAIN_EVENTER, tierDistributionConfig.getMainEventer());
+        tierDistribution.put(WrestlerTier.MIDCARDER, tierDistributionConfig.getMidcarder());
+        tierDistribution.put(WrestlerTier.CONTENDER, tierDistributionConfig.getContender());
+        tierDistribution.put(WrestlerTier.RISER, tierDistributionConfig.getRiser());
         tierDistribution.put(
             WrestlerTier.ROOKIE,
-            1.0
-                - tierDistribution.values().stream()
-                    .mapToDouble(Double::doubleValue)
-                    .sum()); // Remaining
+            1.0 - tierDistribution.values().stream().mapToDouble(Double::doubleValue).sum());
 
         // Determine fan count thresholds for each tier based on percentiles
         int currentWrestlerIndex = 0;

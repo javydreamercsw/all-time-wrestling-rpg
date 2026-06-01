@@ -49,7 +49,7 @@ public class FactionHeatChangeInboxListener implements ApplicationListener<Facti
 
   @Override
   public void onApplicationEvent(@NonNull final FactionHeatChangeEvent event) {
-    log.info("Received FactionHeatChangeEvent for rivalry ID: {}", event.getFactionRivalryId());
+    log.debug("Received FactionHeatChangeEvent for rivalry ID: {}", event.getFactionRivalryId());
 
     String message =
         "Faction rivalry between %s and %s %s %d heat. New total: %d. Reason: %s"

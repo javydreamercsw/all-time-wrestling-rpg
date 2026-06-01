@@ -30,7 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
@@ -55,7 +55,6 @@ public class NewsGenerationService {
   private final EventAggregationService aggregationService;
   private final WrestlerRepository wrestlerRepository;
   private final NpcRepository npcRepository;
-  private final Random random = new Random();
 
   private static final String SYSTEM_PROMPT =
       """
@@ -217,14 +216,14 @@ public class NewsGenerationService {
     }
   }
 
-  @Transactional(readOnly = true)
+  @Transactional
   public void rollForRumor() {
     if (!gameSettingService.isAiNewsEnabled()) {
       return;
     }
 
     int chance = gameSettingService.getNewsRumorChance();
-    if (random.nextInt(100) < chance) {
+    if (ThreadLocalRandom.current().nextInt(100) < chance) {
       log.info("Rumor roll success! Generating rumor...");
       SegmentNarrationService aiService = aiFactory.getBestAvailableService();
       if (aiService != null && aiService.isAvailable()) {

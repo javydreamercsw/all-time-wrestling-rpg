@@ -20,12 +20,16 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -61,6 +65,7 @@ public class WrestlerListView extends Main {
 
   private final WrestlerService wrestlerService;
   private final InjuryService injuryService;
+  private final InjuryTypeService injuryTypeService;
   private final NpcService npcService;
   private final ExpansionService expansionService;
   private final UniverseSettingsService universeSettingsService;
@@ -69,12 +74,14 @@ public class WrestlerListView extends Main {
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
   private final WrestlerStateRepository wrestlerStateRepository;
+  private final AlignmentService alignmentService;
   private Set<Long> injuredWrestlerIds;
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
       @NonNull final WrestlerService wrestlerService,
       @NonNull final InjuryService injuryService,
+      @NonNull final InjuryTypeService injuryTypeService,
       @NonNull final NpcService npcService,
       @NonNull final ExpansionService expansionService,
       @NonNull final UniverseSettingsService universeSettingsService,
@@ -83,9 +90,11 @@ public class WrestlerListView extends Main {
       @NonNull final CampaignService campaignService,
       @NonNull final ImageStorageService imageStorageService,
       @NonNull final UniverseContextService universeContextService,
-      @NonNull final WrestlerStateRepository wrestlerStateRepository) {
+      @NonNull final WrestlerStateRepository wrestlerStateRepository,
+      @NonNull final AlignmentService alignmentService) {
     this.wrestlerService = wrestlerService;
     this.injuryService = injuryService;
+    this.injuryTypeService = injuryTypeService;
     this.npcService = npcService;
     this.expansionService = expansionService;
     this.universeSettingsService = universeSettingsService;
@@ -94,6 +103,7 @@ public class WrestlerListView extends Main {
     this.imageStorageService = imageStorageService;
     this.universeContextService = universeContextService;
     this.wrestlerStateRepository = wrestlerStateRepository;
+    this.alignmentService = alignmentService;
     wrestlerGrid = new Grid<>();
     reloadGrid();
 
@@ -127,6 +137,29 @@ public class WrestlerListView extends Main {
                     nameLayout.add(userIcon);
                   }
                   nameLayout.add(new Span(wrestler.getName()));
+                  universeContextService
+                      .getCurrentUniverse()
+                      .ifPresent(
+                          universe -> {
+                            WrestlerAlignment alignment =
+                                alignmentService.getOrCreateUniverseAlignment(wrestler, universe);
+                            Span badge = new Span(alignment.getAlignmentType().name());
+                            badge.getStyle().set("font-size", "var(--lumo-font-size-xs)");
+                            badge.getStyle().set("padding", "0 4px");
+                            badge.getStyle().set("border-radius", "4px");
+                            badge.getStyle().set("font-weight", "bold");
+                            if (alignment.getAlignmentType() == AlignmentType.FACE) {
+                              badge.getStyle().set("background-color", "#c8e6c9");
+                              badge.getStyle().set("color", "#1b5e20");
+                            } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
+                              badge.getStyle().set("background-color", "#ffcdd2");
+                              badge.getStyle().set("color", "#b71c1c");
+                            } else {
+                              badge.getStyle().set("background-color", "#e0e0e0");
+                              badge.getStyle().set("color", "#424242");
+                            }
+                            nameLayout.add(badge);
+                          });
                   return nameLayout;
                 })
             .setHeader("Name")
@@ -203,6 +236,7 @@ public class WrestlerListView extends Main {
                       wrestler,
                       wrestlerService,
                       injuryService,
+                      injuryTypeService,
                       npcService,
                       campaignService,
                       wrestlerStateRepository,
@@ -211,7 +245,8 @@ public class WrestlerListView extends Main {
                       securityUtils,
                       accountService,
                       imageStorageService,
-                      universeContextService);
+                      universeContextService,
+                      alignmentService);
               wrestlerActionMenu.setId("action-menu-" + wrestler.getId());
               return wrestlerActionMenu;
             })
@@ -252,7 +287,8 @@ public class WrestlerListView extends Main {
                       wrestlerStateRepository,
                       this::reloadGrid,
                       securityUtils,
-                      universeContextService);
+                      universeContextService,
+                      alignmentService);
               dialog.open();
             });
     button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

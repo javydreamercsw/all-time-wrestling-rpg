@@ -49,7 +49,7 @@ public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBu
 
   @Override
   public void onApplicationEvent(@NonNull final WrestlerBumpEvent event) {
-    log.info("Received WrestlerBumpEvent for wrestler: {}", event.getWrestlerState().getName());
+    log.debug("Received WrestlerBumpEvent for wrestler: {}", event.getWrestlerState().getName());
     inboxService.createInboxItem(
         wrestlerBump,
         "Wrestler %s received a bump. Total bumps: %d"

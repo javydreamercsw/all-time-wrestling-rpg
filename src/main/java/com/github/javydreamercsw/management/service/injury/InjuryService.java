@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service.injury;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -50,6 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InjuryService {
 
   @Autowired private InjuryRepository injuryRepository;
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private UniverseRepository universeRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
@@ -57,7 +60,7 @@ public class InjuryService {
   @Autowired private Random random;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
-  /** Create a new injury for a wrestler. */
+  /** Create a new injury for a wrestler. Falls back to the Legacy Injury type if none specified. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
@@ -65,10 +68,12 @@ public class InjuryService {
   public Optional<Injury> createInjury(
       final Long wrestlerId,
       final Long universeId,
+      final Long injuryTypeId,
       final String name,
       final String description,
       final InjurySeverity severity,
       final String injuryNotes) {
+    InjuryType injuryType = resolveInjuryType(injuryTypeId);
     return wrestlerRepository
         .findById(wrestlerId)
         .map(
@@ -76,6 +81,7 @@ public class InjuryService {
               Universe universe = universeRepository.findById(universeId).orElseThrow();
               WrestlerState state = getWrestlerState(wrestlerId, universeId);
               Injury injury = new Injury();
+              injury.setInjuryType(injuryType);
               injury.setWrestler(wrestler);
               injury.setUniverse(universe);
               injury.setName(name);
@@ -113,7 +119,14 @@ public class InjuryService {
     String injuryName = generateInjuryName(severity);
     String description = generateInjuryDescription(severity);
 
+    List<InjuryType> allTypes = injuryTypeRepository.findAll();
+    InjuryType injuryType =
+        allTypes.isEmpty()
+            ? resolveInjuryType(null)
+            : allTypes.get(random.nextInt(allTypes.size()));
+
     Injury injury = new Injury();
+    injury.setInjuryType(injuryType);
     injury.setWrestler(state.getWrestler());
     injury.setUniverse(state.getUniverse());
     injury.setName(injuryName);
@@ -207,11 +220,10 @@ public class InjuryService {
     int roll = diceRoll != null ? diceRoll : random.nextInt(6) + 1;
     boolean success = injury.getSeverity().isHealingSuccessful(roll);
 
-    // Spend the fans regardless of success
-    state.setFans(state.getFans() - injury.getHealingCost());
-    wrestlerStateRepository.saveAndFlush(state);
-
+    // Only spend fans when the healing roll succeeds
     if (success) {
+      state.setFans(state.getFans() - injury.getHealingCost());
+      wrestlerStateRepository.saveAndFlush(state);
       injury.heal();
       injuryRepository.saveAndFlush(injury);
       eventPublisher.publishEvent(new WrestlerInjuryHealedEvent(this, state, injury));
@@ -223,7 +235,7 @@ public class InjuryService {
             : "Healing attempt failed (Rolled: %d, Needed: %d+)"
                 .formatted(roll, injury.getSeverity().getHealingSuccessThreshold());
 
-    return new HealingResult(success, message, injury, roll, true);
+    return new HealingResult(success, message, injury, roll, success);
   }
 
   /** Force heal an injury (Admin only). Bypasses dice roll check by ensuring a successful roll. */
@@ -281,27 +293,6 @@ public class InjuryService {
         .findById(wrestlerId)
         .map(w -> injuryRepository.findByWrestlerAndUniverse(w, universe))
         .orElse(List.of());
-  }
-
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<Injury> getActiveInjuriesForWrestler(@NonNull final Long wrestlerId) {
-    return getActiveInjuriesForWrestler(wrestlerId, 1L);
-  }
-
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<Injury> getAllInjuriesForWrestler(@NonNull final Long wrestlerId) {
-    return getAllInjuriesForWrestler(wrestlerId, 1L);
-  }
-
-  @Deprecated
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public InjuryStats getInjuryStatsForWrestler(final Long wrestlerId) {
-    return getInjuryStatsForWrestler(wrestlerId, 1L);
   }
 
   /** Get injuries by severity. */
@@ -471,6 +462,21 @@ public class InjuryService {
         totalHealthPenalty,
         effectiveHealth,
         activeInjuries.stream().mapToLong(Injury::getHealingCost).sum());
+  }
+
+  /** Returns the requested InjuryType, or the Legacy Injury sentinel when id is null. */
+  private InjuryType resolveInjuryType(final Long injuryTypeId) {
+    if (injuryTypeId != null) {
+      return injuryTypeRepository
+          .findById(injuryTypeId)
+          .orElseThrow(() -> new IllegalArgumentException("InjuryType not found: " + injuryTypeId));
+    }
+    return injuryTypeRepository
+        .findByInjuryName("Legacy Injury")
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Legacy Injury sentinel not found — run Flyway migrations first."));
   }
 
   /**

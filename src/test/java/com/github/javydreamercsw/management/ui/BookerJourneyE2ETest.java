@@ -42,6 +42,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -383,7 +384,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
               ExpectedConditions.elementToBeClickable(
                   By.id(
                       "edit-segment-button-"
-                          + segmentService.getSegmentsByShow(show).get(0).getId())));
+                          + segmentService.getSegmentsByShow(show).getFirst().getId())));
       clickElement(editButton);
 
       // Wait for the dialog to appear
@@ -477,8 +478,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     mainEventSegment.setIsTitleSegment(true);
     mainEventSegment.setIsNpcGenerated(false);
     mainEventSegment.syncParticipants(Arrays.asList(wrestlers.get(2), wrestlers.get(3)));
-    mainEventSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().getFirst()));
-    mainEventSegment.setWinners(Arrays.asList(wrestlers.get(3)));
+    mainEventSegment.syncSegmentRules(
+        Collections.singletonList(segmentRuleService.findAll().getFirst()));
+    mainEventSegment.setWinners(Collections.singletonList(wrestlers.get(3)));
     HashSet<Title> titles = new HashSet<>();
     if (!titleService.getActiveTitles().isEmpty()) {
       titles.add(titleService.getActiveTitles().getFirst());
@@ -498,8 +500,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().getFirst()));
-    firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
+    firstSegment.syncSegmentRules(
+        Collections.singletonList(segmentRuleService.findAll().getFirst()));
+    firstSegment.setWinners(Collections.singletonList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
     // Navigate to the Show List view
@@ -596,8 +599,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().getFirst()));
-    firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
+    firstSegment.syncSegmentRules(
+        Collections.singletonList(segmentRuleService.findAll().getFirst()));
+    firstSegment.setWinners(Collections.singletonList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
     // Navigate to the Show List view
@@ -724,8 +728,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Arrays.asList(segmentRuleService.findAll().getFirst()));
-    firstSegment.setWinners(Arrays.asList(wrestlers.get(0)));
+    firstSegment.syncSegmentRules(
+        Collections.singletonList(segmentRuleService.findAll().getFirst()));
+    firstSegment.setWinners(Collections.singletonList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
     // Navigate back to the list.

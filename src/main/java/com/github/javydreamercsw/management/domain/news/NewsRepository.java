@@ -24,7 +24,5 @@ import org.springframework.stereotype.Repository;
 public interface NewsRepository extends JpaRepository<NewsItem, Long> {
   List<NewsItem> findAllByOrderByPublishDateDesc();
 
-  List<NewsItem> findTop10ByOrderByPublishDateDesc();
-
   List<NewsItem> findAllByCategoryOrderByPublishDateDesc(NewsCategory category);
 }

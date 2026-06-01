@@ -617,9 +617,18 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
         String rosterSection = prompt.substring(rosterStart + rosterMarker.length(), rosterEnd);
         String[] lines = rosterSection.split("\\r?\\n");
         for (String line : lines) {
-          if (line.trim().startsWith("- Name:")) {
-            String name = line.substring(line.indexOf(':') + 1, line.indexOf(',')).trim();
-            participants.add(name);
+          // Handle both "- Name: X, ..." and "- Id: N, Name: X, ..." formats
+          String trimmed = line.trim();
+          if (trimmed.startsWith("- Name:") || trimmed.startsWith("- Id:")) {
+            int nameIdx = line.indexOf("Name:");
+            if (nameIdx != -1) {
+              String after = line.substring(nameIdx + 5).trim();
+              int commaIdx = after.indexOf(',');
+              String name = commaIdx != -1 ? after.substring(0, commaIdx).trim() : after.trim();
+              if (!name.isEmpty()) {
+                participants.add(name);
+              }
+            }
           }
         }
       }

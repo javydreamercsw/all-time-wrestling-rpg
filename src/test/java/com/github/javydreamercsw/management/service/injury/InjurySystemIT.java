@@ -96,6 +96,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
         injuryService.createInjury(
             wrestler1.getId(),
             universeId,
+            null,
             "Test Injury",
             "Test injury for health calculation",
             InjurySeverity.MODERATE,
@@ -121,6 +122,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
     injuryService.createInjury(
         wrestler1.getId(),
         universeId,
+        null,
         "Active Injury 1",
         "First active injury",
         InjurySeverity.MINOR,
@@ -129,6 +131,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
     injuryService.createInjury(
         wrestler1.getId(),
         universeId,
+        null,
         "Active Injury 2",
         "Second active injury",
         InjurySeverity.MODERATE,
@@ -140,6 +143,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
             .createInjury(
                 wrestler1.getId(),
                 universeId,
+                null,
                 "Healed Injury",
                 "This injury will be healed",
                 InjurySeverity.SEVERE,
@@ -177,6 +181,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
             .createInjury(
                 wrestler1.getId(),
                 universeId,
+                null,
                 "Healable Injury",
                 "This injury can be healed",
                 InjurySeverity.MINOR,
@@ -210,6 +215,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
             .createInjury(
                 wrestler1.getId(),
                 universeId,
+                null,
                 "Shoulder Injury",
                 "Dislocated Shoulder",
                 InjurySeverity.SEVERE,
@@ -221,6 +227,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
             .createInjury(
                 wrestler1.getId(),
                 universeId,
+                null,
                 "Knee Injury",
                 "Sprained Knee",
                 InjurySeverity.MINOR,
@@ -232,6 +239,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
             .createInjury(
                 wrestler1.getId(),
                 universeId,
+                null,
                 "Old Injury",
                 "Already healed",
                 InjurySeverity.MODERATE,
@@ -264,6 +272,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
             .createInjury(
                 wrestler1.getId(),
                 universeId,
+                null,
                 "Expensive Injury",
                 "This injury is too expensive to heal",
                 InjurySeverity.SEVERE, // Expensive to heal

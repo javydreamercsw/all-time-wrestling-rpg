@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,10 +28,12 @@ import org.springframework.stereotype.Repository;
 public interface WrestlerAlignmentRepository extends JpaRepository<WrestlerAlignment, Long> {
   Optional<WrestlerAlignment> findByWrestler(Wrestler wrestler);
 
+  Optional<WrestlerAlignment> findByWrestlerAndUniverse(Wrestler wrestler, Universe universe);
+
   @Query(
       """
       SELECT wa FROM WrestlerAlignment wa WHERE wa.wrestler = :wrestler AND\
-       wa.campaign.universe.id = :universeId\
+       wa.universe.id = :universeId\
       """)
   Optional<WrestlerAlignment> findByWrestlerAndUniverseId(
       @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);

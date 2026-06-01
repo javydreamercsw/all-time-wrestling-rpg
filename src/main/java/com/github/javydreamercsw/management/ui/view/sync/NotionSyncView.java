@@ -34,6 +34,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -167,7 +168,32 @@ public class NotionSyncView extends Main {
     controlSection.setId("control-section");
     syncDirection = new ComboBox<>("Sync Direction");
     syncDirection.setItems(SyncDirection.values());
-    syncDirection.setValue(SyncDirection.INBOUND);
+    syncDirection.setValue(SyncDirection.OUTBOUND);
+    syncDirection.addValueChangeListener(
+        event -> {
+          if (SyncDirection.INBOUND.equals(event.getValue())
+              && SyncDirection.OUTBOUND.equals(event.getOldValue())) {
+            ConfirmDialog warning = new ConfirmDialog();
+            warning.setHeader("Switch to Inbound Sync?");
+            warning.setText(
+                """
+                Inbound sync pulls data FROM Notion INTO the local database, overwriting local \
+                values for every show it touches. Any local edits not yet pushed to Notion will \
+                be lost. Future shows will be updated too — including dates, types, and \
+                descriptions.
+
+                Use Inbound only when Notion is the authoritative source (e.g. initial setup or \
+                data recovery). For routine sync, keep Outbound so Notion reflects what is in \
+                the database.\
+                """);
+            warning.setCancelable(true);
+            warning.setCancelText("Keep Outbound");
+            warning.setConfirmText("Switch to Inbound");
+            warning.setConfirmButtonTheme("error primary");
+            warning.addCancelListener(e -> syncDirection.setValue(SyncDirection.OUTBOUND));
+            warning.open();
+          }
+        });
 
     syncAllButton = new Button("Sync All Entities", VaadinIcon.REFRESH.create());
     syncAllButton.setId("sync-all-button");
@@ -325,24 +351,44 @@ public class NotionSyncView extends Main {
       return;
     }
 
+    SyncDirection direction = syncDirection.getValue();
     String operationId = "sync-all-" + System.currentTimeMillis();
+    List<SyncEntityType> entities = notionSyncScheduler.getSyncEntities();
 
     startSyncOperationWithProgress(
         "Syncing all entities...",
         operationId,
         () -> {
-          try {
-            List<NotionSyncService.SyncResult> results =
-                notionSyncScheduler.triggerManualSync(operationId);
-            return new SyncOperationResult(
-                true,
-                results.size(),
-                results.stream().mapToInt(NotionSyncService.SyncResult::getSyncedCount).sum(),
-                "All entities synced successfully");
-          } catch (Exception e) {
-            log.error("Full sync failed", e);
-            return new SyncOperationResult(false, 0, 0, "Sync failed: " + e.getMessage());
+          progressTracker.startOperation(operationId, "Full Notion Sync", entities.size());
+          int totalSynced = 0;
+          int errors = 0;
+          for (int i = 0; i < entities.size(); i++) {
+            SyncEntityType entity = entities.get(i);
+            progressTracker.updateProgress(
+                operationId,
+                i,
+                "Syncing " + entity.getKey() + " (" + (i + 1) + "/" + entities.size() + ")");
+            try {
+              NotionSyncService.SyncResult result =
+                  notionSyncScheduler.syncEntity(
+                      entity, operationId + "-" + entity.getKey(), direction);
+              if (result.isSuccess()) {
+                totalSynced += result.getSyncedCount();
+              } else {
+                errors++;
+              }
+            } catch (Exception e) {
+              log.error("Error syncing {}", entity.getKey(), e);
+              errors++;
+            }
           }
+          boolean success = errors == 0;
+          String msg =
+              success
+                  ? "All entities synced successfully"
+                  : (entities.size() - errors) + "/" + entities.size() + " entities synced";
+          progressTracker.completeOperation(operationId, success, msg, totalSynced);
+          return new SyncOperationResult(success, entities.size(), totalSynced, msg);
         });
   }
 

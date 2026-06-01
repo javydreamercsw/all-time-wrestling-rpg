@@ -32,8 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public abstract class AbstractSegmentNarrationService implements SegmentNarrationService {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
-  private HttpClient httpClient;
+  @Autowired private ObjectMapper objectMapper = new ObjectMapper();
+  private volatile HttpClient httpClient;
 
   @Autowired(required = false)
   @Setter
@@ -419,12 +419,12 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
    * Calculates retry delay, potentially extracting it from API error response. Can be overridden by
    * implementations to parse provider-specific retry hints.
    */
-  protected Duration calculateRetryDelay(
+  protected final Duration calculateRetryDelay(
       @NonNull final Exception exception, @NonNull final Duration defaultDelay) {
     return defaultDelay;
   }
 
-  protected HttpClient getHttpClient(final int timeout) {
+  protected synchronized HttpClient getHttpClient(final int timeout) {
     if (httpClient == null) {
       httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(timeout)).build();
     }

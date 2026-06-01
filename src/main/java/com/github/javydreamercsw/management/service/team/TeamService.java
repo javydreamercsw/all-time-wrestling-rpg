@@ -159,7 +159,7 @@ public class TeamService {
       final Long factionId,
       final Long managerId) {
     if (wrestler1Id == null || wrestler2Id == null) {
-      log.warn("Cannot create team: Wrestler IDs cannot be null");
+      log.debug("Cannot create team: Wrestler IDs cannot be null");
       return Optional.empty();
     }
     // Validate wrestlers exist
@@ -167,7 +167,7 @@ public class TeamService {
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 
     if (wrestler1Opt.isEmpty() || wrestler2Opt.isEmpty()) {
-      log.warn(
+      log.debug(
           "Cannot create team: One or both wrestlers not found (IDs: {}, {})",
           wrestler1Id,
           wrestler2Id);
@@ -179,13 +179,13 @@ public class TeamService {
 
     // Check if wrestlers are the same
     if (wrestler1.equals(wrestler2)) {
-      log.warn("Cannot create team: Both wrestlers are the same ({})", wrestler1.getName());
+      log.debug("Cannot create team: Both wrestlers are the same ({})", wrestler1.getName());
       return Optional.empty();
     }
 
     // Check if team name already exists
     if (teamRepository.existsByName(name)) {
-      log.warn("Cannot create team: Name '{}' already exists", name);
+      log.debug("Cannot create team: Name '{}' already exists", name);
       return Optional.empty();
     }
 
@@ -193,7 +193,7 @@ public class TeamService {
     Optional<Team> existingTeam =
         teamRepository.findActiveTeamByBothWrestlers(wrestler1, wrestler2);
     if (existingTeam.isPresent()) {
-      log.warn(
+      log.debug(
           "Cannot create team: {} and {} already have an active team: {}",
           wrestler1.getName(),
           wrestler2.getName(),
@@ -248,7 +248,7 @@ public class TeamService {
 
     // Check if new name conflicts with existing team (excluding current team)
     if (name != null && !name.equals(team.getName()) && teamRepository.existsByName(name)) {
-      log.warn("Cannot update team: Name '{}' already exists", name);
+      log.debug("Cannot update team: Name '{}' already exists", name);
       return Optional.empty();
     }
 

@@ -16,14 +16,20 @@
 */
 package com.github.javydreamercsw.management.service.wrestler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.WrestlerRetiredEvent;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +44,8 @@ public class RetirementService {
   private final WrestlerService wrestlerService;
   private final ApplicationEventPublisher eventPublisher;
   private final Random random = new Random();
+
+  @Autowired private ObjectMapper objectMapper = new ObjectMapper();
 
   /**
    * Checks if a wrestler should retire based on physical condition in a league.
@@ -100,9 +108,16 @@ public class RetirementService {
   }
 
   private String addRetirementFlag(final String featureData) {
-    // Basic implementation - in a real scenario we'd use ObjectMapper
-    return featureData == null
-        ? "{\"retired\": true}"
-        : featureData.replace("}", ", \"retired\": true}");
+    try {
+      Map<String, Object> map =
+          featureData == null
+              ? new HashMap<>()
+              : objectMapper.readValue(featureData, new TypeReference<Map<String, Object>>() {});
+      map.put("retired", true);
+      return objectMapper.writeValueAsString(map);
+    } catch (JsonProcessingException e) {
+      log.error("Failed to parse featureData JSON; overwriting with retirement flag", e);
+      return "{\"retired\": true}";
+    }
   }
 }

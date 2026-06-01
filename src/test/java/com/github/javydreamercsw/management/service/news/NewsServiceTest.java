@@ -74,7 +74,7 @@ class NewsServiceTest {
             .category(NewsCategory.ANALYSIS)
             .build();
 
-    when(newsRepository.findTop10ByOrderByPublishDateDesc()).thenReturn(List.of(item));
+    when(newsRepository.findAllByOrderByPublishDateDesc()).thenReturn(List.of(item));
 
     List<NewsItem> result = newsService.getLatestNews();
 
@@ -82,6 +82,6 @@ class NewsServiceTest {
     assertEquals(1, result.size());
     assertEquals("Test Headline", result.get(0).getHeadline());
 
-    verify(newsRepository).findTop10ByOrderByPublishDateDesc();
+    verify(newsRepository).findAllByOrderByPublishDateDesc();
   }
 }

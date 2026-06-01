@@ -146,11 +146,13 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
 
     // Get all cell contents
     List<WebElement> cells = driver.findElements(By.tagName("vaadin-grid-cell-content"));
+    List<String> targets = List.of("Adam", "Ben", "Zack");
     List<String> namesInOrder =
         cells.stream()
             .map(WebElement::getText)
             .map(String::trim)
-            .filter(text -> "Adam".equals(text) || "Ben".equals(text) || "Zack".equals(text))
+            .map(text -> text.split("\\s+")[0])
+            .filter(targets::contains)
             .toList();
 
     assertEquals(3, namesInOrder.size(), "Should find all three wrestler names in the grid");
@@ -371,6 +373,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     injuryService.createInjury(
         wrestler.getId(),
         defaultUniverse.getId(),
+        null,
         "Bruised Ribs",
         "Slightly bruised ribs.",
         InjurySeverity.MINOR,
@@ -381,6 +384,7 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
             .createInjury(
                 wrestler.getId(),
                 defaultUniverse.getId(),
+                null,
                 "Twisted Ankle",
                 "Twisted his ankle.",
                 InjurySeverity.MODERATE,
@@ -456,7 +460,9 @@ class WrestlerListViewE2ETest extends AbstractE2ETest {
     // Wait for the dialog to appear
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
-    // Fill the form
+    // Fill the form — injury type is required
+    selectFromVaadinComboBox("create-injury-type", "Legacy Injury");
+
     WebElement nameField =
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("create-injury-name")));
 

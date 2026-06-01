@@ -113,6 +113,11 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
   @Query("SELECT s.externalId FROM Show s WHERE s.externalId IS NOT NULL")
   List<String> findAllExternalIds();
 
+  List<Show> findAllByExternalIdIn(List<String> externalIds);
+
+  @Query("SELECT MAX(s.lastSync) FROM Show s WHERE s.lastSync IS NOT NULL")
+  Optional<java.time.Instant> findMaxLastSync();
+
   @Query(
       value =
           """

@@ -42,6 +42,10 @@ public class Injury extends AbstractSyncableEntity<Long> {
   private Long id;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  @JoinColumn(name = "injury_type_id", nullable = false)
+  private InjuryType injuryType;
+
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "wrestler_id", nullable = false)
   @JsonIgnore
   private Wrestler wrestler;

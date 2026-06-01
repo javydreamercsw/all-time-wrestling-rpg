@@ -56,6 +56,7 @@ class FactionErrorHandlingTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
   @Mock private UniverseContextService universeContextService;
+  @Mock private com.github.javydreamercsw.base.ai.image.ImageStorageService imageStorageService;
 
   private FactionListView factionListView;
 
@@ -68,6 +69,7 @@ class FactionErrorHandlingTest {
     when(securityUtils.canDelete()).thenReturn(true);
     when(wrestlerRepository.findAll()).thenReturn(new ArrayList<>());
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(factionService.resolveFactionImage(any())).thenReturn("");
   }
 
   @Test
@@ -87,7 +89,8 @@ class FactionErrorHandlingTest {
               npcService,
               wrestlerRepository,
               securityUtils,
-              universeContextService);
+              universeContextService,
+              imageStorageService);
         });
   }
 
@@ -113,7 +116,8 @@ class FactionErrorHandlingTest {
                   npcService,
                   wrestlerRepository,
                   securityUtils,
-                  universeContextService);
+                  universeContextService,
+                  imageStorageService);
           assertNotNull(view);
         });
   }
@@ -131,8 +135,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     Faction factionToSave = Faction.builder().build();
     factionToSave.setName("Test Faction");
 
@@ -162,8 +166,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     Faction factionToDelete = Faction.builder().build();
     factionToDelete.setId(1L);
     factionToDelete.setName("Faction to Delete");
@@ -195,8 +199,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     Long factionId = 1L;
     Long wrestlerId = 2L;
 
@@ -226,8 +230,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     // Test various invalid faction scenarios
     Faction invalidFaction1 = Faction.builder().build(); // No name, no alignment
     Faction invalidFaction2 = Faction.builder().build(); // No name
@@ -286,8 +290,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     Long nonExistentFactionId = 999L;
 
     when(factionService.getFactionById(nonExistentFactionId)).thenReturn(Optional.empty());
@@ -313,8 +317,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     Long factionId = 1L;
     Long nonExistentWrestlerId = 999L;
 
@@ -367,8 +371,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     // Then - Should handle large datasets without issues
     assertNotNull(viewWithLargeDataset);
     verify(factionService).findAllByUniverse(anyLong());
@@ -391,7 +395,8 @@ class FactionErrorHandlingTest {
               npcService,
               wrestlerRepository,
               securityUtils,
-              universeContextService);
+              universeContextService,
+              imageStorageService);
         });
 
     verify(factionService).findAllByUniverse(anyLong());
@@ -413,8 +418,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     Faction restrictedFaction = Faction.builder().build();
     restrictedFaction.setId(1L);
     restrictedFaction.setName("Restricted Faction");
@@ -445,8 +450,8 @@ class FactionErrorHandlingTest {
             npcService,
             wrestlerRepository,
             securityUtils,
-            universeContextService);
-
+            universeContextService,
+            imageStorageService);
     // Test faction with name too long
     Faction factionWithLongName = Faction.builder().build();
     factionWithLongName.setName("A".repeat(300)); // Exceeds 255 character limit

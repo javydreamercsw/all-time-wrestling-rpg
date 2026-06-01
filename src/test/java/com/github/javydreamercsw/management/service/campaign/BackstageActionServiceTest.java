@@ -97,7 +97,7 @@ class BackstageActionServiceTest {
 
     when(campaignStateRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
     when(actionHistoryRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
-    when(injuryService.getActiveInjuriesForWrestler(anyLong())).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong())).thenReturn(List.of());
   }
 
   // ==================== Phase check ====================
@@ -268,7 +268,8 @@ class BackstageActionServiceTest {
     injury.setId(42L);
     var severity = com.github.javydreamercsw.management.domain.injury.InjurySeverity.MINOR;
     injury.setSeverity(severity);
-    when(injuryService.getActiveInjuriesForWrestler(anyLong())).thenReturn(List.of(injury));
+    when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(List.of(injury));
     // wrestler has no WrestlerState (bumps = 0) by default
     doReturn(List.of(4, 5)).when(backstageActionService).rollDice(anyInt());
 
@@ -281,7 +282,7 @@ class BackstageActionServiceTest {
 
   @Test
   void performAction_recoveryTwoSuccessesNoBumpsOrInjuries_fullyHealthy() {
-    when(injuryService.getActiveInjuriesForWrestler(anyLong())).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong())).thenReturn(List.of());
     doReturn(List.of(4, 5)).when(backstageActionService).rollDice(anyInt());
 
     var outcome = backstageActionService.performAction(campaign, BackstageActionType.RECOVERY, 2);
@@ -293,7 +294,7 @@ class BackstageActionServiceTest {
 
   @Test
   void performAction_recoveryTwoSuccessesWithBumpsNoInjuries_removesTwoBumps() {
-    when(injuryService.getActiveInjuriesForWrestler(anyLong())).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong())).thenReturn(List.of());
     WrestlerState ws = new WrestlerState();
     ws.setBumps(3);
     // Use Spy pattern on Wrestler to return the WrestlerState
@@ -314,7 +315,7 @@ class BackstageActionServiceTest {
 
   @Test
   void performAction_recoveryOneSuccessWithBumps_removesOneBump() {
-    when(injuryService.getActiveInjuriesForWrestler(anyLong())).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong())).thenReturn(List.of());
     WrestlerState ws = new WrestlerState();
     ws.setBumps(2);
     Wrestler spyWrestler = org.mockito.Mockito.spy(new Wrestler());

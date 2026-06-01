@@ -42,6 +42,20 @@ public class GameSettingService {
   public static final String WEAR_AND_TEAR_ENABLED_KEY = "wear_and_tear_enabled";
   public static final String STATUS_CARDS_ENABLED_KEY = "status_cards_enabled";
   public static final String NOTION_TOKEN_KEY = "notion_token";
+
+  // Rivalry lifecycle settings
+  public static final String RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY =
+      "rivalry_resolution_threshold_ple";
+  public static final String RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY =
+      "rivalry_resolution_threshold_regular";
+  public static final String RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY =
+      "rivalry_resolution_on_regular_shows";
+  public static final String RIVALRY_MAX_DURATION_DAYS_KEY = "rivalry_max_duration_days";
+  public static final String RIVALRY_HEAT_DECAY_ENABLED_KEY = "rivalry_heat_decay_enabled";
+  public static final String RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY =
+      "rivalry_heat_decay_per_interval";
+  public static final String RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY =
+      "rivalry_heat_decay_interval_days";
   private final GameSettingRepository repository;
   private final ApplicationEventPublisher eventPublisher;
 
@@ -150,6 +164,111 @@ public class GameSettingService {
       log.info("Game date changed from {} to {}", oldDate, date);
       eventPublisher.publishEvent(new GameDateChangedEvent(this, oldDate, date));
     }
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryResolutionThresholdPle() {
+    return repository
+        .findById(RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY)
+        .map(GameSetting::getValue)
+        .map(Integer::parseInt)
+        .orElse(30);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryResolutionThresholdPle(final int threshold) {
+    save(RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY, String.valueOf(threshold));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryResolutionThresholdRegular() {
+    return repository
+        .findById(RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY)
+        .map(GameSetting::getValue)
+        .map(Integer::parseInt)
+        .orElse(35);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryResolutionThresholdRegular(final int threshold) {
+    save(RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY, String.valueOf(threshold));
+  }
+
+  @PreAuthorize("permitAll()")
+  public boolean isRivalryResolutionOnRegularShowsEnabled() {
+    return repository
+        .findById(RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY)
+        .map(GameSetting::getValue)
+        .map(Boolean::parseBoolean)
+        .orElse(false);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryResolutionOnRegularShowsEnabled(final boolean enabled) {
+    save(RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY, String.valueOf(enabled));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryMaxDurationDays() {
+    return repository
+        .findById(RIVALRY_MAX_DURATION_DAYS_KEY)
+        .map(GameSetting::getValue)
+        .map(Integer::parseInt)
+        .orElse(0);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryMaxDurationDays(final int days) {
+    save(RIVALRY_MAX_DURATION_DAYS_KEY, String.valueOf(days));
+  }
+
+  @PreAuthorize("permitAll()")
+  public boolean isRivalryHeatDecayEnabled() {
+    return repository
+        .findById(RIVALRY_HEAT_DECAY_ENABLED_KEY)
+        .map(GameSetting::getValue)
+        .map(Boolean::parseBoolean)
+        .orElse(false);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryHeatDecayEnabled(final boolean enabled) {
+    save(RIVALRY_HEAT_DECAY_ENABLED_KEY, String.valueOf(enabled));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryHeatDecayPerInterval() {
+    return repository
+        .findById(RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY)
+        .map(GameSetting::getValue)
+        .map(Integer::parseInt)
+        .orElse(1);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryHeatDecayPerInterval(final int amount) {
+    save(RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY, String.valueOf(amount));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryHeatDecayIntervalDays() {
+    return repository
+        .findById(RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY)
+        .map(GameSetting::getValue)
+        .map(Integer::parseInt)
+        .orElse(7);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryHeatDecayIntervalDays(final int days) {
+    save(RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY, String.valueOf(days));
   }
 
   @PreAuthorize("permitAll()")

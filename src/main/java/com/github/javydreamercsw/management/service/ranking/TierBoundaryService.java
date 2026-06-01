@@ -47,36 +47,16 @@ public class TierBoundaryService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<TierBoundary> findAll() {
-    return tierBoundaryRepository.findAll();
-  }
-
-  @PreAuthorize("isAuthenticated()")
   public List<TierBoundary> findAllByGender(final Gender gender) {
     return tierBoundaryRepository.findAllByGender(gender);
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public WrestlerTier findTierForFans(final long fans, final Gender gender) {
-    List<TierBoundary> boundaries =
-        findAllByGender(gender).stream()
-            .sorted((b1, b2) -> b2.getMinFans().compareTo(b1.getMinFans()))
-            .toList();
-
-    for (TierBoundary boundary : boundaries) {
-      if (fans >= boundary.getMinFans() && fans <= boundary.getMaxFans()) {
-        return boundary.getTier();
-      }
-    }
-    return null; // Or throw an exception if a tier should always be found
   }
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public void resetTierBoundaries() {
-    log.info("Current boundaries: {}", tierBoundaryRepository.count());
+    log.debug("Current boundaries: {}", tierBoundaryRepository.count());
     tierBoundaryRepository.deleteAllInBatch();
-    log.info("Boundaries after delete: {}", tierBoundaryRepository.count());
+    log.debug("Boundaries after delete: {}", tierBoundaryRepository.count());
     List<TierBoundary> boundaries = new java.util.ArrayList<>();
     for (Gender gender : Gender.values()) {
       for (WrestlerTier tier : WrestlerTier.values()) {

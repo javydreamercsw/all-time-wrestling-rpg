@@ -49,7 +49,8 @@ public class RivalryCompletedInboxListener implements ApplicationListener<Rivalr
 
   @Override
   public void onApplicationEvent(@NonNull final RivalryCompletedEvent event) {
-    log.info("Received RivalryCompletedEvent for rivalry: {}", event.getRivalry().getDisplayName());
+    log.debug(
+        "Received RivalryCompletedEvent for rivalry: {}", event.getRivalry().getDisplayName());
     inboxService.createInboxItem(
         rivalryCompleted,
         "Rivalry '%s' has been completed.".formatted(event.getRivalry().getDisplayName()),

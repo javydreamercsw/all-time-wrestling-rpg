@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -52,6 +53,10 @@ public class WrestlerAlignment {
   @JoinColumn(name = "campaign_id")
   @com.fasterxml.jackson.annotation.JsonIgnore
   private Campaign campaign;
+
+  @ManyToOne
+  @JoinColumn(name = "universe_id")
+  private Universe universe;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "alignment_type", nullable = false)

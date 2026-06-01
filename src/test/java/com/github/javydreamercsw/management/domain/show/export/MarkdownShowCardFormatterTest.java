@@ -23,12 +23,14 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class MarkdownShowCardFormatterTest {
@@ -59,6 +61,7 @@ class MarkdownShowCardFormatterTest {
     when(segment.getSegmentRulesAsString()).thenReturn("No DQ");
     when(segment.hasSegmentRules()).thenReturn(true);
     when(segment.getIsTitleSegment()).thenReturn(true);
+    when(segment.getTitles()).thenReturn(Collections.emptySet());
 
     List<Segment> segments = Collections.singletonList(segment);
 
@@ -70,6 +73,74 @@ class MarkdownShowCardFormatterTest {
     assertTrue(result.contains("Wrestler 1 vs. Wrestler 2"));
     assertTrue(result.contains("*Rules: No DQ*"));
     assertTrue(result.contains("**CHAMPIONSHIP MATCH**"));
+  }
+
+  @Test
+  void testTitleAndChampionAppearsInChampionshipMatch() {
+    MarkdownShowCardFormatter formatter = new MarkdownShowCardFormatter();
+
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("PPV");
+    when(show.getShowDate()).thenReturn(null);
+    when(show.getArena()).thenReturn(null);
+
+    Title title = mock(Title.class);
+    when(title.getName()).thenReturn("ATW World Title");
+    when(title.getChampionNames()).thenReturn("El Fuego");
+
+    Segment segment = mock(Segment.class);
+    SegmentType type = mock(SegmentType.class);
+    when(type.getName()).thenReturn("Singles Match");
+    when(segment.getSegmentType()).thenReturn(type);
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    when(segment.isMainEvent()).thenReturn(false);
+    when(segment.hasSegmentRules()).thenReturn(false);
+    when(segment.getWinners()).thenReturn(Collections.emptyList());
+
+    Wrestler w1 = mock(Wrestler.class);
+    when(w1.getName()).thenReturn("El Fuego");
+    Wrestler w2 = mock(Wrestler.class);
+    when(w2.getName()).thenReturn("Challenger");
+    when(segment.getWrestlers()).thenReturn(List.of(w1, w2));
+
+    String result = formatter.format(show, List.of(segment), false, false, false);
+
+    assertTrue(result.contains("**Title:** ATW World Title"), "title name should appear");
+    assertTrue(result.contains("Champion: El Fuego"), "current champion should appear");
+  }
+
+  @Test
+  void testVacantTitleShowsNoChampionLine() {
+    MarkdownShowCardFormatter formatter = new MarkdownShowCardFormatter();
+
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("PPV");
+    when(show.getShowDate()).thenReturn(null);
+    when(show.getArena()).thenReturn(null);
+
+    Title title = mock(Title.class);
+    when(title.getName()).thenReturn("ATW World Title");
+    when(title.getChampionNames()).thenReturn(""); // vacant
+
+    Segment segment = mock(Segment.class);
+    SegmentType type = mock(SegmentType.class);
+    when(type.getName()).thenReturn("Singles Match");
+    when(segment.getSegmentType()).thenReturn(type);
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    when(segment.isMainEvent()).thenReturn(false);
+    when(segment.hasSegmentRules()).thenReturn(false);
+    when(segment.getWinners()).thenReturn(Collections.emptyList());
+
+    Wrestler w1 = mock(Wrestler.class);
+    when(w1.getName()).thenReturn("A");
+    when(segment.getWrestlers()).thenReturn(List.of(w1));
+
+    String result = formatter.format(show, List.of(segment), false, false, false);
+
+    assertTrue(result.contains("**Title:** ATW World Title"), "title name should appear");
+    assertTrue(!result.contains("Champion:"), "vacant title should not show a champion line");
   }
 
   @Test

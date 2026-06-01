@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.StorylineMilestone;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -198,7 +199,7 @@ public class CampaignDashboardView extends VerticalLayout {
             new Button(
                 "Start New Campaign (Debug)",
                 e -> {
-                  log.info("Debug Start Campaign button clicked");
+                  log.debug("Debug Start Campaign button clicked");
                   securityUtils
                       .getAuthenticatedUser()
                       .ifPresentOrElse(
@@ -404,7 +405,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 if (state.getCurrentPhase()
                     == com.github.javydreamercsw.management.domain.campaign.CampaignPhase
                         .POST_MATCH) {
-                  log.info("Navigating to post-match narrative.");
+                  log.debug("Navigating to post-match narrative.");
                 }
                 UI.getCurrent().navigate("campaign/narrative");
               }
@@ -712,7 +713,7 @@ public class CampaignDashboardView extends VerticalLayout {
                       currentCampaign,
                       opponentName,
                       "Tournament Match: " + opponentName,
-                      "One on One",
+                      SegmentTypeNames.ONE_ON_ONE,
                       "Normal");
                   refreshUI();
                 });
@@ -1143,7 +1144,10 @@ public class CampaignDashboardView extends VerticalLayout {
         .ifPresentOrElse(
             opponent -> {
               campaignService.createMatchForEncounter(
-                  currentCampaign, opponent.getName(), "Debug Match Simulation", "One on One");
+                  currentCampaign,
+                  opponent.getName(),
+                  "Debug Match Simulation",
+                  SegmentTypeNames.ONE_ON_ONE);
               campaignService.processMatchResult(currentCampaign, win);
               refreshUI();
             },

@@ -20,7 +20,11 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.export.CsvExportWriter;
+import com.github.javydreamercsw.management.service.export.JsonExportWriter;
+import com.github.javydreamercsw.management.service.export.UniverseExportService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -66,6 +70,10 @@ public class UniverseListView extends Main {
   private final AccountService accountService;
   private final UniverseSettingsService settingsService;
   private final WrestlerRepository wrestlerRepository;
+  private final UniverseExportService exportService;
+  private final CsvExportWriter csvWriter;
+  private final JsonExportWriter jsonWriter;
+  private final WrestlerStateRepository wrestlerStateRepository;
   public final Grid<Universe> grid = new Grid<>(Universe.class, false);
 
   public UniverseListView(
@@ -73,12 +81,20 @@ public class UniverseListView extends Main {
       final UniverseMembershipService membershipService,
       final AccountService accountService,
       final UniverseSettingsService settingsService,
-      final WrestlerRepository wrestlerRepository) {
+      final WrestlerRepository wrestlerRepository,
+      final UniverseExportService exportService,
+      final CsvExportWriter csvWriter,
+      final JsonExportWriter jsonWriter,
+      final WrestlerStateRepository wrestlerStateRepository) {
     this.universeService = universeService;
     this.membershipService = membershipService;
     this.accountService = accountService;
     this.settingsService = settingsService;
     this.wrestlerRepository = wrestlerRepository;
+    this.exportService = exportService;
+    this.csvWriter = csvWriter;
+    this.jsonWriter = jsonWriter;
+    this.wrestlerStateRepository = wrestlerStateRepository;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -115,11 +131,23 @@ public class UniverseListView extends Main {
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
               editButton.addClickListener(e -> openEditDialog(universe).open());
 
+              Button exportButton = new Button("Export Data", new Icon(VaadinIcon.DOWNLOAD));
+              exportButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              exportButton.addClickListener(
+                  e ->
+                      new ExportDataDialog(
+                              universe,
+                              exportService,
+                              csvWriter,
+                              jsonWriter,
+                              wrestlerStateRepository)
+                          .open());
+
               Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
               deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               deleteButton.addClickListener(e -> confirmDelete(universe));
 
-              return new HorizontalLayout(editButton, deleteButton);
+              return new HorizontalLayout(editButton, exportButton, deleteButton);
             })
         .setHeader("Actions");
   }

@@ -19,8 +19,10 @@ package com.github.javydreamercsw.management.ui.view.injury;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -42,6 +44,7 @@ public class CreateInjuryDialog extends Dialog {
       @NonNull final Wrestler wrestler,
       @NonNull final Long universeId,
       @NonNull final InjuryService injuryService,
+      @NonNull final InjuryTypeService injuryTypeService,
       @NonNull final Runnable onSave,
       @NonNull final SecurityUtils securityUtils) {
     this.securityUtils = securityUtils;
@@ -49,6 +52,11 @@ public class CreateInjuryDialog extends Dialog {
     setId("create-injury-dialog");
 
     FormLayout formLayout = new FormLayout();
+    ComboBox<InjuryType> injuryTypeField = new ComboBox<>("Injury Type");
+    injuryTypeField.setItems(injuryTypeService.findAll());
+    injuryTypeField.setItemLabelGenerator(InjuryType::getInjuryName);
+    injuryTypeField.setId("create-injury-type");
+    injuryTypeField.setReadOnly(!securityUtils.canEdit());
     TextField nameField = new TextField("Name");
     nameField.setId("create-injury-name");
     nameField.setReadOnly(!securityUtils.canEdit());
@@ -66,8 +74,12 @@ public class CreateInjuryDialog extends Dialog {
     injuryNotesField.setId("create-injury-notes");
     injuryNotesField.setReadOnly(!securityUtils.canEdit());
 
-    formLayout.add(nameField, descriptionField, severityField, injuryNotesField);
+    formLayout.add(injuryTypeField, nameField, descriptionField, severityField, injuryNotesField);
 
+    binder
+        .forField(injuryTypeField)
+        .asRequired()
+        .bind(Injury::getInjuryType, Injury::setInjuryType);
     binder.forField(nameField).asRequired().bind(Injury::getName, Injury::setName);
     binder.forField(descriptionField).bind(Injury::getDescription, Injury::setDescription);
     binder.forField(severityField).asRequired().bind(Injury::getSeverity, Injury::setSeverity);
@@ -81,9 +93,12 @@ public class CreateInjuryDialog extends Dialog {
             "Save",
             e -> {
               if (binder.writeBeanIfValid(injury)) {
+                Long typeId =
+                    injury.getInjuryType() != null ? injury.getInjuryType().getId() : null;
                 injuryService.createInjury(
                     wrestler.getId(),
                     universeId,
+                    typeId,
                     injury.getName(),
                     injury.getDescription(),
                     injury.getSeverity(),

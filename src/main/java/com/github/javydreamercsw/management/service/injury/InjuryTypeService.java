@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.injury;
 
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InjuryTypeService {
 
   @Autowired private InjuryTypeRepository injuryTypeRepository;
+  @Autowired private InjuryRepository injuryRepository;
 
   // ==================== CRUD OPERATIONS ====================
 
@@ -123,21 +125,21 @@ public class InjuryTypeService {
   public boolean deleteInjuryType(final Long id) {
     log.debug("Deleting injury type with ID: {}", id);
 
-    if (!injuryTypeRepository.existsById(id)) {
+    InjuryType injuryType = injuryTypeRepository.findById(id).orElse(null);
+    if (injuryType == null) {
       return false;
     }
 
-    // TODO: Add check for references from other entities (e.g., active injuries)
-    // For now, we'll allow deletion but this should be enhanced later
-    try {
-      injuryTypeRepository.deleteById(id);
-      log.info("Deleted injury type with ID: {}", id);
-      return true;
-    } catch (Exception e) {
-      log.debug("Failed to delete injury type with ID: {}", id, e);
+    long referenceCount = injuryRepository.countByInjuryType(injuryType);
+    if (referenceCount > 0) {
       throw new IllegalStateException(
-          "Cannot delete injury type - it may be referenced by other records");
+          "Cannot delete injury type '%s' — it is referenced by %d injury record(s). Reassign those injuries first."
+              .formatted(injuryType.getInjuryName(), referenceCount));
     }
+
+    injuryTypeRepository.deleteById(id);
+    log.info("Deleted injury type with ID: {}", id);
+    return true;
   }
 
   // ==================== QUERY OPERATIONS ====================

@@ -43,19 +43,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationService {
 
-  private final ObjectMapper objectMapper;
-  private final ClaudeConfigProperties claudeConfigProperties;
+  @Autowired private ObjectMapper objectMapper;
   private final Environment environment;
   private final AiSettingsService aiSettingsService;
 
   @Autowired
   public ClaudeSegmentNarrationService(
-      final ClaudeConfigProperties claudeConfigProperties,
-      final Environment environment,
-      final AiSettingsService aiSettingsService) {
+      final Environment environment, final AiSettingsService aiSettingsService) {
     this.aiSettingsService = aiSettingsService;
-    this.objectMapper = new ObjectMapper();
-    this.claudeConfigProperties = claudeConfigProperties;
     this.environment = environment;
   }
 
@@ -77,20 +72,16 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
     if (Arrays.asList(environment.getActiveProfiles()).contains("test")) {
       return false;
     }
-    String apiKey = claudeConfigProperties.getApiKey();
+    String apiKey = aiSettingsService.getClaudeApiKey();
     return apiKey != null && !apiKey.trim().isEmpty();
-  }
-
-  @Override
-  public String generateText(@NonNull final String prompt) {
-    return callClaude(prompt);
   }
 
   /** Makes a call to the Claude API with the given prompt. */
   private String callClaude(@NonNull final String prompt) {
     try {
-      String fullApiUrl = claudeConfigProperties.getApiUrl();
-      String modelName = claudeConfigProperties.getModelName();
+      String fullApiUrl = aiSettingsService.getClaudeApiUrl();
+      String modelName = aiSettingsService.getClaudeModelName();
+      int timeout = aiSettingsService.getAiTimeout();
 
       Map<String, Object> requestBody =
           Map.of(
@@ -108,15 +99,14 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
           HttpRequest.newBuilder()
               .uri(URI.create(fullApiUrl))
               .header("Content-Type", "application/json")
-              .header("x-api-key", claudeConfigProperties.getApiKey())
+              .header("x-api-key", aiSettingsService.getClaudeApiKey())
               .header("anthropic-version", "2023-06-01")
-              .timeout(Duration.ofSeconds(claudeConfigProperties.getTimeout()))
+              .timeout(Duration.ofSeconds(timeout))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
 
       HttpResponse<String> response =
-          getHttpClient(claudeConfigProperties.getTimeout())
-              .send(request, HttpResponse.BodyHandlers.ofString());
+          getHttpClient(timeout).send(request, HttpResponse.BodyHandlers.ofString());
 
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());

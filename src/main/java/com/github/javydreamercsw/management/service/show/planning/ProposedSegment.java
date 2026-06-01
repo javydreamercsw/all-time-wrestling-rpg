@@ -28,6 +28,9 @@ public class ProposedSegment {
   private String summary;
   private String notes;
   private List<String> participants;
+  private List<List<String>> teams;
+  private List<Long> participantIds;
+  private List<List<Long>> teamIds;
   private Long rivalryId;
   private List<String> winners;
   private Boolean isTitleSegment = false;

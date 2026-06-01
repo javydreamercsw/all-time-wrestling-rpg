@@ -23,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,4 +152,22 @@ public interface DramaEventRepository
   @Transactional
   void deleteByPrimaryWrestlerOrSecondaryWrestler(
       Wrestler primaryWrestler, Wrestler secondaryWrestler);
+
+  @Modifying
+  @Transactional
+  @Query(
+      """
+      DELETE FROM DramaEvent de
+      WHERE de.isProcessed = TRUE AND de.eventDate < :cutoff
+      """)
+  int deleteProcessedOlderThan(@Param("cutoff") Instant cutoff);
+
+  @Modifying
+  @Transactional
+  @Query(
+      """
+      DELETE FROM DramaEvent de
+      WHERE de.isProcessed = FALSE AND de.eventDate < :cutoff
+      """)
+  int deleteUnprocessedOlderThan(@Param("cutoff") Instant cutoff);
 }

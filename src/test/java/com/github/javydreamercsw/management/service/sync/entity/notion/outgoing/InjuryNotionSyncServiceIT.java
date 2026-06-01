@@ -27,8 +27,10 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.extension.NotionTestCleanupExtension;
 import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryNotionSyncService;
 import java.time.Instant;
 import java.util.UUID;
@@ -37,6 +39,7 @@ import notion.api.v1.model.pages.Page;
 import notion.api.v1.request.pages.CreatePageRequest;
 import notion.api.v1.request.pages.UpdatePageRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -45,10 +48,12 @@ import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@ExtendWith(NotionTestCleanupExtension.class)
 class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private InjuryRepository injuryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
   @Autowired private InjuryNotionSyncService injuryNotionSyncService;
 
   @MockitoBean private NotionHandler notionHandler;
@@ -65,6 +70,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
 
     String newPageId = UUID.randomUUID().toString();
     when(newPage.getId()).thenReturn(newPageId);
+    NotionTestCleanupExtension.trackPageId(newPageId);
 
     when(notionClient.createPage(any(CreatePageRequest.class))).thenReturn(newPage);
     when(notionClient.updatePage(any(UpdatePageRequest.class))).thenReturn(newPage);
@@ -83,7 +89,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     wrestler.setExternalId(UUID.randomUUID().toString());
     wrestlerRepository.save(wrestler);
 
-    // Create a new Injury
+    // Create a new Injury — must have a non-null injuryType (FK constraint)
     Injury injury = new Injury();
     injury.setName("Concussion");
     injury.setSeverity(InjurySeverity.SEVERE);
@@ -94,6 +100,7 @@ class InjuryNotionSyncServiceIT extends ManagementIntegrationTest {
     injury.setInjuryDate(Instant.now());
     injury.setInjuryNotes("Got hit with a chair");
     injury.setWrestler(wrestler);
+    injuryTypeRepository.findByInjuryName("Legacy Injury").ifPresent(injury::setInjuryType);
     injuryRepository.save(injury);
 
     // Sync to Notion for the first time

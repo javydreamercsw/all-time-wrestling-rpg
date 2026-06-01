@@ -49,7 +49,7 @@ public class FeudResolvedInboxListener implements ApplicationListener<FeudResolv
 
   @Override
   public void onApplicationEvent(@NonNull final FeudResolvedEvent event) {
-    log.info("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
+    log.debug("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
     inboxService.createInboxItem(
         feudResolved,
         "Feud '%s' has been resolved.".formatted(event.getFeud().getName()),

@@ -66,6 +66,7 @@ class SocialMediaShowCardFormatterTest {
 
     Title title = mock(Title.class);
     when(title.getName()).thenReturn("ATW World Title");
+    when(title.getChampionNames()).thenReturn("Stone Cold");
     when(segment.getTitles()).thenReturn(new HashSet<>(Collections.singletonList(title)));
 
     segments = Collections.singletonList(segment);
@@ -82,6 +83,7 @@ class SocialMediaShowCardFormatterTest {
     assertTrue(result.contains("Stone Cold vs. The Rock"));
     assertTrue(result.contains("🏆"));
     assertTrue(result.contains("ATW World Title"));
+    assertTrue(result.contains("champ: Stone Cold"));
     assertTrue(result.contains("⭐ MAIN EVENT ⭐"));
     assertTrue(result.contains("📜 Rules: No DQ"));
     assertTrue(result.contains("A brutal battle for the gold."));

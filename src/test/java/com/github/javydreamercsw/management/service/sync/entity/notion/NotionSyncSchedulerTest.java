@@ -22,6 +22,9 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.config.NotionSyncProperties;
 import com.github.javydreamercsw.base.test.BaseTest;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
@@ -32,7 +35,9 @@ import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.github.javydreamercsw.management.service.sync.lock.SyncLockService;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,6 +56,9 @@ class NotionSyncSchedulerTest extends BaseTest {
   @Mock private SyncSessionManager syncSessionManager;
   @Mock private SyncProgressTracker progressTracker;
   @Mock private SyncLockService syncLockService;
+  @Mock private ShowRepository showRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private SegmentRepository segmentRepository;
 
   private NotionSyncScheduler notionSyncScheduler;
 
@@ -61,9 +69,46 @@ class NotionSyncSchedulerTest extends BaseTest {
     lenient().when(syncServiceDependencies.getSyncLockService()).thenReturn(syncLockService);
     lenient().when(syncLockService.acquireLock(anyString())).thenReturn(true);
     lenient().when(notionSyncService.isNotionHandlerAvailable()).thenReturn(true);
+    lenient().when(showRepository.findMaxLastSync()).thenReturn(java.util.Optional.empty());
+    lenient().when(wrestlerRepository.findMaxLastSync()).thenReturn(java.util.Optional.empty());
+    lenient().when(segmentRepository.findMaxLastSync()).thenReturn(java.util.Optional.empty());
     notionSyncScheduler =
         new NotionSyncScheduler(
-            notionSyncService, syncProperties, dependencyAnalyzer, null, syncServiceDependencies);
+            notionSyncService,
+            syncProperties,
+            dependencyAnalyzer,
+            null,
+            syncServiceDependencies,
+            showRepository,
+            wrestlerRepository,
+            segmentRepository);
+  }
+
+  @Test
+  @DisplayName(
+      "seedLastSyncTimesFromDb seeds in-memory map from DB max lastSync on startup (#ATW-t36)")
+  void seedLastSyncTimesFromDb_populatesMapFromDb() {
+    Instant showInstant = Instant.parse("2026-05-20T10:00:00Z");
+    Instant wrestlerInstant = Instant.parse("2026-05-19T08:00:00Z");
+
+    when(showRepository.findMaxLastSync()).thenReturn(java.util.Optional.of(showInstant));
+    when(wrestlerRepository.findMaxLastSync()).thenReturn(java.util.Optional.of(wrestlerInstant));
+    when(segmentRepository.findMaxLastSync()).thenReturn(java.util.Optional.empty());
+
+    notionSyncScheduler.seedLastSyncTimesFromDb();
+
+    verify(syncProperties)
+        .setLastSyncTime(
+            SyncEntityType.SHOWS.getKey(),
+            showInstant.atZone(ZoneId.systemDefault()).toLocalDateTime());
+    verify(syncProperties)
+        .setLastSyncTime(
+            SyncEntityType.WRESTLERS.getKey(),
+            wrestlerInstant.atZone(ZoneId.systemDefault()).toLocalDateTime());
+    verify(syncProperties, never())
+        .setLastSyncTime(
+            org.mockito.ArgumentMatchers.eq(SyncEntityType.SEGMENTS.getKey()),
+            any(LocalDateTime.class));
   }
 
   @Test

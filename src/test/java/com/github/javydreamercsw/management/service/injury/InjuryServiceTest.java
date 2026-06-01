@@ -23,6 +23,8 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -34,6 +36,7 @@ import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
@@ -59,6 +62,7 @@ import org.springframework.context.ApplicationEventPublisher;
 class InjuryServiceTest {
 
   @Mock private InjuryRepository injuryRepository;
+  @Mock private InjuryTypeRepository injuryTypeRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseRepository universeRepository;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
@@ -81,6 +85,15 @@ class InjuryServiceTest {
     lenient()
         .when(wrestlerService.getOrCreateState(anyLong(), anyLong()))
         .thenReturn(new com.github.javydreamercsw.management.domain.wrestler.WrestlerState());
+
+    InjuryType legacyType = new InjuryType();
+    legacyType.setInjuryName("Legacy Injury");
+    lenient()
+        .when(injuryTypeRepository.findByInjuryName("Legacy Injury"))
+        .thenReturn(Optional.of(legacyType));
+    lenient()
+        .when(injuryTypeRepository.findAll())
+        .thenReturn(Collections.singletonList(legacyType));
   }
 
   @Test
@@ -102,6 +115,7 @@ class InjuryServiceTest {
         injuryService.createInjury(
             wrestler.getId(),
             1L,
+            null,
             "Knee Injury",
             "Torn ACL",
             InjurySeverity.SEVERE,
@@ -295,14 +309,14 @@ class InjuryServiceTest {
     // When - Roll 2 (should fail for MINOR injury with threshold 3)
     InjuryService.HealingResult result = injuryService.attemptHealing(1L, 2);
 
-    // Then
+    // Then — fans are NOT spent when the roll fails (ACID fix ATW-t6ss)
     assertThat(result.success()).isFalse();
     assertThat(result.message()).isEqualTo("Healing attempt failed (Rolled: 2, Needed: 3+)");
     assertThat(result.diceRoll()).isEqualTo(2);
-    assertThat(result.fansSpent()).isTrue();
+    assertThat(result.fansSpent()).isFalse();
     assertThat(injury.getIsActive()).isTrue(); // Still active
-    assertThat(state.getFans()).isEqualTo(45_000L); // Fans still spent
-    verify(wrestlerStateRepository).saveAndFlush(state);
+    assertThat(state.getFans()).isEqualTo(50_000L); // Fans preserved on failure
+    verify(wrestlerStateRepository, never()).saveAndFlush(state);
   }
 
   @Test

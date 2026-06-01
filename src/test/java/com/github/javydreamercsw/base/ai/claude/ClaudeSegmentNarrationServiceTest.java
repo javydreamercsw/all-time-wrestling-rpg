@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.management.service.performance.PerformanceMonitoringService;
@@ -39,12 +40,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ClaudeSegmentNarrationServiceTest {
 
   @Mock private AiSettingsService aiSettingsService;
-  @Mock private ClaudeConfigProperties claudeConfigProperties;
   @Mock private Environment environment;
   @Mock private HttpClient httpClient;
   @Mock private PerformanceMonitoringService performanceMonitoringService;
@@ -54,12 +55,13 @@ class ClaudeSegmentNarrationServiceTest {
   @BeforeEach
   void setUp() {
     service =
-        new ClaudeSegmentNarrationService(claudeConfigProperties, environment, aiSettingsService) {
+        new ClaudeSegmentNarrationService(environment, aiSettingsService) {
           @Override
-          protected HttpClient getHttpClient(final int timeout) {
+          protected synchronized HttpClient getHttpClient(final int timeout) {
             return httpClient;
           }
         };
+    ReflectionTestUtils.setField(service, "objectMapper", new ObjectMapper());
     service.setPerformanceMonitoringService(performanceMonitoringService);
   }
 
@@ -72,7 +74,7 @@ class ClaudeSegmentNarrationServiceTest {
   void isAvailable_enabledWithKey_returnsTrue() {
     when(aiSettingsService.isClaudeEnabled()).thenReturn(true);
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
-    when(claudeConfigProperties.getApiKey()).thenReturn("sk-test-key");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("sk-test-key");
 
     assertTrue(service.isAvailable());
   }
@@ -88,7 +90,7 @@ class ClaudeSegmentNarrationServiceTest {
   void isAvailable_noApiKey_returnsFalse() {
     when(aiSettingsService.isClaudeEnabled()).thenReturn(true);
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
-    when(claudeConfigProperties.getApiKey()).thenReturn("");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("");
 
     assertFalse(service.isAvailable());
   }
@@ -97,7 +99,7 @@ class ClaudeSegmentNarrationServiceTest {
   void isAvailable_nullApiKey_returnsFalse() {
     when(aiSettingsService.isClaudeEnabled()).thenReturn(true);
     when(environment.getActiveProfiles()).thenReturn(new String[] {});
-    when(claudeConfigProperties.getApiKey()).thenReturn(null);
+    when(aiSettingsService.getClaudeApiKey()).thenReturn(null);
 
     assertFalse(service.isAvailable());
   }
@@ -124,10 +126,10 @@ class ClaudeSegmentNarrationServiceTest {
     HttpResponse<String> httpResponse = mock(HttpResponse.class);
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
-    when(claudeConfigProperties.getApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
-    when(claudeConfigProperties.getModelName()).thenReturn("claude-3-haiku-20240307");
-    when(claudeConfigProperties.getApiKey()).thenReturn("sk-test-key");
-    when(claudeConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getClaudeApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
+    when(aiSettingsService.getClaudeModelName()).thenReturn("claude-3-haiku-20240307");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("sk-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -142,10 +144,10 @@ class ClaudeSegmentNarrationServiceTest {
     HttpResponse<String> httpResponse = mock(HttpResponse.class);
     when(httpResponse.statusCode()).thenReturn(401);
     when(httpResponse.body()).thenReturn("{\"error\": \"Unauthorized\"}");
-    when(claudeConfigProperties.getApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
-    when(claudeConfigProperties.getModelName()).thenReturn("claude-3-haiku-20240307");
-    when(claudeConfigProperties.getApiKey()).thenReturn("invalid-key");
-    when(claudeConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getClaudeApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
+    when(aiSettingsService.getClaudeModelName()).thenReturn("claude-3-haiku-20240307");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("invalid-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -163,10 +165,10 @@ class ClaudeSegmentNarrationServiceTest {
     HttpResponse<String> httpResponse = mock(HttpResponse.class);
     when(httpResponse.statusCode()).thenReturn(429);
     when(httpResponse.body()).thenReturn("{\"error\": \"Rate limit exceeded\"}");
-    when(claudeConfigProperties.getApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
-    when(claudeConfigProperties.getModelName()).thenReturn("claude-3-haiku-20240307");
-    when(claudeConfigProperties.getApiKey()).thenReturn("sk-test-key");
-    when(claudeConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getClaudeApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
+    when(aiSettingsService.getClaudeModelName()).thenReturn("claude-3-haiku-20240307");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("sk-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -177,10 +179,10 @@ class ClaudeSegmentNarrationServiceTest {
   @SuppressWarnings("unchecked")
   void generateText_timeoutException_throwsAIServiceExceptionWith504()
       throws IOException, InterruptedException {
-    when(claudeConfigProperties.getApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
-    when(claudeConfigProperties.getModelName()).thenReturn("claude-3-haiku-20240307");
-    when(claudeConfigProperties.getApiKey()).thenReturn("sk-test-key");
-    when(claudeConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getClaudeApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
+    when(aiSettingsService.getClaudeModelName()).thenReturn("claude-3-haiku-20240307");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("sk-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenThrow(new HttpTimeoutException("Connection timed out"));
 
@@ -204,10 +206,10 @@ class ClaudeSegmentNarrationServiceTest {
     HttpResponse<String> httpResponse = mock(HttpResponse.class);
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
-    when(claudeConfigProperties.getApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
-    when(claudeConfigProperties.getModelName()).thenReturn("claude-3-haiku-20240307");
-    when(claudeConfigProperties.getApiKey()).thenReturn("sk-test-key");
-    when(claudeConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getClaudeApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
+    when(aiSettingsService.getClaudeModelName()).thenReturn("claude-3-haiku-20240307");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("sk-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -228,10 +230,10 @@ class ClaudeSegmentNarrationServiceTest {
     HttpResponse<String> httpResponse = mock(HttpResponse.class);
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
-    when(claudeConfigProperties.getApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
-    when(claudeConfigProperties.getModelName()).thenReturn("claude-3-haiku-20240307");
-    when(claudeConfigProperties.getApiKey()).thenReturn("sk-test-key");
-    when(claudeConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getClaudeApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
+    when(aiSettingsService.getClaudeModelName()).thenReturn("claude-3-haiku-20240307");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("sk-test-key");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
     when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 
@@ -251,10 +253,10 @@ class ClaudeSegmentNarrationServiceTest {
     HttpResponse<String> httpResponse = mock(HttpResponse.class);
     when(httpResponse.statusCode()).thenReturn(200);
     when(httpResponse.body()).thenReturn(responseJson);
-    when(claudeConfigProperties.getApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
-    when(claudeConfigProperties.getModelName()).thenReturn("claude-3-haiku-20240307");
-    when(claudeConfigProperties.getApiKey()).thenReturn("sk-abc123");
-    when(claudeConfigProperties.getTimeout()).thenReturn(30);
+    when(aiSettingsService.getClaudeApiUrl()).thenReturn("https://api.anthropic.com/v1/messages");
+    when(aiSettingsService.getClaudeModelName()).thenReturn("claude-3-haiku-20240307");
+    when(aiSettingsService.getClaudeApiKey()).thenReturn("sk-abc123");
+    when(aiSettingsService.getAiTimeout()).thenReturn(30);
 
     org.mockito.ArgumentCaptor<HttpRequest> requestCaptor =
         org.mockito.ArgumentCaptor.forClass(HttpRequest.class);

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
@@ -96,7 +97,7 @@ class TitleSyncIT extends ManagementIntegrationTest {
     when(titlePage.getChampionshipType()).thenReturn("SINGLE");
     when(titlePage.getIncludeInRankings()).thenReturn(true);
     when(titlePage.getIsActive()).thenReturn(true);
-    when(titlePage.getDefenseFrequency()).thenReturn(30);
+    when(titlePage.getDefenseFrequency()).thenReturn(4); // 4 weeks → PLE
 
     when(notionHandler.loadAllTitles()).thenReturn(List.of(titlePage));
 
@@ -121,7 +122,7 @@ class TitleSyncIT extends ManagementIntegrationTest {
     assertThat(title.getGender()).isEqualTo(Gender.MALE);
     assertThat(title.getIncludeInRankings()).isTrue();
     assertThat(title.getIsActive()).isTrue();
-    assertThat(title.getDefenseFrequency()).isEqualTo(30);
+    assertThat(title.getDefenseFrequencyType()).isEqualTo(DefenseFrequencyType.PLE);
 
     log.info("✅ Title sync completed successfully!");
   }

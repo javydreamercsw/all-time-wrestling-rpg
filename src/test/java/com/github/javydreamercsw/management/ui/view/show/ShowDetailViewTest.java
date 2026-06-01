@@ -56,6 +56,8 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.BeforeEvent;
@@ -68,17 +70,13 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(MockitoExtension.class)
-class ShowDetailViewTest {
+class ShowDetailViewTest extends AbstractViewTest {
 
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
@@ -87,6 +85,7 @@ class ShowDetailViewTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private TitleService titleService;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private ShowTypeService showTypeService;
@@ -110,7 +109,7 @@ class ShowDetailViewTest {
 
   @BeforeEach
   public void setUp() {
-    MockitoAnnotations.openMocks(this);
+    // mocks initialized by AbstractViewTest.setupKaribu()
   }
 
   @Test
@@ -150,6 +149,8 @@ class ShowDetailViewTest {
       Set<Wrestler> wrestlers = new HashSet<>(Arrays.asList(wrestler1, wrestler2));
 
       ShowExportService exportService = mock(ShowExportService.class);
+      com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository =
+          mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class);
 
       ShowDetailView showDetailView =
           new ShowDetailView(
@@ -160,6 +161,7 @@ class ShowDetailViewTest {
               segmentRuleRepository,
               npcService,
               wrestlerService,
+              wrestlerStatsService,
               titleService,
               showTypeService,
               seasonService,
@@ -177,7 +179,8 @@ class ShowDetailViewTest {
               arenaService,
               relationshipService,
               notificationService,
-              exportService);
+              exportService,
+              leagueRepository);
       java.util.Map<Integer, java.util.List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
       teamMap.put(1, List.of(wrestler1));
       teamMap.put(2, List.of(wrestler2));
@@ -237,6 +240,8 @@ class ShowDetailViewTest {
       when(segmentRepository.findByShow(any(Show.class))).thenReturn(initialSegments);
 
       ShowExportService exportService = mock(ShowExportService.class);
+      com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository =
+          mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class);
 
       ShowDetailView showDetailView =
           new ShowDetailView(
@@ -247,6 +252,7 @@ class ShowDetailViewTest {
               segmentRuleRepository,
               npcService,
               wrestlerService,
+              wrestlerStatsService,
               titleService,
               showTypeService,
               seasonService,
@@ -264,7 +270,8 @@ class ShowDetailViewTest {
               arenaService,
               relationshipService,
               notificationService,
-              exportService);
+              exportService,
+              leagueRepository);
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());

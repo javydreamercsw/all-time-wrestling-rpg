@@ -296,43 +296,21 @@ public class SegmentNarrationServiceFactory {
   }
 
   /**
-   * Gets the estimated cost for a typical segment narration.
+   * Gets the estimated cost for a typical segment narration (~2K input tokens, ~3K output tokens).
    *
    * @param providerName The provider name
    * @return Estimated cost in USD
    */
   public double getEstimatedSegmentCost(final String providerName) {
     CostInfo costInfo = getCostInfo(providerName);
-
-    // Typical segment narration:
-    // Input: ~2000 tokens (rich context)
-    // Output: ~3000 tokens (detailed narration)
-    double inputTokens = 2.0; // 2K tokens
-    double outputTokens = 3.0; // 3K tokens
-
     if (costInfo.costPer1KTokens() == 0.0) {
-      return 0.0; // Free tier
+      return 0.0;
     }
-
-    // Calculate costs based on provider-specific pricing models
-    double inputCost = inputTokens * costInfo.costPer1KTokens();
-    double outputCost;
-
-    if (providerName.toLowerCase().contains("gpt-4")) {
-      // GPT-4: $10 input, $30 output (3x multiplier)
-      outputCost = outputTokens * (costInfo.costPer1KTokens() * 3);
-    } else if (providerName.toLowerCase().contains("openai")) {
-      // GPT-3.5: $0.50 input, $1.50 output (3x multiplier)
-      outputCost = outputTokens * (costInfo.costPer1KTokens() * 3);
-    } else if (providerName.toLowerCase().contains("claude")) {
-      // Claude: $0.25 input, $1.25 output (5x multiplier)
-      outputCost = outputTokens * (costInfo.costPer1KTokens() * 5);
-    } else {
-      // Default: 5x multiplier for other providers
-      outputCost = outputTokens * (costInfo.costPer1KTokens() * 5);
-    }
-
-    return inputCost + outputCost;
+    double inputTokens = 2.0;
+    double outputTokens = 3.0;
+    // Output tokens cost ~3-5x input depending on provider; use 4x as a reasonable estimate
+    return inputTokens * costInfo.costPer1KTokens()
+        + outputTokens * (costInfo.costPer1KTokens() * 4);
   }
 
   /** Information about a segment narration service with cost details. */

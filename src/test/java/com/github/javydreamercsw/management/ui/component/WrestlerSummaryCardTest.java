@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.html.Span;
 import java.util.Optional;
@@ -37,12 +38,14 @@ import org.junit.jupiter.api.Test;
 public class WrestlerSummaryCardTest extends AbstractViewTest {
 
   private WrestlerService wrestlerService;
+  private WrestlerStatsService wrestlerStatsService;
   private InjuryService injuryService;
   private Wrestler wrestler;
 
   @BeforeEach
   public void setUp() {
     wrestlerService = mock(WrestlerService.class);
+    wrestlerStatsService = mock(WrestlerStatsService.class);
     injuryService = mock(InjuryService.class);
 
     wrestler =
@@ -75,7 +78,7 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
     wrestler.setAlignment(alignment);
 
     when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(state);
-    when(wrestlerService.getWrestlerStats(eq(1L), anyLong()))
+    when(wrestlerStatsService.getWrestlerStats(eq(1L), anyLong()))
         .thenReturn(Optional.of(new WrestlerStats(10, 5, 1)));
     when(wrestlerService.findByIdWithDetails(1L)).thenReturn(Optional.of(wrestler));
   }
@@ -83,7 +86,8 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
   @Test
   public void testSummaryContent() {
     WrestlerSummaryCard card =
-        new WrestlerSummaryCard(wrestler, 1L, wrestlerService, injuryService, true);
+        new WrestlerSummaryCard(
+            wrestler, 1L, wrestlerService, injuryService, true, wrestlerStatsService);
 
     // Verify Name
     _get(
@@ -105,7 +109,8 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
   @Test
   public void testPlayerCardShowsLowHealthAndLowStamina() {
     WrestlerSummaryCard card =
-        new WrestlerSummaryCard(wrestler, 1L, wrestlerService, injuryService, true);
+        new WrestlerSummaryCard(
+            wrestler, 1L, wrestlerService, injuryService, true, wrestlerStatsService);
 
     // Player card shows both thresholds
     _get(card, Span.class, spec -> spec.withText("🔻 Low Health: 5"));
@@ -115,7 +120,8 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
   @Test
   public void testNpcCardShowsLowHealthButNotLowStamina() {
     WrestlerSummaryCard card =
-        new WrestlerSummaryCard(wrestler, 1L, wrestlerService, injuryService, false);
+        new WrestlerSummaryCard(
+            wrestler, 1L, wrestlerService, injuryService, false, wrestlerStatsService);
 
     // NPC card shows low-health (game effect threshold) but hides low-stamina
     _get(card, Span.class, spec -> spec.withText("🔻 Low Health: 5"));

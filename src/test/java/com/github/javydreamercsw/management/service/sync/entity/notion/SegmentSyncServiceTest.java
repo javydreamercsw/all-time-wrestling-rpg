@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -91,6 +92,21 @@ class SegmentSyncServiceTest {
             segmentRuleRepository,
             wrestlerService,
             titleRepository);
+  }
+
+  @Test
+  void testProcessSingleSegment_nullShowExternalId_returnsFalseWithoutThrowing() {
+    // Regression: showSyncService.syncShow(@NonNull showId) used to throw NPE when
+    // showExternalId was null, crashing the entire batch save.
+    SegmentDTO dto = new SegmentDTO();
+    dto.setExternalId("segment-no-show");
+    dto.setName("Orphan Segment");
+    dto.setShowExternalId(null);
+    dto.setParticipantNames(new java.util.ArrayList<>());
+    dto.setWinnerNames(new java.util.ArrayList<>());
+
+    boolean result = segmentSyncService.processSingleSegment(dto);
+    assertFalse(result, "Segment with null showExternalId must be skipped, not throw");
   }
 
   @Test

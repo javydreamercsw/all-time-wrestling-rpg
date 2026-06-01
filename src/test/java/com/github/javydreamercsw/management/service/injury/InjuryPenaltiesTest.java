@@ -48,6 +48,7 @@ class InjuryPenaltiesTest extends AbstractIntegrationTest {
               injuryService.createInjury(
                   wrestler.getId(),
                   universe.getId(),
+                  null,
                   "Test Injury",
                   "Description",
                   InjurySeverity.CRITICAL,

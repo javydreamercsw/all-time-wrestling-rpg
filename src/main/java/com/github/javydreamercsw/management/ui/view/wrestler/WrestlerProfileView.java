@@ -34,9 +34,11 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
+import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -45,6 +47,8 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
@@ -96,6 +100,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private record FeudHistoryItem(String name, int heat) {}
 
   private final WrestlerService wrestlerService;
+  private final WrestlerStatsService wrestlerStatsService;
   private final WrestlerRepository wrestlerRepository;
   private final TitleService titleService;
   private final RankingService rankingService;
@@ -103,6 +108,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final MultiWrestlerFeudService multiWrestlerFeudService;
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
+  private final InjuryTypeService injuryTypeService;
   private final AccountService accountService;
   private final NpcService npcService;
   private final CampaignService campaignService;
@@ -117,6 +123,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final com.github.javydreamercsw.management.service.campaign.StatusCardService
       statusCardService;
   private final WrestlerStateRepository wrestlerStateRepository;
+  private final AlignmentService alignmentService;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -144,6 +151,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   @Autowired
   public WrestlerProfileView(
       final WrestlerService wrestlerService,
+      final WrestlerStatsService wrestlerStatsService,
       final WrestlerRepository wrestlerRepository,
       final TitleService titleService,
       final RankingService rankingService,
@@ -152,6 +160,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final RivalryService rivalryService,
       final SeasonService seasonService,
       final InjuryService injuryService,
+      final InjuryTypeService injuryTypeService,
       final NpcService npcService,
       @Qualifier("baseAccountService") final AccountService accountService,
       final CampaignService campaignService,
@@ -163,8 +172,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
           wrestlerStatusService,
       final com.github.javydreamercsw.management.service.campaign.StatusCardService
           statusCardService,
-      final WrestlerStateRepository wrestlerStateRepository) {
+      final WrestlerStateRepository wrestlerStateRepository,
+      final AlignmentService alignmentService) {
     this.wrestlerService = wrestlerService;
+    this.wrestlerStatsService = wrestlerStatsService;
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
     this.rankingService = rankingService;
@@ -172,6 +183,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.multiWrestlerFeudService = multiWrestlerFeudService;
     this.rivalryService = rivalryService;
     this.injuryService = injuryService;
+    this.injuryTypeService = injuryTypeService;
     this.npcService = npcService;
     this.accountService = accountService;
     this.campaignService = campaignService;
@@ -182,6 +194,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.wrestlerStatusService = wrestlerStatusService;
     this.statusCardService = statusCardService;
     this.wrestlerStateRepository = wrestlerStateRepository;
+    this.alignmentService = alignmentService;
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setAlt("Wrestler Image");
     wrestlerImage.setId("wrestler-image");
@@ -330,6 +343,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               wrestler,
               wrestlerService,
               injuryService,
+              injuryTypeService,
               npcService,
               campaignService,
               wrestlerStateRepository,
@@ -338,7 +352,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
               securityUtils,
               accountService,
               imageStorageService,
-              universeContextService));
+              universeContextService,
+              alignmentService));
       wrestlerName.setText(wrestler.getName());
       String details = "Gender: %s, Fans: %d".formatted(wrestler.getGender(), state.getFans());
       if (wrestler.getHeritageTag() != null && !wrestler.getHeritageTag().isEmpty()) {
@@ -350,7 +365,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
       // Fetch and display wrestler stats
       Optional<WrestlerStats> stats =
-          wrestlerService.getWrestlerStats(wrestler.getId(), universeId);
+          wrestlerStatsService.getWrestlerStats(wrestler.getId(), universeId);
       statsLayout.removeAll();
       statsLayout.add(new H3("Career Stats (Universe Context)"));
 
@@ -379,6 +394,15 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       } else {
         statsLayout.add(new Paragraph("Stats not available."));
       }
+
+      universeContextService
+          .getCurrentUniverse()
+          .ifPresent(
+              universe -> {
+                com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment alignment =
+                    alignmentService.getOrCreateUniverseAlignment(wrestler, universe);
+                statsLayout.add(new AlignmentTrackComponent(alignment, false));
+              });
 
       // Status Cards
       statusesLayout.removeAll();
