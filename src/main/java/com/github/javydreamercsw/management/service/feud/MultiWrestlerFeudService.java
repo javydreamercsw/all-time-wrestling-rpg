@@ -116,7 +116,7 @@ public class MultiWrestlerFeudService {
       @NonNull final List<Long> wrestlers) {
     // Check if feud name already exists
     if (multiWrestlerFeudRepository.existsByName(name)) {
-      log.warn("Feud with name '{}' already exists", name);
+      log.debug("Feud with name '{}' already exists", name);
       return Optional.empty();
     }
 
@@ -165,12 +165,12 @@ public class MultiWrestlerFeudService {
     Wrestler wrestler = wrestlerOpt.get();
 
     if (!feud.getIsActive()) {
-      log.warn("Cannot add participant to inactive feud: {}", feud.getName());
+      log.debug("Cannot add participant to inactive feud: {}", feud.getName());
       return Optional.empty();
     }
 
     if (feud.hasParticipant(wrestler)) {
-      log.warn(
+      log.debug(
           "Wrestler {} is already participating in feud: {}", wrestler.getName(), feud.getName());
       return Optional.empty();
     }

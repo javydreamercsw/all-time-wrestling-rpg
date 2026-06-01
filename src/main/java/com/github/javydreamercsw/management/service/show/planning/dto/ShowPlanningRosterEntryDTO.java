@@ -22,6 +22,7 @@ import lombok.Data;
 /** Booking-relevant wrestler summary for AI show planning. Omits bios, stats, and move sets. */
 @Data
 public class ShowPlanningRosterEntryDTO {
+  private Long id;
   private String name;
   private String gender;
   private WrestlerTier tier;

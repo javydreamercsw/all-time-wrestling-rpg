@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.domain.show.export;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,7 +58,7 @@ public class MarkdownShowCardFormatter implements ShowCardFormatter {
     for (Segment segment : segments) {
       String typeName =
           segment.getSegmentType() != null ? segment.getSegmentType().getName() : "Unknown";
-      boolean isMatch = !"Promo".equalsIgnoreCase(typeName);
+      boolean isMatch = !SegmentTypeNames.PROMO.equalsIgnoreCase(typeName);
       if (isMatch) {
         matchCounter++;
         sb.append("### Match ").append(matchCounter).append(": ").append(typeName);
@@ -71,6 +73,14 @@ public class MarkdownShowCardFormatter implements ShowCardFormatter {
 
       if (Boolean.TRUE.equals(segment.getIsTitleSegment())) {
         sb.append("**CHAMPIONSHIP MATCH**\n");
+        for (Title title : segment.getTitles()) {
+          String champions = title.getChampionNames();
+          sb.append("**Title:** ").append(title.getName());
+          if (!champions.isBlank()) {
+            sb.append(" — Champion: ").append(champions);
+          }
+          sb.append("\n");
+        }
       }
 
       String participants =

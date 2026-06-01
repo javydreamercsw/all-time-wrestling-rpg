@@ -222,7 +222,7 @@ public class FactionService {
       final Long leaderId,
       @NonNull final Long universeId) {
     if (factionRepository.existsByName(name)) {
-      log.warn("Faction with name '{}' already exists", name);
+      log.debug("Faction with name '{}' already exists", name);
       return Optional.empty();
     }
 
@@ -369,7 +369,7 @@ public class FactionService {
     Faction faction = factionOpt.get();
 
     if (!faction.isActive()) {
-      log.warn("Faction {} is already disbanded", faction.getName());
+      log.debug("Faction {} is already disbanded", faction.getName());
       return Optional.of(faction);
     }
 

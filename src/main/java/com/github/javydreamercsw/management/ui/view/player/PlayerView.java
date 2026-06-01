@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.SeasonSummaryComponent;
 import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -90,6 +91,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class PlayerView extends VerticalLayout {
 
   private final WrestlerService wrestlerService;
+  private final WrestlerStatsService wrestlerStatsService;
   private final ShowService showService;
   private final RivalryService rivalryService;
   private final InboxService inboxService;
@@ -110,6 +112,7 @@ public class PlayerView extends VerticalLayout {
   @Autowired
   public PlayerView(
       final WrestlerService wrestlerService,
+      final WrestlerStatsService wrestlerStatsService,
       final ShowService showService,
       final RivalryService rivalryService,
       final InboxService inboxService,
@@ -123,6 +126,7 @@ public class PlayerView extends VerticalLayout {
       final SeasonRepository seasonRepository,
       final UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
+    this.wrestlerStatsService = wrestlerStatsService;
     this.showService = showService;
     this.rivalryService = rivalryService;
     this.inboxService = inboxService;
@@ -265,7 +269,7 @@ public class PlayerView extends VerticalLayout {
     nameAndTier.setSpacing(true);
 
     Optional<WrestlerStats> statsOpt =
-        wrestlerService.getWrestlerStats(
+        wrestlerStatsService.getWrestlerStats(
             playerWrestler.getId(), universeContextService.getCurrentUniverseId());
     HorizontalLayout statsLayout = new HorizontalLayout();
     if (statsOpt.isPresent()) {

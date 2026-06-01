@@ -16,16 +16,70 @@
 */
 package com.github.javydreamercsw.management.domain.title;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import org.junit.jupiter.api.Test;
 
 class TitleDefenseFrequencyTest {
 
   @Test
-  void testDefenseFrequencyField() {
+  void defenseFrequencyTypeFieldRoundTrips() {
     Title title = new Title();
-    title.setDefenseFrequency(30);
-    assertEquals(30, title.getDefenseFrequency());
+    title.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    assertEquals(DefenseFrequencyType.BI_WEEKLY, title.getDefenseFrequencyType());
+  }
+
+  @Test
+  void defenseFrequencyTypeDefaultsToNull() {
+    Title title = new Title();
+    assertNull(title.getDefenseFrequencyType());
+  }
+
+  @Test
+  void weeklyIsOverdueAfterSevenDays() {
+    assertTrue(DefenseFrequencyType.WEEKLY.isOverdue(7));
+    assertFalse(DefenseFrequencyType.WEEKLY.isOverdue(6));
+  }
+
+  @Test
+  void biWeeklyIsOverdueAfterFourteenDays() {
+    assertTrue(DefenseFrequencyType.BI_WEEKLY.isOverdue(14));
+    assertFalse(DefenseFrequencyType.BI_WEEKLY.isOverdue(13));
+  }
+
+  @Test
+  void pleIsOverdueAfterTwentyEightDays() {
+    assertTrue(DefenseFrequencyType.PLE.isOverdue(28));
+    assertFalse(DefenseFrequencyType.PLE.isOverdue(27));
+  }
+
+  @Test
+  void effectiveFrequencyUsesExplicitValueWhenSet() {
+    Title title = new Title();
+    title.setTier(WrestlerTier.MAIN_EVENTER);
+    title.setDefenseFrequencyType(DefenseFrequencyType.WEEKLY);
+    assertEquals(DefenseFrequencyType.WEEKLY, title.getEffectiveDefenseFrequencyType());
+  }
+
+  @Test
+  void effectiveFrequencyDefaultsToPlEForMainEventer() {
+    Title title = new Title();
+    title.setTier(WrestlerTier.MAIN_EVENTER);
+    assertEquals(DefenseFrequencyType.PLE, title.getEffectiveDefenseFrequencyType());
+  }
+
+  @Test
+  void effectiveFrequencyDefaultsToBiWeeklyForMidcarder() {
+    Title title = new Title();
+    title.setTier(WrestlerTier.MIDCARDER);
+    assertEquals(DefenseFrequencyType.BI_WEEKLY, title.getEffectiveDefenseFrequencyType());
+  }
+
+  @Test
+  void effectiveFrequencyDefaultsToWeeklyForOtherTiers() {
+    Title title = new Title();
+    title.setTier(WrestlerTier.CONTENDER);
+    assertEquals(DefenseFrequencyType.WEEKLY, title.getEffectiveDefenseFrequencyType());
   }
 }

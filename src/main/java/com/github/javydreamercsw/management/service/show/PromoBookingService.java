@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -280,7 +281,7 @@ public class PromoBookingService {
 
   /** Get the promo segment type from database. */
   private SegmentType getOrCreatePromoSegmentType() {
-    Optional<SegmentType> promoTypeOpt = segmentTypeRepository.findByName("Promo");
+    Optional<SegmentType> promoTypeOpt = segmentTypeRepository.findByName(SegmentTypeNames.PROMO);
 
     if (promoTypeOpt.isPresent()) {
       return promoTypeOpt.get();
@@ -289,7 +290,7 @@ public class PromoBookingService {
     // Fallback: create promo segment type if not loaded from JSON
     log.warn("Promo segment type not found in database, creating fallback");
     SegmentType promoType = new SegmentType();
-    promoType.setName("Promo");
+    promoType.setName(SegmentTypeNames.PROMO);
     promoType.setDescription("Non-wrestling promo segment for storyline development");
     return segmentTypeRepository.save(promoType);
   }
@@ -381,7 +382,8 @@ public class PromoBookingService {
   /** Check if a segment is a promo segment. */
   @PreAuthorize("isAuthenticated()")
   public boolean isPromoSegment(@NonNull final Segment segment) {
-    return segment.getSegmentType() != null && "Promo".equals(segment.getSegmentType().getName());
+    return segment.getSegmentType() != null
+        && SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName());
   }
 
   /** Get all promo segments for a show. */

@@ -91,6 +91,17 @@ public class LeagueListView extends Main {
     leagueGrid.addColumn(League::getName).setHeader("League Name").setSortable(true);
     leagueGrid.addColumn(l -> l.getCommissioner().getUsername()).setHeader("Commissioner");
     leagueGrid.addColumn(League::getStatus).setHeader("Status");
+    leagueGrid
+        .addColumn(l -> l.getBudget() != null ? "$" + l.getBudget().toPlainString() : "$0")
+        .setHeader("Budget")
+        .setSortable(true);
+    leagueGrid
+        .addColumn(l -> l.getDurationWeeks() != null ? l.getDurationWeeks() + " wks" : "—")
+        .setHeader("Duration");
+    leagueGrid
+        .addColumn(l -> l.getLockerRoomMorale() != null ? l.getLockerRoomMorale() + "%" : "100%")
+        .setHeader("Morale")
+        .setSortable(true);
 
     leagueGrid
         .addComponentColumn(

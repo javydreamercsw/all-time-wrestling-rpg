@@ -127,16 +127,17 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
   }
 
   /**
-   * Attempt to resolve the rivalry with dice roll. ATW Rule: Both roll d20 → total >30 = rivalry
-   * ends
+   * Attempt to resolve the rivalry with dice roll. ATW Rule: Both roll d20 → total > threshold =
+   * rivalry ends.
    */
-  public boolean attemptResolution(final int wrestler1Roll, final int wrestler2Roll) {
+  public boolean attemptResolution(
+      final int wrestler1Roll, final int wrestler2Roll, final int threshold) {
     if (!canAttemptResolution()) {
       return false;
     }
 
     int totalRoll = wrestler1Roll + wrestler2Roll;
-    boolean resolved = totalRoll > 30;
+    boolean resolved = totalRoll > threshold;
 
     if (resolved) {
       endRivalry(
@@ -158,6 +159,11 @@ public class Rivalry extends AbstractSyncableEntity<Long> {
     heatEvents.add(event);
 
     return resolved;
+  }
+
+  /** Backward-compatible overload using the default hardcoded threshold of 30. */
+  public boolean attemptResolution(final int wrestler1Roll, final int wrestler2Roll) {
+    return attemptResolution(wrestler1Roll, wrestler2Roll, 30);
   }
 
   /** End the rivalry. */

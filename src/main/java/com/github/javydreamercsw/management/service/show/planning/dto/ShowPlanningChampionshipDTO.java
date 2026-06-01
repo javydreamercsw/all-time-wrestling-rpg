@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import lombok.Data;
 
 @Data
@@ -23,6 +24,14 @@ public class ShowPlanningChampionshipDTO {
   private String championshipName;
   private String championName;
   private String contenderName;
-  private Integer defenseFrequency;
+  private DefenseFrequencyType defenseFrequencyType;
   private Long daysSinceLastDefense;
+
+  /** True when the title is past its defense cadence threshold. */
+  public boolean isOverdue() {
+    if (defenseFrequencyType == null || daysSinceLastDefense == null) {
+      return false;
+    }
+    return defenseFrequencyType.isOverdue(daysSinceLastDefense);
+  }
 }

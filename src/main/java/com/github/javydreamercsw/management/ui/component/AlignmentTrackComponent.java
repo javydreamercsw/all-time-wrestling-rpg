@@ -27,6 +27,10 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 public class AlignmentTrackComponent extends Div {
 
   public AlignmentTrackComponent(final WrestlerAlignment alignment) {
+    this(alignment, true);
+  }
+
+  public AlignmentTrackComponent(final WrestlerAlignment alignment, final boolean showMilestones) {
     addClassNames(
         LumoUtility.Display.FLEX,
         LumoUtility.FlexDirection.COLUMN,
@@ -40,8 +44,7 @@ public class AlignmentTrackComponent extends Div {
     int currentLevel = alignment.getLevel();
 
     Span title =
-        new Span(
-            "Campaign Alignment: " + (type == AlignmentType.NEUTRAL ? "NEUTRAL" : type.name()));
+        new Span("Alignment: " + (type == AlignmentType.NEUTRAL ? "NEUTRAL" : type.name()));
     title.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.PRIMARY);
     add(title);
 
@@ -83,26 +86,28 @@ public class AlignmentTrackComponent extends Div {
 
     add(trackContainer);
 
-    // Legend / Milestone Description (Side-by-Side)
-    Div legendContainer = new Div();
-    legendContainer.addClassNames(
-        LumoUtility.Display.FLEX, LumoUtility.JustifyContent.BETWEEN, LumoUtility.Gap.MEDIUM);
-    legendContainer.getStyle().set("flex-wrap", "nowrap");
+    if (showMilestones) {
+      // Legend / Milestone Description (Side-by-Side)
+      Div legendContainer = new Div();
+      legendContainer.addClassNames(
+          LumoUtility.Display.FLEX, LumoUtility.JustifyContent.BETWEEN, LumoUtility.Gap.MEDIUM);
+      legendContainer.getStyle().set("flex-wrap", "nowrap");
 
-    Div heelLegend = new Div();
-    heelHelegendStyle(heelLegend);
-    addMilestoneText(heelLegend, "1", "Unlock first Level 1 Heel Card.");
-    addMilestoneText(heelLegend, "4", "Unlock Level 2 Card. (Lose 1 L1 card)");
-    addMilestoneText(heelLegend, "5", "Regain slot with another Level 1 Card.");
+      Div heelLegend = new Div();
+      heelHelegendStyle(heelLegend);
+      addMilestoneText(heelLegend, "1", "Unlock first Level 1 Heel Card.");
+      addMilestoneText(heelLegend, "4", "Unlock Level 2 Card. (Lose 1 L1 card)");
+      addMilestoneText(heelLegend, "5", "Regain slot with another Level 1 Card.");
 
-    Div faceLegend = new Div();
-    faceLegendStyle(faceLegend);
-    addMilestoneText(faceLegend, "1", "Unlock first Level 1 Face Card.");
-    addMilestoneText(faceLegend, "4", "Unlock powerful Level 2 Card.");
-    addMilestoneText(faceLegend, "5", "Unlock Level 3 Finisher! (Lose 1 L1 card)");
+      Div faceLegend = new Div();
+      faceLegendStyle(faceLegend);
+      addMilestoneText(faceLegend, "1", "Unlock first Level 1 Face Card.");
+      addMilestoneText(faceLegend, "4", "Unlock powerful Level 2 Card.");
+      addMilestoneText(faceLegend, "5", "Unlock Level 3 Finisher! (Lose 1 L1 card)");
 
-    legendContainer.add(heelLegend, faceLegend);
-    add(legendContainer);
+      legendContainer.add(heelLegend, faceLegend);
+      add(legendContainer);
+    }
   }
 
   private void heelHelegendStyle(final Div div) {

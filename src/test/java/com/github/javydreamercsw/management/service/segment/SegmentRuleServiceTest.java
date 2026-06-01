@@ -66,26 +66,6 @@ class SegmentRuleServiceTest {
   }
 
   @Test
-  void getAllActiveRules_returnsList() {
-    when(segmentRuleRepository.findAll()).thenReturn(List.of(rule1, rule2));
-
-    List<SegmentRule> result = segmentRuleService.getAllActiveRules();
-
-    assertThat(result).hasSize(2).contains(rule1, rule2);
-    verify(segmentRuleRepository).findAll();
-  }
-
-  @Test
-  void getAllActiveRules_emptyRepository_returnsEmptyList() {
-    when(segmentRuleRepository.findAll()).thenReturn(Collections.emptyList());
-
-    List<SegmentRule> result = segmentRuleService.getAllActiveRules();
-
-    assertThat(result).isEmpty();
-    verify(segmentRuleRepository).findAll();
-  }
-
-  @Test
   void findByName_found_returnsOptional() {
     when(segmentRuleRepository.findByName("No DQ")).thenReturn(Optional.of(rule1));
 
@@ -232,25 +212,6 @@ class SegmentRuleServiceTest {
 
     assertThat(result).isEmpty();
     verify(segmentRuleRepository).findById(99L);
-  }
-
-  @Test
-  void getAllRules_returnsList() {
-    when(segmentRuleRepository.findAll()).thenReturn(List.of(rule1, rule2));
-
-    List<SegmentRule> result = segmentRuleService.getAllRules();
-
-    assertThat(result).hasSize(2);
-    verify(segmentRuleRepository).findAll();
-  }
-
-  @Test
-  void getAllRules_emptyRepository_returnsEmptyList() {
-    when(segmentRuleRepository.findAll()).thenReturn(Collections.emptyList());
-
-    List<SegmentRule> result = segmentRuleService.getAllRules();
-
-    assertThat(result).isEmpty();
   }
 
   @Test

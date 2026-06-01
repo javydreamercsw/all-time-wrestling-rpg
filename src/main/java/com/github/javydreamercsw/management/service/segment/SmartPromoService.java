@@ -150,7 +150,7 @@ public class SmartPromoService {
       final Wrestler opponent,
       @NonNull final PromoHookDTO chosenHook,
       final Campaign campaign) {
-    log.info("Processing promo hook: {} for player: {}", chosenHook.getLabel(), player.getName());
+    log.debug("Processing promo hook: {} for player: {}", chosenHook.getLabel(), player.getName());
     // Reload entities to ensure they are attached to the current transaction
     Wrestler loadedPlayer = wrestlerRepository.findById(player.getId()).orElseThrow();
     Wrestler loadedOpponent =
@@ -178,7 +178,7 @@ public class SmartPromoService {
 
     // Record the outcome if in a campaign - this part is critical and should propagate exceptions
     if (loadedCampaign != null) {
-      log.info("Recording promo outcome for campaign: {}", loadedCampaign.getId());
+      log.debug("Recording promo outcome for campaign: {}", loadedCampaign.getId());
       recordOutcome(loadedCampaign, loadedPlayer, loadedOpponent, outcome);
     }
 
@@ -198,7 +198,7 @@ public class SmartPromoService {
 
     // 1. Update alignment
     if (outcome.getAlignmentShift() != 0) {
-      log.info("Applying alignment shift: {}", outcome.getAlignmentShift());
+      log.debug("Applying alignment shift: {}", outcome.getAlignmentShift());
       campaignService.shiftAlignment(campaign, outcome.getAlignmentShift());
     }
 
@@ -211,11 +211,11 @@ public class SmartPromoService {
     log.debug("Campaign state updated and saved");
 
     // 3. Create Segment
-    log.info("Creating promo segment");
+    log.debug("Creating promo segment");
     createPromoSegment(campaign, player, opponent, outcome);
 
     // 4. Save History
-    log.info("Saving action history");
+    log.debug("Saving action history");
     BackstageActionHistory history =
         BackstageActionHistory.builder()
             .campaign(campaign)
@@ -226,7 +226,7 @@ public class SmartPromoService {
             .outcomeDescription(outcome.getFinalNarration())
             .build();
     actionHistoryRepository.save(history);
-    log.info("Promo outcome recorded successfully");
+    log.debug("Promo outcome recorded successfully");
   }
 
   private void createPromoSegment(

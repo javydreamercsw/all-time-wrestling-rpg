@@ -18,7 +18,11 @@ package com.github.javydreamercsw.management.service.season;
 
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
+import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Clock;
 import java.time.Instant;
@@ -43,6 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class SeasonService {
 
   @Autowired private SeasonRepository seasonRepository;
+  @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerSeasonSnapshotRepository snapshotRepository;
   @Autowired private Clock clock;
   @Autowired private GameSettingService gameSettingService;
 
@@ -81,7 +87,29 @@ public class SeasonService {
         gameSettingService.getCurrentGameDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
     season.setCreationDate(Instant.now(clock));
 
-    return seasonRepository.saveAndFlush(season);
+    Season saved = seasonRepository.saveAndFlush(season);
+    snapshotAllWrestlerFans(saved);
+    return saved;
+  }
+
+  private void snapshotAllWrestlerFans(final Season season) {
+    Instant now = Instant.now(clock);
+    wrestlerRepository
+        .findAllByActiveTrue()
+        .forEach(
+            w -> {
+              long fans =
+                  wrestlerRepository
+                      .findByIdWithStates(w.getId())
+                      .flatMap(loaded -> loaded.getDefaultState().map(WrestlerState::getFans))
+                      .orElse(0L);
+              WrestlerSeasonSnapshot snapshot = new WrestlerSeasonSnapshot();
+              snapshot.setWrestler(w);
+              snapshot.setSeason(season);
+              snapshot.setStartingFans(fans);
+              snapshot.setCreatedAt(now);
+              snapshotRepository.save(snapshot);
+            });
   }
 
   /** Get the currently active season. */

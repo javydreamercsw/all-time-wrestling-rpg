@@ -49,14 +49,12 @@ import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
-import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
+import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
-import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -87,7 +85,6 @@ class ShowServiceTest {
   @Mock private ShowTemplateRepository showTemplateRepository;
   @Mock private UniverseRepository universeRepository;
   @Mock private LeagueRepository leagueRepository;
-  @Mock private WrestlerStateRepository wrestlerStateRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
@@ -98,8 +95,7 @@ class ShowServiceTest {
   @Mock private LegacyService legacyService;
   @Mock private SecurityUtils securityUtils;
   @Mock private ArenaRepository arenaRepository;
-  @Mock private SalaryCalculator salaryCalculator;
-  @Mock private RetirementService retirementService;
+  @Mock private GmModeService gmModeService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private Clock clock;
 
@@ -124,7 +120,6 @@ class ShowServiceTest {
             showTemplateRepository,
             universeRepository,
             leagueRepository,
-            wrestlerStateRepository,
             clock,
             segmentAdjudicationService,
             segmentRepository,
@@ -137,8 +132,7 @@ class ShowServiceTest {
             legacyService,
             securityUtils,
             arenaRepository,
-            salaryCalculator,
-            retirementService);
+            gmModeService);
 
     show = new Show();
     show.setId(1L);

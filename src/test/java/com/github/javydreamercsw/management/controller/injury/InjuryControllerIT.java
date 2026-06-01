@@ -72,6 +72,7 @@ class InjuryControllerIT extends AbstractRestControllerIT {
         new InjuryController.CreateInjuryRequest(
             wrestler.getId(),
             defaultUniverse.getId(),
+            null,
             "Broken Arm",
             "Severe arm injury",
             InjurySeverity.MODERATE,

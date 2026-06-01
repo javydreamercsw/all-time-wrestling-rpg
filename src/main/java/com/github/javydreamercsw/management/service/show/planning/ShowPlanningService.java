@@ -398,19 +398,61 @@ public class ShowPlanningService {
       // First, clear existing participants if any, to re-sync
       segment.getParticipants().clear();
 
-      // Add all participants
+      // Add participants with team assignments when available.
+      // Prefer ID-based lookup; fall back to name if IDs are absent (e.g. manual/UI-created).
       List<Wrestler> actualParticipants = new ArrayList<>();
-      for (String participantName : proposedSegment.getParticipants()) {
-        wrestlerRepository
-            .findByName(participantName)
-            .ifPresent(
-                wrestler -> {
-                  segment.addParticipant(wrestler);
-                  actualParticipants.add(wrestler);
-                });
+      if (proposedSegment.getTeamIds() != null && !proposedSegment.getTeamIds().isEmpty()) {
+        List<List<Long>> teamIds = proposedSegment.getTeamIds();
+        for (int teamIndex = 0; teamIndex < teamIds.size(); teamIndex++) {
+          int teamNumber = teamIndex + 1;
+          for (Long wrestlerId : teamIds.get(teamIndex)) {
+            wrestlerRepository
+                .findById(wrestlerId)
+                .ifPresent(
+                    wrestler -> {
+                      segment.addParticipant(wrestler, teamNumber);
+                      actualParticipants.add(wrestler);
+                    });
+          }
+        }
+      } else if (proposedSegment.getTeams() != null && !proposedSegment.getTeams().isEmpty()) {
+        List<List<String>> teams = proposedSegment.getTeams();
+        for (int teamIndex = 0; teamIndex < teams.size(); teamIndex++) {
+          int teamNumber = teamIndex + 1;
+          for (String participantName : teams.get(teamIndex)) {
+            wrestlerRepository
+                .findByName(participantName)
+                .ifPresent(
+                    wrestler -> {
+                      segment.addParticipant(wrestler, teamNumber);
+                      actualParticipants.add(wrestler);
+                    });
+          }
+        }
+      } else if (proposedSegment.getParticipantIds() != null
+          && !proposedSegment.getParticipantIds().isEmpty()) {
+        for (Long wrestlerId : proposedSegment.getParticipantIds()) {
+          wrestlerRepository
+              .findById(wrestlerId)
+              .ifPresent(
+                  wrestler -> {
+                    segment.addParticipant(wrestler);
+                    actualParticipants.add(wrestler);
+                  });
+        }
+      } else if (proposedSegment.getParticipants() != null) {
+        for (String participantName : proposedSegment.getParticipants()) {
+          wrestlerRepository
+              .findByName(participantName)
+              .ifPresent(
+                  wrestler -> {
+                    segment.addParticipant(wrestler);
+                    actualParticipants.add(wrestler);
+                  });
+        }
       }
 
-      // Set winners based on the actual participants list
+      // Set winners — prefer ID-based lookup, fall back to name
       List<Wrestler> actualWinners = new ArrayList<>();
       if (proposedSegment.getWinners() != null && !proposedSegment.getWinners().isEmpty()) {
         for (String winnerName : proposedSegment.getWinners()) {

@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -61,6 +62,8 @@ public class TitleFormDialog extends Dialog {
   private final TextField imageUrl;
   private final Image previewImage;
   private final Button saveButton;
+  private final ComboBox<DefenseFrequencyType> defenseFrequencyType;
+  private final TextArea effectScript;
 
   public TitleFormDialog(
       @NonNull final TitleService titleService,
@@ -100,6 +103,17 @@ public class TitleFormDialog extends Dialog {
     isActive.setReadOnly(!securityUtils.canEdit());
     Checkbox includeInRankings = new Checkbox("Include in Rankings");
     includeInRankings.setReadOnly(!securityUtils.canEdit());
+    defenseFrequencyType = new ComboBox<>("Defense Frequency");
+    defenseFrequencyType.setItems(DefenseFrequencyType.values());
+    defenseFrequencyType.setItemLabelGenerator(DefenseFrequencyType::getDisplayName);
+    defenseFrequencyType.setClearButtonVisible(true);
+    defenseFrequencyType.setPlaceholder("No requirement");
+    defenseFrequencyType.setReadOnly(!securityUtils.canEdit());
+    defenseFrequencyType.setWidthFull();
+    effectScript = new TextArea("Effect Script");
+    effectScript.setPlaceholder("Optional script run when this title is defended");
+    effectScript.setReadOnly(!securityUtils.canEdit());
+    effectScript.setWidthFull();
     champion = new MultiSelectComboBox<>("Champion(s)");
     champion.setItemLabelGenerator(
         w ->
@@ -143,6 +157,9 @@ public class TitleFormDialog extends Dialog {
     binder.bind(isActive, Title::getIsActive, Title::setIsActive);
     binder.bind(includeInRankings, Title::getIncludeInRankings, Title::setIncludeInRankings);
     binder.forField(imageUrl).bind(Title::getImageUrl, Title::setImageUrl);
+    binder.bind(
+        defenseFrequencyType, Title::getDefenseFrequencyType, Title::setDefenseFrequencyType);
+    binder.bind(effectScript, Title::getEffectScript, Title::setEffectScript);
 
     Runnable populateChampions =
         () -> {
@@ -182,9 +199,13 @@ public class TitleFormDialog extends Dialog {
             championshipType,
             isActive,
             includeInRankings,
+            defenseFrequencyType,
             champion,
-            imageLayout);
+            imageLayout,
+            effectScript);
+    formLayout.setColspan(description, 2);
     formLayout.setColspan(imageLayout, 2);
+    formLayout.setColspan(effectScript, 2);
     add(formLayout);
 
     saveButton =

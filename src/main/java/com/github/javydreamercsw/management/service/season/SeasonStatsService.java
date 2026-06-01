@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.season;
 
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -44,17 +45,20 @@ public class SeasonStatsService {
   private final SeasonRepository seasonRepository;
   private final TitleReignRepository titleReignRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerSeasonSnapshotRepository snapshotRepository;
 
   @Autowired
   public SeasonStatsService(
       final SegmentRepository segmentRepository,
       final SeasonRepository seasonRepository,
       final TitleReignRepository titleReignRepository,
-      final WrestlerRepository wrestlerRepository) {
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerSeasonSnapshotRepository snapshotRepository) {
     this.segmentRepository = segmentRepository;
     this.seasonRepository = seasonRepository;
     this.titleReignRepository = titleReignRepository;
     this.wrestlerRepository = wrestlerRepository;
+    this.snapshotRepository = snapshotRepository;
   }
 
   /**
@@ -111,7 +115,11 @@ public class SeasonStatsService {
         .wins(wins)
         .losses(losses)
         .draws(draws)
-        .startingFans(0L) // TODO: Implement fan history tracking
+        .startingFans(
+            snapshotRepository
+                .findByWrestlerIdAndSeasonId(managedWrestler.getId(), season.getId())
+                .map(s -> s.getStartingFans())
+                .orElse(0L))
         .endingFans(managedWrestler.getDefaultState().map(WrestlerState::getFans).orElse(0L))
         .accolades(accolades)
         .build();

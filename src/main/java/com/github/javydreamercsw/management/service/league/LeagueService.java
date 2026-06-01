@@ -51,12 +51,36 @@ public class LeagueService {
       final int maxPicks,
       final Set<Wrestler> excluded,
       final boolean commissionerPlays) {
+    return createLeague(
+        name,
+        commissioner,
+        maxPicks,
+        excluded,
+        commissionerPlays,
+        java.math.BigDecimal.ZERO,
+        null,
+        100);
+  }
+
+  @Transactional
+  public League createLeague(
+      final String name,
+      final Account commissioner,
+      final int maxPicks,
+      final Set<Wrestler> excluded,
+      final boolean commissionerPlays,
+      final java.math.BigDecimal budget,
+      final Integer durationWeeks,
+      final int lockerRoomMorale) {
     League league = new League();
     league.setName(name);
     league.setCommissioner(commissioner);
     league.setMaxPicksPerPlayer(maxPicks);
     league.setExcludedWrestlers(excluded);
     league.setStatus(League.LeagueStatus.PRE_DRAFT);
+    league.setBudget(budget != null ? budget : java.math.BigDecimal.ZERO);
+    league.setDurationWeeks(durationWeeks);
+    league.setLockerRoomMorale(lockerRoomMorale);
 
     // Set universe from context if available
     universeContextService.getCurrentUniverse().ifPresent(league::setUniverse);
@@ -81,6 +105,33 @@ public class LeagueService {
       final int maxPicks,
       final Set<Wrestler> excluded,
       final boolean commissionerPlays) {
+    League existing =
+        leagueRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("League not found: " + id));
+    return updateLeague(
+        id,
+        name,
+        maxPicks,
+        excluded,
+        commissionerPlays,
+        existing.getBudget(),
+        existing.getDurationWeeks(),
+        existing.getLockerRoomMorale() != null ? existing.getLockerRoomMorale() : 100,
+        existing.getStatus());
+  }
+
+  @Transactional
+  public League updateLeague(
+      final Long id,
+      final String name,
+      final int maxPicks,
+      final Set<Wrestler> excluded,
+      final boolean commissionerPlays,
+      final java.math.BigDecimal budget,
+      final Integer durationWeeks,
+      final int lockerRoomMorale,
+      final League.LeagueStatus status) {
     League league =
         leagueRepository
             .findById(id)
@@ -89,6 +140,12 @@ public class LeagueService {
     league.setName(name);
     league.setMaxPicksPerPlayer(maxPicks);
     league.setExcludedWrestlers(excluded);
+    league.setBudget(budget != null ? budget : java.math.BigDecimal.ZERO);
+    league.setDurationWeeks(durationWeeks);
+    league.setLockerRoomMorale(lockerRoomMorale);
+    if (status != null) {
+      league.setStatus(status);
+    }
 
     // Update commissioner role if needed
     Optional<LeagueMembership> commMembership =

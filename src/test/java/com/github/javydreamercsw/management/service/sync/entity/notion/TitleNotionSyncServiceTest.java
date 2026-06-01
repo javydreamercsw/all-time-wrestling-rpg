@@ -105,7 +105,8 @@ class TitleNotionSyncServiceTest extends AbstractSyncTest {
     title.setName("Intercontinental Championship");
     title.setIsActive(true);
     title.setDescription("Mid-card title");
-    title.setDefenseFrequency(4);
+    title.setDefenseFrequencyType(
+        com.github.javydreamercsw.management.domain.title.DefenseFrequencyType.BI_WEEKLY);
 
     NotionClient client = mock(NotionClient.class);
     when(titleRepository.findAll()).thenReturn(List.of(title));

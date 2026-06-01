@@ -300,6 +300,17 @@ class TitleListViewTest extends AbstractViewTest {
   }
 
   @Test
+  void gridShouldShowRankingsAndDefenseFreqColumns() {
+    List<String> headers =
+        titleListView.grid.getColumns().stream()
+            .map(Grid.Column::getHeaderText)
+            .filter(h -> h != null)
+            .collect(java.util.stream.Collectors.toList());
+    assertTrue(headers.contains("Rankings"));
+    assertTrue(headers.contains("Defense Freq."));
+  }
+
+  @Test
   void testChampionDropdownIsPopulatedBasedOnTier() {
     UI.getCurrent()
         .access(

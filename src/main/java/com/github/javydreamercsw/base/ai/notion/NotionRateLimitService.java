@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 public class NotionRateLimitService {
 
   private static final int MAX_REQUESTS_PER_SECOND = 3; // Notion's documented rate limit
-  private static final int BURST_CAPACITY = 10; // Allow small bursts
+  private static final int BURST_CAPACITY = 3; // Match rate limit — no burst flooding
 
   private final Semaphore permits;
   private final ScheduledExecutorService scheduler;

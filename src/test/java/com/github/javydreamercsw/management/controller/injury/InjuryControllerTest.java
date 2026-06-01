@@ -75,12 +75,12 @@ class InjuryControllerTest extends AbstractControllerTest {
   @Test
   @WithMockUser(roles = "BOOKER")
   void createInjury() throws Exception {
-    when(injuryService.createInjury(any(), any(), any(), any(), any(), any()))
+    when(injuryService.createInjury(any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(Optional.of(testInjury));
 
     InjuryController.CreateInjuryRequest request =
         new InjuryController.CreateInjuryRequest(
-            1L, 1L, "Broken Leg", "A severe break.", InjurySeverity.SEVERE, "Some notes");
+            1L, 1L, null, "Broken Leg", "A severe break.", InjurySeverity.SEVERE, "Some notes");
 
     mockMvc
         .perform(
@@ -95,12 +95,12 @@ class InjuryControllerTest extends AbstractControllerTest {
   @Test
   @WithMockUser(roles = "BOOKER")
   void createInjury_wrestlerNotFound_returnsBadRequest() throws Exception {
-    when(injuryService.createInjury(any(), any(), any(), any(), any(), any()))
+    when(injuryService.createInjury(any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(Optional.empty());
 
     InjuryController.CreateInjuryRequest request =
         new InjuryController.CreateInjuryRequest(
-            999L, 1L, "Broken Leg", "A severe break.", InjurySeverity.SEVERE, null);
+            999L, 1L, null, "Broken Leg", "A severe break.", InjurySeverity.SEVERE, null);
 
     mockMvc
         .perform(

@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -67,6 +68,7 @@ class NarrationDialogTest {
 
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private RivalryService rivalryService;
@@ -114,7 +116,8 @@ class NarrationDialogTest {
             ringsideActionService,
             relationshipService,
             universeContextService,
-            notificationService);
+            notificationService,
+            wrestlerStatsService);
   }
 
   @Test

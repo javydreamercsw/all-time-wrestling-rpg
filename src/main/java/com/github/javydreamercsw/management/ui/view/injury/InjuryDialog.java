@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -35,6 +36,7 @@ public class InjuryDialog extends Dialog {
   private final Wrestler wrestler;
   private final Long universeId;
   private final InjuryService injuryService;
+  private final InjuryTypeService injuryTypeService;
   private final Runnable onSave;
   private final Grid<Injury> injuryGrid = new Grid<>(Injury.class);
   private final SecurityUtils securityUtils;
@@ -43,11 +45,13 @@ public class InjuryDialog extends Dialog {
       @NonNull final Wrestler wrestler,
       @NonNull final Long universeId,
       @NonNull final InjuryService injuryService,
+      @NonNull final InjuryTypeService injuryTypeService,
       @NonNull final Runnable onSave,
       @NonNull final SecurityUtils securityUtils) {
     this.wrestler = wrestler;
     this.universeId = universeId;
     this.injuryService = injuryService;
+    this.injuryTypeService = injuryTypeService;
     this.onSave = onSave;
     this.securityUtils = securityUtils;
 
@@ -66,6 +70,7 @@ public class InjuryDialog extends Dialog {
                       wrestler,
                       universeId,
                       injuryService,
+                      injuryTypeService,
                       () -> {
                         updateGrid();
                         onSave.run();

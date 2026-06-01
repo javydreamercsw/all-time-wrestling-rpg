@@ -18,11 +18,13 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageActionService;
@@ -31,42 +33,38 @@ import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.router.BeforeEnterEvent;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
-class BackstageActionViewTest {
+class BackstageActionViewTest extends AbstractViewTest {
 
-  private BackstageActionService backstageActionService;
-  private CampaignRepository campaignRepository;
-  private WrestlerRepository wrestlerRepository;
-  private WrestlerService wrestlerService;
-  private InjuryService injuryService;
-  private UniverseContextService universeContextService;
-  private SecurityUtils securityUtils;
-  private CampaignService campaignService;
-  private BackstageEncounterService backstageEncounterService;
+  @Mock private BackstageActionService backstageActionService;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private WrestlerStatsService wrestlerStatsService;
+  @Mock private InjuryService injuryService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private SecurityUtils securityUtils;
+  @Mock private CampaignService campaignService;
+  @Mock private BackstageEncounterService backstageEncounterService;
 
   @BeforeEach
-  public void setUp() {
-    backstageActionService = mock(BackstageActionService.class);
-    campaignRepository = mock(CampaignRepository.class);
-    wrestlerRepository = mock(WrestlerRepository.class);
-    wrestlerService = mock(WrestlerService.class);
-    injuryService = mock(InjuryService.class);
-    universeContextService = mock(UniverseContextService.class);
-    securityUtils = mock(SecurityUtils.class);
-    campaignService = mock(CampaignService.class);
-    backstageEncounterService = mock(BackstageEncounterService.class);
-
+  void setup() {
     when(backstageActionService.getBackstageEncounterService())
         .thenReturn(backstageEncounterService);
   }
 
   @Test
-  void testNoCampaignRedirection() {
+  @DisplayName("Should render the Backstage Actions heading when unauthenticated")
+  void shouldRenderHeadingWhenUnauthenticated() {
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
 
     BackstageActionView view =
@@ -74,6 +72,7 @@ class BackstageActionViewTest {
             backstageActionService,
             wrestlerRepository,
             wrestlerService,
+            wrestlerStatsService,
             injuryService,
             universeContextService,
             securityUtils,
@@ -89,21 +88,21 @@ class BackstageActionViewTest {
   }
 
   @Test
-  void testEncounterTriggered() {
+  @DisplayName("Should forward to BackstageEncounterView when encounter triggers")
+  void shouldForwardWhenEncounterTriggered() {
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     when(backstageEncounterService.shouldTriggerEncounter(campaign)).thenReturn(true);
 
-    // Setup authenticated user and campaign
-    var user = mock(com.github.javydreamercsw.base.security.CustomUserDetails.class);
-    var account = mock(com.github.javydreamercsw.base.domain.account.Account.class);
+    CustomUserDetails user = mock(CustomUserDetails.class);
+    Account account = mock(Account.class);
     when(user.getAccount()).thenReturn(account);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(user));
 
     Wrestler active = new Wrestler();
     active.setId(1L);
     when(account.getActiveWrestlerId()).thenReturn(1L);
-    when(wrestlerRepository.findByAccount(account)).thenReturn(java.util.List.of(active));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(active));
     when(campaignService.getCampaignForWrestler(active)).thenReturn(Optional.of(campaign));
 
     BackstageActionView view =
@@ -111,6 +110,7 @@ class BackstageActionViewTest {
             backstageActionService,
             wrestlerRepository,
             wrestlerService,
+            wrestlerStatsService,
             injuryService,
             universeContextService,
             securityUtils,
@@ -119,6 +119,6 @@ class BackstageActionViewTest {
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     view.beforeEnter(event);
 
-    org.mockito.Mockito.verify(event).forwardTo(BackstageEncounterView.class);
+    verify(event).forwardTo(BackstageEncounterView.class);
   }
 }

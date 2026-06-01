@@ -79,6 +79,7 @@ public class InjuryController {
         injuryService.createInjury(
             request.wrestlerId(),
             request.universeId(),
+            request.injuryTypeId(),
             request.name(),
             request.description(),
             request.severity(),
@@ -277,6 +278,7 @@ public class InjuryController {
   public record CreateInjuryRequest(
       @NotNull(message = "Wrestler ID is required") Long wrestlerId,
       @NotNull(message = "Universe ID is required") Long universeId,
+      Long injuryTypeId,
       @NotBlank(message = "Injury name is required") @Size(max = 255, message = "Injury name must not exceed 255 characters") String name,
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
       @NotNull(message = "Severity is required") InjurySeverity severity,

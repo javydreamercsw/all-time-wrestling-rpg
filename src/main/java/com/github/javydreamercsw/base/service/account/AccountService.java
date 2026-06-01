@@ -18,10 +18,7 @@ package com.github.javydreamercsw.base.service.account;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
-import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -32,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountService {
 
   @Autowired private AccountRepository accountRepository;
-  @Autowired private WrestlerRepository wrestlerRepository;
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<Account> findAll() {
@@ -46,14 +42,6 @@ public class AccountService {
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<Account> findAllNonPlayerAccounts() {
-    List<Account> allAccounts = accountRepository.findAll();
-    List<Account> accountsWithWrestlers =
-        wrestlerRepository.findAll().stream()
-            .map(Wrestler::getAccount)
-            .filter(Objects::nonNull)
-            .toList();
-
-    allAccounts.removeAll(accountsWithWrestlers);
-    return allAccounts;
+    return accountRepository.findAccountsWithNoAssignedWrestler();
   }
 }

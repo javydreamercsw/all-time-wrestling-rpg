@@ -224,11 +224,11 @@ class AccountServiceTest {
   }
 
   @Test
-  void testUpdate_sameEncodedPassword_keepsOriginal() {
-    // The encoded password starts with $2a$ and matches original → keep original
+  void testUpdate_samePassword_keepsOriginalEncoded() {
     account.setPassword("$2a$10$originalEncoded");
-    Account incoming = new Account("testUser", "$2a$10$originalEncoded", "test@example.com");
+    Account incoming = new Account("testUser", "plaintext", "test@example.com");
     incoming.setId(1L);
+    when(passwordEncoder.matches("plaintext", "$2a$10$originalEncoded")).thenReturn(true);
 
     accountService.update(incoming);
 
@@ -237,10 +237,12 @@ class AccountServiceTest {
   }
 
   @Test
-  void testUpdate_newEncodedPassword_setsDirectly() {
+  void testUpdate_newPlaintextPassword_encodesAndUpdates() {
     account.setPassword("$2a$10$originalEncoded");
-    Account incoming = new Account("testUser", "$2a$10$newEncoded", "test@example.com");
+    Account incoming = new Account("testUser", "NewPass1!", "test@example.com");
     incoming.setId(1L);
+    when(passwordEncoder.matches("NewPass1!", "$2a$10$originalEncoded")).thenReturn(false);
+    when(passwordEncoder.encode("NewPass1!")).thenReturn("$2a$10$newEncoded");
 
     accountService.update(incoming);
 

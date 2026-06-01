@@ -142,4 +142,7 @@ public interface InjuryRepository
 
   /** Find injuries for a wrestler on a specific date. */
   List<Injury> findByWrestlerAndInjuryDate(Wrestler wrestler, java.time.Instant injuryDate);
+
+  /** Count injuries referencing a given InjuryType (used to guard deletion). */
+  long countByInjuryType(InjuryType injuryType);
 }

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.stream.Collectors;
@@ -51,12 +52,12 @@ public class ChampionshipChangeInboxListener
 
   @Override
   public void onApplicationEvent(@NonNull final ChampionshipChangeEvent event) {
-    log.info("Received ChampionshipChangeEvent for title ID: {}", event.getTitleId());
+    log.debug("Received ChampionshipChangeEvent for title ID: {}", event.getTitleId());
 
     String newChampions =
-        event.getNewChampions().stream().map(w -> w.getName()).collect(Collectors.joining(", "));
+        event.getNewChampions().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
     String oldChampions =
-        event.getOldChampions().stream().map(w -> w.getName()).collect(Collectors.joining(", "));
+        event.getOldChampions().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
 
     String message;
     if (event.getOldChampions().isEmpty()) {

@@ -19,12 +19,14 @@ package com.github.javydreamercsw.management.mapper;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RivalryMapper {
   @Autowired private WrestlerService wrestlerService;
+  @Autowired private WrestlerStatsService wrestlerStatsService;
 
   public RivalryDTO toRivalryDTO(final Rivalry rivalry) {
     if (rivalry == null) {
@@ -39,9 +41,9 @@ public class RivalryMapper {
     dto.setEndedDate(rivalry.getEndedDate());
     Long leagueId = rivalry.getLeague() != null ? rivalry.getLeague().getId() : 1L;
     dto.setWrestler1(
-        wrestlerService.findByIdAsDTO(rivalry.getWrestler1().getId(), leagueId).orElse(null));
+        wrestlerStatsService.findByIdAsDTO(rivalry.getWrestler1().getId(), leagueId).orElse(null));
     dto.setWrestler2(
-        wrestlerService.findByIdAsDTO(rivalry.getWrestler2().getId(), leagueId).orElse(null));
+        wrestlerStatsService.findByIdAsDTO(rivalry.getWrestler2().getId(), leagueId).orElse(null));
     // Map other fields as needed
     return dto;
   }
