@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
+import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
@@ -57,6 +59,7 @@ class SeasonStatsServiceTest {
   @Mock private SeasonRepository seasonRepository;
   @Mock private TitleReignRepository titleReignRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private WrestlerSeasonSnapshotRepository snapshotRepository;
 
   @InjectMocks private SeasonStatsService seasonStatsService;
 
@@ -85,6 +88,12 @@ class SeasonStatsServiceTest {
     lenient()
         .when(wrestlerRepository.findByIdWithStates(1L))
         .thenReturn(java.util.Optional.of(wrestler));
+
+    WrestlerSeasonSnapshot snapshot = new WrestlerSeasonSnapshot();
+    snapshot.setStartingFans(500L);
+    lenient()
+        .when(snapshotRepository.findByWrestlerIdAndSeasonId(1L, 1L))
+        .thenReturn(java.util.Optional.of(snapshot));
 
     season = new Season();
     season.setId(1L);
@@ -134,6 +143,23 @@ class SeasonStatsServiceTest {
     assertThat(stats.getLosses()).isEqualTo(1);
     assertThat(stats.getDraws()).isEqualTo(1);
     assertThat(stats.getAccolades()).contains("World Championship");
+    assertThat(stats.getStartingFans()).isEqualTo(500L);
+    assertThat(stats.getEndingFans()).isEqualTo(1000L);
+  }
+
+  @Test
+  @DisplayName("startingFans falls back to 0 when no snapshot exists")
+  void testStartingFansFallsBackToZeroWhenNoSnapshot() {
+    when(snapshotRepository.findByWrestlerIdAndSeasonId(1L, 1L))
+        .thenReturn(java.util.Optional.empty());
+    when(segmentRepository.findByWrestlerParticipationAndSeason(
+            eq(wrestler), eq(season), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(java.util.List.of()));
+    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(java.util.List.of());
+
+    SeasonStatsDTO stats = seasonStatsService.calculateStats(wrestler, season);
+
+    assertThat(stats.getStartingFans()).isZero();
   }
 
   private Segment createSegment(final Long id, final SegmentType type, final Boolean isWinner) {

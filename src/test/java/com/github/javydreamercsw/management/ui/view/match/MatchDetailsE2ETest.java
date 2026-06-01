@@ -25,6 +25,8 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.injury.InjuryType;
+import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -50,6 +52,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private InjuryRepository injuryRepository;
+  @Autowired private InjuryTypeRepository injuryTypeRepository;
   @Autowired private UniverseRepository universeRepository;
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
@@ -78,6 +81,8 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     wrestlerStateRepository.saveAndFlush(state);
     wrestler = wrestlerRepository.saveAndFlush(wrestler);
 
+    InjuryType legacyType = injuryTypeRepository.findByInjuryName("Legacy Injury").orElseThrow();
+
     // Add an active injury
     Injury activeInjury = new Injury();
     activeInjury.setWrestler(wrestler);
@@ -87,6 +92,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     activeInjury.setHealthPenalty(20);
     activeInjury.setIsActive(true);
     activeInjury.setInjuryDate(Instant.now());
+    activeInjury.setInjuryType(legacyType);
     injuryRepository.saveAndFlush(activeInjury);
 
     // Add a healed injury
@@ -99,6 +105,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     healedInjury.setIsActive(false);
     healedInjury.setHealedDate(Instant.now().minusSeconds(3600));
     healedInjury.setInjuryDate(Instant.now().minusSeconds(7200));
+    healedInjury.setInjuryType(legacyType);
     injuryRepository.saveAndFlush(healedInjury);
 
     // Create a match for this wrestler

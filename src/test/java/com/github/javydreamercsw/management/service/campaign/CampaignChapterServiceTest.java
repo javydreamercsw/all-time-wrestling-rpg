@@ -23,9 +23,11 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class CampaignChapterServiceTest {
@@ -84,6 +86,87 @@ class CampaignChapterServiceTest {
 
     available = chapterService.findAvailableChapters(state);
     assertThat(available).extracting(CampaignChapterDTO::getId).contains("tournament");
+  }
+
+  // -------------------------------------------------------------------------
+  // Groovy script evaluation
+  // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Groovy script returning true passes the criterion")
+  void testGroovyScriptReturningTrue() {
+    CampaignState state = buildMinimalState();
+    assertThat(chapterService.evaluateGroovyScript("true", state)).isTrue();
+  }
+
+  @Test
+  @DisplayName("Groovy script returning false fails the criterion")
+  void testGroovyScriptReturningFalse() {
+    CampaignState state = buildMinimalState();
+    assertThat(chapterService.evaluateGroovyScript("false", state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("Groovy script can read state.wins")
+  void testGroovyScriptCanAccessState() {
+    CampaignState state = buildMinimalState();
+    state.setWins(10);
+    assertThat(chapterService.evaluateGroovyScript("state.wins >= 10", state)).isTrue();
+    assertThat(chapterService.evaluateGroovyScript("state.wins >= 11", state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("Groovy script that throws returns false and does not propagate")
+  void testGroovyScriptExceptionReturnsFalse() {
+    CampaignState state = buildMinimalState();
+    assertThat(chapterService.evaluateGroovyScript("throw new RuntimeException('boom')", state))
+        .isFalse();
+  }
+
+  @Test
+  @DisplayName("Script is skipped when built-in check already failed")
+  void testScriptNotEvaluatedWhenBuiltInFails() {
+    CampaignState state = buildMinimalState();
+    state.setVictoryPoints(0);
+
+    // minVictoryPoints=5 fails → script returning true should not rescue the criterion
+    ChapterCriteriaDTO criteria =
+        ChapterCriteriaDTO.builder().minVictoryPoints(5).customEvaluationScript("true").build();
+
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("Script runs when built-in checks pass and determines the result")
+  void testScriptRunsAfterBuiltInChecksPassed() {
+    CampaignState state = buildMinimalState();
+    state.setVictoryPoints(10);
+    state.setWins(3);
+
+    // Built-in passes (minVictoryPoints=5 satisfied), script adds extra gate
+    ChapterCriteriaDTO passCriteria =
+        ChapterCriteriaDTO.builder()
+            .minVictoryPoints(5)
+            .customEvaluationScript("state.wins >= 3")
+            .build();
+    assertThat(chapterService.isCriteriaMet(passCriteria, state)).isTrue();
+
+    ChapterCriteriaDTO failCriteria =
+        ChapterCriteriaDTO.builder()
+            .minVictoryPoints(5)
+            .customEvaluationScript("state.wins >= 10")
+            .build();
+    assertThat(chapterService.isCriteriaMet(failCriteria, state)).isFalse();
+  }
+
+  private CampaignState buildMinimalState() {
+    CampaignState state = new CampaignState();
+    Campaign campaign = new Campaign();
+    Wrestler wrestler = new Wrestler();
+    wrestler.setReigns(new java.util.LinkedHashSet<>());
+    campaign.setWrestler(wrestler);
+    state.setCampaign(campaign);
+    return state;
   }
 
   @Test

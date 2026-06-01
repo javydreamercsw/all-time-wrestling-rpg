@@ -223,6 +223,12 @@ public class InjurySyncService extends BaseSyncService {
       if (injury == null) {
         injury = new Injury();
         injury.setExternalId(dto.getExternalId());
+        // Assign the sentinel Legacy Injury type (required NOT NULL FK) so that the row can be
+        // saved. A follow-up sync of InjuryTypes will update this to the correct type.
+        syncServiceDependencies
+            .getInjuryTypeRepository()
+            .findByInjuryName("Legacy Injury")
+            .ifPresent(injury::setInjuryType);
         isNew = true;
       }
 

@@ -19,14 +19,18 @@ package com.github.javydreamercsw.management.service.season;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Clock;
 import java.time.Instant;
@@ -48,6 +52,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SeasonServiceTest {
 
   @Mock private SeasonRepository seasonRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
+      wrestlerRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository
+      snapshotRepository;
+
   @Mock private Clock clock;
   @Mock private GameSettingService gameSettingService;
 
@@ -64,6 +77,7 @@ class SeasonServiceTest {
     lenient().when(clock.instant()).thenReturn(fixedInstant);
     lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
     lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(fixedLocalDate);
+    lenient().when(wrestlerRepository.findAllByActiveTrue()).thenReturn(java.util.List.of());
 
     weeklyShowType = new ShowType();
     weeklyShowType.setName("Weekly");
@@ -97,6 +111,58 @@ class SeasonServiceTest {
     assertThat(result.getShowsPerPpv()).isEqualTo(5); // Default value
     assertThat(result.getIsActive()).isTrue();
     verify(seasonRepository).saveAndFlush(any(Season.class));
+  }
+
+  @Test
+  @DisplayName("createSeason snapshots fan count for each active wrestler")
+  void shouldSnapshotWrestlerFansOnSeasonCreate() {
+    // Given
+    when(seasonRepository.findActiveSeason()).thenReturn(Optional.empty());
+    when(seasonRepository.saveAndFlush(any(Season.class)))
+        .thenAnswer(
+            inv -> {
+              Season s = inv.getArgument(0);
+              s.setId(10L);
+              return s;
+            });
+
+    Wrestler w = new Wrestler();
+    w.setId(42L);
+    w.setName("Snap Wrestler");
+    WrestlerState state = new WrestlerState();
+    state.setFans(7_500L);
+    w.setWrestlerStates(new java.util.LinkedHashSet<>(List.of(state)));
+
+    when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of(w));
+    when(wrestlerRepository.findByIdWithStates(42L)).thenReturn(Optional.of(w));
+
+    // When
+    seasonService.createSeason("Snap Season", "desc", null);
+
+    // Then: one snapshot saved with the wrestler's fan count
+    var captor = org.mockito.ArgumentCaptor.forClass(WrestlerSeasonSnapshot.class);
+    verify(snapshotRepository).save(captor.capture());
+    WrestlerSeasonSnapshot saved = captor.getValue();
+    assertThat(saved.getWrestler()).isSameAs(w);
+    assertThat(saved.getStartingFans()).isEqualTo(7_500L);
+  }
+
+  @Test
+  @DisplayName("createSeason saves no snapshots when no active wrestlers exist")
+  void shouldSaveNoSnapshotsWhenNoActiveWrestlers() {
+    when(seasonRepository.findActiveSeason()).thenReturn(Optional.empty());
+    when(seasonRepository.saveAndFlush(any(Season.class)))
+        .thenAnswer(
+            inv -> {
+              Season s = inv.getArgument(0);
+              s.setId(11L);
+              return s;
+            });
+    when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of());
+
+    seasonService.createSeason("Empty Season", "desc", null);
+
+    verify(snapshotRepository, never()).save(any(WrestlerSeasonSnapshot.class));
   }
 
   @Test
