@@ -624,7 +624,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
             if (nameIdx != -1) {
               String after = line.substring(nameIdx + 5).trim();
               int commaIdx = after.indexOf(',');
-              String name = (commaIdx != -1) ? after.substring(0, commaIdx).trim() : after.trim();
+              String name = commaIdx != -1 ? after.substring(0, commaIdx).trim() : after.trim();
               if (!name.isEmpty()) {
                 participants.add(name);
               }

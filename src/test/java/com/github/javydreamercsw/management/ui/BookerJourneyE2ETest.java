@@ -478,7 +478,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     mainEventSegment.setIsTitleSegment(true);
     mainEventSegment.setIsNpcGenerated(false);
     mainEventSegment.syncParticipants(Arrays.asList(wrestlers.get(2), wrestlers.get(3)));
-    mainEventSegment.syncSegmentRules(Collections.singletonList(segmentRuleService.findAll().getFirst()));
+    mainEventSegment.syncSegmentRules(
+        Collections.singletonList(segmentRuleService.findAll().getFirst()));
     mainEventSegment.setWinners(Collections.singletonList(wrestlers.get(3)));
     HashSet<Title> titles = new HashSet<>();
     if (!titleService.getActiveTitles().isEmpty()) {
@@ -499,7 +500,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Collections.singletonList(segmentRuleService.findAll().getFirst()));
+    firstSegment.syncSegmentRules(
+        Collections.singletonList(segmentRuleService.findAll().getFirst()));
     firstSegment.setWinners(Collections.singletonList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
@@ -597,7 +599,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Collections.singletonList(segmentRuleService.findAll().getFirst()));
+    firstSegment.syncSegmentRules(
+        Collections.singletonList(segmentRuleService.findAll().getFirst()));
     firstSegment.setWinners(Collections.singletonList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
@@ -725,7 +728,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     firstSegment.setIsTitleSegment(false);
     firstSegment.setIsNpcGenerated(false);
     firstSegment.syncParticipants(Arrays.asList(wrestlers.get(0), wrestlers.get(1)));
-    firstSegment.syncSegmentRules(Collections.singletonList(segmentRuleService.findAll().getFirst()));
+    firstSegment.syncSegmentRules(
+        Collections.singletonList(segmentRuleService.findAll().getFirst()));
     firstSegment.setWinners(Collections.singletonList(wrestlers.get(0)));
     segmentService.updateSegment(firstSegment);
 
