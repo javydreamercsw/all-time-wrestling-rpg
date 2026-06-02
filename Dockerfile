@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl git && rm 
     | tar -xz -C /opt && \
     ln -s /opt/apache-maven-3.9.14/bin/mvn /usr/local/bin/mvn
 WORKDIR /app
+RUN git init
 # Cache dependency downloads as a separate layer — only re-runs when pom.xml changes
 COPY pom.xml ./
 RUN mvn dependency:go-offline -Pwar,production -B -q
