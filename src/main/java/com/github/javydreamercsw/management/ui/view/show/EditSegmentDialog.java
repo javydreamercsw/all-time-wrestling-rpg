@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -31,15 +32,22 @@ import com.github.javydreamercsw.management.service.show.planning.ProposedSegmen
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +56,8 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 
 public class EditSegmentDialog extends Dialog {
+
+  // ==================== NESTED TYPES ====================
 
   /**
    * All reference data needed by the dialog, loaded in one async batch. Use {@link #load} to
@@ -88,43 +98,173 @@ public class EditSegmentDialog extends Dialog {
     }
   }
 
-  @Getter private final ProposedSegment segment;
+  /** Normalized initial values for the dialog, independent of source type. */
+  public record SegmentDialogData(
+      String typeName,
+      Map<Integer, List<Wrestler>> teams,
+      List<Wrestler> winners,
+      Set<SegmentRule> segmentRules,
+      Npc referee,
+      String narration,
+      String summary,
+      String notes,
+      boolean isTitleSegment,
+      Set<Title> titles) {
+
+    /** Build from a planning DTO using pre-loaded wrestler map for name resolution. */
+    public static SegmentDialogData from(final ProposedSegment proposed, final PreloadedData data) {
+      Map<Integer, List<Wrestler>> teams = new LinkedHashMap<>();
+      if (proposed.getTeams() != null && !proposed.getTeams().isEmpty()) {
+        for (int i = 0; i < proposed.getTeams().size(); i++) {
+          List<Wrestler> team =
+              proposed.getTeams().get(i).stream()
+                  .map(name -> data.wrestlerByName().get(name))
+                  .filter(java.util.Objects::nonNull)
+                  .collect(Collectors.toList());
+          teams.put(i + 1, team);
+        }
+      } else if (proposed.getParticipants() != null) {
+        List<Wrestler> all =
+            proposed.getParticipants().stream()
+                .map(name -> data.wrestlerByName().get(name))
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+        for (int i = 0; i < all.size(); i++) {
+          teams.put(i + 1, new ArrayList<>(List.of(all.get(i))));
+        }
+      }
+      if (teams.isEmpty()) {
+        teams.put(1, new ArrayList<>());
+        teams.put(2, new ArrayList<>());
+      }
+
+      List<Wrestler> winners =
+          proposed.getWinners() == null
+              ? List.of()
+              : proposed.getWinners().stream()
+                  .map(name -> data.wrestlerByName().get(name))
+                  .filter(java.util.Objects::nonNull)
+                  .collect(Collectors.toList());
+
+      Set<SegmentRule> rules =
+          proposed.getRules() == null
+              ? new HashSet<>()
+              : proposed.getRules().stream()
+                  .map(
+                      name ->
+                          data.segmentRules().stream()
+                              .filter(r -> r.getName().equals(name))
+                              .findFirst())
+                  .filter(Optional::isPresent)
+                  .map(Optional::get)
+                  .collect(Collectors.toSet());
+
+      Npc referee =
+          proposed.getRefereeName() == null
+              ? null
+              : data.referees().stream()
+                  .filter(n -> proposed.getRefereeName().equals(n.getName()))
+                  .findFirst()
+                  .orElse(null);
+
+      return new SegmentDialogData(
+          proposed.getType(),
+          teams,
+          winners,
+          rules,
+          referee,
+          proposed.getNarration() != null ? proposed.getNarration() : "",
+          proposed.getSummary() != null ? proposed.getSummary() : "",
+          proposed.getNotes() != null ? proposed.getNotes() : "",
+          Boolean.TRUE.equals(proposed.getIsTitleSegment()),
+          proposed.getTitles() != null ? proposed.getTitles() : new HashSet<>());
+    }
+
+    /** Build from a persisted Segment entity. */
+    public static SegmentDialogData from(final Segment segment) {
+      Map<Integer, List<Wrestler>> teams = segment.getWrestlersByTeam();
+      if (teams.isEmpty()) {
+        for (Wrestler w : segment.getWrestlers()) {
+          int next = teams.size() + 1;
+          teams.put(next, new ArrayList<>(List.of(w)));
+        }
+      }
+      if (teams.isEmpty()) {
+        teams.put(1, new ArrayList<>());
+        teams.put(2, new ArrayList<>());
+      }
+
+      return new SegmentDialogData(
+          segment.getSegmentType() != null ? segment.getSegmentType().getName() : null,
+          teams,
+          segment.getWinners(),
+          segment.getSegmentRules(),
+          segment.getReferee(),
+          segment.getNarration() != null ? segment.getNarration() : "",
+          segment.getSummary() != null ? segment.getSummary() : "",
+          segment.getNotes() != null ? segment.getNotes() : "",
+          Boolean.TRUE.equals(segment.getIsTitleSegment()),
+          segment.getTitles() != null ? segment.getTitles() : new HashSet<>());
+    }
+  }
+
+  /** Data produced by the dialog when the user clicks Save. */
+  public record SegmentSaveData(
+      SegmentType segmentType,
+      Map<Integer, List<Wrestler>> teams,
+      Set<Wrestler> winners,
+      Set<SegmentRule> rules,
+      Npc referee,
+      String narration,
+      String summary,
+      String notes,
+      boolean isTitleSegment,
+      Set<Title> titles) {}
+
+  @FunctionalInterface
+  public interface SaveCallback {
+    void onSave(SegmentSaveData data);
+  }
+
+  // ==================== FIELDS ====================
+
+  /** Kept for legacy test constructor compatibility. */
+  @Getter private ProposedSegment segment;
+
   private final PreloadedData data;
   private final WrestlerService wrestlerService;
   private final Long universeId;
-  private final Runnable onSave;
+
   @Getter private final TextArea narrationArea;
   @Getter private final TextArea notesArea;
   @Getter private final MultiSelectComboBox<Wrestler> participantsCombo;
+  @Getter private final MultiSelectComboBox<Title> titleMultiSelectComboBox;
+  @Getter private final Button saveButton;
+  @Getter private final ComboBox<SegmentType> segmentTypeCombo;
 
   private final ComboBox<Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
   private final ComboBox<AlignmentType> alignmentFilter;
-
-  @Getter private final MultiSelectComboBox<Title> titleMultiSelectComboBox;
-
-  @Getter private final Button saveButton;
-  private final Button cancelButton;
-  @Getter private final ComboBox<SegmentType> segmentTypeCombo;
   private final MultiSelectComboBox<SegmentRule> rulesCombo;
   private final MultiSelectComboBox<Wrestler> winnersCombo;
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
+  private final List<MultiSelectComboBox<Wrestler>> teamCombos = new ArrayList<>();
+  private final VerticalLayout teamsLayout = new VerticalLayout();
 
-  /** Fast constructor: all reference data pre-loaded — zero DB queries at construction time. */
+  // ==================== MAIN CONSTRUCTOR ====================
+
   public EditSegmentDialog(
-      final ProposedSegment segment,
       final PreloadedData data,
+      final SegmentDialogData initial,
       final WrestlerService wrestlerService,
       final Gender defaultGenderConstraint,
       final Long universeId,
-      final Runnable onSave) {
-    this.segment = segment;
+      final SaveCallback onSave) {
     this.data = data;
     this.wrestlerService = wrestlerService;
     this.universeId = universeId;
-    this.onSave = onSave;
 
     setHeaderTitle("Edit Segment");
 
@@ -144,40 +284,26 @@ public class EditSegmentDialog extends Dialog {
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
-    data.segmentTypes().stream()
-        .filter(t -> t.getName().equals(segment.getType()))
-        .findFirst()
-        .ifPresent(segmentTypeCombo::setValue);
+    if (initial.typeName() != null) {
+      data.segmentTypes().stream()
+          .filter(t -> t.getName().equals(initial.typeName()))
+          .findFirst()
+          .ifPresent(segmentTypeCombo::setValue);
+    }
     segmentTypeCombo.setId("edit-segment-type-combo-box");
 
     refereeCombo = new ComboBox<>("Referee");
     refereeCombo.setItems(data.referees());
     refereeCombo.setItemLabelGenerator(Npc::getName);
     refereeCombo.setWidthFull();
-    if (segment.getRefereeName() != null) {
-      data.referees().stream()
-          .filter(n -> segment.getRefereeName().equals(n.getName()))
-          .findFirst()
-          .ifPresent(refereeCombo::setValue);
-    }
+    refereeCombo.setValue(initial.referee());
     refereeCombo.setId("edit-referee-combo-box");
 
     rulesCombo = new MultiSelectComboBox<>("Segment Rules");
     rulesCombo.setItems(data.segmentRules());
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
-    if (segment.getRules() != null) {
-      rulesCombo.setValue(
-          segment.getRules().stream()
-              .map(
-                  name ->
-                      data.segmentRules().stream()
-                          .filter(r -> r.getName().equals(name))
-                          .findFirst())
-              .filter(Optional::isPresent)
-              .map(Optional::get)
-              .collect(Collectors.toSet()));
-    }
+    rulesCombo.setValue(initial.segmentRules());
     rulesCombo.setId("edit-segment-rules-combo-box");
     formLayout.setColspan(rulesCombo, 2);
 
@@ -196,71 +322,113 @@ public class EditSegmentDialog extends Dialog {
     genderFilter.setValue(defaultGenderConstraint);
     genderFilter.setId("edit-gender-filter-combo-box");
 
-    participantsCombo = new MultiSelectComboBox<>("Participants");
-    participantsCombo.setItemLabelGenerator(Wrestler::getName);
-    participantsCombo.setWidthFull();
-    participantsCombo.setRequired(true);
-    participantsCombo.setId("edit-wrestlers-combo-box");
-
-    Set<Wrestler> existingParticipants =
-        segment.getParticipants().stream()
-            .map(name -> Optional.ofNullable(data.wrestlerByName().get(name)))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toSet());
-
+    // Winners combo — defined before teams so team lambdas can capture it
     winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnersCombo.setItemLabelGenerator(Wrestler::getName);
     winnersCombo.setWidthFull();
     winnersCombo.setId("edit-winners-combo-box");
 
-    participantsCombo.addValueChangeListener(
-        e -> {
-          updateSynergyBonus(e.getValue());
+    // Dummy field to satisfy @Getter contract (teams replace participantsCombo functionally)
+    participantsCombo = new MultiSelectComboBox<>();
+    participantsCombo.setVisible(false);
+
+    Runnable refreshWinners =
+        () -> {
+          Set<Wrestler> allSelected =
+              teamCombos.stream().flatMap(c -> c.getValue().stream()).collect(Collectors.toSet());
+          Set<Wrestler> currentWinners = new HashSet<>(winnersCombo.getValue());
           winnersCombo.setItems(
-              e.getValue().stream()
+              allSelected.stream()
                   .sorted(Comparator.comparing(Wrestler::getName))
                   .collect(Collectors.toList()));
           winnersCombo.setValue(
-              winnersCombo.getValue().stream()
-                  .filter(e.getValue()::contains)
-                  .collect(Collectors.toSet()));
-        });
+              currentWinners.stream().filter(allSelected::contains).collect(Collectors.toSet()));
+          updateSynergyBonus(allSelected);
+        };
 
-    refreshParticipantsList(existingParticipants);
+    java.util.function.Consumer<Set<Wrestler>> addTeamRow =
+        initialWrestlers -> {
+          int teamNum = teamCombos.size() + 1;
+          MultiSelectComboBox<Wrestler> teamCombo = new MultiSelectComboBox<>("Team " + teamNum);
+          teamCombo.setItemLabelGenerator(Wrestler::getName);
+          teamCombo.setWidthFull();
+          teamCombo.setItems(getFilteredWrestlers(initialWrestlers));
+          if (!initialWrestlers.isEmpty()) {
+            teamCombo.setValue(initialWrestlers);
+          }
+          teamCombo.addValueChangeListener(e -> refreshWinners.run());
+          teamCombos.add(teamCombo);
+
+          Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
+          removeTeamButton.addThemeVariants(
+              ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
+          removeTeamButton.setTooltipText("Remove Team");
+          HorizontalLayout teamRow = new HorizontalLayout(teamCombo, removeTeamButton);
+          teamRow.setFlexGrow(1, teamCombo);
+          teamRow.setAlignItems(HorizontalLayout.Alignment.END);
+          teamRow.setWidthFull();
+          removeTeamButton.addClickListener(
+              e -> {
+                teamsLayout.remove(teamRow);
+                teamCombos.remove(teamCombo);
+                for (int i = 0; i < teamCombos.size(); i++) {
+                  teamCombos.get(i).setLabel("Team " + (i + 1));
+                }
+                refreshWinners.run();
+              });
+          teamsLayout.add(teamRow);
+          refreshWinners.run();
+        };
+
+    // Populate teams from initial data
+    initial.teams().forEach((teamNum, wrestlers) -> addTeamRow.accept(new HashSet<>(wrestlers)));
 
     alignmentFilter.addValueChangeListener(
-        e -> refreshParticipantsList(participantsCombo.getValue()));
-    genderFilter.addValueChangeListener(e -> refreshParticipantsList(participantsCombo.getValue()));
+        e -> {
+          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
+            Set<Wrestler> current = combo.getValue();
+            combo.setItems(getFilteredWrestlers(current));
+            combo.setValue(current);
+          }
+        });
+    genderFilter.addValueChangeListener(
+        e -> {
+          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
+            Set<Wrestler> current = combo.getValue();
+            combo.setItems(getFilteredWrestlers(current));
+            combo.setValue(current);
+          }
+        });
 
-    participantsCombo.setValue(existingParticipants);
+    Button addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
+    addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    addTeamButton.setId("edit-add-team-button");
+    addTeamButton.addClickListener(e -> addTeamRow.accept(new HashSet<>()));
 
-    if (segment.getWinners() != null) {
-      winnersCombo.setValue(
-          segment.getWinners().stream()
-              .map(name -> Optional.ofNullable(data.wrestlerByName().get(name)))
-              .filter(Optional::isPresent)
-              .map(Optional::get)
-              .collect(Collectors.toSet()));
-    }
+    teamsLayout.setSpacing(true);
+    teamsLayout.setPadding(false);
+    VerticalLayout teamsSection = new VerticalLayout(teamsLayout, addTeamButton);
+    teamsSection.setSpacing(false);
+    teamsSection.setPadding(false);
+    formLayout.setColspan(teamsSection, 2);
 
-    updateSynergyBonus(existingParticipants);
+    winnersCombo.setValue(new HashSet<>(initial.winners()));
 
     summaryArea = new TextArea("Summary");
     summaryArea.setWidthFull();
-    summaryArea.setValue(segment.getSummary() != null ? segment.getSummary() : "");
+    summaryArea.setValue(initial.summary());
     summaryArea.setId("edit-summary-text-area");
     formLayout.setColspan(summaryArea, 2);
 
     narrationArea = new TextArea("Narration");
     narrationArea.setWidthFull();
-    narrationArea.setValue(segment.getNarration());
+    narrationArea.setValue(initial.narration());
     narrationArea.setId("edit-narration-text-area");
     formLayout.setColspan(narrationArea, 2);
 
     notesArea = new TextArea("Match Feedback / Notes");
     notesArea.setWidthFull();
-    notesArea.setValue(segment.getNotes() != null ? segment.getNotes() : "");
+    notesArea.setValue(initial.notes());
     notesArea.setId("edit-notes-text-area");
     notesArea.setPlaceholder("Provide specific instructions for the AI narration...");
     formLayout.setColspan(notesArea, 2);
@@ -280,10 +448,10 @@ public class EditSegmentDialog extends Dialog {
             titleMultiSelectComboBox.clear();
           }
         });
-    isTitleSegmentCheckbox.setValue(segment.getIsTitleSegment());
-    titleMultiSelectComboBox.setVisible(segment.getIsTitleSegment());
-    if (segment.getIsTitleSegment()) {
-      titleMultiSelectComboBox.setValue(segment.getTitles());
+    isTitleSegmentCheckbox.setValue(initial.isTitleSegment());
+    titleMultiSelectComboBox.setVisible(initial.isTitleSegment());
+    if (initial.isTitleSegment()) {
+      titleMultiSelectComboBox.setValue(initial.titles());
     }
 
     formLayout.add(
@@ -292,7 +460,7 @@ public class EditSegmentDialog extends Dialog {
         refereeCombo,
         alignmentFilter,
         genderFilter,
-        participantsCombo,
+        teamsSection,
         synergyBonusLabel,
         winnersCombo,
         isTitleSegmentCheckbox,
@@ -301,11 +469,76 @@ public class EditSegmentDialog extends Dialog {
         notesArea,
         narrationArea);
 
-    saveButton = new Button("Save", e -> save());
-    cancelButton = new Button("Cancel", e -> close());
+    saveButton =
+        new Button(
+            "Save",
+            e -> {
+              Map<Integer, List<Wrestler>> teamMap = new LinkedHashMap<>();
+              for (int i = 0; i < teamCombos.size(); i++) {
+                teamMap.put(i + 1, new ArrayList<>(teamCombos.get(i).getValue()));
+              }
+              onSave.onSave(
+                  new SegmentSaveData(
+                      segmentTypeCombo.getValue(),
+                      teamMap,
+                      new HashSet<>(winnersCombo.getValue()),
+                      new HashSet<>(rulesCombo.getValue()),
+                      refereeCombo.getValue(),
+                      narrationArea.getValue(),
+                      summaryArea.getValue(),
+                      notesArea.getValue(),
+                      isTitleSegmentCheckbox.getValue(),
+                      titleMultiSelectComboBox.getValue()));
+            });
 
+    Button cancelButton = new Button("Cancel", e -> close());
     getFooter().add(cancelButton, saveButton);
     add(new VerticalLayout(formLayout));
+  }
+
+  // ==================== CONVENIENCE CONSTRUCTORS ====================
+
+  /** Fast constructor for ShowPlanningView: accepts pre-loaded data and a ProposedSegment. */
+  public EditSegmentDialog(
+      final ProposedSegment segment,
+      final PreloadedData data,
+      final WrestlerService wrestlerService,
+      final Gender defaultGenderConstraint,
+      final Long universeId,
+      final Runnable onSave) {
+    this(
+        data,
+        SegmentDialogData.from(segment, data),
+        wrestlerService,
+        defaultGenderConstraint,
+        universeId,
+        saveData -> {
+          segment.setType(saveData.segmentType().getName());
+          segment.setNarration(saveData.narration());
+          segment.setSummary(saveData.summary());
+          segment.setNotes(saveData.notes());
+          List<List<String>> teams =
+              saveData.teams().values().stream()
+                  .map(
+                      wrestlers ->
+                          wrestlers.stream().map(Wrestler::getName).collect(Collectors.toList()))
+                  .collect(Collectors.toList());
+          segment.setTeams(teams);
+          segment.setParticipants(
+              saveData.teams().values().stream()
+                  .flatMap(List::stream)
+                  .map(Wrestler::getName)
+                  .collect(Collectors.toList()));
+          segment.setWinners(
+              saveData.winners().stream().map(Wrestler::getName).collect(Collectors.toList()));
+          segment.setRules(
+              saveData.rules().stream().map(SegmentRule::getName).collect(Collectors.toList()));
+          segment.setRefereeName(saveData.referee() != null ? saveData.referee().getName() : null);
+          segment.setIsTitleSegment(saveData.isTitleSegment());
+          segment.setTitles(saveData.titles());
+          onSave.run();
+        });
+    this.segment = segment;
   }
 
   /** Legacy constructor kept for test backward compatibility. Builds PreloadedData inline. */
@@ -333,6 +566,27 @@ public class EditSegmentDialog extends Dialog {
         defaultGenderConstraint,
         universeId,
         onSave);
+  }
+
+  // ==================== PRIVATE HELPERS ====================
+
+  private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
+    AlignmentType alignment = alignmentFilter.getValue();
+    Gender gender = genderFilter.getValue();
+
+    if (alignment != null) {
+      return wrestlerService.findAllFiltered(alignment, gender, universeId, forceInclude);
+    }
+
+    Set<Long> includeIds =
+        forceInclude == null
+            ? Set.of()
+            : forceInclude.stream().map(Wrestler::getId).collect(Collectors.toSet());
+
+    return data.activeWrestlers().stream()
+        .filter(w -> includeIds.contains(w.getId()) || (gender == null || w.getGender() == gender))
+        .sorted(Comparator.comparing(Wrestler::getName))
+        .collect(Collectors.toList());
   }
 
   private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {
@@ -363,51 +617,7 @@ public class EditSegmentDialog extends Dialog {
     synergyBonusLabel.setVisible(totalBonus > 0);
   }
 
-  private void refreshParticipantsList(final Set<Wrestler> selectedWrestlers) {
-    AlignmentType alignment = alignmentFilter.getValue();
-    Gender gender = genderFilter.getValue();
-
-    if (alignment != null) {
-      // Alignment filtering needs DB-backed service (alignment data not pre-loaded)
-      participantsCombo.setItems(
-          wrestlerService.findAllFiltered(alignment, gender, universeId, selectedWrestlers));
-      return;
-    }
-
-    // In-memory filter from pre-loaded data — zero DB queries
-    Set<Long> selectedIds =
-        selectedWrestlers == null
-            ? Set.of()
-            : selectedWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
-
-    List<Wrestler> filtered =
-        data.activeWrestlers().stream()
-            .filter(
-                w -> selectedIds.contains(w.getId()) || (gender == null || w.getGender() == gender))
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList());
-    participantsCombo.setItems(filtered);
-  }
-
   public void save() {
-    segment.setType(segmentTypeCombo.getValue().getName());
-    segment.setNarration(narrationArea.getValue());
-    segment.setSummary(summaryArea.getValue());
-    segment.setNotes(notesArea.getValue());
-    segment.setParticipants(
-        participantsCombo.getValue().stream().map(Wrestler::getName).collect(Collectors.toList()));
-    segment.setWinners(
-        winnersCombo.getValue().stream().map(Wrestler::getName).collect(Collectors.toList()));
-    segment.setRules(
-        rulesCombo.getValue().stream().map(SegmentRule::getName).collect(Collectors.toList()));
-    segment.setIsTitleSegment(isTitleSegmentCheckbox.getValue());
-    segment.setTitles(titleMultiSelectComboBox.getValue());
-    if (refereeCombo.getValue() != null) {
-      segment.setRefereeName(refereeCombo.getValue().getName());
-    } else {
-      segment.setRefereeName(null);
-    }
-    onSave.run();
-    close();
+    saveButton.click();
   }
 }

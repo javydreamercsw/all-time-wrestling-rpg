@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
@@ -98,12 +99,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /** Detail view for displaying comprehensive information about a specific show. */
 @Route("show-detail")
@@ -1321,296 +1325,78 @@ public class ShowDetailView extends Main
   }
 
   private void openEditSegmentDialog(@NonNull Segment segment) {
-    final Segment seg = segmentRepository.findById(segment.getId()).orElse(segment);
-    Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Edit Segment for " + currentShow.getName());
-    dialog.setWidth("min(600px, 95vw)");
-    dialog.setMaxWidth("90vw");
-    dialog.setId("edit-segment-dialog");
-
-    // Form layout
-    FormLayout formLayout = new FormLayout();
-    formLayout.setResponsiveSteps(
-        new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
-
-    // Segment type selection
-    ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
-    segmentTypeCombo.setItems(
-        segmentTypeRepository.findAll().stream()
-            .sorted(Comparator.comparing(SegmentType::getName))
-            .collect(Collectors.toList()));
-    segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
-    segmentTypeCombo.setWidthFull();
-    segmentTypeCombo.setRequired(true);
-    segmentTypeCombo.setValue(seg.getSegmentType());
-    segmentTypeCombo.setId("edit-segment-type-combo-box");
-
-    // Segment rules selection (multi-select)
-    MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
-    rulesCombo.setItems(
-        segmentRuleRepository.findAll().stream()
-            .sorted(Comparator.comparing(SegmentRule::getName))
-            .collect(Collectors.toList()));
-    rulesCombo.setItemLabelGenerator(SegmentRule::getName);
-    rulesCombo.setWidthFull();
-    rulesCombo.setValue(seg.getSegmentRules());
-    rulesCombo.setId("edit-segment-rules-combo-box");
-    formLayout.setColspan(rulesCombo, 2);
-
-    // Referee selection
-    ComboBox<Npc> refereeCombo = new ComboBox<>("Referee");
-    refereeCombo.setItems(
-        npcService.findAllByType("Referee").stream()
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
-    refereeCombo.setItemLabelGenerator(Npc::getName);
-    refereeCombo.setWidthFull();
-    refereeCombo.setValue(seg.getReferee());
-    refereeCombo.setId("edit-referee-combo-box");
-
-    // Alignment and Gender Filters
-    ComboBox<AlignmentType> alignmentFilter = new ComboBox<>("Alignment Filter");
-    alignmentFilter.setItems(AlignmentType.values());
-    alignmentFilter.setClearButtonVisible(true);
-    alignmentFilter.setPlaceholder("All alignments");
-    alignmentFilter.setWidthFull();
-    alignmentFilter.setId("edit-alignment-filter-combo-box");
-
-    ComboBox<Gender> genderFilter = new ComboBox<>("Gender Filter");
-    genderFilter.setItems(Gender.values());
-    genderFilter.setClearButtonVisible(true);
-    genderFilter.setPlaceholder("All genders");
-    genderFilter.setWidthFull();
+    final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
     Gender defaultGender =
         currentShow.getTemplate() != null ? currentShow.getTemplate().getGenderConstraint() : null;
-    genderFilter.setValue(defaultGender);
-    genderFilter.setId("edit-gender-filter-combo-box");
+    Long universeId = universeContextService.getCurrentUniverseId();
 
-    // Winners combo (defined first so team lambdas can capture it)
-    MultiSelectComboBox<Wrestler> winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
-    winnersCombo.setItemLabelGenerator(Wrestler::getName);
-    winnersCombo.setWidthFull();
-    winnersCombo.setId("edit-winners-combo-box");
+    CompletableFuture.supplyAsync(
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    securityContext,
+                    () -> {
+                      Segment seg = segmentRepository.findById(segment.getId()).orElse(segment);
+                      EditSegmentDialog.PreloadedData preloaded =
+                          EditSegmentDialog.PreloadedData.load(
+                              segmentTypeRepository,
+                              segmentRuleRepository,
+                              npcService,
+                              titleService,
+                              wrestlerService,
+                              universeId);
+                      return new Object[] {seg, preloaded};
+                    }))
+        .thenAccept(
+            result ->
+                ui.access(
+                    () -> {
+                      Segment seg = (Segment) result[0];
+                      EditSegmentDialog.PreloadedData preloaded =
+                          (EditSegmentDialog.PreloadedData) result[1];
+                      EditSegmentDialog.SegmentDialogData initial =
+                          EditSegmentDialog.SegmentDialogData.from(seg);
 
-    // Teams layout — one row per team, matching the NarrationDialog pattern
-    List<MultiSelectComboBox<Wrestler>> teamCombos = new ArrayList<>();
-    VerticalLayout teamsLayout = new VerticalLayout();
-    teamsLayout.setSpacing(true);
-    teamsLayout.setPadding(false);
-
-    Runnable refreshWinners =
-        () -> {
-          Set<Wrestler> allSelected =
-              teamCombos.stream().flatMap(c -> c.getValue().stream()).collect(Collectors.toSet());
-          Set<Wrestler> currentWinners = new HashSet<>(winnersCombo.getValue());
-          winnersCombo.setItems(
-              allSelected.stream()
-                  .sorted(Comparator.comparing(Wrestler::getName))
-                  .collect(Collectors.toList()));
-          winnersCombo.setValue(
-              currentWinners.stream().filter(allSelected::contains).collect(Collectors.toSet()));
-        };
-
-    java.util.function.Consumer<Set<Wrestler>> addTeamRow =
-        initialWrestlers -> {
-          MultiSelectComboBox<Wrestler> teamCombo =
-              new MultiSelectComboBox<>("Team " + (teamCombos.size() + 1));
-          teamCombo.setItemLabelGenerator(Wrestler::getName);
-          teamCombo.setWidthFull();
-          teamCombo.setItems(
-              wrestlerService.findAllFiltered(
-                  alignmentFilter.getValue(),
-                  genderFilter.getValue(),
-                  universeContextService.getCurrentUniverseId(),
-                  initialWrestlers));
-          if (!initialWrestlers.isEmpty()) {
-            teamCombo.setValue(initialWrestlers);
-          }
-          teamCombo.addValueChangeListener(e -> refreshWinners.run());
-          teamCombos.add(teamCombo);
-
-          Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
-          removeTeamButton.addThemeVariants(
-              ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
-          removeTeamButton.setTooltipText("Remove Team");
-          HorizontalLayout teamRow = new HorizontalLayout(teamCombo, removeTeamButton);
-          teamRow.setFlexGrow(1, teamCombo);
-          teamRow.setAlignItems(HorizontalLayout.Alignment.END);
-          teamRow.setWidthFull();
-          removeTeamButton.addClickListener(
-              e -> {
-                teamsLayout.remove(teamRow);
-                teamCombos.remove(teamCombo);
-                for (int i = 0; i < teamCombos.size(); i++) {
-                  teamCombos.get(i).setLabel("Team " + (i + 1));
-                }
-                refreshWinners.run();
-              });
-          teamsLayout.add(teamRow);
-          refreshWinners.run();
-        };
-
-    // Restore teams grouped by saved teamNumber; fall back to one row per wrestler for legacy data
-    java.util.Map<Integer, List<Wrestler>> existingTeams = seg.getWrestlersByTeam();
-    if (existingTeams.isEmpty()) {
-      for (Wrestler w : seg.getWrestlers()) {
-        addTeamRow.accept(new HashSet<>(Set.of(w)));
-      }
-    } else {
-      existingTeams.forEach((teamNum, wrestlers) -> addTeamRow.accept(new HashSet<>(wrestlers)));
-    }
-    if (teamCombos.isEmpty()) {
-      addTeamRow.accept(new HashSet<>());
-      addTeamRow.accept(new HashSet<>());
-    }
-
-    // Keep team combo items in sync with alignment/gender filters
-    alignmentFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(
-                wrestlerService.findAllFiltered(
-                    e.getValue(),
-                    genderFilter.getValue(),
-                    universeContextService.getCurrentUniverseId(),
-                    current));
-            combo.setValue(current);
-          }
-        });
-    genderFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(
-                wrestlerService.findAllFiltered(
-                    alignmentFilter.getValue(),
-                    e.getValue(),
-                    universeContextService.getCurrentUniverseId(),
-                    current));
-            combo.setValue(current);
-          }
-        });
-
-    Button addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
-    addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-    addTeamButton.setId("edit-add-team-button");
-    addTeamButton.addClickListener(e -> addTeamRow.accept(new HashSet<>()));
-
-    VerticalLayout teamsSection = new VerticalLayout(teamsLayout, addTeamButton);
-    teamsSection.setSpacing(false);
-    teamsSection.setPadding(false);
-    formLayout.setColspan(teamsSection, 2);
-
-    winnersCombo.setValue(new HashSet<>(seg.getWinners()));
-
-    // Narration
-    TextArea summaryArea = new TextArea("Summary");
-    summaryArea.setWidthFull();
-    summaryArea.setValue(seg.getSummary() != null ? seg.getSummary() : "");
-    summaryArea.setId("edit-summary-text-area");
-    formLayout.setColspan(summaryArea, 2);
-
-    // Narration
-    TextArea narrationArea = new TextArea("Narration");
-    narrationArea.setWidthFull();
-    narrationArea.setValue(seg.getNarration() != null ? seg.getNarration() : "");
-    narrationArea.setId("edit-narration-text-area");
-    formLayout.setColspan(narrationArea, 2);
-
-    // Notes
-    TextArea notesArea = new TextArea("Notes/Feedback");
-    notesArea.setWidthFull();
-    notesArea.setValue(seg.getNotes() != null ? seg.getNotes() : "");
-    notesArea.setId("edit-notes-text-area");
-    formLayout.setColspan(notesArea, 2);
-
-    // Title selection (multi-select) - only visible if segment is a title segment
-    MultiSelectComboBox<Title> titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
-    titleMultiSelectComboBox.setItems(
-        titleService.findAll().stream()
-            .sorted(Comparator.comparing(Title::getName))
-            .collect(Collectors.toList()));
-    titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
-    titleMultiSelectComboBox.setWidthFull();
-    titleMultiSelectComboBox.setVisible(seg.getIsTitleSegment());
-    titleMultiSelectComboBox.setValue(seg.getTitles());
-    titleMultiSelectComboBox.setId("edit-title-multi-select-combo-box");
-
-    // Add checkbox to indicate if it's a title segment
-    Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
-    isTitleSegmentCheckbox.setValue(seg.getIsTitleSegment());
-    isTitleSegmentCheckbox.setId("edit-is-title-segment-checkbox");
-    isTitleSegmentCheckbox.addValueChangeListener(
-        event -> {
-          titleMultiSelectComboBox.setVisible(event.getValue());
-          if (!event.getValue()) {
-            titleMultiSelectComboBox.clear();
-          }
-        });
-
-    formLayout.add(
-        segmentTypeCombo,
-        rulesCombo,
-        refereeCombo,
-        alignmentFilter,
-        genderFilter,
-        teamsSection,
-        winnersCombo,
-        isTitleSegmentCheckbox,
-        titleMultiSelectComboBox,
-        summaryArea,
-        narrationArea,
-        notesArea);
-
-    // Buttons
-    Button saveButton =
-        new Button(
-            "Save Changes",
-            e -> {
-              seg.setNarration(narrationArea.getValue());
-              seg.setSummary(summaryArea.getValue());
-              seg.setNotes(notesArea.getValue());
-              seg.setReferee(refereeCombo.getValue());
-              // Set isTitleSegment based on checkbox
-              boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
-              seg.setIsTitleSegment(isTitleSegment);
-              // If it's a title segment, set the selected titles
-              if (isTitleSegment) {
-                seg.setTitles(titleMultiSelectComboBox.getValue());
-              }
-              java.util.Map<Integer, List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
-              for (int i = 0; i < teamCombos.size(); i++) {
-                teamMap.put(i + 1, new ArrayList<>(teamCombos.get(i).getValue()));
-              }
-              if (validateAndSaveSegment(
-                  currentShow,
-                  segmentTypeCombo.getValue(),
-                  teamMap,
-                  winnersCombo.getValue(),
-                  rulesCombo.getValue(),
-                  seg)) {
-                dialog.close();
-                refreshSegmentsGrid();
-              }
+                      EditSegmentDialog[] dialogHolder = new EditSegmentDialog[1];
+                      dialogHolder[0] =
+                          new EditSegmentDialog(
+                              preloaded,
+                              initial,
+                              wrestlerService,
+                              defaultGender,
+                              universeId,
+                              saveData -> {
+                                seg.setNarration(saveData.narration());
+                                seg.setSummary(saveData.summary());
+                                seg.setNotes(saveData.notes());
+                                seg.setReferee(saveData.referee());
+                                seg.setIsTitleSegment(saveData.isTitleSegment());
+                                if (saveData.isTitleSegment()) {
+                                  seg.setTitles(saveData.titles());
+                                }
+                                if (validateAndSaveSegment(
+                                    currentShow,
+                                    saveData.segmentType(),
+                                    saveData.teams(),
+                                    saveData.winners(),
+                                    saveData.rules(),
+                                    seg)) {
+                                  dialogHolder[0].close();
+                                  refreshSegmentsGrid();
+                                }
+                              });
+                      dialogHolder[0].setHeaderTitle("Edit Segment for " + currentShow.getName());
+                      dialogHolder[0].open();
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error loading segment edit data", ex);
+              ui.access(
+                  () ->
+                      notificationService.showError(
+                          "Failed to load segment data: " + ex.getMessage()));
+              return null;
             });
-    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    saveButton.setId("edit-segment-save-button");
-
-    Button cancelButton = new Button("Cancel", e -> dialog.close());
-    cancelButton.setId("edit-segment-cancel-button");
-
-    HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
-    buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-    buttonLayout.setWidthFull();
-
-    VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
-    dialogLayout.setSpacing(true);
-    dialogLayout.setPadding(false);
-    dialogLayout.setId("edit-segment-dialog-layout");
-
-    dialog.add(dialogLayout);
-    dialog.open();
   }
 
   private void deleteSegment(@NonNull Segment segment) {
