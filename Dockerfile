@@ -25,11 +25,9 @@ ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 # Note: AI_OPENAI_API_KEY, AI_CLAUDE_API_KEY, AI_GEMINI_API_KEY, and NOTION_TOKEN 
 # must be provided at runtime for AI/Notion features to work.
 
-ENV SPRING_DATASOURCE_URL=jdbc:h2:file:/data/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-ENV SPRING_DATASOURCE_USERNAME=sa
-ENV SPRING_H2_CONSOLE_ENABLED=true
+ENV SPRING_PROFILES_ACTIVE=mysql
 
-# Note: SPRING_DATASOURCE_PASSWORD must be provided at runtime if required by the database.
+# Note: SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD
+# must be provided at runtime via Railway environment variables.
 
-VOLUME /data
 EXPOSE 9090
