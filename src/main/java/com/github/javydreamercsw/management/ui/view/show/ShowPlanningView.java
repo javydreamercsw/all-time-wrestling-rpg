@@ -237,20 +237,58 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                     selectedShow != null && selectedShow.getTemplate() != null
                         ? selectedShow.getTemplate().getGenderConstraint()
                         : null;
+                Long universeId = universeContextService.getCurrentUniverseId();
 
-                EditSegmentDialog dialog =
-                    new EditSegmentDialog(
-                        segment,
-                        wrestlerRepository,
-                        wrestlerService,
-                        titleService,
-                        segmentTypeRepository,
-                        segmentRuleRepository,
-                        npcService,
-                        constraint,
-                        universeContextService.getCurrentUniverseId(),
-                        () -> proposedSegmentsGrid.getDataProvider().refreshAll());
-                dialog.open();
+                editButton.setEnabled(false);
+                editButton.setText("...");
+                UI ui = UI.getCurrent();
+                SecurityContext securityContext = SecurityContextHolder.getContext();
+
+                CompletableFuture.supplyAsync(
+                        () ->
+                            GeneralSecurityUtils.runWithContext(
+                                securityContext,
+                                () ->
+                                    EditSegmentDialog.PreloadedData.load(
+                                        segmentTypeRepository,
+                                        segmentRuleRepository,
+                                        npcService,
+                                        titleService,
+                                        wrestlerService,
+                                        universeId)))
+                    .thenAccept(
+                        preloaded ->
+                            ui.access(
+                                () -> {
+                                  EditSegmentDialog dialog =
+                                      new EditSegmentDialog(
+                                          segment,
+                                          preloaded,
+                                          wrestlerService,
+                                          constraint,
+                                          universeId,
+                                          () ->
+                                              proposedSegmentsGrid.getDataProvider().refreshAll());
+                                  dialog.addOpenedChangeListener(
+                                      ev -> {
+                                        if (!ev.isOpened()) {
+                                          editButton.setEnabled(true);
+                                          editButton.setText("Edit");
+                                        }
+                                      });
+                                  dialog.open();
+                                }))
+                    .exceptionally(
+                        ex -> {
+                          ui.access(
+                              () -> {
+                                editButton.setEnabled(true);
+                                editButton.setText("Edit");
+                                notificationService.showError(
+                                    "Failed to load segment data: " + ex.getMessage());
+                              });
+                          return null;
+                        });
               });
           return editButton;
         });

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -38,33 +39,69 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
 public class EditSegmentDialog extends Dialog {
 
+  /**
+   * All reference data needed by the dialog, loaded in one async batch. Use {@link #load} to
+   * pre-fetch before constructing the dialog on the UI thread.
+   */
+  public record PreloadedData(
+      List<SegmentType> segmentTypes,
+      List<SegmentRule> segmentRules,
+      List<Npc> referees,
+      List<Title> titles,
+      List<Wrestler> activeWrestlers,
+      Map<String, Wrestler> wrestlerByName) {
+
+    public static PreloadedData load(
+        final SegmentTypeRepository segmentTypeRepository,
+        final SegmentRuleRepository segmentRuleRepository,
+        final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+        final TitleService titleService,
+        final WrestlerService wrestlerService,
+        final Long universeId) {
+      List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
+      Map<String, Wrestler> byName =
+          wrestlerService.getAllWrestlers().stream()
+              .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
+      return new PreloadedData(
+          segmentTypeRepository.findAll().stream()
+              .sorted(Comparator.comparing(SegmentType::getName))
+              .collect(Collectors.toList()),
+          segmentRuleRepository.findAll().stream()
+              .sorted(Comparator.comparing(SegmentRule::getName))
+              .collect(Collectors.toList()),
+          npcService.findAllByType("Referee").stream()
+              .sorted(Comparator.comparing(Npc::getName))
+              .collect(Collectors.toList()),
+          titleService.findAll(),
+          active,
+          byName);
+    }
+  }
+
   @Getter private final ProposedSegment segment;
-  private final WrestlerRepository wrestlerRepository;
+  private final PreloadedData data;
   private final WrestlerService wrestlerService;
-  private final TitleService titleService;
-  private final SegmentTypeRepository segmentTypeRepository;
-  private final SegmentRuleRepository segmentRuleRepository;
-  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final Long universeId;
   private final Runnable onSave;
   @Getter private final TextArea narrationArea;
   @Getter private final TextArea notesArea;
   @Getter private final MultiSelectComboBox<Wrestler> participantsCombo;
 
-  private final ComboBox<com.github.javydreamercsw.management.domain.npc.Npc> refereeCombo;
+  private final ComboBox<Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
   private final ComboBox<AlignmentType> alignmentFilter;
 
-  @Getter
-  private final MultiSelectComboBox<Title>
-      titleMultiSelectComboBox; // MultiSelectComboBox for titles
+  @Getter private final MultiSelectComboBox<Title> titleMultiSelectComboBox;
 
   @Getter private final Button saveButton;
   private final Button cancelButton;
@@ -75,30 +112,22 @@ public class EditSegmentDialog extends Dialog {
   private final Checkbox isTitleSegmentCheckbox;
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
 
+  /** Fast constructor: all reference data pre-loaded — zero DB queries at construction time. */
   public EditSegmentDialog(
       final ProposedSegment segment,
-      final WrestlerRepository wrestlerRepository,
+      final PreloadedData data,
       final WrestlerService wrestlerService,
-      final TitleService titleService,
-      final SegmentTypeRepository segmentTypeRepository,
-      final SegmentRuleRepository segmentRuleRepository,
-      final com.github.javydreamercsw.management.service.npc.NpcService npcService,
       final Gender defaultGenderConstraint,
       final Long universeId,
       final Runnable onSave) {
     this.segment = segment;
-    this.wrestlerRepository = wrestlerRepository;
+    this.data = data;
     this.wrestlerService = wrestlerService;
-    this.titleService = titleService;
-    this.segmentTypeRepository = segmentTypeRepository;
-    this.segmentRuleRepository = segmentRuleRepository;
-    this.npcService = npcService;
     this.universeId = universeId;
     this.onSave = onSave;
 
     setHeaderTitle("Edit Segment");
 
-    // Form layout
     FormLayout formLayout = new FormLayout();
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
@@ -111,41 +140,42 @@ public class EditSegmentDialog extends Dialog {
     synergyBonusLabel.setId("edit-synergy-bonus-label");
 
     segmentTypeCombo = new ComboBox<>("Segment Type");
-    segmentTypeCombo.setItems(
-        segmentTypeRepository.findAll().stream()
-            .sorted(Comparator.comparing(SegmentType::getName))
-            .collect(Collectors.toList()));
+    segmentTypeCombo.setItems(data.segmentTypes());
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
-    segmentTypeRepository.findByName(segment.getType()).ifPresent(segmentTypeCombo::setValue);
+    data.segmentTypes().stream()
+        .filter(t -> t.getName().equals(segment.getType()))
+        .findFirst()
+        .ifPresent(segmentTypeCombo::setValue);
     segmentTypeCombo.setId("edit-segment-type-combo-box");
 
     refereeCombo = new ComboBox<>("Referee");
-    refereeCombo.setItems(npcService.findAllByType("Referee"));
-    refereeCombo.setItemLabelGenerator(
-        com.github.javydreamercsw.management.domain.npc.Npc::getName);
+    refereeCombo.setItems(data.referees());
+    refereeCombo.setItemLabelGenerator(Npc::getName);
     refereeCombo.setWidthFull();
     if (segment.getRefereeName() != null) {
-      npcService.findByName(segment.getRefereeName());
-      refereeCombo.setValue(npcService.findByName(segment.getRefereeName()));
+      data.referees().stream()
+          .filter(n -> segment.getRefereeName().equals(n.getName()))
+          .findFirst()
+          .ifPresent(refereeCombo::setValue);
     }
     refereeCombo.setId("edit-referee-combo-box");
 
     rulesCombo = new MultiSelectComboBox<>("Segment Rules");
-    rulesCombo.setItems(
-        segmentRuleRepository.findAll().stream()
-            .sorted(Comparator.comparing(SegmentRule::getName))
-            .collect(Collectors.toList()));
+    rulesCombo.setItems(data.segmentRules());
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
     rulesCombo.setWidthFull();
-    // Pre-select existing rules
     if (segment.getRules() != null) {
       rulesCombo.setValue(
           segment.getRules().stream()
-              .map(segmentRuleRepository::findByName)
-              .filter(java.util.Optional::isPresent)
-              .map(java.util.Optional::get)
+              .map(
+                  name ->
+                      data.segmentRules().stream()
+                          .filter(r -> r.getName().equals(name))
+                          .findFirst())
+              .filter(Optional::isPresent)
+              .map(Optional::get)
               .collect(Collectors.toSet()));
     }
     rulesCombo.setId("edit-segment-rules-combo-box");
@@ -172,12 +202,11 @@ public class EditSegmentDialog extends Dialog {
     participantsCombo.setRequired(true);
     participantsCombo.setId("edit-wrestlers-combo-box");
 
-    // Pre-select existing participants
-    java.util.Set<Wrestler> existingParticipants =
+    Set<Wrestler> existingParticipants =
         segment.getParticipants().stream()
-            .map(wrestlerRepository::findByName)
-            .filter(java.util.Optional::isPresent)
-            .map(java.util.Optional::get)
+            .map(name -> Optional.ofNullable(data.wrestlerByName().get(name)))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
             .collect(Collectors.toSet());
 
     winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
@@ -192,7 +221,6 @@ public class EditSegmentDialog extends Dialog {
               e.getValue().stream()
                   .sorted(Comparator.comparing(Wrestler::getName))
                   .collect(Collectors.toList()));
-          // Clear winners if selected participants no longer include them
           winnersCombo.setValue(
               winnersCombo.getValue().stream()
                   .filter(e.getValue()::contains)
@@ -201,20 +229,18 @@ public class EditSegmentDialog extends Dialog {
 
     refreshParticipantsList(existingParticipants);
 
-    // Filter logic
     alignmentFilter.addValueChangeListener(
         e -> refreshParticipantsList(participantsCombo.getValue()));
     genderFilter.addValueChangeListener(e -> refreshParticipantsList(participantsCombo.getValue()));
 
     participantsCombo.setValue(existingParticipants);
 
-    // Pre-select existing winners if any
     if (segment.getWinners() != null) {
       winnersCombo.setValue(
           segment.getWinners().stream()
-              .map(wrestlerRepository::findByName)
-              .filter(java.util.Optional::isPresent)
-              .map(java.util.Optional::get)
+              .map(name -> Optional.ofNullable(data.wrestlerByName().get(name)))
+              .filter(Optional::isPresent)
+              .map(Optional::get)
               .collect(Collectors.toSet()));
     }
 
@@ -240,7 +266,7 @@ public class EditSegmentDialog extends Dialog {
     formLayout.setColspan(notesArea, 2);
 
     titleMultiSelectComboBox = new MultiSelectComboBox<>("Titles");
-    titleMultiSelectComboBox.setItems(titleService.findAll());
+    titleMultiSelectComboBox.setItems(data.titles());
     titleMultiSelectComboBox.setItemLabelGenerator(Title::getName);
     titleMultiSelectComboBox.setWidthFull();
     titleMultiSelectComboBox.setId("edit-title-multi-select-combo-box");
@@ -275,7 +301,6 @@ public class EditSegmentDialog extends Dialog {
         notesArea,
         narrationArea);
 
-    // Buttons
     saveButton = new Button("Save", e -> save());
     cancelButton = new Button("Cancel", e -> close());
 
@@ -283,10 +308,37 @@ public class EditSegmentDialog extends Dialog {
     add(new VerticalLayout(formLayout));
   }
 
+  /** Legacy constructor kept for test backward compatibility. Builds PreloadedData inline. */
+  public EditSegmentDialog(
+      final ProposedSegment segment,
+      final WrestlerRepository wrestlerRepository,
+      final WrestlerService wrestlerService,
+      final TitleService titleService,
+      final SegmentTypeRepository segmentTypeRepository,
+      final SegmentRuleRepository segmentRuleRepository,
+      final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+      final Gender defaultGenderConstraint,
+      final Long universeId,
+      final Runnable onSave) {
+    this(
+        segment,
+        PreloadedData.load(
+            segmentTypeRepository,
+            segmentRuleRepository,
+            npcService,
+            titleService,
+            wrestlerService,
+            universeId),
+        wrestlerService,
+        defaultGenderConstraint,
+        universeId,
+        onSave);
+  }
+
   private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {
     int totalBonus = 0;
-    java.util.Map<Long, Integer> factionCounts = new java.util.HashMap<>();
-    java.util.Map<Long, Integer> factionAffinity = new java.util.HashMap<>();
+    Map<Long, Integer> factionCounts = new HashMap<>();
+    Map<Long, Integer> factionAffinity = new HashMap<>();
 
     for (Wrestler w : wrestlers) {
       w.getDefaultState()
@@ -299,7 +351,7 @@ public class EditSegmentDialog extends Dialog {
               });
     }
 
-    for (java.util.Map.Entry<Long, Integer> entry : factionCounts.entrySet()) {
+    for (Map.Entry<Long, Integer> entry : factionCounts.entrySet()) {
       int count = entry.getValue();
       if (count > 1) {
         int affinity = factionAffinity.get(entry.getKey());
@@ -312,14 +364,29 @@ public class EditSegmentDialog extends Dialog {
   }
 
   private void refreshParticipantsList(final Set<Wrestler> selectedWrestlers) {
-
     AlignmentType alignment = alignmentFilter.getValue();
-
     Gender gender = genderFilter.getValue();
 
-    List<Wrestler> filteredWrestlers =
-        wrestlerService.findAllFiltered(alignment, gender, universeId, selectedWrestlers);
-    participantsCombo.setItems(filteredWrestlers);
+    if (alignment != null) {
+      // Alignment filtering needs DB-backed service (alignment data not pre-loaded)
+      participantsCombo.setItems(
+          wrestlerService.findAllFiltered(alignment, gender, universeId, selectedWrestlers));
+      return;
+    }
+
+    // In-memory filter from pre-loaded data — zero DB queries
+    Set<Long> selectedIds =
+        selectedWrestlers == null
+            ? Set.of()
+            : selectedWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
+
+    List<Wrestler> filtered =
+        data.activeWrestlers().stream()
+            .filter(
+                w -> selectedIds.contains(w.getId()) || (gender == null || w.getGender() == gender))
+            .sorted(Comparator.comparing(Wrestler::getName))
+            .collect(Collectors.toList());
+    participantsCombo.setItems(filtered);
   }
 
   public void save() {
