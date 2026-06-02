@@ -1,6 +1,9 @@
 # Build stage: download Maven 3.9.14 and build the WAR
 FROM eclipse-temurin:25-jdk AS build
-RUN apt-get update && apt-get install -y --no-install-recommends curl git && rm -rf /var/lib/apt/lists/* && \
+RUN apt-get update && apt-get install -y --no-install-recommends curl git && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/* && \
     curl -fsSL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz \
     | tar -xz -C /opt && \
     ln -s /opt/apache-maven-3.9.14/bin/mvn /usr/local/bin/mvn
