@@ -141,7 +141,7 @@ public class Wrestler extends AbstractSyncableEntity<Long> {
   @OneToMany(
       mappedBy = "wrestler",
       cascade = CascadeType.ALL,
-      fetch = FetchType.EAGER,
+      fetch = FetchType.LAZY,
       orphanRemoval = true)
   @JsonIgnore
   @Builder.Default
@@ -193,12 +193,12 @@ public class Wrestler extends AbstractSyncableEntity<Long> {
       mappedBy = "wrestler",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.EAGER)
+      fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
   private Set<Deck> decks = new LinkedHashSet<>();
 
-  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
   private Set<WrestlerState> wrestlerStates = new LinkedHashSet<>();

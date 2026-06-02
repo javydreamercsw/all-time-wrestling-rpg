@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource
@@ -28,4 +29,8 @@ public interface ArenaRepository
   Optional<Arena> findByName(String name);
 
   List<Arena> findByLocation(Location location);
+
+  @Query(
+      "SELECT DISTINCT a FROM Arena a JOIN FETCH a.location LEFT JOIN FETCH a.environmentalTraits")
+  List<Arena> findAllWithLocation();
 }

@@ -20,10 +20,12 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +49,7 @@ public class TierBoundaryService {
   }
 
   @PreAuthorize("isAuthenticated()")
+  @Cacheable(value = CacheConfig.TIER_BOUNDARIES_CACHE, key = "#gender")
   public List<TierBoundary> findAllByGender(final Gender gender) {
     return tierBoundaryRepository.findAllByGender(gender);
   }

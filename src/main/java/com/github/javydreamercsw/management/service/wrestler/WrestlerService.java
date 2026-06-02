@@ -48,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -139,8 +140,20 @@ public class WrestlerService {
 
   /** Get all wrestlers (alias for findAll for UI compatibility). */
   @PreAuthorize("isAuthenticated()")
+  @Cacheable(value = CacheConfig.WRESTLERS_CACHE, key = "'all'")
   public List<Wrestler> getAllWrestlers() {
-    return findAll();
+    return wrestlerRepository.findAll();
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public java.util.Map<Long, WrestlerState> getStateMapByUniverseId(
+      @NonNull final Long universeId) {
+    return wrestlerStateRepository.findByUniverseIdWithWrestler(universeId).stream()
+        .filter(s -> s.getWrestler() != null)
+        .collect(
+            java.util.stream.Collectors.toMap(
+                s -> s.getWrestler().getId(), s -> s, (existing, duplicate) -> existing));
   }
 
   @Transactional(readOnly = true)
@@ -157,6 +170,9 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = CacheConfig.WRESTLERS_CACHE,
+      key = "'all'")
   public List<Wrestler> findAll() {
     return wrestlerRepository.findAll();
   }

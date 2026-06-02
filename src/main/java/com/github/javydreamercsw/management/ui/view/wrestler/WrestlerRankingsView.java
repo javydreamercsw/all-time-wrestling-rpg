@@ -45,8 +45,10 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +67,7 @@ public class WrestlerRankingsView extends Main {
   private final UniverseContextService universeContextService;
   private final Grid<Wrestler> grid = new Grid<>(Wrestler.class, false);
   private Set<Long> championIds = new HashSet<>();
+  private Map<Long, WrestlerState> statesByWrestlerId = new HashMap<>();
   private ComboBox<Gender> genderComboBox;
 
   public WrestlerRankingsView(
@@ -165,11 +168,13 @@ public class WrestlerRankingsView extends Main {
               layout.setAlignItems(FlexComponent.Alignment.CENTER);
 
               Long universeId = universeContextService.getCurrentUniverseId();
-              WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+              WrestlerState state = statesByWrestlerId.get(wrestler.getId());
 
               Span nameSpan = new Span(wrestler.getName());
               nameSpan.addClassNames(
-                  "wrestler-tier-" + state.getTier().name().toLowerCase(), "wrestler-tier-badge");
+                  "wrestler-tier-"
+                      + (state != null ? state.getTier().name().toLowerCase() : "rookie"),
+                  "wrestler-tier-badge");
               layout.add(nameSpan);
 
               // Add a star icon for champions
@@ -195,20 +200,16 @@ public class WrestlerRankingsView extends Main {
 
     grid.addColumn(
             wrestler -> {
-              WrestlerState state =
-                  wrestlerService.getOrCreateState(
-                      wrestler.getId(), universeContextService.getCurrentUniverseId());
-              return "%,d".formatted(state.getFans());
+              WrestlerState state = statesByWrestlerId.get(wrestler.getId());
+              return state != null ? "%,d".formatted(state.getFans()) : "0";
             })
         .setHeader("Fans")
         .setSortable(true);
 
     grid.addColumn(
             wrestler -> {
-              WrestlerState state =
-                  wrestlerService.getOrCreateState(
-                      wrestler.getId(), universeContextService.getCurrentUniverseId());
-              return state.getTier().getDisplayWithEmoji();
+              WrestlerState state = statesByWrestlerId.get(wrestler.getId());
+              return state != null ? state.getTier().getDisplayWithEmoji() : "";
             })
         .setHeader("Tier")
         .setSortable(true);
@@ -216,6 +217,7 @@ public class WrestlerRankingsView extends Main {
 
   private void updateList() {
     Long universeId = universeContextService.getCurrentUniverseId();
+    statesByWrestlerId = wrestlerService.getStateMapByUniverseId(universeId);
 
     this.championIds =
         titleService.findAll().stream()

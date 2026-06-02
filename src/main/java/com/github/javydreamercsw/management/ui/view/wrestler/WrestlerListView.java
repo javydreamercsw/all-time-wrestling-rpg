@@ -51,15 +51,19 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 @Route("wrestler-list")
 @PageTitle("Wrestler List")
 @Menu(order = 0, icon = "vaadin:user", title = "Wrestler List")
+@Slf4j
 @PermitAll // When security is enabled, allow all authenticated users
 public class WrestlerListView extends Main {
 
@@ -76,6 +80,8 @@ public class WrestlerListView extends Main {
   private final WrestlerStateRepository wrestlerStateRepository;
   private final AlignmentService alignmentService;
   private Set<Long> injuredWrestlerIds;
+  private Map<Long, WrestlerState> statesByWrestlerId = new HashMap<>();
+  private Map<Long, WrestlerAlignment> alignmentsByWrestlerId = new HashMap<>();
   final Grid<Wrestler> wrestlerGrid;
 
   public WrestlerListView(
@@ -137,29 +143,25 @@ public class WrestlerListView extends Main {
                     nameLayout.add(userIcon);
                   }
                   nameLayout.add(new Span(wrestler.getName()));
-                  universeContextService
-                      .getCurrentUniverse()
-                      .ifPresent(
-                          universe -> {
-                            WrestlerAlignment alignment =
-                                alignmentService.getOrCreateUniverseAlignment(wrestler, universe);
-                            Span badge = new Span(alignment.getAlignmentType().name());
-                            badge.getStyle().set("font-size", "var(--lumo-font-size-xs)");
-                            badge.getStyle().set("padding", "0 4px");
-                            badge.getStyle().set("border-radius", "4px");
-                            badge.getStyle().set("font-weight", "bold");
-                            if (alignment.getAlignmentType() == AlignmentType.FACE) {
-                              badge.getStyle().set("background-color", "#c8e6c9");
-                              badge.getStyle().set("color", "#1b5e20");
-                            } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
-                              badge.getStyle().set("background-color", "#ffcdd2");
-                              badge.getStyle().set("color", "#b71c1c");
-                            } else {
-                              badge.getStyle().set("background-color", "#e0e0e0");
-                              badge.getStyle().set("color", "#424242");
-                            }
-                            nameLayout.add(badge);
-                          });
+                  WrestlerAlignment alignment = alignmentsByWrestlerId.get(wrestler.getId());
+                  if (alignment != null) {
+                    Span badge = new Span(alignment.getAlignmentType().name());
+                    badge.getStyle().set("font-size", "var(--lumo-font-size-xs)");
+                    badge.getStyle().set("padding", "0 4px");
+                    badge.getStyle().set("border-radius", "4px");
+                    badge.getStyle().set("font-weight", "bold");
+                    if (alignment.getAlignmentType() == AlignmentType.FACE) {
+                      badge.getStyle().set("background-color", "#c8e6c9");
+                      badge.getStyle().set("color", "#1b5e20");
+                    } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
+                      badge.getStyle().set("background-color", "#ffcdd2");
+                      badge.getStyle().set("color", "#b71c1c");
+                    } else {
+                      badge.getStyle().set("background-color", "#e0e0e0");
+                      badge.getStyle().set("color", "#424242");
+                    }
+                    nameLayout.add(badge);
+                  }
                   return nameLayout;
                 })
             .setHeader("Name")
@@ -181,10 +183,8 @@ public class WrestlerListView extends Main {
     wrestlerGrid
         .addColumn(
             wrestler -> {
-              WrestlerState state =
-                  wrestlerService.getOrCreateState(
-                      wrestler.getId(), universeContextService.getCurrentUniverseId());
-              return state.getFans();
+              WrestlerState state = statesByWrestlerId.get(wrestler.getId());
+              return state != null ? state.getFans() : 0L;
             })
         .setHeader("Fans")
         .setSortable(true);
@@ -192,10 +192,8 @@ public class WrestlerListView extends Main {
     wrestlerGrid
         .addColumn(
             wrestler -> {
-              WrestlerState state =
-                  wrestlerService.getOrCreateState(
-                      wrestler.getId(), universeContextService.getCurrentUniverseId());
-              return state.getBumps();
+              WrestlerState state = statesByWrestlerId.get(wrestler.getId());
+              return state != null ? state.getBumps() : 0;
             })
         .setHeader("Bumps")
         .setSortable(true);
@@ -203,10 +201,8 @@ public class WrestlerListView extends Main {
     wrestlerGrid
         .addColumn(
             wrestler -> {
-              WrestlerState state =
-                  wrestlerService.getOrCreateState(
-                      wrestler.getId(), universeContextService.getCurrentUniverseId());
-              if (state.getManager() == null) {
+              WrestlerState state = statesByWrestlerId.get(wrestler.getId());
+              if (state == null || state.getManager() == null) {
                 return "";
               }
               String expansionCode = state.getManager().getExpansionCode();
@@ -299,6 +295,19 @@ public class WrestlerListView extends Main {
 
   private void reloadGrid() {
     Long universeId = universeContextService.getCurrentUniverseId();
+    try {
+      statesByWrestlerId = wrestlerService.getStateMapByUniverseId(universeId);
+    } catch (Exception e) {
+      log.warn("Could not preload wrestler states for universe {}: {}", universeId, e.getMessage());
+      statesByWrestlerId = new HashMap<>();
+    }
+    try {
+      alignmentsByWrestlerId = alignmentService.getAlignmentMapByUniverseId(universeId);
+    } catch (Exception e) {
+      log.warn(
+          "Could not preload wrestler alignments for universe {}: {}", universeId, e.getMessage());
+      alignmentsByWrestlerId = new HashMap<>();
+    }
     injuredWrestlerIds =
         injuryService.getWrestlersWithActiveInjuries(universeId).stream()
             .map(Wrestler::getId)
