@@ -321,16 +321,46 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       return;
     }
 
-    try {
-      ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
-      contextArea.setValue(
-          objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
-      proposeSegmentsButton.setEnabled(true);
-      notificationService.showSuccess("Planning context loaded from database.");
-    } catch (Exception e) {
-      log.error("Error loading planning context", e);
-      notificationService.showError("Failed to load planning context: " + e.getMessage());
-    }
+    loadContextButton.setEnabled(false);
+    loadContextButton.setText("Loading...");
+    UI ui = UI.getCurrent();
+
+    CompletableFuture.supplyAsync(() -> showPlanningService.getShowPlanningContext(show))
+        .thenAccept(
+            context ->
+                ui.access(
+                    () -> {
+                      try {
+                        contextArea.setValue(
+                            objectMapper
+                                .writerWithDefaultPrettyPrinter()
+                                .writeValueAsString(context));
+                        proposeSegmentsButton.setEnabled(true);
+                        notificationService.showSuccess("Planning context loaded from database.");
+                      } catch (Exception e) {
+                        log.error("Error serializing planning context", e);
+                        notificationService.showError(
+                            "Failed to display context: " + e.getMessage());
+                      } finally {
+                        loadContextButton.setEnabled(true);
+                        loadContextButton.setText("Load Context");
+                      }
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error loading planning context", ex);
+              ui.access(
+                  () -> {
+                    notificationService.showError(
+                        "Failed to load planning context: "
+                            + (ex.getCause() != null
+                                ? ex.getCause().getMessage()
+                                : ex.getMessage()));
+                    loadContextButton.setEnabled(true);
+                    loadContextButton.setText("Load Context");
+                  });
+              return null;
+            });
   }
 
   private void proposeSegments() {
@@ -344,20 +374,15 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       return;
     }
 
-    ShowPlanningContextDTO context;
-    try {
-      context = showPlanningService.getShowPlanningContext(show);
-    } catch (Exception e) {
-      log.error("Error loading planning context", e);
-      notificationService.showError("Failed to load show context: " + e.getMessage());
-      return;
-    }
-
     proposeSegmentsButton.setEnabled(false);
     proposeSegmentsButton.setText("AI Planning...");
     UI ui = UI.getCurrent();
 
-    CompletableFuture.supplyAsync(() -> showPlanningAiService.planShow(context))
+    CompletableFuture.supplyAsync(
+            () -> {
+              ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
+              return showPlanningAiService.planShow(context);
+            })
         .thenAccept(
             proposedShow ->
                 ui.access(
