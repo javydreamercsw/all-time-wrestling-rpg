@@ -21,6 +21,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
@@ -72,6 +73,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Route(
     value = "show-planning",
@@ -324,8 +327,12 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     loadContextButton.setEnabled(false);
     loadContextButton.setText("Loading...");
     UI ui = UI.getCurrent();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
 
-    CompletableFuture.supplyAsync(() -> showPlanningService.getShowPlanningContext(show))
+    CompletableFuture.supplyAsync(
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    securityContext, () -> showPlanningService.getShowPlanningContext(show)))
         .thenAccept(
             context ->
                 ui.access(
@@ -377,12 +384,17 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposeSegmentsButton.setEnabled(false);
     proposeSegmentsButton.setText("AI Planning...");
     UI ui = UI.getCurrent();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
 
     CompletableFuture.supplyAsync(
-            () -> {
-              ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
-              return showPlanningAiService.planShow(context);
-            })
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    securityContext,
+                    () -> {
+                      ShowPlanningContextDTO context =
+                          showPlanningService.getShowPlanningContext(show);
+                      return showPlanningAiService.planShow(context);
+                    }))
         .thenAccept(
             proposedShow ->
                 ui.access(
