@@ -5,9 +5,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
     | tar -xz -C /opt && \
     ln -s /opt/apache-maven-3.9.14/bin/mvn /usr/local/bin/mvn
 WORKDIR /app
-COPY pom.xml lombok.config package.json package-lock.json tsconfig.json vite.config.ts types.d.ts ./
+# Cache dependency downloads as a separate layer — only re-runs when pom.xml changes
+COPY pom.xml ./
+RUN mvn dependency:go-offline -Pwar,production -B -q
+COPY lombok.config package.json package-lock.json tsconfig.json vite.config.ts types.d.ts ./
 COPY src ./src
-RUN mvn -Pwar,production package -DskipTests
+RUN mvn -Pwar,production package -DskipTests -B
 
 # Runtime stage
 FROM tomcat:11-jdk25
