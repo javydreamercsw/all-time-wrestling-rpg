@@ -79,7 +79,11 @@ public class Wrestler extends AbstractSyncableEntity<Long> {
   @Builder.Default
   private Integer deckSize = 0;
 
-  @OneToMany(mappedBy = "wrestler", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(
+      mappedBy = "wrestler",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
   @Builder.Default
   @com.fasterxml.jackson.annotation.JsonIgnore
   private List<WrestlerStatus> statuses = new ArrayList<>();

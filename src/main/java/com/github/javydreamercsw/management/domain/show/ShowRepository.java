@@ -45,6 +45,10 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
 
   List<Show> findByUniverseOrUniverseIsNull(Universe universe);
 
+  Page<Show> findByUniverseOrUniverseIsNull(Universe universe, Pageable pageable);
+
+  long countByUniverseOrUniverseIsNull(Universe universe);
+
   List<Show> findByLeague(League league);
 
   // ==================== CALENDAR-SPECIFIC QUERIES ====================
@@ -141,4 +145,17 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
       WHERE s.id IN :showIds
       """)
   List<Show> findByIdsWithRelationships(List<Long> showIds, Sort sort);
+
+  @Query(
+      """
+      SELECT s FROM Show s
+      LEFT JOIN FETCH s.arena a
+      LEFT JOIN FETCH a.location
+      LEFT JOIN FETCH s.season
+      LEFT JOIN FETCH s.template t
+      LEFT JOIN FETCH t.showType
+      WHERE s.id = :id
+      """)
+  Optional<Show> findByIdWithArenaAndLocation(
+      @org.springframework.data.repository.query.Param("id") Long id);
 }

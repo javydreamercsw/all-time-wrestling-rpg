@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,6 +86,7 @@ public class RankingService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @Cacheable(value = CacheConfig.TITLES_CACHE, key = "'championships'")
   public List<ChampionshipDTO> getChampionships() {
     return titleRepository.findAll().stream()
         .filter(Title::getIncludeInRankings)

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.service.league.LeagueService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -37,13 +38,14 @@ class GmDashboardViewTest extends AbstractViewTest {
 
   @Mock private LeagueService leagueService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private WrestlerService wrestlerService;
 
   private GmDashboardView view;
 
   @BeforeEach
   void setup() {
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
-    view = new GmDashboardView(leagueService, securityUtils);
+    view = new GmDashboardView(leagueService, securityUtils, wrestlerService);
     UI.getCurrent().add(view);
   }
 

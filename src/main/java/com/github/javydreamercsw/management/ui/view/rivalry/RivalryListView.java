@@ -72,18 +72,17 @@ public class RivalryListView extends Main {
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
 
-    ComboBox<Wrestler> wrestler1ComboBox = new ComboBox<>("Wrestler 1");
-    wrestler1ComboBox.setItems(
-        wrestlerRepository.findAll().stream()
+    java.util.List<Wrestler> allWrestlers =
+        wrestlerService.getAllWrestlers().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+
+    ComboBox<Wrestler> wrestler1ComboBox = new ComboBox<>("Wrestler 1");
+    wrestler1ComboBox.setItems(allWrestlers);
     wrestler1ComboBox.setItemLabelGenerator(Wrestler::getName);
 
     ComboBox<Wrestler> wrestler2ComboBox = new ComboBox<>("Wrestler 2");
-    wrestler2ComboBox.setItems(
-        wrestlerRepository.findAll().stream()
-            .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList()));
+    wrestler2ComboBox.setItems(allWrestlers);
     wrestler2ComboBox.setItemLabelGenerator(Wrestler::getName);
 
     TextField storylineNotes = new TextField("Storyline Notes");

@@ -81,10 +81,11 @@ public class RankingView extends Main {
 
     ComboBox<ChampionshipDTO> championshipComboBox = new ComboBox<>("Championship");
     championshipComboBox.setId("championship-combo-box");
-    championshipComboBox.setItems(
+    List<ChampionshipDTO> championships =
         rankingService.getChampionships().stream()
             .sorted(Comparator.comparing(ChampionshipDTO::getName))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+    championshipComboBox.setItems(championships);
     championshipComboBox.setItemLabelGenerator(ChampionshipDTO::getName);
     championshipComboBox.addValueChangeListener(
         event -> {
@@ -93,7 +94,7 @@ public class RankingView extends Main {
         });
 
     // Select the first championship by default
-    rankingService.getChampionships().stream()
+    championships.stream()
         .min(Comparator.comparing(ChampionshipDTO::getName))
         .ifPresent(
             championship -> {

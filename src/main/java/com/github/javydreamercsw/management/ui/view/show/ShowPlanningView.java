@@ -30,7 +30,6 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.CardValidationResult;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
-import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -70,6 +69,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -344,17 +344,44 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       return;
     }
 
+    ShowPlanningContextDTO context;
     try {
-      ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
-      ProposedShow proposedShow = showPlanningAiService.planShow(context);
-      segments = proposedShow.getSegments();
-      proposedSegmentsGrid.setItems(segments);
-      approveButton.setEnabled(!segments.isEmpty());
-      notificationService.showSuccess("AI proposed " + segments.size() + " segments.");
+      context = showPlanningService.getShowPlanningContext(show);
     } catch (Exception e) {
-      log.error("Error proposing segments", e);
-      notificationService.showAIServiceError(e);
+      log.error("Error loading planning context", e);
+      notificationService.showError("Failed to load show context: " + e.getMessage());
+      return;
     }
+
+    proposeSegmentsButton.setEnabled(false);
+    proposeSegmentsButton.setText("AI Planning...");
+    UI ui = UI.getCurrent();
+
+    CompletableFuture.supplyAsync(() -> showPlanningAiService.planShow(context))
+        .thenAccept(
+            proposedShow ->
+                ui.access(
+                    () -> {
+                      segments = proposedShow.getSegments();
+                      proposedSegmentsGrid.setItems(segments);
+                      approveButton.setEnabled(!segments.isEmpty());
+                      notificationService.showSuccess(
+                          "AI proposed " + segments.size() + " segments.");
+                      proposeSegmentsButton.setEnabled(true);
+                      proposeSegmentsButton.setText("AI Propose Segments");
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error proposing segments", ex);
+              ui.access(
+                  () -> {
+                    notificationService.showAIServiceError(
+                        ex.getCause() != null ? ex.getCause() : ex);
+                    proposeSegmentsButton.setEnabled(true);
+                    proposeSegmentsButton.setText("AI Propose Segments");
+                  });
+              return null;
+            });
   }
 
   private void approvePlanning() {
