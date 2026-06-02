@@ -10,3 +10,9 @@ target/*
 frontend/node_modules
 src/main/frontend/generated
 src/main/frontend/themes/*/generated
+# Large directories not needed for the Maven build
+data/
+docs/
+videos/
+.beads/
+.claude/

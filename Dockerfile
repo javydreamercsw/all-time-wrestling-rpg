@@ -12,8 +12,7 @@ RUN git init
 # Cache dependency downloads as a separate layer — only re-runs when pom.xml changes
 COPY pom.xml ./
 RUN mvn dependency:go-offline -Pwar,production -B -q
-COPY lombok.config package.json package-lock.json tsconfig.json vite.config.ts types.d.ts ./
-COPY src ./src
+COPY . .
 RUN mvn -Pwar,production package -DskipTests -B
 
 # Runtime stage
@@ -47,6 +46,6 @@ ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 ENV SPRING_PROFILES_ACTIVE=mysql
 
 # Note: SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD
-# must be provided at runtime via Railway environment variables.
+# must be provided at runtime via environment variables.
 
 EXPOSE 9090
