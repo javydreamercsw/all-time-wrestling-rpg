@@ -1,10 +1,28 @@
+# Build stage: download Maven 3.9.14 and build the WAR
+FROM eclipse-temurin:25-jdk AS build
+RUN apt-get update && apt-get install -y --no-install-recommends curl git && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.14/apache-maven-3.9.14-bin.tar.gz \
+    | tar -xz -C /opt && \
+    ln -s /opt/apache-maven-3.9.14/bin/mvn /usr/local/bin/mvn
+WORKDIR /app
+RUN git init
+# Cache dependency downloads as a separate layer — only re-runs when pom.xml changes
+COPY pom.xml ./
+RUN mvn dependency:go-offline -Pwar,production -B -q
+COPY . .
+RUN mvn -Pwar,production package -DskipTests -B
+
+# Runtime stage
 FROM tomcat:11-jdk25
 COPY src/main/resources/docker/tomcat/server.xml /usr/local/tomcat/conf/server.xml
 RUN keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 \
     -storetype JKS -keystore /usr/local/tomcat/conf/keystore.jks \
     -validity 36500 -storepass changeit -keypass changeit \
     -dname "CN=localhost, OU=Test, O=Test, L=Test, S=Test, C=US"
-COPY target/all-time-wrestling-rpg*.war /usr/local/tomcat/webapps/atw-rpg.war
+COPY --from=build /app/target/all-time-wrestling-rpg.war /usr/local/tomcat/webapps/atw-rpg.war
 
 # Default non-sensitive configurations
 ENV AI_TIMEOUT=300
@@ -22,14 +40,12 @@ ENV AI_GEMINI_ENABLED=false
 ENV AI_GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/
 ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 
-# Note: AI_OPENAI_API_KEY, AI_CLAUDE_API_KEY, AI_GEMINI_API_KEY, and NOTION_TOKEN 
+# Note: AI_OPENAI_API_KEY, AI_CLAUDE_API_KEY, AI_GEMINI_API_KEY, and NOTION_TOKEN
 # must be provided at runtime for AI/Notion features to work.
 
-ENV SPRING_DATASOURCE_URL=jdbc:h2:file:/data/atwrpg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-ENV SPRING_DATASOURCE_USERNAME=sa
-ENV SPRING_H2_CONSOLE_ENABLED=true
+ENV SPRING_PROFILES_ACTIVE=mysql
 
-# Note: SPRING_DATASOURCE_PASSWORD must be provided at runtime if required by the database.
+# Note: SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD
+# must be provided at runtime via environment variables.
 
-VOLUME /data
 EXPOSE 9090
