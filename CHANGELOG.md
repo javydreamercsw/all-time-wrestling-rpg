@@ -1,8 +1,8 @@
 # Changelog
 
-## [v2.1.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.1.0) (2026-06-01)
+## [v2.1.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.1.1) (2026-06-03)
 
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.1.0...v2.1.0)
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.1.0...v2.1.1)
 
 **Implemented enhancements:**
 
@@ -22,6 +22,11 @@
 
 **Merged pull requests:**
 
+- Build\(deps\): Bump ch.qos.logback:logback-core from 1.5.32 to 1.5.34 [\#347](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/347) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.graalvm.buildtools:native-maven-plugin from 1.1.0 to 1.1.1 [\#346](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/346) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump org.apache.maven.plugins:maven-surefire-plugin from 3.5.5 to 3.5.6 [\#345](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/345) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps-dev\): Bump com.diffplug.spotless:spotless-maven-plugin from 3.5.1 to 3.6.0 [\#344](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/344) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump ch.qos.logback:logback-classic from 1.5.32 to 1.5.34 [\#343](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/343) ([dependabot[bot]](https://github.com/apps/dependabot))
 - feat\(alignment\): spread wrestler alignment to universe/booker modes [\#332](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/332) ([javydreamercsw](https://github.com/javydreamercsw))
 
 ## [v2.1.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.1.0) (2026-05-27)
