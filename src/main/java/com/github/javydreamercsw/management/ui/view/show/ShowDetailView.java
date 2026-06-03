@@ -906,7 +906,7 @@ public class ShowDetailView extends Main
                       for (int i = 0; i < snapshot.size(); i++) {
                         Segment s = snapshot.get(i);
                         int newOrder = i + 1;
-                        boolean shouldBeMain = (i == mainEventIdx);
+                        boolean shouldBeMain = i == mainEventIdx;
                         boolean orderChanged =
                             !Integer.valueOf(newOrder).equals(s.getSegmentOrder());
                         boolean mainChanged = s.isMainEvent() != shouldBeMain;
