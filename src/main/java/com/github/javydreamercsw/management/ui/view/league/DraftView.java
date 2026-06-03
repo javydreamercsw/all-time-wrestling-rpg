@@ -305,7 +305,7 @@ public class DraftView extends VerticalLayout implements HasUrlParameter<Long> {
         league.getExcludedWrestlers().stream().map(Wrestler::getId).collect(Collectors.toSet());
 
     List<Wrestler> available =
-        wrestlerRepository.findAll().stream()
+        wrestlerRepository.findAllByActiveTrue().stream()
             .filter(w -> !draftedWrestlerIds.contains(w.getId()))
             .filter(w -> !excludedWrestlerIds.contains(w.getId()))
             .collect(Collectors.toList());

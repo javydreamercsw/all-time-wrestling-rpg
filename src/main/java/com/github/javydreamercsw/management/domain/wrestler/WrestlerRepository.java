@@ -32,6 +32,14 @@ public interface WrestlerRepository
 
   List<Wrestler> findByAccount(com.github.javydreamercsw.base.domain.account.Account account);
 
+  @Query(
+      """
+      SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.alignments LEFT JOIN FETCH\
+       w.wrestlerStates ws LEFT JOIN FETCH ws.faction WHERE w.account = :account\
+      """)
+  List<Wrestler> findByAccountWithDetails(
+      @Param("account") com.github.javydreamercsw.base.domain.account.Account account);
+
   List<Wrestler> findAllByAccount(com.github.javydreamercsw.base.domain.account.Account account);
 
   // If you don't need a total row count, Slice is better than Page.
