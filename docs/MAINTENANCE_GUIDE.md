@@ -2,6 +2,162 @@
 
 This document outlines the maintenance procedures for the All Time Wrestling RPG database.
 
+---
+
+## MySQL Setup & Migration (Windows)
+
+This section covers installing MySQL on Windows, migrating your production database locally, and running the application against it.
+
+### 1. Install MySQL on Windows
+
+1. Download **MySQL Installer** from https://dev.mysql.com/downloads/installer/
+2. Run the installer and choose **Developer Default** (includes MySQL Server, Workbench, and Shell).
+3. During configuration, set a root password and note it down — you will need it in the steps below.
+4. Ensure **MySQL Server** is added to `PATH` during installation (the installer offers this option).
+5. Verify installation:
+
+```powershell
+mysql --version
+```
+
+### 2. Create the Application Database
+
+Open a terminal (PowerShell or MySQL Shell) and run:
+
+```
+mysql -u root -p
+```
+
+```sql
+CREATE DATABASE atw_rpg CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'atwrpg'@'localhost' IDENTIFIED BY 'YOUR_PASSWORD';
+GRANT ALL PRIVILEGES ON atw_rpg.* TO 'atwrpg'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+### 3. Migrate Production Database to Local
+
+**On the production server**, dump the database:
+
+```bash
+mysqldump -u root -p atw_rpg > atw_rpg_prod_backup.sql
+```
+
+Transfer the dump file to this Windows machine (via SCP, SFTP, USB, or cloud storage), then import it:
+
+```powershell
+mysql -u atwrpg -p atw_rpg < C:\path\to\atw_rpg_prod_backup.sql
+```
+
+### 4. Configure the Application for MySQL
+
+Create or edit `src/main/resources/application-local.properties` (or set environment variables):
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/atw_rpg?useSSL=false&serverTimezone=UTC
+spring.datasource.username=atwrpg
+spring.datasource.password=YOUR_PASSWORD
+spring.profiles.include=mysql
+```
+
+Then start the app pointing at the local profile:
+
+```powershell
+./mvnw spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+Navigate to http://localhost:8080/atw-rpg to verify the app is running against the migrated data.
+
+### 5. Stop the App (Windows)
+
+```powershell
+# Find and kill the Java process
+Get-Process -Name java | Stop-Process -Force
+# Or press Ctrl+C in the terminal where it's running
+```
+
+---
+
+## MySQL Automated Backups (Windows)
+
+The Windows equivalent of the macOS backup uses a PowerShell script scheduled via **Task Scheduler**.
+
+### 1. Backup Script
+
+Save this script as `C:\scripts\mysql_backup.ps1`:
+
+```powershell
+$BackupDir = "$env:USERPROFILE\mysql_backups"
+$Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$DumpPath  = "$BackupDir\all_databases_$Timestamp.sql"
+
+if (-not (Test-Path $BackupDir)) { New-Item -ItemType Directory -Force $BackupDir | Out-Null }
+
+# Adjust path to mysqldump if MySQL is not in PATH
+$MySqlDump = "mysqldump"
+
+# Credentials are read from ~\.my.cnf (see section 3 below)
+& $MySqlDump --all-databases | Out-File -FilePath $DumpPath -Encoding utf8
+
+# Retention policy: delete backups older than 7 days
+Get-ChildItem "$BackupDir\all_databases_*.sql" |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } |
+    Remove-Item -Force
+```
+
+### 2. Schedule via Task Scheduler
+
+Run this once in an elevated PowerShell session to register the daily 2 AM task:
+
+```powershell
+$action  = New-ScheduledTaskAction -Execute "powershell.exe" `
+               -Argument "-NonInteractive -ExecutionPolicy Bypass -File C:\scripts\mysql_backup.ps1"
+$trigger = New-ScheduledTaskTrigger -Daily -At "02:00"
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable
+Register-ScheduledTask -TaskName "MySQLBackup" `
+    -Action $action -Trigger $trigger -Settings $settings `
+    -RunLevel Highest -Force
+```
+
+Verify the task was registered:
+
+```powershell
+Get-ScheduledTask -TaskName "MySQLBackup"
+```
+
+### 3. Credentials
+
+MySQL credentials are read from `%USERPROFILE%\.my.cnf` (MySQL respects this on Windows too):
+
+```ini
+[client]
+user=root
+password=YOUR_PASSWORD
+```
+
+Restrict permissions on this file so only your user can read it.
+
+### 4. Manual Verification
+
+```powershell
+# Run the backup manually
+powershell -ExecutionPolicy Bypass -File C:\scripts\mysql_backup.ps1
+
+# Check Task Scheduler log
+Get-ScheduledTaskInfo -TaskName "MySQLBackup"
+```
+
+Backup files land in `%USERPROFILE%\mysql_backups\`.
+
+### 5. Troubleshooting (Windows)
+
+- **`mysqldump` not found**: Add `C:\Program Files\MySQL\MySQL Server X.X\bin` to your `PATH` environment variable, or use the full path in the script.
+- **Access denied**: Ensure the `.my.cnf` credentials are correct and the user has `LOCK TABLES` and `SELECT` privileges on all databases.
+- **Task does not run**: Open Task Scheduler UI (`taskschd.msc`), find *MySQLBackup*, and check the *History* tab for error codes.
+
+---
+
 ## MySQL Automated Backups (macOS)
 
 The application uses a shell script and `launchd` to perform daily automated backups of the MySQL database.
