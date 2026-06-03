@@ -1473,10 +1473,14 @@ public class DataInitializer implements Initializable {
           return;
         }
 
+        Map<String, Arena> existingByName =
+            arenaRepository.findAllWithLocation().stream()
+                .collect(Collectors.toMap(Arena::getName, a -> a));
+
         List<Arena> toSave = new ArrayList<>();
         log.debug("Found {} arenas in JSON file", arenasFromFile.size());
         for (ArenaImportDTO dto : arenasFromFile) {
-          Optional<Arena> existingArena = arenaRepository.findByName(dto.getName());
+          Optional<Arena> existingArena = Optional.ofNullable(existingByName.get(dto.getName()));
           if (existingArena.isEmpty()) {
             Optional<Location> location = locationRepository.findByName(dto.getLocation());
             if (location.isPresent()) {
