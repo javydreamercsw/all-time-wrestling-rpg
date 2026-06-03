@@ -91,6 +91,11 @@ public interface WrestlerRepository
   Optional<Wrestler> findByIdWithStates(@Param("id") Long id);
 
   @Query(
+      "SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws WHERE"
+          + " w.externalId = :externalId")
+  Optional<Wrestler> findByExternalIdWithStates(@Param("externalId") String externalId);
+
+  @Query(
       """
       SELECT DISTINCT w FROM Wrestler w JOIN SegmentParticipant sp ON sp.wrestler = w WHERE\
        sp.segment = :segment\
