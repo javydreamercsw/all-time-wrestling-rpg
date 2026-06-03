@@ -140,7 +140,12 @@ public class WrestlerService {
   @Transactional(readOnly = true)
   public Optional<Wrestler> findByIdWithDetails(final Long id) {
     Optional<Wrestler> wrestler = wrestlerRepository.findByIdWithStatuses(id);
-    wrestler.ifPresent(w -> w.getStatuses().size());
+    wrestler.ifPresent(
+        w -> {
+          w.getStatuses().size();
+          w.getWrestlerStates().size();
+          w.getAlignments().size();
+        });
     return wrestler;
   }
 

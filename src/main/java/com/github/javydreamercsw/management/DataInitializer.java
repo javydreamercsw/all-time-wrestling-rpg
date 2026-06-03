@@ -1155,7 +1155,7 @@ public class DataInitializer implements Initializable {
             continue;
           }
 
-          List<Deck> byWrestler = deckService.findByWrestler(wrestler);
+          List<Deck> byWrestler = deckService.findByWrestlerWithCards(wrestler);
           Deck deck =
               byWrestler.isEmpty() ? deckService.createDeck(wrestler) : byWrestler.getFirst();
 

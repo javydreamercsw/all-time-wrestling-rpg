@@ -425,7 +425,15 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
 
     List<Wrestler> wrestlers = segment.getWrestlers();
-    Long universeId = universeContextService.getCurrentUniverseId();
+    // Fall back to the show's universe when no universe is selected in the session.
+    // findByIdWithDetails() eagerly loads sh.universe so this access is safe.
+    Long sessionUniverseId = universeContextService.getCurrentUniverseId();
+    final Long universeId =
+        sessionUniverseId != null
+            ? sessionUniverseId
+            : (segment.getShow() != null && segment.getShow().getUniverse() != null
+                ? segment.getShow().getUniverse().getId()
+                : null);
 
     // Collect all wrestler IDs owned by the current account so that accounts with multiple
     // wrestlers in the same match have each of their wrestlers marked as "player" cards.
