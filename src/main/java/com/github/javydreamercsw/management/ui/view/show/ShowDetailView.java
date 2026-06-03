@@ -115,7 +115,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @PermitAll
 @Slf4j
 public class ShowDetailView extends Main
-    implements HasUrlParameter<Long>, ApplicationListener<ApplicationEvent> {
+    implements HasUrlParameter<Long>,
+        ApplicationListener<ApplicationEvent>,
+        com.vaadin.flow.router.BeforeLeaveObserver {
 
   private final ShowService showService;
   private final SegmentService segmentService;
@@ -151,8 +153,15 @@ public class ShowDetailView extends Main
   private Grid<Segment> segmentsGrid;
   private Button adjudicateButton;
   private Button addSegmentButton;
+  private Button saveOrderButton;
   private Span noSegmentsMessage;
   private Segment draggedSegment;
+  private com.vaadin.flow.component.progressbar.ProgressBar segmentsProgressBar;
+
+  /** In-memory ordered list; mutations here are instant — persisted only on "Save Order". */
+  private List<Segment> segmentOrder = new ArrayList<>();
+
+  private boolean orderDirty = false;
 
   private final NotificationService notificationService;
   private final ShowExportService exportService;
@@ -288,7 +297,6 @@ public class ShowDetailView extends Main
     } else {
       showNotFound();
     }
-    refreshSegmentsGrid();
   }
 
   private void displayShow(@NonNull final Show show) {
@@ -582,10 +590,19 @@ public class ShowDetailView extends Main
                     segment -> segment.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED);
     addSegmentButton.setEnabled(!allAdjudicated);
 
-    header.add(segmentsTitle, new HorizontalLayout(adjudicateButton, addSegmentButton));
+    saveOrderButton = new Button("Save Order", new Icon(VaadinIcon.CHECK));
+    saveOrderButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+    saveOrderButton.setId("save-order-btn");
+    saveOrderButton.setVisible(false);
+    saveOrderButton.addClickListener(e -> persistSegmentOrder());
 
-    // Get segments for this show
-    List<Segment> segments = segmentRepository.findByShow(show);
+    header.add(
+        segmentsTitle, new HorizontalLayout(saveOrderButton, adjudicateButton, addSegmentButton));
+
+    // Get segments for this show — also seeds the in-memory order
+    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(show);
+    segmentOrder = new ArrayList<>(segments);
+    orderDirty = false;
     log.debug("Found {} segments for show: {}", segments.size(), show.getName());
 
     VerticalLayout segmentsLayout = new VerticalLayout();
@@ -598,6 +615,13 @@ public class ShowDetailView extends Main
     segmentsGrid = createSegmentsGrid(segments);
     segmentsGrid.setSizeFull();
     segmentsGrid.setId("segments-grid");
+
+    segmentsProgressBar = new com.vaadin.flow.component.progressbar.ProgressBar();
+    segmentsProgressBar.setIndeterminate(true);
+    segmentsProgressBar.setWidthFull();
+    segmentsProgressBar.setVisible(false);
+    segmentsProgressBar.setId("segments-progress-bar");
+    segmentsLayout.add(segmentsProgressBar);
 
     // Wrap the grid in a Div to enable horizontal scrolling
     Div gridWrapper = new Div(segmentsGrid);
@@ -754,124 +778,201 @@ public class ShowDetailView extends Main
         .setFlexGrow(1)
         .setKey("order");
 
-    grid.addComponentColumn(this::createMainEventCheckbox).setHeader("Main Event").setFlexGrow(1);
+    grid.addComponentColumn(
+            segment -> {
+              // Main event = last non-Promo segment in current in-memory order
+              Long mainEventId = null;
+              for (int i = segmentOrder.size() - 1; i >= 0; i--) {
+                Segment s = segmentOrder.get(i);
+                if (s.getSegmentType() == null
+                    || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+                  mainEventId = s.getId();
+                  break;
+                }
+              }
+              if (mainEventId != null && mainEventId.equals(segment.getId())) {
+                Span badge = new Span("★ Main Event");
+                badge
+                    .getStyle()
+                    .set("background-color", "#fff3cd")
+                    .set("color", "#856404")
+                    .set("border-radius", "4px")
+                    .set("padding", "2px 6px")
+                    .set("font-weight", "bold")
+                    .set("font-size", "var(--lumo-font-size-s)");
+                return badge;
+              }
+              return new Span();
+            })
+        .setHeader("Main Event")
+        .setFlexGrow(1);
     return grid;
   }
 
   private Component createOrderButtons(@NonNull Segment segment) {
-    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(segment.getShow());
-    int currentIndex = segments.indexOf(segment);
+    int currentIndex = segmentOrder.indexOf(segment);
     boolean isFirst = currentIndex == 0;
-    boolean isLast = currentIndex == segments.size() - 1;
+    boolean isLast = currentIndex == segmentOrder.size() - 1;
 
     Button topButton = new Button(new Icon(VaadinIcon.ANGLE_DOUBLE_UP));
     topButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     topButton.setTooltipText("Move to Top");
     topButton.setId("move-segment-top-button-" + segment.getId());
-    topButton.addClickListener(e -> moveSegmentToTop(segment));
+    topButton.addClickListener(e -> moveSegmentInMemory(segment, -currentIndex));
     topButton.setEnabled(!isFirst);
 
     Button upButton = new Button(new Icon(VaadinIcon.ARROW_UP));
     upButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     upButton.setTooltipText("Move Up");
     upButton.setId("move-segment-up-button-" + segment.getId());
-    upButton.addClickListener(e -> moveSegment(segment, -1));
+    upButton.addClickListener(e -> moveSegmentInMemory(segment, -1));
     upButton.setEnabled(!isFirst);
 
     Button downButton = new Button(new Icon(VaadinIcon.ARROW_DOWN));
     downButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     downButton.setTooltipText("Move Down");
     downButton.setId("move-segment-down-button-" + segment.getId());
-    downButton.addClickListener(e -> moveSegment(segment, 1));
+    downButton.addClickListener(e -> moveSegmentInMemory(segment, 1));
     downButton.setEnabled(!isLast);
 
     Button bottomButton = new Button(new Icon(VaadinIcon.ANGLE_DOUBLE_DOWN));
     bottomButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     bottomButton.setTooltipText("Move to Bottom");
     bottomButton.setId("move-segment-bottom-button-" + segment.getId());
-    bottomButton.addClickListener(e -> moveSegmentToBottom(segment));
+    bottomButton.addClickListener(
+        e -> moveSegmentInMemory(segment, segmentOrder.size() - 1 - currentIndex));
     bottomButton.setEnabled(!isLast);
 
     return new HorizontalLayout(topButton, upButton, downButton, bottomButton);
   }
 
-  protected void moveSegment(@NonNull Segment segment, int direction) {
-    Show show = segment.getShow();
-    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(show);
-    int currentIndex = segments.indexOf(segment);
-    int newIndex = currentIndex + direction;
-
-    if (newIndex >= 0 && newIndex < segments.size()) {
-      Segment otherSegment = segments.get(newIndex);
-      int currentOrder = segment.getSegmentOrder();
-      segment.setSegmentOrder(otherSegment.getSegmentOrder());
-      otherSegment.setSegmentOrder(currentOrder);
-      segmentRepository.save(segment);
-      segmentRepository.save(otherSegment);
-      refreshSegmentsGrid();
-    }
-  }
-
-  private void moveSegmentToTop(@NonNull Segment segment) {
-    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(segment.getShow());
-    int currentIndex = segments.indexOf(segment);
-    if (currentIndex <= 0) {
+  /** Moves a segment in the in-memory list by {@code delta} positions and refreshes the grid. */
+  protected void moveSegmentInMemory(@NonNull Segment segment, int delta) {
+    int idx = segmentOrder.indexOf(segment);
+    int newIdx = Math.max(0, Math.min(segmentOrder.size() - 1, idx + delta));
+    if (idx == newIdx) {
       return;
     }
-    for (int i = currentIndex; i > 0; i--) {
-      Segment prev = segments.get(i - 1);
-      int order = segment.getSegmentOrder();
-      segment.setSegmentOrder(prev.getSegmentOrder());
-      prev.setSegmentOrder(order);
-      segments.set(i, prev);
-      segments.set(i - 1, segment);
-    }
-    segmentRepository.saveAll(segments);
-    refreshSegmentsGrid();
+    segmentOrder.remove(idx);
+    segmentOrder.add(newIdx, segment);
+    markOrderDirty();
+    segmentsGrid.setItems(new ArrayList<>(segmentOrder));
   }
 
-  private void moveSegmentToBottom(@NonNull Segment segment) {
-    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(segment.getShow());
-    int currentIndex = segments.indexOf(segment);
-    if (currentIndex >= segments.size() - 1) {
-      return;
-    }
-    for (int i = currentIndex; i < segments.size() - 1; i++) {
-      Segment next = segments.get(i + 1);
-      int order = segment.getSegmentOrder();
-      segment.setSegmentOrder(next.getSegmentOrder());
-      next.setSegmentOrder(order);
-      segments.set(i, next);
-      segments.set(i + 1, segment);
-    }
-    segmentRepository.saveAll(segments);
-    refreshSegmentsGrid();
-  }
-
+  /** Moves a dragged segment to just before {@code target} in the in-memory list. */
   private void moveSegmentToPosition(@NonNull Segment dragged, @NonNull Segment target) {
-    List<Segment> segments =
-        new ArrayList<>(segmentRepository.findByShowOrderBySegmentOrderAsc(dragged.getShow()));
-    segments.remove(dragged);
-    int targetIndex = segments.indexOf(target);
-    segments.add(targetIndex, dragged);
-    for (int i = 0; i < segments.size(); i++) {
-      segments.get(i).setSegmentOrder(i + 1);
-    }
-    segmentRepository.saveAll(segments);
-    refreshSegmentsGrid();
+    segmentOrder.remove(dragged);
+    int targetIndex = segmentOrder.indexOf(target);
+    segmentOrder.add(targetIndex, dragged);
+    markOrderDirty();
+    segmentsGrid.setItems(new ArrayList<>(segmentOrder));
   }
 
-  private Component createMainEventCheckbox(@NonNull Segment segment) {
-    Checkbox checkbox = new Checkbox();
-    checkbox.setValue(segment.isMainEvent());
-    checkbox.setId("main-event-checkbox");
-    checkbox.addValueChangeListener(
-        e -> {
-          segment.setMainEvent(e.getValue());
-          segmentRepository.save(segment);
-          refreshSegmentsGrid();
-        });
-    return checkbox;
+  private void markOrderDirty() {
+    orderDirty = true;
+    if (saveOrderButton != null) {
+      saveOrderButton.setVisible(true);
+    }
+  }
+
+  private void persistSegmentOrder() {
+    if (!orderDirty) {
+      return;
+    }
+    showSegmentsProgress(true);
+    if (saveOrderButton != null) {
+      saveOrderButton.setEnabled(false);
+    }
+    com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    SecurityContext ctx = SecurityContextHolder.getContext();
+    List<Segment> snapshot = new ArrayList<>(segmentOrder);
+    CompletableFuture.runAsync(
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    ctx,
+                    () -> {
+                      // Find the last non-Promo segment index
+                      int mainEventIdx = -1;
+                      for (int i = snapshot.size() - 1; i >= 0; i--) {
+                        Segment s = snapshot.get(i);
+                        if (s.getSegmentType() == null
+                            || !SegmentTypeNames.PROMO.equalsIgnoreCase(
+                                s.getSegmentType().getName())) {
+                          mainEventIdx = i;
+                          break;
+                        }
+                      }
+                      List<Segment> changed = new ArrayList<>();
+                      for (int i = 0; i < snapshot.size(); i++) {
+                        Segment s = snapshot.get(i);
+                        int newOrder = i + 1;
+                        boolean shouldBeMain = (i == mainEventIdx);
+                        boolean orderChanged =
+                            !Integer.valueOf(newOrder).equals(s.getSegmentOrder());
+                        boolean mainChanged = s.isMainEvent() != shouldBeMain;
+                        if (orderChanged || mainChanged) {
+                          s.setSegmentOrder(newOrder);
+                          s.setMainEvent(shouldBeMain);
+                          changed.add(s);
+                        }
+                      }
+                      if (!changed.isEmpty()) {
+                        segmentRepository.saveAll(changed);
+                      }
+                      return null;
+                    }))
+        .thenRun(
+            () -> {
+              if (ui != null) {
+                ui.access(
+                    () -> {
+                      orderDirty = false;
+                      if (saveOrderButton != null) {
+                        saveOrderButton.setVisible(false);
+                        saveOrderButton.setEnabled(true);
+                      }
+                      showSegmentsProgress(false);
+                      notificationService.showSuccess("Segment order saved.");
+                      segmentsGrid.setItems(new ArrayList<>(segmentOrder));
+                    });
+              }
+            })
+        .exceptionally(
+            ex -> {
+              log.error("Error persisting segment order", ex);
+              if (ui != null) {
+                ui.access(
+                    () -> {
+                      if (saveOrderButton != null) {
+                        saveOrderButton.setEnabled(true);
+                      }
+                      showSegmentsProgress(false);
+                      notificationService.showError("Failed to save order: " + ex.getMessage());
+                    });
+              }
+              return null;
+            });
+  }
+
+  @Override
+  public void beforeLeave(com.vaadin.flow.router.BeforeLeaveEvent event) {
+    if (orderDirty) {
+      com.vaadin.flow.router.BeforeLeaveEvent.ContinueNavigationAction action = event.postpone();
+      Dialog confirm = new Dialog();
+      confirm.setHeaderTitle("Unsaved Order");
+      confirm.add(new Paragraph("You have unsaved segment order changes. Leave without saving?"));
+      Button leave =
+          new Button(
+              "Leave",
+              e -> {
+                confirm.close();
+                action.proceed();
+              });
+      leave.addThemeVariants(ButtonVariant.LUMO_ERROR);
+      Button stay = new Button("Stay", e -> confirm.close());
+      confirm.getFooter().add(stay, leave);
+      confirm.open();
+    }
   }
 
   private Component createActionButtons(@NonNull Segment segment) {
@@ -1146,7 +1247,7 @@ public class ShowDetailView extends Main
               addTeamCombos.stream()
                   .flatMap(c -> c.getValue().stream())
                   .map(Wrestler::getName)
-                  .collect(Collectors.toList());
+                  .toList();
           boolean hotRivalryNeedsStipulation =
               rivalryService.getActiveRivalries().stream()
                   .filter(r -> r.getHeat() >= 30)
@@ -1366,6 +1467,7 @@ public class ShowDetailView extends Main
                               defaultGender,
                               universeId,
                               saveData -> {
+                                // Non-DB field assignments
                                 seg.setNarration(saveData.narration());
                                 seg.setSummary(saveData.summary());
                                 seg.setNotes(saveData.notes());
@@ -1374,16 +1476,76 @@ public class ShowDetailView extends Main
                                 if (saveData.isTitleSegment()) {
                                   seg.setTitles(saveData.titles());
                                 }
-                                if (validateAndSaveSegment(
-                                    currentShow,
-                                    saveData.segmentType(),
-                                    saveData.teams(),
-                                    saveData.winners(),
-                                    saveData.rules(),
-                                    seg)) {
-                                  dialogHolder[0].close();
-                                  refreshSegmentsGrid();
+                                // Inline validation (no DB)
+                                Set<Wrestler> wrestlers =
+                                    saveData.teams().values().stream()
+                                        .flatMap(List::stream)
+                                        .collect(Collectors.toSet());
+                                if (saveData.segmentType() == null) {
+                                  notificationService.showError("Please select a segment type");
+                                  return;
                                 }
+                                if (!SegmentTypeNames.PROMO.equalsIgnoreCase(
+                                    saveData.segmentType().getName())) {
+                                  if (wrestlers.isEmpty()) {
+                                    notificationService.showError(
+                                        "Please select at least one wrestler");
+                                    return;
+                                  }
+                                  if (wrestlers.size() < 2) {
+                                    notificationService.showError(
+                                        "Please select at least two wrestlers for a match");
+                                    return;
+                                  }
+                                }
+                                if (saveData.winners() != null) {
+                                  for (Wrestler winner : saveData.winners()) {
+                                    if (!wrestlers.contains(winner)) {
+                                      notificationService.showError(
+                                          "Winner must be one of the selected wrestlers");
+                                      return;
+                                    }
+                                  }
+                                }
+                                // In-memory sync (no DB)
+                                seg.syncParticipants(saveData.teams());
+                                seg.syncSegmentRules(new ArrayList<>(saveData.rules()));
+                                seg.setAdjudicationStatus(AdjudicationStatus.PENDING);
+                                seg.setSegmentType(saveData.segmentType());
+                                if (saveData.winners() != null) {
+                                  seg.setWinners(new ArrayList<>(saveData.winners()));
+                                }
+                                // Async DB write
+                                dialogHolder[0].getSaveButton().setEnabled(false);
+                                SecurityContext saveCtx = SecurityContextHolder.getContext();
+                                CompletableFuture.supplyAsync(
+                                        () ->
+                                            GeneralSecurityUtils.runWithContext(
+                                                saveCtx,
+                                                () -> {
+                                                  segmentService.updateSegment(seg);
+                                                  return null;
+                                                }))
+                                    .thenRun(
+                                        () ->
+                                            ui.access(
+                                                () -> {
+                                                  notificationService.showSuccess(
+                                                      "Segment updated successfully!");
+                                                  dialogHolder[0].close();
+                                                  refreshSegmentsGrid();
+                                                }))
+                                    .exceptionally(
+                                        ex -> {
+                                          log.error("Error saving segment", ex);
+                                          ui.access(
+                                              () -> {
+                                                dialogHolder[0].getSaveButton().setEnabled(true);
+                                                notificationService.showError(
+                                                    "Error saving segment: " + ex.getMessage());
+                                              });
+                                          return null;
+                                        });
                               });
                       dialogHolder[0].setHeaderTitle("Edit Segment for " + currentShow.getName());
                       dialogHolder[0].open();
@@ -1523,41 +1685,99 @@ public class ShowDetailView extends Main
   private void adjudicateShow(@NonNull final Show show) {
     adjudicateButton.setEnabled(false);
     addSegmentButton.setEnabled(false);
-    showController.adjudicateShow(show.getId());
-    notificationService.showSuccess("Fan adjudication completed!");
-    refreshSegmentsGrid();
+    com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    SecurityContext ctx = SecurityContextHolder.getContext();
+    CompletableFuture.runAsync(
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    ctx,
+                    () -> {
+                      showController.adjudicateShow(show.getId());
+                      return null;
+                    }))
+        .thenRun(
+            () ->
+                ui.access(
+                    () -> {
+                      notificationService.showSuccess("Fan adjudication completed!");
+                      refreshSegmentsGrid();
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error adjudicating show", ex);
+              ui.access(
+                  () -> notificationService.showError("Adjudication failed: " + ex.getMessage()));
+              return null;
+            });
+  }
+
+  private void showSegmentsProgress(final boolean visible) {
+    if (segmentsProgressBar != null) {
+      segmentsProgressBar.setVisible(visible);
+    }
+    if (segmentsGrid != null) {
+      segmentsGrid.setEnabled(!visible);
+    }
+    if (adjudicateButton != null) {
+      adjudicateButton.setEnabled(!visible);
+    }
+    if (addSegmentButton != null && visible) {
+      addSegmentButton.setEnabled(false);
+    }
   }
 
   private void refreshSegmentsGrid() {
-    if (currentShow != null && segmentsGrid != null) {
-      List<Segment> updatedSegments =
-          segmentRepository.findByShowOrderBySegmentOrderAsc(currentShow);
-      segmentsGrid.setItems(updatedSegments);
-
-      // Update visibility of grid and noSegmentsMessage
-      boolean hasSegments = !updatedSegments.isEmpty();
-      segmentsGrid.setVisible(hasSegments);
-      if (noSegmentsMessage != null) {
-        noSegmentsMessage.setVisible(!hasSegments);
-      }
-
-      // Re-enable/disable buttons based on adjudication state
-      boolean hasPendingSegments =
-          updatedSegments.stream()
-              .anyMatch(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING);
-      boolean allAdjudicated =
-          !updatedSegments.isEmpty()
-              && updatedSegments.stream()
-                  .allMatch(
-                      segment -> segment.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED);
-
-      if (adjudicateButton != null) {
-        adjudicateButton.setEnabled(hasPendingSegments);
-      }
-      if (addSegmentButton != null) {
-        addSegmentButton.setEnabled(!allAdjudicated);
-      }
+    if (currentShow == null || segmentsGrid == null) {
+      return;
     }
+    showSegmentsProgress(true);
+    com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    SecurityContext ctx = SecurityContextHolder.getContext();
+    Show show = currentShow;
+    CompletableFuture.supplyAsync(
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    ctx, () -> segmentRepository.findByShowOrderBySegmentOrderAsc(show)))
+        .thenAccept(
+            updatedSegments ->
+                ui.access(
+                    () -> {
+                      showSegmentsProgress(false);
+                      segmentOrder = new ArrayList<>(updatedSegments);
+                      orderDirty = false;
+                      if (saveOrderButton != null) {
+                        saveOrderButton.setVisible(false);
+                      }
+                      segmentsGrid.setItems(updatedSegments);
+                      boolean hasSegments = !updatedSegments.isEmpty();
+                      segmentsGrid.setVisible(hasSegments);
+                      if (noSegmentsMessage != null) {
+                        noSegmentsMessage.setVisible(!hasSegments);
+                      }
+                      boolean hasPending =
+                          updatedSegments.stream()
+                              .anyMatch(
+                                  s -> s.getAdjudicationStatus() == AdjudicationStatus.PENDING);
+                      boolean allAdjudicated =
+                          hasSegments
+                              && updatedSegments.stream()
+                                  .allMatch(
+                                      s ->
+                                          s.getAdjudicationStatus()
+                                              == AdjudicationStatus.ADJUDICATED);
+                      if (adjudicateButton != null) {
+                        adjudicateButton.setEnabled(hasPending);
+                      }
+                      if (addSegmentButton != null) {
+                        addSegmentButton.setEnabled(!allAdjudicated);
+                      }
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error refreshing segments grid", ex);
+              ui.access(() -> showSegmentsProgress(false));
+              return null;
+            });
   }
 
   @Override

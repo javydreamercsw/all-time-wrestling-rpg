@@ -595,6 +595,9 @@ public class EditSegmentDialog extends Dialog {
     Map<Long, Integer> factionAffinity = new HashMap<>();
 
     for (Wrestler w : wrestlers) {
+      if (!org.hibernate.Hibernate.isInitialized(w.getWrestlerStates())) {
+        continue;
+      }
       w.getDefaultState()
           .map(WrestlerState::getFaction)
           .ifPresent(
