@@ -209,3 +209,4 @@ Get-Content "$env:USERPROFILE\mysql_backups\backup.log" -Tail 20
 - **Access denied errors:** Double-check the credentials in `%USERPROFILE%\.my.cnf` match your Railway connection details exactly.
 - **Task not running:** Open Task Scheduler UI (`taskschd.msc`), find `MySQLBackup`, and check the **History** tab for error codes.
 - **Railway SSL requirement:** Railway MySQL may require SSL. If you get SSL errors, add `--ssl-mode=REQUIRED` to the `mysqldump` arguments.
+
