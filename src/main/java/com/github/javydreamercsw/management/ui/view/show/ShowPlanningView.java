@@ -356,10 +356,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     }
   }
 
-  private void loadContext() {
+  CompletableFuture<Void> loadContext() {
     Show show = showComboBox.getValue();
     if (show == null) {
-      return;
+      return CompletableFuture.completedFuture(null);
     }
 
     loadContextButton.setEnabled(false);
@@ -367,7 +367,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     UI ui = UI.getCurrent();
     SecurityContext securityContext = SecurityContextHolder.getContext();
 
-    CompletableFuture.supplyAsync(
+    return CompletableFuture.supplyAsync(
             () ->
                 GeneralSecurityUtils.runWithContext(
                     securityContext, () -> showPlanningService.getShowPlanningContext(show)))
@@ -408,15 +408,15 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             });
   }
 
-  private void proposeSegments() {
+  CompletableFuture<Void> proposeSegments() {
     Show show = showComboBox.getValue();
     if (show == null) {
-      return;
+      return CompletableFuture.completedFuture(null);
     }
 
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
       notificationService.showError("No AI providers available.");
-      return;
+      return CompletableFuture.completedFuture(null);
     }
 
     proposeSegmentsButton.setEnabled(false);
@@ -424,7 +424,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     UI ui = UI.getCurrent();
     SecurityContext securityContext = SecurityContextHolder.getContext();
 
-    CompletableFuture.supplyAsync(
+    return CompletableFuture.supplyAsync(
             () ->
                 GeneralSecurityUtils.runWithContext(
                     securityContext,

@@ -226,7 +226,7 @@ class ShowServiceTest {
 
   @Test
   void getShowById_returnsShowWhenFound() {
-    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(showRepository.findByIdWithArenaAndLocation(1L)).thenReturn(Optional.of(show));
 
     Optional<Show> result = showService.getShowById(1L);
 
