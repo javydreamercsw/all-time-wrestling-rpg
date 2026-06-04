@@ -19,16 +19,16 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
-import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import lombok.NonNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -43,11 +43,9 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private TournamentService tournamentService;
-  @Autowired private TitleRepository titleRepository;
-  @Autowired private TitleService titleService;
-  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
+  @Autowired private DataInitializer dataInitializer;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setup() {
     dataInitializer.init();
   }
