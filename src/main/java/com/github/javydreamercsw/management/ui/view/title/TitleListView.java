@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -47,8 +48,11 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.Height;
 import com.vaadin.flow.theme.lumo.LumoUtility.Width;
 import jakarta.annotation.security.PermitAll;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -69,6 +73,8 @@ public class TitleListView extends Main {
   private final UniverseContextService universeContextService;
   private final UniverseRepository universeRepository;
   public final Grid<Title> grid = new Grid<>(Title.class, false);
+  private List<Wrestler> allWrestlersCache = new ArrayList<>();
+  private Map<Long, WrestlerState> challengerStateMap = new HashMap<>();
 
   public TitleListView(
       @NonNull final TitleService titleService,
@@ -145,7 +151,9 @@ public class TitleListView extends Main {
                   new MultiSelectComboBox<>("Challengers");
               assert title.getId() != null;
               List<Wrestler> eligibleChallengers =
-                  titleService.getEligibleChallengers(title.getId()).stream()
+                  titleService
+                      .getEligibleChallengersFast(allWrestlersCache, challengerStateMap, title)
+                      .stream()
                       .sorted(Comparator.comparing(Wrestler::getName))
                       .collect(Collectors.toList());
               challengerComboBox.setItems(eligibleChallengers);
@@ -211,6 +219,8 @@ public class TitleListView extends Main {
 
   public void refreshGrid() {
     Long universeId = universeContextService.getCurrentUniverseId();
+    allWrestlersCache = wrestlerService.getAllWrestlers();
+    challengerStateMap = wrestlerService.getStateMapByUniverseId(universeId);
     universeRepository
         .findById(universeId)
         .ifPresent(u -> grid.setItems(titleService.findByUniverse(u)));

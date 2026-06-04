@@ -67,18 +67,17 @@ public class FactionRivalryListView extends Main {
     this.factionRivalryService = factionRivalryService;
     this.factionRivalryRepository = factionRivalryRepository;
 
-    ComboBox<Faction> faction1ComboBox = new ComboBox<>("Faction 1");
-    faction1ComboBox.setItems(
+    java.util.List<Faction> allFactions =
         factionService.getAllFactions(Pageable.unpaged()).stream()
             .sorted(Comparator.comparing(Faction::getName))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
+
+    ComboBox<Faction> faction1ComboBox = new ComboBox<>("Faction 1");
+    faction1ComboBox.setItems(allFactions);
     faction1ComboBox.setItemLabelGenerator(Faction::getName);
 
     ComboBox<Faction> faction2ComboBox = new ComboBox<>("Faction 2");
-    faction2ComboBox.setItems(
-        factionService.getAllFactions(Pageable.unpaged()).stream()
-            .sorted(Comparator.comparing(Faction::getName))
-            .collect(Collectors.toList()));
+    faction2ComboBox.setItems(allFactions);
     faction2ComboBox.setItemLabelGenerator(Faction::getName);
 
     TextField storylineNotes = new TextField("Storyline Notes");

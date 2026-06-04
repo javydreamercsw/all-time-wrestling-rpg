@@ -109,11 +109,11 @@ public class Title extends AbstractSyncableEntity<Long> {
       mappedBy = "title",
       cascade = CascadeType.ALL,
       orphanRemoval = true,
-      fetch = FetchType.EAGER)
+      fetch = FetchType.LAZY)
   @JsonIgnoreProperties({"title"})
   private Set<TitleReign> titleReigns = new HashSet<>();
 
-  @ManyToMany(mappedBy = "titles", fetch = FetchType.EAGER)
+  @ManyToMany(mappedBy = "titles", fetch = FetchType.LAZY)
   private List<Segment> segments = new ArrayList<>();
 
   public void awardTitleTo(
