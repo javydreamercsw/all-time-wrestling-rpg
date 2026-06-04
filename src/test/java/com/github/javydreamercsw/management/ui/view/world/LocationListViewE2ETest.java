@@ -91,15 +91,16 @@ class LocationListViewE2ETest extends AbstractE2ETest {
 
     // Verify that the new location appears in the grid
     waitForGridToSettle("location-grid", Duration.ofSeconds(10));
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> "E2E Test City".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d -> {
+              try {
+                return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
+                    .anyMatch(it -> "E2E Test City".equals(it.getText()));
+              } catch (Exception e) {
+                return false;
+              }
+            });
 
     assertEquals(initialSize + 1, locationRepository.count());
   }
@@ -179,15 +180,16 @@ class LocationListViewE2ETest extends AbstractE2ETest {
 
     // Verify deletion
     waitForGridToSettle("location-grid", Duration.ofSeconds(10));
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> "Delete Me City".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d -> {
+              try {
+                return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
+                    .noneMatch(it -> "Delete Me City".equals(it.getText()));
+              } catch (Exception e) {
+                return false;
+              }
+            });
 
     assertEquals(initialSize - 1, locationRepository.count());
   }

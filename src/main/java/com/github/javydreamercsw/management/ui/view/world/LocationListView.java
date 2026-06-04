@@ -138,8 +138,8 @@ public class LocationListView extends Main {
             e -> {
               try {
                 service.deleteLocation(location.getId());
-                Notification.show("Location deleted successfully!");
                 listItems();
+                Notification.show("Location deleted successfully!");
                 confirmDialog.close();
               } catch (Exception ex) {
                 Notification.show("Error deleting location: " + ex.getMessage());
