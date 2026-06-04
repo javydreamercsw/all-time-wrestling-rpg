@@ -491,6 +491,7 @@ public class EditSegmentDialog extends Dialog {
                       titleMultiSelectComboBox.getValue()));
             });
 
+    saveButton.setId("edit-segment-save-button");
     Button cancelButton = new Button("Cancel", e -> close());
     getFooter().add(cancelButton, saveButton);
     add(new VerticalLayout(formLayout));
