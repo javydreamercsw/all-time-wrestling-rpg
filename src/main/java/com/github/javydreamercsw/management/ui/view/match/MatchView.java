@@ -373,11 +373,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           items.add(playerItem);
           messageList.setItems(items);
 
-          // Generate Retort
+          // Generate Retort — reload opponent with alignments to avoid lazy init in PromoService
           Wrestler opponent =
               segment.getWrestlers().stream()
                   .filter(w -> !w.equals(playerWrestler))
                   .findFirst()
+                  .flatMap(w -> wrestlerService.findByIdWithDetails(w.getId()))
                   .orElse(null);
 
           if (opponent != null) {
