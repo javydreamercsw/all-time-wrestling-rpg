@@ -100,9 +100,10 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(saveBtn);
     clickElement(saveBtn);
 
-    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("arena-form-dialog")));
+    waitForNotification("Arena added successfully!");
 
     // Verify that the new arena appears in the grid
+    waitForGridToSettle("arena-grid", Duration.ofSeconds(10));
     wait.until(
         d -> {
           try {
@@ -195,9 +196,10 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("confirm-delete-arena-button")));
     clickElement(confirmBtn);
 
-    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("delete-arena-dialog")));
+    waitForNotification("Arena deleted successfully!");
 
     // Verify deletion
+    waitForGridToSettle("arena-grid", Duration.ofSeconds(10));
     wait.until(
         d -> {
           try {

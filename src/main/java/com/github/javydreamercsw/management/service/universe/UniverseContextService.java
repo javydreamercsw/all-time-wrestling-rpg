@@ -83,13 +83,17 @@ public class UniverseContextService implements Serializable {
   }
 
   /**
-   * Get the current universe ID, falling back to 1L (Default Universe) if none.
+   * Get the current universe ID, falling back to the first available universe if none is set in the
+   * session.
    *
    * @return Current universe ID
    */
   public Long getCurrentUniverseId() {
     Long id = getInternalUniverseId();
-    return id != null ? id : 1L;
+    if (id != null) {
+      return id;
+    }
+    return universeRepository.findAll().stream().findFirst().map(Universe::getId).orElse(1L);
   }
 
   /**

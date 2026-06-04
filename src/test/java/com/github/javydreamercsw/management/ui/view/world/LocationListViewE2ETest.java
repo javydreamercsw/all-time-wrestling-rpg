@@ -87,9 +87,10 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(saveBtn);
     clickElement(saveBtn);
 
-    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("location-form-dialog")));
+    waitForNotification("Location added successfully!");
 
     // Verify that the new location appears in the grid
+    waitForGridToSettle("location-grid", Duration.ofSeconds(10));
     wait.until(
         d -> {
           try {
@@ -174,9 +175,10 @@ class LocationListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.elementToBeClickable(By.id("confirm-delete-location-button")));
     clickElement(confirmBtn);
 
-    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("delete-location-dialog")));
+    waitForNotification("Location deleted successfully!");
 
     // Verify deletion
+    waitForGridToSettle("location-grid", Duration.ofSeconds(10));
     wait.until(
         d -> {
           try {

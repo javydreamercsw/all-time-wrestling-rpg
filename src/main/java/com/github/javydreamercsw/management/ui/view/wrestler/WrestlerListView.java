@@ -167,6 +167,7 @@ public class WrestlerListView extends Main {
                 })
             .setHeader("Name")
             .setComparator(Comparator.comparing(Wrestler::getName))
+            .setSortProperty("name")
             .setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
     wrestlerGrid.addColumn(Wrestler::getDeckSize).setHeader("Deck Size").setSortable(true);
