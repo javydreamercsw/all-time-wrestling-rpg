@@ -924,9 +924,11 @@ public class DataInitializer implements Initializable {
             List<WrestlerImportDTO> wrestlersFromFile =
                 mapper.readValue(is, new TypeReference<>() {});
 
-            // Collect all wrestlers that need state refresh/creation
+            // toSaveBulk = only wrestlers whose fields actually changed (or are new).
+            // allWrestlers = every wrestler from the file — used for state processing.
             Map<String, WrestlerImportDTO> dtoMap = new HashMap<>();
             List<Wrestler> toSaveBulk = new ArrayList<>();
+            List<Wrestler> allWrestlers = new ArrayList<>();
 
             for (WrestlerImportDTO w : wrestlersFromFile) {
               Wrestler existingWrestler = wrestlersByName.get(w.getName());
@@ -938,37 +940,76 @@ public class DataInitializer implements Initializable {
 
               Wrestler wrestlerToSave;
               if (existingWrestler != null) {
-                // Update fields
-                existingWrestler.setDeckSize(w.getDeckSize());
-                existingWrestler.setStartingHealth(w.getStartingHealth());
-                existingWrestler.setLowHealth(w.getLowHealth());
-                existingWrestler.setStartingStamina(w.getStartingStamina());
-                existingWrestler.setLowStamina(w.getLowStamina());
-                existingWrestler.setDescription(w.getDescription());
-                existingWrestler.setGender(w.getGender());
-                if (w.getImageUrl() != null) {
+                // Dirty-check each field — only save if something actually changed.
+                boolean changed = false;
+                if (!Objects.equals(existingWrestler.getDeckSize(), w.getDeckSize())) {
+                  existingWrestler.setDeckSize(w.getDeckSize());
+                  changed = true;
+                }
+                if (!Objects.equals(existingWrestler.getStartingHealth(), w.getStartingHealth())) {
+                  existingWrestler.setStartingHealth(w.getStartingHealth());
+                  changed = true;
+                }
+                if (!Objects.equals(existingWrestler.getLowHealth(), w.getLowHealth())) {
+                  existingWrestler.setLowHealth(w.getLowHealth());
+                  changed = true;
+                }
+                if (!Objects.equals(
+                    existingWrestler.getStartingStamina(), w.getStartingStamina())) {
+                  existingWrestler.setStartingStamina(w.getStartingStamina());
+                  changed = true;
+                }
+                if (!Objects.equals(existingWrestler.getLowStamina(), w.getLowStamina())) {
+                  existingWrestler.setLowStamina(w.getLowStamina());
+                  changed = true;
+                }
+                if (!Objects.equals(existingWrestler.getDescription(), w.getDescription())) {
+                  existingWrestler.setDescription(w.getDescription());
+                  changed = true;
+                }
+                if (!Objects.equals(existingWrestler.getGender(), w.getGender())) {
+                  existingWrestler.setGender(w.getGender());
+                  changed = true;
+                }
+                if (w.getImageUrl() != null
+                    && !Objects.equals(existingWrestler.getImageUrl(), w.getImageUrl())) {
                   existingWrestler.setImageUrl(w.getImageUrl());
+                  changed = true;
                 }
-                if (w.getHeritageTag() != null) {
+                if (w.getHeritageTag() != null
+                    && !Objects.equals(existingWrestler.getHeritageTag(), w.getHeritageTag())) {
                   existingWrestler.setHeritageTag(w.getHeritageTag());
+                  changed = true;
                 }
-                if (w.getSet() != null) {
+                if (w.getSet() != null
+                    && !Objects.equals(existingWrestler.getExpansionCode(), w.getSet())) {
                   existingWrestler.setExpansionCode(w.getSet());
+                  changed = true;
                 }
-                if (w.getExternalId() != null) {
+                if (w.getExternalId() != null
+                    && !Objects.equals(existingWrestler.getExternalId(), w.getExternalId())) {
                   existingWrestler.setExternalId(w.getExternalId());
+                  changed = true;
                 }
-                if (w.getDrive() != null) {
+                if (w.getDrive() != null
+                    && !Objects.equals(existingWrestler.getDrive(), w.getDrive())) {
                   existingWrestler.setDrive(w.getDrive());
+                  changed = true;
                 }
-                if (w.getResilience() != null) {
+                if (w.getResilience() != null
+                    && !Objects.equals(existingWrestler.getResilience(), w.getResilience())) {
                   existingWrestler.setResilience(w.getResilience());
+                  changed = true;
                 }
-                if (w.getCharisma() != null) {
+                if (w.getCharisma() != null
+                    && !Objects.equals(existingWrestler.getCharisma(), w.getCharisma())) {
                   existingWrestler.setCharisma(w.getCharisma());
+                  changed = true;
                 }
-                if (w.getBrawl() != null) {
+                if (w.getBrawl() != null
+                    && !Objects.equals(existingWrestler.getBrawl(), w.getBrawl())) {
                   existingWrestler.setBrawl(w.getBrawl());
+                  changed = true;
                 }
 
                 if (w.getAlignment() != null) {
@@ -987,6 +1028,7 @@ public class DataInitializer implements Initializable {
                           "Initialized alignment for existing wrestler {}: {}",
                           existingWrestler.getName(),
                           at);
+                      changed = true;
                     } catch (IllegalArgumentException e) {
                       log.warn(
                           "Invalid alignment '{}' for wrestler '{}'",
@@ -998,15 +1040,24 @@ public class DataInitializer implements Initializable {
 
                 if (existingWrestler.getActive() == null) {
                   existingWrestler.setActive(true);
+                  changed = true;
                 }
                 if (existingWrestler.getIsPlayer() == null) {
                   existingWrestler.setIsPlayer(false);
+                  changed = true;
                 }
 
                 wrestlerToSave = existingWrestler;
-                log.debug(
-                    "Updated existing wrestler: {}",
-                    LogSanitizer.sanitize(existingWrestler.getName()));
+                if (changed) {
+                  toSaveBulk.add(wrestlerToSave);
+                  log.debug(
+                      "Wrestler changed, will save: {}",
+                      LogSanitizer.sanitize(existingWrestler.getName()));
+                } else {
+                  log.debug(
+                      "Wrestler unchanged, skipping save: {}",
+                      LogSanitizer.sanitize(existingWrestler.getName()));
+                }
               } else {
                 Wrestler newWrestler = new Wrestler();
                 newWrestler.setName(w.getName());
@@ -1060,13 +1111,23 @@ public class DataInitializer implements Initializable {
                 }
                 wrestlerToSave = newWrestler;
               }
-              toSaveBulk.add(wrestlerToSave);
+              // New wrestlers always go to both lists; existing ones already handled above.
+              if (existingWrestler == null) {
+                toSaveBulk.add(wrestlerToSave);
+              }
+              allWrestlers.add(wrestlerToSave);
               dtoMap.put(wrestlerToSave.getName(), w);
             }
 
-            // Save all wrestlers in one batch
-            wrestlerRepository.saveAll(toSaveBulk);
-            wrestlerRepository.flush();
+            // Save only changed/new wrestlers
+            if (!toSaveBulk.isEmpty()) {
+              log.debug(
+                  "Saving {}/{} wrestlers with changes", toSaveBulk.size(), allWrestlers.size());
+              wrestlerRepository.saveAll(toSaveBulk);
+              wrestlerRepository.flush();
+            } else {
+              log.debug("All {} wrestlers unchanged — skipping saveAll", allWrestlers.size());
+            }
 
             // Keep caches current for any subsequent wrestler files
             toSaveBulk.forEach(
@@ -1077,30 +1138,39 @@ public class DataInitializer implements Initializable {
                   }
                 });
 
-            // Process states in bulk-like manner (though getOrCreateState and tierRecalculation are
-            // still single)
-            for (Wrestler wrestler : toSaveBulk) {
+            // Process states for ALL wrestlers, but only save if something actually changed.
+            for (Wrestler wrestler : allWrestlers) {
               WrestlerImportDTO w = dtoMap.get(wrestler.getName());
               WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+              boolean stateChanged =
+                  (state.getId() == null); // newly created state always needs save
+
               if (w.getFans() != null && w.getFans() > state.getFans()) {
                 state.setFans(w.getFans());
+                stateChanged = true;
               }
               if (w.getBumps() != null && w.getBumps() > state.getBumps()) {
                 state.setBumps(w.getBumps());
+                stateChanged = true;
               }
-              state.setTier(WrestlerTier.fromFanCount(state.getFans()));
-              tierRecalculationService.recalculateTier(state);
+              if (stateChanged) {
+                state.setTier(WrestlerTier.fromFanCount(state.getFans()));
+                tierRecalculationService.recalculateTier(state);
+              }
 
               if (w.getManager() != null) {
                 if (!npcByName.containsKey(w.getManager())) {
                   npcByName.put(w.getManager(), npcService.findByName(w.getManager()));
                 }
                 Npc manager = npcByName.get(w.getManager());
-                if (manager != null) {
+                if (manager != null && !Objects.equals(state.getManager(), manager)) {
                   state.setManager(manager);
+                  stateChanged = true;
                 }
               }
-              wrestlerStateRepository.save(state);
+              if (stateChanged) {
+                wrestlerStateRepository.save(state);
+              }
             }
           } catch (IOException e) {
             log.error("Error loading wrestlers from file", e);
@@ -1350,28 +1420,65 @@ public class DataInitializer implements Initializable {
         for (NpcDTO dto : dtos) {
           Npc npc = existingNpcs.get(dto.getName());
           if (npc == null) {
+            // New NPC — always save
             npc = new Npc();
             npc.setName(dto.getName());
-          }
-          npc.setDescription(dto.getDescription());
-          npc.setNpcType(dto.getType());
-          if (dto.getSet() != null) {
-            npc.setExpansionCode(dto.getSet());
-          }
-          if (dto.getAwareness() != null) {
-            npcService.setAwareness(npc, dto.getAwareness());
-          }
-          if (dto.getAlignment() != null) {
-            try {
-              AlignmentType at = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
-              npc.setAlignment(at);
-            } catch (IllegalArgumentException e) {
-              log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
+            npc.setDescription(dto.getDescription());
+            npc.setNpcType(dto.getType());
+            if (dto.getSet() != null) {
+              npc.setExpansionCode(dto.getSet());
+            }
+            if (dto.getAwareness() != null) {
+              npcService.setAwareness(npc, dto.getAwareness());
+            }
+            if (dto.getAlignment() != null) {
+              try {
+                AlignmentType at = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
+                npc.setAlignment(at);
+              } catch (IllegalArgumentException e) {
+                log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
+              }
+            }
+            toSave.add(npc);
+          } else {
+            // Existing NPC — dirty-check before saving
+            boolean changed = false;
+            if (!Objects.equals(npc.getDescription(), dto.getDescription())) {
+              npc.setDescription(dto.getDescription());
+              changed = true;
+            }
+            if (!Objects.equals(npc.getNpcType(), dto.getType())) {
+              npc.setNpcType(dto.getType());
+              changed = true;
+            }
+            if (dto.getSet() != null && !Objects.equals(npc.getExpansionCode(), dto.getSet())) {
+              npc.setExpansionCode(dto.getSet());
+              changed = true;
+            }
+            if (dto.getAlignment() != null) {
+              try {
+                AlignmentType at = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
+                if (!Objects.equals(npc.getAlignment(), at)) {
+                  npc.setAlignment(at);
+                  changed = true;
+                }
+              } catch (IllegalArgumentException e) {
+                log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
+              }
+            }
+            // Awareness is a separate side-effectful call; skip if unchanged would require
+            // an extra query — leave as unconditional for now (it's a cheap update).
+            if (dto.getAwareness() != null) {
+              npcService.setAwareness(npc, dto.getAwareness());
+            }
+            if (changed) {
+              toSave.add(npc);
             }
           }
-          toSave.add(npc);
         }
-        npcService.saveAll(toSave);
+        if (!toSave.isEmpty()) {
+          npcService.saveAll(toSave);
+        }
         log.debug("Npc loading completed - {} npcs processed", dtos.size());
       } catch (IOException e) {
         log.error("Error loading npcs from file", e);
