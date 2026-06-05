@@ -54,7 +54,9 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -93,10 +95,10 @@ public class NarrationDialog extends Dialog {
   private final VerticalLayout teamsLayout;
   private final SegmentNarrationController segmentNarrationController;
   private final Consumer<Segment> onSaveCallback;
+  private final List<WrestlerDTO> allWrestlerDTOs;
 
   public NarrationDialog(
-      final Segment segment,
-      final NpcService npcService,
+      final PreloadedData preloaded,
       final WrestlerService wrestlerService,
       final ShowService showService,
       final SegmentService segmentService,
@@ -111,7 +113,8 @@ public class NarrationDialog extends Dialog {
       final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
       final WrestlerStatsService wrestlerStatsService) {
     this.segmentService = segmentService;
-    this.segment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
+    this.segment = preloaded.segment();
+    this.allWrestlerDTOs = preloaded.allWrestlerDTOs();
     this.objectMapper = new ObjectMapper();
     this.wrestlerService = wrestlerService;
     this.showService = showService;
@@ -158,7 +161,7 @@ public class NarrationDialog extends Dialog {
     feedbackArea = new TextArea("Feedback");
     feedbackArea.setWidthFull();
     feedbackArea.setPlaceholder("Provide feedback to the AI to improve the narration...");
-    feedbackArea.setValue(segment.getNotes() == null ? "" : segment.getNotes());
+    feedbackArea.setValue(this.segment.getNotes() == null ? "" : this.segment.getNotes());
 
     regenerateButton = new Button("Regenerate with Feedback");
     regenerateButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
@@ -167,10 +170,7 @@ public class NarrationDialog extends Dialog {
     refereeField = new ComboBox<>("Referee");
     refereeField.setItemLabelGenerator(Npc::getName);
     refereeField.setWidthFull();
-    List<Npc> referees =
-        npcService.findAllByType("Referee").stream()
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList());
+    List<Npc> referees = preloaded.referees();
     refereeField.setItems(referees);
 
     Button randomRefereeButton = new Button(new Icon(VaadinIcon.RANDOM));
@@ -192,79 +192,37 @@ public class NarrationDialog extends Dialog {
     commissionerField = new ComboBox<>("Commissioner");
     commissionerField.setItemLabelGenerator(Npc::getName);
     commissionerField.setWidthFull();
-    commissionerField.setItems(
-        npcService.findAllByType("Commissioner").stream()
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
+    commissionerField.setItems(preloaded.commissioners());
 
     commentatorsField = new MultiSelectComboBox<>("Commentators");
     commentatorsField.setItemLabelGenerator(Npc::getName);
     commentatorsField.setWidthFull();
-    List<Npc> commentators =
-        npcService.findAllByType("Commentator").stream()
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList());
+    List<Npc> commentators = preloaded.commentators();
     commentatorsField.setItems(commentators);
     commentatorsField.setValue(new HashSet<>(commentators));
 
     ringAnnouncerField = new ComboBox<>("Ring Announcer");
     ringAnnouncerField.setItemLabelGenerator(Npc::getName);
     ringAnnouncerField.setWidthFull();
-    ringAnnouncerField.setItems(
-        npcService.findAllByType("Announcer").stream()
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList()));
+    ringAnnouncerField.setItems(preloaded.announcers());
 
     otherNpcsField = new MultiSelectComboBox<>("Other NPCs");
     otherNpcsField.setItemLabelGenerator(Npc::getName);
     otherNpcsField.setWidthFull();
-    List<Npc> allNpcs = npcService.findAll();
-    List<Npc> otherNpcs =
-        allNpcs.stream()
-            .filter(
-                npc ->
-                    !"Referee".equals(npc.getNpcType())
-                        && !"Commissioner".equals(npc.getNpcType())
-                        && !"Commentator".equals(npc.getNpcType())
-                        && !"Announcer".equals(npc.getNpcType()))
-            .sorted(Comparator.comparing(Npc::getName))
-            .collect(Collectors.toList());
-    otherNpcsField.setItems(otherNpcs);
+    otherNpcsField.setItems(preloaded.otherNpcs());
 
     teamsLayout = new VerticalLayout();
     teamsLayout.setSpacing(true);
     teamsLayout.setPadding(false);
 
-    if (segment.getNarration() != null && !segment.getNarration().isEmpty()) {
-      narrationDisplay.setText(segment.getNarration());
+    if (this.segment.getNarration() != null && !this.segment.getNarration().isEmpty()) {
+      narrationDisplay.setText(this.segment.getNarration());
       saveButton.setEnabled(true);
     }
-    if (segment.getReferee() != null) {
-      refereeField.setValue(segment.getReferee());
+    if (this.segment.getReferee() != null) {
+      refereeField.setValue(this.segment.getReferee());
     }
-    java.util.Map<
-            Integer, java.util.List<com.github.javydreamercsw.management.domain.wrestler.Wrestler>>
-        byTeam = this.segment.getWrestlersByTeam();
-    if (byTeam.isEmpty()) {
-      // Fallback for legacy data: one row per wrestler, each in their own team
-      wrestlerStatsService
-          .findAllBySegment(this.segment, universeContextService.getCurrentUniverseId())
-          .forEach(this::addTeamSelector);
-    } else {
-      byTeam.forEach(
-          (teamNumber, wrestlers) -> {
-            List<WrestlerDTO> dtos =
-                wrestlers.stream()
-                    .map(
-                        w ->
-                            wrestlerStatsService
-                                .findByIdAsDTO(
-                                    w.getId(), universeContextService.getCurrentUniverseId())
-                                .orElseGet(() -> new WrestlerDTO(w)))
-                    .collect(java.util.stream.Collectors.toList());
-            addTeamSelector(dtos);
-          });
-    }
+    preloaded.teamDTOs().forEach((teamNumber, dtos) -> addTeamSelector(dtos));
 
     VerticalLayout layout =
         new VerticalLayout(
@@ -292,10 +250,7 @@ public class NarrationDialog extends Dialog {
         new MultiSelectComboBox<>("Team " + teamNumber);
     wrestlersCombo.setItemLabelGenerator(WrestlerDTO::getName);
     wrestlersCombo.setWidthFull();
-    wrestlersCombo.setItems(
-        wrestlerStatsService.findAllAsDTO(universeContextService.getCurrentUniverseId()).stream()
-            .sorted(Comparator.comparing(WrestlerDTO::getName))
-            .collect(Collectors.toList()));
+    wrestlersCombo.setItems(allWrestlerDTOs);
     wrestlersCombo.setValue(new HashSet<>(wrestlers));
 
     Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
@@ -812,6 +767,91 @@ public class NarrationDialog extends Dialog {
     } catch (Exception e) {
       log.error("Error parsing narration response", e);
       narrationDisplay.setText(response);
+    }
+  }
+
+  public record PreloadedData(
+      Segment segment,
+      List<Npc> referees,
+      List<Npc> commissioners,
+      List<Npc> commentators,
+      List<Npc> announcers,
+      List<Npc> otherNpcs,
+      List<WrestlerDTO> allWrestlerDTOs,
+      Map<Integer, List<WrestlerDTO>> teamDTOs) {
+
+    public static PreloadedData load(
+        SegmentService segmentService,
+        NpcService npcService,
+        WrestlerStatsService wrestlerStatsService,
+        UniverseContextService universeContextService,
+        Segment segment) {
+      Segment loaded = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
+      Long universeId = universeContextService.getCurrentUniverseId();
+
+      List<Npc> referees =
+          npcService.findAllByType("Referee").stream()
+              .sorted(Comparator.comparing(Npc::getName))
+              .collect(Collectors.toList());
+      List<Npc> commissioners =
+          npcService.findAllByType("Commissioner").stream()
+              .sorted(Comparator.comparing(Npc::getName))
+              .collect(Collectors.toList());
+      List<Npc> commentators =
+          npcService.findAllByType("Commentator").stream()
+              .sorted(Comparator.comparing(Npc::getName))
+              .collect(Collectors.toList());
+      List<Npc> announcers =
+          npcService.findAllByType("Announcer").stream()
+              .sorted(Comparator.comparing(Npc::getName))
+              .collect(Collectors.toList());
+      List<Npc> otherNpcs =
+          npcService.findAll().stream()
+              .filter(
+                  n ->
+                      !"Referee".equals(n.getNpcType())
+                          && !"Commissioner".equals(n.getNpcType())
+                          && !"Commentator".equals(n.getNpcType())
+                          && !"Announcer".equals(n.getNpcType()))
+              .sorted(Comparator.comparing(Npc::getName))
+              .collect(Collectors.toList());
+
+      List<WrestlerDTO> allWrestlerDTOs =
+          wrestlerStatsService.findAllAsDTO(universeId).stream()
+              .sorted(Comparator.comparing(WrestlerDTO::getName))
+              .collect(Collectors.toList());
+
+      Map<Integer, List<WrestlerDTO>> teamDTOs = new LinkedHashMap<>();
+      Map<Integer, List<Wrestler>> byTeam = loaded.getWrestlersByTeam();
+      if (byTeam.isEmpty()) {
+        List<WrestlerDTO> flat = wrestlerStatsService.findAllBySegment(loaded, universeId);
+        for (int i = 0; i < flat.size(); i++) {
+          teamDTOs.put(i + 1, List.of(flat.get(i)));
+        }
+      } else {
+        byTeam.forEach(
+            (teamNum, wrestlers) -> {
+              List<WrestlerDTO> dtos =
+                  wrestlers.stream()
+                      .map(
+                          w ->
+                              wrestlerStatsService
+                                  .findByIdAsDTO(w.getId(), universeId)
+                                  .orElseGet(() -> new WrestlerDTO(w)))
+                      .collect(Collectors.toList());
+              teamDTOs.put(teamNum, dtos);
+            });
+      }
+
+      return new PreloadedData(
+          loaded,
+          referees,
+          commissioners,
+          commentators,
+          announcers,
+          otherNpcs,
+          allWrestlerDTOs,
+          teamDTOs);
     }
   }
 }
