@@ -887,6 +887,67 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     assertEquals(Boolean.TRUE, found, "Grid " + gridId + " should contain text: " + text);
   }
 
+  /**
+   * Polls until the given text appears in a Vaadin grid's visible cells. Uses JS + scrollToIndex to
+   * force virtualisation on each attempt, which is more reliable than searching the raw DOM with
+   * Selenium's findElements.
+   */
+  protected void waitForGridContains(@NonNull final String gridId, @NonNull final String text) {
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d -> {
+              try {
+                WebElement grid = d.findElement(By.id(gridId));
+                js.executeScript(
+                    "arguments[0].scrollToIndex("
+                        + "arguments[0].items ? arguments[0].items.length - 1 : 9999);",
+                    grid);
+                return Boolean.TRUE.equals(
+                    js.executeScript(
+                        """
+                        const grid=arguments[0];const needle=arguments[1];
+                        return Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))
+                          .some(c=>c.innerText&&c.innerText.includes(needle));
+                        """,
+                        grid,
+                        text));
+              } catch (Exception e) {
+                return false;
+              }
+            });
+  }
+
+  /**
+   * Polls until the given text is absent from a Vaadin grid's visible cells. Uses the same JS +
+   * scrollToIndex approach as {@link #waitForGridContains}.
+   */
+  protected void waitForGridNotContains(@NonNull final String gridId, @NonNull final String text) {
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d -> {
+              try {
+                WebElement grid = d.findElement(By.id(gridId));
+                js.executeScript(
+                    "arguments[0].scrollToIndex("
+                        + "arguments[0].items ? arguments[0].items.length - 1 : 9999);",
+                    grid);
+                return Boolean.TRUE.equals(
+                    js.executeScript(
+                        """
+                        const grid=arguments[0];const needle=arguments[1];
+                        return !Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))
+                          .some(c=>c.innerText&&c.innerText.includes(needle));
+                        """,
+                        grid,
+                        text));
+              } catch (Exception e) {
+                return false;
+              }
+            });
+  }
+
   protected List<WebElement> getGridRows(@NonNull final String gridId) {
     WebElement grid = driver.findElement(By.id(gridId));
     return grid.findElements(By.cssSelector("vaadin-grid-cell-content"));

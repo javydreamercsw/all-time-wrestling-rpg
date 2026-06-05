@@ -102,18 +102,9 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
 
     waitForNotification("Arena added successfully!");
 
-    // Verify that the new arena appears in the grid
-    waitForGridToSettle("arena-grid", Duration.ofSeconds(10));
-    new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(
-            d -> {
-              try {
-                return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                    .anyMatch(it -> "E2E Test Arena".equals(it.getText()));
-              } catch (Exception e) {
-                return false;
-              }
-            });
+    // Verify that the new arena appears in the grid using JS-based polling (reliable with Vaadin
+    // virtualisation)
+    waitForGridContains("arena-grid", "E2E Test Arena");
 
     assertEquals(initialSize + 1, arenaRepository.count());
   }
@@ -150,16 +141,8 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("arena-form-dialog")));
 
-    // Verify update
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> "Edit Me Arena Updated".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    // Verify update using JS-based polling
+    waitForGridContains("arena-grid", "Edit Me Arena Updated");
 
     assertTrue(
         arenaRepository.findAll().stream()
@@ -199,18 +182,8 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
 
     waitForNotification("Arena deleted successfully!");
 
-    // Verify deletion
-    waitForGridToSettle("arena-grid", Duration.ofSeconds(10));
-    new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(
-            d -> {
-              try {
-                return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                    .noneMatch(it -> "Delete Me Arena".equals(it.getText()));
-              } catch (Exception e) {
-                return false;
-              }
-            });
+    // Verify deletion using JS-based polling
+    waitForGridNotContains("arena-grid", "Delete Me Arena");
 
     assertEquals(initialSize - 1, arenaRepository.count());
   }
