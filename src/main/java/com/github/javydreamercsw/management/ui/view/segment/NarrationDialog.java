@@ -245,10 +245,6 @@ public class NarrationDialog extends Dialog {
     getFooter().add(generateButton, saveButton, new Button("Close", e -> close()));
   }
 
-  private void addTeamSelector(@NonNull final WrestlerDTO wrestler) {
-    addTeamSelector(List.of(wrestler));
-  }
-
   private void addTeamSelector(@NonNull final List<WrestlerDTO> wrestlers) {
     int teamNumber = teamsLayout.getComponentCount() + 1;
     MultiSelectComboBox<WrestlerDTO> wrestlersCombo =
