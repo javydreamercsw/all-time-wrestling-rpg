@@ -17,8 +17,8 @@ RUN mvn -Pproduction,docker package -DskipTests -B
 
 # Runtime stage: JDK required — H2 migration V52 uses CREATE ALIAS with embedded Java
 # source which H2 compiles at runtime using javac. A JRE-only image lacks javac and
-# fails at Flyway startup on a fresh H2 database.
-FROM eclipse-temurin:25-jdk
+# fails at Flyway startup on a fresh H2 database. Alpine variant keeps the image smaller.
+FROM eclipse-temurin:25-jdk-alpine
 WORKDIR /app
 COPY --from=build /app/target/all-time-wrestling-rpg-*.jar app.jar
 
