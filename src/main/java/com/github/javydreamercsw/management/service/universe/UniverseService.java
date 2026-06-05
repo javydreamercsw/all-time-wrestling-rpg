@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.universe;
 
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -43,6 +45,7 @@ public class UniverseService {
   private final CampaignRepository campaignRepository;
 
   @PreAuthorize("isAuthenticated()")
+  @Cacheable(value = CacheConfig.UNIVERSES_CACHE, key = "'all'")
   public List<Universe> findAll() {
     return universeRepository.findAll();
   }

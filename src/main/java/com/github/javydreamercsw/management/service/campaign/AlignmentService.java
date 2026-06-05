@@ -26,7 +26,9 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRep
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +43,15 @@ public class AlignmentService {
 
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final CampaignStateRepository campaignStateRepository;
+
+  public Map<Long, WrestlerAlignment> getAlignmentMapByUniverseId(final Long universeId) {
+    if (universeId == null) {
+      return java.util.Collections.emptyMap();
+    }
+    return wrestlerAlignmentRepository.findByUniverseIdWithWrestler(universeId).stream()
+        .filter(wa -> wa.getWrestler() != null)
+        .collect(Collectors.toMap(wa -> wa.getWrestler().getId(), wa -> wa, (e, d) -> e));
+  }
 
   public WrestlerAlignment getOrCreateUniverseAlignment(
       @NonNull final Wrestler wrestler, @NonNull final Universe universe) {

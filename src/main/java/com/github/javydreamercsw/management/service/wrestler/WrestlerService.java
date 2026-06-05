@@ -39,6 +39,9 @@ import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.utils.DiceBag;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -48,8 +51,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -139,8 +146,20 @@ public class WrestlerService {
 
   /** Get all wrestlers (alias for findAll for UI compatibility). */
   @PreAuthorize("isAuthenticated()")
+  @Cacheable(value = CacheConfig.WRESTLERS_CACHE, key = "'all'")
   public List<Wrestler> getAllWrestlers() {
-    return findAll();
+    return wrestlerRepository.findAll();
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public java.util.Map<Long, WrestlerState> getStateMapByUniverseId(
+      @NonNull final Long universeId) {
+    return wrestlerStateRepository.findByUniverseIdWithWrestler(universeId).stream()
+        .filter(s -> s.getWrestler() != null)
+        .collect(
+            java.util.stream.Collectors.toMap(
+                s -> s.getWrestler().getId(), s -> s, (existing, duplicate) -> existing));
   }
 
   @Transactional(readOnly = true)
@@ -157,6 +176,9 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
+  @org.springframework.cache.annotation.Cacheable(
+      value = CacheConfig.WRESTLERS_CACHE,
+      key = "'all'")
   public List<Wrestler> findAll() {
     return wrestlerRepository.findAll();
   }
@@ -173,6 +195,45 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllIncludingInactive() {
     return wrestlerRepository.findAll();
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Page<Wrestler> findPageFiltered(
+      @Nullable final Collection<String> enabledExpansionCodes,
+      @Nullable final Collection<Long> excludedIds,
+      final Pageable pageable) {
+    Specification<Wrestler> spec =
+        (root, query, cb) -> {
+          List<Predicate> predicates = new ArrayList<>();
+          if (enabledExpansionCodes != null && !enabledExpansionCodes.isEmpty()) {
+            predicates.add(root.get("expansionCode").in(enabledExpansionCodes));
+          }
+          if (excludedIds != null && !excludedIds.isEmpty()) {
+            predicates.add(root.get("id").in(excludedIds).not());
+          }
+          return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    return wrestlerRepository.findAll(spec, pageable);
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public long countFiltered(
+      @Nullable final Collection<String> enabledExpansionCodes,
+      @Nullable final Collection<Long> excludedIds) {
+    Specification<Wrestler> spec =
+        (root, query, cb) -> {
+          List<Predicate> predicates = new ArrayList<>();
+          if (enabledExpansionCodes != null && !enabledExpansionCodes.isEmpty()) {
+            predicates.add(root.get("expansionCode").in(enabledExpansionCodes));
+          }
+          if (excludedIds != null && !excludedIds.isEmpty()) {
+            predicates.add(root.get("id").in(excludedIds).not());
+          }
+          return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    return wrestlerRepository.count(spec);
   }
 
   @Transactional(readOnly = true)

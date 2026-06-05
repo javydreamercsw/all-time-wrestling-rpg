@@ -57,6 +57,10 @@ public class CacheConfig {
   public static final String NOTION_PAGES_CACHE = "notionPages";
   public static final String NOTION_QUERIES_CACHE = "notionQueries";
   public static final String NPCS_CACHE = "npcs";
+  public static final String ARENAS_CACHE = "arenas";
+  public static final String LOCATIONS_CACHE = "locations";
+  public static final String UNIVERSES_CACHE = "universes";
+  public static final String TIER_BOUNDARIES_CACHE = "tierBoundaries";
 
   /**
    * Configures the cache manager with optimized cache settings. Uses Caffeine for thread-safe
@@ -84,7 +88,11 @@ public class CacheConfig {
             NOTION_SYNC_CACHE,
             NOTION_PAGES_CACHE,
             NOTION_QUERIES_CACHE,
-            NPCS_CACHE));
+            NPCS_CACHE,
+            ARENAS_CACHE,
+            LOCATIONS_CACHE,
+            UNIVERSES_CACHE,
+            TIER_BOUNDARIES_CACHE));
 
     // Default spec for all caches
     cacheManager.setCaffeine(

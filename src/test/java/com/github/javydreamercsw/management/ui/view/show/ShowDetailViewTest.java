@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.show;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -70,6 +71,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -225,6 +227,7 @@ class ShowDetailViewTest extends AbstractViewTest {
       segment1.setSegmentType(segmentType);
       when(segmentRepository.save(any(Segment.class)))
           .thenAnswer(invocation -> invocation.getArgument(0));
+      when(segmentRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
       Segment segment2 = new Segment();
       segment2.setId(11L);
@@ -278,11 +281,29 @@ class ShowDetailViewTest extends AbstractViewTest {
 
       ReflectionTestUtils.setField(showDetailView, "currentShow", show);
       ReflectionTestUtils.setField(showDetailView, "segmentsGrid", mock(Grid.class));
+      ReflectionTestUtils.setField(
+          showDetailView, "segmentOrder", new ArrayList<>(Arrays.asList(segment1, segment2)));
 
-      showDetailView.moveSegment(segment1, 1);
+      // Reordering is instant — no DB call, just rearranges in-memory list
+      showDetailView.moveSegmentInMemory(segment1, 1);
 
-      assertEquals(2, segment1.getSegmentOrder());
-      assertEquals(1, segment2.getSegmentOrder());
+      @SuppressWarnings("unchecked")
+      List<Segment> order =
+          (List<Segment>) ReflectionTestUtils.getField(showDetailView, "segmentOrder");
+      assertSame(segment2, order.get(0), "segment2 should now be first");
+      assertSame(segment1, order.get(1), "segment1 should now be second");
+
+      // Persisting writes the new order to the DB
+      ReflectionTestUtils.invokeMethod(showDetailView, "persistSegmentOrder");
+
+      @SuppressWarnings("unchecked")
+      ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+      Mockito.verify(segmentRepository, Mockito.timeout(2000)).saveAll(captor.capture());
+      List<Segment> saved = captor.getValue();
+      assertSame(segment2, saved.get(0));
+      assertSame(segment1, saved.get(1));
+      assertEquals(1, saved.get(0).getSegmentOrder());
+      assertEquals(2, saved.get(1).getSegmentOrder());
     }
   }
 }

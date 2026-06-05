@@ -531,20 +531,29 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
     captureCaption(
         "Show Detail — segments appear in their current scheduled order. Use the ↑ ↓"
-            + " arrow buttons on each row to reposition them. The new order is saved"
-            + " immediately without a separate save step.",
+            + " arrow buttons on each row to reposition them. Click Save Order to persist"
+            + " the new arrangement.",
         4500);
 
-    // Click the down button on the first row
+    // Click the down button on the main event segment (moves it from position 1 to 2 in memory)
     WebElement downButton =
         driver.findElement(By.id("move-segment-down-button-" + mainEventSegment.getId()));
     clickElement(downButton);
 
-    // Navigate to the Show Detail view
+    // Save Order button should now be visible — click it to persist
+    WebElement saveOrderButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("save-order-btn")));
+    captureCaption(
+        "Reorder complete — click Save Order to write the new arrangement to the database.", 2500);
+    clickElement(saveOrderButton);
+
+    // Wait for the Save Order button to disappear (indicates async save completed)
+    wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("save-order-btn")));
+
+    // Navigate back to the Show Detail view to verify the persisted order
     driver.get(
         "http://localhost:" + serverPort + getContextPath() + "/show-detail/" + show.getId());
 
-    // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
     wait.until(
@@ -552,8 +561,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
             By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
     captureCaption(
         "Order updated — the opener is now in position 1 and the main event has moved to"
-            + " position 2. Adjustments take effect instantly and are reflected in the show"
-            + " card, match sequence, and AI narration context.",
+            + " position 2. Adjustments are reflected in the show card, match sequence,"
+            + " and AI narration context.",
         4500);
 
     // Moved up
@@ -752,22 +761,23 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     // Verify navigation to the show detail view (or planning view)
     wait.until(ExpectedConditions.urlContains("/show-detail"));
 
-    // Click the main event checkbox on the last row
-    WebElement mainEventCheckbox =
-        wait.until(ExpectedConditions.elementToBeClickable(By.id("main-event-checkbox")));
-    Assertions.assertNotNull(mainEventCheckbox);
+    // The last non-Promo segment is automatically the main event — verify the badge is shown
+    WebElement mainEventBadge =
+        wait.until(
+            ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//*[contains(text(),'★ Main Event')]")));
+    Assertions.assertNotNull(mainEventBadge);
     captureCaption(
-        "Show Detail — each segment row has a Main Event checkbox. Checking it marks"
-            + " this match as the headline bout, which boosts AI narration drama and"
-            + " applies a fan multiplier to both winner and loser.",
+        "Show Detail — the last match on the card is automatically designated as the"
+            + " main event and highlighted with a badge. Reorder segments to change"
+            + " which match headlines the show.",
         4500);
-    clickElement(mainEventCheckbox);
 
     waitForVaadinClientToLoad();
     captureCaption(
-        "Main event confirmed — the segment is now flagged as the night's headline."
-            + " When the show is finalised, the winner earns elevated fan gains and the"
-            + " AI narration treats this as the climax of the event.",
+        "Main event confirmed — the last non-Promo segment is flagged as the night's"
+            + " headline. When the show is finalised, the winner earns elevated fan"
+            + " gains and the AI narration treats this as the climax of the event.",
         4000);
   }
 }

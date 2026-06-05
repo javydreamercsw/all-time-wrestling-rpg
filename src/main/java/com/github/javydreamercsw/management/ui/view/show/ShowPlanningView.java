@@ -21,6 +21,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
@@ -30,7 +31,6 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.CardValidationResult;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
-import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -70,8 +70,11 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Route(
     value = "show-planning",
@@ -234,20 +237,58 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                     selectedShow != null && selectedShow.getTemplate() != null
                         ? selectedShow.getTemplate().getGenderConstraint()
                         : null;
+                Long universeId = universeContextService.getCurrentUniverseId();
 
-                EditSegmentDialog dialog =
-                    new EditSegmentDialog(
-                        segment,
-                        wrestlerRepository,
-                        wrestlerService,
-                        titleService,
-                        segmentTypeRepository,
-                        segmentRuleRepository,
-                        npcService,
-                        constraint,
-                        universeContextService.getCurrentUniverseId(),
-                        () -> proposedSegmentsGrid.getDataProvider().refreshAll());
-                dialog.open();
+                editButton.setEnabled(false);
+                editButton.setText("...");
+                UI ui = UI.getCurrent();
+                SecurityContext securityContext = SecurityContextHolder.getContext();
+
+                CompletableFuture.supplyAsync(
+                        () ->
+                            GeneralSecurityUtils.runWithContext(
+                                securityContext,
+                                () ->
+                                    EditSegmentDialog.PreloadedData.load(
+                                        segmentTypeRepository,
+                                        segmentRuleRepository,
+                                        npcService,
+                                        titleService,
+                                        wrestlerService,
+                                        universeId)))
+                    .thenAccept(
+                        preloaded ->
+                            ui.access(
+                                () -> {
+                                  EditSegmentDialog dialog =
+                                      new EditSegmentDialog(
+                                          segment,
+                                          preloaded,
+                                          wrestlerService,
+                                          constraint,
+                                          universeId,
+                                          () ->
+                                              proposedSegmentsGrid.getDataProvider().refreshAll());
+                                  dialog.addOpenedChangeListener(
+                                      ev -> {
+                                        if (!ev.isOpened()) {
+                                          editButton.setEnabled(true);
+                                          editButton.setText("Edit");
+                                        }
+                                      });
+                                  dialog.open();
+                                }))
+                    .exceptionally(
+                        ex -> {
+                          ui.access(
+                              () -> {
+                                editButton.setEnabled(true);
+                                editButton.setText("Edit");
+                                notificationService.showError(
+                                    "Failed to load segment data: " + ex.getMessage());
+                              });
+                          return null;
+                        });
               });
           return editButton;
         });
@@ -321,16 +362,50 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       return;
     }
 
-    try {
-      ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
-      contextArea.setValue(
-          objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context));
-      proposeSegmentsButton.setEnabled(true);
-      notificationService.showSuccess("Planning context loaded from database.");
-    } catch (Exception e) {
-      log.error("Error loading planning context", e);
-      notificationService.showError("Failed to load planning context: " + e.getMessage());
-    }
+    loadContextButton.setEnabled(false);
+    loadContextButton.setText("Loading...");
+    UI ui = UI.getCurrent();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
+
+    CompletableFuture.supplyAsync(
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    securityContext, () -> showPlanningService.getShowPlanningContext(show)))
+        .thenAccept(
+            context ->
+                ui.access(
+                    () -> {
+                      try {
+                        contextArea.setValue(
+                            objectMapper
+                                .writerWithDefaultPrettyPrinter()
+                                .writeValueAsString(context));
+                        proposeSegmentsButton.setEnabled(true);
+                        notificationService.showSuccess("Planning context loaded from database.");
+                      } catch (Exception e) {
+                        log.error("Error serializing planning context", e);
+                        notificationService.showError(
+                            "Failed to display context: " + e.getMessage());
+                      } finally {
+                        loadContextButton.setEnabled(true);
+                        loadContextButton.setText("Load Context");
+                      }
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error loading planning context", ex);
+              ui.access(
+                  () -> {
+                    notificationService.showError(
+                        "Failed to load planning context: "
+                            + (ex.getCause() != null
+                                ? ex.getCause().getMessage()
+                                : ex.getMessage()));
+                    loadContextButton.setEnabled(true);
+                    loadContextButton.setText("Load Context");
+                  });
+              return null;
+            });
   }
 
   private void proposeSegments() {
@@ -344,17 +419,44 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       return;
     }
 
-    try {
-      ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
-      ProposedShow proposedShow = showPlanningAiService.planShow(context);
-      segments = proposedShow.getSegments();
-      proposedSegmentsGrid.setItems(segments);
-      approveButton.setEnabled(!segments.isEmpty());
-      notificationService.showSuccess("AI proposed " + segments.size() + " segments.");
-    } catch (Exception e) {
-      log.error("Error proposing segments", e);
-      notificationService.showAIServiceError(e);
-    }
+    proposeSegmentsButton.setEnabled(false);
+    proposeSegmentsButton.setText("AI Planning...");
+    UI ui = UI.getCurrent();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
+
+    CompletableFuture.supplyAsync(
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    securityContext,
+                    () -> {
+                      ShowPlanningContextDTO context =
+                          showPlanningService.getShowPlanningContext(show);
+                      return showPlanningAiService.planShow(context);
+                    }))
+        .thenAccept(
+            proposedShow ->
+                ui.access(
+                    () -> {
+                      segments = proposedShow.getSegments();
+                      proposedSegmentsGrid.setItems(segments);
+                      approveButton.setEnabled(!segments.isEmpty());
+                      notificationService.showSuccess(
+                          "AI proposed " + segments.size() + " segments.");
+                      proposeSegmentsButton.setEnabled(true);
+                      proposeSegmentsButton.setText("AI Propose Segments");
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error proposing segments", ex);
+              ui.access(
+                  () -> {
+                    notificationService.showAIServiceError(
+                        ex.getCause() != null ? ex.getCause() : ex);
+                    proposeSegmentsButton.setEnabled(true);
+                    proposeSegmentsButton.setText("AI Propose Segments");
+                  });
+              return null;
+            });
   }
 
   private void approvePlanning() {

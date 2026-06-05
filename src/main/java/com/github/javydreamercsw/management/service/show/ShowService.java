@@ -194,7 +194,7 @@ public class ShowService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
       key = "#id")
   public Optional<Show> getShowById(final Long id) {
-    return showRepository.findById(id);
+    return showRepository.findByIdWithArenaAndLocation(id);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -567,6 +567,18 @@ public class ShowService {
   @PreAuthorize("isAuthenticated()")
   public List<Show> getShowsByUniverse(@NonNull final Universe universe) {
     return showRepository.findByUniverseOrUniverseIsNull(universe);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public org.springframework.data.domain.Page<Show> getShowsByUniverse(
+      @NonNull final Universe universe,
+      @NonNull final org.springframework.data.domain.Pageable pageable) {
+    return showRepository.findByUniverseOrUniverseIsNull(universe, pageable);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public long countShowsByUniverse(@NonNull final Universe universe) {
+    return showRepository.countByUniverseOrUniverseIsNull(universe);
   }
 
   @PreAuthorize("isAuthenticated()")
