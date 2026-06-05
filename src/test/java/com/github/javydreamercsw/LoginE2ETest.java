@@ -60,9 +60,11 @@ public class LoginE2ETest extends AbstractE2ETest {
         loginFormHost.findElement(By.cssSelector("vaadin-button[slot='submit']"));
     clickElement(signInButton);
     // Wait for Spring Security's failed-login redirect before asserting the URL
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-    wait.until(
-        d -> Objects.requireNonNull(d.getCurrentUrl()).endsWith(getContextPath() + "/login?error"));
+    new WebDriverWait(driver, Duration.ofSeconds(30))
+        .until(
+            d ->
+                Objects.requireNonNull(d.getCurrentUrl())
+                    .endsWith(getContextPath() + "/login?error"));
     assertTrue(
         Objects.requireNonNull(driver.getCurrentUrl()).endsWith(getContextPath() + "/login?error"),
         driver.getCurrentUrl());
