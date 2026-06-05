@@ -888,9 +888,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
-   * Polls until the given text appears in a Vaadin grid's visible cells. Uses JS + scrollToIndex to
-   * force virtualisation on each attempt, which is more reliable than searching the raw DOM with
-   * Selenium's findElements.
+   * Polls until the given text appears in a Vaadin grid's visible cells.
+   *
+   * <p>Scrolls to index 0 on each attempt so that the first rows (where newly-created items
+   * appear) are in the virtual-scroll viewport and their {@code vaadin-grid-cell-content} elements
+   * are rendered. Scrolling to a large index (e.g. 9999) triggers an unnecessary server round-trip
+   * for non-existent rows and pushes existing rows out of the virtual DOM.
    */
   protected void waitForGridContains(@NonNull final String gridId, @NonNull final String text) {
     JavascriptExecutor js = (JavascriptExecutor) driver;
@@ -899,10 +902,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             d -> {
               try {
                 WebElement grid = d.findElement(By.id(gridId));
-                js.executeScript(
-                    "arguments[0].scrollToIndex("
-                        + "arguments[0].items ? arguments[0].items.length - 1 : 9999);",
-                    grid);
+                js.executeScript("arguments[0].scrollToIndex(0);", grid);
                 return Boolean.TRUE.equals(
                     js.executeScript(
                         """
@@ -919,8 +919,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
-   * Polls until the given text is absent from a Vaadin grid's visible cells. Uses the same JS +
-   * scrollToIndex approach as {@link #waitForGridContains}.
+   * Polls until the given text is absent from a Vaadin grid's visible cells. Uses the same
+   * scrollToIndex(0) approach as {@link #waitForGridContains}.
    */
   protected void waitForGridNotContains(@NonNull final String gridId, @NonNull final String text) {
     JavascriptExecutor js = (JavascriptExecutor) driver;
@@ -929,10 +929,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             d -> {
               try {
                 WebElement grid = d.findElement(By.id(gridId));
-                js.executeScript(
-                    "arguments[0].scrollToIndex("
-                        + "arguments[0].items ? arguments[0].items.length - 1 : 9999);",
-                    grid);
+                js.executeScript("arguments[0].scrollToIndex(0);", grid);
                 return Boolean.TRUE.equals(
                     js.executeScript(
                         """
