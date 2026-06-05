@@ -196,6 +196,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         Optional<MatchFulfillment> fulfillment = matchFulfillmentRepository.findByIdWithDetails(id);
         if (fulfillment.isPresent()) {
           segment = fulfillment.get().getSegment();
+          // findByIdWithDetails does not cover the fulfillment path — force-load alignments
+          segment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
         } else {
           // Fallback to direct segment lookup with all details
           segment = segmentService.findByIdWithDetails(id).orElse(null);
