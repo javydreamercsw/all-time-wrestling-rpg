@@ -185,6 +185,7 @@ class MatchPromoUITest extends AbstractViewTest {
     when(userDetails.getWrestler()).thenReturn(playerWrestler);
 
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    when(wrestlerService.findByIdWithDetails(1L)).thenReturn(Optional.of(playerWrestler));
     when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
         .thenAnswer(
             invocation -> {
@@ -251,6 +252,7 @@ class MatchPromoUITest extends AbstractViewTest {
     when(userDetails.getWrestler()).thenReturn(playerWrestler);
 
     when(segmentService.findByIdWithDetails(2L)).thenReturn(Optional.of(segment));
+    when(wrestlerService.findByIdWithDetails(3L)).thenReturn(Optional.of(playerWrestler));
     when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
         .thenAnswer(
             invocation -> {
@@ -261,8 +263,10 @@ class MatchPromoUITest extends AbstractViewTest {
               throw new RuntimeException("Unexpected wrestler ID: " + wrestlerId);
             });
     // No campaign
-    when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.empty());
-    when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+    lenient()
+        .when(campaignRepository.findActiveByWrestler(playerWrestler))
+        .thenReturn(Optional.empty());
+    lenient().when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
 
     // 5. Navigate to View
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
