@@ -62,6 +62,7 @@
     "@vaadin/popover": "25.1.1",
     "@vaadin/progress-bar": "25.1.1",
     "@vaadin/radio-group": "25.1.1",
+    "@vaadin/react-components": "25.1.1",
     "@vaadin/router": "2.0.1",
     "@vaadin/scroller": "25.1.1",
     "@vaadin/select": "25.1.1",
@@ -90,9 +91,9 @@
     "moment": "2.30.1",
     "moment-timezone": "0.6.0",
     "onecolor": "4.1.0",
+    "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-router": "7.13.1",
-    "react": "19.2.4"
+    "react-router": "7.13.1"
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
@@ -100,6 +101,8 @@
     "@rollup/plugin-replace": "6.0.3",
     "@rollup/pluginutils": "5.3.0",
     "@types/node": "25.5.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
     "magic-string": "0.30.21",
     "rollup-plugin-brotli": "3.1.0",
@@ -108,9 +111,7 @@
     "transform-ast": "2.4.4",
     "typescript": "5.9.3",
     "vite": "7.3.2",
-    "vite-plugin-checker": "0.12.0",
-    "@types/react-dom": "19.2.3",
-    "@types/react": "19.2.14"
+    "vite-plugin-checker": "0.12.0"
   },
   "overrides": {
     "magic-string": "0.30.21",
@@ -201,13 +202,16 @@
     "@vaadin/badge": "$@vaadin/badge",
     "@vaadin/slider": "$@vaadin/slider",
     "@vaadin/vaadin-lumo-styles": "$@vaadin/vaadin-lumo-styles",
-    "@vaadin/react-components": "25.1.1",
+    "@vaadin/react-components": "$@vaadin/react-components",
     "serialize-javascript": "7.0.5",
     "brace-expansion": "2.0.3",
     "dompurify": "$dompurify",
     "apexcharts": "$apexcharts",
     "onecolor": "$onecolor",
-    "@webcomponents/shadycss": "$@webcomponents/shadycss"
+    "@webcomponents/shadycss": "$@webcomponents/shadycss",
+    "react-dom": "$react-dom",
+    "react": "$react",
+    "react-router": "$react-router"
   },
   "vaadin": {
     "dependencies": {
@@ -247,6 +251,8 @@
       "@rollup/plugin-replace": "6.0.3",
       "@rollup/pluginutils": "5.3.0",
       "@types/node": "25.5.0",
+      "@types/react": "19.2.14",
+      "@types/react-dom": "19.2.3",
       "@vitejs/plugin-react": "5.1.4",
       "magic-string": "0.30.21",
       "rollup-plugin-brotli": "3.1.0",
@@ -255,11 +261,9 @@
       "transform-ast": "2.4.4",
       "typescript": "5.9.3",
       "vite": "7.3.2",
-      "vite-plugin-checker": "0.12.0",
-      "@types/react-dom": "19.2.3",
-      "@types/react": "19.2.14"
+      "vite-plugin-checker": "0.12.0"
     },
-    "hash": "1a9444f8de1f7e211baa4dfbd5712e79f77d0f580a3f3fac4f684ee18440dab1",
+    "hash": "af487b77db812914ab26d70a0534ca6290fc35da3d7e7a9831d9144e968096e0",
     "overrides": {
       "@fullcalendar/core": "$@fullcalendar/core",
       "@fullcalendar/daygrid": "$@fullcalendar/daygrid",
@@ -320,7 +324,7 @@
       "@vaadin/popover": "$@vaadin/popover",
       "@vaadin/progress-bar": "$@vaadin/progress-bar",
       "@vaadin/radio-group": "$@vaadin/radio-group",
-      "@vaadin/react-components": "25.1.1",
+      "@vaadin/react-components": "$@vaadin/react-components",
       "@vaadin/router": "$@vaadin/router",
       "@vaadin/scroller": "$@vaadin/scroller",
       "@vaadin/select": "$@vaadin/select",
@@ -348,7 +352,10 @@
       "lit": "$lit",
       "moment": "$moment",
       "moment-timezone": "$moment-timezone",
-      "onecolor": "$onecolor"
+      "onecolor": "$onecolor",
+      "react": "$react",
+      "react-dom": "$react-dom",
+      "react-router": "$react-router"
     }
   }
 }
