@@ -18,7 +18,7 @@ RUN mvn -Pproduction,docker package -DskipTests -B
 # Runtime stage: slim JRE — no standalone Tomcat
 FROM eclipse-temurin:25-jre
 WORKDIR /app
-COPY --from=build /app/target/all-time-wrestling-rpg.jar app.jar
+COPY --from=build /app/target/all-time-wrestling-rpg-*.jar app.jar
 
 # Default non-sensitive configurations
 ENV AI_TIMEOUT=300
