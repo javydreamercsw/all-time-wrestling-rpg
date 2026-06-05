@@ -26,10 +26,10 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
@@ -54,7 +54,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class WrestlerSyncService extends BaseSyncService {
 
   private final WrestlerService wrestlerService;
-  private final WrestlerRepository wrestlerRepository;
   private final com.github.javydreamercsw.management.domain.universe.UniverseRepository
       universeRepository;
   private final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
@@ -64,7 +63,6 @@ public class WrestlerSyncService extends BaseSyncService {
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final FactionRepository factionRepository;
   private final NpcRepository npcRepository;
-  private final InjuryRepository injuryRepository;
 
   @Autowired @Lazy @Setter protected WrestlerSyncService self;
 
@@ -77,20 +75,15 @@ public class WrestlerSyncService extends BaseSyncService {
       final SyncServiceDependencies syncServiceDependencies,
       final NotionApiExecutor notionApiExecutor,
       final WrestlerService wrestlerService,
-      final WrestlerRepository wrestlerRepository,
-      final com.github.javydreamercsw.management.domain.universe.UniverseRepository
-          universeRepository,
-      final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
-          wrestlerStateRepository,
+      final UniverseRepository universeRepository,
+      final WrestlerStateRepository wrestlerStateRepository,
       final WrestlerNotionSyncService wrestlerNotionSyncService,
       final TierRecalculationService tierRecalculationService,
       final WrestlerAlignmentRepository wrestlerAlignmentRepository,
       final FactionRepository factionRepository,
-      final NpcRepository npcRepository,
-      final InjuryRepository injuryRepository) {
+      final NpcRepository npcRepository) {
     super(objectMapper, syncServiceDependencies, notionApiExecutor);
     this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
     this.universeRepository = universeRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.wrestlerNotionSyncService = wrestlerNotionSyncService;
@@ -98,7 +91,6 @@ public class WrestlerSyncService extends BaseSyncService {
     this.wrestlerAlignmentRepository = wrestlerAlignmentRepository;
     this.factionRepository = factionRepository;
     this.npcRepository = npcRepository;
-    this.injuryRepository = injuryRepository;
     this.self = this;
   }
 

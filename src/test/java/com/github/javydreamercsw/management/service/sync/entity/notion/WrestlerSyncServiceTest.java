@@ -78,7 +78,7 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
                       if (titleMap.containsKey("text")) {
                         Map<String, Object> textMap = (Map<String, Object>) titleMap.get("text");
                         if (textMap.containsKey("content")) {
-                          return (String) textMap.get("content");
+                          return textMap.get("content");
                         }
                       }
                     }
@@ -94,15 +94,13 @@ class WrestlerSyncServiceTest extends AbstractSyncTest {
             syncServiceDependencies,
             notionApiExecutor,
             wrestlerService,
-            wrestlerRepository,
             universeRepository,
             wrestlerStateRepository,
             wrestlerNotionSyncService,
             tierRecalculationService,
             wrestlerAlignmentRepository,
             factionRepository,
-            npcRepository,
-            injuryRepository);
+            npcRepository);
 
     lenient()
         .when(wrestlerService.getOrCreateState(any(), anyLong()))
