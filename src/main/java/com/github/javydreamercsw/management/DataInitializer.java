@@ -902,9 +902,11 @@ public class DataInitializer implements Initializable {
               .orElseThrow(() -> new IllegalStateException("No universe found"));
       Long leagueId = universe.getId();
 
-      // Pre-load all wrestlers once to avoid N per-wrestler DB queries across all files
+      // Pre-load all wrestlers once to avoid N per-wrestler DB queries across all files.
+      // findAllWithAlignments uses LEFT JOIN FETCH so that getAlignment() (which iterates the
+      // lazy alignments collection) works safely on the detached entities.
       Map<String, Wrestler> wrestlersByName =
-          wrestlerRepository.findAll().stream()
+          wrestlerRepository.findAllWithAlignments().stream()
               .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
       Map<String, Wrestler> wrestlersByExternalId =
           wrestlersByName.values().stream()

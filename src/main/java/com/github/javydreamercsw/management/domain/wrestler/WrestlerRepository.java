@@ -95,6 +95,13 @@ public interface WrestlerRepository
   @Query("SELECT MAX(w.lastSync) FROM Wrestler w WHERE w.lastSync IS NOT NULL")
   Optional<java.time.Instant> findMaxLastSync();
 
+  /**
+   * Fetch all wrestlers with their alignments eagerly loaded (avoids LazyInitializationException
+   * when getAlignment() is called on detached entities).
+   */
+  @Query("SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.alignments")
+  List<Wrestler> findAllWithAlignments();
+
   @Query("SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws WHERE w.id = :id")
   Optional<Wrestler> findByIdWithStates(@Param("id") Long id);
 
