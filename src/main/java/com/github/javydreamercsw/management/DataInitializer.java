@@ -1143,7 +1143,7 @@ public class DataInitializer implements Initializable {
               WrestlerImportDTO w = dtoMap.get(wrestler.getName());
               WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
               boolean stateChanged =
-                  (state.getId() == null); // newly created state always needs save
+                  state.getId() == null; // newly created state always needs save
 
               if (w.getFans() != null && w.getFans() > state.getFans()) {
                 state.setFans(w.getFans());
