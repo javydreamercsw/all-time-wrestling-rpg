@@ -42,6 +42,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Pre;
 import com.vaadin.flow.component.icon.Icon;
@@ -129,8 +130,10 @@ public class NarrationDialog extends Dialog {
     this.wrestlerStatsService = wrestlerStatsService;
 
     setHeaderTitle("Generate Narration for: " + this.segment.getSegmentType().getName());
-    setWidth("min(800px, 95vw)");
-    setMaxWidth("90vw");
+    setWidth("min(900px, 95vw)");
+    setHeight("min(90vh, 900px)");
+    setResizable(true);
+    setDraggable(true);
     setId("narration-dialog");
 
     progressBar = new ProgressBar();
@@ -144,8 +147,8 @@ public class NarrationDialog extends Dialog {
         LumoUtility.BorderRadius.MEDIUM,
         LumoUtility.FontSize.SMALL);
     narrationDisplay.getStyle().set("white-space", "pre-wrap");
-    narrationDisplay.getStyle().set("max-height", "500px");
     narrationDisplay.getStyle().set("overflow-y", "auto");
+    narrationDisplay.getStyle().set("min-height", "6em");
 
     generateButton = new Button("Generate Narration");
     generateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -224,18 +227,20 @@ public class NarrationDialog extends Dialog {
     }
     preloaded.teamDTOs().forEach((teamNumber, dtos) -> addTeamSelector(dtos));
 
+    FormLayout npcForm = new FormLayout();
+    npcForm.setResponsiveSteps(
+        new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
+    npcForm.add(refereeLayout, commissionerField);
+    npcForm.add(ringAnnouncerField, commentatorsField);
+    npcForm.add(otherNpcsField);
+    npcForm.setColspan(otherNpcsField, 2);
+    npcForm.setWidthFull();
+
     VerticalLayout layout =
         new VerticalLayout(
-            progressBar,
-            narrationDisplay,
-            teamsLayout,
-            refereeLayout,
-            commissionerField,
-            commentatorsField,
-            ringAnnouncerField,
-            otherNpcsField,
-            feedbackArea,
-            regenerateButton);
+            progressBar, narrationDisplay, teamsLayout, npcForm, feedbackArea, regenerateButton);
+    layout.setHeightFull();
+    layout.setFlexGrow(1, narrationDisplay);
     add(layout);
     getFooter().add(generateButton, saveButton, new Button("Close", e -> close()));
   }
