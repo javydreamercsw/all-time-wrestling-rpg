@@ -890,10 +890,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   /**
    * Polls until the given text appears in a Vaadin grid's visible cells.
    *
-   * <p>Scrolls to index 0 on each attempt so that the first rows (where newly-created items
-   * appear) are in the virtual-scroll viewport and their {@code vaadin-grid-cell-content} elements
-   * are rendered. Scrolling to a large index (e.g. 9999) triggers an unnecessary server round-trip
-   * for non-existent rows and pushes existing rows out of the virtual DOM.
+   * <p>Scrolls to index 0 on each attempt so that the first rows (where newly-created items appear)
+   * are in the virtual-scroll viewport and their {@code vaadin-grid-cell-content} elements are
+   * rendered. Scrolling to a large index (e.g. 9999) triggers an unnecessary server round-trip for
+   * non-existent rows and pushes existing rows out of the virtual DOM.
    */
   protected void waitForGridContains(@NonNull final String gridId, @NonNull final String text) {
     JavascriptExecutor js = (JavascriptExecutor) driver;
