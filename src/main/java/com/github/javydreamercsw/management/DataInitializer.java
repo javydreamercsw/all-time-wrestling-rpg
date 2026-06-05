@@ -285,7 +285,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("ringside_action_types.json");
     if (resource.exists()) {
       log.debug("Loading ringside action types from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<RingsideActionTypeDTO> dtos =
             mapper.readValue(is, new TypeReference<List<RingsideActionTypeDTO>>() {});
@@ -311,7 +311,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("ringside_actions.json");
     if (resource.exists()) {
       log.debug("Loading ringside actions from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<RingsideActionDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (RingsideActionDTO dto : dtos) {
@@ -338,7 +338,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("achievements.json");
     if (resource.exists()) {
       log.debug("Loading achievements from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<Achievement> achievementsFromFile = mapper.readValue(is, new TypeReference<>() {});
         List<Achievement> toSave = new ArrayList<>();
@@ -374,7 +374,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("commentators.json");
     if (resource.exists()) {
       log.debug("Loading commentators from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<CommentatorImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (CommentatorImportDTO cDto : dtos) {
@@ -404,7 +404,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("commentary_teams.json");
     if (resource.exists()) {
       log.debug("Loading commentary teams from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<CommentaryTeamImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         for (CommentaryTeamImportDTO teamDto : dtos) {
@@ -431,38 +431,75 @@ public class DataInitializer implements Initializable {
     log.debug(
         "Syncing AI settings from environment variables/system properties/Spring environment...");
 
-    syncSetting("AI_TIMEOUT", "300");
-    syncSetting("AI_PROVIDER_AUTO", "true");
+    // Pre-load all existing settings once to avoid one DB round-trip per key
+    Map<String, com.github.javydreamercsw.management.domain.GameSetting> existingSettings =
+        gameSettingRepository.findAll().stream()
+            .collect(
+                Collectors.toMap(
+                    com.github.javydreamercsw.management.domain.GameSetting::getId,
+                    s -> s,
+                    (a, b) -> a));
+    boolean forceOverride =
+        Boolean.parseBoolean(env.getProperty("data.initializer.aiSettings.forceOverride", "false"));
+    List<com.github.javydreamercsw.management.domain.GameSetting> toSave = new ArrayList<>();
+
+    syncSetting("AI_TIMEOUT", "300", existingSettings, forceOverride, toSave);
+    syncSetting("AI_PROVIDER_AUTO", "true", existingSettings, forceOverride, toSave);
 
     // OpenAI
-    syncSetting("AI_OPENAI_ENABLED", "false");
-    syncSetting("AI_OPENAI_API_URL", "https://api.openai.com/v1/chat/completions");
-    syncSetting("AI_OPENAI_API_KEY", null);
-    syncSetting("AI_OPENAI_DEFAULT_MODEL", "gpt-3.5-turbo");
-    syncSetting("AI_OPENAI_PREMIUM_MODEL", "gpt-4");
-    syncSetting("AI_OPENAI_IMAGE_MODEL", "dall-e-3");
-    syncSetting("AI_OPENAI_MAX_TOKENS", "4000");
-    syncSetting("AI_OPENAI_TEMPERATURE", "0.7");
+    syncSetting("AI_OPENAI_ENABLED", "false", existingSettings, forceOverride, toSave);
+    syncSetting(
+        "AI_OPENAI_API_URL",
+        "https://api.openai.com/v1/chat/completions",
+        existingSettings,
+        forceOverride,
+        toSave);
+    syncSetting("AI_OPENAI_API_KEY", null, existingSettings, forceOverride, toSave);
+    syncSetting(
+        "AI_OPENAI_DEFAULT_MODEL", "gpt-3.5-turbo", existingSettings, forceOverride, toSave);
+    syncSetting("AI_OPENAI_PREMIUM_MODEL", "gpt-4", existingSettings, forceOverride, toSave);
+    syncSetting("AI_OPENAI_IMAGE_MODEL", "dall-e-3", existingSettings, forceOverride, toSave);
+    syncSetting("AI_OPENAI_MAX_TOKENS", "4000", existingSettings, forceOverride, toSave);
+    syncSetting("AI_OPENAI_TEMPERATURE", "0.7", existingSettings, forceOverride, toSave);
 
     // Claude
-    syncSetting("AI_CLAUDE_ENABLED", "false");
-    syncSetting("AI_CLAUDE_API_URL", "https://api.anthropic.com/v1/messages/");
-    syncSetting("AI_CLAUDE_API_KEY", null);
-    syncSetting("AI_CLAUDE_MODEL_NAME", "claude-3-haiku-20240307");
+    syncSetting("AI_CLAUDE_ENABLED", "false", existingSettings, forceOverride, toSave);
+    syncSetting(
+        "AI_CLAUDE_API_URL",
+        "https://api.anthropic.com/v1/messages/",
+        existingSettings,
+        forceOverride,
+        toSave);
+    syncSetting("AI_CLAUDE_API_KEY", null, existingSettings, forceOverride, toSave);
+    syncSetting(
+        "AI_CLAUDE_MODEL_NAME", "claude-3-haiku-20240307", existingSettings, forceOverride, toSave);
 
     // Gemini
-    syncSetting("AI_GEMINI_ENABLED", "false");
-    syncSetting("AI_GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/models/");
-    syncSetting("AI_GEMINI_API_KEY", null);
-    syncSetting("AI_GEMINI_MODEL_NAME", "gemini-2.5-flash");
+    syncSetting("AI_GEMINI_ENABLED", "false", existingSettings, forceOverride, toSave);
+    syncSetting(
+        "AI_GEMINI_API_URL",
+        "https://generativelanguage.googleapis.com/v1beta/models/",
+        existingSettings,
+        forceOverride,
+        toSave);
+    syncSetting("AI_GEMINI_API_KEY", null, existingSettings, forceOverride, toSave);
+    syncSetting(
+        "AI_GEMINI_MODEL_NAME", "gemini-2.5-flash", existingSettings, forceOverride, toSave);
 
+    if (!toSave.isEmpty()) {
+      gameSettingRepository.saveAll(toSave);
+      log.debug("AI settings synchronization saved {} settings.", toSave.size());
+    }
     log.debug("AI settings synchronization complete.");
   }
 
-  private void syncSetting(@NonNull final String key, final String defaultValue) {
+  private void syncSetting(
+      @NonNull final String key,
+      final String defaultValue,
+      final Map<String, com.github.javydreamercsw.management.domain.GameSetting> existingSettings,
+      final boolean forceOverride,
+      final List<com.github.javydreamercsw.management.domain.GameSetting> toSave) {
     String envValue = env.getProperty(key);
-    boolean forceOverride =
-        Boolean.parseBoolean(env.getProperty("data.initializer.aiSettings.forceOverride", "false"));
 
     // Prefer NOT overwriting DB values unless explicitly forced.
     if (envValue != null) {
@@ -472,7 +509,7 @@ public class DataInitializer implements Initializable {
             key,
             maskIfSecret(key, envValue));
         gameSettingService.save(key, envValue);
-      } else if (gameSettingService.findById(key).isPresent()) {
+      } else if (existingSettings.containsKey(key)) {
         log.debug(
             "AI setting sync: skipping '{}' from environment because DB already has a value: {}",
             key,
@@ -482,21 +519,21 @@ public class DataInitializer implements Initializable {
             "AI setting sync: saving missing '{}' from environment: {}",
             key,
             maskIfSecret(key, envValue));
-        saveIfMissing(key, envValue);
+        saveIfMissing(key, envValue, existingSettings, toSave);
       }
       return;
     }
 
     // No env value: seed defaults only if missing.
     if (defaultValue != null) {
-      if (gameSettingService.findById(key).isPresent()) {
+      if (existingSettings.containsKey(key)) {
         log.debug("AI setting sync: '{}' already present in DB; default not applied.", key);
       } else {
         log.debug(
             "AI setting sync: seeding missing '{}' with default: {}",
             key,
             maskIfSecret(key, defaultValue));
-        saveIfMissing(key, defaultValue);
+        saveIfMissing(key, defaultValue, existingSettings, toSave);
       }
     } else {
       log.debug("AI setting sync: '{}' has no env value and no default; leaving as-is.", key);
@@ -510,13 +547,18 @@ public class DataInitializer implements Initializable {
     return value;
   }
 
-  private void saveIfMissing(@NonNull final String key, @NonNull final String value) {
-    if (gameSettingRepository.findById(key).isEmpty()) {
+  private void saveIfMissing(
+      @NonNull final String key,
+      @NonNull final String value,
+      final Map<String, com.github.javydreamercsw.management.domain.GameSetting> existingSettings,
+      final List<com.github.javydreamercsw.management.domain.GameSetting> toSave) {
+    if (!existingSettings.containsKey(key)) {
       com.github.javydreamercsw.management.domain.GameSetting setting =
           new com.github.javydreamercsw.management.domain.GameSetting();
       setting.setId(key);
       setting.setValue(value);
-      gameSettingRepository.save(setting);
+      existingSettings.put(key, setting); // prevent duplicate adds within this run
+      toSave.add(setting);
       log.debug("Initialized missing setting: {} = {}", key, maskIfSecret(key, value));
     }
   }
@@ -528,7 +570,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("campaign_ability_cards.json");
     if (resource.exists()) {
       log.debug("Loading campaign ability cards from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<CampaignAbilityCardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (CampaignAbilityCardDTO dto : cardsFromFile) {
@@ -559,7 +601,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("status_cards.json");
     if (resource.exists()) {
       log.debug("Loading status cards from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<StatusCardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
         // Skip loading if the count already matches — avoids N×M DB round-trips in tests
@@ -598,7 +640,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("segment_rules.json");
     if (resource.exists()) {
       log.debug("Loading segment rules from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<SegmentRuleDTO> segmentRulesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
@@ -632,7 +674,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("show_types.json");
     if (resource.exists()) {
       log.debug("Loading show types from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<ShowType> showTypesFromFile = mapper.readValue(is, new TypeReference<>() {});
         for (ShowType st : showTypesFromFile) {
@@ -660,7 +702,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("segment_types.json");
     if (resource.exists()) {
       log.debug("Loading segment types from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<SegmentTypeDTO> segmentTypesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
@@ -702,7 +744,7 @@ public class DataInitializer implements Initializable {
     if (resource.exists()) {
       log.debug(
           "Show templates table is empty - loading templates from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<ShowTemplateDTO> templatesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
@@ -754,7 +796,7 @@ public class DataInitializer implements Initializable {
     if (resource.exists()) {
       log.debug("Loading card sets from file: {}", resource.getPath());
       // Load card sets from JSON file
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<CardSet> setsFromFile = mapper.readValue(is, new TypeReference<>() {});
         List<CardSet> toSave = new ArrayList<>();
@@ -799,7 +841,7 @@ public class DataInitializer implements Initializable {
         if (resource.exists()) {
           log.debug("Loading cards from file: {}", resource.getFilename());
           // Load cards from JSON file
-          ObjectMapper mapper = new ObjectMapper();
+          ObjectMapper mapper = objectMapper;
           try (var is = resource.getInputStream()) {
             List<CardDTO> cardsFromFile = mapper.readValue(is, new TypeReference<>() {});
             List<Card> toSave = new ArrayList<>();
@@ -860,11 +902,22 @@ public class DataInitializer implements Initializable {
               .orElseThrow(() -> new IllegalStateException("No universe found"));
       Long leagueId = universe.getId();
 
+      // Pre-load all wrestlers once to avoid N per-wrestler DB queries across all files
+      Map<String, Wrestler> wrestlersByName =
+          wrestlerRepository.findAll().stream()
+              .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
+      Map<String, Wrestler> wrestlersByExternalId =
+          wrestlersByName.values().stream()
+              .filter(wr -> wr.getExternalId() != null && !wr.getExternalId().isBlank())
+              .collect(Collectors.toMap(Wrestler::getExternalId, wr -> wr, (a, b) -> a));
+      // Lazy NPC cache for manager lookups — populated on first use per manager name
+      Map<String, Npc> npcByName = new HashMap<>();
+
       for (Resource resource : resources) {
         if (resource.exists()) {
           log.debug("Loading wrestlers from file: {}", resource.getFilename());
           // Load wrestlers from JSON file
-          ObjectMapper mapper = new ObjectMapper();
+          ObjectMapper mapper = objectMapper;
           try (var is = resource.getInputStream()) {
             List<WrestlerImportDTO> wrestlersFromFile =
                 mapper.readValue(is, new TypeReference<>() {});
@@ -874,12 +927,11 @@ public class DataInitializer implements Initializable {
             List<Wrestler> toSaveBulk = new ArrayList<>();
 
             for (WrestlerImportDTO w : wrestlersFromFile) {
-              Wrestler existingWrestler = wrestlerRepository.findByName(w.getName()).orElse(null);
+              Wrestler existingWrestler = wrestlersByName.get(w.getName());
               if (existingWrestler == null
                   && w.getExternalId() != null
                   && !w.getExternalId().trim().isEmpty()) {
-                existingWrestler =
-                    wrestlerRepository.findByExternalId(w.getExternalId()).orElse(null);
+                existingWrestler = wrestlersByExternalId.get(w.getExternalId().trim());
               }
 
               Wrestler wrestlerToSave;
@@ -1014,6 +1066,15 @@ public class DataInitializer implements Initializable {
             wrestlerRepository.saveAll(toSaveBulk);
             wrestlerRepository.flush();
 
+            // Keep caches current for any subsequent wrestler files
+            toSaveBulk.forEach(
+                saved -> {
+                  wrestlersByName.put(saved.getName(), saved);
+                  if (saved.getExternalId() != null && !saved.getExternalId().isBlank()) {
+                    wrestlersByExternalId.put(saved.getExternalId(), saved);
+                  }
+                });
+
             // Process states in bulk-like manner (though getOrCreateState and tierRecalculation are
             // still single)
             for (Wrestler wrestler : toSaveBulk) {
@@ -1029,7 +1090,10 @@ public class DataInitializer implements Initializable {
               tierRecalculationService.recalculateTier(state);
 
               if (w.getManager() != null) {
-                Npc manager = npcService.findByName(w.getManager());
+                if (!npcByName.containsKey(w.getManager())) {
+                  npcByName.put(w.getManager(), npcService.findByName(w.getManager()));
+                }
+                Npc manager = npcByName.get(w.getManager());
                 if (manager != null) {
                   state.setManager(manager);
                 }
@@ -1053,10 +1117,14 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("championships.json");
     if (resource.exists()) {
       log.debug("Loading championships from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<TitleDTO> championshipsFromFile = mapper.readValue(is, new TypeReference<>() {});
         Long universeId = getGlobalUniverseId();
+        // Pre-load wrestlers once to avoid per-champion-name DB queries
+        Map<String, Wrestler> wrestlersByName =
+            wrestlerRepository.findAll().stream()
+                .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
         List<Title> toSave = new ArrayList<>();
         for (TitleDTO dto : championshipsFromFile) {
           Optional<Title> existingTitle = titleService.findByName(dto.getName());
@@ -1099,7 +1167,8 @@ public class DataInitializer implements Initializable {
             String[] championNames = dto.getCurrentChampionName().split(",");
             List<Wrestler> champions = new ArrayList<>();
             for (String name : championNames) {
-              Optional<Wrestler> championOpt = wrestlerRepository.findByName(name.trim());
+              Optional<Wrestler> championOpt =
+                  Optional.ofNullable(wrestlersByName.get(name.trim()));
               championOpt.ifPresent(champions::add);
             }
 
@@ -1134,7 +1203,7 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("decks.json");
     if (resource.exists()) {
       log.debug("Loading decks from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<DeckDTO> decksFromFile = mapper.readValue(is, new TypeReference<>() {});
         Map<String, Wrestler> wrestlers =
@@ -1268,12 +1337,16 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("npcs.json");
     if (resource.exists()) {
       log.debug("Loading npcs from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<NpcDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
+        // Pre-load existing NPCs once to avoid per-NPC DB queries
+        Map<String, Npc> existingNpcs =
+            npcService.findAll().stream()
+                .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         List<Npc> toSave = new ArrayList<>();
         for (NpcDTO dto : dtos) {
-          Npc npc = npcService.findByName(dto.getName());
+          Npc npc = existingNpcs.get(dto.getName());
           if (npc == null) {
             npc = new Npc();
             npc.setName(dto.getName());
@@ -1313,12 +1386,19 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("factions.json");
     if (resource.exists()) {
       log.debug("Loading factions from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<FactionImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         Long universeId = getGlobalUniverseId();
+        // Pre-load wrestlers and NPCs once to avoid per-leader / per-member / per-manager queries
+        Map<String, Wrestler> wrestlersByName =
+            wrestlerRepository.findAll().stream()
+                .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
+        Map<String, Npc> npcByName =
+            npcService.findAll().stream()
+                .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         for (FactionImportDTO dto : dtos) {
-          Optional<Wrestler> leaderOpt = wrestlerRepository.findByName(dto.getLeader());
+          Optional<Wrestler> leaderOpt = Optional.ofNullable(wrestlersByName.get(dto.getLeader()));
           if (leaderOpt.isPresent()) {
             Optional<Faction> factionOpt = factionService.getFactionByName(dto.getName());
             if (factionOpt.isEmpty()) {
@@ -1329,13 +1409,13 @@ public class DataInitializer implements Initializable {
             if (factionOpt.isPresent()) {
               Faction faction = factionOpt.get();
               for (String memberName : dto.getMembers()) {
-                Optional<Wrestler> memberOpt = wrestlerRepository.findByName(memberName);
+                Optional<Wrestler> memberOpt = Optional.ofNullable(wrestlersByName.get(memberName));
                 memberOpt.ifPresent(
                     wrestler ->
                         factionService.addMemberToFaction(faction.getId(), wrestler.getId()));
               }
               if (dto.getManager() != null) {
-                Npc manager = npcService.findByName(dto.getManager());
+                Npc manager = npcByName.get(dto.getManager());
                 if (manager != null) {
                   faction.setManager(manager);
                   factionService.save(faction);
@@ -1361,12 +1441,21 @@ public class DataInitializer implements Initializable {
     ClassPathResource resource = new ClassPathResource("teams.json");
     if (resource.exists()) {
       log.debug("Loading teams from file: {}", resource.getPath());
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = objectMapper;
       try (var is = resource.getInputStream()) {
         List<TeamImportDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
+        // Pre-load wrestlers and NPCs once to avoid per-member / per-manager queries
+        Map<String, Wrestler> wrestlersByName =
+            wrestlerRepository.findAll().stream()
+                .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
+        Map<String, Npc> npcByName =
+            npcService.findAll().stream()
+                .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         for (TeamImportDTO dto : dtos) {
-          Optional<Wrestler> wrestler1Opt = wrestlerRepository.findByName(dto.getWrestler1());
-          Optional<Wrestler> wrestler2Opt = wrestlerRepository.findByName(dto.getWrestler2());
+          Optional<Wrestler> wrestler1Opt =
+              Optional.ofNullable(wrestlersByName.get(dto.getWrestler1()));
+          Optional<Wrestler> wrestler2Opt =
+              Optional.ofNullable(wrestlersByName.get(dto.getWrestler2()));
           if (wrestler1Opt.isPresent() && wrestler2Opt.isPresent()) {
             Optional<Team> teamOpt = teamService.getTeamByName(dto.getName());
             if (teamOpt.isEmpty()) {
@@ -1382,7 +1471,7 @@ public class DataInitializer implements Initializable {
             if (teamOpt.isPresent()) {
               Team team = teamOpt.get();
               if (dto.getManager() != null) {
-                Npc manager = npcService.findByName(dto.getManager());
+                Npc manager = npcByName.get(dto.getManager());
                 if (manager != null) {
                   team.setManager(manager);
                   teamRepository.save(team);
@@ -1549,9 +1638,14 @@ public class DataInitializer implements Initializable {
         List<RelationshipImportDTO> dtos =
             objectMapper.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
 
+        // Pre-load wrestlers once to avoid 2 queries per relationship
+        Map<String, Wrestler> wrestlersByName =
+            wrestlerRepository.findAll().stream()
+                .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
+
         for (RelationshipImportDTO dto : dtos) {
-          Optional<Wrestler> w1 = wrestlerRepository.findByName(dto.getWrestler1());
-          Optional<Wrestler> w2 = wrestlerRepository.findByName(dto.getWrestler2());
+          Optional<Wrestler> w1 = Optional.ofNullable(wrestlersByName.get(dto.getWrestler1()));
+          Optional<Wrestler> w2 = Optional.ofNullable(wrestlersByName.get(dto.getWrestler2()));
 
           if (w1.isPresent() && w2.isPresent()) {
             relationshipService.createOrUpdateRelationship(

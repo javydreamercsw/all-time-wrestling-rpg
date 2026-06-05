@@ -459,10 +459,12 @@ class DataInitializerTest {
     // Simulate an environment variable being set
     when(env.getProperty("AI_OPENAI_ENABLED")).thenReturn("true");
 
-    // But the DB already has a value (e.g., user explicitly disabled it)
-    GameSetting existingSetting = mock(GameSetting.class);
-    when(existingSetting.getValue()).thenReturn("false");
-    when(gameSettingService.findById("AI_OPENAI_ENABLED")).thenReturn(Optional.of(existingSetting));
+    // But the DB already has a value (e.g., user explicitly disabled it).
+    // Code now pre-loads via gameSettingRepository.findAll() — seed it there.
+    GameSetting existingSetting = new GameSetting();
+    existingSetting.setId("AI_OPENAI_ENABLED");
+    existingSetting.setValue("false");
+    when(gameSettingRepository.findAll()).thenReturn(List.of(existingSetting));
 
     dataInitializer.init();
 
@@ -493,8 +495,15 @@ class DataInitializerTest {
     w2.setId(2L);
     w2.setName("Taya Valkyrie");
 
-    when(wrestlerRepository.findByName("Johnny All Time")).thenReturn(Optional.of(w1));
-    when(wrestlerRepository.findByName("Taya Valkyrie")).thenReturn(Optional.of(w2));
+    // Code now pre-loads all wrestlers via findAll; findByName is no longer called
+    when(wrestlerRepository.findAll()).thenReturn(List.of(w1, w2));
+
+    // syncDecksFromFile also uses findAll — guard against NPE when createDeck returns null
+    com.github.javydreamercsw.management.domain.deck.Deck mockDeck =
+        mock(com.github.javydreamercsw.management.domain.deck.Deck.class);
+    when(mockDeck.getCards()).thenReturn(new java.util.HashSet<>());
+    lenient().when(deckService.findByWrestlerWithCards(any())).thenReturn(List.of());
+    lenient().when(deckService.createDeck(any())).thenReturn(mockDeck);
 
     // When
     dataInitializer.init();
