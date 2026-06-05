@@ -274,10 +274,6 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-tomcat</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-web-server</artifactId>
     </dependency>
     <dependency>
@@ -1542,6 +1538,29 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <!--
+      docker profile: swaps embedded Tomcat for Jetty so the Railway image has no
+      standalone Tomcat runtime.  Build with: mvn -Pproduction,docker package
+    -->
+    <profile>
+      <id>docker</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-web</artifactId>
+          <exclusions>
+            <exclusion>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-tomcat</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-jetty</artifactId>
+        </dependency>
+      </dependencies>
     </profile>
     <profile>
       <id>war</id>
