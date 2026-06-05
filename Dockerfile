@@ -39,10 +39,13 @@ ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 # Note: AI_OPENAI_API_KEY, AI_CLAUDE_API_KEY, AI_GEMINI_API_KEY, and NOTION_TOKEN
 # must be provided at runtime for AI/Notion features to work.
 
-ENV SPRING_PROFILES_ACTIVE=prod,mysql
-
-# Note: SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD
-# must be provided at runtime via environment variables.
+# Default to H2 so the image starts without any external database.
+# Override to prod,mysql on Railway (or any MySQL host) by setting:
+#   SPRING_PROFILES_ACTIVE=prod,mysql
+#   SPRING_DATASOURCE_URL=jdbc:mysql://...
+#   SPRING_DATASOURCE_USERNAME=...
+#   SPRING_DATASOURCE_PASSWORD=...
+ENV SPRING_PROFILES_ACTIVE=prod,h2
 
 # Railway injects PORT; default to 8080 for local docker run
 EXPOSE 8080
