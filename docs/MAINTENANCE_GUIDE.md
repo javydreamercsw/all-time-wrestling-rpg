@@ -4,6 +4,109 @@ This document outlines the maintenance procedures for the All Time Wrestling RPG
 
 ---
 
+## Deploying to Tomcat as a Windows Service
+
+When Tomcat runs as a **Windows service** (installed via the Apache Tomcat Windows installer), it uses
+the `Procrun` service wrapper (`Tomcat11.exe`) and **does not execute `setenv.bat`**. All JVM
+options and environment variables must be configured through the Tomcat service manager GUI instead.
+
+### Key difference from command-line startup
+
+| Startup method | Reads `setenv.bat`? | Configure via |
+|---|---|---|
+| `catalina.bat` / `startup.bat` | ✅ Yes | `setenv.bat` |
+| Windows service (`Tomcat11.exe`) | ❌ No | `tomcat11w.exe` Java Options tab |
+
+### Configuring JVM options
+
+Open the Tomcat Monitor GUI **as Administrator**:
+
+```cmd
+"C:\Program Files\Apache Software Foundation\Tomcat 11.0\bin\tomcat11w.exe" //ES//Tomcat11
+```
+
+Go to the **Java** tab and add the following to the **Java Options** box (one per line):
+
+```
+-Dspring.profiles.active=prod,mysql
+-Dspring.datasource.url=jdbc:mysql://<host>:<port>/<database>
+-Dspring.datasource.username=<db_user>
+-Dspring.datasource.password=<db_password>
+-Dspring.flyway.locations=classpath:db/migration/mysql
+-Xms512m
+-Xmx2g
+```
+
+> ⚠️ **Critical naming convention:** JVM system properties (`-D` flags) are **case-sensitive** and
+> must use lowercase dot-notation. `-Dspring.profiles.active=prod,mysql` works.
+> `-DSPRING_PROFILES_ACTIVE=prod,mysql` (uppercase) is silently ignored because Spring Boot only
+> matches the exact property name, not the environment-variable relaxed-binding equivalent.
+
+Set **Initial memory pool** to `512` MB and **Maximum memory pool** to `2048` MB in the same tab,
+then click **Apply**. Restart the service for changes to take effect.
+
+### Required Spring profiles
+
+The application needs **both** `prod` and `mysql` active, with `mysql` last so its datasource
+settings take precedence:
+
+```
+-Dspring.profiles.active=prod,mysql
+```
+
+`application.properties` defaults to `spring.profiles.active=h2`; the JVM option overrides it.
+
+### Tomcat Manager roles for remote deploy
+
+The Cargo Maven plugin (`remote-deploy` profile) uses the Tomcat Manager **text interface**
+(`/manager/text`). The user in `conf/tomcat-users.xml` needs **both** roles:
+
+```xml
+<user username="<user>" password="<password>" roles="manager-gui,manager-script" />
+```
+
+`manager-gui` alone is not sufficient — the text API requires `manager-script`.
+
+> **Note:** `tomcat-users.xml` is reloaded on each request; no restart is needed after editing it.
+> The service **does** need a restart to pick up changes to JVM options.
+
+### Image storage when running as LOCAL SERVICE
+
+Tomcat's Windows service runs under the **LOCAL SERVICE** account. The application stores generated
+and uploaded images in the user home directory:
+
+```
+C:\Windows\ServiceProfiles\LocalService\.atwrpg\images\generated\   ← AI-generated images
+C:\Windows\ServiceProfiles\LocalService\.atwrpg\images\defaults\    ← uploaded/manual images
+```
+
+To migrate images from another machine, copy the contents of `~/.atwrpg/images/` on the source
+machine into the corresponding folders above.
+
+### First-deploy startup time
+
+On the very first deployment against a fresh database, the `DataInitializer` seeds all reference
+data (wrestlers, NPCs, cards, arenas, etc.) — this can take several minutes against a remote
+database due to network latency.
+
+On all **subsequent** deployments the initializer runs a dirty-check: it only writes records whose
+fields have actually changed since the last run. Against an already-populated database with no
+game-file changes, the init step completes in seconds.
+
+If for any reason you need to skip the initializer entirely (e.g. during debugging), add:
+
+```
+-Ddata.initializer.enabled=false
+```
+
+Or to skip sync methods only when data already exists:
+
+```
+-Ddata.initializer.skip-if-not-empty=true
+```
+
+---
+
 ## MySQL Setup & Migration (Windows)
 
 This section covers installing MySQL on Windows, migrating your production database locally, and running the application against it.
