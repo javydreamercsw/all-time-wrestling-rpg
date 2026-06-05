@@ -49,11 +49,8 @@ ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 #   SPRING_DATASOURCE_PASSWORD=...
 ENV SPRING_PROFILES_ACTIVE=prod,h2
 
-# Persistent data volume: images and H2 database file live here.
-# Mount a Railway Volume (or host directory) at /data to survive container restarts.
-# Set ATW_STORAGE_BASE_DIR=/data so the app writes images under /data instead of ~/.atwrpg.
-VOLUME /data
-
 # Railway injects PORT; default to 8080 for local docker run
+# For persistent image storage, attach a Railway Volume at /data and set:
+#   ATW_STORAGE_BASE_DIR=/data
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
