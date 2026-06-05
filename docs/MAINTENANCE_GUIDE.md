@@ -12,10 +12,10 @@ options and environment variables must be configured through the Tomcat service 
 
 ### Key difference from command-line startup
 
-| Startup method | Reads `setenv.bat`? | Configure via |
-|---|---|---|
-| `catalina.bat` / `startup.bat` | ✅ Yes | `setenv.bat` |
-| Windows service (`Tomcat11.exe`) | ❌ No | `tomcat11w.exe` Java Options tab |
+|          Startup method          | Reads `setenv.bat`? |          Configure via           |
+|----------------------------------|---------------------|----------------------------------|
+| `catalina.bat` / `startup.bat`   | ✅ Yes               | `setenv.bat`                     |
+| Windows service (`Tomcat11.exe`) | ❌ No                | `tomcat11w.exe` Java Options tab |
 
 ### Configuring JVM options
 
