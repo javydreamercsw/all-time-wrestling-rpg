@@ -4,6 +4,114 @@ This document outlines the maintenance procedures for the All Time Wrestling RPG
 
 ---
 
+## Deploying to Railway (Docker)
+
+Railway runs the application from the `Dockerfile` in the repository root. The image uses
+embedded Jetty (no standalone Tomcat) and defaults to H2 unless MySQL environment variables
+are provided.
+
+### Required environment variables
+
+Set these in your Railway service's **Variables** panel:
+
+|                 Variable                  |          Description           |                      Example                       |
+|-------------------------------------------|--------------------------------|----------------------------------------------------|
+| `SPRING_PROFILES_ACTIVE`                  | Database profile               | `prod,mysql` (MySQL) or `prod,h2` (H2)             |
+| `SPRING_DATASOURCE_URL`                   | JDBC URL of your MySQL service | `jdbc:mysql://mysql.railway.internal:3306/railway` |
+| `SPRING_DATASOURCE_USERNAME`              | Database username              | `root`                                             |
+| `SPRING_DATASOURCE_PASSWORD`              | Database password              | _(from Railway MySQL service)_                     |
+| `ATW_STORAGE_BASE_DIR`                    | Root path for images and data  | `/data`                                            |
+| `AI_CLAUDE_ENABLED` / `AI_CLAUDE_API_KEY` | Enable Claude AI narration     | `true` / your key                                  |
+| `AI_GEMINI_ENABLED` / `AI_GEMINI_API_KEY` | Enable Gemini AI narration     | `true` / your key                                  |
+| `AI_OPENAI_ENABLED` / `AI_OPENAI_API_KEY` | Enable OpenAI narration        | `true` / your key                                  |
+
+> Railway injects `PORT` automatically; the app reads it via `server.port=${PORT:8080}`.
+> Do **not** set `PORT` manually.
+
+### Persistent image storage (Railway Volume)
+
+The application stores AI-generated and uploaded images under `${ATW_STORAGE_BASE_DIR}`:
+
+```
+/data/images/generated/   ← AI-generated images
+/data/images/defaults/    ← manually uploaded images
+```
+
+The `Dockerfile` declares `/data` as a `VOLUME`. Without a persistent volume, images are lost
+every time the container restarts or redeploys.
+
+**To attach a Railway Volume:**
+
+1. In your Railway project, open the service → **Volumes** tab → **Add Volume**.
+2. Set the **Mount Path** to `/data`.
+3. Redeploy — the volume persists across all future deploys.
+
+### Migrating existing images from a local install
+
+If you have images on a local machine (typically `~/.atwrpg/images/`) and want to move them
+to Railway:
+
+```bash
+# 1. SSH into the Railway container (requires Railway CLI)
+railway shell
+
+# 2. On your local machine, copy images to the running container via Railway's volume
+#    Or use mysqldump / a one-time upload script
+```
+
+The simplest approach is to re-upload images through the application UI after deploying, or
+to use `railway cp` once Railway CLI supports it.
+
+### H2 mode (no MySQL)
+
+Leaving `SPRING_PROFILES_ACTIVE=prod,h2` and attaching a volume at `/data` also persists the
+H2 database file across restarts:
+
+```
+/data/db/atwrpg.mv.db   ← H2 database file (created automatically)
+```
+
+Set the datasource URL to a file-based H2 path inside the volume:
+
+```
+SPRING_DATASOURCE_URL=jdbc:h2:file:/data/db/atwrpg;AUTO_SERVER=FALSE
+SPRING_DATASOURCE_USERNAME=sa
+SPRING_DATASOURCE_PASSWORD=
+```
+
+> `AUTO_SERVER=FALSE` is required in Docker — the embedded server mode used for desktop
+> installs does not work inside a single-container deployment.
+
+### Local Docker run (testing the image)
+
+```bash
+# Build
+docker build -t atwrpg .
+
+# Run with H2 (no database required)
+docker run --rm \
+  -p 8080:8080 \
+  -v "$HOME/.atwrpg:/data" \
+  -e ATW_STORAGE_BASE_DIR=/data \
+  atwrpg
+
+# Run with MySQL
+docker run --rm \
+  -p 8080:8080 \
+  -v "$HOME/.atwrpg:/data" \
+  -e ATW_STORAGE_BASE_DIR=/data \
+  -e SPRING_PROFILES_ACTIVE=prod,mysql \
+  -e SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/atwrpg \
+  -e SPRING_DATASOURCE_USERNAME=root \
+  -e SPRING_DATASOURCE_PASSWORD=secret \
+  atwrpg
+```
+
+Mounting `~/.atwrpg` at `/data` reuses any images and (for H2 mode) the database already on
+your machine.
+
+---
+
 ## Deploying to Tomcat as a Windows Service
 
 When Tomcat runs as a **Windows service** (installed via the Apache Tomcat Windows installer), it uses
