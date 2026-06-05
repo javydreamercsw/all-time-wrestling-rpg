@@ -15,8 +15,10 @@ RUN mvn dependency:go-offline -Pproduction,docker -B -q
 COPY . .
 RUN mvn -Pproduction,docker package -DskipTests -B
 
-# Runtime stage: slim JRE — no standalone Tomcat
-FROM eclipse-temurin:25-jre
+# Runtime stage: JDK required — H2 migration V52 uses CREATE ALIAS with embedded Java
+# source which H2 compiles at runtime using javac. A JRE-only image lacks javac and
+# fails at Flyway startup on a fresh H2 database.
+FROM eclipse-temurin:25-jdk
 WORKDIR /app
 COPY --from=build /app/target/all-time-wrestling-rpg-*.jar app.jar
 
