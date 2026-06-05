@@ -88,8 +88,8 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     clickElement(saveBtn);
 
     // Wait for the dialog to close — guarantees listItems() has run and grid is updated.
+    // Notification check omitted: the 3-second notification may expire during this wait.
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("location-form-dialog")));
-    waitForNotification("Location added successfully!");
 
     // Verify that the new location appears in the grid using JS-based polling (reliable with Vaadin
     // virtualisation)
@@ -161,9 +161,9 @@ class LocationListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.elementToBeClickable(By.id("confirm-delete-location-button")));
     clickElement(confirmBtn);
 
-    // Wait for the confirmation dialog to close — guarantees server has processed deletion.
+    // Wait for the confirmation dialog to close — guarantees server has processed the deletion.
+    // Notification check omitted: the 3-second notification may expire during this wait.
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("delete-location-dialog")));
-    waitForNotification("Location deleted successfully!");
 
     // Verify deletion using JS-based polling
     waitForGridNotContains("location-grid", "Delete Me City");

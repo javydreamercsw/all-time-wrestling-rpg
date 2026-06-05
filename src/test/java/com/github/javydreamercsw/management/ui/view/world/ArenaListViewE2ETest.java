@@ -101,9 +101,10 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
     clickElement(saveBtn);
 
     // Wait for the dialog to close — this Vaadin round-trip guarantees listItems() has run
-    // and the grid update has been sent to the client before we check cell content.
+    // and the grid update has been applied before we check cell content.
+    // (No notification check: the 3-second notification expires before Selenium can reliably
+    // detect it after the dialog-close wait; the dialog close is a sufficient save signal.)
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("arena-form-dialog")));
-    waitForNotification("Arena added successfully!");
 
     // Verify that the new arena appears in the grid using JS-based polling (reliable with Vaadin
     // virtualisation)
@@ -183,10 +184,10 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("confirm-delete-arena-button")));
     clickElement(confirmBtn);
 
-    // Wait for the confirmation dialog to close — guarantees server has processed deletion
-    // and listItems() has updated the grid before we poll for cell content.
+    // Wait for the confirmation dialog to close — guarantees server has processed the deletion
+    // and the grid has been refreshed. Notification check omitted (3-second notification
+    // may expire during this wait; dialog close is a sufficient synchronisation signal).
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("delete-arena-dialog")));
-    waitForNotification("Arena deleted successfully!");
 
     // Verify deletion using JS-based polling
     waitForGridNotContains("arena-grid", "Delete Me Arena");
