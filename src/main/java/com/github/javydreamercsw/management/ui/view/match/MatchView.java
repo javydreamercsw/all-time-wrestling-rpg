@@ -260,7 +260,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     getStyle().set("background-color", "var(--lumo-contrast-5pct)");
 
     Optional<CustomUserDetails> userDetails = securityUtils.getAuthenticatedUser();
-    Wrestler playerWrestler = userDetails.map(CustomUserDetails::getWrestler).orElse(null);
+    Wrestler playerWrestler =
+        userDetails
+            .map(CustomUserDetails::getWrestler)
+            .flatMap(w -> wrestlerService.findByIdWithDetails(w.getId()))
+            .orElse(null);
 
     buildHeader(playerWrestler);
 
