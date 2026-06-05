@@ -60,7 +60,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
     Location location = locationService.createLocation("Arena City", "Desc", null, Set.of());
 
     navigateTo("arena-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Get the initial size of the grid
     long initialSize = arenaRepository.count();

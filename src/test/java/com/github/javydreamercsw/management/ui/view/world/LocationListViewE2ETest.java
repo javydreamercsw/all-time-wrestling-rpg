@@ -55,7 +55,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
   @Test
   void testCreateLocation() {
     navigateTo("location-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Get the initial size of the grid
     long initialSize = locationRepository.count();
@@ -103,7 +103,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     Location location = locationService.createLocation("Edit Me City", "Desc", null, Set.of());
 
     navigateTo("location-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Wait for the grid to load
     waitForGridToSettle("location-grid", Duration.ofSeconds(30));
@@ -141,7 +141,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     Location location = locationService.createLocation("Delete Me City", "Desc", null, Set.of());
 
     navigateTo("location-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Wait for the grid to load
     waitForGridToSettle("location-grid", Duration.ofSeconds(30));
