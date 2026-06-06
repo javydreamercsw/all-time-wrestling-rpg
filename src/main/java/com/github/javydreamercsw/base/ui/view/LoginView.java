@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ui.view;
 
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.ui.view.account.ForgotPasswordView;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
@@ -30,6 +31,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /** Login view for the application. */
 @Route("login")
@@ -37,9 +41,17 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 @AnonymousAllowed
 public class LoginView extends VerticalLayout implements BeforeEnterObserver {
 
+  private static final List<String[]> DEFAULT_ACCOUNTS =
+      List.of(
+          new String[] {"admin", "admin123"},
+          new String[] {"booker", "booker123"},
+          new String[] {"player", "player123"},
+          new String[] {"viewer", "viewer123"});
+
   private final LoginForm loginForm = new LoginForm();
 
-  public LoginView() {
+  public LoginView(
+      final AccountRepository accountRepository, final PasswordEncoder passwordEncoder) {
     addClassName("login-view");
     setSizeFull();
     setAlignItems(Alignment.CENTER);
@@ -68,8 +80,16 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
     i18nError.setUsername("Username is required");
     i18nError.setPassword("Password is required");
 
-    i18n.setAdditionalInformation(
-        "Default accounts: admin/admin123, booker/booker123, player/player123, viewer/viewer123");
+    List<String> stillDefault = new ArrayList<>();
+    for (String[] entry : DEFAULT_ACCOUNTS) {
+      accountRepository
+          .findByUsername(entry[0])
+          .filter(a -> passwordEncoder.matches(entry[1], a.getPassword()))
+          .ifPresent(a -> stillDefault.add(entry[0] + "/" + entry[1]));
+    }
+    if (!stillDefault.isEmpty()) {
+      i18n.setAdditionalInformation("Default accounts: " + String.join(", ", stillDefault));
+    }
 
     loginForm.setI18n(i18n);
     loginForm.setId("vaadinLoginFormWrapper");
