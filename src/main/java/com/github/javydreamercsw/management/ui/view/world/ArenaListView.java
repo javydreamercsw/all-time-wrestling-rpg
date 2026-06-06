@@ -36,13 +36,12 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.data.provider.CallbackDataProvider;
+import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,8 +55,7 @@ public class ArenaListView extends Main {
   private final LocationService locationService;
   private final SecurityUtils securityUtils;
   private final ImageStorageService storageService;
-  private final List<Arena> arenaItems = new ArrayList<>();
-  private final ListDataProvider<Arena> dataProvider = new ListDataProvider<>(arenaItems);
+  private final CallbackDataProvider<Arena, Void> dataProvider;
   private final Grid<Arena> grid = new Grid<>();
 
   public ArenaListView(
@@ -69,6 +67,9 @@ public class ArenaListView extends Main {
     this.locationService = locationService;
     this.securityUtils = securityUtils;
     this.storageService = storageService;
+    this.dataProvider =
+        DataProvider.fromCallbacks(
+            query -> arenaService.findAll().stream(), query -> (int) arenaService.count());
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -181,8 +182,6 @@ public class ArenaListView extends Main {
   }
 
   private void listItems() {
-    arenaItems.clear();
-    arenaItems.addAll(arenaService.findAll());
     dataProvider.refreshAll();
   }
 
