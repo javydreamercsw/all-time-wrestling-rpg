@@ -54,6 +54,11 @@ class RivalryServiceTest {
 
   @Mock private RivalryRepository rivalryRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.universe.UniverseRepository
+      universeRepository;
+
   @Mock private Clock clock;
   @Mock private Random random;
   @Mock private ApplicationEventPublisher eventPublisher;
@@ -65,6 +70,10 @@ class RivalryServiceTest {
   public void setUp() {
     lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
     lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
+    com.github.javydreamercsw.management.domain.universe.Universe defaultUniverse =
+        org.mockito.Mockito.mock(
+            com.github.javydreamercsw.management.domain.universe.Universe.class);
+    lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(defaultUniverse));
   }
 
   @Test

@@ -500,7 +500,11 @@ public class SegmentAdjudicationService {
             continue;
           }
           rivalryService.addHeatBetweenWrestlers(
-              wi.getId(), wj.getId(), heat, "From segment: " + segment.getSegmentType().getName());
+              wi.getId(),
+              wj.getId(),
+              heat,
+              "From segment: " + segment.getSegmentType().getName(),
+              universeId);
         }
       }
     } else {
