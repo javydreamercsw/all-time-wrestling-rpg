@@ -53,6 +53,7 @@ public class ArenaService {
   private final Random random = new Random();
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(value = CacheConfig.ARENAS_CACHE, allEntries = true)
   public Arena createArena(
       final String name,
       final String description,
@@ -77,6 +78,7 @@ public class ArenaService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(value = CacheConfig.ARENAS_CACHE, allEntries = true)
   public Optional<Arena> updateArena(
       final Long id,
       final String name,
