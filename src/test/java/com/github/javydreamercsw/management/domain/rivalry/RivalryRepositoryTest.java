@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,7 +32,6 @@ class RivalryRepositoryTest extends AbstractJpaTest {
 
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private EntityManager entityManager;
-  @Autowired private UniverseContextService universeContextService;
 
   @AfterEach
   public void tearDown() {
@@ -57,7 +55,7 @@ class RivalryRepositoryTest extends AbstractJpaTest {
     activeRivalry.setWrestler2(wrestler2);
     activeRivalry.setStartedDate(lastMonth.minus(1, ChronoUnit.DAYS));
     activeRivalry.setIsActive(true);
-    activeRivalry.setUniverse(universeContextService.getCurrentUniverse().get());
+    activeRivalry.setUniverse(defaultUniverse);
     rivalryRepository.save(activeRivalry);
 
     Rivalry activeRivalry2 = new Rivalry();
@@ -65,7 +63,7 @@ class RivalryRepositoryTest extends AbstractJpaTest {
     activeRivalry2.setWrestler2(wrestler4);
     activeRivalry2.setStartedDate(lastMonth.plus(1, ChronoUnit.DAYS));
     activeRivalry2.setIsActive(true);
-    activeRivalry2.setUniverse(universeContextService.getCurrentUniverse().get());
+    activeRivalry2.setUniverse(defaultUniverse);
     rivalryRepository.save(activeRivalry2);
 
     Rivalry endedRivalry = new Rivalry();
@@ -74,7 +72,7 @@ class RivalryRepositoryTest extends AbstractJpaTest {
     endedRivalry.setStartedDate(lastMonth.minus(10, ChronoUnit.DAYS));
     endedRivalry.setEndedDate(lastMonth.minus(1, ChronoUnit.DAYS));
     endedRivalry.setIsActive(false);
-    endedRivalry.setUniverse(universeContextService.getCurrentUniverse().get());
+    endedRivalry.setUniverse(defaultUniverse);
     rivalryRepository.save(endedRivalry);
 
     Rivalry futureRivalry = new Rivalry();
@@ -82,7 +80,7 @@ class RivalryRepositoryTest extends AbstractJpaTest {
     futureRivalry.setWrestler2(wrestler4); // Different wrestlers
     futureRivalry.setStartedDate(now.plus(1, ChronoUnit.DAYS));
     futureRivalry.setIsActive(true);
-    futureRivalry.setUniverse(universeContextService.getCurrentUniverse().get());
+    futureRivalry.setUniverse(defaultUniverse);
     rivalryRepository.save(futureRivalry);
 
     // When
