@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.extension.NotionTestCleanupExtension;
@@ -51,6 +52,7 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
 
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private RivalryNotionSyncService rivalryNotionSyncService;
 
   @MockitoBean private NotionHandler notionHandler;
@@ -95,6 +97,7 @@ class RivalryNotionSyncServiceIT extends ManagementIntegrationTest {
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
     rivalry.setWrestler2(wrestler2);
+    rivalry.setUniverse(universeRepository.findById(1L).orElseThrow());
     rivalry.setHeat(15);
     rivalry.setIsActive(true);
     rivalry.setStartedDate(Instant.now());

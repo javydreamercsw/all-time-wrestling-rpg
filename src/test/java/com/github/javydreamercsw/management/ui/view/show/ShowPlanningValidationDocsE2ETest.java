@@ -84,6 +84,7 @@ class ShowPlanningValidationDocsE2ETest extends AbstractE2ETest {
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
     rivalry.setWrestler2(wrestler2);
+    rivalry.setUniverse(defaultUniverse);
     rivalry.setHeat(25);
     rivalry.setIsActive(true);
     rivalry.setStartedDate(Instant.now());
@@ -133,6 +134,7 @@ class ShowPlanningValidationDocsE2ETest extends AbstractE2ETest {
     Rivalry hotRivalry = new Rivalry();
     hotRivalry.setWrestler1(wrestler1);
     hotRivalry.setWrestler2(wrestler2);
+    hotRivalry.setUniverse(defaultUniverse);
     hotRivalry.setHeat(35);
     hotRivalry.setIsActive(true);
     hotRivalry.setStartedDate(Instant.now());
