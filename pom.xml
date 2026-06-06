@@ -274,10 +274,6 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-tomcat</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-web-server</artifactId>
     </dependency>
     <dependency>
@@ -560,12 +556,12 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.32</version>
+      <version>1.5.34</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.5.32</version>
+      <version>1.5.34</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
@@ -865,7 +861,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.5.5</version>
+        <version>3.5.6</version>
         <configuration>
           <skipTests>${surefire.skip}</skipTests>
           <!-- Enable parallel execution for unit tests -->
@@ -943,7 +939,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.5.1</version>
+        <version>3.6.0</version>
         <configuration>
           <!-- optional: limit format enforcement to just the files changed by this feature branch
                 <ratchetFrom>origin/master</ratchetFrom>-->
@@ -961,6 +957,8 @@
                      of third-party README/CHANGELOG files in node_modules and fails
                      the endWithNewline check. -->
                 <exclude>target/**</exclude>
+                <!-- Auto-generated memory files managed by Claude Code -->
+                <exclude>.claude/**</exclude>
               </excludes>
               <!-- define the steps to apply to those files -->
               <trimTrailingWhitespace/>
@@ -1267,7 +1265,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>1.1.0</version>
+            <version>1.1.1</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>
@@ -1542,6 +1540,29 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <!--
+      docker profile: swaps embedded Tomcat for Jetty so the Railway image has no
+      standalone Tomcat runtime.  Build with: mvn -Pproduction,docker package
+    -->
+    <profile>
+      <id>docker</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-web</artifactId>
+          <exclusions>
+            <exclusion>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-tomcat</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-jetty</artifactId>
+        </dependency>
+      </dependencies>
     </profile>
     <profile>
       <id>war</id>

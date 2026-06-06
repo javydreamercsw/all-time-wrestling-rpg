@@ -248,8 +248,8 @@ public class ArenaFormDialog extends Dialog {
               arena.getImageUrl(),
               arena.getEnvironmentalTraits());
         }
-        onSave.run();
         close();
+        onSave.run();
       } catch (Exception e) {
         log.error("Error saving arena", e);
         Notification.show(

@@ -206,8 +206,8 @@ public class LocationFormDialog extends Dialog {
               location.getImageUrl(),
               location.getCulturalTags());
         }
-        onSave.run();
         close();
+        onSave.run();
       } catch (Exception e) {
         log.error("Error saving location", e);
         Notification.show(

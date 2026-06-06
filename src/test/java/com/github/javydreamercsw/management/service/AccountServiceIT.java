@@ -25,6 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembership.UniverseMemberRole;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
+import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +58,9 @@ public class AccountServiceIT {
   @Qualifier("managementAccountService") private AccountService accountService;
 
   @Autowired private PasswordEncoder passwordEncoder;
+  @Autowired private UniverseMembershipService universeMembershipService;
+  @Autowired private UniverseMembershipRepository universeMembershipRepository;
+  @Autowired private UniverseRepository universeRepository;
 
   @Test
   @WithCustomMockUser(roles = "ADMIN")
@@ -90,6 +97,25 @@ public class AccountServiceIT {
 
     accountService.delete(account.getId());
     assertFalse(accountService.get(account.getId()).isPresent());
+  }
+
+  @Test
+  @WithCustomMockUser(roles = "ADMIN")
+  public void testDeleteAccount_withUniverseMembership_doesNotThrowFkViolation() {
+    Account account =
+        accountService.createAccount(
+            "member_delete_user", "Password123!", "member@user.com", RoleName.PLAYER);
+    assertNotNull(account.getId());
+
+    // Use the first available universe (created by DataInitializer at startup)
+    var universe = universeRepository.findAll().get(0);
+    universeMembershipService.addMember(universe, account, UniverseMemberRole.MEMBER);
+    assertFalse(universeMembershipRepository.findByAccount(account).isEmpty());
+
+    accountService.delete(account.getId());
+
+    assertFalse(accountService.get(account.getId()).isPresent());
+    assertTrue(universeMembershipRepository.findByAccount(account).isEmpty());
   }
 
   @Test

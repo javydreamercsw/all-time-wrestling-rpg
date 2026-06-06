@@ -427,7 +427,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push Docker image (no release profile)
-        run: mvn clean package jib:build -Pproduction -DskipTests=true
+        run: |
+          for attempt in 1 2 3; do
+            mvn clean package jib:build -Pproduction -DskipTests=true && break || {
+              if [ $attempt -lt 3 ]; then
+                echo "Attempt $attempt failed (MANIFEST_BLOB_UNKNOWN race). Retrying in 15s..."
+                sleep 15
+              else
+                echo "All 3 attempts failed."
+                exit 1
+              fi
+            }
+          done
 
   # Build and push Docker image with release profile on version tag
   docker-image-main-release:
@@ -447,7 +458,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push Docker image (release profile)
-        run: mvn clean package jib:build -Prelease,production -DskipTests=true
+        run: |
+          for attempt in 1 2 3; do
+            mvn clean package jib:build -Prelease,production -DskipTests=true && break || {
+              if [ $attempt -lt 3 ]; then
+                echo "Attempt $attempt failed (MANIFEST_BLOB_UNKNOWN race). Retrying in 15s..."
+                sleep 15
+              else
+                echo "All 3 attempts failed."
+                exit 1
+              fi
+            }
+          done
 
   docker-it:
     runs-on: ubuntu-latest

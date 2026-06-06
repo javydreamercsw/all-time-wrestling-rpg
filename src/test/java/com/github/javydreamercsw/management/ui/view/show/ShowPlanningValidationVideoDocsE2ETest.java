@@ -78,6 +78,7 @@ class ShowPlanningValidationVideoDocsE2ETest extends AbstractE2ETest {
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(w1);
     rivalry.setWrestler2(w2);
+    rivalry.setUniverse(defaultUniverse);
     rivalry.setHeat(20);
     rivalry.setIsActive(true);
     rivalry.setStartedDate(Instant.now());

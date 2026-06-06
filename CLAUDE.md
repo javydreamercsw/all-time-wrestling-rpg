@@ -54,6 +54,15 @@ git status  # MUST show "up to date with origin"
 
 <!-- END BEADS INTEGRATION -->
 
+## Pre-Commit Checklist
+
+Before committing any code change, you MUST:
+
+1. **Run affected tests** — if you changed production code, run the corresponding unit tests (`mvn test -Dtest=AffectedTest`) and confirm they pass. If you changed a method signature or renamed a call site, grep for all usages (including mocks in tests) and verify each one compiles and passes.
+2. **Apply formatting** — run `mvn spotless:apply` before every commit. The CI build fails without it.
+3. **No parallel Maven processes** — never run two `mvn` commands against the same `target/` concurrently. It corrupts class files. Run tests sequentially. If the IDE is open, use `mvn compile -Dmaven.compiler.useIncrementalCompilation=false` rather than `mvn clean` when a clean is needed.
+4. **E2E tests** — use `-DrerunFailingTestsCount=0` when debugging failures locally. Retries are for flaky CI runs, not diagnosis. Use `-Dit.test=ClassName` with `-Pdocs-e2e,production` for docs tests, `-Pe2e,production` for regular E2E tests.
+
 ## Build & Test
 
 ```bash

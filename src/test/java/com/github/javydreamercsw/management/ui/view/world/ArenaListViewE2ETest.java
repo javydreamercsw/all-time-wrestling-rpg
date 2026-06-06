@@ -100,18 +100,17 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(saveBtn);
     clickElement(saveBtn);
 
+    // Wait for the dialog to close — this Vaadin round-trip guarantees listItems() has run
+    // and the grid update has been applied before we check cell content.
+    // (No notification check: the 3-second notification expires before Selenium can reliably
+    // detect it after the dialog-close wait; the dialog close is a sufficient save signal.)
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("arena-form-dialog")));
 
-    // Verify that the new arena appears in the grid
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> "E2E Test Arena".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    waitForVaadinClientToLoad();
+
+    // Verify that the new arena appears in the grid using JS-based polling (reliable with Vaadin
+    // virtualisation)
+    waitForGridContains("arena-grid", "E2E Test Arena");
 
     assertEquals(initialSize + 1, arenaRepository.count());
   }
@@ -127,7 +126,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to load
-    waitForGridToSettle("arena-grid", Duration.ofSeconds(30));
+    waitForGridToSettle("arena-grid", Duration.ofSeconds(10));
 
     // Click edit button for the specific arena
     WebElement editBtn =
@@ -148,16 +147,8 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("arena-form-dialog")));
 
-    // Verify update
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> "Edit Me Arena Updated".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    // Verify update using JS-based polling
+    waitForGridContains("arena-grid", "Edit Me Arena Updated");
 
     assertTrue(
         arenaRepository.findAll().stream()
@@ -180,7 +171,7 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to load
-    waitForGridToSettle("arena-grid", Duration.ofSeconds(30));
+    waitForGridToSettle("arena-grid", Duration.ofSeconds(10));
 
     long initialSize = arenaRepository.count();
 
@@ -195,18 +186,15 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("confirm-delete-arena-button")));
     clickElement(confirmBtn);
 
+    // Wait for the confirmation dialog to close — guarantees server has processed the deletion
+    // and the grid has been refreshed. Notification check omitted (3-second notification
+    // may expire during this wait; dialog close is a sufficient synchronisation signal).
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("delete-arena-dialog")));
 
-    // Verify deletion
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> "Delete Me Arena".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    waitForVaadinClientToLoad();
+
+    // Verify deletion using JS-based polling
+    waitForGridNotContains("arena-grid", "Delete Me Arena");
 
     assertEquals(initialSize - 1, arenaRepository.count());
   }

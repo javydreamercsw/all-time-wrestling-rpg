@@ -41,8 +41,8 @@ class DockerPackageIT {
   @Test
   void testDockerPackage() throws Exception {
     File projectDir = new File(".").getAbsoluteFile().getCanonicalFile();
-    final int port = Integer.parseInt(System.getProperty("server.port", "9090"));
-    final String contextPath = System.getProperty("server.servlet.context-path", "/atw-rpg");
+    final int port = Integer.parseInt(System.getProperty("server.port", "8080"));
+    final String contextPath = System.getProperty("server.servlet.context-path", "");
 
     // Build image via docker CLI with --pull=never so it uses the local base image without
     // hitting Docker Hub. This avoids the Testcontainers pre-pull hang on ImageFromDockerfile.
@@ -70,7 +70,7 @@ class DockerPackageIT {
             .withEnv(
                 "JAVA_TOOL_OPTIONS",
                 """
-                -Dspring.profiles.active=prod -Dvaadin.productionMode=true\
+                -Dspring.profiles.active=prod,h2 -Dvaadin.productionMode=true\
                  -Dhttps.enforcement.disabled=true\
                 """)
             .waitingFor(

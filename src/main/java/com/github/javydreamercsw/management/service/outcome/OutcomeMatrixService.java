@@ -260,7 +260,7 @@ public class OutcomeMatrixService {
 
     if (entry.getHeatDelta() != null && secondaryWrestlerId != null) {
       rivalryService.addHeatBetweenWrestlers(
-          primaryWrestlerId, secondaryWrestlerId, entry.getHeatDelta(), reason);
+          primaryWrestlerId, secondaryWrestlerId, entry.getHeatDelta(), reason, universeId);
     }
 
     if (entry.getFanDelta() != null && entry.getFanDelta() != 0) {

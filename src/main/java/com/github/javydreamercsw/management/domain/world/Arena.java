@@ -63,7 +63,7 @@ public class Arena extends AbstractSyncableEntity<Long> {
   @Column(name = "description")
   private String description;
 
-  @ManyToOne(optional = false, fetch = FetchType.EAGER)
+  @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "location_id", nullable = false)
   private Location location;
 
@@ -77,7 +77,7 @@ public class Arena extends AbstractSyncableEntity<Long> {
   @Column(name = "image_url")
   private String imageUrl;
 
-  @ElementCollection(fetch = FetchType.EAGER)
+  @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "arena_environmental_trait", joinColumns = @JoinColumn(name = "arena_id"))
   @Column(name = "environmental_trait")
   @Builder.Default

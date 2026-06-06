@@ -82,7 +82,7 @@ public class UniverseExportService {
     return switch (category) {
       case UNIVERSE_STATE -> collectUniverseState(states);
       case INJURIES -> collectInjuries(universe, states);
-      case RIVALRIES -> collectRivalries(states);
+      case RIVALRIES -> collectRivalries(universe, states);
       case TITLE_REIGNS -> collectTitleReigns(states);
       case ALIGNMENTS -> collectAlignments(universe, states);
       case RELATIONSHIPS -> collectRelationships(states);
@@ -128,24 +128,20 @@ public class UniverseExportService {
     return rows;
   }
 
-  private List<Map<String, Object>> collectRivalries(List<WrestlerState> states) {
-    Set<Long> seenRivalryIds = new HashSet<>();
+  private List<Map<String, Object>> collectRivalries(
+      Universe universe, List<WrestlerState> states) {
     List<Map<String, Object>> rows = new ArrayList<>();
-    for (WrestlerState state : states) {
-      for (var r : rivalryRepository.findAllForWrestler(state.getWrestler())) {
-        if (seenRivalryIds.add(r.getId())) {
-          Map<String, Object> row = new LinkedHashMap<>();
-          row.put("wrestler1", r.getWrestler1().getName());
-          row.put("wrestler2", r.getWrestler2().getName());
-          row.put("heat", r.getHeat());
-          row.put("heatEvents", r.getHeatEvents().size());
-          row.put("isActive", r.getIsActive());
-          row.put("startedDate", r.getStartedDate());
-          row.put("endedDate", r.getEndedDate() != null ? r.getEndedDate() : "");
-          row.put("storylineNotes", r.getStorylineNotes() != null ? r.getStorylineNotes() : "");
-          rows.add(row);
-        }
-      }
+    for (var r : rivalryRepository.findByUniverseWithWrestlers(universe)) {
+      Map<String, Object> row = new LinkedHashMap<>();
+      row.put("wrestler1", r.getWrestler1().getName());
+      row.put("wrestler2", r.getWrestler2().getName());
+      row.put("heat", r.getHeat());
+      row.put("heatEvents", r.getHeatEvents().size());
+      row.put("isActive", r.getIsActive());
+      row.put("startedDate", r.getStartedDate());
+      row.put("endedDate", r.getEndedDate() != null ? r.getEndedDate() : "");
+      row.put("storylineNotes", r.getStorylineNotes() != null ? r.getStorylineNotes() : "");
+      rows.add(row);
     }
     return rows;
   }

@@ -29,6 +29,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Slf4j
 public final class UrlUtil {
 
+  // Cached during the first real HTTP request so WebSocket callers get the right context path.
+  private static volatile String cachedNetworkUrl = null;
+
   public static String getBaseUrl() {
     VaadinServletRequest request = VaadinServletRequest.getCurrent();
     if (request != null) {
@@ -46,8 +49,9 @@ public final class UrlUtil {
    * scannable from phones on the same network.
    *
    * <p>When called outside a Vaadin HTTP request (e.g. from a WebSocket click listener),
-   * VaadinServletRequest.getCurrent() returns null. In that case we derive the URL from the
-   * machine's first non-loopback IPv4 address so the generated QR code still works on the LAN.
+   * VaadinServletRequest.getCurrent() returns null. In that case the value computed during the most
+   * recent real HTTP request is reused, preserving the correct context path. If no HTTP request has
+   * been seen yet the method falls back to a best-effort LAN IP guess.
    */
   public static String getNetworkUrl() {
     String override = System.getenv("QR_BASE_URL");
@@ -58,20 +62,26 @@ public final class UrlUtil {
     if (request != null) {
       String forwardedHost = request.getHttpServletRequest().getHeader("X-Forwarded-Host");
       String forwardedProto = request.getHttpServletRequest().getHeader("X-Forwarded-Proto");
+      String result;
       if (forwardedHost != null && !forwardedHost.isBlank()) {
         String scheme = forwardedProto != null ? forwardedProto : "https";
         String contextPath = request.getHttpServletRequest().getContextPath();
-        return scheme + "://" + forwardedHost + contextPath;
+        result = scheme + "://" + forwardedHost + contextPath;
+      } else {
+        // Real HTTP request — swap localhost for LAN IP and preserve context path.
+        String base = getBaseUrl();
+        String lanIp = getLanIpAddress();
+        result =
+            lanIp != null ? base.replace("localhost", lanIp).replace("127.0.0.1", lanIp) : base;
       }
-      // We have a real HTTP request — use it, but swap localhost for the LAN IP
-      String base = getBaseUrl();
-      String lanIp = getLanIpAddress();
-      if (lanIp != null) {
-        base = base.replace("localhost", lanIp).replace("127.0.0.1", lanIp);
-      }
-      return base;
+      cachedNetworkUrl = result;
+      return result;
     }
-    // No HTTP request context (called from a WebSocket/push thread) — build from LAN IP directly
+    // No HTTP request context (WebSocket/push thread) — use cached value to keep context path.
+    if (cachedNetworkUrl != null) {
+      return cachedNetworkUrl;
+    }
+    // Last resort: no cache yet, build from LAN IP (context path unknown).
     String lanIp = getLanIpAddress();
     if (lanIp != null) {
       return "http://" + lanIp + ":8080";

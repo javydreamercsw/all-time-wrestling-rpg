@@ -87,18 +87,15 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(saveBtn);
     clickElement(saveBtn);
 
+    // Wait for the dialog to close — guarantees listItems() has run and grid is updated.
+    // Notification check omitted: the 3-second notification may expire during this wait.
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("location-form-dialog")));
 
-    // Verify that the new location appears in the grid
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> "E2E Test City".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    waitForVaadinClientToLoad();
+
+    // Verify that the new location appears in the grid using JS-based polling (reliable with Vaadin
+    // virtualisation)
+    waitForGridContains("location-grid", "E2E Test City");
 
     assertEquals(initialSize + 1, locationRepository.count());
   }
@@ -111,7 +108,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to load
-    waitForGridToSettle("location-grid", Duration.ofSeconds(30));
+    waitForGridToSettle("location-grid", Duration.ofSeconds(10));
 
     // Click edit button for the specific location
     WebElement editBtn =
@@ -133,16 +130,8 @@ class LocationListViewE2ETest extends AbstractE2ETest {
 
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("location-form-dialog")));
 
-    // Verify update
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .anyMatch(it -> "Edit Me City Updated".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    // Verify update using JS-based polling
+    waitForGridContains("location-grid", "Edit Me City Updated");
 
     assertTrue(
         locationRepository.findAll().stream()
@@ -157,7 +146,7 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the grid to load
-    waitForGridToSettle("location-grid", Duration.ofSeconds(30));
+    waitForGridToSettle("location-grid", Duration.ofSeconds(10));
 
     long initialSize = locationRepository.count();
 
@@ -174,18 +163,14 @@ class LocationListViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.elementToBeClickable(By.id("confirm-delete-location-button")));
     clickElement(confirmBtn);
 
+    // Wait for the confirmation dialog to close — guarantees server has processed the deletion.
+    // Notification check omitted: the 3-second notification may expire during this wait.
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("delete-location-dialog")));
 
-    // Verify deletion
-    wait.until(
-        d -> {
-          try {
-            return d.findElements(By.tagName("vaadin-grid-cell-content")).stream()
-                .noneMatch(it -> "Delete Me City".equals(it.getText()));
-          } catch (Exception e) {
-            return false;
-          }
-        });
+    waitForVaadinClientToLoad();
+
+    // Verify deletion using JS-based polling
+    waitForGridNotContains("location-grid", "Delete Me City");
 
     assertEquals(initialSize - 1, locationRepository.count());
   }

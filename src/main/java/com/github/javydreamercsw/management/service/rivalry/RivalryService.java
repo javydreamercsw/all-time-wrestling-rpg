@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service.rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
@@ -52,12 +54,13 @@ public class RivalryService {
 
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired @Getter private RivalryMapper rivalryMapper;
   @Autowired private Clock clock;
   @Autowired private ApplicationEventPublisher eventPublisher;
   @Autowired private GameSettingService gameSettingService;
 
-  /** Create a new rivalry between two wrestlers. */
+  /** Create a new rivalry between two wrestlers in the Default Universe. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
@@ -67,10 +70,25 @@ public class RivalryService {
       @NonNull final Long wrestler1Id,
       @NonNull final Long wrestler2Id,
       @NonNull final String storylineNotes) {
+    return createRivalry(wrestler1Id, wrestler2Id, storylineNotes, 1L);
+  }
+
+  /** Create a new rivalry between two wrestlers in the given universe. */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
+      allEntries = true)
+  public Optional<Rivalry> createRivalry(
+      @NonNull final Long wrestler1Id,
+      @NonNull final Long wrestler2Id,
+      @NonNull final String storylineNotes,
+      @NonNull final Long universeId) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
+    Optional<Universe> universeOpt = universeRepository.findById(universeId);
 
-    if (wrestler1Opt.isEmpty() || wrestler2Opt.isEmpty()) {
+    if (wrestler1Opt.isEmpty() || wrestler2Opt.isEmpty() || universeOpt.isEmpty()) {
       return Optional.empty();
     }
 
@@ -81,13 +99,13 @@ public class RivalryService {
     Optional<Rivalry> existingRivalry =
         rivalryRepository.findActiveRivalryBetween(wrestler1, wrestler2);
     if (existingRivalry.isPresent()) {
-      return existingRivalry; // Return existing rivalry
+      return existingRivalry;
     }
 
-    // Create new rivalry
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
     rivalry.setWrestler2(wrestler2);
+    rivalry.setUniverse(universeOpt.get());
     rivalry.setHeat(0);
     rivalry.setIsActive(true);
     rivalry.setStartedDate(Instant.now(clock));
@@ -124,7 +142,7 @@ public class RivalryService {
             });
   }
 
-  /** Add heat between two specific wrestlers. */
+  /** Add heat between two specific wrestlers in the Default Universe. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
@@ -135,6 +153,21 @@ public class RivalryService {
       @NonNull final Long wrestler2Id,
       final int heatGain,
       @NonNull final String reason) {
+    return addHeatBetweenWrestlers(wrestler1Id, wrestler2Id, heatGain, reason, 1L);
+  }
+
+  /** Add heat between two specific wrestlers in the given universe. */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
+      allEntries = true)
+  public Optional<Rivalry> addHeatBetweenWrestlers(
+      @NonNull final Long wrestler1Id,
+      @NonNull final Long wrestler2Id,
+      final int heatGain,
+      @NonNull final String reason,
+      @NonNull final Long universeId) {
     Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
     Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
 
@@ -142,13 +175,12 @@ public class RivalryService {
       return Optional.empty();
     }
 
-    // Find or create rivalry
     Optional<Rivalry> rivalryOpt =
         rivalryRepository.findActiveRivalryBetween(wrestler1Opt.get(), wrestler2Opt.get());
 
     if (rivalryOpt.isEmpty()) {
-      // Create new rivalry if none exists
-      rivalryOpt = createRivalry(wrestler1Id, wrestler2Id, "Auto-generated from heat event");
+      rivalryOpt =
+          createRivalry(wrestler1Id, wrestler2Id, "Auto-generated from heat event", universeId);
     }
 
     return rivalryOpt.flatMap(rivalry -> addHeat(rivalry.getId(), heatGain, reason));

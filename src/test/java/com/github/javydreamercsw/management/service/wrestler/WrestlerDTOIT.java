@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 public class WrestlerDTOIT extends ManagementIntegrationTest {
 
@@ -36,6 +37,7 @@ public class WrestlerDTOIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @Transactional
   void robVanDamMoveSetShouldBePopulatedCorrectly() {
     // Given
     String wrestlerName = "Rob Van Dam";

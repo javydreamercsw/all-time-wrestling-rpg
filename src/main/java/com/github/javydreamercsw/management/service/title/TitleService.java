@@ -28,11 +28,13 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -381,6 +383,26 @@ public class TitleService {
             + " is now a challenger for the "
             + title.getName()
             + ".");
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> getEligibleChallengersFast(
+      @NonNull final List<Wrestler> candidates,
+      @NonNull final Map<Long, WrestlerState> stateMap,
+      @NonNull final Title title) {
+    if (title.getUniverse() == null || title.getTier() == null) {
+      return List.of();
+    }
+    WrestlerTier titleTier = title.getTier();
+    Gender titleGender = title.getGender();
+    return candidates.stream()
+        .filter(w -> titleGender == null || titleGender == w.getGender())
+        .filter(
+            w -> {
+              WrestlerState state = stateMap.get(w.getId());
+              return state != null && state.getTier().ordinal() >= titleTier.ordinal();
+            })
+        .collect(Collectors.toList());
   }
 
   @PreAuthorize("isAuthenticated()")

@@ -253,6 +253,7 @@ public interface SegmentRepository
       """
       SELECT s FROM Segment s
       JOIN FETCH s.show sh
+      LEFT JOIN FETCH sh.universe u
       JOIN FETCH s.segmentType st
       LEFT JOIN FETCH s.segmentRules sr
       LEFT JOIN FETCH s.titles t

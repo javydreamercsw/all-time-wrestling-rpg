@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.campaign;
 
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -37,4 +38,9 @@ public interface WrestlerAlignmentRepository extends JpaRepository<WrestlerAlign
       """)
   Optional<WrestlerAlignment> findByWrestlerAndUniverseId(
       @Param("wrestler") Wrestler wrestler, @Param("universeId") Long universeId);
+
+  @Query(
+      "SELECT wa FROM WrestlerAlignment wa JOIN FETCH wa.wrestler WHERE wa.universe.id ="
+          + " :universeId")
+  List<WrestlerAlignment> findByUniverseIdWithWrestler(@Param("universeId") Long universeId);
 }

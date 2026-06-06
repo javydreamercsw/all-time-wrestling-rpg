@@ -517,7 +517,17 @@ public class ShowListView extends Main {
     Long universeId = universeContextService.getCurrentUniverseId();
     universeRepository
         .findById(universeId)
-        .ifPresent(u -> showGrid.setItems(showService.getShowsByUniverse(u)));
+        .ifPresentOrElse(
+            u ->
+                showGrid.setItems(
+                    query -> {
+                      org.springframework.data.domain.Pageable pageable =
+                          com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest(
+                              query);
+                      return showService.getShowsByUniverse(u, pageable).stream();
+                    },
+                    query -> (int) showService.countShowsByUniverse(u)),
+            () -> showGrid.setItems());
   }
 
   private void openGenerateArtDialog(final ShowTemplate template) {

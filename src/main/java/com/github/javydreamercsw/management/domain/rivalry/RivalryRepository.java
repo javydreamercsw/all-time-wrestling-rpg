@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.rivalry;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
@@ -31,6 +32,15 @@ public interface RivalryRepository
     extends JpaRepository<Rivalry, Long>, JpaSpecificationExecutor<Rivalry> {
 
   Optional<Rivalry> findByExternalId(String externalId);
+
+  List<Rivalry> findByUniverse(Universe universe);
+
+  @Query(
+      """
+      SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2
+      WHERE r.universe = :universe
+      """)
+  List<Rivalry> findByUniverseWithWrestlers(@Param("universe") Universe universe);
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Rivalry> findAllBy(Pageable pageable);

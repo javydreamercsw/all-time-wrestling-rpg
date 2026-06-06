@@ -365,7 +365,9 @@ public class SegmentService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<Segment> findByIdWithDetails(@NonNull final Long id) {
-    return segmentRepository.findByIdWithDetails(id);
+    Optional<Segment> result = segmentRepository.findByIdWithDetails(id);
+    result.ifPresent(s -> s.getParticipants().forEach(p -> p.getWrestler().getAlignments().size()));
+    return result;
   }
 
   /**

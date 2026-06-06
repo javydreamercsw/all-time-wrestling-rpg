@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomPasswordValidator;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
@@ -52,6 +53,7 @@ public class AccountService {
   private final RoleRepository roleRepository;
   @Lazy private final PasswordEncoder passwordEncoder;
   private final WrestlerRepository wrestlerRepository;
+  private final UniverseMembershipRepository universeMembershipRepository;
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public Account createAccount(
@@ -110,6 +112,12 @@ public class AccountService {
   }
 
   public void delete(final Long id) {
+    accountRepository
+        .findById(id)
+        .ifPresent(
+            account ->
+                universeMembershipRepository.deleteAll(
+                    universeMembershipRepository.findByAccount(account)));
     accountRepository.deleteById(id);
   }
 

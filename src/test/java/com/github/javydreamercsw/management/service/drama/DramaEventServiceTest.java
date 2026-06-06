@@ -134,7 +134,8 @@ class DramaEventServiceTest {
 
     dramaEventService.processEvent(event);
 
-    verify(rivalryService).addHeatBetweenWrestlers(eq(1L), eq(2L), anyInt(), anyString());
+    verify(rivalryService)
+        .addHeatBetweenWrestlers(eq(1L), eq(2L), anyInt(), anyString(), anyLong());
     assertTrue(event.getIsProcessed());
     assertNotNull(event.getProcessedDate());
   }

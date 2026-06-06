@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.league.LeagueService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -34,7 +35,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 @Route(value = "gm-dashboard", layout = MainLayout.class)
@@ -45,14 +49,20 @@ public class GmDashboardView extends VerticalLayout {
 
   private final LeagueService leagueService;
   private final SecurityUtils securityUtils;
+  private final WrestlerService wrestlerService;
 
   private final ComboBox<League> leagueSelector = new ComboBox<>("Select League");
   private final Grid<Wrestler> rosterGrid = new Grid<>(Wrestler.class, false);
   private final Span budgetLabel = new Span();
+  private Map<Long, WrestlerState> statesByWrestlerId = new HashMap<>();
 
-  public GmDashboardView(final LeagueService leagueService, final SecurityUtils securityUtils) {
+  public GmDashboardView(
+      final LeagueService leagueService,
+      final SecurityUtils securityUtils,
+      final WrestlerService wrestlerService) {
     this.leagueService = leagueService;
     this.securityUtils = securityUtils;
+    this.wrestlerService = wrestlerService;
 
     initializeUI();
   }
@@ -92,26 +102,46 @@ public class GmDashboardView extends VerticalLayout {
         rosterGrid.addColumn(Wrestler::getName).setHeader("Wrestler").setSortable(true);
     rosterGrid
         .addColumn(
-            w -> w.getDefaultState().map(s -> s.getTier().getDisplayName()).orElse("Unknown"))
+            w ->
+                Optional.ofNullable(statesByWrestlerId.get(w.getId()))
+                    .map(s -> s.getTier().getDisplayName())
+                    .orElse("Unknown"))
         .setHeader("Tier");
 
     rosterGrid
-        .addColumn(w -> w.getDefaultState().map(s -> s.getManagementStamina() + "%").orElse("100%"))
+        .addColumn(
+            w ->
+                Optional.ofNullable(statesByWrestlerId.get(w.getId()))
+                    .map(s -> s.getManagementStamina() + "%")
+                    .orElse("100%"))
         .setHeader("Stamina")
         .setPartNameGenerator(
             w ->
-                w.getDefaultState()
+                Optional.ofNullable(statesByWrestlerId.get(w.getId()))
                     .map(s -> s.getManagementStamina() < 40 ? "danger" : "")
                     .orElse(""));
 
     rosterGrid
-        .addColumn(w -> w.getDefaultState().map(s -> s.getMorale() + "%").orElse("100%"))
+        .addColumn(
+            w ->
+                Optional.ofNullable(statesByWrestlerId.get(w.getId()))
+                    .map(s -> s.getMorale() + "%")
+                    .orElse("100%"))
         .setHeader("Morale")
         .setPartNameGenerator(
-            w -> w.getDefaultState().map(s -> s.getMorale() < 50 ? "warning" : "").orElse(""));
+            w ->
+                Optional.ofNullable(statesByWrestlerId.get(w.getId()))
+                    .map(s -> s.getMorale() < 50 ? "warning" : "")
+                    .orElse(""));
 
     rosterGrid
-        .addColumn(w -> "%,d".formatted(w.getDefaultState().map(WrestlerState::getFans).orElse(0L)))
+        .addColumn(
+            w ->
+                "%,d"
+                    .formatted(
+                        Optional.ofNullable(statesByWrestlerId.get(w.getId()))
+                            .map(WrestlerState::getFans)
+                            .orElse(0L)))
         .setHeader("Fans")
         .setSortable(true);
 
@@ -163,6 +193,16 @@ public class GmDashboardView extends VerticalLayout {
         leagueService.getRoster(league.getId()).stream()
             .map(com.github.javydreamercsw.management.domain.league.LeagueRoster::getWrestler)
             .toList();
+
+    Long universeId = league.getUniverse() != null ? league.getUniverse().getId() : null;
+    if (universeId != null) {
+      try {
+        statesByWrestlerId = wrestlerService.getStateMapByUniverseId(universeId);
+      } catch (Exception e) {
+        log.warn("Could not preload wrestler states: {}", e.getMessage());
+        statesByWrestlerId = new HashMap<>();
+      }
+    }
 
     rosterGrid.setItems(roster);
   }

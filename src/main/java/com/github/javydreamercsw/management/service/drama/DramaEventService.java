@@ -225,7 +225,8 @@ public class DramaEventService {
               event.getPrimaryWrestler().getId(),
               event.getSecondaryWrestler().getId(),
               heatImpact,
-              "From drama event: " + event.getTitle());
+              "From drama event: " + event.getTitle(),
+              event.getUniverse().getId());
         }
       }
       case INJURY_INCIDENT -> {

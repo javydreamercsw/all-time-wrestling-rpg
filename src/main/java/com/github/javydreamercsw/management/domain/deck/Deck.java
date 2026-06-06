@@ -55,7 +55,7 @@ public class Deck extends AbstractSyncableEntity<Long> { // Removed implements O
   @OneToMany(
       mappedBy = "deck",
       cascade = CascadeType.ALL,
-      fetch = FetchType.EAGER,
+      fetch = FetchType.LAZY,
       orphanRemoval = true)
   private Set<DeckCard> cards = new HashSet<>();
 

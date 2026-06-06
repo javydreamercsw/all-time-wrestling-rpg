@@ -109,6 +109,8 @@ public class WrestlerActionMenu extends MenuBar {
         subMenu.addItem(
             "Edit",
             e -> {
+              Wrestler eagerWrestler =
+                  wrestlerService.findByIdWithDetails(wrestler.getId()).orElse(wrestler);
               WrestlerDialog dialog =
                   new WrestlerDialog(
                       wrestlerService,
@@ -116,7 +118,7 @@ public class WrestlerActionMenu extends MenuBar {
                       npcService,
                       imageStorageService,
                       wrestlerStateRepository,
-                      wrestler,
+                      eagerWrestler,
                       refreshProvider,
                       securityUtils,
                       universeContextService,

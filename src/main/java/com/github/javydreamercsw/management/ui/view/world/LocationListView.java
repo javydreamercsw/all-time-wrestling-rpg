@@ -35,6 +35,8 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.data.provider.CallbackDataProvider;
+import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -51,6 +53,7 @@ public class LocationListView extends Main {
   private final LocationService service;
   private final SecurityUtils securityUtils;
   private final ImageStorageService storageService;
+  private final CallbackDataProvider<Location, Void> dataProvider;
   private final Grid<Location> grid = new Grid<>();
 
   public LocationListView(
@@ -60,6 +63,10 @@ public class LocationListView extends Main {
     this.service = service;
     this.securityUtils = securityUtils;
     this.storageService = storageService;
+    this.dataProvider =
+        DataProvider.fromCallbacks(
+            query -> service.findAll().stream().skip(query.getOffset()).limit(query.getLimit()),
+            query -> (int) service.count());
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
@@ -79,6 +86,7 @@ public class LocationListView extends Main {
 
   private Component createGrid() {
     grid.setId("location-grid");
+    grid.setDataProvider(dataProvider);
     grid.addColumn(Location::getName).setHeader("Name").setSortable(true).setAutoWidth(true);
     grid.addColumn(Location::getDescription).setHeader("Description").setFlexGrow(1);
     grid.addComponentColumn(
@@ -138,9 +146,9 @@ public class LocationListView extends Main {
             e -> {
               try {
                 service.deleteLocation(location.getId());
-                Notification.show("Location deleted successfully!");
-                listItems();
                 confirmDialog.close();
+                listItems();
+                Notification.show("Location deleted successfully!");
               } catch (Exception ex) {
                 Notification.show("Error deleting location: " + ex.getMessage());
               }
@@ -163,7 +171,7 @@ public class LocationListView extends Main {
   }
 
   private void listItems() {
-    grid.setItems(service.findAll());
+    dataProvider.refreshAll();
   }
 
   private void addItem() {
