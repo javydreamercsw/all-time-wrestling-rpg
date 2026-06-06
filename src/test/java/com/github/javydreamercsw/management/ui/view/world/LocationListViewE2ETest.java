@@ -91,6 +91,8 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     // Notification check omitted: the 3-second notification may expire during this wait.
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("location-form-dialog")));
 
+    waitForVaadinClientToLoad();
+
     // Verify that the new location appears in the grid using JS-based polling (reliable with Vaadin
     // virtualisation)
     waitForGridContains("location-grid", "E2E Test City");
@@ -164,6 +166,8 @@ class LocationListViewE2ETest extends AbstractE2ETest {
     // Wait for the confirmation dialog to close — guarantees server has processed the deletion.
     // Notification check omitted: the 3-second notification may expire during this wait.
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("delete-location-dialog")));
+
+    waitForVaadinClientToLoad();
 
     // Verify deletion using JS-based polling
     waitForGridNotContains("location-grid", "Delete Me City");

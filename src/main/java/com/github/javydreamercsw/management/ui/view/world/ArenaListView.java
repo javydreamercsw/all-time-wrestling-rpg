@@ -150,9 +150,9 @@ public class ArenaListView extends Main {
             e -> {
               try {
                 arenaService.deleteArena(arena.getId());
+                confirmDialog.close();
                 listItems();
                 Notification.show("Arena deleted successfully!");
-                confirmDialog.close();
               } catch (Exception ex) {
                 Notification.show("Error deleting arena: " + ex.getMessage());
               }

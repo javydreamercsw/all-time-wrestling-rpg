@@ -106,6 +106,8 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
     // detect it after the dialog-close wait; the dialog close is a sufficient save signal.)
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("arena-form-dialog")));
 
+    waitForVaadinClientToLoad();
+
     // Verify that the new arena appears in the grid using JS-based polling (reliable with Vaadin
     // virtualisation)
     waitForGridContains("arena-grid", "E2E Test Arena");
@@ -188,6 +190,8 @@ class ArenaListViewE2ETest extends AbstractE2ETest {
     // and the grid has been refreshed. Notification check omitted (3-second notification
     // may expire during this wait; dialog close is a sufficient synchronisation signal).
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("delete-arena-dialog")));
+
+    waitForVaadinClientToLoad();
 
     // Verify deletion using JS-based polling
     waitForGridNotContains("arena-grid", "Delete Me Arena");
