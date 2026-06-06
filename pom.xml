@@ -957,6 +957,8 @@
                      of third-party README/CHANGELOG files in node_modules and fails
                      the endWithNewline check. -->
                 <exclude>target/**</exclude>
+                <!-- Auto-generated memory files managed by Claude Code -->
+                <exclude>.claude/**</exclude>
               </excludes>
               <!-- define the steps to apply to those files -->
               <trimTrailingWhitespace/>
