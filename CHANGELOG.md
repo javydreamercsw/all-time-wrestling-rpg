@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.1.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.1.1) (2026-06-03)
+## [v2.1.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.1.1) (2026-06-06)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.1.0...v2.1.1)
 
@@ -22,6 +22,8 @@
 
 **Merged pull requests:**
 
+- Build\(deps\): Bump react-router from 7.13.1 to 7.15.0 in the npm\_and\_yarn group across 1 directory [\#350](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/350) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Build\(deps\): Bump react-router from 7.13.1 to 7.15.0 in the npm\_and\_yarn group across 1 directory [\#349](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/349) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump ch.qos.logback:logback-core from 1.5.32 to 1.5.34 [\#347](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/347) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump org.graalvm.buildtools:native-maven-plugin from 1.1.0 to 1.1.1 [\#346](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/346) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump org.apache.maven.plugins:maven-surefire-plugin from 3.5.5 to 3.5.6 [\#345](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/345) ([dependabot[bot]](https://github.com/apps/dependabot))
