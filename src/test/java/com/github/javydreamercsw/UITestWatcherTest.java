@@ -63,21 +63,20 @@ class UITestWatcherTest {
   // ---------------------------------------------------------------------------
 
   @Test
-  void beforeTestExecution_deletesExistingOutputRootDir() throws Exception {
+  void beforeAll_deletesExistingOutputRootDir() throws Exception {
     Path nested = tempDir.resolve("SomeTest").resolve("someMethod");
     Files.createDirectories(nested);
     Files.writeString(nested.resolve("artifact.png"), "data");
 
-    watcher.beforeTestExecution(context);
+    watcher.beforeAll(context);
 
     assertFalse(Files.exists(tempDir), "outputRootDir should be fully deleted");
   }
 
   @Test
-  void beforeTestExecution_doesNotThrowWhenDirAlreadyAbsent() throws Exception {
-    watcher.beforeTestExecution(context); // deletes tempDir
-    assertDoesNotThrow(
-        () -> watcher.beforeTestExecution(context)); // already gone — should be no-op
+  void beforeAll_doesNotThrowWhenDirAlreadyAbsent() throws Exception {
+    watcher.beforeAll(context); // deletes tempDir
+    assertDoesNotThrow(() -> watcher.beforeAll(context)); // already gone — should be no-op
   }
 
   // ---------------------------------------------------------------------------
