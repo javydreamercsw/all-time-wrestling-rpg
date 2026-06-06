@@ -21,6 +21,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource
@@ -28,6 +30,11 @@ public interface LeagueRosterRepository extends JpaRepository<LeagueRoster, Long
   List<LeagueRoster> findByLeagueAndOwner(League league, Account owner);
 
   List<LeagueRoster> findByLeague(League league);
+
+  @Query(
+      "SELECT DISTINCT r FROM LeagueRoster r LEFT JOIN FETCH r.wrestler w"
+          + " LEFT JOIN FETCH w.wrestlerStates WHERE r.league = :league")
+  List<LeagueRoster> findByLeagueWithWrestlerStates(@Param("league") League league);
 
   Optional<LeagueRoster> findByLeagueAndWrestler(League league, Wrestler wrestler);
 }

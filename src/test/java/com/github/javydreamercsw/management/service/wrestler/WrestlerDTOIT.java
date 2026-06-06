@@ -36,6 +36,7 @@ public class WrestlerDTOIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @org.springframework.transaction.annotation.Transactional
   void robVanDamMoveSetShouldBePopulatedCorrectly() {
     // Given
     String wrestlerName = "Rob Van Dam";

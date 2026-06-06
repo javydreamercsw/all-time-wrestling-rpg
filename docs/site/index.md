@@ -37,6 +37,10 @@ details: Challenge other players in online leagues and tournaments.
 
 ---
 
+---
+
+---
+
 ## Download & Play
 
 Non-technical users can download the game for their platform below. No complex setup required!

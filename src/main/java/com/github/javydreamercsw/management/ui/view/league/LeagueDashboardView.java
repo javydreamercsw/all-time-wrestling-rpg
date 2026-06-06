@@ -156,7 +156,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
         .addColumn(r -> "%d - %d - %d".formatted(r.getWins(), r.getLosses(), r.getDraws()))
         .setHeader("Record");
 
-    List<LeagueRoster> rosters = leagueRosterRepository.findByLeague(league);
+    List<LeagueRoster> rosters = leagueRosterRepository.findByLeagueWithWrestlerStates(league);
     standingsGrid.setItems(rosters);
     standingsGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
@@ -181,7 +181,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
         .setHeader("Fans")
         .setSortable(true);
 
-    List<LeagueRoster> rosters = leagueRosterRepository.findByLeague(league);
+    List<LeagueRoster> rosters = leagueRosterRepository.findByLeagueWithWrestlerStates(league);
     rosterGrid.setItems(rosters);
     rosterGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 

@@ -466,6 +466,9 @@ public class CampaignService {
               }
               // Initialize wrestler reigns as they are used in many views/criteria
               campaign.getWrestler().getReigns().size();
+              // Initialize alignments to prevent LazyInitializationException in
+              // CampaignDashboardView
+              campaign.getWrestler().getAlignments().size();
               return campaign;
             });
   }
