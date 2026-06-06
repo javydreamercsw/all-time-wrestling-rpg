@@ -92,7 +92,7 @@
     "onecolor": "4.1.0",
     "react-dom": "19.2.4",
     "react": "19.2.4",
-    "react-router": "7.13.1"
+    "react-router": "7.17.0"
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
@@ -207,7 +207,8 @@
     "dompurify": "$dompurify",
     "apexcharts": "$apexcharts",
     "onecolor": "$onecolor",
-    "@webcomponents/shadycss": "$@webcomponents/shadycss"
+    "@webcomponents/shadycss": "$@webcomponents/shadycss",
+    "react-router": "7.17.0"
   },
   "vaadin": {
     "dependencies": {
@@ -299,7 +300,7 @@
       "onecolor": "4.1.0",
       "react-dom": "19.2.4",
       "react": "19.2.4",
-      "react-router": "7.13.1"
+      "react-router": "7.17.0"
     },
     "devDependencies": {
       "@babel/preset-react": "7.28.5",
