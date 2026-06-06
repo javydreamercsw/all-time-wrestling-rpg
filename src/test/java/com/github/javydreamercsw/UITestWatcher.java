@@ -105,6 +105,12 @@ public class UITestWatcher implements AfterTestExecutionCallback, BeforeTestExec
 
   @Override
   public void beforeTestExecution(ExtensionContext context) throws Exception {
-    FileUtils.deleteDirectory(outputRootDir.toFile());
+    Path outputDir =
+        outputRootDir
+            .resolve(context.getTestClass().get().getSimpleName())
+            .resolve(context.getRequiredTestMethod().getName());
+    if (Files.exists(outputDir)) {
+      FileUtils.deleteDirectory(outputDir.toFile());
+    }
   }
 }

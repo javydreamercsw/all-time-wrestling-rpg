@@ -35,10 +35,13 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,6 +54,8 @@ public class LocationListView extends Main {
   private final LocationService service;
   private final SecurityUtils securityUtils;
   private final ImageStorageService storageService;
+  private final List<Location> locationItems = new ArrayList<>();
+  private final ListDataProvider<Location> dataProvider = new ListDataProvider<>(locationItems);
   private final Grid<Location> grid = new Grid<>();
 
   public LocationListView(
@@ -79,6 +84,7 @@ public class LocationListView extends Main {
 
   private Component createGrid() {
     grid.setId("location-grid");
+    grid.setDataProvider(dataProvider);
     grid.addColumn(Location::getName).setHeader("Name").setSortable(true).setAutoWidth(true);
     grid.addColumn(Location::getDescription).setHeader("Description").setFlexGrow(1);
     grid.addComponentColumn(
@@ -163,7 +169,9 @@ public class LocationListView extends Main {
   }
 
   private void listItems() {
-    grid.setItems(service.findAll());
+    locationItems.clear();
+    locationItems.addAll(service.findAll());
+    dataProvider.refreshAll();
   }
 
   private void addItem() {
