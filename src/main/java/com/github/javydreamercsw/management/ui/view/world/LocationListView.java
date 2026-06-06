@@ -65,7 +65,8 @@ public class LocationListView extends Main {
     this.storageService = storageService;
     this.dataProvider =
         DataProvider.fromCallbacks(
-            query -> service.findAll().stream(), query -> (int) service.count());
+            query -> service.findAll().stream().skip(query.getOffset()).limit(query.getLimit()),
+            query -> (int) service.count());
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,

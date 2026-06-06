@@ -69,7 +69,9 @@ public class ArenaListView extends Main {
     this.storageService = storageService;
     this.dataProvider =
         DataProvider.fromCallbacks(
-            query -> arenaService.findAll().stream(), query -> (int) arenaService.count());
+            query ->
+                arenaService.findAll().stream().skip(query.getOffset()).limit(query.getLimit()),
+            query -> (int) arenaService.count());
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
         LumoUtility.Display.FLEX,
