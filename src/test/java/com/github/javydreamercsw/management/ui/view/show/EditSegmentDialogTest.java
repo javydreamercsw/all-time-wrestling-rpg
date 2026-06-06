@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -89,6 +88,7 @@ class EditSegmentDialogTest {
 
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), any(), any()))
         .thenReturn(allWrestlers);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong())).thenReturn(allWrestlers);
     when(wrestlerService.findByName("Wrestler 1")).thenReturn(Optional.of(wrestler1));
     when(wrestlerService.findByName("Wrestler 2")).thenReturn(Optional.of(wrestler2));
     when(wrestlerRepository.findAll()).thenReturn(allWrestlers);
@@ -138,11 +138,6 @@ class EditSegmentDialogTest {
     // Simulate user input
     dialog.getNarrationArea().setValue("New Description");
     segment.setNarration("New Description");
-    Set<Wrestler> selectedParticipants =
-        Set.of(
-            wrestlerService.findByName("Wrestler 1").get(),
-            wrestlerService.findByName("Wrestler 2").get());
-    dialog.getParticipantsCombo().setValue(selectedParticipants);
 
     // Act
     dialog.save();

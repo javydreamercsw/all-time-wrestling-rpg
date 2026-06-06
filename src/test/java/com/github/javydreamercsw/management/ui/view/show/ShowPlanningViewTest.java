@@ -53,9 +53,12 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.QueryParameters;
+import com.vaadin.flow.server.VaadinSession;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -125,7 +128,11 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
     // Call the method to be tested
-    ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
+    @SuppressWarnings("unchecked")
+    CompletableFuture<Void> future =
+        (CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
+    future.get(2, TimeUnit.SECONDS);
+    flushVaadinAccessQueue();
 
     // Verify the results
     TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
@@ -181,8 +188,17 @@ class ShowPlanningViewTest extends AbstractViewTest {
     when(aiFactory.getAvailableServicesInPriorityOrder())
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
     // Call the method to be tested
-    ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
-    ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
+    @SuppressWarnings("unchecked")
+    CompletableFuture<Void> loadFuture =
+        (CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
+    loadFuture.get(2, TimeUnit.SECONDS);
+    flushVaadinAccessQueue();
+    @SuppressWarnings("unchecked")
+    CompletableFuture<Void> proposeFuture =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
+    proposeFuture.get(2, TimeUnit.SECONDS);
+    flushVaadinAccessQueue();
 
     // Verify the results
     TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
@@ -240,8 +256,17 @@ class ShowPlanningViewTest extends AbstractViewTest {
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
     // Call the method to be tested
     showPlanningView.setParameter(mock(BeforeEvent.class), showId);
-    ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
-    ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
+    @SuppressWarnings("unchecked")
+    CompletableFuture<Void> loadFuture =
+        (CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
+    loadFuture.get(2, TimeUnit.SECONDS);
+    flushVaadinAccessQueue();
+    @SuppressWarnings("unchecked")
+    CompletableFuture<Void> proposeFuture =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
+    proposeFuture.get(2, TimeUnit.SECONDS);
+    flushVaadinAccessQueue();
 
     // Verify the results
     ComboBox<Show> showComboBox =
@@ -374,6 +399,20 @@ class ShowPlanningViewTest extends AbstractViewTest {
       verify(ui).navigate(eq(ShowDetailView.class), eq(showId), any(QueryParameters.class));
     } finally {
       UI.setCurrent(karibuUI);
+    }
+  }
+
+  /** Drain all pending ui.access() commands queued on the current Vaadin session. */
+  private void flushVaadinAccessQueue() {
+    VaadinSession session = VaadinSession.getCurrent();
+    if (session == null) {
+      return;
+    }
+    Object task;
+    while ((task = session.getPendingAccessQueue().poll()) != null) {
+      if (task instanceof Runnable r) {
+        r.run();
+      }
     }
   }
 }
