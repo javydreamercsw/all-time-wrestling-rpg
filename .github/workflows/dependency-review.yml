@@ -33,6 +33,16 @@ jobs:
         # Commonly enabled options, see https://github.com/actions/dependency-review-action#configuration-options for all available options.
         with:
           comment-summary-in-pr: always
+          # react-router@7.13.1 is pinned by Vaadin 25.1.1; upgrading breaks the frontend
+          # build. All flagged advisories require React Server Components (RSC) or specific
+          # server-mode usage not present in this Vaadin app.
+          allow-ghsas: >-
+            GHSA-8646-j5j9-6r62,
+            GHSA-49rj-9fvp-4h2h,
+            GHSA-8x6r-g9mw-2r78,
+            GHSA-rxv8-25v2-qmq8,
+            GHSA-f22v-gfqf-p8f3,
+            GHSA-2j2x-hqr9-3h42
         #   fail-on-severity: moderate
         #   deny-licenses: GPL-1.0-or-later, LGPL-2.0-or-later
         #   retry-on-snapshot-warnings: true

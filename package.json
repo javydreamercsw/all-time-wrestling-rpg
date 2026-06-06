@@ -91,8 +91,13 @@
     "moment-timezone": "0.6.0",
     "onecolor": "4.1.0",
     "react-dom": "19.2.4",
+<<<<<<< HEAD
     "react-router": "7.13.1",
     "react": "19.2.4"
+=======
+    "react": "19.2.4",
+    "react-router": "7.13.1"
+>>>>>>> 36fd810c8 (fix(ci): revert react-router upgrade; allow known GHSAs in dep review)
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
@@ -238,7 +243,10 @@
       "moment-timezone": "0.6.0",
       "onecolor": "4.1.0",
       "react": "19.2.4",
+<<<<<<< HEAD
       "react-dom": "19.2.4",
+=======
+>>>>>>> 36fd810c8 (fix(ci): revert react-router upgrade; allow known GHSAs in dep review)
       "react-router": "7.13.1"
     },
     "devDependencies": {
