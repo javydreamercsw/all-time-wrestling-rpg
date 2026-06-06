@@ -919,8 +919,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   /**
-   * Polls until the given text is absent from a Vaadin grid's visible cells. Uses the same
-   * scrollToIndex(0) approach as {@link #waitForGridContains}.
+   * Polls until the given text is absent from a Vaadin grid's visible cells. scrollToIndex(0) is
+   * attempted inside JS so that an empty-grid error does not propagate to the Java catch and
+   * permanently return false.
    */
   protected void waitForGridNotContains(@NonNull final String gridId, @NonNull final String text) {
     JavascriptExecutor js = (JavascriptExecutor) driver;
@@ -929,11 +930,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             d -> {
               try {
                 WebElement grid = d.findElement(By.id(gridId));
-                js.executeScript("arguments[0].scrollToIndex(0);", grid);
                 return Boolean.TRUE.equals(
                     js.executeScript(
                         """
                         const grid=arguments[0];const needle=arguments[1];
+                        try{grid.scrollToIndex(0);}catch(e){}
+                        if(typeof grid.size==='number'&&grid.size===0)return true;
                         return !Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))
                           .some(c=>c.innerText&&c.innerText.includes(needle));
                         """,
