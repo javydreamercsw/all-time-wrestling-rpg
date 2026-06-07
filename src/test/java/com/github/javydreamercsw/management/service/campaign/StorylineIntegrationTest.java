@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -92,7 +91,6 @@ class StorylineIntegrationTest {
   @Mock private AlignmentService alignmentService;
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseRepository universeRepository;
-  private ObjectMapper objectMapper = new ObjectMapper();
   @Mock private FeatureDataService featureDataService;
 
   private CampaignService campaignService;
