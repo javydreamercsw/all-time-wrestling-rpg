@@ -408,6 +408,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
+        skip_validation: true
 
   # Build and push Docker image (no release profile) on release/* branches
   docker-image-release-branch:
