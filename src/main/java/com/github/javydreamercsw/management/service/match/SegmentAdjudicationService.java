@@ -679,7 +679,6 @@ public class SegmentAdjudicationService {
     int matchQualityBonus = calculateMatchQualityBonus(segment, roll);
 
     Long universeId = universeContextService.getCurrentUniverseId();
-    ;
 
     // Deduct fan fees for challengers in title segments
     if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
