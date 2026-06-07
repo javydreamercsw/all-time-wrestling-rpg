@@ -130,6 +130,29 @@ class StorylineIntegrationTest {
             storylineExportService,
             wrestlerStatusService,
             featureDataService);
+    // Field-injected services must be set explicitly since we bypass Spring
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        campaignService,
+        "matchResultProcessorService",
+        org.mockito.Mockito.mock(MatchResultProcessorService.class));
+
+    // Use a real CampaignProgressionService (with shared mocks) so advanceChapter works
+    CampaignProgressionService progressionService =
+        new CampaignProgressionService(
+            campaignRepository,
+            campaignStateRepository,
+            chapterService,
+            tournamentService,
+            titleRepository,
+            teamRepository,
+            titleService,
+            storylineDirectorService,
+            wrestlerStatusService,
+            featureDataService);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        progressionService, "campaignService", campaignService);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        campaignService, "campaignProgressionService", progressionService);
   }
 
   @Test
