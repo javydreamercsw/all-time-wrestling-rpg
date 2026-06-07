@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
@@ -60,6 +61,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -277,37 +279,37 @@ public class SegmentAdjudicationService {
     }
     if (effectiveLeague != null) {
       final com.github.javydreamercsw.management.domain.league.League league = effectiveLeague;
+      Map<Long, LeagueRoster> rosterByWrestlerId =
+          leagueRosterRepository.findByLeague(league).stream()
+              .filter(r -> r.getWrestler() != null)
+              .collect(Collectors.toMap(r -> r.getWrestler().getId(), r -> r));
+
+      List<LeagueRoster> toSave = new ArrayList<>();
       if (winners.isEmpty()) {
-        // Draw
         for (Wrestler w : segment.getWrestlers()) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setDraws(roster.getDraws() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
+          LeagueRoster roster = rosterByWrestlerId.get(w.getId());
+          if (roster != null) {
+            roster.setDraws(roster.getDraws() + 1);
+            toSave.add(roster);
+          }
         }
       } else {
         for (Wrestler w : winners) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setWins(roster.getWins() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
+          LeagueRoster roster = rosterByWrestlerId.get(w.getId());
+          if (roster != null) {
+            roster.setWins(roster.getWins() + 1);
+            toSave.add(roster);
+          }
         }
         for (Wrestler w : losers) {
-          leagueRosterRepository
-              .findByLeagueAndWrestler(league, w)
-              .ifPresent(
-                  roster -> {
-                    roster.setLosses(roster.getLosses() + 1);
-                    leagueRosterRepository.save(roster);
-                  });
+          LeagueRoster roster = rosterByWrestlerId.get(w.getId());
+          if (roster != null) {
+            roster.setLosses(roster.getLosses() + 1);
+            toSave.add(roster);
+          }
         }
       }
+      leagueRosterRepository.saveAll(toSave);
     }
   }
 
@@ -980,7 +982,6 @@ public class SegmentAdjudicationService {
       int current = state.getPhysicalCondition();
       int newCondition = Math.max(0, current - baseLoss);
       state.setPhysicalCondition(newCondition);
-      wrestlerService.save(wrestler);
       log.info(
           "Applied {}% wear and tear to {} in league {}. New condition: {}%",
           baseLoss, wrestler.getName(), universeId, newCondition);

@@ -199,18 +199,16 @@ class SegmentAdjudicationServiceTest {
 
     LeagueRoster winnerRoster = mock(LeagueRoster.class);
     LeagueRoster loserRoster = mock(LeagueRoster.class);
-
-    when(leagueRosterRepository.findByLeagueAndWrestler(league, winner))
-        .thenReturn(Optional.of(winnerRoster));
-    when(leagueRosterRepository.findByLeagueAndWrestler(league, loser))
-        .thenReturn(Optional.of(loserRoster));
+    when(winnerRoster.getWrestler()).thenReturn(winner);
+    when(loserRoster.getWrestler()).thenReturn(loser);
+    when(leagueRosterRepository.findByLeague(league))
+        .thenReturn(List.of(winnerRoster, loserRoster));
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
     verify(winnerRoster).setWins(any(Integer.class));
     verify(loserRoster).setLosses(any(Integer.class));
-    verify(leagueRosterRepository).save(winnerRoster);
-    verify(leagueRosterRepository).save(loserRoster);
+    verify(leagueRosterRepository).saveAll(any());
   }
 
   @Test
