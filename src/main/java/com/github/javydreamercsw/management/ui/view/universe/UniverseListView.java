@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.export.CsvExportWriter;
 import com.github.javydreamercsw.management.service.export.ImageExportService;
+import com.github.javydreamercsw.management.service.export.ImageImportService;
 import com.github.javydreamercsw.management.service.export.JsonExportWriter;
 import com.github.javydreamercsw.management.service.export.UniverseExportService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
@@ -44,11 +45,13 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
+import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.Height;
 import com.vaadin.flow.theme.lumo.LumoUtility.Width;
@@ -80,6 +83,7 @@ public class UniverseListView extends Main {
   private final JsonExportWriter jsonWriter;
   private final WrestlerStateRepository wrestlerStateRepository;
   private final ImageExportService imageExportService;
+  private final ImageImportService imageImportService;
   public final Grid<Universe> grid = new Grid<>(Universe.class, false);
 
   public UniverseListView(
@@ -92,7 +96,8 @@ public class UniverseListView extends Main {
       final CsvExportWriter csvWriter,
       final JsonExportWriter jsonWriter,
       final WrestlerStateRepository wrestlerStateRepository,
-      final ImageExportService imageExportService) {
+      final ImageExportService imageExportService,
+      final ImageImportService imageImportService) {
     this.universeService = universeService;
     this.membershipService = membershipService;
     this.accountService = accountService;
@@ -103,6 +108,7 @@ public class UniverseListView extends Main {
     this.jsonWriter = jsonWriter;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.imageExportService = imageExportService;
+    this.imageImportService = imageImportService;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -152,7 +158,35 @@ public class UniverseListView extends Main {
                 Notification.Position.BOTTOM_END));
     exportImagesAnchor.add(exportImagesBtn);
 
-    add(new ViewToolbar("Universe List", ViewToolbar.group(exportImagesAnchor, createButton)));
+    Upload importUpload = new Upload();
+    importUpload.setId("import-images-upload");
+    importUpload.setAcceptedFileTypes("application/zip", ".zip");
+    importUpload.setMaxFiles(1);
+    importUpload.setUploadHandler(
+        UploadHandler.inMemory(
+            (metadata, bytes) -> {
+              try {
+                ImageImportService.ImportSummary summary =
+                    imageImportService.importImages(new java.io.ByteArrayInputStream(bytes));
+                Notification.show(summary.toMessage(), 5000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              } catch (Exception ex) {
+                log.error("Image import failed", ex);
+                Notification.show(
+                        "Image restore failed: " + ex.getMessage(),
+                        5000,
+                        Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            }));
+    Button importBtn = new Button("Restore Images", new Icon(VaadinIcon.UPLOAD));
+    importBtn.setId("restore-images-button");
+    importUpload.setUploadButton(importBtn);
+    importUpload.setDropAllowed(false);
+
+    add(
+        new ViewToolbar(
+            "Universe List", ViewToolbar.group(importUpload, exportImagesAnchor, createButton)));
 
     setupGrid();
     grid.addClassNames(LumoUtility.Flex.GROW);
