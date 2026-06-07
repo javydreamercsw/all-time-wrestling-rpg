@@ -55,7 +55,6 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.QueryParameters;
-import com.vaadin.flow.server.VaadinSession;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -392,20 +391,6 @@ class ShowPlanningViewTest extends AbstractViewTest {
       verify(ui).navigate(eq(ShowDetailView.class), eq(showId), any(QueryParameters.class));
     } finally {
       UI.setCurrent(karibuUI);
-    }
-  }
-
-  /** Drain all pending ui.access() commands queued on the current Vaadin session. */
-  private void flushVaadinAccessQueue() {
-    VaadinSession session = VaadinSession.getCurrent();
-    if (session == null) {
-      return;
-    }
-    Object task;
-    while ((task = session.getPendingAccessQueue().poll()) != null) {
-      if (task instanceof Runnable r) {
-        r.run();
-      }
     }
   }
 }
