@@ -466,11 +466,8 @@ public class CampaignService {
               }
               // Initialize collections used in many views/criteria
               campaign.getWrestler().getReigns().size();
-<<<<<<< HEAD
               // Initialize alignments to prevent LazyInitializationException in
               // CampaignDashboardView
-=======
->>>>>>> release/2.X.X
               campaign.getWrestler().getAlignments().size();
               campaign.getWrestler().getWrestlerStates().size();
               return campaign;

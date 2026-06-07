@@ -32,15 +32,9 @@ public interface LeagueRosterRepository extends JpaRepository<LeagueRoster, Long
   List<LeagueRoster> findByLeague(League league);
 
   @Query(
-<<<<<<< HEAD
       "SELECT DISTINCT r FROM LeagueRoster r LEFT JOIN FETCH r.wrestler w"
           + " LEFT JOIN FETCH w.wrestlerStates WHERE r.league = :league")
   List<LeagueRoster> findByLeagueWithWrestlerStates(@Param("league") League league);
-=======
-      "SELECT r FROM LeagueRoster r LEFT JOIN FETCH r.wrestler w"
-          + " LEFT JOIN FETCH w.wrestlerStates WHERE r.league = :league")
-  List<LeagueRoster> findByLeagueWithWrestlerDetails(@Param("league") League league);
->>>>>>> release/2.X.X
 
   Optional<LeagueRoster> findByLeagueAndWrestler(League league, Wrestler wrestler);
 }

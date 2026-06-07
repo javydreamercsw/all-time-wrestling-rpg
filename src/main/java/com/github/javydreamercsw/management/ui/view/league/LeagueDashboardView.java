@@ -181,11 +181,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
         .setHeader("Fans")
         .setSortable(true);
 
-<<<<<<< HEAD
     List<LeagueRoster> rosters = leagueRosterRepository.findByLeagueWithWrestlerStates(league);
-=======
-    List<LeagueRoster> rosters = leagueRosterRepository.findByLeagueWithWrestlerDetails(league);
->>>>>>> release/2.X.X
     rosterGrid.setItems(rosters);
     rosterGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
