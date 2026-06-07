@@ -1,4 +1,4 @@
-# Build stage: download Maven 3.9.14 and build the WAR
+# Build stage: download Maven 3.9.14 and build the production JAR (Jetty embedded)
 FROM eclipse-temurin:25-jdk AS build
 RUN apt-get update && apt-get install -y --no-install-recommends curl git && \
     curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
@@ -11,18 +11,16 @@ WORKDIR /app
 RUN git init
 # Cache dependency downloads as a separate layer — only re-runs when pom.xml changes
 COPY pom.xml ./
-RUN mvn dependency:go-offline -Pwar,production -B -q
+RUN mvn dependency:go-offline -Pproduction,docker -B -q
 COPY . .
-RUN mvn -Pwar,production package -DskipTests -B
+RUN mvn -Pproduction,docker package -DskipTests -B
 
-# Runtime stage
-FROM tomcat:11-jdk25
-COPY src/main/resources/docker/tomcat/server.xml /usr/local/tomcat/conf/server.xml
-RUN keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 \
-    -storetype JKS -keystore /usr/local/tomcat/conf/keystore.jks \
-    -validity 36500 -storepass changeit -keypass changeit \
-    -dname "CN=localhost, OU=Test, O=Test, L=Test, S=Test, C=US"
-COPY --from=build /app/target/all-time-wrestling-rpg.war /usr/local/tomcat/webapps/atw-rpg.war
+# Runtime stage: JDK required — H2 migration V52 uses CREATE ALIAS with embedded Java
+# source which H2 compiles at runtime using javac. A JRE-only image lacks javac and
+# fails at Flyway startup on a fresh H2 database. Alpine variant keeps the image smaller.
+FROM eclipse-temurin:25-jdk-alpine
+WORKDIR /app
+COPY --from=build /app/target/all-time-wrestling-rpg-*.jar app.jar
 
 # Default non-sensitive configurations
 ENV AI_TIMEOUT=300
@@ -43,9 +41,16 @@ ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 # Note: AI_OPENAI_API_KEY, AI_CLAUDE_API_KEY, AI_GEMINI_API_KEY, and NOTION_TOKEN
 # must be provided at runtime for AI/Notion features to work.
 
-ENV SPRING_PROFILES_ACTIVE=mysql
+# Default to H2 so the image starts without any external database.
+# Override to prod,mysql on Railway (or any MySQL host) by setting:
+#   SPRING_PROFILES_ACTIVE=prod,mysql
+#   SPRING_DATASOURCE_URL=jdbc:mysql://...
+#   SPRING_DATASOURCE_USERNAME=...
+#   SPRING_DATASOURCE_PASSWORD=...
+ENV SPRING_PROFILES_ACTIVE=prod,h2
 
-# Note: SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD
-# must be provided at runtime via environment variables.
-
-EXPOSE 9090
+# Railway injects PORT; default to 8080 for local docker run
+# For persistent image storage, attach a Railway Volume at /data and set:
+#   ATW_STORAGE_BASE_DIR=/data
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

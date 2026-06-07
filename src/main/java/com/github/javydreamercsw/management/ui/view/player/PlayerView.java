@@ -57,6 +57,7 @@ import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
@@ -240,11 +241,19 @@ public class PlayerView extends VerticalLayout {
     topLayout.setAlignItems(FlexComponent.Alignment.STRETCH);
     topLayout.addClassNames(LumoUtility.FlexWrap.WRAP);
 
+    Details profileSection = new Details("Wrestler Profile", topLayout);
+    profileSection.setOpened(true);
+    profileSection.setWidthFull();
+
+    Details newsSection = new Details("News", newsTicker);
+    newsSection.setOpened(true);
+    newsSection.setWidthFull();
+
     Component tabsComponent = createTabs();
 
-    add(topLayout, newsTicker, tabsComponent);
-    setFlexGrow(0, topLayout);
-    setFlexGrow(0, newsTicker);
+    add(profileSection, newsSection, tabsComponent);
+    setFlexGrow(0, profileSection);
+    setFlexGrow(0, newsSection);
     setFlexGrow(1, tabsComponent);
     getStyle().set("padding", "1em");
   }

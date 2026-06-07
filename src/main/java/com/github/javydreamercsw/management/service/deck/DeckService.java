@@ -107,4 +107,9 @@ public class DeckService {
   public List<Deck> findByWrestler(final Wrestler wrestler) {
     return deckRepository.findByWrestler(wrestler);
   }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public List<Deck> findByWrestlerWithCards(final Wrestler wrestler) {
+    return deckRepository.findByWrestlerWithCards(wrestler);
+  }
 }

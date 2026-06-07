@@ -167,6 +167,7 @@ class SegmentAdjudicationServiceUnitTest {
             Objects.requireNonNull(eq(wrestler1.getId())),
             Objects.requireNonNull(eq(wrestler2.getId())),
             eq(1),
-            eq("From segment: Match"));
+            eq("From segment: Match"),
+            eq(1L));
   }
 }

@@ -51,12 +51,14 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
       show1.setName("Monday Night Chaos");
       show1.setShowDate(LocalDate.now().plusDays(1));
       show1.setType(weekly);
+      show1.setUniverse(defaultUniverse);
       showRepository.save(show1);
 
       Show show2 = new Show();
       show2.setName("All Time Genesis");
       show2.setShowDate(LocalDate.now().plusDays(6));
       show2.setType(ple);
+      show2.setUniverse(defaultUniverse);
       showRepository.save(show2);
     }
 
@@ -156,8 +158,17 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureRingsideActions() {
-    // Navigate to a match.
-    Segment segment = segmentRepository.findAll().stream().findFirst().orElse(null);
+    // Navigate to a non-promo match (promo segments hide the Ringside Actions card).
+    Segment segment =
+        segmentRepository.findAll().stream()
+            .filter(
+                s ->
+                    s.getSegmentType() != null
+                        && !com.github.javydreamercsw.management.domain.show.segment.type
+                            .SegmentTypeNames.PROMO
+                            .equalsIgnoreCase(s.getSegmentType().getName()))
+            .findFirst()
+            .orElse(null);
     if (segment != null) {
       navigateTo("match/" + segment.getId());
       waitForText("Ringside Actions");

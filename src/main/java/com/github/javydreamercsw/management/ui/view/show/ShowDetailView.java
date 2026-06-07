@@ -989,23 +989,45 @@ public class ShowDetailView extends Main
     narrateButton.setId("generate-narration-button-" + segment.getId());
     narrateButton.addClickListener(
         e -> {
-          NarrationDialog dialog =
-              new NarrationDialog(
-                  segment,
-                  npcService,
-                  wrestlerService,
-                  showService,
-                  segmentService,
-                  updatedSegment -> refreshSegmentsGrid(),
-                  rivalryService,
-                  segmentNarrationController,
-                  segmentNarrationServiceFactory,
-                  ringsideActionService,
-                  relationshipService,
-                  universeContextService,
-                  notificationService,
-                  wrestlerStatsService);
-          dialog.open();
+          final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+          SecurityContext securityContext = SecurityContextHolder.getContext();
+          CompletableFuture.supplyAsync(
+                  () ->
+                      GeneralSecurityUtils.runWithContext(
+                          securityContext,
+                          () ->
+                              NarrationDialog.PreloadedData.load(
+                                  segmentService,
+                                  npcService,
+                                  wrestlerStatsService,
+                                  universeContextService,
+                                  segment)))
+              .thenAccept(
+                  preloaded ->
+                      ui.access(
+                          () ->
+                              new NarrationDialog(
+                                      preloaded,
+                                      wrestlerService,
+                                      showService,
+                                      segmentService,
+                                      updatedSegment -> refreshSegmentsGrid(),
+                                      rivalryService,
+                                      segmentNarrationController,
+                                      segmentNarrationServiceFactory,
+                                      ringsideActionService,
+                                      relationshipService,
+                                      universeContextService,
+                                      notificationService,
+                                      wrestlerStatsService)
+                                  .open()))
+              .exceptionally(
+                  ex -> {
+                    log.error("Error loading narration dialog data", ex);
+                    ui.access(
+                        () -> notificationService.showError("Failed to open narration dialog."));
+                    return null;
+                  });
         });
 
     Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
@@ -1035,21 +1057,39 @@ public class ShowDetailView extends Main
 
   private void generateSummary(@NonNull Segment segment) {
     if (segmentNarrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
-      String reason = "No AI providers are currently enabled or reachable.";
-      notificationService.showError(reason);
+      notificationService.showError("No AI providers are currently enabled or reachable.");
       return;
     }
 
-    try {
-      String summary = segmentNarrationServiceFactory.summarizeNarration(segment.getNarration());
-      segment.setSummary(summary);
-      segmentService.updateSegment(segment);
-      notificationService.showSuccess("Summary generated successfully!");
-      refreshSegmentsGrid();
-    } catch (Exception e) {
-      log.error("Error generating summary", e);
-      notificationService.showAIServiceError(e);
-    }
+    final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
+    CompletableFuture.supplyAsync(
+            () ->
+                GeneralSecurityUtils.runWithContext(
+                    securityContext,
+                    () ->
+                        segmentNarrationServiceFactory.summarizeNarration(segment.getNarration())))
+        .thenAccept(
+            summary ->
+                ui.access(
+                    () -> {
+                      segment.setSummary(summary);
+                      segmentService.updateSegment(segment);
+                      notificationService.showSuccess("Summary generated successfully!");
+                      refreshSegmentsGrid();
+                      ui.push();
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error generating summary", ex);
+              ui.access(
+                  () -> {
+                    notificationService.showAIServiceError(
+                        ex.getCause() != null ? ex.getCause() : ex);
+                    ui.push();
+                  });
+              return null;
+            });
   }
 
   private void openAddSegmentDialog(@NonNull final Show show) {

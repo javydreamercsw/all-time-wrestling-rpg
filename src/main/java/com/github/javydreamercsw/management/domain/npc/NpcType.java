@@ -26,6 +26,8 @@ public enum NpcType {
   MANAGER("Manager"),
   ANNOUNCER("Announcer"),
   REFEREE("Referee"),
+  COMMENTATOR("Commentator"),
+  COMMISSIONER("Commissioner"),
   OWNER("Owner"),
   BACKSTAGE_PERSONNEL("Backstage Personnel");
 

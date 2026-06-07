@@ -290,6 +290,7 @@ class RivalryControllerIT extends AbstractRestControllerIT {
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
     rivalry.setWrestler2(wrestler2);
+    rivalry.setUniverse(universeRepository.findById(1L).orElseThrow());
     rivalry.setHeat(heat);
     rivalry.setIsActive(true);
     rivalry.setStorylineNotes("Test storyline");

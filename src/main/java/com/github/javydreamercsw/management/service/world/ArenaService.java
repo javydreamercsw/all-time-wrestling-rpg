@@ -32,6 +32,7 @@ import java.util.Random;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,6 +53,7 @@ public class ArenaService {
   private final Random random = new Random();
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(value = CacheConfig.ARENAS_CACHE, allEntries = true)
   public Arena createArena(
       final String name,
       final String description,
@@ -76,6 +78,7 @@ public class ArenaService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(value = CacheConfig.ARENAS_CACHE, allEntries = true)
   public Optional<Arena> updateArena(
       final Long id,
       final String name,
@@ -125,6 +128,7 @@ public class ArenaService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(value = CacheConfig.ARENAS_CACHE, allEntries = true)
   public void deleteArena(final Long id) {
     repository.deleteById(id);
   }

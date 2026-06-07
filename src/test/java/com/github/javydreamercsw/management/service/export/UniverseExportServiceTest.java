@@ -127,8 +127,7 @@ class UniverseExportServiceTest {
         .thenReturn(List.of());
     when(injuryRepository.findByWrestlerAndUniverse(inactiveWrestler, universe))
         .thenReturn(List.of());
-    when(rivalryRepository.findAllForWrestler(activeWrestler)).thenReturn(List.of());
-    when(rivalryRepository.findAllForWrestler(inactiveWrestler)).thenReturn(List.of());
+    when(rivalryRepository.findByUniverseWithWrestlers(universe)).thenReturn(List.of());
     when(titleReignRepository.findByChampionsContaining(activeWrestler)).thenReturn(List.of());
     when(titleReignRepository.findByChampionsContaining(inactiveWrestler)).thenReturn(List.of());
     when(wrestlerAlignmentRepository.findByWrestlerAndUniverseId(activeWrestler, 1L))
@@ -232,9 +231,7 @@ class UniverseExportServiceTest {
     when(rivalry.getEndedDate()).thenReturn(null);
     when(rivalry.getStorylineNotes()).thenReturn(null);
 
-    // Both wrestlers return the same rivalry — should appear only once
-    when(rivalryRepository.findAllForWrestler(activeWrestler)).thenReturn(List.of(rivalry));
-    when(rivalryRepository.findAllForWrestler(inactiveWrestler)).thenReturn(List.of(rivalry));
+    when(rivalryRepository.findByUniverseWithWrestlers(universe)).thenReturn(List.of(rivalry));
 
     ExportPayload payload =
         service.collect(universe, Set.of(ExportCategory.RIVALRIES), WrestlerFilter.all());

@@ -185,6 +185,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     show.setShowDate(LocalDate.now());
     show.setDescription("Documentation Show");
     show.setType(showTypeRepository.findByName("Weekly").get());
+    show.setUniverse(defaultUniverse);
     show = showRepository.save(show);
 
     Segment segment = new Segment();
@@ -271,6 +272,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
     show.setShowDate(LocalDate.now());
     show.setDescription("Documentation Show for Commentary");
     show.setType(showTypeRepository.findByName("Weekly").get());
+    show.setUniverse(defaultUniverse);
     show = showRepository.save(show);
 
     Segment segment = new Segment();

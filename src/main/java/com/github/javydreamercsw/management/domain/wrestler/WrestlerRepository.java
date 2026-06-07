@@ -32,6 +32,14 @@ public interface WrestlerRepository
 
   List<Wrestler> findByAccount(com.github.javydreamercsw.base.domain.account.Account account);
 
+  @Query(
+      """
+      SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.alignments LEFT JOIN FETCH\
+       w.wrestlerStates ws LEFT JOIN FETCH ws.faction WHERE w.account = :account\
+      """)
+  List<Wrestler> findByAccountWithDetails(
+      @Param("account") com.github.javydreamercsw.base.domain.account.Account account);
+
   List<Wrestler> findAllByAccount(com.github.javydreamercsw.base.domain.account.Account account);
 
   // If you don't need a total row count, Slice is better than Page.
@@ -87,8 +95,20 @@ public interface WrestlerRepository
   @Query("SELECT MAX(w.lastSync) FROM Wrestler w WHERE w.lastSync IS NOT NULL")
   Optional<java.time.Instant> findMaxLastSync();
 
+  /**
+   * Fetch all wrestlers with their alignments eagerly loaded (avoids LazyInitializationException
+   * when getAlignment() is called on detached entities).
+   */
+  @Query("SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.alignments")
+  List<Wrestler> findAllWithAlignments();
+
   @Query("SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws WHERE w.id = :id")
   Optional<Wrestler> findByIdWithStates(@Param("id") Long id);
+
+  @Query(
+      "SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws WHERE"
+          + " w.externalId = :externalId")
+  Optional<Wrestler> findByExternalIdWithStates(@Param("externalId") String externalId);
 
   @Query(
       """

@@ -246,7 +246,7 @@ class SegmentAdjudicationServiceTest {
   @Test
   void testRivalryHeat() {
     segmentAdjudicationService.adjudicateMatch(segment);
-    verify(rivalryService).addHeatBetweenWrestlers(eq(1L), eq(2L), eq(1), anyString());
+    verify(rivalryService).addHeatBetweenWrestlers(eq(1L), eq(2L), eq(1), anyString(), anyLong());
   }
 
   @Test
@@ -276,9 +276,9 @@ class SegmentAdjudicationServiceTest {
 
     // Heat must NOT be added between teammates
     verify(rivalryService, never())
-        .addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString());
+        .addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString(), anyLong());
     verify(rivalryService, never())
-        .addHeatBetweenWrestlers(eq(11L), eq(10L), anyInt(), anyString());
+        .addHeatBetweenWrestlers(eq(11L), eq(10L), anyInt(), anyString(), anyLong());
   }
 
   @Test
@@ -307,7 +307,8 @@ class SegmentAdjudicationServiceTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(rivalryService).addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString());
+    verify(rivalryService)
+        .addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString(), anyLong());
   }
 
   @Test

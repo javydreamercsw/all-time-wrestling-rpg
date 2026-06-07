@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.show;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -46,6 +47,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -58,7 +60,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -106,6 +107,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void testLoadContextWithRivalries() throws Exception {
     // Create a mock Show
     Show show = new Show();
@@ -128,11 +130,9 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
     // Call the method to be tested
-    @SuppressWarnings("unchecked")
-    CompletableFuture<Void> future =
-        (CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
-    future.get(2, TimeUnit.SECONDS);
-    flushVaadinAccessQueue();
+    ((CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext"))
+        .join();
+    MockVaadin.runUIQueue();
 
     // Verify the results
     TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
@@ -154,6 +154,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
     // Mock the ComboBox to return the mock Show
     ComboBox<Show> showComboBox =
         (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    assertNotNull(showComboBox);
     showComboBox.setValue(show);
 
     // Create a mock ShowPlanningContext
@@ -188,17 +189,13 @@ class ShowPlanningViewTest extends AbstractViewTest {
     when(aiFactory.getAvailableServicesInPriorityOrder())
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
     // Call the method to be tested
-    @SuppressWarnings("unchecked")
-    CompletableFuture<Void> loadFuture =
-        (CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
-    loadFuture.get(2, TimeUnit.SECONDS);
-    flushVaadinAccessQueue();
-    @SuppressWarnings("unchecked")
-    CompletableFuture<Void> proposeFuture =
-        (CompletableFuture<Void>)
-            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
-    proposeFuture.get(2, TimeUnit.SECONDS);
-    flushVaadinAccessQueue();
+    ((CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext"))
+        .join();
+    MockVaadin.runUIQueue();
+    ((CompletableFuture<Void>)
+            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments"))
+        .join();
+    MockVaadin.runUIQueue();
 
     // Verify the results
     TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
@@ -256,17 +253,13 @@ class ShowPlanningViewTest extends AbstractViewTest {
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
     // Call the method to be tested
     showPlanningView.setParameter(mock(BeforeEvent.class), showId);
-    @SuppressWarnings("unchecked")
-    CompletableFuture<Void> loadFuture =
-        (CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext");
-    loadFuture.get(2, TimeUnit.SECONDS);
-    flushVaadinAccessQueue();
-    @SuppressWarnings("unchecked")
-    CompletableFuture<Void> proposeFuture =
-        (CompletableFuture<Void>)
-            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments");
-    proposeFuture.get(2, TimeUnit.SECONDS);
-    flushVaadinAccessQueue();
+    ((CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext"))
+        .join();
+    MockVaadin.runUIQueue();
+    ((CompletableFuture<Void>)
+            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments"))
+        .join();
+    MockVaadin.runUIQueue();
 
     // Verify the results
     ComboBox<Show> showComboBox =

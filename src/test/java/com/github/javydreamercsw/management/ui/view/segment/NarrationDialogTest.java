@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -101,11 +102,15 @@ class NarrationDialogTest {
     when(npcService.findAllByType("Announcer")).thenReturn(new ArrayList<>());
     when(npcService.findAll()).thenReturn(new ArrayList<>());
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(wrestlerStatsService.findAllAsDTO(anyLong())).thenReturn(new ArrayList<>());
+    when(wrestlerStatsService.findAllBySegment(any(), anyLong())).thenReturn(new ArrayList<>());
 
+    NarrationDialog.PreloadedData preloaded =
+        NarrationDialog.PreloadedData.load(
+            segmentService, npcService, wrestlerStatsService, universeContextService, segment);
     narrationDialog =
         new NarrationDialog(
-            segment,
-            npcService,
+            preloaded,
             wrestlerService,
             showService,
             segmentService,

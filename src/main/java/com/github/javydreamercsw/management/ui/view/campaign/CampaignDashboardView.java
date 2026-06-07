@@ -158,7 +158,8 @@ public class CampaignDashboardView extends VerticalLayout {
             user -> {
               log.debug("Authenticated user: {}", user.getUsername());
               com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
-              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+              java.util.List<Wrestler> wrestlers =
+                  wrestlerRepository.findByAccountWithDetails(account);
               Wrestler active =
                   wrestlers.stream()
                       .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
@@ -206,7 +207,7 @@ public class CampaignDashboardView extends VerticalLayout {
                           user -> {
                             Account account = user.getAccount();
                             java.util.List<Wrestler> wrestlers =
-                                wrestlerRepository.findByAccount(account);
+                                wrestlerRepository.findByAccountWithDetails(account);
                             Wrestler active =
                                 wrestlers.stream()
                                     .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
@@ -217,7 +218,7 @@ public class CampaignDashboardView extends VerticalLayout {
                               campaignService.startCampaign(active);
                               refreshUI();
                             } else {
-                              List<Wrestler> all = wrestlerRepository.findAll();
+                              List<Wrestler> all = wrestlerRepository.findAllByActiveTrue();
                               if (!all.isEmpty()) {
                                 Wrestler first = all.getFirst();
                                 first.setAccount(user.getAccount());

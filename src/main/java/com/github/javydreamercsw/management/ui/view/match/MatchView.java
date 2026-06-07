@@ -196,6 +196,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         Optional<MatchFulfillment> fulfillment = matchFulfillmentRepository.findByIdWithDetails(id);
         if (fulfillment.isPresent()) {
           segment = fulfillment.get().getSegment();
+          // findByIdWithDetails does not cover the fulfillment path — force-load alignments
+          segment = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
         } else {
           // Fallback to direct segment lookup with all details
           segment = segmentService.findByIdWithDetails(id).orElse(null);
@@ -258,7 +260,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     getStyle().set("background-color", "var(--lumo-contrast-5pct)");
 
     Optional<CustomUserDetails> userDetails = securityUtils.getAuthenticatedUser();
-    Wrestler playerWrestler = userDetails.map(CustomUserDetails::getWrestler).orElse(null);
+    Wrestler playerWrestler =
+        userDetails
+            .map(CustomUserDetails::getWrestler)
+            .flatMap(w -> wrestlerService.findByIdWithDetails(w.getId()))
+            .orElse(null);
 
     buildHeader(playerWrestler);
 
@@ -373,11 +379,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           items.add(playerItem);
           messageList.setItems(items);
 
-          // Generate Retort
+          // Generate Retort — reload opponent with alignments to avoid lazy init in PromoService
           Wrestler opponent =
               segment.getWrestlers().stream()
                   .filter(w -> !w.equals(playerWrestler))
                   .findFirst()
+                  .flatMap(w -> wrestlerService.findByIdWithDetails(w.getId()))
                   .orElse(null);
 
           if (opponent != null) {
@@ -425,7 +432,15 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
 
     List<Wrestler> wrestlers = segment.getWrestlers();
-    Long universeId = universeContextService.getCurrentUniverseId();
+    // Fall back to the show's universe when no universe is selected in the session.
+    // findByIdWithDetails() eagerly loads sh.universe so this access is safe.
+    Long sessionUniverseId = universeContextService.getCurrentUniverseId();
+    final Long universeId =
+        sessionUniverseId != null
+            ? sessionUniverseId
+            : (segment.getShow() != null && segment.getShow().getUniverse() != null
+                ? segment.getShow().getUniverse().getId()
+                : null);
 
     // Collect all wrestler IDs owned by the current account so that accounts with multiple
     // wrestlers in the same match have each of their wrestlers marked as "player" cards.

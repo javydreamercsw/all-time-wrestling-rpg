@@ -25,14 +25,14 @@ import java.nio.file.StandardCopyOption;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 
 @Slf4j
-public class UITestWatcher implements AfterTestExecutionCallback, BeforeTestExecutionCallback {
+public class UITestWatcher implements AfterTestExecutionCallback, BeforeAllCallback {
   private final Path outputRootDir;
 
   /** Production constructor — uses the default {@code target/test-failures} directory. */
@@ -57,7 +57,7 @@ public class UITestWatcher implements AfterTestExecutionCallback, BeforeTestExec
           .ifPresent(
               testInstance -> {
                 if (testInstance instanceof AbstractE2ETest) {
-                  WebDriver driver = ((AbstractE2ETest) testInstance).driver;
+                  WebDriver driver = AbstractE2ETest.driver;
                   if (driver != null) {
                     // Print the page source to the console
                     log.debug("--- Page Source on Failure ---");
@@ -104,7 +104,9 @@ public class UITestWatcher implements AfterTestExecutionCallback, BeforeTestExec
   }
 
   @Override
-  public void beforeTestExecution(ExtensionContext context) throws Exception {
-    FileUtils.deleteDirectory(outputRootDir.toFile());
+  public void beforeAll(ExtensionContext context) throws Exception {
+    if (Files.exists(outputRootDir)) {
+      FileUtils.deleteDirectory(outputRootDir.toFile());
+    }
   }
 }

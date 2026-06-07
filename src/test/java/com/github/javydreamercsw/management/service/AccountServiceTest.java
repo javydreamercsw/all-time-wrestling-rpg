@@ -27,6 +27,8 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDateTime;
@@ -53,6 +55,7 @@ class AccountServiceTest {
   @Mock private RoleRepository roleRepository;
   @Mock private PasswordEncoder passwordEncoder;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private UniverseMembershipRepository universeMembershipRepository;
 
   @InjectMocks private AccountService accountService;
 
@@ -105,8 +108,22 @@ class AccountServiceTest {
 
   @Test
   void testDelete() {
+    when(universeMembershipRepository.findByAccount(account)).thenReturn(List.of());
+
     accountService.delete(1L);
 
+    verify(universeMembershipRepository).findByAccount(account);
+    verify(accountRepository).deleteById(1L);
+  }
+
+  @Test
+  void testDelete_removesUniverseMembershipsFirst() {
+    UniverseMembership membership = new UniverseMembership();
+    when(universeMembershipRepository.findByAccount(account)).thenReturn(List.of(membership));
+
+    accountService.delete(1L);
+
+    verify(universeMembershipRepository).deleteAll(List.of(membership));
     verify(accountRepository).deleteById(1L);
   }
 

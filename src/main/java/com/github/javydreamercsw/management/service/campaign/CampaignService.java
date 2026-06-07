@@ -464,11 +464,12 @@ public class CampaignService {
                 // Initialize milestones to prevent LazyInitializationException in views
                 state.getActiveStoryline().getMilestones().size();
               }
-              // Initialize wrestler reigns as they are used in many views/criteria
+              // Initialize collections used in many views/criteria
               campaign.getWrestler().getReigns().size();
               // Initialize alignments to prevent LazyInitializationException in
               // CampaignDashboardView
               campaign.getWrestler().getAlignments().size();
+              campaign.getWrestler().getWrestlerStates().size();
               return campaign;
             });
   }
