@@ -48,7 +48,7 @@ ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 ENV SPRING_PROFILES_ACTIVE=prod,h2
 
 # Railway injects PORT; default to 8080 for local docker run
-# For persistent image storage, attach a Railway Volume at /data and set:
-#   ATW_STORAGE_BASE_DIR=/data
+# For persistent image storage, attach a Railway Volume at /data and
+# set ATW_STORAGE_BASE_DIR to /data via environment variable.
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
