@@ -50,6 +50,9 @@ class UniverseListViewTest extends AbstractViewTest {
   @Mock private JsonExportWriter jsonExportWriter;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.export.ImageExportService imageExportService;
+
   private UniverseListView view;
 
   @BeforeEach
@@ -66,7 +69,8 @@ class UniverseListViewTest extends AbstractViewTest {
             universeExportService,
             csvExportWriter,
             jsonExportWriter,
-            wrestlerStateRepository);
+            wrestlerStateRepository,
+            imageExportService);
     UI.getCurrent().add(view);
   }
 
