@@ -26,12 +26,12 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +45,7 @@ public class CampaignDramaService {
   private final WrestlerRepository wrestlerRepository;
   private final CampaignService campaignService;
   private final UniverseContextService universeContextService;
+  private final FeatureDataService featureDataService;
   private final Random random;
 
   /**
@@ -72,17 +73,17 @@ public class CampaignDramaService {
       }
     }
 
-    // Chapter 3: Outsider
+    // Chapter 3: Outsider — fires at most once per campaign state
     if ("ch3_outsider".equals(state.getCurrentChapterId())) {
-      // Check if player has active outsider feud (we'll use Rivalry for now with special flag or
-      // just check event history?)
-      // Simpler: Trigger it if not triggered yet?
-      // We don't have a flag for "Outsider Event Triggered".
-      // Let's assume we trigger it if no active rivalries (or a specific one).
-      // For MVP, randomly trigger if chance hits.
-      if (random.nextDouble() < 0.2) { // 20% chance per check (e.g. per week)
+      boolean alreadyTriggered =
+          featureDataService.getFeatureValue(state, "outsiderEventTriggered", Boolean.class, false);
+      if (!alreadyTriggered && random.nextDouble() < 0.2) {
         log.info("Triggering Chapter 3 Outsider Event for campaign {}", campaign.getId());
-        return triggerOutsiderEvent(campaign);
+        Optional<DramaEvent> event = triggerOutsiderEvent(campaign);
+        if (event.isPresent()) {
+          featureDataService.setFeatureValue(state, "outsiderEventTriggered", true);
+        }
+        return event;
       }
     }
 
@@ -160,15 +161,8 @@ public class CampaignDramaService {
   }
 
   private Wrestler findRival(@NonNull final Wrestler player) {
-    List<Long> allIds = wrestlerRepository.findAllIds();
-    // Filter out player
-    List<Long> opponentIds = allIds.stream().filter(id -> !id.equals(player.getId())).toList();
-
-    if (opponentIds.isEmpty()) {
-      return null;
-    }
-
-    Long randomId = opponentIds.get(random.nextInt(opponentIds.size()));
-    return wrestlerRepository.findById(randomId).orElse(null);
+    return wrestlerRepository.findRandomExcluding(player.getId(), PageRequest.of(0, 1)).stream()
+        .findFirst()
+        .orElse(null);
   }
 }
