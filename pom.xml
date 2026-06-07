@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>2.1.1</version>
+  <version>2.2.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
@@ -37,7 +37,7 @@
     <jacoco.notion.it.destFile>${project.build.directory}/jacoco-notion-it.exec</jacoco.notion.it.destFile>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.ut.destFile>${project.build.directory}/jacoco.exec</jacoco.ut.destFile>
-    <jacoco.version>0.8.14</jacoco.version>
+    <jacoco.version>0.8.15</jacoco.version>
     <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
     <lombok.version>1.18.46</lombok.version>
@@ -51,8 +51,8 @@
     <testcontainers.version>2.0.5</testcontainers.version>
     <!-- npm packages for @vaadin/* components lag behind Maven releases. Set this to the latest
          version actually published to npm. Update when npm catches up to vaadin.version. -->
-    <vaadin.npm.version>25.1.1</vaadin.npm.version>
-    <vaadin.version>25.1.2</vaadin.version>
+    <vaadin.npm.version>25.1.3</vaadin.npm.version>
+    <vaadin.version>25.1.6</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
@@ -82,7 +82,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.14.Final</version>
+        <version>4.2.15.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -247,7 +247,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>7.2.1</version>
+      <version>7.3.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
