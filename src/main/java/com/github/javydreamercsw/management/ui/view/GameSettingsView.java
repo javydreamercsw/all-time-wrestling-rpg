@@ -18,11 +18,15 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
+import com.github.javydreamercsw.management.domain.GameSettingRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -47,8 +51,10 @@ import org.springframework.stereotype.Component;
 public class GameSettingsView extends VerticalLayout {
 
   private final GameSettingService gameSettingService;
+  private final GameSettingRepository gameSettingRepository;
   private final ThemeService themeService;
   private final NotionHandler notionHandler;
+  private final UniverseContextService universeContextService;
   private DatePicker gameDatePicker;
   private ComboBox<String> defaultThemeSelection;
   private PasswordField notionTokenField;
@@ -56,23 +62,41 @@ public class GameSettingsView extends VerticalLayout {
   @Autowired
   public GameSettingsView(
       final GameSettingService gameSettingService,
+      final GameSettingRepository gameSettingRepository,
       final ThemeService themeService,
-      final Optional<NotionHandler> notionHandler) {
+      final Optional<NotionHandler> notionHandler,
+      final UniverseContextService universeContextService) {
     this.gameSettingService = gameSettingService;
+    this.gameSettingRepository = gameSettingRepository;
     this.themeService = themeService;
     this.notionHandler = notionHandler.orElse(null);
+    this.universeContextService = universeContextService;
     init();
   }
 
   private void init() {
-    gameDatePicker = new DatePicker("Current Game Date");
-    gameDatePicker.setValue(gameSettingService.getCurrentGameDate());
-    gameDatePicker.addValueChangeListener(
-        event -> {
-          gameSettingService.saveCurrentGameDate(event.getValue());
-          Notification.show("Game date updated to: " + event.getValue())
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        });
+    Long universeId = universeContextService.getCurrentUniverseId();
+    boolean hasUniverse = universeId != null;
+
+    // ── Universe context banner ──────────────────────────────────────────────
+    if (hasUniverse) {
+      Span universeBadge = new Span("Editing settings for universe ID: " + universeId);
+      universeBadge
+          .getStyle()
+          .set("font-style", "italic")
+          .set("color", "var(--lumo-secondary-text-color)");
+      add(universeBadge);
+    } else {
+      Span globalBadge = new Span("Editing global default settings (no universe selected)");
+      globalBadge
+          .getStyle()
+          .set("font-style", "italic")
+          .set("color", "var(--lumo-secondary-text-color)");
+      add(globalBadge);
+    }
+
+    // ── System settings (always global) ─────────────────────────────────────
+    add(new H3("System Settings"));
 
     defaultThemeSelection = new ComboBox<>("Default Application Theme");
     defaultThemeSelection.setId("default-theme-selection");
@@ -84,42 +108,79 @@ public class GameSettingsView extends VerticalLayout {
           Notification.show("Default theme updated to: " + event.getValue())
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
+    add(defaultThemeSelection);
 
-    notionTokenField = new PasswordField("Notion Integration Token");
-    try {
-      notionTokenField.setValue(
-          gameSettingService.getNotionToken() != null ? gameSettingService.getNotionToken() : "");
-    } catch (Exception e) {
-      log.warn(
-          "Could not retrieve Notion token (likely due to missing authentication): {}",
-          e.getMessage());
-      notionTokenField.setValue("");
+    // ── Credentials (per-universe only) ─────────────────────────────────────
+    add(new H3("Credentials"));
+
+    if (!hasUniverse) {
+      Span credNote =
+          new Span(
+              "Select a universe to manage its credentials. Credentials are never shared between"
+                  + " universes.");
+      credNote.getStyle().set("color", "var(--lumo-error-text-color)");
+      add(credNote);
+    } else {
+      notionTokenField = new PasswordField("Notion Integration Token");
+      notionTokenField.setHelperText(
+          universeInheritanceLabel(GameSettingService.NOTION_TOKEN_KEY, universeId));
+      try {
+        notionTokenField.setValue(
+            gameSettingService.getNotionToken() != null ? gameSettingService.getNotionToken() : "");
+      } catch (Exception e) {
+        log.warn("Could not retrieve Notion token: {}", e.getMessage());
+        notionTokenField.setValue("");
+      }
+      notionTokenField.setPlaceholder("Enter your Notion API token for this universe");
+      notionTokenField.setWidthFull();
+      notionTokenField.addValueChangeListener(
+          event -> {
+            gameSettingService.setNotionToken(event.getValue());
+            if (notionHandler != null) {
+              notionHandler.reinitialize();
+            }
+            Notification.show("Notion token updated")
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          });
+      add(notionTokenField);
     }
-    notionTokenField.setPlaceholder("Enter your Notion API token");
-    notionTokenField.setWidthFull();
-    notionTokenField.addValueChangeListener(
+
+    // ── Gameplay settings (global default + per-universe override) ───────────
+    add(new H3("Gameplay Settings"));
+    if (hasUniverse) {
+      Span note =
+          new Span(
+              "Settings marked '(inherited)' use the global default. Save a value to override for"
+                  + " this universe.");
+      note.getStyle().set("font-style", "italic").set("color", "var(--lumo-secondary-text-color)");
+      add(note);
+    }
+
+    gameDatePicker = new DatePicker("Current Game Date");
+    gameDatePicker.setHelperText(
+        universeInheritanceLabel(GameSettingService.CURRENT_GAME_DATE_KEY, universeId));
+    gameDatePicker.setValue(gameSettingService.getCurrentGameDate());
+    gameDatePicker.addValueChangeListener(
         event -> {
-          gameSettingService.setNotionToken(event.getValue());
-          if (notionHandler != null) {
-            notionHandler.reinitialize();
-          }
-          Notification.show("Notion token updated")
+          gameSettingService.saveCurrentGameDate(event.getValue());
+          Notification.show("Game date updated to: " + event.getValue())
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
     Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
-
+    aiNewsEnabled.setHelperText(
+        universeInheritanceLabel(GameSettingService.AI_NEWS_ENABLED_KEY, universeId));
     aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
-
     aiNewsEnabled.addValueChangeListener(
         event -> {
           gameSettingService.setAiNewsEnabled(event.getValue());
-
           Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
     Checkbox wearAndTearEnabled = new Checkbox("Enable Persistent Wear & Tear");
+    wearAndTearEnabled.setHelperText(
+        universeInheritanceLabel(GameSettingService.WEAR_AND_TEAR_ENABLED_KEY, universeId));
     wearAndTearEnabled.setValue(gameSettingService.isWearAndTearEnabled());
     wearAndTearEnabled.addValueChangeListener(
         event -> {
@@ -129,6 +190,8 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     Checkbox statusCardsEnabled = new Checkbox("Enable Status Cards Mechanic");
+    statusCardsEnabled.setHelperText(
+        universeInheritanceLabel(GameSettingService.STATUS_CARDS_ENABLED_KEY, universeId));
     statusCardsEnabled.setValue(gameSettingService.isStatusCardsEnabled());
     statusCardsEnabled.addValueChangeListener(
         event -> {
@@ -138,39 +201,38 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     IntegerField rumorChance = new IntegerField("Daily Rumor Chance (%)");
-
+    rumorChance.setHelperText(
+        universeInheritanceLabel(GameSettingService.NEWS_RUMOR_CHANCE_KEY, universeId));
     rumorChance.setMin(0);
-
     rumorChance.setMax(100);
-
     rumorChance.setValue(gameSettingService.getNewsRumorChance());
-
     rumorChance.setStepButtonsVisible(true);
-
     rumorChance.addValueChangeListener(
         event -> {
           gameSettingService.setNewsRumorChance(event.getValue());
-
           Notification.show("Rumor chance updated to: " + event.getValue() + "%")
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
     ComboBox<String> newsStrategy = new ComboBox<>("News Generation Strategy");
-
+    newsStrategy.setHelperText(
+        universeInheritanceLabel(GameSettingService.NEWS_STRATEGY_KEY, universeId));
     newsStrategy.setItems(List.of("SEGMENT", "SHOW"));
-
     newsStrategy.setValue(gameSettingService.getNewsStrategy());
-
     newsStrategy.addValueChangeListener(
         event -> {
           gameSettingService.setNewsStrategy(event.getValue());
-
           Notification.show("News strategy updated to: " + event.getValue())
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-    // ── Rivalry Configuration ──────────────────────────────────────────────────
+    // ── Rivalry Configuration ────────────────────────────────────────────────
+    H4 rivalryHeader = new H4("Rivalry Configuration");
+
     IntegerField pleThreshold = new IntegerField("PLE Resolution Threshold (2d20 must exceed)");
+    pleThreshold.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY, universeId));
     pleThreshold.setMin(2);
     pleThreshold.setMax(40);
     pleThreshold.setStepButtonsVisible(true);
@@ -184,6 +246,9 @@ public class GameSettingsView extends VerticalLayout {
 
     IntegerField regularThreshold =
         new IntegerField("Regular Show Resolution Threshold (2d20 must exceed)");
+    regularThreshold.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY, universeId));
     regularThreshold.setMin(2);
     regularThreshold.setMax(40);
     regularThreshold.setStepButtonsVisible(true);
@@ -197,6 +262,9 @@ public class GameSettingsView extends VerticalLayout {
 
     Checkbox resolutionOnRegular =
         new Checkbox("Allow rivalry resolution on regular (non-PLE) shows");
+    resolutionOnRegular.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY, universeId));
     resolutionOnRegular.setValue(gameSettingService.isRivalryResolutionOnRegularShowsEnabled());
     resolutionOnRegular.addValueChangeListener(
         event -> {
@@ -207,6 +275,8 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     IntegerField maxDuration = new IntegerField("Max Rivalry Duration (days, 0 = unlimited)");
+    maxDuration.setHelperText(
+        universeInheritanceLabel(GameSettingService.RIVALRY_MAX_DURATION_DAYS_KEY, universeId));
     maxDuration.setMin(0);
     maxDuration.setStepButtonsVisible(true);
     maxDuration.setValue(gameSettingService.getRivalryMaxDurationDays());
@@ -221,6 +291,8 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     Checkbox heatDecayEnabled = new Checkbox("Enable automatic heat decay");
+    heatDecayEnabled.setHelperText(
+        universeInheritanceLabel(GameSettingService.RIVALRY_HEAT_DECAY_ENABLED_KEY, universeId));
     heatDecayEnabled.setValue(gameSettingService.isRivalryHeatDecayEnabled());
     heatDecayEnabled.addValueChangeListener(
         event -> {
@@ -230,6 +302,9 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     IntegerField decayAmount = new IntegerField("Heat decay per interval");
+    decayAmount.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY, universeId));
     decayAmount.setMin(1);
     decayAmount.setMax(10);
     decayAmount.setStepButtonsVisible(true);
@@ -242,6 +317,9 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     IntegerField decayInterval = new IntegerField("Heat decay interval (days)");
+    decayInterval.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY, universeId));
     decayInterval.setMin(1);
     decayInterval.setMax(30);
     decayInterval.setStepButtonsVisible(true);
@@ -255,7 +333,7 @@ public class GameSettingsView extends VerticalLayout {
 
     VerticalLayout rivalrySection =
         new VerticalLayout(
-            new H3("Rivalry Configuration"),
+            rivalryHeader,
             pleThreshold,
             regularThreshold,
             resolutionOnRegular,
@@ -265,17 +343,26 @@ public class GameSettingsView extends VerticalLayout {
             decayInterval);
     rivalrySection.setPadding(false);
 
-    VerticalLayout layout =
-        new VerticalLayout(
-            gameDatePicker,
-            defaultThemeSelection,
-            notionTokenField,
-            aiNewsEnabled,
-            wearAndTearEnabled,
-            rumorChance,
-            newsStrategy,
-            rivalrySection);
+    add(
+        gameDatePicker,
+        aiNewsEnabled,
+        wearAndTearEnabled,
+        statusCardsEnabled,
+        rumorChance,
+        newsStrategy,
+        rivalrySection);
+  }
 
-    add(layout);
+  /**
+   * Returns helper text indicating whether a gameplay setting is universe-specific or inherited
+   * from the global default.
+   */
+  private String universeInheritanceLabel(final String key, final Long universeId) {
+    if (universeId == null) {
+      return "Global default";
+    }
+    boolean hasOverride =
+        gameSettingRepository.findBySettingKeyAndUniverseId(key, universeId).isPresent();
+    return hasOverride ? "Universe override" : "(inherited from global default)";
   }
 }

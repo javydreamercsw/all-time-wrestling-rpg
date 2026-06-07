@@ -54,10 +54,10 @@ class ThemeServiceTest {
     // themePreference is null
 
     GameSetting setting = new GameSetting();
-    setting.setId("default_theme");
+    setting.setSettingKey("default_theme");
     setting.setValue("neon");
 
-    when(gameSettingRepository.findById("default_theme")).thenReturn(Optional.of(setting));
+    when(gameSettingRepository.findGlobal("default_theme")).thenReturn(Optional.of(setting));
 
     String theme = themeService.getEffectiveTheme(account);
     assertEquals("neon", theme);
@@ -66,7 +66,7 @@ class ThemeServiceTest {
   @Test
   void testGetEffectiveTheme_Fallback() {
     Account account = new Account();
-    when(gameSettingRepository.findById("default_theme")).thenReturn(Optional.empty());
+    when(gameSettingRepository.findGlobal("default_theme")).thenReturn(Optional.empty());
 
     String theme = themeService.getEffectiveTheme(account);
     assertEquals("light", theme); // Default fallback
@@ -91,7 +91,7 @@ class ThemeServiceTest {
     ArgumentCaptor<GameSetting> captor = ArgumentCaptor.forClass(GameSetting.class);
     verify(gameSettingRepository).save(captor.capture());
     GameSetting captured = captor.getValue();
-    assertEquals("default_theme", captured.getId());
+    assertEquals("default_theme", captured.getSettingKey());
     assertEquals("retro", captured.getValue());
   }
 }

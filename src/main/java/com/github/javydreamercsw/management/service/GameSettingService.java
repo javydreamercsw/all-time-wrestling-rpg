@@ -19,10 +19,12 @@ package com.github.javydreamercsw.management.service;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -56,98 +58,171 @@ public class GameSettingService {
       "rivalry_heat_decay_per_interval";
   public static final String RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY =
       "rivalry_heat_decay_interval_days";
+
+  /**
+   * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
+   * defaults — each universe must configure its own. Reading without an active universe returns
+   * empty.
+   */
+  private static final Set<String> CREDENTIAL_KEYS =
+      Set.of(
+          NOTION_TOKEN_KEY,
+          "AI_OPENAI_API_KEY",
+          "AI_CLAUDE_API_KEY",
+          "AI_GEMINI_API_KEY",
+          "AI_POLLINATIONS_API_KEY");
+
+  /**
+   * Keys that are always global (system-level). They are never scoped per-universe regardless of
+   * the active universe context.
+   */
+  private static final Set<String> SYSTEM_KEYS = Set.of("default_theme");
+
   private final GameSettingRepository repository;
   private final ApplicationEventPublisher eventPublisher;
+  private final UniverseContextService universeContextService;
+
+  // ── Internal resolution ───────────────────────────────────────────────────
+
+  /**
+   * Resolves a setting value respecting the three-tier hierarchy:
+   *
+   * <ul>
+   *   <li>System keys → always global (universe_id IS NULL)
+   *   <li>Credential keys → universe-scoped only, no fallback
+   *   <li>Gameplay keys → universe-scoped with fallback to global
+   * </ul>
+   */
+  private Optional<String> resolveValue(final String key) {
+    if (SYSTEM_KEYS.contains(key)) {
+      return repository.findGlobal(key).map(GameSetting::getValue);
+    }
+
+    Long universeId = universeContextService.getCurrentUniverseId();
+
+    if (CREDENTIAL_KEYS.contains(key)) {
+      if (universeId == null) {
+        return Optional.empty();
+      }
+      return repository.findBySettingKeyAndUniverseId(key, universeId).map(GameSetting::getValue);
+    }
+
+    // Gameplay: universe-scoped first, fall back to global
+    if (universeId != null) {
+      Optional<String> universeValue =
+          repository.findBySettingKeyAndUniverseId(key, universeId).map(GameSetting::getValue);
+      if (universeValue.isPresent()) {
+        return universeValue;
+      }
+    }
+    return repository.findGlobal(key).map(GameSetting::getValue);
+  }
+
+  /**
+   * Saves a setting scoped to the correct context:
+   *
+   * <ul>
+   *   <li>System keys → always saves as global
+   *   <li>Credential keys → saves to current universe (throws if none active)
+   *   <li>Gameplay keys → saves to current universe if one is active, else global
+   * </ul>
+   */
+  private void saveInternal(final String key, final String value) {
+    Long universeId = null;
+
+    if (!SYSTEM_KEYS.contains(key)) {
+      universeId = universeContextService.getCurrentUniverseId();
+      if (CREDENTIAL_KEYS.contains(key) && universeId == null) {
+        throw new IllegalStateException(
+            "Cannot save credential setting '" + key + "' without an active universe.");
+      }
+    }
+
+    final Long finalUniverseId = universeId;
+    GameSetting setting =
+        (finalUniverseId != null
+                ? repository.findBySettingKeyAndUniverseId(key, finalUniverseId)
+                : repository.findGlobal(key))
+            .orElseGet(GameSetting::new);
+    setting.setSettingKey(key);
+    setting.setValue(value);
+    setting.setUniverseId(finalUniverseId);
+    repository.save(setting);
+  }
+
+  // ── Credentials ──────────────────────────────────────────────────────────
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public String getNotionToken() {
-    return repository.findById(NOTION_TOKEN_KEY).map(GameSetting::getValue).orElse(null);
+    return resolveValue(NOTION_TOKEN_KEY).orElse(null);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setNotionToken(final String token) {
-    save(NOTION_TOKEN_KEY, token);
+    saveInternal(NOTION_TOKEN_KEY, token);
   }
+
+  // ── Gameplay settings ────────────────────────────────────────────────────
 
   @PreAuthorize("permitAll()")
   public boolean isWearAndTearEnabled() {
-    return repository
-        .findById(WEAR_AND_TEAR_ENABLED_KEY)
-        .map(GameSetting::getValue)
-        .map(Boolean::parseBoolean)
-        .orElse(true); // Enabled by default
+    return resolveValue(WEAR_AND_TEAR_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setWearAndTearEnabled(final boolean enabled) {
-    save(WEAR_AND_TEAR_ENABLED_KEY, String.valueOf(enabled));
+    saveInternal(WEAR_AND_TEAR_ENABLED_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("permitAll()")
   public boolean isStatusCardsEnabled() {
-    return repository
-        .findById(STATUS_CARDS_ENABLED_KEY)
-        .map(GameSetting::getValue)
-        .map(Boolean::parseBoolean)
-        .orElse(true); // Enabled by default
+    return resolveValue(STATUS_CARDS_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
   }
 
   @PreAuthorize("hasRole('ADMIN')")
   @Transactional
   public void setStatusCardsEnabled(final boolean enabled) {
-    save(STATUS_CARDS_ENABLED_KEY, String.valueOf(enabled));
+    saveInternal(STATUS_CARDS_ENABLED_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("permitAll()")
   public boolean isAiNewsEnabled() {
-    return repository
-        .findById(AI_NEWS_ENABLED_KEY)
-        .map(GameSetting::getValue)
-        .map(Boolean::parseBoolean)
-        .orElse(true); // Enabled by default
+    return resolveValue(AI_NEWS_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
   }
 
   @PreAuthorize("permitAll()")
   public int getNewsRumorChance() {
-    return repository
-        .findById(NEWS_RUMOR_CHANCE_KEY)
-        .map(GameSetting::getValue)
-        .map(Integer::parseInt)
-        .orElse(20); // 20% default
+    return resolveValue(NEWS_RUMOR_CHANCE_KEY).map(Integer::parseInt).orElse(20);
   }
 
   @PreAuthorize("permitAll()")
   public String getNewsStrategy() {
-    return repository.findById(NEWS_STRATEGY_KEY).map(GameSetting::getValue).orElse("SEGMENT");
+    return resolveValue(NEWS_STRATEGY_KEY).orElse("SEGMENT");
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setAiNewsEnabled(final boolean enabled) {
-    save(AI_NEWS_ENABLED_KEY, String.valueOf(enabled));
+    saveInternal(AI_NEWS_ENABLED_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setNewsRumorChance(final int chance) {
-    save(NEWS_RUMOR_CHANCE_KEY, String.valueOf(chance));
+    saveInternal(NEWS_RUMOR_CHANCE_KEY, String.valueOf(chance));
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setNewsStrategy(final String strategy) {
-    save(NEWS_STRATEGY_KEY, strategy);
+    saveInternal(NEWS_STRATEGY_KEY, strategy);
   }
 
   @PreAuthorize("permitAll()")
   public LocalDate getCurrentGameDate() {
-    return repository
-        .findById(CURRENT_GAME_DATE_KEY)
-        .map(GameSetting::getValue)
-        .map(LocalDate::parse)
-        .orElse(LocalDate.now()); // Fallback to real date if not set
+    return resolveValue(CURRENT_GAME_DATE_KEY).map(LocalDate::parse).orElse(LocalDate.now());
   }
 
   @PreAuthorize(
@@ -155,11 +230,7 @@ public class GameSettingService {
   @Transactional
   public void saveCurrentGameDate(final LocalDate date) {
     LocalDate oldDate = getCurrentGameDate();
-    GameSetting setting = repository.findById(CURRENT_GAME_DATE_KEY).orElseGet(GameSetting::new);
-    setting.setId(CURRENT_GAME_DATE_KEY);
-    setting.setValue(date.format(DateTimeFormatter.ISO_LOCAL_DATE));
-    repository.save(setting);
-
+    saveInternal(CURRENT_GAME_DATE_KEY, date.format(DateTimeFormatter.ISO_LOCAL_DATE));
     if (!date.equals(oldDate)) {
       log.info("Game date changed from {} to {}", oldDate, date);
       eventPublisher.publishEvent(new GameDateChangedEvent(this, oldDate, date));
@@ -168,39 +239,29 @@ public class GameSettingService {
 
   @PreAuthorize("permitAll()")
   public int getRivalryResolutionThresholdPle() {
-    return repository
-        .findById(RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY)
-        .map(GameSetting::getValue)
-        .map(Integer::parseInt)
-        .orElse(30);
+    return resolveValue(RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY).map(Integer::parseInt).orElse(30);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setRivalryResolutionThresholdPle(final int threshold) {
-    save(RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY, String.valueOf(threshold));
+    saveInternal(RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY, String.valueOf(threshold));
   }
 
   @PreAuthorize("permitAll()")
   public int getRivalryResolutionThresholdRegular() {
-    return repository
-        .findById(RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY)
-        .map(GameSetting::getValue)
-        .map(Integer::parseInt)
-        .orElse(35);
+    return resolveValue(RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY).map(Integer::parseInt).orElse(35);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setRivalryResolutionThresholdRegular(final int threshold) {
-    save(RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY, String.valueOf(threshold));
+    saveInternal(RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY, String.valueOf(threshold));
   }
 
   @PreAuthorize("permitAll()")
   public boolean isRivalryResolutionOnRegularShowsEnabled() {
-    return repository
-        .findById(RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY)
-        .map(GameSetting::getValue)
+    return resolveValue(RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY)
         .map(Boolean::parseBoolean)
         .orElse(false);
   }
@@ -208,72 +269,74 @@ public class GameSettingService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setRivalryResolutionOnRegularShowsEnabled(final boolean enabled) {
-    save(RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY, String.valueOf(enabled));
+    saveInternal(RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("permitAll()")
   public int getRivalryMaxDurationDays() {
-    return repository
-        .findById(RIVALRY_MAX_DURATION_DAYS_KEY)
-        .map(GameSetting::getValue)
-        .map(Integer::parseInt)
-        .orElse(0);
+    return resolveValue(RIVALRY_MAX_DURATION_DAYS_KEY).map(Integer::parseInt).orElse(0);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setRivalryMaxDurationDays(final int days) {
-    save(RIVALRY_MAX_DURATION_DAYS_KEY, String.valueOf(days));
+    saveInternal(RIVALRY_MAX_DURATION_DAYS_KEY, String.valueOf(days));
   }
 
   @PreAuthorize("permitAll()")
   public boolean isRivalryHeatDecayEnabled() {
-    return repository
-        .findById(RIVALRY_HEAT_DECAY_ENABLED_KEY)
-        .map(GameSetting::getValue)
-        .map(Boolean::parseBoolean)
-        .orElse(false);
+    return resolveValue(RIVALRY_HEAT_DECAY_ENABLED_KEY).map(Boolean::parseBoolean).orElse(false);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setRivalryHeatDecayEnabled(final boolean enabled) {
-    save(RIVALRY_HEAT_DECAY_ENABLED_KEY, String.valueOf(enabled));
+    saveInternal(RIVALRY_HEAT_DECAY_ENABLED_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("permitAll()")
   public int getRivalryHeatDecayPerInterval() {
-    return repository
-        .findById(RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY)
-        .map(GameSetting::getValue)
-        .map(Integer::parseInt)
-        .orElse(1);
+    return resolveValue(RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY).map(Integer::parseInt).orElse(1);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setRivalryHeatDecayPerInterval(final int amount) {
-    save(RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY, String.valueOf(amount));
+    saveInternal(RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY, String.valueOf(amount));
   }
 
   @PreAuthorize("permitAll()")
   public int getRivalryHeatDecayIntervalDays() {
-    return repository
-        .findById(RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY)
-        .map(GameSetting::getValue)
-        .map(Integer::parseInt)
-        .orElse(7);
+    return resolveValue(RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY).map(Integer::parseInt).orElse(7);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void setRivalryHeatDecayIntervalDays(final int days) {
-    save(RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY, String.valueOf(days));
+    saveInternal(RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY, String.valueOf(days));
   }
 
+  // ── Generic access (used by AiSettingsService and other consumers) ────────
+
+  /**
+   * Finds a setting by key using the standard resolution hierarchy. Callers that need raw access
+   * (e.g. AiSettingsService) should use this instead of the old repository.findById(key).
+   */
   @PreAuthorize("permitAll()")
   public Optional<GameSetting> findById(final String key) {
-    return repository.findById(key);
+    Long universeId =
+        SYSTEM_KEYS.contains(key) ? null : universeContextService.getCurrentUniverseId();
+
+    if (CREDENTIAL_KEYS.contains(key)) {
+      if (universeId == null) return Optional.empty();
+      return repository.findBySettingKeyAndUniverseId(key, universeId);
+    }
+
+    if (universeId != null) {
+      Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
+      if (scoped.isPresent()) return scoped;
+    }
+    return repository.findGlobal(key);
   }
 
   @Transactional
@@ -282,8 +345,10 @@ public class GameSettingService {
   public GameSetting save(final GameSetting gameSetting) {
     log.debug(
         "Saving game setting: {} = {}",
-        gameSetting.getId(),
-        gameSetting.getId().contains("KEY") ? "********" : gameSetting.getValue());
+        gameSetting.getSettingKey(),
+        gameSetting.getSettingKey() != null && gameSetting.getSettingKey().contains("KEY")
+            ? "********"
+            : gameSetting.getValue());
     return repository.save(gameSetting);
   }
 
@@ -291,14 +356,23 @@ public class GameSettingService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void save(final String key, final String value) {
-    GameSetting setting = repository.findById(key).orElseGet(GameSetting::new);
-    setting.setId(key);
-    setting.setValue(value);
-    save(setting);
+    saveInternal(key, value);
   }
 
   @PreAuthorize("permitAll()")
   public List<GameSetting> findAll() {
     return repository.findAll();
+  }
+
+  /** Returns all global (shared) settings — used by admin views. */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  public List<GameSetting> findAllGlobal() {
+    return repository.findAllGlobal();
+  }
+
+  /** Returns all universe-scoped overrides for a specific universe. */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  public List<GameSetting> findAllForUniverse(final Long universeId) {
+    return repository.findAllByUniverseId(universeId);
   }
 }

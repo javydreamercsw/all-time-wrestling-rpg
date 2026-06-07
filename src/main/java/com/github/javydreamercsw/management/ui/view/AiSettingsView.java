@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
-import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -277,10 +276,7 @@ public class AiSettingsView extends VerticalLayout {
     if (value == null) {
       return;
     }
-    GameSetting setting = gameSettingService.findById(key).orElseGet(GameSetting::new);
-    setting.setId(key);
-    setting.setValue(value);
-    gameSettingService.save(setting);
+    gameSettingService.save(key, value);
     notificationService.showSuccess("Setting '" + key + "' updated!");
   }
 }

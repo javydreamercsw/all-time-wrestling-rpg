@@ -74,14 +74,14 @@ public class ExpansionServiceTest {
 
     // Case 2: Explicitly disabled in DB
     GameSetting disabledSetting = new GameSetting();
-    disabledSetting.setId(key);
+    disabledSetting.setSettingKey(key);
     disabledSetting.setValue("false");
     when(gameSettingService.findById(key)).thenReturn(Optional.of(disabledSetting));
     assertFalse(expansionService.isExpansionEnabled(code));
 
     // Case 3: Explicitly enabled in DB
     GameSetting enabledSetting = new GameSetting();
-    enabledSetting.setId(key);
+    enabledSetting.setSettingKey(key);
     enabledSetting.setValue("true");
     when(gameSettingService.findById(key)).thenReturn(Optional.of(enabledSetting));
     assertTrue(expansionService.isExpansionEnabled(code));
@@ -103,7 +103,7 @@ public class ExpansionServiceTest {
   void testGetEnabledExpansionCodes() {
     // Mock BASE_GAME as enabled and EXTREME as disabled
     GameSetting extremeDisabled = new GameSetting();
-    extremeDisabled.setId(ExpansionService.SET_ENABLED_PREFIX + "EXTREME");
+    extremeDisabled.setSettingKey(ExpansionService.SET_ENABLED_PREFIX + "EXTREME");
     extremeDisabled.setValue("false");
 
     when(gameSettingService.findById(ExpansionService.SET_ENABLED_PREFIX + "EXTREME"))

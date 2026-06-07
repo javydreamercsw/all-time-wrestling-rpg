@@ -433,10 +433,10 @@ public class DataInitializer implements Initializable {
 
     // Pre-load all existing settings once to avoid one DB round-trip per key
     Map<String, com.github.javydreamercsw.management.domain.GameSetting> existingSettings =
-        gameSettingRepository.findAll().stream()
+        gameSettingRepository.findAllGlobal().stream()
             .collect(
                 Collectors.toMap(
-                    com.github.javydreamercsw.management.domain.GameSetting::getId,
+                    com.github.javydreamercsw.management.domain.GameSetting::getSettingKey,
                     s -> s,
                     (a, b) -> a));
     boolean forceOverride =
@@ -555,7 +555,7 @@ public class DataInitializer implements Initializable {
     if (!existingSettings.containsKey(key)) {
       com.github.javydreamercsw.management.domain.GameSetting setting =
           new com.github.javydreamercsw.management.domain.GameSetting();
-      setting.setId(key);
+      setting.setSettingKey(key);
       setting.setValue(value);
       existingSettings.put(key, setting); // prevent duplicate adds within this run
       toSave.add(setting);
@@ -1391,11 +1391,11 @@ public class DataInitializer implements Initializable {
   }
 
   private void initializeGameDate() {
-    if (gameSettingRepository.findById(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
+    if (gameSettingRepository.findGlobal(GameSettingService.CURRENT_GAME_DATE_KEY).isEmpty()) {
       log.debug("In-game date not set. Initializing to current date.");
       com.github.javydreamercsw.management.domain.GameSetting setting =
           new com.github.javydreamercsw.management.domain.GameSetting();
-      setting.setId(GameSettingService.CURRENT_GAME_DATE_KEY);
+      setting.setSettingKey(GameSettingService.CURRENT_GAME_DATE_KEY);
       setting.setValue(LocalDate.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE));
       gameSettingRepository.save(setting);
     }
