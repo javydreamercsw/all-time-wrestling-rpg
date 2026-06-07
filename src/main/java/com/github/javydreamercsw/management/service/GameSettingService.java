@@ -328,13 +328,17 @@ public class GameSettingService {
         SYSTEM_KEYS.contains(key) ? null : universeContextService.getCurrentUniverseId();
 
     if (CREDENTIAL_KEYS.contains(key)) {
-      if (universeId == null) return Optional.empty();
+      if (universeId == null) {
+        return Optional.empty();
+      }
       return repository.findBySettingKeyAndUniverseId(key, universeId);
     }
 
     if (universeId != null) {
       Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
-      if (scoped.isPresent()) return scoped;
+      if (scoped.isPresent()) {
+        return scoped;
+      }
     }
     return repository.findGlobal(key);
   }
