@@ -62,6 +62,7 @@ class BackstageActionServiceTest {
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private BackstageEncounterService backstageEncounterService;
+  @Mock private FeatureDataService featureDataService;
 
   @Spy @InjectMocks private BackstageActionService backstageActionService;
 

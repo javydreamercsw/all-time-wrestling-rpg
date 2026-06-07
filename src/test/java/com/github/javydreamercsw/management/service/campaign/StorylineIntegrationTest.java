@@ -93,6 +93,7 @@ class StorylineIntegrationTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseRepository universeRepository;
   private ObjectMapper objectMapper = new ObjectMapper();
+  @Mock private FeatureDataService featureDataService;
 
   private CampaignService campaignService;
 
@@ -130,7 +131,7 @@ class StorylineIntegrationTest {
             storylineDirectorService,
             storylineExportService,
             wrestlerStatusService,
-            objectMapper);
+            featureDataService);
   }
 
   @Test

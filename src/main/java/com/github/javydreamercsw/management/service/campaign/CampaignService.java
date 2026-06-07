@@ -16,9 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
@@ -73,9 +70,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
@@ -120,7 +115,7 @@ public class CampaignService {
   private final StorylineDirectorService storylineDirectorService;
   private final StorylineExportService storylineExportService;
   private final WrestlerStatusService wrestlerStatusService;
-  private final ObjectMapper objectMapper;
+  private final FeatureDataService featureDataService;
 
   private final Random random = new Random();
 
@@ -132,41 +127,8 @@ public class CampaignService {
   private static final String KEY_TOURNAMENT_STATE = "tournamentState";
   private static final String KEY_RECRUITING_PARTNER = "recruitingPartner";
 
-  private Map<String, Object> getFeatureData(final CampaignState state) {
-    if (state.getFeatureData() == null) {
-      return new HashMap<>();
-    }
-    try {
-      return objectMapper.readValue(
-          state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
-    } catch (JsonProcessingException e) {
-      log.error("Error parsing feature data", e);
-      return new HashMap<>();
-    }
-  }
-
-  private void saveFeatureData(final CampaignState state, final Map<String, Object> data) {
-    try {
-      state.setFeatureData(objectMapper.writeValueAsString(data));
-    } catch (JsonProcessingException e) {
-      log.error("Error serializing feature data", e);
-    }
-  }
-
-  private <T> T getFeatureValue(
-      final CampaignState state, final String key, final Class<T> type, final T defaultValue) {
-    Map<String, Object> data = getFeatureData(state);
-    Object value = data.get(key);
-    if (value == null) {
-      return defaultValue;
-    }
-    return objectMapper.convertValue(value, type);
-  }
-
   public void setFeatureValue(final CampaignState state, final String key, final Object value) {
-    Map<String, Object> data = getFeatureData(state);
-    data.put(key, value);
-    saveFeatureData(state, data);
+    featureDataService.setFeatureValue(state, key, value);
   }
 
   public Campaign startCampaign(@NonNull final Wrestler wrestlerParam) {
@@ -277,7 +239,8 @@ public class CampaignService {
     CampaignChapterDTO chapter =
         getCurrentChapter(campaign)
             .orElseThrow(() -> new IllegalStateException("No active chapter for match encounter"));
-    boolean isFinalsPhase = getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
+    boolean isFinalsPhase =
+        featureDataService.getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
     boolean isNarrativeFinale = isFinalsPhase && !chapter.isTournament();
 
     String actualTypeName = segmentTypeName;
@@ -345,14 +308,11 @@ public class CampaignService {
     // Tag Team Logic
     if (SegmentTypeNames.TAG_TEAM.equalsIgnoreCase(type.getName())) {
       // Player Partner
-      Long partnerId = getFeatureValue(state, KEY_PARTNER_ID, Long.class, null);
+      Long partnerId = featureDataService.getFeatureValue(state, KEY_PARTNER_ID, Long.class, null);
       if (partnerId != null) {
         wrestlerRepository.findById(partnerId).ifPresent(p -> addParticipant(segment, p));
       } else {
-        // Let's assign a random partner for now if missing.
-        List<Wrestler> freeAgents = wrestlerRepository.findAll(); // Optimization needed in future
-        freeAgents.remove(player);
-        freeAgents.remove(opponent);
+        List<Wrestler> freeAgents = freeAgents(player, opponent);
         if (!freeAgents.isEmpty()) {
           addParticipant(segment, freeAgents.get(random.nextInt(freeAgents.size())));
         }
@@ -369,10 +329,7 @@ public class CampaignService {
                 : oppTeam.getWrestler1();
         addParticipant(segment, oppPartner);
       } else {
-        // Random partner for opponent
-        List<Wrestler> freeAgents = wrestlerRepository.findAll();
-        freeAgents.remove(player);
-        freeAgents.remove(opponent);
+        List<Wrestler> freeAgents = freeAgents(player, opponent);
         if (partnerId != null) {
           Long finalPartnerId = partnerId;
           freeAgents.removeIf(w -> w.getId().equals(finalPartnerId));
@@ -393,6 +350,14 @@ public class CampaignService {
     campaignStateRepository.save(state);
 
     return segment;
+  }
+
+  private List<Wrestler> freeAgents(final Wrestler... excluded) {
+    List<Wrestler> free = new ArrayList<>(wrestlerRepository.findAll());
+    for (Wrestler w : excluded) {
+      if (w != null) free.remove(w);
+    }
+    return free;
   }
 
   private void addParticipant(@NonNull final Segment segment, @NonNull final Wrestler wrestler) {
@@ -576,7 +541,8 @@ public class CampaignService {
 
     // Check for chapter completion/tournament qualification
     if (currentChapter.isTournament()) {
-      boolean isFinalsPhase = getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
+      boolean isFinalsPhase =
+          featureDataService.getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
 
       // Ensure tournament is initialized (handle legacy saves or missed init)
       if (!isFinalsPhase || tournamentService.getTournamentState(campaign) == null) {
@@ -641,8 +607,10 @@ public class CampaignService {
     } else if (currentChapter.getRules() != null
         && currentChapter.getRules().getFinaleTriggerVP() != null) {
       // Narrative Finale Logic
-      boolean isFinalsPhase = getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
-      boolean hasWonFinale = getFeatureValue(state, KEY_WON_FINALE, Boolean.class, false);
+      boolean isFinalsPhase =
+          featureDataService.getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
+      boolean hasWonFinale =
+          featureDataService.getFeatureValue(state, KEY_WON_FINALE, Boolean.class, false);
 
       if (!isFinalsPhase
           && !hasWonFinale

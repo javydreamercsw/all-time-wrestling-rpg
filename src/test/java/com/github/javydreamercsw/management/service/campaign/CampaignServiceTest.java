@@ -106,8 +106,23 @@ class CampaignServiceTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseRepository universeRepository;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
+  @Mock private WrestlerStatusService wrestlerStatusService;
+  @Mock private FeatureDataService featureDataService;
 
   @InjectMocks private CampaignService campaignService;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUpFeatureDataMock() {
+    // Return the defaultValue argument so Boolean auto-unboxing never receives null
+    org.mockito.Mockito.lenient()
+        .when(
+            featureDataService.getFeatureValue(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(inv -> inv.getArgument(3));
+  }
 
   @Test
   void testStartCampaign() {
