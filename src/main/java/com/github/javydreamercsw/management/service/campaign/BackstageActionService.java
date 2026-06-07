@@ -179,8 +179,6 @@ public class BackstageActionService {
               wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
               bumpsRemoved++;
             }
-            // Update local state copy if needed, but entity is source of truth
-            // state.setBumps is removed as it's no longer in CampaignState
             outcomeDescription =
                 "Recovery successful. Removed "
                     + bumpsRemoved
@@ -195,7 +193,6 @@ public class BackstageActionService {
           if (currentBumps > 0) {
             Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
             wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
-            // state.setBumps is removed
             outcomeDescription = "Recovery successful. Removed 1 bump. (Successes: 1)";
           } else if (!activeInjuries.isEmpty()) {
             outcomeDescription =
