@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.export.CsvExportWriter;
+import com.github.javydreamercsw.management.service.export.ImageExportService;
 import com.github.javydreamercsw.management.service.export.JsonExportWriter;
 import com.github.javydreamercsw.management.service.export.UniverseExportService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
@@ -34,6 +35,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.UnorderedList;
@@ -45,10 +47,13 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadResponse;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.Height;
 import com.vaadin.flow.theme.lumo.LumoUtility.Width;
 import jakarta.annotation.security.RolesAllowed;
+import java.io.ByteArrayInputStream;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -74,6 +79,7 @@ public class UniverseListView extends Main {
   private final CsvExportWriter csvWriter;
   private final JsonExportWriter jsonWriter;
   private final WrestlerStateRepository wrestlerStateRepository;
+  private final ImageExportService imageExportService;
   public final Grid<Universe> grid = new Grid<>(Universe.class, false);
 
   public UniverseListView(
@@ -85,7 +91,8 @@ public class UniverseListView extends Main {
       final UniverseExportService exportService,
       final CsvExportWriter csvWriter,
       final JsonExportWriter jsonWriter,
-      final WrestlerStateRepository wrestlerStateRepository) {
+      final WrestlerStateRepository wrestlerStateRepository,
+      final ImageExportService imageExportService) {
     this.universeService = universeService;
     this.membershipService = membershipService;
     this.accountService = accountService;
@@ -95,6 +102,7 @@ public class UniverseListView extends Main {
     this.csvWriter = csvWriter;
     this.jsonWriter = jsonWriter;
     this.wrestlerStateRepository = wrestlerStateRepository;
+    this.imageExportService = imageExportService;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -109,7 +117,28 @@ public class UniverseListView extends Main {
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createButton.addClickListener(e -> openCreateDialog().open());
 
-    add(new ViewToolbar("Universe List", ViewToolbar.group(createButton)));
+    Button exportImagesBtn = new Button("Export Images", new Icon(VaadinIcon.PICTURE));
+    exportImagesBtn.setId("export-images-button");
+    Anchor exportImagesAnchor =
+        new Anchor(
+            DownloadHandler.fromInputStream(
+                event -> {
+                  try {
+                    byte[] data = imageExportService.exportImages();
+                    return new DownloadResponse(
+                        new ByteArrayInputStream(data),
+                        "images-export.zip",
+                        "application/zip",
+                        data.length);
+                  } catch (Exception ex) {
+                    log.error("Image export failed", ex);
+                    return DownloadResponse.error(500);
+                  }
+                }),
+            "");
+    exportImagesAnchor.add(exportImagesBtn);
+
+    add(new ViewToolbar("Universe List", ViewToolbar.group(exportImagesAnchor, createButton)));
 
     setupGrid();
     grid.addClassNames(LumoUtility.Flex.GROW);
