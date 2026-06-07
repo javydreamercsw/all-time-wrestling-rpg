@@ -117,8 +117,16 @@ public class UniverseListView extends Main {
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createButton.addClickListener(e -> openCreateDialog().open());
 
-    Button exportImagesBtn = new Button("Export Images", new Icon(VaadinIcon.PICTURE));
+    int imageCount = 0;
+    try {
+      imageCount = imageExportService.countImages();
+    } catch (Exception ex) {
+      log.warn("Could not count images for button label", ex);
+    }
+    String exportLabel = imageCount > 0 ? "Export Images (" + imageCount + ")" : "Export Images";
+    Button exportImagesBtn = new Button(exportLabel, new Icon(VaadinIcon.PICTURE));
     exportImagesBtn.setId("export-images-button");
+    final int finalImageCount = imageCount;
     Anchor exportImagesAnchor =
         new Anchor(
             DownloadHandler.fromInputStream(
@@ -136,6 +144,12 @@ public class UniverseListView extends Main {
                   }
                 }),
             "");
+    exportImagesBtn.addClickListener(
+        e ->
+            Notification.show(
+                "Downloading " + finalImageCount + " image(s)",
+                3000,
+                Notification.Position.BOTTOM_END));
     exportImagesAnchor.add(exportImagesBtn);
 
     add(new ViewToolbar("Universe List", ViewToolbar.group(exportImagesAnchor, createButton)));

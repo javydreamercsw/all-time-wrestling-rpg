@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
@@ -42,16 +43,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Collects all custom images referenced by entities and packages them into a single ZIP for
- * download. The ZIP preserves relative paths (e.g. {@code images/generated/uuid.png}) so that the
- * companion import can restore files to the correct location.
+ * Packages all custom images into a single ZIP for download, preserving relative paths so that the
+ * companion import can restore files to the correct locations without any DB changes.
+ *
+ * <p>Two image systems are exported:
+ *
+ * <ol>
+ *   <li><b>Generated images</b> ({@code images/generated/}) — AI-produced images referenced by
+ *       entity {@code imageUrl} fields in the database.
+ *   <li><b>Default/profile images</b> ({@code images/defaults/}) — name-based profile images stored
+ *       under category sub-directories (e.g. {@code images/defaults/wrestlers/John.png}). These are
+ *       never stored in any DB column and must be discovered by filesystem walk.
+ * </ol>
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class ImageExportService {
 
-  static final String IMAGE_PATH_PREFIX = "images/generated/";
+  static final String GENERATED_PREFIX = "images/generated/";
+  static final String DEFAULTS_PREFIX = "images/defaults/";
 
   private final StorageProperties storageProperties;
   private final WrestlerRepository wrestlerRepository;
@@ -69,30 +80,77 @@ public class ImageExportService {
    *
    * @return the ZIP bytes, never null (may be an empty ZIP if no images are found)
    */
+  /** Returns the total number of images that would be included in an export. */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @Transactional(readOnly = true)
+  public int countImages() {
+    int generated = collectImageUrls().size();
+    int defaults = 0;
+    Path defaultsDir = storageProperties.getResolvedDefaultImageDir();
+    if (Files.exists(defaultsDir)) {
+      try (Stream<Path> files = Files.walk(defaultsDir)) {
+        defaults = (int) files.filter(Files::isRegularFile).count();
+      } catch (IOException e) {
+        log.warn("Failed to count default images: {}", e.getMessage());
+      }
+    }
+    return generated + defaults;
+  }
+
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   @Transactional(readOnly = true)
   public byte[] exportImages() throws IOException {
-    Set<String> urls = collectImageUrls();
-    Path imageDir = storageProperties.getResolvedImageDir();
-
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     try (ZipOutputStream zip = new ZipOutputStream(out, StandardCharsets.UTF_8)) {
-      for (String url : urls) {
-        String filename = url.substring(IMAGE_PATH_PREFIX.length());
-        Path file = imageDir.resolve(filename);
-        if (!Files.exists(file)) {
-          log.warn("Referenced image not found on disk, skipping: {}", file);
-          continue;
-        }
-        zip.putNextEntry(new ZipEntry(url));
+      int generated = exportGeneratedImages(zip);
+      int defaults = exportDefaultImages(zip);
+      log.info(
+          "Image export complete: {} generated, {} default/profile images, {} bytes",
+          generated,
+          defaults,
+          out.size());
+    }
+    return out.toByteArray();
+  }
+
+  private int exportGeneratedImages(final ZipOutputStream zip) throws IOException {
+    Set<String> urls = collectImageUrls();
+    Path imageDir = storageProperties.getResolvedImageDir();
+    int count = 0;
+    for (String url : urls) {
+      String filename = url.substring(GENERATED_PREFIX.length());
+      Path file = imageDir.resolve(filename);
+      if (!Files.exists(file)) {
+        log.warn("Referenced generated image not found on disk, skipping: {}", file);
+        continue;
+      }
+      zip.putNextEntry(new ZipEntry(url));
+      Files.copy(file, zip);
+      zip.closeEntry();
+      log.debug("Added generated image: {}", url);
+      count++;
+    }
+    return count;
+  }
+
+  private int exportDefaultImages(final ZipOutputStream zip) throws IOException {
+    Path defaultsDir = storageProperties.getResolvedDefaultImageDir();
+    if (!Files.exists(defaultsDir)) {
+      return 0;
+    }
+    int count = 0;
+    try (Stream<Path> files = Files.walk(defaultsDir)) {
+      for (Path file : files.filter(Files::isRegularFile).toList()) {
+        String relativePath = defaultsDir.relativize(file).toString().replace('\\', '/');
+        String entryName = DEFAULTS_PREFIX + relativePath;
+        zip.putNextEntry(new ZipEntry(entryName));
         Files.copy(file, zip);
         zip.closeEntry();
-        log.debug("Added image to export ZIP: {}", url);
+        log.debug("Added default image: {}", entryName);
+        count++;
       }
     }
-
-    log.info("Image export complete: {} referenced URLs, {} bytes", urls.size(), out.size());
-    return out.toByteArray();
+    return count;
   }
 
   private Set<String> collectImageUrls() {
@@ -110,7 +168,7 @@ public class ImageExportService {
 
   private void addUrls(final Set<String> target, final List<String> candidates) {
     for (String url : candidates) {
-      if (url != null && url.startsWith(IMAGE_PATH_PREFIX)) {
+      if (url != null && url.startsWith(GENERATED_PREFIX)) {
         target.add(url);
       }
     }

@@ -75,6 +75,7 @@ class ImageExportServiceTest {
             arenaRepository,
             locationRepository);
     when(storageProperties.getResolvedImageDir()).thenReturn(tempDir);
+    when(storageProperties.getResolvedDefaultImageDir()).thenReturn(tempDir.resolve("defaults"));
     // Default: all other repos return empty
     when(factionRepository.findAll()).thenReturn(List.of());
     when(titleRepository.findAll()).thenReturn(List.of());
@@ -101,19 +102,19 @@ class ImageExportServiceTest {
     Files.write(imgFile, new byte[] {1, 2, 3});
 
     Wrestler w = new Wrestler();
-    w.setImageUrl(ImageExportService.IMAGE_PATH_PREFIX + "uuid.png");
+    w.setImageUrl(ImageExportService.GENERATED_PREFIX + "uuid.png");
     when(wrestlerRepository.findAll()).thenReturn(List.of(w));
 
     byte[] zip = service.exportImages();
 
     assertThat(zipEntryNames(zip))
-        .containsExactly(ImageExportService.IMAGE_PATH_PREFIX + "uuid.png");
+        .containsExactly(ImageExportService.GENERATED_PREFIX + "uuid.png");
   }
 
   @Test
   void exportImages_missingFileOnDisk_skipsWithoutError() throws IOException {
     Wrestler w = new Wrestler();
-    w.setImageUrl(ImageExportService.IMAGE_PATH_PREFIX + "missing.png");
+    w.setImageUrl(ImageExportService.GENERATED_PREFIX + "missing.png");
     when(wrestlerRepository.findAll()).thenReturn(List.of(w));
 
     byte[] zip = service.exportImages();
@@ -126,7 +127,7 @@ class ImageExportServiceTest {
     Path imgFile = tempDir.resolve("shared.png");
     Files.write(imgFile, new byte[] {9});
 
-    String url = ImageExportService.IMAGE_PATH_PREFIX + "shared.png";
+    String url = ImageExportService.GENERATED_PREFIX + "shared.png";
     Wrestler w1 = new Wrestler();
     w1.setImageUrl(url);
     Wrestler w2 = new Wrestler();
@@ -154,7 +155,7 @@ class ImageExportServiceTest {
   void exportImages_allEntityTypes_collected() throws IOException {
     Path img = tempDir.resolve("x.png");
     Files.write(img, new byte[] {7});
-    String url = ImageExportService.IMAGE_PATH_PREFIX + "x.png";
+    String url = ImageExportService.GENERATED_PREFIX + "x.png";
 
     when(wrestlerRepository.findAll()).thenReturn(List.of());
     Faction f = new Faction();
