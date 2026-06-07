@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,34 +31,76 @@ import org.springframework.transaction.annotation.Transactional;
  * Integration tests for {@link UniverseService}. Exercises real H2 round-trips to catch sequence /
  * identity bugs that unit tests with mocks cannot detect.
  */
-@Transactional
 class UniverseServiceIT extends ManagementIntegrationTest {
 
   @Autowired private UniverseService universeService;
 
+  /** Remove any universes created during a test, restoring the seeded Default Universe only. */
+  @AfterEach
+  void cleanup() {
+    universeService.findAll().stream()
+        .filter(u -> u.getId() != null && u.getId() != 1L)
+        .forEach(u -> universeService.delete(u.getId()));
+  }
+
+  // ── Sequence regression tests ────────────────────────────────────────────
+
   @Test
+  @Transactional
   void createUniverse_afterSeededDefault_getsUniqueId() {
-    // The "Default Universe" is seeded in V75 with explicit id=1 via MERGE INTO.
-    // If the H2 identity sequence was not reset (V92), this second INSERT would
-    // also generate id=1 and throw a PK violation.
-    Universe second =
-        Universe.builder().name("Test Universe Alpha").type(UniverseType.GLOBAL).build();
-    Universe saved = universeService.save(second);
+    // V75 seeds Default Universe with explicit id=1. Without V92 sequence reset
+    // the next INSERT generates id=1 and throws a PK violation.
+    Universe saved =
+        universeService.save(
+            Universe.builder().name("Test Universe Alpha").type(UniverseType.GLOBAL).build());
 
     assertThat(saved.getId()).isNotNull();
     assertThat(saved.getId()).isNotEqualTo(1L);
   }
 
   @Test
+  @Transactional
   void createMultipleUniverses_eachGetsDistinctId() {
-    Universe u1 = Universe.builder().name("League Universe").type(UniverseType.LEAGUE).build();
-    Universe u2 = Universe.builder().name("Fantasy Universe").type(UniverseType.GLOBAL).build();
-
-    Universe saved1 = universeService.save(u1);
-    Universe saved2 = universeService.save(u2);
+    Universe saved1 =
+        universeService.save(
+            Universe.builder().name("League Universe").type(UniverseType.LEAGUE).build());
+    Universe saved2 =
+        universeService.save(
+            Universe.builder().name("Fantasy Universe").type(UniverseType.GLOBAL).build());
 
     assertThat(saved1.getId()).isNotNull();
     assertThat(saved2.getId()).isNotNull();
     assertThat(saved1.getId()).isNotEqualTo(saved2.getId());
+  }
+
+  // ── Cache eviction tests ─────────────────────────────────────────────────
+
+  @Test
+  void save_newUniverse_appearsInFindAll() {
+    // Prime the cache with the current list (Default Universe only).
+    List<Universe> before = universeService.findAll();
+    int sizeBefore = before.size();
+
+    // save() must evict the cache so the next findAll() returns the new row.
+    universeService.save(
+        Universe.builder().name("Cache Test Universe").type(UniverseType.GLOBAL).build());
+
+    List<Universe> after = universeService.findAll();
+    assertThat(after).hasSize(sizeBefore + 1);
+    assertThat(after).anyMatch(u -> "Cache Test Universe".equals(u.getName()));
+  }
+
+  @Test
+  void delete_existingUniverse_disappearsFromFindAll() {
+    Universe created =
+        universeService.save(
+            Universe.builder().name("To Be Deleted").type(UniverseType.GLOBAL).build());
+    // Prime cache with the list that includes the new universe.
+    assertThat(universeService.findAll()).anyMatch(u -> "To Be Deleted".equals(u.getName()));
+
+    // delete() must evict the cache so the next findAll() no longer returns it.
+    universeService.delete(created.getId());
+
+    assertThat(universeService.findAll()).noneMatch(u -> "To Be Deleted".equals(u.getName()));
   }
 }
