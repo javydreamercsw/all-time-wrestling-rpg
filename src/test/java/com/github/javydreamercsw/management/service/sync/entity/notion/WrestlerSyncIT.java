@@ -122,7 +122,8 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     // Verify the wrestler in the database (use eager-loading query to access wrestlerStates)
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findByExternalIdWithStates(wrestlerId);
     assertThat(wrestlerOpt).isPresent();
-    Wrestler wrestler = wrestlerOpt.get();
+    Wrestler wrestler =
+        wrestlerRepository.findByIdWithStates(wrestlerOpt.get().getId()).orElseThrow();
     assertThat(wrestler.getName()).isEqualTo("Test Wrestler");
     assertThat(wrestler.getFans(null)).isEqualTo(100_000L);
 
@@ -137,7 +138,8 @@ class WrestlerSyncIT extends ManagementIntegrationTest {
     Optional<Wrestler> updatedWrestlerOpt =
         wrestlerRepository.findByExternalIdWithStates(wrestlerId);
     assertThat(updatedWrestlerOpt).isPresent();
-    Wrestler updatedWrestler = updatedWrestlerOpt.get();
+    Wrestler updatedWrestler =
+        wrestlerRepository.findByIdWithStates(updatedWrestlerOpt.get().getId()).orElseThrow();
     assertThat(updatedWrestler.getName()).isEqualTo("Test Wrestler Updated");
     assertThat(updatedWrestler.getFans(1L)).isEqualTo(120_000L);
   }

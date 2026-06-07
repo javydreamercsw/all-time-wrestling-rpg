@@ -198,7 +198,7 @@ public class CampaignService {
     campaignStateRepository.save(state);
     campaign.setState(state);
 
-    updateAbilityCards(campaign);
+    alignmentService.updateAbilityCards(campaign);
 
     campaign = campaignRepository.save(campaign);
 
@@ -431,6 +431,8 @@ public class CampaignService {
               }
               // Initialize collections used in many views/criteria
               campaign.getWrestler().getReigns().size();
+              // Initialize alignments to prevent LazyInitializationException in
+              // CampaignDashboardView
               campaign.getWrestler().getAlignments().size();
               campaign.getWrestler().getWrestlerStates().size();
               return campaign;
@@ -942,147 +944,6 @@ public class CampaignService {
     campaign.getWrestler().getReigns().size();
 
     return chapterService.isChapterComplete(campaign.getState());
-  }
-
-  /**
-   * Updates the wrestler's available ability cards based on their alignment and level. If the
-   * wrestler has turned (changed alignment), all current cards are removed and the system resets
-   * card inventory based on the current level.
-   *
-   * @param campaign The campaign to update.
-   */
-  public void updateAbilityCards(@NonNull Campaign campaign) {
-    Wrestler wrestler = campaign.getWrestler();
-    Optional<WrestlerAlignment> alignmentOpt = wrestlerAlignmentRepository.findByWrestler(wrestler);
-
-    if (alignmentOpt.isEmpty()) {
-      return; // No alignment tracking yet
-    }
-
-    WrestlerAlignment alignment = alignmentOpt.get();
-    CampaignState state = campaign.getState();
-    List<CampaignAbilityCard> currentCards = state.getActiveCards();
-
-    // Check for alignment mismatch (Turn happened)
-    boolean alignmentChanged =
-        currentCards.stream().anyMatch(c -> c.getAlignmentType() != alignment.getAlignmentType());
-
-    if (alignmentChanged) {
-      // Discard all cards of wrong alignment
-      currentCards.clear();
-      recalculatePendingPicks(state, alignment);
-      log.info(
-          "Wrestler {} turned. Card inventory cleared and picks recalculated.", wrestler.getName());
-    }
-
-    state.setActiveCards(currentCards);
-    campaignStateRepository.save(state);
-  }
-
-  private void recalculatePendingPicks(
-      @NonNull final CampaignState state, @NonNull final WrestlerAlignment alignment) {
-    int level = alignment.getLevel();
-    AlignmentType type = alignment.getAlignmentType();
-
-    state.setPendingL1Picks(0);
-    state.setPendingL2Picks(0);
-    state.setPendingL3Picks(0);
-
-    if (type == AlignmentType.FACE) {
-      if (level >= 1 && level < 5) {
-        state.setPendingL1Picks(1);
-      }
-      if (level >= 4) {
-        state.setPendingL2Picks(1);
-      }
-      if (level >= 5) {
-        state.setPendingL3Picks(1);
-      }
-    } else {
-      // HEEL
-      if (level >= 1 && level < 4) {
-        state.setPendingL1Picks(1);
-      }
-      if (level >= 4) {
-        state.setPendingL2Picks(1);
-      }
-      if (level >= 5) {
-        state.setPendingL1Picks(1); // Regain L1 slot
-      }
-    }
-  }
-
-  /**
-   * Handles track level changes, applying gain/loss rules for ability cards.
-   *
-   * @param campaign The campaign.
-   * @param oldLevel The previous level.
-   * @param newLevel The new level.
-   */
-  public void handleLevelChange(@NonNull Campaign campaign, int oldLevel, int newLevel) {
-    Wrestler wrestler = campaign.getWrestler();
-    WrestlerAlignment alignment =
-        wrestlerAlignmentRepository
-            .findByWrestler(wrestler)
-            .orElseThrow(() -> new IllegalStateException("Alignment not found"));
-
-    AlignmentType type = alignment.getAlignmentType();
-    CampaignState state = campaign.getState();
-    List<CampaignAbilityCard> cards = state.getActiveCards();
-
-    // Grant first pick when reaching Level 1 from 0 (Neutral)
-    if (oldLevel == 0 && newLevel >= 1 && type != AlignmentType.NEUTRAL) {
-      log.debug("Reached Level 1 {}: Eligible for first Level 1 card.", type);
-      state.setPendingL1Picks(state.getPendingL1Picks() + 1);
-    }
-
-    // Rules logic
-    if (type == AlignmentType.FACE) {
-      // Face Level 4: Gain a level 2 card
-      if (oldLevel < 4 && newLevel >= 4) {
-        log.debug("Face reached Level 4: Eligible for Level 2 card.");
-        state.setPendingL2Picks(state.getPendingL2Picks() + 1);
-      }
-      // Face Level 5: Gain a level 3 card, lose a level 1 card
-      if (oldLevel < 5 && newLevel >= 5) {
-        log.debug("Face reached Level 5: Gain Level 3 card, Lose Level 1 card.");
-        removeOneCardOfLevel(cards, 1);
-        state.setPendingL3Picks(state.getPendingL3Picks() + 1);
-        // If they had no L1 card yet, we might want to decrement pending L1 picks instead?
-        if (state.getPendingL1Picks() > 0) {
-          state.setPendingL1Picks(state.getPendingL1Picks() - 1);
-        }
-      }
-    } else {
-      // Heel Level 4: Gain a level 2 card, lose a level 1 card
-      if (oldLevel < 4 && newLevel >= 4) {
-        log.debug("Heel reached Level 4: Gain Level 2 card, Lose Level 1 card.");
-        removeOneCardOfLevel(cards, 1);
-        state.setPendingL2Picks(state.getPendingL2Picks() + 1);
-        if (state.getPendingL1Picks() > 0) {
-          state.setPendingL1Picks(state.getPendingL1Picks() - 1);
-        }
-      }
-      // Heel Level 5: Gain another level 1 card
-      if (oldLevel < 5 && newLevel >= 5) {
-        log.debug("Heel reached Level 5: Eligible for another Level 1 card.");
-        state.setPendingL1Picks(state.getPendingL1Picks() + 1);
-      }
-    }
-
-    campaignStateRepository.save(state);
-  }
-
-  private void removeOneCardOfLevel(
-      @NonNull final List<CampaignAbilityCard> cards, final int level) {
-    cards.stream()
-        .filter(c -> c.getLevel() == level)
-        .findFirst()
-        .ifPresent(
-            card -> {
-              cards.remove(card);
-              log.debug("Removed Level {} card: {}", level, card.getName());
-            });
   }
 
   /**

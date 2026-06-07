@@ -272,26 +272,6 @@ class CampaignServiceTest {
   }
 
   @Test
-  void testHandleLevelChange_GainedLevel() {
-    Wrestler wrestler = new Wrestler();
-    Campaign campaign = new Campaign();
-    campaign.setWrestler(wrestler);
-    CampaignState state = new CampaignState();
-    state.setActiveCards(new ArrayList<>());
-    campaign.setState(state);
-
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.FACE);
-    alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
-    campaignService.handleLevelChange(campaign, 0, 1);
-
-    assertThat(state.getPendingL1Picks()).isEqualTo(1);
-    verify(campaignStateRepository).save(state);
-  }
-
-  @Test
   void testProcessMatchResult_Win() {
     Wrestler wrestler = new Wrestler();
     Campaign campaign = new Campaign();
