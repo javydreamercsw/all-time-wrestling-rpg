@@ -355,7 +355,9 @@ public class CampaignService {
   private List<Wrestler> freeAgents(final Wrestler... excluded) {
     List<Wrestler> free = new ArrayList<>(wrestlerRepository.findAll());
     for (Wrestler w : excluded) {
-      if (w != null) free.remove(w);
+      if (w != null) {
+        free.remove(w);
+      }
     }
     return free;
   }
