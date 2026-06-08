@@ -156,6 +156,8 @@ class GameSettingServiceIT extends ManagementIntegrationTest {
 
     List<GameSetting> all = gameSettingService.findAll();
 
-    assertThat(all).extracting(GameSetting::getId).contains("find_all_key_a", "find_all_key_b");
+    assertThat(all)
+        .extracting(GameSetting::getSettingKey)
+        .contains("find_all_key_a", "find_all_key_b");
   }
 }

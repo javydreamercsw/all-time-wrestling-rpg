@@ -25,9 +25,11 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -43,19 +45,26 @@ class GameSettingServiceTest {
 
   @Mock private GameSettingRepository repository;
   @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private UniverseContextService universeContextService;
 
   @InjectMocks private GameSettingService service;
 
+  @BeforeEach
+  void setUp() {
+    // Return null universeId so tests resolve against global (NULL) rows by default
+    org.mockito.Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(null);
+  }
+
   private GameSetting setting(final String key, final String value) {
     GameSetting s = new GameSetting();
-    s.setId(key);
+    s.setSettingKey(key);
     s.setValue(value);
     return s;
   }
 
   @Test
   void isWearAndTearEnabled_settingExists_returnsValue() {
-    when(repository.findById(GameSettingService.WEAR_AND_TEAR_ENABLED_KEY))
+    when(repository.findGlobal(GameSettingService.WEAR_AND_TEAR_ENABLED_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.WEAR_AND_TEAR_ENABLED_KEY, "false")));
 
     assertThat(service.isWearAndTearEnabled()).isFalse();
@@ -63,7 +72,7 @@ class GameSettingServiceTest {
 
   @Test
   void isWearAndTearEnabled_settingMissing_returnsDefaultTrue() {
-    when(repository.findById(GameSettingService.WEAR_AND_TEAR_ENABLED_KEY))
+    when(repository.findGlobal(GameSettingService.WEAR_AND_TEAR_ENABLED_KEY))
         .thenReturn(Optional.empty());
 
     assertThat(service.isWearAndTearEnabled()).isTrue();
@@ -71,7 +80,7 @@ class GameSettingServiceTest {
 
   @Test
   void isStatusCardsEnabled_settingExists_returnsValue() {
-    when(repository.findById(GameSettingService.STATUS_CARDS_ENABLED_KEY))
+    when(repository.findGlobal(GameSettingService.STATUS_CARDS_ENABLED_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.STATUS_CARDS_ENABLED_KEY, "false")));
 
     assertThat(service.isStatusCardsEnabled()).isFalse();
@@ -79,7 +88,7 @@ class GameSettingServiceTest {
 
   @Test
   void isStatusCardsEnabled_settingMissing_returnsDefaultTrue() {
-    when(repository.findById(GameSettingService.STATUS_CARDS_ENABLED_KEY))
+    when(repository.findGlobal(GameSettingService.STATUS_CARDS_ENABLED_KEY))
         .thenReturn(Optional.empty());
 
     assertThat(service.isStatusCardsEnabled()).isTrue();
@@ -87,7 +96,7 @@ class GameSettingServiceTest {
 
   @Test
   void isAiNewsEnabled_settingExists_returnsValue() {
-    when(repository.findById(GameSettingService.AI_NEWS_ENABLED_KEY))
+    when(repository.findGlobal(GameSettingService.AI_NEWS_ENABLED_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.AI_NEWS_ENABLED_KEY, "false")));
 
     assertThat(service.isAiNewsEnabled()).isFalse();
@@ -95,14 +104,15 @@ class GameSettingServiceTest {
 
   @Test
   void isAiNewsEnabled_settingMissing_returnsDefaultTrue() {
-    when(repository.findById(GameSettingService.AI_NEWS_ENABLED_KEY)).thenReturn(Optional.empty());
+    when(repository.findGlobal(GameSettingService.AI_NEWS_ENABLED_KEY))
+        .thenReturn(Optional.empty());
 
     assertThat(service.isAiNewsEnabled()).isTrue();
   }
 
   @Test
   void getNewsRumorChance_settingExists_returnsValue() {
-    when(repository.findById(GameSettingService.NEWS_RUMOR_CHANCE_KEY))
+    when(repository.findGlobal(GameSettingService.NEWS_RUMOR_CHANCE_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.NEWS_RUMOR_CHANCE_KEY, "35")));
 
     assertThat(service.getNewsRumorChance()).isEqualTo(35);
@@ -110,7 +120,7 @@ class GameSettingServiceTest {
 
   @Test
   void getNewsRumorChance_settingMissing_returnsDefault20() {
-    when(repository.findById(GameSettingService.NEWS_RUMOR_CHANCE_KEY))
+    when(repository.findGlobal(GameSettingService.NEWS_RUMOR_CHANCE_KEY))
         .thenReturn(Optional.empty());
 
     assertThat(service.getNewsRumorChance()).isEqualTo(20);
@@ -118,7 +128,7 @@ class GameSettingServiceTest {
 
   @Test
   void getNewsStrategy_settingExists_returnsValue() {
-    when(repository.findById(GameSettingService.NEWS_STRATEGY_KEY))
+    when(repository.findGlobal(GameSettingService.NEWS_STRATEGY_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.NEWS_STRATEGY_KEY, "SHOW")));
 
     assertThat(service.getNewsStrategy()).isEqualTo("SHOW");
@@ -126,7 +136,7 @@ class GameSettingServiceTest {
 
   @Test
   void getNewsStrategy_settingMissing_returnsDefaultSegment() {
-    when(repository.findById(GameSettingService.NEWS_STRATEGY_KEY)).thenReturn(Optional.empty());
+    when(repository.findGlobal(GameSettingService.NEWS_STRATEGY_KEY)).thenReturn(Optional.empty());
 
     assertThat(service.getNewsStrategy()).isEqualTo("SEGMENT");
   }
@@ -134,7 +144,7 @@ class GameSettingServiceTest {
   @Test
   void getCurrentGameDate_settingExists_returnsParsedDate() {
     LocalDate date = LocalDate.of(2025, 6, 15);
-    when(repository.findById(GameSettingService.CURRENT_GAME_DATE_KEY))
+    when(repository.findGlobal(GameSettingService.CURRENT_GAME_DATE_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.CURRENT_GAME_DATE_KEY, "2025-06-15")));
 
     assertThat(service.getCurrentGameDate()).isEqualTo(date);
@@ -142,7 +152,7 @@ class GameSettingServiceTest {
 
   @Test
   void getCurrentGameDate_settingMissing_returnsToday() {
-    when(repository.findById(GameSettingService.CURRENT_GAME_DATE_KEY))
+    when(repository.findGlobal(GameSettingService.CURRENT_GAME_DATE_KEY))
         .thenReturn(Optional.empty());
 
     LocalDate result = service.getCurrentGameDate();
@@ -158,7 +168,7 @@ class GameSettingServiceTest {
     LocalDate newDate = LocalDate.of(2025, 6, 15);
 
     // getCurrentGameDate() -> old date
-    when(repository.findById(GameSettingService.CURRENT_GAME_DATE_KEY))
+    when(repository.findGlobal(GameSettingService.CURRENT_GAME_DATE_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.CURRENT_GAME_DATE_KEY, "2025-01-01")));
     GameSetting existingSetting = setting(GameSettingService.CURRENT_GAME_DATE_KEY, "2025-01-01");
     when(repository.save(any(GameSetting.class))).thenReturn(existingSetting);
@@ -172,7 +182,7 @@ class GameSettingServiceTest {
   void saveCurrentGameDate_sameDateAsExisting_doesNotPublishEvent() {
     LocalDate date = LocalDate.of(2025, 6, 15);
 
-    when(repository.findById(GameSettingService.CURRENT_GAME_DATE_KEY))
+    when(repository.findGlobal(GameSettingService.CURRENT_GAME_DATE_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.CURRENT_GAME_DATE_KEY, "2025-06-15")));
     GameSetting existingSetting = setting(GameSettingService.CURRENT_GAME_DATE_KEY, "2025-06-15");
     when(repository.save(any(GameSetting.class))).thenReturn(existingSetting);
@@ -185,7 +195,7 @@ class GameSettingServiceTest {
   @Test
   void findById_delegatesToRepository() {
     GameSetting gs = setting("some_key", "some_value");
-    when(repository.findById("some_key")).thenReturn(Optional.of(gs));
+    when(repository.findGlobal("some_key")).thenReturn(Optional.of(gs));
 
     Optional<GameSetting> result = service.findById("some_key");
 
