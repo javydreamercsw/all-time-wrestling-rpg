@@ -103,14 +103,20 @@ public class NpcService {
   public List<Npc> findAllByType(final String npcType) {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAllByNpcType(npcType).stream()
-        .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
+        .filter(
+            npc ->
+                npc.getExpansionCode() == null
+                    || enabledExpansions.contains(npc.getExpansionCode()))
         .collect(Collectors.toList());
   }
 
   public List<Npc> findAllIncludingInactive() {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAll().stream()
-        .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
+        .filter(
+            npc ->
+                npc.getExpansionCode() == null
+                    || enabledExpansions.contains(npc.getExpansionCode()))
         .collect(Collectors.toList());
   }
 
@@ -118,7 +124,10 @@ public class NpcService {
   public List<Npc> findAll() {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAll().stream()
-        .filter(npc -> enabledExpansions.contains(npc.getExpansionCode()))
+        .filter(
+            npc ->
+                npc.getExpansionCode() == null
+                    || enabledExpansions.contains(npc.getExpansionCode()))
         .collect(Collectors.toList());
   }
 
