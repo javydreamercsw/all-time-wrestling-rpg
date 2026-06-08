@@ -354,7 +354,7 @@ class SecurityServiceIT extends ManagementIntegrationTest {
       roles = {"ADMIN", "PLAYER"})
   void testAdminCanSaveGameSetting() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("test_key");
+    gameSetting.setSettingKey("test_key");
     gameSetting.setValue("test_value");
     gameSettingService.save(gameSetting);
     // No exception means success
@@ -366,7 +366,7 @@ class SecurityServiceIT extends ManagementIntegrationTest {
       roles = {"BOOKER", "PLAYER"})
   void testBookerCanSaveGameSetting() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("test_key_booker");
+    gameSetting.setSettingKey("test_key_booker");
     gameSetting.setValue("test_value_booker");
     gameSettingService.save(gameSetting);
     // No exception means success
@@ -376,7 +376,7 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "player", roles = "PLAYER")
   void testPlayerCannotSaveGameSetting() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("test_key_player");
+    gameSetting.setSettingKey("test_key_player");
     gameSetting.setValue("test_value_player");
     Assertions.assertThrows(
         AccessDeniedException.class, () -> gameSettingService.save(gameSetting));
@@ -386,7 +386,7 @@ class SecurityServiceIT extends ManagementIntegrationTest {
   @WithCustomMockUser(username = "viewer", roles = "VIEWER")
   void testViewerCannotSaveGameSetting() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("test_key_viewer");
+    gameSetting.setSettingKey("test_key_viewer");
     gameSetting.setValue("test_value_viewer");
     Assertions.assertThrows(
         AccessDeniedException.class, () -> gameSettingService.save(gameSetting));

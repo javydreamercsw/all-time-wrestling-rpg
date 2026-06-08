@@ -18,22 +18,38 @@ package com.github.javydreamercsw.management.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "game_setting")
+@Table(
+    name = "game_setting",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "uq_game_setting_key_universe",
+            columnNames = {"setting_key", "universe_id"}))
 @Getter
 @Setter
 public class GameSetting {
 
   @Id
-  @Column(name = "setting_key", nullable = false, unique = true)
-  @NotNull private String id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id")
+  private Long id;
+
+  @Column(name = "setting_key", nullable = false)
+  @NotNull private String settingKey;
 
   @Column(name = "setting_value", nullable = false)
   @NotNull private String value;
+
+  /** NULL means this is a global default; non-null scopes the setting to a specific universe. */
+  @Column(name = "universe_id")
+  private Long universeId;
 }
