@@ -37,7 +37,7 @@
     <jacoco.notion.it.destFile>${project.build.directory}/jacoco-notion-it.exec</jacoco.notion.it.destFile>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.ut.destFile>${project.build.directory}/jacoco.exec</jacoco.ut.destFile>
-    <jacoco.version>0.8.14</jacoco.version>
+    <jacoco.version>0.8.15</jacoco.version>
     <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
     <lombok.version>1.18.46</lombok.version>
