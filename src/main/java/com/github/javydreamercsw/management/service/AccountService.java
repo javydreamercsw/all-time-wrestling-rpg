@@ -121,6 +121,10 @@ public class AccountService {
             });
   }
 
+  public void hardDelete(final Long id) {
+    accountRepository.deleteById(id);
+  }
+
   public void enable(final Long id) {
     accountRepository
         .findById(id)

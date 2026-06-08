@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.security.PasswordValidator;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -104,7 +105,15 @@ public class AccountFormDialog extends Dialog {
       role.setValue(account.getRoles().iterator().next().getName());
     }
 
+    Checkbox enabled = new Checkbox("Enabled");
+    enabled.setId("enabled-field");
+    binder.bind(enabled, "enabled");
+    enabled.setVisible(account.getId() != null);
+
     formLayout.add(username, email, password, role);
+    if (account.getId() != null) {
+      formLayout.add(enabled);
+    }
     add(formLayout);
 
     Button saveButton = new Button("Save");
