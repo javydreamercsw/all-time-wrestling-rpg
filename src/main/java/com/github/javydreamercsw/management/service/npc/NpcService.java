@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionToggledEv
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseExpansionToggledEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -107,6 +108,23 @@ public class NpcService {
             npc ->
                 npc.getExpansionCode() == null
                     || enabledExpansions.contains(npc.getExpansionCode()))
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Returns all NPCs of a given type without expansion filtering. Safe to call from background
+   * threads.
+   */
+  public List<Npc> findAllByTypeUnfiltered(final String npcType) {
+    return npcRepository.findAllByNpcType(npcType).stream()
+        .sorted(Comparator.comparing(Npc::getName))
+        .collect(Collectors.toList());
+  }
+
+  /** Returns all NPCs without expansion filtering. Safe to call from background threads. */
+  public List<Npc> findAllUnfiltered() {
+    return npcRepository.findAll().stream()
+        .sorted(Comparator.comparing(Npc::getName))
         .collect(Collectors.toList());
   }
 

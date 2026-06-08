@@ -99,11 +99,11 @@ class NarrationDialogTest {
     wrestler.setGender(Gender.MALE);
 
     when(segmentService.findByIdWithDetails(anyLong())).thenReturn(Optional.of(segment));
-    when(npcService.findAllByType("Referee")).thenReturn(new ArrayList<>());
-    when(npcService.findAllByType("Commissioner")).thenReturn(new ArrayList<>());
-    when(npcService.findAllByType("Commentator")).thenReturn(new ArrayList<>());
-    when(npcService.findAllByType("Announcer")).thenReturn(new ArrayList<>());
-    when(npcService.findAll()).thenReturn(new ArrayList<>());
+    when(npcService.findAllByTypeUnfiltered("Referee")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByTypeUnfiltered("Commissioner")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByTypeUnfiltered("Commentator")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByTypeUnfiltered("Announcer")).thenReturn(new ArrayList<>());
+    when(npcService.findAllUnfiltered()).thenReturn(new ArrayList<>());
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     when(wrestlerStatsService.findAllAsDTO(anyLong())).thenReturn(new ArrayList<>());
     when(wrestlerStatsService.findAllBySegment(any(), anyLong())).thenReturn(new ArrayList<>());
@@ -308,17 +308,18 @@ class NarrationDialogTest {
   // ── Dropdown population tests ─────────────────────────────────────────────
 
   /**
-   * Regression test: PreloadedData.load() must return commentator NPCs even when their
-   * expansionCode is null (created by CommentaryService without an expansion code).
+   * Regression: PreloadedData.load() must use findAllByTypeUnfiltered so that the expansion filter
+   * (which silently returns empty on background threads where VaadinSession is null) cannot cause
+   * the dropdowns to appear empty.
    */
   @Test
-  void preloadedData_load_commentatorsWithNullExpansionCode_notFiltered() {
+  void preloadedData_load_usesUnfilteredMethods() {
     Npc commentator = new Npc();
     commentator.setName("Jane Commentator");
     commentator.setNpcType("Commentator");
     commentator.setExpansionCode(null);
 
-    when(npcService.findAllByType("Commentator")).thenReturn(List.of(commentator));
+    when(npcService.findAllByTypeUnfiltered("Commentator")).thenReturn(List.of(commentator));
 
     NarrationDialog.PreloadedData preloaded =
         NarrationDialog.PreloadedData.load(
@@ -336,11 +337,11 @@ class NarrationDialogTest {
     Npc announcer = npc("Lena Voss", "Announcer", "BASE_GAME");
     Npc manager = npc("Colonel Mustafa", "Manager", "RUMBLE");
 
-    when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
-    when(npcService.findAllByType("Commissioner")).thenReturn(List.of(commissioner));
-    when(npcService.findAllByType("Commentator")).thenReturn(List.of(commentator));
-    when(npcService.findAllByType("Announcer")).thenReturn(List.of(announcer));
-    when(npcService.findAll())
+    when(npcService.findAllByTypeUnfiltered("Referee")).thenReturn(List.of(referee));
+    when(npcService.findAllByTypeUnfiltered("Commissioner")).thenReturn(List.of(commissioner));
+    when(npcService.findAllByTypeUnfiltered("Commentator")).thenReturn(List.of(commentator));
+    when(npcService.findAllByTypeUnfiltered("Announcer")).thenReturn(List.of(announcer));
+    when(npcService.findAllUnfiltered())
         .thenReturn(List.of(referee, commissioner, commentator, announcer, manager));
 
     NarrationDialog.PreloadedData preloaded =
@@ -351,7 +352,7 @@ class NarrationDialogTest {
     assertThat(preloaded.commissioners()).hasSize(1);
     assertThat(preloaded.commentators()).hasSize(1);
     assertThat(preloaded.announcers()).hasSize(1);
-    assertThat(preloaded.otherNpcs()).hasSize(1); // manager only — others are filtered out
+    assertThat(preloaded.otherNpcs()).hasSize(1); // manager only — others filtered out
   }
 
   @Test
