@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.universe;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
@@ -27,6 +28,8 @@ import com.github.javydreamercsw.management.service.export.ImageExportService;
 import com.github.javydreamercsw.management.service.export.ImageImportService;
 import com.github.javydreamercsw.management.service.export.JsonExportWriter;
 import com.github.javydreamercsw.management.service.export.UniverseExportService;
+import com.github.javydreamercsw.management.service.universe.InviteService;
+import com.github.javydreamercsw.management.service.universe.JoinRequestService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -84,6 +87,9 @@ public class UniverseListView extends Main {
   private final WrestlerStateRepository wrestlerStateRepository;
   private final ImageExportService imageExportService;
   private final ImageImportService imageImportService;
+  private final InviteService inviteService;
+  private final JoinRequestService joinRequestService;
+  private final SecurityUtils securityUtils;
   public final Grid<Universe> grid = new Grid<>(Universe.class, false);
 
   public UniverseListView(
@@ -97,7 +103,10 @@ public class UniverseListView extends Main {
       final JsonExportWriter jsonWriter,
       final WrestlerStateRepository wrestlerStateRepository,
       final ImageExportService imageExportService,
-      final ImageImportService imageImportService) {
+      final ImageImportService imageImportService,
+      final InviteService inviteService,
+      final JoinRequestService joinRequestService,
+      final SecurityUtils securityUtils) {
     this.universeService = universeService;
     this.membershipService = membershipService;
     this.accountService = accountService;
@@ -109,6 +118,9 @@ public class UniverseListView extends Main {
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.imageExportService = imageExportService;
     this.imageImportService = imageImportService;
+    this.inviteService = inviteService;
+    this.joinRequestService = joinRequestService;
+    this.securityUtils = securityUtils;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -220,11 +232,38 @@ public class UniverseListView extends Main {
                               wrestlerStateRepository)
                           .open());
 
+              Button inviteButton = new Button("Invites", new Icon(VaadinIcon.LINK));
+              inviteButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              inviteButton.setId("invite-members-button-" + universe.getId());
+              inviteButton.addClickListener(
+                  e ->
+                      securityUtils
+                          .getCurrentAccountId()
+                          .flatMap(accountService::get)
+                          .ifPresent(
+                              admin ->
+                                  new InviteManagementDialog(universe, inviteService, admin)
+                                      .open()));
+
+              Button requestsButton = new Button("Requests", new Icon(VaadinIcon.USERS));
+              requestsButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              requestsButton.setId("join-requests-button-" + universe.getId());
+              requestsButton.addClickListener(
+                  e ->
+                      securityUtils
+                          .getCurrentAccountId()
+                          .flatMap(accountService::get)
+                          .ifPresent(
+                              admin ->
+                                  new JoinRequestsDialog(universe, joinRequestService, admin)
+                                      .open()));
+
               Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
               deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               deleteButton.addClickListener(e -> confirmDelete(universe));
 
-              return new HorizontalLayout(editButton, exportButton, deleteButton);
+              return new HorizontalLayout(
+                  editButton, exportButton, inviteButton, requestsButton, deleteButton);
             })
         .setHeader("Actions");
   }
