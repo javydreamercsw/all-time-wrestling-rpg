@@ -83,6 +83,6 @@ public class UniverseInvite {
     if (expiresAt != null && Instant.now().isAfter(expiresAt)) {
       return false;
     }
-    return !(maxUses != null && useCount >= maxUses);
+    return !(maxUses != null) || !(useCount >= maxUses);
   }
 }
