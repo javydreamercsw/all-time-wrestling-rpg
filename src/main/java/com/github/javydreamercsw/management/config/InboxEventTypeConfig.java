@@ -120,4 +120,9 @@ public class InboxEventTypeConfig {
   @Qualifier("ACHIEVEMENT_UNLOCKED") InboxEventType achievementUnlocked() {
     return new InboxEventType("ACHIEVEMENT_UNLOCKED", "Achievement Unlocked");
   }
+
+  @Bean
+  @Qualifier("JOIN_REQUEST_SUBMITTED") InboxEventType joinRequestSubmitted() {
+    return new InboxEventType("JOIN_REQUEST_SUBMITTED", "Universe Join Request");
+  }
 }
