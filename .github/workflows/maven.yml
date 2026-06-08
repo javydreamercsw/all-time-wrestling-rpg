@@ -105,6 +105,8 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+      - name: Clear OpenRewrite POM cache (prevents stale RocksDB deserialization errors)
+        run: rm -rf ~/.rewrite ~/.m2/repository/.rewrite
       - name: OpenRewrite dry-run (fail if changes needed)
         run: mvn -B rewrite:dryRun
 
