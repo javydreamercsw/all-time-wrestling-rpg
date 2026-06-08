@@ -116,12 +116,18 @@ class JoinViewTest extends AbstractViewTest {
 
     simulateBeforeEnter(view, "join/valid-token", "token", "valid-token");
 
-    // Logged-in form shows display name field and submit button
+    // Logged-in form shows read-only username and email fields, and submit button
     assertThat(
             _get(
                 view,
                 com.vaadin.flow.component.textfield.TextField.class,
-                spec -> spec.withId("join-display-name")))
+                spec -> spec.withId("join-username-display")))
+        .isNotNull();
+    assertThat(
+            _get(
+                view,
+                com.vaadin.flow.component.textfield.EmailField.class,
+                spec -> spec.withId("join-email-display")))
         .isNotNull();
     assertThat(
             _get(

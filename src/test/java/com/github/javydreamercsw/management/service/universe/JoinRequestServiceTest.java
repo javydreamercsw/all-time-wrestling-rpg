@@ -128,7 +128,12 @@ class JoinRequestServiceTest {
   }
 
   @Test
-  void submitRequest_alreadyPending_throws() {
+  void submitRequest_alreadyPending_targeted_throws() {
+    UniverseInvite targeted = new UniverseInvite();
+    targeted.setId("tok-targeted");
+    targeted.setUniverse(universe);
+    targeted.setType(InviteType.TARGETED);
+
     when(requestRepository.findByUniverseAndAccountAndStatus(any(), any(), any()))
         .thenReturn(Optional.empty());
     UniverseJoinRequest pending = new UniverseJoinRequest();
@@ -137,9 +142,27 @@ class JoinRequestServiceTest {
             universe, requester, List.of(RequestStatus.PENDING)))
         .thenReturn(Optional.of(pending));
 
-    assertThatThrownBy(() -> service.submitRequest(invite, "Player One", null, requester))
+    assertThatThrownBy(() -> service.submitRequest(targeted, "Player One", null, requester))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("already pending");
+  }
+
+  @Test
+  void submitRequest_alreadyPending_community_returnsExisting() {
+    when(requestRepository.findByUniverseAndAccountAndStatus(any(), any(), any()))
+        .thenReturn(Optional.empty());
+    UniverseJoinRequest existing = new UniverseJoinRequest();
+    existing.setId(42L);
+    existing.setStatus(RequestStatus.PENDING);
+    when(requestRepository.findByUniverseAndAccountAndStatusIn(
+            universe, requester, List.of(RequestStatus.PENDING)))
+        .thenReturn(Optional.of(existing));
+
+    UniverseJoinRequest result = service.submitRequest(invite, "Player One", null, requester);
+
+    assertThat(result).isSameAs(existing);
+    verify(inviteService).recordUse(invite);
+    verify(requestRepository, never()).save(any());
   }
 
   // ── approveRequest ────────────────────────────────────────────────────────
@@ -174,14 +197,14 @@ class JoinRequestServiceTest {
   }
 
   @Test
-  void approveRequest_noLinkedAccount_doesNotCallAddMember() {
+  void approveRequest_noLinkedAccount_throws() {
     UniverseJoinRequest request = pendingRequest();
     request.setAccount(null);
     when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
 
-    service.approveRequest(1L, admin);
-
-    assertThat(request.getStatus()).isEqualTo(RequestStatus.APPROVED);
+    assertThatThrownBy(() -> service.approveRequest(1L, admin))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("no account is linked");
     verify(membershipService, never()).addMember(any(), any(), any());
   }
 

@@ -89,33 +89,49 @@ public class AccountServiceIT {
 
   @Test
   @WithCustomMockUser(roles = "ADMIN")
-  public void testDeleteAccount() {
+  public void testDeleteAccount_softDeletes_setsEnabledFalse() {
     Account account =
         accountService.createAccount(
             "delete_user", "Password123!", "delete@user.com", RoleName.PLAYER);
     assertNotNull(account.getId());
+    assertTrue(account.isEnabled());
 
     accountService.delete(account.getId());
-    assertFalse(accountService.get(account.getId()).isPresent());
+
+    Account found = accountService.get(account.getId()).orElseThrow();
+    assertFalse(found.isEnabled());
   }
 
   @Test
   @WithCustomMockUser(roles = "ADMIN")
-  public void testDeleteAccount_withUniverseMembership_doesNotThrowFkViolation() {
+  public void testEnableAccount_reEnablesDisabledAccount() {
+    Account account =
+        accountService.createAccount(
+            "enable_user", "Password123!", "enable@user.com", RoleName.PLAYER);
+    accountService.delete(account.getId());
+    assertFalse(accountService.get(account.getId()).orElseThrow().isEnabled());
+
+    accountService.enable(account.getId());
+
+    assertTrue(accountService.get(account.getId()).orElseThrow().isEnabled());
+  }
+
+  @Test
+  @WithCustomMockUser(roles = "ADMIN")
+  public void testDeleteAccount_withUniverseMembership_preservesMembership() {
     Account account =
         accountService.createAccount(
             "member_delete_user", "Password123!", "member@user.com", RoleName.PLAYER);
     assertNotNull(account.getId());
 
-    // Use the first available universe (created by DataInitializer at startup)
     var universe = universeRepository.findAll().get(0);
     universeMembershipService.addMember(universe, account, UniverseMemberRole.MEMBER);
     assertFalse(universeMembershipRepository.findByAccount(account).isEmpty());
 
     accountService.delete(account.getId());
 
-    assertFalse(accountService.get(account.getId()).isPresent());
-    assertTrue(universeMembershipRepository.findByAccount(account).isEmpty());
+    assertFalse(accountService.get(account.getId()).orElseThrow().isEnabled());
+    assertFalse(universeMembershipRepository.findByAccount(account).isEmpty());
   }
 
   @Test

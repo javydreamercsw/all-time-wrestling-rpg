@@ -118,41 +118,51 @@ public class JoinView extends VerticalLayout implements BeforeEnterObserver {
     add(new H2("Join " + invite.getUniverse().getName()));
     add(
         new Paragraph(
-            "Click below to submit your request to join. The admin will review it shortly."));
+            "Review your account details below and click Request to Join."
+                + " The admin will review it shortly."));
 
-    TextField nameField = new TextField("Your display name");
-    nameField.setId("join-display-name");
-    nameField.setWidthFull();
+    try {
+      Long accountId =
+          securityUtils
+              .getCurrentAccountId()
+              .orElseThrow(() -> new IllegalStateException("Not logged in"));
+      Account current =
+          accountService
+              .get(accountId)
+              .orElseThrow(() -> new IllegalStateException("Account not found"));
 
-    Button submitBtn = new Button("Request to Join");
-    submitBtn.setId("join-submit-button");
-    submitBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    submitBtn.addClickListener(
-        e -> {
-          String name = nameField.getValue().trim();
-          if (name.isBlank()) {
-            Notification.show("Please enter your display name.")
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            return;
-          }
-          try {
-            Long accountId =
-                securityUtils
-                    .getCurrentAccountId()
-                    .orElseThrow(() -> new IllegalStateException("Not logged in"));
-            Account current =
-                accountService
-                    .get(accountId)
-                    .orElseThrow(() -> new IllegalStateException("Account not found"));
-            joinRequestService.submitRequest(invite, name, null, current);
-            renderConfirmation();
-          } catch (Exception ex) {
-            log.warn("Failed to submit join request: {}", ex.getMessage());
-            Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
-          }
-        });
+      TextField usernameField = new TextField("Username");
+      usernameField.setId("join-username-display");
+      usernameField.setValue(current.getUsername());
+      usernameField.setReadOnly(true);
+      usernameField.setWidthFull();
 
-    add(nameField, submitBtn);
+      EmailField emailField = new EmailField("Email");
+      emailField.setId("join-email-display");
+      emailField.setValue(current.getEmail() != null ? current.getEmail() : "");
+      emailField.setReadOnly(true);
+      emailField.setWidthFull();
+
+      Button submitBtn = new Button("Request to Join");
+      submitBtn.setId("join-submit-button");
+      submitBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      submitBtn.addClickListener(
+          e -> {
+            try {
+              joinRequestService.submitRequest(
+                  invite, current.getUsername(), current.getEmail(), current);
+              renderConfirmation();
+            } catch (Exception ex) {
+              log.warn("Failed to submit join request: {}", ex.getMessage());
+              Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+          });
+
+      add(usernameField, emailField, submitBtn);
+    } catch (Exception ex) {
+      log.error("Failed to load account for join form", ex);
+      renderError("Could not load your account. Please try logging in again.");
+    }
   }
 
   private void renderRegistrationForm() {
@@ -174,9 +184,10 @@ public class JoinView extends VerticalLayout implements BeforeEnterObserver {
     confirmField.setId("join-confirm-password");
     confirmField.setWidthFull();
 
-    EmailField emailField = new EmailField("Email (optional)");
+    EmailField emailField = new EmailField("Email");
     emailField.setId("join-email");
     emailField.setWidthFull();
+    emailField.setRequiredIndicatorVisible(true);
 
     Button submitBtn = new Button("Create Account & Request to Join");
     submitBtn.setId("join-register-submit");
@@ -193,12 +204,20 @@ public class JoinView extends VerticalLayout implements BeforeEnterObserver {
             showError("Username is required.");
             return;
           }
+          if (email.isBlank()) {
+            showError("Email is required.");
+            return;
+          }
           if (password.isBlank()) {
             showError("Password is required.");
             return;
           }
           if (!password.equals(confirm)) {
             showError("Passwords do not match.");
+            return;
+          }
+          if (accountService.findByUsername(username).isPresent()) {
+            showError("Username '" + username + "' is already taken. Please choose another.");
             return;
           }
 

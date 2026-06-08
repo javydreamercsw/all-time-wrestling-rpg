@@ -136,17 +136,60 @@ class JoinRequestServiceIT extends ManagementIntegrationTest {
   }
 
   @Test
-  void submitTwice_withSameAccountPending_throws() {
-    joinRequestService.submitRequest(invite, "Requester", null, requester);
+  void submitTwice_community_existingPending_returnsExisting() {
+    UniverseJoinRequest first =
+        joinRequestService.submitRequest(invite, "Requester", null, requester);
 
-    assertThatThrownBy(() -> joinRequestService.submitRequest(invite, "Requester", null, requester))
+    UniverseJoinRequest second =
+        joinRequestService.submitRequest(invite, "Requester", null, requester);
+
+    assertThat(second.getId()).isEqualTo(first.getId());
+    assertThat(requestRepository.findAllByUniverse(universe)).hasSize(1);
+  }
+
+  @Test
+  void submitTwice_targeted_withSameAccountPending_throws() {
+    UniverseInvite targeted = inviteService.generateInvite(universe, InviteType.TARGETED, admin);
+    joinRequestService.submitRequest(targeted, "Requester", null, requester);
+
+    UniverseInvite targeted2 = inviteService.generateInvite(universe, InviteType.TARGETED, admin);
+    assertThatThrownBy(
+            () -> joinRequestService.submitRequest(targeted2, "Requester", null, requester))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("already pending");
   }
 
   @Test
+  void approveRequest_nullAccount_throws() {
+    UniverseJoinRequest request =
+        joinRequestService.submitRequest(invite, "Anonymous", "anon@test.com", null);
+    assertThat(request.getAccount()).isNull();
+
+    assertThatThrownBy(() -> joinRequestService.approveRequest(request.getId(), admin))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("no account is linked");
+    assertThat(membershipService.isMember(universe, requester)).isFalse();
+  }
+
+  @Test
+  void approveRequest_alreadyMember_stillApproves() {
+    membershipService.addMember(
+        universe,
+        requester,
+        com.github.javydreamercsw.management.domain.universe.UniverseMembership.UniverseMemberRole
+            .MEMBER);
+
+    UniverseJoinRequest request =
+        joinRequestService.submitRequest(invite, "Requester", null, requester);
+    joinRequestService.approveRequest(request.getId(), admin);
+
+    assertThat(requestRepository.findById(request.getId()).orElseThrow().getStatus())
+        .isEqualTo(RequestStatus.APPROVED);
+    assertThat(membershipService.isMember(universe, requester)).isTrue();
+  }
+
+  @Test
   void anonymousSubmit_thenLinkAccount_thenApprove_addsMember() {
-    // Simulates the self-registration flow: anonymous submit, then account linked
     UniverseJoinRequest request =
         joinRequestService.submitRequest(invite, "New Player", "new@test.com", null);
     assertThat(request.getAccount()).isNull();

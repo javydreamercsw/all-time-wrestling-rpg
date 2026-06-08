@@ -27,7 +27,6 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -107,24 +106,35 @@ class AccountServiceTest {
   }
 
   @Test
-  void testDelete() {
-    when(universeMembershipRepository.findByAccount(account)).thenReturn(List.of());
-
+  void testDelete_softDeletes_setsEnabledFalse() {
     accountService.delete(1L);
 
-    verify(universeMembershipRepository).findByAccount(account);
-    verify(accountRepository).deleteById(1L);
+    assertThat(account.isEnabled()).isFalse();
+    verify(accountRepository).save(account);
   }
 
   @Test
-  void testDelete_removesUniverseMembershipsFirst() {
-    UniverseMembership membership = new UniverseMembership();
-    when(universeMembershipRepository.findByAccount(account)).thenReturn(List.of(membership));
+  void testDelete_nonExistentId_doesNothing() {
+    accountService.delete(99L);
 
-    accountService.delete(1L);
+    verify(accountRepository, org.mockito.Mockito.never()).save(any());
+  }
 
-    verify(universeMembershipRepository).deleteAll(List.of(membership));
-    verify(accountRepository).deleteById(1L);
+  @Test
+  void testEnable_setsEnabledTrue() {
+    account.setEnabled(false);
+
+    accountService.enable(1L);
+
+    assertThat(account.isEnabled()).isTrue();
+    verify(accountRepository).save(account);
+  }
+
+  @Test
+  void testEnable_nonExistentId_doesNothing() {
+    accountService.enable(99L);
+
+    verify(accountRepository, org.mockito.Mockito.never()).save(any());
   }
 
   @Test

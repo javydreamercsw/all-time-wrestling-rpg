@@ -82,6 +82,11 @@ public class JoinRequestsDialog extends Dialog {
               Button approveBtn = new Button("Approve");
               approveBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_SMALL);
               approveBtn.addClickListener(e -> handleApprove(request));
+              if (request.getAccount() == null) {
+                approveBtn.setEnabled(false);
+                approveBtn.setTooltipText(
+                    "No account linked — requester must complete registration");
+              }
 
               Button rejectBtn = new Button("Reject");
               rejectBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_SMALL);

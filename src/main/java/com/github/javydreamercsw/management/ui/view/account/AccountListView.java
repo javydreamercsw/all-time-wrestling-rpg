@@ -118,35 +118,49 @@ public class AccountListView extends Main {
     grid.addColumn(enabledRenderer).setHeader("Enabled").setSortable(true).setFlexGrow(0);
     grid.addComponentColumn(
             account -> {
-              Button deleteButton = new Button("Delete", VaadinIcon.TRASH.create());
-              deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
-              deleteButton.setId("delete-button-" + account.getId());
-              deleteButton.addClickListener(
-                  e -> {
-                    if (accountService.canDelete(account)) {
-                      ConfirmDialog confirmDialog = new ConfirmDialog();
-                      confirmDialog.setHeader("Confirm Delete");
-                      confirmDialog.setText("Are you sure you want to delete this account?");
-
-                      confirmDialog.setConfirmButton(
-                          "Delete",
-                          event -> {
-                            accountService.delete(account.getId());
-                            refreshGrid();
-                          });
-                      confirmDialog.setConfirmButtonTheme("error");
-                      confirmDialog.setCancelable(true);
-                      confirmDialog.open();
-                    } else {
-                      new ConfirmDialog(
-                              "Cannot Delete Account",
-                              "This account is associated with a wrestler and cannot be deleted.",
-                              "OK",
-                              null)
-                          .open();
-                    }
-                  });
-              return deleteButton;
+              if (account.isEnabled()) {
+                Button disableButton = new Button("Disable", VaadinIcon.TRASH.create());
+                disableButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+                disableButton.setId("disable-button-" + account.getId());
+                disableButton.addClickListener(
+                    e -> {
+                      if (accountService.canDelete(account)) {
+                        ConfirmDialog confirmDialog = new ConfirmDialog();
+                        confirmDialog.setHeader("Disable Account");
+                        confirmDialog.setText(
+                            "This account will be disabled and cannot log in."
+                                + " You can re-enable it later.");
+                        confirmDialog.setConfirmButton(
+                            "Disable",
+                            event -> {
+                              accountService.delete(account.getId());
+                              refreshGrid();
+                            });
+                        confirmDialog.setConfirmButtonTheme("error");
+                        confirmDialog.setCancelable(true);
+                        confirmDialog.open();
+                      } else {
+                        new ConfirmDialog(
+                                "Cannot Disable Account",
+                                "This account is associated with a wrestler and cannot be"
+                                    + " disabled.",
+                                "OK",
+                                null)
+                            .open();
+                      }
+                    });
+                return disableButton;
+              } else {
+                Button enableButton = new Button("Enable", VaadinIcon.CHECK.create());
+                enableButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_SUCCESS);
+                enableButton.setId("enable-button-" + account.getId());
+                enableButton.addClickListener(
+                    e -> {
+                      accountService.enable(account.getId());
+                      refreshGrid();
+                    });
+                return enableButton;
+              }
             })
         .setFlexGrow(0);
   }

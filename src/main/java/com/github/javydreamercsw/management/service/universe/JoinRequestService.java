@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.universe;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseInvite;
+import com.github.javydreamercsw.management.domain.universe.UniverseInvite.InviteType;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest.RequestStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequestRepository;
@@ -81,14 +82,33 @@ public class JoinRequestService {
                     "Your account has been blocked from joining this universe.");
               });
 
-      // Deduplicate pending
-      requestRepository
-          .findByUniverseAndAccountAndStatusIn(universe, account, List.of(RequestStatus.PENDING))
-          .ifPresent(
-              p -> {
-                throw new IllegalStateException(
-                    "A join request for this universe is already pending.");
-              });
+      // For community invites: if a pending request already exists, return it silently rather
+      // than blocking the user. Community invites are multi-use and one pending request should
+      // not prevent additional uses of the same link by the same account.
+      if (invite.getType() == InviteType.COMMUNITY) {
+        var existing =
+            requestRepository.findByUniverseAndAccountAndStatusIn(
+                universe, account, List.of(RequestStatus.PENDING));
+        if (existing.isPresent()) {
+          log.info(
+              "Community invite used by '{}' — returning existing pending request {} for universe"
+                  + " {}",
+              requesterName,
+              existing.get().getId(),
+              universe.getName());
+          inviteService.recordUse(invite);
+          return existing.get();
+        }
+      } else {
+        // For targeted invites: deduplicate strictly
+        requestRepository
+            .findByUniverseAndAccountAndStatusIn(universe, account, List.of(RequestStatus.PENDING))
+            .ifPresent(
+                p -> {
+                  throw new IllegalStateException(
+                      "A join request for this universe is already pending.");
+                });
+      }
     }
 
     UniverseJoinRequest request = new UniverseJoinRequest();
@@ -127,7 +147,12 @@ public class JoinRequestService {
     request.setResolvedBy(resolvedBy);
     requestRepository.save(request);
 
-    if (request.getAccount() != null) {
+    if (request.getAccount() == null) {
+      throw new IllegalStateException(
+          "Cannot approve: no account is linked to this request. "
+              + "The requester must complete registration first.");
+    }
+    try {
       membershipService.addMember(
           request.getUniverse(), request.getAccount(), UniverseMemberRole.MEMBER);
       log.info(
@@ -135,8 +160,12 @@ public class JoinRequestService {
           requestId,
           request.getAccount().getUsername(),
           request.getUniverse().getName());
-    } else {
-      log.warn("Approved request {} has no linked account — member not added yet", requestId);
+    } catch (IllegalStateException alreadyMember) {
+      log.warn(
+          "Approved request {} but {} was already a member of {} — skipping addMember",
+          requestId,
+          request.getAccount().getUsername(),
+          request.getUniverse().getName());
     }
   }
 
