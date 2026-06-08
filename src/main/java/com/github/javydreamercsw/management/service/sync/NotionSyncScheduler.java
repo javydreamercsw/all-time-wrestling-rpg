@@ -185,21 +185,21 @@ public class NotionSyncScheduler {
 
     NotionSyncService.SyncResult result =
         switch (entityType) {
-          case SHOWS -> notionSyncService.syncShows(operationId, direction);
-          case WRESTLERS -> notionSyncService.syncWrestlers(operationId, direction);
-          case FACTIONS -> notionSyncService.syncFactions(operationId, direction);
-          case TEAMS -> notionSyncService.syncTeams(operationId, direction);
+          case SHOWS -> notionSyncService.syncShows(operationId);
+          case WRESTLERS -> notionSyncService.syncWrestlers(operationId);
+          case FACTIONS -> notionSyncService.syncFactions(operationId);
+          case TEAMS -> notionSyncService.syncTeams(operationId);
           case TEMPLATES -> notionSyncService.syncShowTemplates(operationId, direction);
-          case SEASONS -> notionSyncService.syncSeasons(operationId, direction);
-          case SHOW_TYPES -> notionSyncService.syncShowTypes(operationId, direction);
-          case INJURY_TYPES -> notionSyncService.syncInjuryTypes(operationId, direction);
+          case SEASONS -> notionSyncService.syncSeasons(operationId);
+          case SHOW_TYPES -> notionSyncService.syncShowTypes(operationId);
+          case INJURY_TYPES -> notionSyncService.syncInjuryTypes(operationId);
           case NPCS -> notionSyncService.syncNpcs(operationId, direction);
-          case TITLES -> notionSyncService.syncTitles(operationId, direction);
-          case RIVALRIES -> notionSyncService.syncRivalries(operationId, direction);
+          case TITLES -> notionSyncService.syncTitles(operationId);
+          case RIVALRIES -> notionSyncService.syncRivalries(operationId);
           case FACTION_RIVALRIES -> notionSyncService.syncFactionRivalries(operationId, direction);
-          case SEGMENTS -> notionSyncService.syncSegments(operationId, direction);
+          case SEGMENTS -> notionSyncService.syncSegments(operationId);
           case TITLE_REIGN -> notionSyncService.syncTitleReigns(operationId);
-          case INJURIES -> notionSyncService.syncInjuries(operationId, direction);
+          case INJURIES -> notionSyncService.syncInjuries(operationId);
         };
     if (result.isSuccess()) {
       syncProperties.setLastSyncTime(entityType.getKey(), LocalDateTime.now());

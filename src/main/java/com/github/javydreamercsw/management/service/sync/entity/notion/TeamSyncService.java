@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyUtil;
 import com.github.javydreamercsw.base.ai.notion.TeamPage;
 import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -170,8 +171,10 @@ public class TeamSyncService extends BaseSyncService {
 
     // Fallback to Member 1 and Member 2 if Members is empty
     if (dto.getMemberExternalIds().isEmpty()) {
-      dto.setWrestler1ExternalId(extractRelationId(rawProperties.get("Member 1")));
-      dto.setWrestler2ExternalId(extractRelationId(rawProperties.get("Member 2")));
+      dto.setWrestler1ExternalId(
+          NotionPropertyUtil.extractRelationId(rawProperties.get("Member 1")));
+      dto.setWrestler2ExternalId(
+          NotionPropertyUtil.extractRelationId(rawProperties.get("Member 2")));
     }
 
     // Fallback to names if IDs aren't present (less reliable but preserves old behavior)
@@ -183,8 +186,8 @@ public class TeamSyncService extends BaseSyncService {
     }
 
     // Extract relationship IDs
-    dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
-    String factionId = extractRelationId(rawProperties.get("Faction"));
+    dto.setManagerExternalId(NotionPropertyUtil.extractRelationId(rawProperties.get("Manager")));
+    String factionId = NotionPropertyUtil.extractRelationId(rawProperties.get("Faction"));
     if (factionId != null) {
       dto.setFactionName(factionId); // Using ID as placeholder
     }
@@ -221,40 +224,6 @@ public class TeamSyncService extends BaseSyncService {
 
     log.debug("Successfully converted team page '{}' to DTO", dto.getName());
     return dto;
-  }
-
-  /** Extracts a single relation ID from a Notion property. */
-  private String extractRelationId(final Object property) {
-    switch (property) {
-      case null -> {
-        return null;
-      }
-      case String str -> {
-        if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-          return str;
-        }
-      }
-      case List<?> list when !list.isEmpty() -> {
-        Object first = list.getFirst();
-        if (first instanceof String str) {
-          return str;
-        }
-        if (first instanceof Map<?, ?> map) {
-          Object id = map.get("id");
-          if (id instanceof String str) {
-            return str;
-          }
-        }
-      }
-      case Map<?, ?> map -> {
-        Object id = map.get("id");
-        if (id instanceof String str) {
-          return str;
-        }
-      }
-      default -> {}
-    }
-    return null;
   }
 
   /** Extracts wrestler name from team page with enhanced relation handling. */

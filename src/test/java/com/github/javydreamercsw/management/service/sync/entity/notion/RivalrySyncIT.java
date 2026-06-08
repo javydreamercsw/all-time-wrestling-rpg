@@ -25,7 +25,6 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -89,7 +88,7 @@ class RivalrySyncIT extends ManagementIntegrationTest {
 
     // When - Sync rivalries from real Notion database
     BaseSyncService.SyncResult result =
-        notionSyncService.syncRivalries("test-operation-rivalry-123", SyncDirection.INBOUND);
+        notionSyncService.syncRivalries("test-operation-rivalry-123");
 
     // Then - Verify sync completed successfully
     assertThat(result).isNotNull();

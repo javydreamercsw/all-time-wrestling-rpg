@@ -29,7 +29,6 @@ import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -135,9 +134,7 @@ class InjuryTypeSyncIT extends ManagementIntegrationTest {
     BaseSyncService.SyncResult result =
         GeneralSecurityUtils.runAsAdmin(
             (Supplier<BaseSyncService.SyncResult>)
-                () ->
-                    notionSyncService.syncInjuryTypes(
-                        "integration-test-operation", SyncDirection.INBOUND));
+                () -> notionSyncService.syncInjuryTypes("integration-test-operation"));
 
     // Then - Verify sync was successful
     assertThat(result).isNotNull();
@@ -187,9 +184,7 @@ class InjuryTypeSyncIT extends ManagementIntegrationTest {
     BaseSyncService.SyncResult secondResult =
         GeneralSecurityUtils.runAsAdmin(
             (Supplier<BaseSyncService.SyncResult>)
-                () ->
-                    notionSyncService.syncInjuryTypes(
-                        "second-sync-operation", SyncDirection.INBOUND));
+                () -> notionSyncService.syncInjuryTypes("second-sync-operation"));
     assertThat(secondResult.isSuccess()).isTrue();
     // No new injuries synced — still 2 Notion-sourced types (plus the V89 sentinel)
     assertThat(

@@ -30,7 +30,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -100,8 +99,7 @@ class NotionSyncServiceTeamsIT extends ManagementIntegrationTest {
         .thenReturn(List.of(w1.getExternalId(), w2.getExternalId()));
 
     // When
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncTeams("test-op-teams", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncTeams("test-op-teams");
 
     // Then
     assertThat(result.isSuccess()).isTrue();
