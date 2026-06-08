@@ -68,6 +68,7 @@ node/
 # Beads / Dolt files (added by bd init)
 .beads-credential-key
 /.claude/worktrees/
+/.claude/scheduled_tasks.lock
 /docs/videos/
 /docs/site/public/videos/
 /docs/site/.vitepress/dist/videos/
