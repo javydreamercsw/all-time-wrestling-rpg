@@ -727,7 +727,6 @@
             <recipe>org.openrewrite.xml.style.AutodetectDebug</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCatch</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources</recipe>
-            <recipe>org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments</recipe>
             <recipe>org.openrewrite.staticanalysis.UnnecessaryParentheses</recipe>
             <recipe>org.openrewrite.staticanalysis.SillyEqualsCheck</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyArraysAsList</recipe>
