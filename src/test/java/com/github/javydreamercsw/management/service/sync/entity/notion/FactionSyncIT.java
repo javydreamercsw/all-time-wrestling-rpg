@@ -30,7 +30,6 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.sync.SyncSessionManager;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,8 +135,7 @@ class FactionSyncIT extends ManagementIntegrationTest {
     when(notionHandler.loadAllFactions()).thenReturn(List.of(factionPage1, factionPage2));
 
     // When - Perform sync with mocked services
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncFactions("integration-test-factions", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncFactions("integration-test-factions");
 
     // Then - Verify the sync result
     assertNotNull(result, "Sync result should not be null");
@@ -189,8 +187,7 @@ class FactionSyncIT extends ManagementIntegrationTest {
 
     // When
     BaseSyncService.SyncResult result =
-        notionSyncService.syncFactions(
-            "integration-test-factions-no-leader", SyncDirection.INBOUND);
+        notionSyncService.syncFactions("integration-test-factions-no-leader");
 
     // Then
     assertTrue(result.isSuccess());

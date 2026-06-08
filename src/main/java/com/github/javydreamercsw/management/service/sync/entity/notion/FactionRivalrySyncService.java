@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionRivalryPage;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyUtil;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
@@ -90,6 +91,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
       return SyncResult.failure("Faction Rivalries", "NotionHandler is not available.");
     }
 
+    long startTime = System.currentTimeMillis();
     syncServiceDependencies
         .getProgressTracker()
         .startOperation(operationId, "Sync Faction Rivalries", 3);
@@ -139,7 +141,7 @@ public class FactionRivalrySyncService extends BaseSyncService {
         .getHealthMonitor()
         .recordSuccess(
             SyncEntityType.FACTION_RIVALRIES.getKey(),
-            System.currentTimeMillis() - System.currentTimeMillis(),
+            System.currentTimeMillis() - startTime,
             createdCount.get() + updatedCount.get());
 
     return SyncResult.success(
@@ -151,8 +153,8 @@ public class FactionRivalrySyncService extends BaseSyncService {
     Map<String, Object> props = page.getRawProperties();
     dto.setExternalId(page.getId());
     try {
-      dto.setFaction1Name(extractStringPropertyFromNotionPage(page, "Faction 1"));
-      dto.setFaction2Name(extractStringPropertyFromNotionPage(page, "Faction 2"));
+      dto.setFaction1Name(NotionPropertyUtil.extractStringProperty(page, "Faction 1"));
+      dto.setFaction2Name(NotionPropertyUtil.extractStringProperty(page, "Faction 2"));
     } catch (ClassCastException e) {
       log.warn("Failed to cast faction name for rivalry page {}: {}", page.getId(), e.getMessage());
     }
@@ -246,48 +248,6 @@ public class FactionRivalrySyncService extends BaseSyncService {
         log.info("Updated faction rivalry: {} vs {}", f1.getName(), f2.getName());
       }
     }
-  }
-
-  /** Extracts a string property from any NotionPage type using raw properties. */
-  private String extractStringPropertyFromNotionPage(
-      @NonNull final com.github.javydreamercsw.base.ai.notion.NotionPage page,
-      @NonNull final String propertyName) {
-    if (page.getRawProperties() != null) {
-      Object property = page.getRawProperties().get(propertyName);
-      if (property != null) {
-        String propertyStr = property.toString().trim();
-
-        // Handle relationship properties that show as "X items" or "X relations"
-        if (propertyStr.matches("\\d+ (items?|relations?)")) {
-          log.debug(
-              "Property '{}' shows as relationship count ({}), cannot resolve in sync mode",
-              propertyName,
-              propertyStr);
-          return null;
-        }
-
-        // Handle comma-separated values
-        if (propertyStr.contains(",")) {
-          String[] parts = propertyStr.split(",");
-          String firstPart = parts[0].trim();
-          if (!firstPart.isEmpty()) {
-            log.debug(
-                "Property '{}' contains multiple values, using first: '{}'",
-                propertyName,
-                firstPart);
-            return firstPart;
-          }
-        }
-
-        // Return the property value if it's not empty and not a UUID
-        if (!propertyStr.isEmpty()
-            && !propertyStr.matches(
-                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-          return propertyStr;
-        }
-      }
-    }
-    return null;
   }
 
   @Data

@@ -217,7 +217,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync show types from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncShowTypes("integration-test-show-types", SyncDirection.INBOUND);
+        notionSyncService.syncShowTypes("integration-test-show-types");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -237,7 +237,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync wrestlers from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncWrestlers("integration-test-wrestlers", SyncDirection.INBOUND);
+        notionSyncService.syncWrestlers("integration-test-wrestlers");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -256,8 +256,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(seasonSyncService.syncSeasons(anyString())).thenReturn(expectedResult);
 
     // When - Sync seasons from Notion
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncSeasons("integration-test-seasons", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncSeasons("integration-test-seasons");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -296,8 +295,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(factionSyncService.syncFactions(anyString())).thenReturn(expectedResult);
 
     // When - Sync factions from Notion
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncFactions("integration-test-factions", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncFactions("integration-test-factions");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -316,8 +314,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(showSyncService.syncShows(anyString())).thenReturn(expectedResult);
 
     // When - Sync shows from Notion
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncShows("integration-test-shows", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncShows("integration-test-shows");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -337,7 +334,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync injury types from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncInjuryTypes("integration-test-injury-types", SyncDirection.INBOUND);
+        notionSyncService.syncInjuryTypes("integration-test-injury-types");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -356,8 +353,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(injurySyncService.syncInjuries(anyString())).thenReturn(expectedResult);
 
     // When - Sync injuries from Notion
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncInjuries("integration-test-injuries", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncInjuries("integration-test-injuries");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -396,8 +392,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
     when(titleSyncService.syncTitles(anyString())).thenReturn(expectedResult);
 
     // When - Sync titles from Notion
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncTitles("integration-test-titles", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncTitles("integration-test-titles");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");
@@ -437,7 +432,7 @@ class NotionSyncServiceTest extends ManagementIntegrationTest {
 
     // When - Sync rivalries from Notion
     BaseSyncService.SyncResult result =
-        notionSyncService.syncRivalries("integration-test-rivalries", SyncDirection.INBOUND);
+        notionSyncService.syncRivalries("integration-test-rivalries");
 
     // Then - Verify sync result
     assertNotNull(result, "Sync result should not be null");

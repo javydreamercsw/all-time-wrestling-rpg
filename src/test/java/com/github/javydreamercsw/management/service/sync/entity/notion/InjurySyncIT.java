@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -126,8 +125,7 @@ class InjurySyncIT extends ManagementIntegrationTest {
     when(notionHandler.loadAllInjuries()).thenReturn(List.of(injuryPage));
 
     // When
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncInjuries("test-injuries-op", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncInjuries("test-injuries-op");
 
     // Then
     assertThat(result.isSuccess()).isTrue();
