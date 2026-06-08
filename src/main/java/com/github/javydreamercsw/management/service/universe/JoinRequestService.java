@@ -23,11 +23,13 @@ import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest.RequestStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequestRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership.UniverseMemberRole;
+import com.github.javydreamercsw.management.event.JoinRequestSubmittedEvent;
 import java.time.Instant;
 import java.util.List;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,7 @@ public class JoinRequestService {
   private final UniverseJoinRequestRepository requestRepository;
   private final UniverseMembershipService membershipService;
   private final InviteService inviteService;
+  private final ApplicationEventPublisher eventPublisher;
 
   /**
    * Submits a join request for a universe.
@@ -104,6 +107,7 @@ public class JoinRequestService {
         saved.getId(),
         universe.getName(),
         requesterName);
+    eventPublisher.publishEvent(new JoinRequestSubmittedEvent(this, saved));
     return saved;
   }
 

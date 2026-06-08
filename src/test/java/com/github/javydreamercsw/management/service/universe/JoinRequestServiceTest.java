@@ -49,6 +49,7 @@ class JoinRequestServiceTest {
   @Mock private UniverseJoinRequestRepository requestRepository;
   @Mock private UniverseMembershipService membershipService;
   @Mock private InviteService inviteService;
+  @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private JoinRequestService service;
 
