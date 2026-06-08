@@ -81,7 +81,9 @@ class JoinRequestServiceTest {
         .thenAnswer(
             inv -> {
               UniverseJoinRequest r = inv.getArgument(0);
-              if (r.getId() == null) r.setId(99L);
+              if (r.getId() == null) {
+                r.setId(99L);
+              }
               return r;
             });
   }

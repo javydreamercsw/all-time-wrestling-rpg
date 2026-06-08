@@ -77,9 +77,12 @@ public class UniverseInvite {
   private int useCount = 0;
 
   public boolean isActive() {
-    if (revokedAt != null) return false;
-    if (expiresAt != null && Instant.now().isAfter(expiresAt)) return false;
-    if (maxUses != null && useCount >= maxUses) return false;
-    return true;
+    if (revokedAt != null) {
+      return false;
+    }
+    if (expiresAt != null && Instant.now().isAfter(expiresAt)) {
+      return false;
+    }
+    return !(maxUses != null && useCount >= maxUses);
   }
 }
