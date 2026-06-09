@@ -9,3 +9,4 @@ View detailed information about any wrestler, including their core stats (Drive,
 ![Wrestler Profile](/screenshots/wrestler-profile.png)
 
 ---
+

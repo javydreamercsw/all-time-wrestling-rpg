@@ -17,3 +17,26 @@ View and manage active wrestler contracts. Salaries are dynamically tied to fan 
 ![Contract Management](/screenshots/admin-contract-management.png)
 
 ---
+
+## Video Walkthroughs
+
+### Contract Management Walkthrough
+
+Salary scales with a wrestler's fan base — Main Eventers command higher pay than Rookies. Monitor total payroll here to avoid overspending on roster depth at the expense of developing the next headliner.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/contract-management-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### GM Dashboard Walkthrough
+
+Exhausted or unhappy wrestlers underperform in matches and lose fans over time. Review this dashboard before booking shows to identify who needs rest and who is primed for a featured main-event spot.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/gm-dashboard-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+

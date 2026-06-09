@@ -26,6 +26,14 @@ Universes are the top-level containers for all promotion data — shows, wrestle
 
 ---
 
+## Export Custom Images
+
+Download a ZIP of all custom images (wrestlers, factions, titles, arenas, and more) in one click. The archive preserves the original file paths so images can be restored on a new host without reconfiguration.
+
+![Export Custom Images](/screenshots/export-universe-images.png)
+
+---
+
 ## Wrestler Relationships Management
 
 Manage the social fabric of your promotion. Define marriages, family ties, and deep friendships that influence chemistry, AI narration, and random backstage events.
@@ -137,3 +145,36 @@ Group and toggle themed content sets. Enable or disable entire collections of wr
 ![Expansion Management](/screenshots/admin-expansion-management.png)
 
 ---
+
+## Video Walkthroughs
+
+### MySQL Data Migration Wizard
+
+Migration complete — all data is now in MySQL and verified. Restart the application with the MySQL Spring profile (spring.profiles.active=mysql) to run in production mode against the new database.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/data-transfer-full-wizard.mp4" type="video/mp4">
+</video>
+
+---
+
+### Account Management Walkthrough
+
+New Account dialog — username and email are required; password is set on first login or by the admin. Roles can be combined: a Booker who also plays in leagues needs both the Booker and Player roles.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/account-list-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### Universe Management Walkthrough
+
+Create Universe dialog — name is required; type controls which game rules apply. Standard uses the default ATW ruleset; Fantasy enables league drafts; Historical locks the roster to a specific era.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/universe-list-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+

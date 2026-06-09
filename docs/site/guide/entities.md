@@ -26,6 +26,14 @@ Manage every championship belt in the promotion. Each title has a configurable t
 
 ---
 
+## Export Universe Data
+
+Export wrestler state, injuries, rivalries, title reigns, alignments and relationships to CSV or JSON
+
+![Export Universe Data](/screenshots/export-universe-data.png)
+
+---
+
 ## Seasons
 
 Configure and track game seasons. Seasons group shows together and define the journey toward major year-end events.
@@ -49,3 +57,16 @@ Manage powerful wrestling groups. Factions bring together multiple wrestlers und
 ![Factions](/screenshots/entity-factions.png)
 
 ---
+
+## Video Walkthroughs
+
+### Championship Titles Walkthrough
+
+The Create Title dialog — Name and Tier are required. Tier controls which wrestlers are eligible to compete for it, and Championship Type determines whether it is a singles, tag team, or trios title.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/title-list-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+

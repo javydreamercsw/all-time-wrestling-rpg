@@ -2,12 +2,6 @@
 
 Welcome to the Game Mechanics guide. This documentation is automatically generated from the latest game features.
 
-## Cards Walkthrough
-
-Card detail view: health cost, stamina cost, damage type, and move category.
-
----
-
 ## Match Interference
 
 Managers and faction members can swing the match in your favor. Perform ringside actions like distracting the referee or sliding in a weapon, but be careful - too much interference will lead to ejections or disqualification!
@@ -63,3 +57,46 @@ Managers and faction members can swing the match in your favor. Perform ringside
 ![Ringside Actions](/screenshots/mechanic-ringside-actions.png)
 
 ---
+
+## Video Walkthroughs
+
+### Managing Cards
+
+Card name updated in place — changes persist immediately with no page reload, keeping the editing flow smooth during show preparation. Updated cards are reflected in all decks that reference them automatically.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/card-list-manage.mp4" type="video/mp4">
+</video>
+
+---
+
+### Creating a Card
+
+New card created — it appears in the grid immediately and is ready to be assigned stats, a card set, and rules for use in segments. Open the Edit dialog to configure health cost, stamina cost, and damage values.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/create-card.mp4" type="video/mp4">
+</video>
+
+---
+
+### Decks Walkthrough
+
+A well-rounded deck includes both offensive moves and defensive counters. Cards carry health cost, stamina cost, and damage values — the match engine draws from these to determine realistic in-ring outcomes.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/mechanic-decks-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### Cards Walkthrough
+
+Card detail view shows health cost, stamina cost, damage type, and move category. These values are referenced directly by the match engine and AI narration when describing what happened in a segment.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/mechanic-cards-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+

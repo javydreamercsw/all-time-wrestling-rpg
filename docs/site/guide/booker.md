@@ -34,6 +34,14 @@ The QR share button on a match segment opens a dialog with a scannable QR code. 
 
 ---
 
+## Show Calendar
+
+The Show Calendar provides a monthly view of every scheduled show in the promotion. Each show appears as a colour-coded event tile on its booked date. Click any tile to jump directly to that show's detail page. Navigate between months using the prev/next arrows, or click Today to snap back to the current date.
+
+![Show Calendar](/screenshots/show-calendar-overview.png)
+
+---
+
 ## Dashboard with News Ticker
 
 Latest headlines and rumors are visible directly on the booker dashboard.
@@ -65,3 +73,26 @@ View a complete history of all booked shows. Click on any show to view its detai
 ![Show History](/screenshots/booker-show-history.png)
 
 ---
+
+## Video Walkthroughs
+
+### Show Card Validation Walkthrough
+
+After the booker confirms, the segments are saved to the show. Each approved segment enters the adjudication pipeline — the match engine resolves outcomes, updates wrestler stats, and the AI generates narration ready for broadcast.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/booker-show-planning-card-validation-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### Show Calendar Walkthrough
+
+Shows scheduled in future months appear here as soon as they're created in the Show List. Plan your entire PPV season at a glance — weekly shows, special events, and pay-per-view dates all land on the same calendar.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="http://localhost:4173/videos/show-calendar-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
