@@ -9,4 +9,3 @@ Access your personal settings by clicking the Profile button in the top navigati
 ![Profile Drawer](/screenshots/profile-drawer.png)
 
 ---
-

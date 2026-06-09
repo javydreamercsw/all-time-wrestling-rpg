@@ -177,4 +177,3 @@ Create Universe dialog — name is required; type controls which game rules appl
 </video>
 
 ---
-

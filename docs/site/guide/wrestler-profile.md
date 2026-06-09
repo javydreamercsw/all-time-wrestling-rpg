@@ -49,4 +49,3 @@ Heat accumulates automatically from match outcomes, drama events, and promos. Bo
 </video>
 
 ---
-

@@ -71,4 +71,3 @@ Turn updated — the turn label now shows it's player1's pick. All participants 
 </video>
 
 ---
-

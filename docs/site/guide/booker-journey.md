@@ -43,4 +43,3 @@ Summary is generated from the full narration.
 </video>
 
 ---
-

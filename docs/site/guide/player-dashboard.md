@@ -121,4 +121,3 @@ Filtered to Championship Change events only — the feed now shows just the titl
 </video>
 
 ---
-

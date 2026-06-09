@@ -65,4 +65,3 @@ The Hall of Fame is global — every account in the system appears here. Use it 
 </video>
 
 ---
-

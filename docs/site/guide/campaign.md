@@ -227,4 +227,3 @@ Your choice is recorded and affects the storyline's direction. Choosing aggressi
 </video>
 
 ---
-

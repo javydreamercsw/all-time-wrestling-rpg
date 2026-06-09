@@ -43,4 +43,3 @@ Tier boundaries reset — all tiers now use their default fan requirements, read
 </video>
 
 ---
-
