@@ -2,14 +2,6 @@
 
 Welcome to the Game Mechanics guide. This documentation is automatically generated from the latest game features.
 
-## Match Interference
-
-Managers and faction members can swing the match in your favor. Perform ringside actions like distracting the referee or sliding in a weapon, but be careful - too much interference will lead to ejections or disqualification!
-
-![Match Interference](/screenshots/mechanic-match-interference.png)
-
----
-
 ## Cards
 
 The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.
