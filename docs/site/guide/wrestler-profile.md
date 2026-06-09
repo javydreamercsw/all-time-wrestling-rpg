@@ -25,7 +25,7 @@ Wrestler profiles now include a 'Relationships' section showing their social con
 The show detail view opens — you can review the full card and segment results from the night the title changed hands. All segments, participants, and AI-generated narration are preserved in the show record.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/wrestler-title-history.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/wrestler-title-history.mp4" type="video/mp4">
 </video>
 
 ---
@@ -35,7 +35,7 @@ The show detail view opens — you can review the full card and segment results 
 Click the show name in any row to navigate directly to that show's detail view. From there you can review the full card, narration, and results for every segment on the night the match took place.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/wrestler-recent-matches.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/wrestler-recent-matches.mp4" type="video/mp4">
 </video>
 
 ---
@@ -45,7 +45,7 @@ Click the show name in any row to navigate directly to that show's detail view. 
 Heat accumulates automatically from match outcomes, drama events, and promos. Booking a high-heat feud match on a big show accelerates the rise while keeping them apart lets the heat decay naturally over time.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/wrestler-feud-history.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/wrestler-feud-history.mp4" type="video/mp4">
 </video>
 
 ---

@@ -617,5 +617,26 @@
     "description": "Download a ZIP of all custom images (wrestlers, factions, titles, arenas, and more) in one click. The archive preserves the original file paths so images can be restored on a new host without reconfiguration.",
     "imagePath": "screenshots/export-universe-images.png",
     "order": 0
+  }, {
+    "id": "community-universe-join-page",
+    "category": "Community",
+    "title": "Joining a Universe",
+    "description": "When you follow a universe invite link, you are taken to this page. Existing users can log in and request membership; new users can create a free account and submit their request in one step.",
+    "imagePath": "screenshots/universe-join-page.png",
+    "order": 0
+  }, {
+    "id": "admin-universe-invite-management",
+    "category": "Admin",
+    "title": "Managing Universe Invites",
+    "description": "Admins can generate invite links to share with prospective members. Targeted links are single-use with a 7-day expiry; Community links are multi-use with no expiry. Active links are listed below with options to revoke.",
+    "imagePath": "screenshots/universe-invite-management.png",
+    "order": 0
+  }, {
+    "id": "admin-universe-join-requests",
+    "category": "Admin",
+    "title": "Reviewing Join Requests",
+    "description": "Pending membership requests appear here. Approve to add the user as a member, Reject to decline while allowing them to re-request, or Block to permanently prevent future requests from that account.",
+    "imagePath": "screenshots/universe-join-requests.png",
+    "order": 0
   } ]
 }

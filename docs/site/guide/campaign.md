@@ -153,7 +153,7 @@ Your AI-generated adventures are preserved in the Story Journal. Here you can re
 The upgrade moves to Purchased Skills and takes effect immediately — maximum stamina increased by 2 for all future matches. The effective stats shown on your Player Dashboard update to reflect the new total.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/campaign-skill-upgrades.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-skill-upgrades.mp4" type="video/mp4">
 </video>
 
 ---
@@ -163,7 +163,7 @@ The upgrade moves to Purchased Skills and takes effect immediately — maximum s
 Back on the Campaign Dashboard — Victory Points accumulate from backstage actions and match wins, driving chapter progression throughout the season. Reaching each VP threshold automatically transitions the story to the next chapter.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/campaign-backstage-actions.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-backstage-actions.mp4" type="video/mp4">
 </video>
 
 ---
@@ -173,7 +173,7 @@ Back on the Campaign Dashboard — Victory Points accumulate from backstage acti
 Use every Backstage Action to counter the Authority's interference. Smart positioning before each show can be the difference between a takeover and getting buried.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/campaign-corporate-power-trip.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-corporate-power-trip.mp4" type="video/mp4">
 </video>
 
 ---
@@ -183,7 +183,7 @@ Use every Backstage Action to counter the Authority's interference. Smart positi
 Recruit, train, and prepare between shows using Backstage Actions. Two actions per day let you build faction strength before the climactic showdown.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/campaign-gang-warfare.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-gang-warfare.mp4" type="video/mp4">
 </video>
 
 ---
@@ -193,17 +193,17 @@ Recruit, train, and prepare between shows using Backstage Actions. Two actions p
 Use Backstage Actions before each show to train, cut promos, or attack rivals. Two actions are available per day — spend them wisely to enter each title defense at peak condition.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/campaign-fighting-champion.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-fighting-champion.mp4" type="video/mp4">
 </video>
 
 ---
 
 ### Campaign List Walkthrough
 
-The Campaign Dashboard shows the wrestler's current chapter, alignment track, win/loss record, and available actions — giving admins full visibility into any player's campaign state.
+Click the Dashboard button on any row to jump directly to that wrestler's campaign dashboard — the same view the player uses to run their campaign matches and backstage actions.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/campaign-list-walkthrough.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-list-walkthrough.mp4" type="video/mp4">
 </video>
 
 ---
@@ -213,7 +213,7 @@ The Campaign Dashboard shows the wrestler's current chapter, alignment track, wi
 Ability unlocked — the token balance drops and the upgrade is active. The match engine and AI narration will reference this ability when generating outcomes for future matches.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/campaign-ability-tree.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-ability-tree.mp4" type="video/mp4">
 </video>
 
 ---
@@ -223,7 +223,7 @@ Ability unlocked — the token balance drops and the upgrade is active. The matc
 Your choice is recorded and affects the storyline's direction. Choosing aggressively raises your Heel alignment; diplomatic choices push you toward Face. Some encounters trigger bonus matches or backstage events.
 
 <video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="http://localhost:4173/videos/campaign-narrative-walkthrough.mp4" type="video/mp4">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/campaign-narrative-walkthrough.mp4" type="video/mp4">
 </video>
 
 ---
