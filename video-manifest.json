@@ -349,5 +349,12 @@
     "description": "Create Universe dialog — name is required; type controls which game rules apply. Standard uses the default ATW ruleset; Fantasy enables league drafts; Historical locks the roster to a specific era.",
     "videoPath": "videos/universe-list-walkthrough.mp4",
     "order": 0
+  }, {
+    "id": "admin-universe-member-onboarding",
+    "category": "Admin",
+    "title": "Inviting Members to a Universe",
+    "description": "When someone follows the link and submits a request, click Requests to review it. Approve to add them as a member, Reject to decline, or Block to prevent future requests from that account.",
+    "videoPath": "videos/universe-member-onboarding.mp4",
+    "order": 0
   } ]
 }
