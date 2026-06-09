@@ -288,14 +288,14 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: docs-screenshots
-          path: .
+          path: docs
 
       - name: Download videos artifact
         if: needs.generate_videos.result == 'success'
         uses: actions/download-artifact@v8
         with:
           name: docs-videos
-          path: .
+          path: docs
 
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs

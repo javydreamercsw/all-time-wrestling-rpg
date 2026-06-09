@@ -70,10 +70,16 @@ node/
 /.claude/worktrees/
 /.claude/scheduled_tasks.lock
 /docs/videos/
+/docs/screenshots/
+/docs/site/public/screenshots/
 /docs/site/public/videos/
 /docs/site/.vitepress/dist/videos/
 /docs/site/.vitepress/cache/
 /docs/site/node_modules/
 /docs/site/#/
-/docs/screenshots/
 /src/main/resources/META-INF/resources/docs/videos/
+# Safety nets: download-artifact strips docs/ prefix; these catch any spillover
+/screenshots/
+/videos/
+/manifest.json
+/video-manifest.json
