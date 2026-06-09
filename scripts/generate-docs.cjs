@@ -105,7 +105,8 @@ const copiedScreenshotNames = new Set(
 );
 const originalFeatureCount = features.length;
 features = features.filter(f => {
-  if (!f.imagePath) return true; // no image reference — always keep
+  if (f.videoPath && !f.imagePath) return false; // video-only entry; handled by video-manifest
+  if (!f.imagePath) return true; // text-only entry — always keep
   return copiedScreenshotNames.has(path.basename(f.imagePath));
 });
 if (features.length !== originalFeatureCount) {
