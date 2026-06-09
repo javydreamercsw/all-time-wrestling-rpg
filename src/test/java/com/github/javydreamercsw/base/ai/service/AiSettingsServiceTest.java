@@ -110,7 +110,7 @@ class AiSettingsServiceTest {
   @Test
   void getAiTimeout_settingPresent_returnsValue() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("AI_TIMEOUT");
+    gameSetting.setSettingKey("AI_TIMEOUT");
     gameSetting.setValue("600");
     when(gameSettingService.findById("AI_TIMEOUT")).thenReturn(Optional.of(gameSetting));
 
@@ -120,7 +120,7 @@ class AiSettingsServiceTest {
   @Test
   void isOpenAIEnabled_settingPresent_returnsTrue() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("AI_OPENAI_ENABLED");
+    gameSetting.setSettingKey("AI_OPENAI_ENABLED");
     gameSetting.setValue("true");
     when(gameSettingService.findById("AI_OPENAI_ENABLED")).thenReturn(Optional.of(gameSetting));
 
@@ -130,7 +130,7 @@ class AiSettingsServiceTest {
   @Test
   void getOpenAIMaxTokens_settingPresent_returnsValue() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("AI_OPENAI_MAX_TOKENS");
+    gameSetting.setSettingKey("AI_OPENAI_MAX_TOKENS");
     gameSetting.setValue("2000");
     when(gameSettingService.findById("AI_OPENAI_MAX_TOKENS")).thenReturn(Optional.of(gameSetting));
 
@@ -140,7 +140,7 @@ class AiSettingsServiceTest {
   @Test
   void isClaudeEnabled_settingPresent_returnsTrue() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("AI_CLAUDE_ENABLED");
+    gameSetting.setSettingKey("AI_CLAUDE_ENABLED");
     gameSetting.setValue("true");
     when(gameSettingService.findById("AI_CLAUDE_ENABLED")).thenReturn(Optional.of(gameSetting));
 
@@ -150,7 +150,7 @@ class AiSettingsServiceTest {
   @Test
   void getOpenAITemperature_settingPresent_returnsValue() {
     GameSetting gameSetting = new GameSetting();
-    gameSetting.setId("AI_OPENAI_TEMPERATURE");
+    gameSetting.setSettingKey("AI_OPENAI_TEMPERATURE");
     gameSetting.setValue("0.5");
     when(gameSettingService.findById("AI_OPENAI_TEMPERATURE")).thenReturn(Optional.of(gameSetting));
 

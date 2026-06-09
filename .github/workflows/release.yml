@@ -31,11 +31,27 @@ jobs:
   # ---------------------------------------------------------------------------
   setup_release:
     runs-on: ubuntu-latest
+    outputs:
+      is_patch: ${{ steps.release_type.outputs.is_patch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Detect release type
+        id: release_type
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          BASE=$(echo "$VERSION" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
+          PATCH=$(echo "$BASE" | cut -d. -f3)
+          if [ "$PATCH" -ne "0" ]; then
+            echo "is_patch=true" >> "$GITHUB_OUTPUT"
+            echo "Patch release detected ($VERSION) — screenshots and videos will be skipped."
+          else
+            echo "is_patch=false" >> "$GITHUB_OUTPUT"
+            echo "Non-patch release detected ($VERSION) — screenshots and videos will be generated."
+          fi
 
       - name: Set up JDK 25
         uses: actions/setup-java@v5
@@ -131,6 +147,7 @@ jobs:
   # ---------------------------------------------------------------------------
   generate_screenshots:
     needs: setup_release
+    if: needs.setup_release.outputs.is_patch != 'true'
     runs-on: ubuntu-latest
     env:
       HEADLESS: 'true'
@@ -177,6 +194,7 @@ jobs:
   # ---------------------------------------------------------------------------
   generate_videos:
     needs: setup_release
+    if: needs.setup_release.outputs.is_patch != 'true'
     runs-on: ubuntu-latest
     env:
       HEADLESS: 'true'
@@ -228,7 +246,13 @@ jobs:
   #    docs commit.  Uploads the Pages artifact for deploy_pages.
   # ---------------------------------------------------------------------------
   assemble_docs:
-    needs: [generate_screenshots, generate_videos]
+    needs: [setup_release, generate_screenshots, generate_videos]
+    # Run when setup succeeded and neither docs job failed (skipped = patch release, which is fine).
+    if: |
+      always() &&
+      needs.setup_release.result == 'success' &&
+      needs.generate_screenshots.result != 'failure' &&
+      needs.generate_videos.result != 'failure'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -260,16 +284,18 @@ jobs:
           cd docs/site && npm install
 
       - name: Download screenshots artifact
+        if: needs.generate_screenshots.result == 'success'
         uses: actions/download-artifact@v8
         with:
           name: docs-screenshots
-          path: .
+          path: docs
 
       - name: Download videos artifact
+        if: needs.generate_videos.result == 'success'
         uses: actions/download-artifact@v8
         with:
           name: docs-videos
-          path: .
+          path: docs
 
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs

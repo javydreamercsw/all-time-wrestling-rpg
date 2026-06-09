@@ -57,6 +57,7 @@ class CampaignDramaServiceTest {
 
   @Mock private CampaignService campaignService;
   @Mock private UniverseContextService universeContextService;
+  @Mock private FeatureDataService featureDataService;
   @Mock private Random random;
 
   @InjectMocks private CampaignDramaService campaignDramaService;
@@ -84,6 +85,10 @@ class CampaignDramaServiceTest {
     campaign.setState(state);
 
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    // Return the defaultValue arg so Boolean unboxing never receives null
+    org.mockito.Mockito.lenient()
+        .when(featureDataService.getFeatureValue(any(), any(), any(), any()))
+        .thenAnswer(inv -> inv.getArgument(3));
   }
 
   @Test
@@ -106,9 +111,7 @@ class CampaignDramaServiceTest {
 
     // Player has no active rivalries (rivalriesAsWrestler1 and rivalriesAsWrestler2 are empty by
     // default)
-    when(wrestlerRepository.findAllIds()).thenReturn(List.of(2L));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(rival));
-    when(random.nextInt(1)).thenReturn(0);
+    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of(rival));
 
     DramaEvent event = new DramaEvent();
     when(dramaEventService.createDramaEvent(
@@ -144,10 +147,7 @@ class CampaignDramaServiceTest {
 
     // Random returns value < 0.2 → triggers outsider event
     when(random.nextDouble()).thenReturn(0.1);
-
-    when(wrestlerRepository.findAllIds()).thenReturn(List.of(2L));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(rival));
-    when(random.nextInt(1)).thenReturn(0);
+    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of(rival));
 
     DramaEvent event = new DramaEvent();
     when(dramaEventService.createDramaEvent(
@@ -184,7 +184,7 @@ class CampaignDramaServiceTest {
 
   @Test
   void triggerRivalEvent_noRivalsAvailable_returnsEmpty() {
-    when(wrestlerRepository.findAllIds()).thenReturn(List.of());
+    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of());
 
     Optional<DramaEvent> result = campaignDramaService.triggerRivalEvent(campaign);
 
@@ -195,9 +195,7 @@ class CampaignDramaServiceTest {
 
   @Test
   void triggerRivalEvent_rivalFound_createsEvent() {
-    when(wrestlerRepository.findAllIds()).thenReturn(List.of(2L));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(rival));
-    when(random.nextInt(1)).thenReturn(0);
+    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of(rival));
 
     DramaEvent event = new DramaEvent();
     when(dramaEventService.createDramaEvent(
@@ -217,7 +215,7 @@ class CampaignDramaServiceTest {
 
   @Test
   void triggerOutsiderEvent_noOpponentsAvailable_returnsEmpty() {
-    when(wrestlerRepository.findAllIds()).thenReturn(List.of());
+    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of());
 
     Optional<DramaEvent> result = campaignDramaService.triggerOutsiderEvent(campaign);
 
@@ -226,9 +224,7 @@ class CampaignDramaServiceTest {
 
   @Test
   void triggerOutsiderEvent_outsiderFound_createsEvent() {
-    when(wrestlerRepository.findAllIds()).thenReturn(List.of(2L));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(rival));
-    when(random.nextInt(1)).thenReturn(0);
+    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of(rival));
 
     DramaEvent event = new DramaEvent();
     when(dramaEventService.createDramaEvent(
@@ -248,8 +244,8 @@ class CampaignDramaServiceTest {
 
   @Test
   void triggerRivalEvent_onlyPlayerInRoster_returnsEmpty() {
-    // Only the player's ID in the list - all filtered out
-    when(wrestlerRepository.findAllIds()).thenReturn(List.of(1L));
+    // DB query excludes the player, so returns empty
+    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of());
 
     Optional<DramaEvent> result = campaignDramaService.triggerRivalEvent(campaign);
 

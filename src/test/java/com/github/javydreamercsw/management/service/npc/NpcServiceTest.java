@@ -140,4 +140,37 @@ class NpcServiceTest {
     results = npcService.findAll();
     assertEquals(2, results.size());
   }
+
+  @Test
+  void findAllByType_nullExpansionCode_notFilteredOut() {
+    // Commentators are created by CommentaryService without an expansionCode.
+    // They must always appear regardless of which expansions are enabled.
+    Npc commentator = new Npc();
+    commentator.setName("Jane Commentator");
+    commentator.setNpcType("Commentator");
+    commentator.setExpansionCode(null);
+
+    when(npcRepository.findAllByNpcType("Commentator")).thenReturn(Arrays.asList(commentator));
+
+    List<Npc> result = npcService.findAllByType("Commentator");
+
+    assertEquals(1, result.size());
+  }
+
+  @Test
+  void findAll_nullExpansionCode_notFilteredOut() {
+    Npc systemNpc = new Npc();
+    systemNpc.setName("System NPC");
+    systemNpc.setNpcType("Commentator");
+    systemNpc.setExpansionCode(null);
+
+    Npc baseNpc = Npc.builder().name("Base Ref").expansionCode("BASE_GAME").build();
+
+    when(npcRepository.findAll()).thenReturn(Arrays.asList(systemNpc, baseNpc));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(Arrays.asList("BASE_GAME"));
+
+    List<Npc> result = npcService.findAll();
+
+    assertEquals(2, result.size());
+  }
 }

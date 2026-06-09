@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
@@ -45,10 +46,16 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
+import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
+import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
@@ -113,16 +120,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final PromoService promoService;
   private final CommentaryTeamRepository commentaryTeamRepository;
   private final NarrationParserService narrationParserService;
-  private final com.github.javydreamercsw.management.service.ringside.RingsideActionService
-      ringsideActionService;
-  private final com.github.javydreamercsw.management.service.ringside.RingsideAiService
-      ringsideAiService;
-  private final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-      ringsideActionDataService;
-  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
-  private final com.github.javydreamercsw.management.service.team.TeamService teamService;
-  private final com.github.javydreamercsw.management.service.title.TitleScriptService
-      titleScriptService;
+  private final RingsideActionService ringsideActionService;
+  private final RingsideAiService ringsideAiService;
+  private final RingsideActionDataService ringsideActionDataService;
+  private final NotificationService notificationService;
+  private final TeamService teamService;
+  private final TitleScriptService titleScriptService;
+  @Autowired private ArenaService arenaService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -150,16 +154,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       final PromoService promoService,
       final CommentaryTeamRepository commentaryTeamRepository,
       final NarrationParserService narrationParserService,
-      final com.github.javydreamercsw.management.service.ringside.RingsideActionService
-          ringsideActionService,
-      final com.github.javydreamercsw.management.service.ringside.RingsideAiService
-          ringsideAiService,
-      final com.github.javydreamercsw.management.service.ringside.RingsideActionDataService
-          ringsideActionDataService,
-      final com.github.javydreamercsw.management.service.team.TeamService teamService,
-      final com.github.javydreamercsw.management.service.title.TitleScriptService
-          titleScriptService,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final RingsideActionService ringsideActionService,
+      final RingsideAiService ringsideAiService,
+      final RingsideActionDataService ringsideActionDataService,
+      final TeamService teamService,
+      final TitleScriptService titleScriptService,
+      final NotificationService notificationService) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
@@ -967,9 +967,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 .toList());
       }
 
-      // Venue Context
-      if (segment.getShow().getArena() != null) {
-        Arena arena = segment.getShow().getArena();
+      // Venue Context — re-fetch arena with lazy collections initialized to avoid
+      // LazyInitializationException outside the Hibernate session
+      if (segment.getShow().getArena() != null && arenaService != null) {
+        Arena arena =
+            arenaService
+                .findByIdWithTraits(segment.getShow().getArena().getId())
+                .orElse(segment.getShow().getArena());
         VenueContext vc = new VenueContext();
         vc.setName(arena.getName());
         vc.setDescription(arena.getDescription());

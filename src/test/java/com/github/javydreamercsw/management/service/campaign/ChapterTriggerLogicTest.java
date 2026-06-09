@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -40,7 +41,10 @@ class ChapterTriggerLogicTest {
 
   @BeforeEach
   public void setUp() {
-    chapterService = new CampaignChapterService(new ObjectMapper());
+    ObjectMapper objectMapper = new ObjectMapper();
+    FeatureDataService featureDataService =
+        new FeatureDataService(objectMapper, mock(CampaignStateRepository.class));
+    chapterService = new CampaignChapterService(objectMapper, featureDataService);
     chapterService.init();
   }
 

@@ -33,3 +33,35 @@ Track the momentum of every wrestler in the promotion. Rankings determine title 
 ![Wrestler Rankings](/screenshots/dashboard-rankings.png)
 
 ---
+
+## Video Walkthroughs
+
+### Wrestler Rankings
+
+Click any wrestler's name in the rankings to jump straight to their full profile — match history, rivalries, title reigns, and injury records are all one click away from this view.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/dashboard-rankings-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### News & Rumors Walkthrough
+
+Admins and bookers can click Generate Monthly Synthesis to have the AI summarise the month's events into a single narrative dispatch, or Create News to manually write a headline that appears in the feed.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/news-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### Hall of Fame Walkthrough
+
+The Hall of Fame is global — every account in the system appears here. Use it to benchmark your career progress against other promoters and set long-term goals for the season.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/hall-of-fame-walkthrough.mp4" type="video/mp4">
+</video>
+
+---

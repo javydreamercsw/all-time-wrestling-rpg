@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistory;
@@ -35,7 +34,6 @@ import com.github.javydreamercsw.utils.DiceBag;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +54,7 @@ public class BackstageActionService {
   private final WrestlerService wrestlerService;
   private final ObjectMapper objectMapper;
   @Getter private final BackstageEncounterService backstageEncounterService;
+  private final FeatureDataService featureDataService;
 
   public BackstageActionService(
       final CampaignStateRepository campaignStateRepository,
@@ -65,7 +64,8 @@ public class BackstageActionService {
       final SegmentRuleRepository segmentRuleRepository,
       final WrestlerService wrestlerService,
       final ObjectMapper objectMapper,
-      final BackstageEncounterService backstageEncounterService) {
+      final BackstageEncounterService backstageEncounterService,
+      final FeatureDataService featureDataService) {
     this.campaignStateRepository = campaignStateRepository;
     this.actionHistoryRepository = actionHistoryRepository;
     this.injuryService = injuryService;
@@ -74,6 +74,7 @@ public class BackstageActionService {
     this.wrestlerService = wrestlerService;
     this.objectMapper = objectMapper;
     this.backstageEncounterService = backstageEncounterService;
+    this.featureDataService = featureDataService;
   }
 
   /**
@@ -124,12 +125,15 @@ public class BackstageActionService {
 
     // Apply backstage dice bonus from script effects (ATW-ta7)
     int effectiveDice =
-        diceSides + consumeFeatureInt(state, CampaignEffectContext.KEY_BACKSTAGE_DICE_BONUS);
+        diceSides
+            + featureDataService.consumeFeatureInt(
+                state, CampaignEffectContext.KEY_BACKSTAGE_DICE_BONUS);
     java.util.List<Integer> rolls = rollDice(effectiveDice);
     int successes = (int) rolls.stream().filter(r -> r >= 4).count();
 
     // Apply player roll modifier from script effects (ATW-t8q)
-    int rollModifier = consumeFeatureInt(state, CampaignEffectContext.KEY_PLAYER_ROLL_MODIFIER);
+    int rollModifier =
+        featureDataService.consumeFeatureInt(state, CampaignEffectContext.KEY_PLAYER_ROLL_MODIFIER);
     if (rollModifier != 0) {
       successes = Math.max(0, successes + rollModifier);
       log.debug(
@@ -179,8 +183,6 @@ public class BackstageActionService {
               wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
               bumpsRemoved++;
             }
-            // Update local state copy if needed, but entity is source of truth
-            // state.setBumps is removed as it's no longer in CampaignState
             outcomeDescription =
                 "Recovery successful. Removed "
                     + bumpsRemoved
@@ -195,7 +197,6 @@ public class BackstageActionService {
           if (currentBumps > 0) {
             Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
             wrestlerService.healBump(campaign.getWrestler().getId(), universeId);
-            // state.setBumps is removed
             outcomeDescription = "Recovery successful. Removed 1 bump. (Successes: 1)";
           } else if (!activeInjuries.isEmpty()) {
             outcomeDescription =
@@ -268,31 +269,6 @@ public class BackstageActionService {
     actionHistoryRepository.save(history);
 
     return new ActionOutcome(successes, outcomeDescription);
-  }
-
-  /**
-   * Reads an int value from the campaign state's featureData by key, then clears it (one-shot
-   * consumption). Returns 0 if the key is absent or featureData is unparseable.
-   */
-  private int consumeFeatureInt(final CampaignState state, final String key) {
-    if (state.getFeatureData() == null) {
-      return 0;
-    }
-    try {
-      Map<String, Object> data =
-          objectMapper.readValue(state.getFeatureData(), new TypeReference<>() {});
-      Object value = data.remove(key);
-      if (value == null) {
-        return 0;
-      }
-      int result = ((Number) value).intValue();
-      state.setFeatureData(objectMapper.writeValueAsString(data));
-      campaignStateRepository.save(state);
-      return result;
-    } catch (Exception e) {
-      log.warn("Failed to consume featureData key '{}' in BackstageActionService", key, e);
-      return 0;
-    }
   }
 
   /**

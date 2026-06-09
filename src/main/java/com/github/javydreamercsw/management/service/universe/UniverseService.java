@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -60,6 +61,7 @@ public class UniverseService {
     return universeRepository.findByName(name);
   }
 
+  @CacheEvict(value = CacheConfig.UNIVERSES_CACHE, allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public Universe save(@NonNull final Universe universe) {
     String name = universe.getName();
@@ -78,6 +80,7 @@ public class UniverseService {
     return universeRepository.save(universe);
   }
 
+  @CacheEvict(value = CacheConfig.UNIVERSES_CACHE, allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public void delete(@NonNull final Long id) {
     Universe universe =

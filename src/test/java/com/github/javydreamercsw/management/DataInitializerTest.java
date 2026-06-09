@@ -462,7 +462,7 @@ class DataInitializerTest {
     // But the DB already has a value (e.g., user explicitly disabled it).
     // Code now pre-loads via gameSettingRepository.findAll() — seed it there.
     GameSetting existingSetting = new GameSetting();
-    existingSetting.setId("AI_OPENAI_ENABLED");
+    existingSetting.setSettingKey("AI_OPENAI_ENABLED");
     existingSetting.setValue("false");
     when(gameSettingRepository.findAll()).thenReturn(List.of(existingSetting));
 

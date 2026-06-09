@@ -16,8 +16,24 @@
 */
 package com.github.javydreamercsw.management.domain;
 
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface GameSettingRepository extends JpaRepository<GameSetting, String> {}
+public interface GameSettingRepository extends JpaRepository<GameSetting, Long> {
+
+  @Query("SELECT s FROM GameSetting s WHERE s.settingKey = :key AND s.universeId IS NULL")
+  Optional<GameSetting> findGlobal(@Param("key") String key);
+
+  Optional<GameSetting> findBySettingKeyAndUniverseId(String settingKey, Long universeId);
+
+  @Query("SELECT s FROM GameSetting s WHERE s.universeId IS NULL ORDER BY s.settingKey")
+  List<GameSetting> findAllGlobal();
+
+  @Query("SELECT s FROM GameSetting s WHERE s.universeId = :universeId ORDER BY s.settingKey")
+  List<GameSetting> findAllByUniverseId(@Param("universeId") Long universeId);
+}

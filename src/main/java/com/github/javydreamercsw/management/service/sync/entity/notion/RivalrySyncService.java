@@ -83,6 +83,7 @@ public class RivalrySyncService extends BaseSyncService {
       return SyncResult.failure("Rivalries", "NotionHandler is not available.");
     }
 
+    long startTime = System.currentTimeMillis();
     syncServiceDependencies.getProgressTracker().startOperation(operationId, "Sync Rivalries", 3);
 
     // 1. Load all rivalry pages from Notion
@@ -130,7 +131,7 @@ public class RivalrySyncService extends BaseSyncService {
         .getHealthMonitor()
         .recordSuccess(
             "Rivalries",
-            System.currentTimeMillis() - System.currentTimeMillis(),
+            System.currentTimeMillis() - startTime,
             createdCount.get() + updatedCount.get());
 
     return SyncResult.success("Rivalries", createdCount.get(), updatedCount.get(), 0);

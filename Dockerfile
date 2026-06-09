@@ -42,15 +42,13 @@ ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
 # must be provided at runtime for AI/Notion features to work.
 
 # Default to H2 so the image starts without any external database.
-# Override to prod,mysql on Railway (or any MySQL host) by setting:
-#   SPRING_PROFILES_ACTIVE=prod,mysql
-#   SPRING_DATASOURCE_URL=jdbc:mysql://...
-#   SPRING_DATASOURCE_USERNAME=...
-#   SPRING_DATASOURCE_PASSWORD=...
+# To use MySQL (e.g. on Railway), override SPRING_PROFILES_ACTIVE,
+# SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, and
+# SPRING_DATASOURCE_PASSWORD at runtime via environment variables.
 ENV SPRING_PROFILES_ACTIVE=prod,h2
 
 # Railway injects PORT; default to 8080 for local docker run
-# For persistent image storage, attach a Railway Volume at /data and set:
-#   ATW_STORAGE_BASE_DIR=/data
+# For persistent image storage, attach a Railway Volume at /data and
+# set ATW_STORAGE_BASE_DIR to /data via environment variable.
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

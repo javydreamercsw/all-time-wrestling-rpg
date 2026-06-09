@@ -22,20 +22,7 @@ import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import com.github.javydreamercsw.management.service.sync.entity.notion.FactionRivalrySyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.FactionSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.InjurySyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.InjuryTypeSyncService;
 import com.github.javydreamercsw.management.service.sync.entity.notion.NotionSyncServicesManager;
-import com.github.javydreamercsw.management.service.sync.entity.notion.NpcSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.RivalrySyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.SeasonSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.SegmentSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.ShowSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.ShowTypeSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.TeamSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.TitleReignSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.TitleSyncService;
-import com.github.javydreamercsw.management.service.sync.entity.notion.WrestlerSyncService;
 import com.github.javydreamercsw.management.service.sync.parallel.ParallelSyncOrchestrator;
 import java.util.UUID;
 import lombok.NonNull;
@@ -80,24 +67,24 @@ public class NotionSyncService extends BaseSyncService {
 
     try {
       // Phase 1: Reference Data (Sequential due to dependencies)
-      syncShowTypes(operationId, SyncDirection.INBOUND);
-      syncInjuryTypes(operationId, SyncDirection.INBOUND);
+      syncShowTypes(operationId);
+      syncInjuryTypes(operationId);
 
       // Phase 2: Core Entities (Can be parallelized)
-      syncWrestlers(operationId, SyncDirection.INBOUND);
+      syncWrestlers(operationId);
       syncNpcs(operationId, SyncDirection.INBOUND);
-      syncSeasons(operationId, SyncDirection.INBOUND);
+      syncSeasons(operationId);
 
       // Phase 3: Dependent Entities
-      syncFactions(operationId, SyncDirection.INBOUND);
-      syncTeams(operationId, SyncDirection.INBOUND);
-      syncTitles(operationId, SyncDirection.INBOUND);
-      syncInjuries(operationId, SyncDirection.INBOUND);
+      syncFactions(operationId);
+      syncTeams(operationId);
+      syncTitles(operationId);
+      syncInjuries(operationId);
 
       // Phase 4: Dynamic/Historical Data
-      syncShows(operationId, SyncDirection.INBOUND);
-      syncSegments(operationId, SyncDirection.INBOUND);
-      syncRivalries(operationId, SyncDirection.INBOUND);
+      syncShows(operationId);
+      syncSegments(operationId);
+      syncRivalries(operationId);
       syncTitleReigns(operationId);
 
       log.info("✅ Full Notion synchronization completed successfully.");
@@ -106,81 +93,57 @@ public class NotionSyncService extends BaseSyncService {
     }
   }
 
-  public SyncResult syncWrestlers(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    WrestlerSyncService service = servicesManager.getWrestlerSyncService();
-    return service.syncWrestlers(operationId);
+  public SyncResult syncWrestlers(@NonNull final String operationId) {
+    return servicesManager.getWrestlerSyncService().syncWrestlers(operationId);
   }
 
-  public SyncResult syncFactions(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    FactionSyncService service = servicesManager.getFactionSyncService();
-    return service.syncFactions(operationId);
+  public SyncResult syncFactions(@NonNull final String operationId) {
+    return servicesManager.getFactionSyncService().syncFactions(operationId);
   }
 
-  public SyncResult syncTeams(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    TeamSyncService service = servicesManager.getTeamSyncService();
-    return service.syncTeams(operationId);
+  public SyncResult syncTeams(@NonNull final String operationId) {
+    return servicesManager.getTeamSyncService().syncTeams(operationId);
   }
 
-  public SyncResult syncTitles(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    TitleSyncService service = servicesManager.getTitleSyncService();
-    return service.syncTitles(operationId);
+  public SyncResult syncTitles(@NonNull final String operationId) {
+    return servicesManager.getTitleSyncService().syncTitles(operationId);
   }
 
   public SyncResult syncTitleReigns(@NonNull final String operationId) {
-    TitleReignSyncService service = servicesManager.getTitleReignSyncService();
-    return service.syncTitleReigns(operationId);
+    return servicesManager.getTitleReignSyncService().syncTitleReigns(operationId);
   }
 
-  public SyncResult syncShowTypes(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    ShowTypeSyncService service = servicesManager.getShowTypeSyncService();
-    return service.syncShowTypes(operationId);
+  public SyncResult syncShowTypes(@NonNull final String operationId) {
+    return servicesManager.getShowTypeSyncService().syncShowTypes(operationId);
   }
 
-  public SyncResult syncSeasons(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    SeasonSyncService service = servicesManager.getSeasonSyncService();
-    return service.syncSeasons(operationId);
+  public SyncResult syncSeasons(@NonNull final String operationId) {
+    return servicesManager.getSeasonSyncService().syncSeasons(operationId);
   }
 
-  public SyncResult syncShows(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    ShowSyncService service = servicesManager.getShowSyncService();
-    return service.syncShows(operationId);
+  public SyncResult syncShows(@NonNull final String operationId) {
+    return servicesManager.getShowSyncService().syncShows(operationId);
   }
 
-  public SyncResult syncSegments(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    SegmentSyncService service = servicesManager.getSegmentSyncService();
-    return service.syncSegments(operationId);
+  public SyncResult syncSegments(@NonNull final String operationId) {
+    return servicesManager.getSegmentSyncService().syncSegments(operationId);
   }
 
-  public SyncResult syncInjuryTypes(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    InjuryTypeSyncService service = servicesManager.getInjuryTypeSyncService();
-    return service.syncInjuryTypes(operationId);
+  public SyncResult syncInjuryTypes(@NonNull final String operationId) {
+    return servicesManager.getInjuryTypeSyncService().syncInjuryTypes(operationId);
   }
 
-  public SyncResult syncInjuries(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    InjurySyncService service = servicesManager.getInjurySyncService();
-    return service.syncInjuries(operationId);
+  public SyncResult syncInjuries(@NonNull final String operationId) {
+    return servicesManager.getInjurySyncService().syncInjuries(operationId);
   }
 
   public SyncResult syncNpcs(
       @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    NpcSyncService service = servicesManager.getNpcSyncService();
-    return service.syncNpcs(operationId, direction);
+    return servicesManager.getNpcSyncService().syncNpcs(operationId, direction);
   }
 
-  public SyncResult syncRivalries(
-      @NonNull final String operationId, @NonNull final SyncDirection direction) {
-    RivalrySyncService service = servicesManager.getRivalrySyncService();
-    return service.syncRivalries(operationId);
+  public SyncResult syncRivalries(@NonNull final String operationId) {
+    return servicesManager.getRivalrySyncService().syncRivalries(operationId);
   }
 
   public SyncResult syncFactionRivalries(

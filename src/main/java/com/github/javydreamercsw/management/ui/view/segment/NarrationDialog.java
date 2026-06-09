@@ -790,31 +790,18 @@ public class NarrationDialog extends Dialog {
       Segment loaded = segmentService.findByIdWithDetails(segment.getId()).orElse(segment);
       Long universeId = universeContextService.getCurrentUniverseId();
 
-      List<Npc> referees =
-          npcService.findAllByType("Referee").stream()
-              .sorted(Comparator.comparing(Npc::getName))
-              .collect(Collectors.toList());
-      List<Npc> commissioners =
-          npcService.findAllByType("Commissioner").stream()
-              .sorted(Comparator.comparing(Npc::getName))
-              .collect(Collectors.toList());
-      List<Npc> commentators =
-          npcService.findAllByType("Commentator").stream()
-              .sorted(Comparator.comparing(Npc::getName))
-              .collect(Collectors.toList());
-      List<Npc> announcers =
-          npcService.findAllByType("Announcer").stream()
-              .sorted(Comparator.comparing(Npc::getName))
-              .collect(Collectors.toList());
+      List<Npc> referees = npcService.findAllByTypeUnfiltered("Referee");
+      List<Npc> commissioners = npcService.findAllByTypeUnfiltered("Commissioner");
+      List<Npc> commentators = npcService.findAllByTypeUnfiltered("Commentator");
+      List<Npc> announcers = npcService.findAllByTypeUnfiltered("Announcer");
       List<Npc> otherNpcs =
-          npcService.findAll().stream()
+          npcService.findAllUnfiltered().stream()
               .filter(
                   n ->
                       !"Referee".equals(n.getNpcType())
                           && !"Commissioner".equals(n.getNpcType())
                           && !"Commentator".equals(n.getNpcType())
                           && !"Announcer".equals(n.getNpcType()))
-              .sorted(Comparator.comparing(Npc::getName))
               .collect(Collectors.toList());
 
       List<WrestlerDTO> allWrestlerDTOs =

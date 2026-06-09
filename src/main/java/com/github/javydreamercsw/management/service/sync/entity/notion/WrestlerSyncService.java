@@ -264,21 +264,6 @@ public class WrestlerSyncService extends BaseSyncService {
             .getNotionPageDataExtractor()
             .extractRelationId(wrestlerPage, "Manager"));
 
-    dto.setInjuryExternalIds(
-        syncServiceDependencies
-            .getNotionPageDataExtractor()
-            .extractRelationIds(wrestlerPage, "Injuries"));
-
-    dto.setTeamExternalIds(
-        syncServiceDependencies
-            .getNotionPageDataExtractor()
-            .extractRelationIds(wrestlerPage, "Teams"));
-
-    dto.setTitleReignExternalIds(
-        syncServiceDependencies
-            .getNotionPageDataExtractor()
-            .extractRelationIds(wrestlerPage, "Title Reigns"));
-
     dto.setFaction((String) rawProperties.get("Faction"));
     dto.setHeritageTag((String) rawProperties.get("Heritage Tag"));
 
@@ -556,8 +541,5 @@ public class WrestlerSyncService extends BaseSyncService {
     private Integer brawl;
     private String heritageTag;
     private String managerExternalId;
-    private java.util.List<String> injuryExternalIds = new java.util.ArrayList<>();
-    private java.util.List<String> teamExternalIds = new java.util.ArrayList<>();
-    private java.util.List<String> titleReignExternalIds = new java.util.ArrayList<>();
   }
 }

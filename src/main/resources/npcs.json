@@ -37,4 +37,14 @@
   "description": "",
   "set": "HURT_BUSINESS",
   "type": "Manager"
+}, {
+  "name": "Commissioner Blake",
+  "description": "The stern and authoritative Commissioner of ATW. Blake oversees match stipulations, enforces league rules, and occasionally appears ringside to ensure fair competition — or to stir controversy with a last-minute ruling.",
+  "set": "BASE_GAME",
+  "type": "Commissioner"
+}, {
+  "name": "Lena Voss",
+  "description": "The voice of ATW. Lena Voss is a sharp, confident ring announcer whose powerful delivery electrifies the crowd with every entrance. Known for drawing out championship introductions with theatrical precision.",
+  "set": "BASE_GAME",
+  "type": "Announcer"
 } ]

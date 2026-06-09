@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.universe;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
@@ -23,8 +24,12 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.export.CsvExportWriter;
+import com.github.javydreamercsw.management.service.export.ImageExportService;
+import com.github.javydreamercsw.management.service.export.ImageImportService;
 import com.github.javydreamercsw.management.service.export.JsonExportWriter;
 import com.github.javydreamercsw.management.service.export.UniverseExportService;
+import com.github.javydreamercsw.management.service.universe.InviteService;
+import com.github.javydreamercsw.management.service.universe.JoinRequestService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -34,6 +39,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.UnorderedList;
@@ -42,13 +48,18 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadResponse;
+import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.Height;
 import com.vaadin.flow.theme.lumo.LumoUtility.Width;
 import jakarta.annotation.security.RolesAllowed;
+import java.io.ByteArrayInputStream;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -74,6 +85,11 @@ public class UniverseListView extends Main {
   private final CsvExportWriter csvWriter;
   private final JsonExportWriter jsonWriter;
   private final WrestlerStateRepository wrestlerStateRepository;
+  private final ImageExportService imageExportService;
+  private final ImageImportService imageImportService;
+  private final InviteService inviteService;
+  private final JoinRequestService joinRequestService;
+  private final SecurityUtils securityUtils;
   public final Grid<Universe> grid = new Grid<>(Universe.class, false);
 
   public UniverseListView(
@@ -85,7 +101,12 @@ public class UniverseListView extends Main {
       final UniverseExportService exportService,
       final CsvExportWriter csvWriter,
       final JsonExportWriter jsonWriter,
-      final WrestlerStateRepository wrestlerStateRepository) {
+      final WrestlerStateRepository wrestlerStateRepository,
+      final ImageExportService imageExportService,
+      final ImageImportService imageImportService,
+      final InviteService inviteService,
+      final JoinRequestService joinRequestService,
+      final SecurityUtils securityUtils) {
     this.universeService = universeService;
     this.membershipService = membershipService;
     this.accountService = accountService;
@@ -95,6 +116,11 @@ public class UniverseListView extends Main {
     this.csvWriter = csvWriter;
     this.jsonWriter = jsonWriter;
     this.wrestlerStateRepository = wrestlerStateRepository;
+    this.imageExportService = imageExportService;
+    this.imageImportService = imageImportService;
+    this.inviteService = inviteService;
+    this.joinRequestService = joinRequestService;
+    this.securityUtils = securityUtils;
 
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -109,7 +135,70 @@ public class UniverseListView extends Main {
     createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createButton.addClickListener(e -> openCreateDialog().open());
 
-    add(new ViewToolbar("Universe List", ViewToolbar.group(createButton)));
+    int imageCount = 0;
+    try {
+      imageCount = imageExportService.countImages();
+    } catch (Exception ex) {
+      log.warn("Could not count images for button label", ex);
+    }
+    String exportLabel = imageCount > 0 ? "Export Images (" + imageCount + ")" : "Export Images";
+    Button exportImagesBtn = new Button(exportLabel, new Icon(VaadinIcon.PICTURE));
+    exportImagesBtn.setId("export-images-button");
+    final int finalImageCount = imageCount;
+    Anchor exportImagesAnchor =
+        new Anchor(
+            DownloadHandler.fromInputStream(
+                event -> {
+                  try {
+                    byte[] data = imageExportService.exportImages();
+                    return new DownloadResponse(
+                        new ByteArrayInputStream(data),
+                        "images-export.zip",
+                        "application/zip",
+                        data.length);
+                  } catch (Exception ex) {
+                    log.error("Image export failed", ex);
+                    return DownloadResponse.error(500);
+                  }
+                }),
+            "");
+    exportImagesBtn.addClickListener(
+        e ->
+            Notification.show(
+                "Downloading " + finalImageCount + " image(s)",
+                3000,
+                Notification.Position.BOTTOM_END));
+    exportImagesAnchor.add(exportImagesBtn);
+
+    Upload importUpload = new Upload();
+    importUpload.setId("import-images-upload");
+    importUpload.setAcceptedFileTypes("application/zip", ".zip");
+    importUpload.setMaxFiles(1);
+    importUpload.setUploadHandler(
+        UploadHandler.inMemory(
+            (metadata, bytes) -> {
+              try {
+                ImageImportService.ImportSummary summary =
+                    imageImportService.importImages(new java.io.ByteArrayInputStream(bytes));
+                Notification.show(summary.toMessage(), 5000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              } catch (Exception ex) {
+                log.error("Image import failed", ex);
+                Notification.show(
+                        "Image restore failed: " + ex.getMessage(),
+                        5000,
+                        Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            }));
+    Button importBtn = new Button("Restore Images", new Icon(VaadinIcon.UPLOAD));
+    importBtn.setId("restore-images-button");
+    importUpload.setUploadButton(importBtn);
+    importUpload.setDropAllowed(false);
+
+    add(
+        new ViewToolbar(
+            "Universe List", ViewToolbar.group(importUpload, exportImagesAnchor, createButton)));
 
     setupGrid();
     grid.addClassNames(LumoUtility.Flex.GROW);
@@ -143,11 +232,38 @@ public class UniverseListView extends Main {
                               wrestlerStateRepository)
                           .open());
 
+              Button inviteButton = new Button("Invites", new Icon(VaadinIcon.LINK));
+              inviteButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              inviteButton.setId("invite-members-button-" + universe.getId());
+              inviteButton.addClickListener(
+                  e ->
+                      securityUtils
+                          .getCurrentAccountId()
+                          .flatMap(accountService::get)
+                          .ifPresent(
+                              admin ->
+                                  new InviteManagementDialog(universe, inviteService, admin)
+                                      .open()));
+
+              Button requestsButton = new Button("Requests", new Icon(VaadinIcon.USERS));
+              requestsButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              requestsButton.setId("join-requests-button-" + universe.getId());
+              requestsButton.addClickListener(
+                  e ->
+                      securityUtils
+                          .getCurrentAccountId()
+                          .flatMap(accountService::get)
+                          .ifPresent(
+                              admin ->
+                                  new JoinRequestsDialog(universe, joinRequestService, admin)
+                                      .open()));
+
               Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
               deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               deleteButton.addClickListener(e -> confirmDelete(universe));
 
-              return new HorizontalLayout(editButton, exportButton, deleteButton);
+              return new HorizontalLayout(
+                  editButton, exportButton, inviteButton, requestsButton, deleteButton);
             })
         .setHeader("Actions");
   }
