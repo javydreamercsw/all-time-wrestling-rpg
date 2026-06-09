@@ -21,7 +21,6 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
-import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -76,14 +75,13 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
           final com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext
               context) {
     if (context.getDeterminedOutcome() == null || context.getDeterminedOutcome().isBlank()) {
-      String outcome = determineOutcome(null, context.getWrestlers(), context.getVenue(), 1L);
+      String outcome = determineOutcome(context.getWrestlers(), context.getVenue(), 1L);
       context.setDeterminedOutcome(outcome);
     }
     return context;
   }
 
   public String determineOutcome(
-      final Segment segment,
       @NonNull final List<WrestlerContext> wrestlers,
       final SegmentNarrationService.VenueContext venue,
       @NonNull final Long universeId) {
@@ -122,7 +120,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Determine winner using weighted random selection
     int totalWeight = weight1 + weight2;
-    double randomValue = new DiceBag(random, new int[] {totalWeight}).roll();
+    int randomValue = new DiceBag(random, new int[] {totalWeight}).roll();
 
     WrestlerContext winnerContext;
     WrestlerContext loserContext;
@@ -160,9 +158,9 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
 
     // Determine winner using weighted random selection
     int totalWeight = wrestlerWeights.stream().mapToInt(WrestlerWeight::weight).sum();
-    double randomValue = new DiceBag(random, new int[] {totalWeight}).roll();
+    int randomValue = new DiceBag(random, new int[] {totalWeight}).roll();
 
-    double cumulativeWeight = 0;
+    int cumulativeWeight = 0;
     WrestlerContext winnerContext = wrestlers.get(0); // fallback
     for (WrestlerWeight wrestlerWeight : wrestlerWeights) {
       cumulativeWeight += wrestlerWeight.weight();

@@ -40,7 +40,15 @@ import org.mockito.Mock;
 class GameSettingsViewTest extends AbstractViewTest {
 
   @Mock private GameSettingService gameSettingService;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.GameSettingRepository gameSettingRepository;
+
   @Mock private ThemeService themeService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.universe.UniverseContextService
+      universeContextService;
 
   private GameSettingsView view;
 
@@ -59,7 +67,14 @@ class GameSettingsViewTest extends AbstractViewTest {
     when(gameSettingService.getRivalryHeatDecayPerInterval()).thenReturn(1);
     when(gameSettingService.getRivalryHeatDecayIntervalDays()).thenReturn(7);
 
-    view = new GameSettingsView(gameSettingService, themeService, Optional.empty());
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    view =
+        new GameSettingsView(
+            gameSettingService,
+            gameSettingRepository,
+            themeService,
+            Optional.empty(),
+            universeContextService);
     UI.getCurrent().add(view);
   }
 

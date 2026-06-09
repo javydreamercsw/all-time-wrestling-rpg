@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -118,8 +117,7 @@ class ShowSyncIT extends ManagementIntegrationTest {
     when(notionHandler.loadAllShowsForSync()).thenReturn(List.of(showPage));
 
     // When
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncShows("test-operation", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncShows("test-operation");
 
     // Then
     assertThat(result).isNotNull();

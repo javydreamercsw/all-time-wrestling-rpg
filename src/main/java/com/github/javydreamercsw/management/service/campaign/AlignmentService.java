@@ -190,6 +190,9 @@ public class AlignmentService {
         log.debug("Face reached Level 5: Gain Level 3 card, Lose Level 1 card.");
         removeOneCardOfLevel(cards, 1);
         state.setPendingL3Picks(state.getPendingL3Picks() + 1);
+        if (state.getPendingL1Picks() > 0) {
+          state.setPendingL1Picks(state.getPendingL1Picks() - 1);
+        }
       }
     } else {
       // Heel Level 4: Gain a level 2 card, lose a level 1 card

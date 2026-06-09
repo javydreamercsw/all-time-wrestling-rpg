@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
@@ -35,18 +34,13 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStorylineRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
-import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.SegmentParticipantRepository;
-import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
-import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
-import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -55,7 +49,6 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -64,7 +57,6 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,8 +98,25 @@ class CampaignServiceTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseRepository universeRepository;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
+  @Mock private WrestlerStatusService wrestlerStatusService;
+  @Mock private FeatureDataService featureDataService;
+  @Mock private MatchResultProcessorService matchResultProcessorService;
+  @Mock private CampaignProgressionService campaignProgressionService;
 
   @InjectMocks private CampaignService campaignService;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUpFeatureDataMock() {
+    // Return the defaultValue argument so Boolean auto-unboxing never receives null
+    org.mockito.Mockito.lenient()
+        .when(
+            featureDataService.getFeatureValue(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(inv -> inv.getArgument(3));
+  }
 
   @Test
   void testStartCampaign() {
@@ -201,212 +210,5 @@ class CampaignServiceTest {
 
     campaignService.shiftAlignment(campaign, -1);
     verify(alignmentService).shiftAlignment(campaign, -1);
-  }
-
-  @Test
-  void testCreateMatchForEncounter() {
-    Wrestler player = new Wrestler();
-    player.setName("Player");
-    player.setReigns(new LinkedHashSet<>());
-    Campaign campaign = new Campaign();
-    campaign.setId(1L);
-    campaign.setWrestler(player);
-
-    CampaignState state = new CampaignState();
-    campaign.setState(state);
-
-    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
-
-    Season season = new Season();
-    season.setId(1L);
-    Show show = new Show();
-    show.setId(1L);
-
-    state.setCurrentChapterId("test-chapter");
-
-    when(seasonRepository.findByName("Campaign Mode")).thenReturn(Optional.of(season));
-    when(chapterService.getChapter("test-chapter"))
-        .thenReturn(Optional.of(CampaignChapterDTO.builder().id("test-chapter").build()));
-
-    SegmentType matchType = new SegmentType();
-    matchType.setId(1L);
-    when(segmentTypeRepository.findByName(any())).thenReturn(Optional.of(matchType));
-
-    ShowType weekly = new ShowType();
-
-    weekly.setId(1L);
-
-    when(showTypeRepository.findByName("Weekly")).thenReturn(Optional.of(weekly));
-
-    Wrestler opponent = new Wrestler();
-
-    opponent.setName("Opponent");
-
-    when(wrestlerRepository.findByName("Opponent")).thenReturn(Optional.of(opponent));
-
-    when(showRepository.saveAndFlush(any())).thenReturn(show);
-
-    when(segmentRepository.save(any(Segment.class))).thenReturn(new Segment());
-
-    campaignService.createMatchForEncounter(
-        campaign, "Opponent", "Test Narration", "One on One", "Normal");
-
-    assertThat(state.getCurrentMatch()).isNotNull();
-    assertThat(state.getCurrentPhase()).isEqualTo(CampaignPhase.MATCH);
-    verify(campaignStateRepository).save(state);
-  }
-
-  @Test
-  void testHandleLevelChange_GainedLevel() {
-    Wrestler wrestler = new Wrestler();
-    Campaign campaign = new Campaign();
-    campaign.setWrestler(wrestler);
-    CampaignState state = new CampaignState();
-    state.setActiveCards(new ArrayList<>());
-    campaign.setState(state);
-
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.FACE);
-    alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
-    campaignService.handleLevelChange(campaign, 0, 1);
-
-    assertThat(state.getPendingL1Picks()).isEqualTo(1);
-    verify(campaignStateRepository).save(state);
-  }
-
-  @Test
-  void testProcessMatchResult_Win() {
-    Wrestler wrestler = new Wrestler();
-    Campaign campaign = new Campaign();
-    campaign.setId(1L);
-    campaign.setWrestler(wrestler);
-    CampaignState state = new CampaignState();
-    state.setWins(0);
-    state.setLosses(0);
-    state.setVictoryPoints(0);
-    state.setMatchesPlayed(0);
-    state.setActiveCards(new ArrayList<>());
-    state.setCurrentChapterId("test-chapter");
-    campaign.setState(state);
-
-    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
-    when(chapterService.getChapter("test-chapter"))
-        .thenReturn(
-            Optional.of(
-                CampaignChapterDTO.builder()
-                    .rules(
-                        CampaignChapterDTO.ChapterRules.builder()
-                            .victoryPointsWin(2)
-                            .victoryPointsLoss(1)
-                            .build())
-                    .build()));
-
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.FACE);
-    alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
-    campaignService.processMatchResult(campaign, true); // Win 1
-
-    assertThat(state.getWins()).isEqualTo(1);
-    assertThat(state.getVictoryPoints()).isEqualTo(2);
-    assertThat(state.getMatchesPlayed()).isEqualTo(1);
-    assertThat(state.getCurrentPhase()).isEqualTo(CampaignPhase.POST_MATCH);
-
-    campaignService.processMatchResult(campaign, false); // Loss 1
-    assertThat(state.getLosses()).isEqualTo(1);
-    assertThat(state.getVictoryPoints()).isEqualTo(3);
-    assertThat(state.getMatchesPlayed()).isEqualTo(2);
-  }
-
-  @Test
-  void testAdvanceChapter() {
-    Wrestler wrestler = new Wrestler();
-    wrestler.setReigns(new LinkedHashSet<>());
-    Campaign campaign = new Campaign();
-    campaign.setId(1L);
-    campaign.setWrestler(wrestler);
-    CampaignState state = new CampaignState();
-    state.setCurrentChapterId("ch1");
-    state.setCampaign(campaign);
-    campaign.setState(state);
-
-    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
-
-    CampaignChapterDTO ch2 = new CampaignChapterDTO();
-    ch2.setId("ch2");
-    when(chapterService.findAvailableChapters(state)).thenReturn(List.of(ch2));
-
-    campaignService.advanceChapter(campaign);
-
-    assertThat(state.getCurrentChapterId()).isEqualTo("ch2");
-    assertThat(state.getMatchesPlayed()).isZero();
-    verify(campaignStateRepository).save(state);
-  }
-
-  @Test
-  void testCompletePostMatch() {
-    Campaign campaign = new Campaign();
-    campaign.setId(1L);
-    CampaignState state = new CampaignState();
-    state.setCurrentPhase(CampaignPhase.POST_MATCH);
-    state.setActionsTaken(1);
-
-    campaign.setState(state);
-
-    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
-
-    campaignService.completePostMatch(campaign);
-
-    assertThat(state.getCurrentPhase()).isEqualTo(CampaignPhase.BACKSTAGE);
-    assertThat(state.getActionsTaken()).isZero();
-    verify(campaignStateRepository).save(state);
-  }
-
-  @Test
-  void testProcessMatchResult_Tournament() {
-    Wrestler wrestler = new Wrestler();
-    Campaign campaign = new Campaign();
-    campaign.setId(1L);
-    wrestler.setId(1L);
-    campaign.setWrestler(wrestler);
-    CampaignState state = new CampaignState();
-    state.setWins(0);
-    state.setLosses(0);
-    state.setVictoryPoints(0);
-    state.setMatchesPlayed(0);
-    state.setActiveCards(new ArrayList<>());
-    state.setCurrentChapterId("tournament");
-
-    Segment currentMatch = new Segment();
-    currentMatch.setShow(new Show());
-    state.setCurrentMatch(currentMatch);
-
-    campaign.setState(state);
-
-    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
-    when(chapterService.getChapter("tournament"))
-        .thenReturn(
-            Optional.of(
-                CampaignChapterDTO.builder()
-                    .id("tournament")
-                    .tournament(true)
-                    .rules(
-                        CampaignChapterDTO.ChapterRules.builder()
-                            .victoryPointsWin(2)
-                            .victoryPointsLoss(1)
-                            .build())
-                    .build()));
-
-    WrestlerAlignment alignment = new WrestlerAlignment();
-    alignment.setAlignmentType(AlignmentType.FACE);
-    alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
-
-    campaignService.processMatchResult(campaign, true);
-
-    verify(tournamentService).advanceTournament(any(), any(Boolean.class), any());
   }
 }

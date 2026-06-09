@@ -32,7 +32,6 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -108,8 +107,7 @@ class ShowSyncServiceIT extends ManagementIntegrationTest {
         .thenReturn("Weekly");
 
     // When
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncShows("test-op-shows", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncShows("test-op-shows");
 
     // Then
     assertThat(result.isSuccess()).isTrue();
@@ -146,8 +144,7 @@ class ShowSyncServiceIT extends ManagementIntegrationTest {
         .thenReturn("2026-01-12T00:00:00.000+00:00");
     when(notionPageDataExtractor.extractPropertyAsString(any(), eq("Template"))).thenReturn(null);
 
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncShows("test-op-shows-date", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncShows("test-op-shows-date");
 
     assertThat(result.isSuccess()).isTrue();
     Optional<Show> saved = showRepository.findByExternalId(showId);

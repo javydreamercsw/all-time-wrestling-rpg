@@ -115,10 +115,24 @@ public class AccountService {
     accountRepository
         .findById(id)
         .ifPresent(
-            account ->
-                universeMembershipRepository.deleteAll(
-                    universeMembershipRepository.findByAccount(account)));
+            account -> {
+              account.setEnabled(false);
+              accountRepository.save(account);
+            });
+  }
+
+  public void hardDelete(final Long id) {
     accountRepository.deleteById(id);
+  }
+
+  public void enable(final Long id) {
+    accountRepository
+        .findById(id)
+        .ifPresent(
+            account -> {
+              account.setEnabled(true);
+              accountRepository.save(account);
+            });
   }
 
   public Page<Account> list(final Pageable pageable) {

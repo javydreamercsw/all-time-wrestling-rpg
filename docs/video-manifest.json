@@ -199,14 +199,14 @@
     "id": "booker-journey-booker-set-main-event",
     "category": "Booker Journey",
     "title": "Set Main Event",
-    "description": "Main event confirmed — the segment is now flagged as the night's headline. When the show is finalised, the winner earns elevated fan gains and the AI narration treats this as the climax of the event.",
+    "description": "Main event confirmed — the last non-Promo segment is flagged as the night's headline. When the show is finalised, the winner earns elevated fan gains and the AI narration treats this as the climax of the event.",
     "videoPath": "videos/booker-set-main-event.mp4",
     "order": 0
   }, {
     "id": "booker-journey-booker-change-segment-order",
     "category": "Booker Journey",
     "title": "Change Segment Order",
-    "description": "Order updated — the opener is now in position 1 and the main event has moved to position 2. Adjustments take effect instantly and are reflected in the show card, match sequence, and AI narration context.",
+    "description": "Order updated — the opener is now in position 1 and the main event has moved to position 2. Adjustments are reflected in the show card, match sequence, and AI narration context.",
     "videoPath": "videos/booker-change-segment-order.mp4",
     "order": 0
   }, {
@@ -248,7 +248,7 @@
     "id": "campaign-campaign-list-walkthrough",
     "category": "Campaign",
     "title": "Campaign List Walkthrough",
-    "description": "The Campaign Dashboard shows the wrestler's current chapter, alignment track, win/loss record, and available actions — giving admins full visibility into any player's campaign state.",
+    "description": "Click the Dashboard button on any row to jump directly to that wrestler's campaign dashboard — the same view the player uses to run their campaign matches and backstage actions.",
     "videoPath": "videos/campaign-list-walkthrough.mp4",
     "order": 0
   }, {
@@ -348,6 +348,13 @@
     "title": "Universe Management Walkthrough",
     "description": "Create Universe dialog — name is required; type controls which game rules apply. Standard uses the default ATW ruleset; Fantasy enables league drafts; Historical locks the roster to a specific era.",
     "videoPath": "videos/universe-list-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "admin-universe-member-onboarding",
+    "category": "Admin",
+    "title": "Inviting Members to a Universe",
+    "description": "When someone follows the link and submits a request, click Requests to review it. Approve to add them as a member, Reject to decline, or Block to prevent future requests from that account.",
+    "videoPath": "videos/universe-member-onboarding.mp4",
     "order": 0
   } ]
 }

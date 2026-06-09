@@ -27,7 +27,6 @@ import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyze
 import com.github.javydreamercsw.management.service.sync.NotionSyncScheduler;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -159,7 +158,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
   @WithMockUser(roles = "ADMIN")
   void shouldSyncShowsSuccessfully() throws Exception {
     // Given
-    when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
+    when(notionSyncService.syncShows(anyString()))
         .thenReturn(NotionSyncService.SyncResult.success(SyncEntityType.SHOWS.getKey(), 12, 0, 0));
 
     // When & Then
@@ -177,7 +176,7 @@ class NotionSyncControllerTest extends AbstractControllerTest {
   @WithMockUser(roles = "ADMIN")
   void shouldHandleShowsSyncFailure() throws Exception {
     // Given
-    when(notionSyncService.syncShows(anyString(), any(SyncDirection.class)))
+    when(notionSyncService.syncShows(anyString()))
         .thenReturn(NotionSyncService.SyncResult.failure("Shows", "Database connection failed"));
 
     // When & Then

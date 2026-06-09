@@ -44,11 +44,14 @@ import org.springframework.stereotype.Service;
 public class CampaignChapterService {
 
   private final ObjectMapper objectMapper;
+  private final FeatureDataService featureDataService;
   private List<CampaignChapterDTO> chapters = Collections.emptyList();
 
   @Autowired
-  public CampaignChapterService(@NonNull final ObjectMapper objectMapper) {
+  public CampaignChapterService(
+      @NonNull final ObjectMapper objectMapper, final FeatureDataService featureDataService) {
     this.objectMapper = objectMapper;
+    this.featureDataService = featureDataService;
   }
 
   @PostConstruct
@@ -162,16 +165,7 @@ public class CampaignChapterService {
     }
 
     // Check Tournament Status
-    java.util.Map<String, Object> featureData = java.util.Collections.emptyMap();
-    if (state.getFeatureData() != null) {
-      try {
-        featureData =
-            objectMapper.readValue(
-                state.getFeatureData(), new TypeReference<java.util.Map<String, Object>>() {});
-      } catch (IOException e) {
-        log.error("Error parsing feature data", e);
-      }
-    }
+    java.util.Map<String, Object> featureData = featureDataService.getFeatureData(state);
 
     if (criteria.getTournamentWinner() != null) {
       boolean isWinner = Boolean.TRUE.equals(featureData.get("tournamentWinner"));

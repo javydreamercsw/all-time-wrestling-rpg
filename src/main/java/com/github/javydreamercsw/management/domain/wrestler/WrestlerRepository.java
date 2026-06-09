@@ -92,6 +92,9 @@ public interface WrestlerRepository
   @Query("SELECT DISTINCT w.id FROM Wrestler w")
   List<Long> findAllIds();
 
+  @Query("SELECT w FROM Wrestler w WHERE w.id <> :excludeId ORDER BY RAND()")
+  List<Wrestler> findRandomExcluding(@Param("excludeId") Long excludeId, Pageable pageable);
+
   @Query("SELECT MAX(w.lastSync) FROM Wrestler w WHERE w.lastSync IS NOT NULL")
   Optional<java.time.Instant> findMaxLastSync();
 

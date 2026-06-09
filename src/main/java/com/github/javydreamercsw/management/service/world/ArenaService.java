@@ -112,6 +112,10 @@ public class ArenaService {
     return repository.findById(id);
   }
 
+  public Optional<Arena> findByIdWithTraits(final Long id) {
+    return repository.findByIdWithTraits(id);
+  }
+
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @Cacheable(value = CacheConfig.ARENAS_CACHE, key = "'all'")
   public List<Arena> findAll() {

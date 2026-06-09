@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.sync.entity.notion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.FactionPage;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
+import com.github.javydreamercsw.base.ai.notion.NotionPropertyUtil;
 import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.dto.FactionDTO;
@@ -27,7 +28,6 @@ import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -182,16 +182,18 @@ public class FactionSyncService extends BaseSyncService {
           dto.setIsActive("true".equalsIgnoreCase(str) || "active".equalsIgnoreCase(str));
         }
 
-        dto.setLeaderExternalId(extractRelationId(rawProperties.get("Leader")));
+        dto.setLeaderExternalId(NotionPropertyUtil.extractRelationId(rawProperties.get("Leader")));
         if (dto.getLeaderExternalId() == null) {
           dto.setLeader(
               syncServiceDependencies
                   .getNotionPageDataExtractor()
                   .extractPropertyAsString(rawProperties, "Leader"));
         }
-        dto.setManagerExternalId(extractRelationId(rawProperties.get("Manager")));
-        dto.setMemberExternalIds(extractRelationIds(rawProperties.get("Members")));
-        dto.setTeamExternalIds(extractRelationIds(rawProperties.get("Teams")));
+        dto.setManagerExternalId(
+            NotionPropertyUtil.extractRelationId(rawProperties.get("Manager")));
+        dto.setMemberExternalIds(
+            NotionPropertyUtil.extractRelationIds(rawProperties.get("Members")));
+        dto.setTeamExternalIds(NotionPropertyUtil.extractRelationIds(rawProperties.get("Teams")));
 
         Object alignmentObj = rawProperties.get("Alignment");
         if (alignmentObj instanceof String) {
@@ -213,42 +215,6 @@ public class FactionSyncService extends BaseSyncService {
       log.error("Failed to convert faction page to DTO", e);
       return null;
     }
-  }
-
-  private String extractRelationId(final Object property) {
-    List<String> ids = extractRelationIds(property);
-    return ids.isEmpty() ? null : ids.get(0);
-  }
-
-  private List<String> extractRelationIds(final Object property) {
-    List<String> ids = new ArrayList<>();
-    if (property == null) {
-      return ids;
-    }
-
-    if (property instanceof String str) {
-      if (str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-        ids.add(str);
-      }
-    } else if (property instanceof List<?> list) {
-      for (Object item : list) {
-        if (item instanceof String str
-            && str.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
-          ids.add(str);
-        } else if (item instanceof Map<?, ?> map) {
-          Object id = map.get("id");
-          if (id instanceof String str) {
-            ids.add(str);
-          }
-        }
-      }
-    } else if (property instanceof Map<?, ?> map) {
-      Object id = map.get("id");
-      if (id instanceof String str) {
-        ids.add(str);
-      }
-    }
-    return ids;
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)

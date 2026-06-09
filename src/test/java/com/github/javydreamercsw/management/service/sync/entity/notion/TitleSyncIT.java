@@ -31,7 +31,6 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.service.sync.NotionSyncService;
 import com.github.javydreamercsw.management.service.sync.SyncEntityType;
 import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
-import com.github.javydreamercsw.management.service.sync.base.SyncDirection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -102,8 +101,7 @@ class TitleSyncIT extends ManagementIntegrationTest {
     when(notionHandler.loadAllTitles()).thenReturn(List.of(titlePage));
 
     // Act
-    BaseSyncService.SyncResult result =
-        notionSyncService.syncTitles("integration-test-titles", SyncDirection.INBOUND);
+    BaseSyncService.SyncResult result = notionSyncService.syncTitles("integration-test-titles");
 
     // Assert
     assertThat(result).isNotNull();

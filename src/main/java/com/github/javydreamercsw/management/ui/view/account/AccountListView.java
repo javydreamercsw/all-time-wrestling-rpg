@@ -26,7 +26,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.data.renderer.LitRenderer;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -73,8 +73,8 @@ public class AccountListView extends Main {
   }
 
   private void setupGrid() {
-    grid.addColumn(Account::getUsername).setHeader("Username").setSortable(true);
-    grid.addColumn(Account::getEmail).setHeader("Email").setSortable(true);
+    grid.addColumn(Account::getUsername).setHeader("Username").setSortable(true).setFlexGrow(1);
+    grid.addColumn(Account::getEmail).setHeader("Email").setSortable(true).setFlexGrow(2);
     grid.addColumn(
             account ->
                 account.getRoles().stream()
@@ -82,14 +82,17 @@ public class AccountListView extends Main {
                     .map(role -> role.getName().name())
                     .orElse("N/A"))
         .setHeader("Role")
-        .setSortable(true);
+        .setSortable(true)
+        .setFlexGrow(0)
+        .setWidth("8em");
     grid.setId("account-grid");
-    grid.addColumn(Account::getLastLogin).setHeader("Last Login").setSortable(true);
+    grid.addColumn(Account::getLastLogin).setHeader("Last Login").setSortable(true).setFlexGrow(1);
 
     grid.addComponentColumn(
             account -> {
-              Button editButton = new Button("Edit", VaadinIcon.EDIT.create());
-              editButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              Button editButton = new Button(VaadinIcon.EDIT.create());
+              editButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+              editButton.setTooltipText("Edit");
               editButton.setId("edit-button-" + account.getId());
               editButton.addClickListener(
                   e -> {
@@ -102,34 +105,25 @@ public class AccountListView extends Main {
                         });
                     dialog.open();
                   });
-              return editButton;
-            })
-        .setFlexGrow(0);
 
-    LitRenderer<Account> enabledRenderer =
-        LitRenderer.<Account>of(
-                """
-                <vaadin-icon icon='vaadin:${item.icon}' style='color:\
-                 ${item.color}'></vaadin-icon>\
-                """)
-            .withProperty("icon", account -> account.isEnabled() ? "check" : "close")
-            .withProperty("color", account -> account.isEnabled() ? "green" : "red");
-
-    grid.addColumn(enabledRenderer).setHeader("Enabled").setSortable(true).setFlexGrow(0);
-    grid.addComponentColumn(
-            account -> {
-              Button deleteButton = new Button("Delete", VaadinIcon.TRASH.create());
-              deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
-              deleteButton.setId("delete-button-" + account.getId());
-              deleteButton.addClickListener(
-                  e -> {
-                    if (accountService.canDelete(account)) {
+              Button toggleButton;
+              if (account.isEnabled()) {
+                toggleButton = new Button(VaadinIcon.BAN.create());
+                toggleButton.addThemeVariants(
+                    ButtonVariant.LUMO_SMALL,
+                    ButtonVariant.LUMO_TERTIARY,
+                    ButtonVariant.LUMO_ERROR);
+                toggleButton.setTooltipText("Disable");
+                toggleButton.setId("disable-button-" + account.getId());
+                toggleButton.addClickListener(
+                    e -> {
                       ConfirmDialog confirmDialog = new ConfirmDialog();
-                      confirmDialog.setHeader("Confirm Delete");
-                      confirmDialog.setText("Are you sure you want to delete this account?");
-
+                      confirmDialog.setHeader("Disable Account");
+                      confirmDialog.setText(
+                          "This account will be disabled and cannot log in."
+                              + " You can re-enable it later.");
                       confirmDialog.setConfirmButton(
-                          "Delete",
+                          "Disable",
                           event -> {
                             accountService.delete(account.getId());
                             refreshGrid();
@@ -137,18 +131,56 @@ public class AccountListView extends Main {
                       confirmDialog.setConfirmButtonTheme("error");
                       confirmDialog.setCancelable(true);
                       confirmDialog.open();
-                    } else {
-                      new ConfirmDialog(
-                              "Cannot Delete Account",
-                              "This account is associated with a wrestler and cannot be deleted.",
-                              "OK",
-                              null)
-                          .open();
-                    }
-                  });
-              return deleteButton;
+                    });
+              } else {
+                toggleButton = new Button(VaadinIcon.CHECK.create());
+                toggleButton.addThemeVariants(
+                    ButtonVariant.LUMO_SMALL,
+                    ButtonVariant.LUMO_TERTIARY,
+                    ButtonVariant.LUMO_SUCCESS);
+                toggleButton.setTooltipText("Enable");
+                toggleButton.setId("enable-button-" + account.getId());
+                toggleButton.addClickListener(
+                    e -> {
+                      accountService.enable(account.getId());
+                      refreshGrid();
+                    });
+              }
+
+              HorizontalLayout actions = new HorizontalLayout(editButton, toggleButton);
+              if (accountService.canDelete(account)) {
+                Button deleteButton = new Button(VaadinIcon.TRASH.create());
+                deleteButton.addThemeVariants(
+                    ButtonVariant.LUMO_SMALL,
+                    ButtonVariant.LUMO_TERTIARY,
+                    ButtonVariant.LUMO_ERROR);
+                deleteButton.setTooltipText("Delete");
+                deleteButton.setId("delete-button-" + account.getId());
+                deleteButton.addClickListener(
+                    e -> {
+                      ConfirmDialog confirmDialog = new ConfirmDialog();
+                      confirmDialog.setHeader("Delete Account");
+                      confirmDialog.setText(
+                          "This will permanently delete the account. This cannot be undone.");
+                      confirmDialog.setConfirmButton(
+                          "Delete",
+                          event -> {
+                            accountService.hardDelete(account.getId());
+                            refreshGrid();
+                          });
+                      confirmDialog.setConfirmButtonTheme("error");
+                      confirmDialog.setCancelable(true);
+                      confirmDialog.open();
+                    });
+                actions.add(deleteButton);
+              }
+              actions.setSpacing(false);
+              actions.setPadding(false);
+              return actions;
             })
-        .setFlexGrow(0);
+        .setHeader("Actions")
+        .setFlexGrow(0)
+        .setWidth("8em");
   }
 
   private void refreshGrid() {

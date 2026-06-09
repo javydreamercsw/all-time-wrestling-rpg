@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.segment;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -48,6 +49,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -55,6 +57,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,11 +99,11 @@ class NarrationDialogTest {
     wrestler.setGender(Gender.MALE);
 
     when(segmentService.findByIdWithDetails(anyLong())).thenReturn(Optional.of(segment));
-    when(npcService.findAllByType("Referee")).thenReturn(new ArrayList<>());
-    when(npcService.findAllByType("Commissioner")).thenReturn(new ArrayList<>());
-    when(npcService.findAllByType("Commentator")).thenReturn(new ArrayList<>());
-    when(npcService.findAllByType("Announcer")).thenReturn(new ArrayList<>());
-    when(npcService.findAll()).thenReturn(new ArrayList<>());
+    when(npcService.findAllByTypeUnfiltered("Referee")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByTypeUnfiltered("Commissioner")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByTypeUnfiltered("Commentator")).thenReturn(new ArrayList<>());
+    when(npcService.findAllByTypeUnfiltered("Announcer")).thenReturn(new ArrayList<>());
+    when(npcService.findAllUnfiltered()).thenReturn(new ArrayList<>());
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     when(wrestlerStatsService.findAllAsDTO(anyLong())).thenReturn(new ArrayList<>());
     when(wrestlerStatsService.findAllBySegment(any(), anyLong())).thenReturn(new ArrayList<>());
@@ -300,5 +303,129 @@ class NarrationDialogTest {
     assertTrue(relText.contains("Seth Rollins"));
     assertTrue(relText.contains("80"));
     assertTrue(relText.contains("Storyline"));
+  }
+
+  // ── Dropdown population tests ─────────────────────────────────────────────
+
+  /**
+   * Regression: PreloadedData.load() must use findAllByTypeUnfiltered so that the expansion filter
+   * (which silently returns empty on background threads where VaadinSession is null) cannot cause
+   * the dropdowns to appear empty.
+   */
+  @Test
+  void preloadedData_load_usesUnfilteredMethods() {
+    Npc commentator = new Npc();
+    commentator.setName("Jane Commentator");
+    commentator.setNpcType("Commentator");
+    commentator.setExpansionCode(null);
+
+    when(npcService.findAllByTypeUnfiltered("Commentator")).thenReturn(List.of(commentator));
+
+    NarrationDialog.PreloadedData preloaded =
+        NarrationDialog.PreloadedData.load(
+            segmentService, npcService, wrestlerStatsService, universeContextService, segment);
+
+    assertThat(preloaded.commentators()).hasSize(1);
+    assertThat(preloaded.commentators().get(0).getName()).isEqualTo("Jane Commentator");
+  }
+
+  @Test
+  void preloadedData_load_allNpcTypesPopulated() {
+    Npc referee = npc("Samuel Winters", "Referee", "BASE_GAME");
+    Npc commissioner = npc("Commissioner Blake", "Commissioner", "BASE_GAME");
+    Npc commentator = npc("Jane Doe", "Commentator", null);
+    Npc announcer = npc("Lena Voss", "Announcer", "BASE_GAME");
+    Npc manager = npc("Colonel Mustafa", "Manager", "RUMBLE");
+
+    when(npcService.findAllByTypeUnfiltered("Referee")).thenReturn(List.of(referee));
+    when(npcService.findAllByTypeUnfiltered("Commissioner")).thenReturn(List.of(commissioner));
+    when(npcService.findAllByTypeUnfiltered("Commentator")).thenReturn(List.of(commentator));
+    when(npcService.findAllByTypeUnfiltered("Announcer")).thenReturn(List.of(announcer));
+    when(npcService.findAllUnfiltered())
+        .thenReturn(List.of(referee, commissioner, commentator, announcer, manager));
+
+    NarrationDialog.PreloadedData preloaded =
+        NarrationDialog.PreloadedData.load(
+            segmentService, npcService, wrestlerStatsService, universeContextService, segment);
+
+    assertThat(preloaded.referees()).hasSize(1);
+    assertThat(preloaded.commissioners()).hasSize(1);
+    assertThat(preloaded.commentators()).hasSize(1);
+    assertThat(preloaded.announcers()).hasSize(1);
+    assertThat(preloaded.otherNpcs()).hasSize(1); // manager only — others filtered out
+  }
+
+  @Test
+  void narrationDialog_refereeField_hasItemsFromPreloadedData() throws Exception {
+    Npc referee = npc("Samuel Winters", "Referee", "BASE_GAME");
+    NarrationDialog.PreloadedData preloaded =
+        new NarrationDialog.PreloadedData(
+            segment,
+            List.of(referee),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            Map.of());
+
+    NarrationDialog dialog = buildDialog(preloaded);
+
+    Field refereeFieldRefl = NarrationDialog.class.getDeclaredField("refereeField");
+    refereeFieldRefl.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    ComboBox<Npc> refereeField = (ComboBox<Npc>) refereeFieldRefl.get(dialog);
+
+    assertThat(refereeField.getListDataView().getItemCount()).isEqualTo(1);
+  }
+
+  @Test
+  void narrationDialog_commentatorsField_hasItemsFromPreloadedData() throws Exception {
+    Npc commentator = npc("Jane Doe", "Commentator", null);
+    NarrationDialog.PreloadedData preloaded =
+        new NarrationDialog.PreloadedData(
+            segment,
+            List.of(),
+            List.of(),
+            List.of(commentator),
+            List.of(),
+            List.of(),
+            List.of(),
+            Map.of());
+
+    NarrationDialog dialog = buildDialog(preloaded);
+
+    Field commentatorsFieldRefl = NarrationDialog.class.getDeclaredField("commentatorsField");
+    commentatorsFieldRefl.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    MultiSelectComboBox<Npc> commentatorsField =
+        (MultiSelectComboBox<Npc>) commentatorsFieldRefl.get(dialog);
+
+    assertThat(commentatorsField.getListDataView().getItemCount()).isEqualTo(1);
+  }
+
+  private static Npc npc(final String name, final String type, final String expansionCode) {
+    Npc n = new Npc();
+    n.setName(name);
+    n.setNpcType(type);
+    n.setExpansionCode(expansionCode);
+    return n;
+  }
+
+  private NarrationDialog buildDialog(final NarrationDialog.PreloadedData preloaded) {
+    return new NarrationDialog(
+        preloaded,
+        wrestlerService,
+        showService,
+        segmentService,
+        s -> {},
+        rivalryService,
+        segmentNarrationController,
+        aiFactory,
+        ringsideActionService,
+        relationshipService,
+        universeContextService,
+        notificationService,
+        wrestlerStatsService);
   }
 }

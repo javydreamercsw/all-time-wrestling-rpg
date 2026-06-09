@@ -65,8 +65,8 @@ public class CommentaryService {
       log.debug("Creating new NPC for commentator: {}", npcName);
       npc = new Npc();
       npc.setName(npcName);
-      npc.setNpcType("Commentator");
     }
+    npc.setNpcType("Commentator");
     npc.setGender(gender);
     npc.setAlignment(alignment);
     npc.setDescription(description);

@@ -17,10 +17,12 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
@@ -36,7 +38,10 @@ class CampaignChapterServiceTest {
 
   @BeforeEach
   public void setUp() {
-    chapterService = new CampaignChapterService(new ObjectMapper());
+    ObjectMapper objectMapper = new ObjectMapper();
+    FeatureDataService featureDataService =
+        new FeatureDataService(objectMapper, mock(CampaignStateRepository.class));
+    chapterService = new CampaignChapterService(objectMapper, featureDataService);
     chapterService.init();
   }
 

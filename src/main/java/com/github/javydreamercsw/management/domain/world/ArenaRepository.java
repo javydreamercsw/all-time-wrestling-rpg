@@ -21,6 +21,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource
@@ -33,4 +34,12 @@ public interface ArenaRepository
   @Query(
       "SELECT DISTINCT a FROM Arena a JOIN FETCH a.location LEFT JOIN FETCH a.environmentalTraits")
   List<Arena> findAllWithLocation();
+
+  @Query(
+      "SELECT DISTINCT a FROM Arena a"
+          + " LEFT JOIN FETCH a.environmentalTraits"
+          + " LEFT JOIN FETCH a.location l"
+          + " LEFT JOIN FETCH l.culturalTags"
+          + " WHERE a.id = :id")
+  Optional<Arena> findByIdWithTraits(@Param("id") Long id);
 }

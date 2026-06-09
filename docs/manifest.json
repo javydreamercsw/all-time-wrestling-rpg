@@ -492,34 +492,6 @@
     "imagePath": "screenshots/booker-show-history.png",
     "order": 400
   }, {
-    "id": "game-mechanics-mechanic-cards-walkthrough",
-    "category": "Game Mechanics",
-    "title": "Cards Walkthrough",
-    "description": "Card detail view: health cost, stamina cost, damage type, and move category.",
-    "videoPath": "videos/mechanic-cards-walkthrough.mp4",
-    "order": 0
-  }, {
-    "id": "uncategorized-_discard_1779114245433",
-    "category": "Uncategorized",
-    "title": "Unknown",
-    "description": "Segment description updated — the show card reflects the new summary immediately.",
-    "videoPath": "videos/_discard_1779114245433.mp4",
-    "order": 0
-  }, {
-    "id": "booker-journey-booker-full-show-lifecycle",
-    "category": "Booker Journey",
-    "title": "Full Show Lifecycle",
-    "description": "Segment description updated — the show card reflects the new summary immediately.",
-    "videoPath": "videos/booker-full-show-lifecycle.mp4",
-    "order": 0
-  }, {
-    "id": "booker-journey-booker-set-main-event",
-    "category": "Booker Journey",
-    "title": "Set Main Event",
-    "description": "This setting impacts the narration as well as the fans obtained by the participants!.",
-    "videoPath": "videos/booker-set-main-event.mp4",
-    "order": 0
-  }, {
     "id": "campaign-campaign-dashboard",
     "category": "Campaign",
     "title": "Campaign Dashboard",
@@ -630,6 +602,41 @@
     "title": "Show Calendar",
     "description": "The Show Calendar provides a monthly view of every scheduled show in the promotion. Each show appears as a colour-coded event tile on its booked date. Click any tile to jump directly to that show's detail page. Navigate between months using the prev/next arrows, or click Today to snap back to the current date.",
     "imagePath": "screenshots/show-calendar-overview.png",
+    "order": 0
+  }, {
+    "id": "entities-export-universe-data",
+    "category": "Entities",
+    "title": "Export Universe Data",
+    "description": "Export wrestler state, injuries, rivalries, title reigns, alignments and relationships to CSV or JSON",
+    "imagePath": "screenshots/export-universe-data.png",
+    "order": 0
+  }, {
+    "id": "admin-export-universe-images",
+    "category": "Admin",
+    "title": "Export Custom Images",
+    "description": "Download a ZIP of all custom images (wrestlers, factions, titles, arenas, and more) in one click. The archive preserves the original file paths so images can be restored on a new host without reconfiguration.",
+    "imagePath": "screenshots/export-universe-images.png",
+    "order": 0
+  }, {
+    "id": "community-universe-join-page",
+    "category": "Community",
+    "title": "Joining a Universe",
+    "description": "When you follow a universe invite link, you are taken to this page. Existing users can log in and request membership; new users can create a free account and submit their request in one step.",
+    "imagePath": "screenshots/universe-join-page.png",
+    "order": 0
+  }, {
+    "id": "admin-universe-invite-management",
+    "category": "Admin",
+    "title": "Managing Universe Invites",
+    "description": "Admins can generate invite links to share with prospective members. Targeted links are single-use with a 7-day expiry; Community links are multi-use with no expiry. Active links are listed below with options to revoke.",
+    "imagePath": "screenshots/universe-invite-management.png",
+    "order": 0
+  }, {
+    "id": "admin-universe-join-requests",
+    "category": "Admin",
+    "title": "Reviewing Join Requests",
+    "description": "Pending membership requests appear here. Approve to add the user as a member, Reject to decline while allowing them to re-request, or Block to permanently prevent future requests from that account.",
+    "imagePath": "screenshots/universe-join-requests.png",
     "order": 0
   } ]
 }

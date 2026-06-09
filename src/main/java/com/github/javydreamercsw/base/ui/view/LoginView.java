@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ui.view;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.ui.view.account.ForgotPasswordView;
 import com.vaadin.flow.component.html.Div;
@@ -84,6 +85,7 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
     for (String[] entry : DEFAULT_ACCOUNTS) {
       accountRepository
           .findByUsername(entry[0])
+          .filter(Account::isEnabled)
           .filter(a -> passwordEncoder.matches(entry[1], a.getPassword()))
           .ifPresent(a -> stillDefault.add(entry[0] + "/" + entry[1]));
     }

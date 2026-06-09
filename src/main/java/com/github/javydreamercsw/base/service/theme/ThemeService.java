@@ -48,14 +48,14 @@ public class ThemeService {
   }
 
   public Optional<String> getGlobalDefaultTheme() {
-    return gameSettingRepository.findById(DEFAULT_THEME_KEY).map(GameSetting::getValue);
+    return gameSettingRepository.findGlobal(DEFAULT_THEME_KEY).map(GameSetting::getValue);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public void updateGlobalDefaultTheme(final String theme) {
     GameSetting setting =
-        gameSettingRepository.findById(DEFAULT_THEME_KEY).orElse(new GameSetting());
-    setting.setId(DEFAULT_THEME_KEY);
+        gameSettingRepository.findGlobal(DEFAULT_THEME_KEY).orElse(new GameSetting());
+    setting.setSettingKey(DEFAULT_THEME_KEY);
     setting.setValue(theme);
     gameSettingRepository.save(setting);
   }

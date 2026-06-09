@@ -105,6 +105,8 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+      - name: Clear OpenRewrite POM cache (prevents stale RocksDB deserialization errors)
+        run: rm -rf ~/.rewrite-cache ~/.rewrite ~/.m2/repository/.rewrite
       - name: OpenRewrite dry-run (fail if changes needed)
         run: mvn -B rewrite:dryRun
 
@@ -408,6 +410,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
+        skip_validation: true
 
   # Build and push Docker image (no release profile) on release/* branches
   docker-image-release-branch:
