@@ -321,7 +321,7 @@
       "@babel/types": "7.28.5",
       "@types/react": "19.2.14"
     },
-    "hash": "1a9444f8de1f7e211baa4dfbd5712e79f77d0f580a3f3fac4f684ee18440dab1",
+    "hash": "463c3457b28ac2abd85de464df7a1318ab5e57b803244afd93f028c084930c9e",
     "overrides": {
       "@fullcalendar/core": "$@fullcalendar/core",
       "@fullcalendar/daygrid": "$@fullcalendar/daygrid",
