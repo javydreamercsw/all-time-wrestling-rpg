@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.ui.view.universe;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.universe.UniverseInvite;
 import com.github.javydreamercsw.management.service.AccountService;
@@ -223,7 +222,7 @@ public class JoinView extends VerticalLayout implements BeforeEnterObserver {
 
           try {
             Account account =
-                accountService.createAccount(username, password, email, RoleName.PLAYER);
+                accountService.createPlayerAccountForInvite(username, password, email);
             joinRequestService.submitRequest(invite, username, email, account);
             renderConfirmation();
           } catch (IllegalArgumentException ex) {

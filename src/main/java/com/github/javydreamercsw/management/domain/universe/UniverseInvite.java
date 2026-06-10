@@ -54,8 +54,8 @@ public class UniverseInvite {
   @Column(name = "type", nullable = false, length = 20)
   private InviteType type;
 
-  @ManyToOne(optional = false)
-  @JoinColumn(name = "created_by", nullable = false)
+  @ManyToOne(optional = true)
+  @JoinColumn(name = "created_by", nullable = true)
   private Account createdBy;
 
   @Column(name = "created_at", nullable = false)

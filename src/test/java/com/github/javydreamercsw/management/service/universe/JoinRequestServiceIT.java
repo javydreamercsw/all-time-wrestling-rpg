@@ -36,6 +36,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 
 /**
  * Integration tests for {@link JoinRequestService}. Exercises real H2 schema — verifies the full
@@ -198,5 +200,31 @@ class JoinRequestServiceIT extends ManagementIntegrationTest {
     joinRequestService.approveRequest(request.getId(), admin);
 
     assertThat(membershipService.isMember(universe, requester)).isTrue();
+  }
+
+  /**
+   * Regression test: invite-link registration creates an account but does not log it in, so
+   * submitRequest fires JoinRequestSubmittedEvent with no Authentication in the SecurityContext.
+   * JoinRequestInboxListener must not propagate AuthenticationCredentialsNotFoundException.
+   */
+  @Test
+  void submitRequest_withNoSecurityContext_doesNotThrow() {
+    SecurityContextHolder.clearContext();
+    TestSecurityContextHolder.clearContext();
+    try {
+      // Use createPlayerAccountForInvite — same method JoinView uses; has no auth guard
+      Account newPlayer =
+          accountService.createPlayerAccountForInvite(
+              "it_anon_" + System.nanoTime(), "P@ssw0rd!", "anon@test.com");
+
+      UniverseJoinRequest request =
+          joinRequestService.submitRequest(
+              invite, newPlayer.getUsername(), "anon@test.com", newPlayer);
+
+      assertThat(request.getStatus()).isEqualTo(RequestStatus.PENDING);
+    } finally {
+      // Restore admin context so @AfterEach cleanup methods can run
+      accountRepository.findByUsername("admin").ifPresent(this::login);
+    }
   }
 }

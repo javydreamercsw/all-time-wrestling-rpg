@@ -16,10 +16,15 @@
 */
 package com.github.javydreamercsw.management.ui.view.universe;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseInvite;
@@ -135,6 +140,54 @@ class JoinViewTest extends AbstractViewTest {
                 com.vaadin.flow.component.button.Button.class,
                 spec -> spec.withId("join-submit-button")))
         .isNotNull();
+  }
+
+  @Test
+  void submitRegistration_callsCreatePlayerAccountForInvite_notAdminCreateAccount() {
+    // Regression: before the fix, the submit button called createAccount which requires
+    // ROLE_ADMIN and threw AuthenticationCredentialsNotFoundException for anonymous users.
+    Account created = new Account("alice", "$2a$10$enc", "alice@example.com");
+    created.setId(10L);
+    when(accountService.createPlayerAccountForInvite("alice", "Valid1!pw", "alice@example.com"))
+        .thenReturn(created);
+
+    simulateBeforeEnter(view, "join/valid-token", "token", "valid-token");
+
+    com.vaadin.flow.component.textfield.TextField usernameField =
+        _get(
+            view,
+            com.vaadin.flow.component.textfield.TextField.class,
+            s -> s.withId("join-username"));
+    com.vaadin.flow.component.textfield.PasswordField passwordField =
+        _get(
+            view,
+            com.vaadin.flow.component.textfield.PasswordField.class,
+            s -> s.withId("join-password"));
+    com.vaadin.flow.component.textfield.PasswordField confirmField =
+        _get(
+            view,
+            com.vaadin.flow.component.textfield.PasswordField.class,
+            s -> s.withId("join-confirm-password"));
+    com.vaadin.flow.component.textfield.EmailField emailField =
+        _get(
+            view,
+            com.vaadin.flow.component.textfield.EmailField.class,
+            s -> s.withId("join-email"));
+
+    usernameField.setValue("alice");
+    passwordField.setValue("Valid1!pw");
+    confirmField.setValue("Valid1!pw");
+    emailField.setValue("alice@example.com");
+
+    com.vaadin.flow.component.button.Button submitBtn =
+        _get(
+            view,
+            com.vaadin.flow.component.button.Button.class,
+            s -> s.withId("join-register-submit"));
+    _click(submitBtn);
+
+    verify(accountService).createPlayerAccountForInvite("alice", "Valid1!pw", "alice@example.com");
+    verify(joinRequestService).submitRequest(any(), anyString(), anyString(), any());
   }
 
   // ── Helper ────────────────────────────────────────────────────────────────

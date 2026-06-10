@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.event;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest;
@@ -70,40 +71,44 @@ public class JoinRequestInboxListener implements ApplicationListener<JoinRequest
     String message =
         "'%s' has requested to join universe '%s'.".formatted(requesterName, universeName);
 
-    // Notify all ADMIN accounts that are members of this universe
-    List<TargetInfo> targets =
-        membershipService.getMembersForUniverse(request.getUniverse()).stream()
-            .map(m -> m.getAccount())
-            .filter(a -> a.hasRole(RoleName.ADMIN))
-            .map(Account::getId)
-            .filter(id -> id != null)
-            .map(id -> new TargetInfo(id.toString(), InboxItemTarget.TargetType.ACCOUNT))
-            .toList();
+    // Notifications require auth (getMembersForUniverse, createInboxItem); the caller may be an
+    // anonymous registrant who has not yet established a SecurityContext, so elevate to system.
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          List<TargetInfo> targets =
+              membershipService.getMembersForUniverse(request.getUniverse()).stream()
+                  .map(m -> m.getAccount())
+                  .filter(a -> a.hasRole(RoleName.ADMIN))
+                  .map(Account::getId)
+                  .filter(id -> id != null)
+                  .map(id -> new TargetInfo(id.toString(), InboxItemTarget.TargetType.ACCOUNT))
+                  .toList();
 
-    if (targets.isEmpty()) {
-      log.debug(
-          "No ADMIN members found for universe {} to notify of join request {}",
-          universeName,
-          request.getId());
-      return;
-    }
+          if (targets.isEmpty()) {
+            log.debug(
+                "No ADMIN members found for universe {} to notify of join request {}",
+                universeName,
+                request.getId());
+            return;
+          }
 
-    try {
-      inboxService.createInboxItem(joinRequestEventType, message, targets);
-      InboxUpdateEvent updateEvent = new InboxUpdateEvent(this);
-      eventPublisher.publishEvent(updateEvent);
-      inboxUpdateBroadcaster.broadcast(updateEvent);
-      log.debug(
-          "Notified {} admin(s) of join request {} for universe {}",
-          targets.size(),
-          request.getId(),
-          universeName);
-    } catch (Exception ex) {
-      // Notifications are best-effort — don't fail the join request if inbox write fails
-      log.warn(
-          "Failed to create inbox notification for join request {}: {}",
-          request.getId(),
-          ex.getMessage());
-    }
+          try {
+            inboxService.createInboxItem(joinRequestEventType, message, targets);
+            InboxUpdateEvent updateEvent = new InboxUpdateEvent(this);
+            eventPublisher.publishEvent(updateEvent);
+            inboxUpdateBroadcaster.broadcast(updateEvent);
+            log.debug(
+                "Notified {} admin(s) of join request {} for universe {}",
+                targets.size(),
+                request.getId(),
+                universeName);
+          } catch (Exception ex) {
+            // Notifications are best-effort — don't fail the join request if inbox write fails
+            log.warn(
+                "Failed to create inbox notification for join request {}: {}",
+                request.getId(),
+                ex.getMessage());
+          }
+        });
   }
 }
