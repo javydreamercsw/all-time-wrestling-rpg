@@ -73,6 +73,40 @@ class AccountServiceTest {
   }
 
   @Test
+  void createPlayerAccountForInvite_createsPlayerAccount() {
+    Role playerRole = new Role(RoleName.PLAYER, "PLAYER");
+    when(roleRepository.findByName(RoleName.PLAYER)).thenReturn(Optional.of(playerRole));
+    when(passwordEncoder.encode("Valid1!pass")).thenReturn("$2a$10$encoded");
+
+    Account result = accountService.createPlayerAccountForInvite("alice", "Valid1!pass", "a@b.com");
+
+    assertThat(result.getUsername()).isEqualTo("alice");
+    assertThat(result.getRoles()).contains(playerRole);
+    verify(accountRepository).save(any(Account.class));
+  }
+
+  @Test
+  void createPlayerAccountForInvite_weakPassword_throws() {
+    assertThatThrownBy(
+            () -> accountService.createPlayerAccountForInvite("alice", "weak", "a@b.com"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Password is not valid");
+  }
+
+  @Test
+  void createPlayerAccountForInvite_noAuthContext_doesNotThrow() {
+    // This is the regression test for the bug: calling createPlayerAccountForInvite with no
+    // authenticated session must NOT throw AuthenticationCredentialsNotFoundException.
+    Role playerRole = new Role(RoleName.PLAYER, "PLAYER");
+    when(roleRepository.findByName(RoleName.PLAYER)).thenReturn(Optional.of(playerRole));
+    when(passwordEncoder.encode("Valid1!pass")).thenReturn("$2a$10$encoded");
+
+    // No Spring Security context is set — plain Mockito test, unauthenticated by definition.
+    assertThat(accountService.createPlayerAccountForInvite("bob", "Valid1!pass", "b@c.com"))
+        .isNotNull();
+  }
+
+  @Test
   void testUpdateThemePreference() {
     accountService.updateThemePreference(1L, "dark");
 

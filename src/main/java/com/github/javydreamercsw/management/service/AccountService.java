@@ -58,6 +58,17 @@ public class AccountService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public Account createAccount(
       final String username, final String password, final String email, final RoleName roleName) {
+    return createAccountInternal(username, password, email, roleName);
+  }
+
+  /** Creates a PLAYER account without requiring an authenticated session (invite-link flow). */
+  public Account createPlayerAccountForInvite(
+      final String username, final String password, final String email) {
+    return createAccountInternal(username, password, email, RoleName.PLAYER);
+  }
+
+  private Account createAccountInternal(
+      final String username, final String password, final String email, final RoleName roleName) {
     if (!CustomPasswordValidator.isValid(password)) {
       throw new IllegalArgumentException("Password is not valid.");
     }
