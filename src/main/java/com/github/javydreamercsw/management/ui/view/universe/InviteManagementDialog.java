@@ -158,6 +158,25 @@ public class InviteManagementDialog extends Dialog {
     activeInvitesGrid
         .addComponentColumn(
             invite -> {
+              Button copy = new Button("Copy");
+              copy.addThemeVariants(ButtonVariant.LUMO_SMALL);
+              copy.addClickListener(
+                  e ->
+                      UI.getCurrent()
+                          .getPage()
+                          .executeJs(
+                              "return window.location.origin + '/join/' + $0", invite.getId())
+                          .then(
+                              String.class,
+                              url -> {
+                                UI.getCurrent()
+                                    .getPage()
+                                    .executeJs("navigator.clipboard.writeText($0)", url);
+                                Notification.show(
+                                        "Link copied!", 2000, Notification.Position.BOTTOM_END)
+                                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                              }));
+
               Button revoke = new Button("Revoke");
               revoke.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
               revoke.addClickListener(
@@ -167,10 +186,11 @@ public class InviteManagementDialog extends Dialog {
                     Notification.show("Invite revoked.", 2000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                   });
-              return revoke;
+
+              return new HorizontalLayout(copy, revoke);
             })
-        .setHeader("Action")
-        .setWidth("90px")
+        .setHeader("Actions")
+        .setWidth("160px")
         .setFlexGrow(0);
 
     refreshGrid();
