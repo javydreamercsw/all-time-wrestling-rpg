@@ -84,6 +84,24 @@ class MenuServiceTest {
   }
 
   @Test
+  void getMenuItems_viewerDoesNotSeeDeckList() {
+    when(securityUtils.hasRole(RoleName.VIEWER)).thenReturn(true);
+    when(securityUtils.hasRole(RoleName.ADMIN)).thenReturn(false);
+    when(securityUtils.hasRole(RoleName.BOOKER)).thenReturn(false);
+    when(securityUtils.hasRole(RoleName.PLAYER)).thenReturn(false);
+
+    List<MenuItem> items = menuService.getMenuItems();
+
+    boolean deckListPresent =
+        items.stream()
+            .flatMap(i -> i.getChildren().stream())
+            .anyMatch(i -> "deck-list".equals(i.getPath()));
+    assertThat(deckListPresent)
+        .as("deck-list must not appear in the menu for VIEWER role")
+        .isFalse();
+  }
+
+  @Test
   void getMenuItems_noRole_returnsOnlyPublicItems() {
     when(securityUtils.hasRole(any(RoleName.class))).thenReturn(false);
 
