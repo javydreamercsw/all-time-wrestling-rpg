@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
@@ -182,7 +183,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               relationshipService,
               notificationService,
               exportService,
-              leagueRepository);
+              leagueRepository,
+              mock(SecurityUtils.class));
       java.util.Map<Integer, java.util.List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
       teamMap.put(1, List.of(wrestler1));
       teamMap.put(2, List.of(wrestler2));
@@ -274,7 +276,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               relationshipService,
               notificationService,
               exportService,
-              leagueRepository);
+              leagueRepository,
+              mock(SecurityUtils.class));
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());

@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
@@ -166,6 +167,7 @@ public class ShowDetailView extends Main
   private final NotificationService notificationService;
   private final ShowExportService exportService;
   private final LeagueRepository leagueRepository;
+  private final SecurityUtils securityUtils;
 
   @Autowired
   public ShowDetailView(
@@ -195,7 +197,8 @@ public class ShowDetailView extends Main
       final WrestlerRelationshipService relationshipService,
       final NotificationService notificationService,
       final ShowExportService exportService,
-      final LeagueRepository leagueRepository) {
+      final LeagueRepository leagueRepository,
+      final SecurityUtils securityUtils) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -223,6 +226,7 @@ public class ShowDetailView extends Main
     this.notificationService = notificationService;
     this.exportService = exportService;
     this.leagueRepository = leagueRepository;
+    this.securityUtils = securityUtils;
     initializeComponents();
   }
 
@@ -354,6 +358,7 @@ public class ShowDetailView extends Main
     editNameButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editNameButton.setTooltipText("Edit Show Name");
     editNameButton.addClickListener(e -> new EditShowNameDialog(showService, show).open());
+    editNameButton.setVisible(!securityUtils.isViewer());
 
     Span typeBadge = new Span(show.getType().getName());
     typeBadge.addClassNames(
@@ -483,6 +488,7 @@ public class ShowDetailView extends Main
     planShowButton.setId("plan-show-button");
     planShowButton.addClickListener(
         e -> getUI().ifPresent(ui -> ui.navigate(ShowPlanningView.class, show.getId())));
+    planShowButton.setVisible(!securityUtils.isViewer());
 
     Button editDetailsButton =
         new Button(
@@ -500,6 +506,7 @@ public class ShowDetailView extends Main
                         show)
                     .open());
     editDetailsButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    editDetailsButton.setVisible(!securityUtils.isViewer());
 
     Button exportCardButton = new Button("Export Card", new Icon(VaadinIcon.DOWNLOAD));
     exportCardButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -566,6 +573,7 @@ public class ShowDetailView extends Main
     adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     adjudicateButton.setId("adjudicate-show-btn");
     adjudicateButton.addClickListener(e -> adjudicateShow(show));
+    adjudicateButton.setVisible(!securityUtils.isViewer());
 
     // Check if there are any pending segments
     boolean hasPendingSegments =
@@ -580,6 +588,7 @@ public class ShowDetailView extends Main
         new Button("Add Segment", new Icon(VaadinIcon.PLUS), e -> openAddSegmentDialog(show));
     addSegmentButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     addSegmentButton.setId("add-segment-btn");
+    addSegmentButton.setVisible(!securityUtils.isViewer());
 
     // Disable "Add Segment" only when all existing segments have been adjudicated
     List<Segment> existingSegments = segmentRepository.findByShow(show);
@@ -654,8 +663,10 @@ public class ShowDetailView extends Main
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     grid.setItems(segments);
 
-    grid.setRowsDraggable(true);
-    grid.setDropMode(GridDropMode.BETWEEN);
+    grid.setRowsDraggable(!securityUtils.isViewer());
+    if (!securityUtils.isViewer()) {
+      grid.setDropMode(GridDropMode.BETWEEN);
+    }
     grid.addDragStartListener(
         e -> e.getDraggedItems().stream().findFirst().ifPresent(s -> draggedSegment = s));
     grid.addDragEndListener(e -> draggedSegment = null);
@@ -686,7 +697,8 @@ public class ShowDetailView extends Main
             })
         .setWidth("3em")
         .setFlexGrow(0)
-        .setHeader("");
+        .setHeader("")
+        .setVisible(!securityUtils.isViewer());
 
     // Segment type column
     grid.addColumn(
@@ -771,12 +783,16 @@ public class ShowDetailView extends Main
         .setSortable(true)
         .setFlexGrow(1);
 
-    grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
+    grid.addComponentColumn(this::createActionButtons)
+        .setHeader("Actions")
+        .setFlexGrow(1)
+        .setVisible(!securityUtils.isViewer());
 
     grid.addComponentColumn(this::createOrderButtons)
         .setHeader("Order")
         .setFlexGrow(1)
-        .setKey("order");
+        .setKey("order")
+        .setVisible(!securityUtils.isViewer());
 
     grid.addComponentColumn(
             segment -> {
@@ -982,11 +998,13 @@ public class ShowDetailView extends Main
     summaryButton.setId("generate-summary-button-" + segment.getId());
     summaryButton.addClickListener(e -> generateSummary(segment));
     summaryButton.setEnabled(segment.getNarration() != null && !segment.getNarration().isEmpty());
+    summaryButton.setVisible(!securityUtils.isViewer());
 
     Button narrateButton = new Button("Narrate", new Icon(VaadinIcon.MICROPHONE));
     narrateButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     narrateButton.setTooltipText("Generate AI Narration");
     narrateButton.setId("generate-narration-button-" + segment.getId());
+    narrateButton.setVisible(!securityUtils.isViewer());
     narrateButton.addClickListener(
         e -> {
           final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
@@ -1035,12 +1053,14 @@ public class ShowDetailView extends Main
     editButton.setTooltipText("Edit Segment");
     editButton.setId("edit-segment-button-" + segment.getId());
     editButton.addClickListener(e -> openEditSegmentDialog(segment));
+    editButton.setVisible(!securityUtils.isViewer());
 
     Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.setTooltipText("Delete Segment");
     deleteButton.setId("delete-segment-button-" + segment.getId());
     deleteButton.addClickListener(e -> deleteSegment(segment));
+    deleteButton.setVisible(!securityUtils.isViewer());
 
     SegmentType segmentType = segment.getSegmentType();
     boolean isMatch =
