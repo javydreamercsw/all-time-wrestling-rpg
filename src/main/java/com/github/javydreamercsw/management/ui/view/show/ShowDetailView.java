@@ -803,8 +803,11 @@ public class ShowDetailView extends Main
     if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
       CommentaryComponent commentary = new CommentaryComponent();
       commentary.setCommentary(narrationParserService.parse(segment.getNarration()), alignments);
-      commentary.getStyle().set("margin-top", "var(--lumo-space-s)");
-      card.add(commentary);
+      Details narrationDetails = new Details("Read narration", commentary);
+      narrationDetails.setOpened(false);
+      narrationDetails.setWidthFull();
+      narrationDetails.getStyle().set("margin-top", "var(--lumo-space-s)");
+      card.add(narrationDetails);
     } else if (segment.getSummary() != null && !segment.getSummary().isBlank()) {
       Paragraph summary = new Paragraph(segment.getSummary());
       summary.addClassNames(LumoUtility.TextColor.SECONDARY);
