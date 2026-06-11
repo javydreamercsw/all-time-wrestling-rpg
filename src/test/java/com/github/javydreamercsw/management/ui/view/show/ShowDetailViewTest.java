@@ -334,10 +334,12 @@ class ShowDetailViewTest extends AbstractViewTest {
     Mockito.when(event.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
     view.setParameter(event, 1L);
 
-    Button adjudicate = (Button) ReflectionTestUtils.getField(view, "adjudicateButton");
-    Button addSegment = (Button) ReflectionTestUtils.getField(view, "addSegmentButton");
-    assertThat(adjudicate.isVisible()).isFalse();
-    assertThat(addSegment.isVisible()).isFalse();
+    assertThat(ReflectionTestUtils.getField(view, "adjudicateButton"))
+        .as("adjudicateButton must not be created for VIEWER")
+        .isNull();
+    assertThat(ReflectionTestUtils.getField(view, "addSegmentButton"))
+        .as("addSegmentButton must not be created for VIEWER")
+        .isNull();
   }
 
   @Test
