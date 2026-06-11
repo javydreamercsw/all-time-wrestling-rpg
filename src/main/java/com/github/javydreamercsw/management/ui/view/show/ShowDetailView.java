@@ -678,6 +678,19 @@ public class ShowDetailView extends Main
       return feed;
     }
 
+    // Build champion names for all title segments upfront (avoids lazy-load at render time)
+    java.util.Set<Long> titleIds =
+        segments.stream()
+            .filter(s -> Boolean.TRUE.equals(s.getIsTitleSegment()))
+            .flatMap(s -> s.getTitles().stream())
+            .map(com.github.javydreamercsw.management.domain.title.Title::getId)
+            .filter(java.util.Objects::nonNull)
+            .collect(java.util.stream.Collectors.toSet());
+    java.util.Map<Long, String> championNames =
+        titleIds.isEmpty()
+            ? java.util.Map.of()
+            : titleService.getCurrentChampionNamesByTitleIds(titleIds);
+
     java.util.Map<String, String> alignments = new java.util.HashMap<>();
     if (show.getCommentaryTeam() != null) {
       show.getCommentaryTeam()
@@ -703,7 +716,10 @@ public class ShowDetailView extends Main
     for (Segment segment : segments) {
       feed.add(
           createViewerSegmentCard(
-              segment, segment.getId() != null && segment.getId().equals(mainId), alignments));
+              segment,
+              segment.getId() != null && segment.getId().equals(mainId),
+              alignments,
+              championNames));
     }
     return feed;
   }
@@ -711,7 +727,8 @@ public class ShowDetailView extends Main
   private Div createViewerSegmentCard(
       @NonNull final Segment segment,
       final boolean isMainEvent,
-      @NonNull final java.util.Map<String, String> alignments) {
+      @NonNull final java.util.Map<String, String> alignments,
+      @NonNull final java.util.Map<Long, String> championNames) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.MEDIUM,
@@ -756,18 +773,20 @@ public class ShowDetailView extends Main
     }
 
     if (Boolean.TRUE.equals(segment.getIsTitleSegment()) && !segment.getTitles().isEmpty()) {
-      String titleNames =
-          segment.getTitles().stream().map(Title::getName).collect(Collectors.joining(", "));
-      Span titleBadge = new Span("🏆 " + titleNames);
-      titleBadge
-          .getStyle()
-          .set("background", "#fff8e1")
-          .set("color", "#c17900")
-          .set("border-radius", "4px")
-          .set("padding", "2px 8px")
-          .set("font-size", "var(--lumo-font-size-s)")
-          .set("font-weight", "bold");
-      leftBadges.add(titleBadge);
+      for (Title title : segment.getTitles()) {
+        String champion =
+            title.getId() != null ? championNames.getOrDefault(title.getId(), "Vacant") : "Vacant";
+        Span titleBadge = new Span("🏆 " + title.getName() + " (c: " + champion + ")");
+        titleBadge
+            .getStyle()
+            .set("background", "#fff8e1")
+            .set("color", "#c17900")
+            .set("border-radius", "4px")
+            .set("padding", "2px 8px")
+            .set("font-size", "var(--lumo-font-size-s)")
+            .set("font-weight", "bold");
+        leftBadges.add(titleBadge);
+      }
     }
 
     Span dateLabel =
