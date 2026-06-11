@@ -35,7 +35,7 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -43,7 +43,7 @@ import lombok.NonNull;
 @Route("deck-list")
 @PageTitle("Deck List")
 @Menu(order = 1, icon = "vaadin:records", title = "Deck List")
-@PermitAll // When security is enabled, allow all authenticated users
+@RolesAllowed({"ADMIN", "BOOKER", "PLAYER"})
 public class DeckListView extends VerticalLayout {
 
   private final DeckService deckService;
