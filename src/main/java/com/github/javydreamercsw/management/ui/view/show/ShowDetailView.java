@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.service.relationship.WrestlerRelatio
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
@@ -59,6 +60,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
@@ -168,6 +170,7 @@ public class ShowDetailView extends Main
   private final ShowExportService exportService;
   private final LeagueRepository leagueRepository;
   private final SecurityUtils securityUtils;
+  private final NarrationParserService narrationParserService;
 
   @Autowired
   public ShowDetailView(
@@ -198,7 +201,8 @@ public class ShowDetailView extends Main
       final NotificationService notificationService,
       final ShowExportService exportService,
       final LeagueRepository leagueRepository,
-      final SecurityUtils securityUtils) {
+      final SecurityUtils securityUtils,
+      final NarrationParserService narrationParserService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -227,6 +231,7 @@ public class ShowDetailView extends Main
     this.exportService = exportService;
     this.leagueRepository = leagueRepository;
     this.securityUtils = securityUtils;
+    this.narrationParserService = narrationParserService;
     initializeComponents();
   }
 
@@ -778,14 +783,25 @@ public class ShowDetailView extends Main
       card.add(rules);
     }
 
-    // Narration (prefer full narration, fall back to summary)
+    // Narration (prefer full narration rendered as structured commentary, fall back to summary)
     if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
-      Paragraph narration = new Paragraph(segment.getNarration());
-      narration
-          .getStyle()
-          .set("margin-top", "var(--lumo-space-s)")
-          .set("margin-bottom", "var(--lumo-space-s)");
-      card.add(narration);
+      java.util.Map<String, String> alignments = new java.util.HashMap<>();
+      if (segment.getShow() != null && segment.getShow().getCommentaryTeam() != null) {
+        segment
+            .getShow()
+            .getCommentaryTeam()
+            .getCommentators()
+            .forEach(
+                c -> {
+                  if (c.getNpc().getAlignment() != null) {
+                    alignments.put(c.getNpc().getName(), c.getNpc().getAlignment().name());
+                  }
+                });
+      }
+      CommentaryComponent commentary = new CommentaryComponent();
+      commentary.setCommentary(narrationParserService.parse(segment.getNarration()), alignments);
+      commentary.getStyle().set("margin-top", "var(--lumo-space-s)");
+      card.add(commentary);
     } else if (segment.getSummary() != null && !segment.getSummary().isBlank()) {
       Paragraph summary = new Paragraph(segment.getSummary());
       summary.addClassNames(LumoUtility.TextColor.SECONDARY);

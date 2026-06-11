@@ -50,6 +50,7 @@ import com.github.javydreamercsw.management.service.relationship.WrestlerRelatio
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
@@ -112,6 +113,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private NotificationService notificationService;
   @Mock private WrestlerRelationshipService relationshipService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private NarrationParserService narrationParserService;
 
   @BeforeEach
   public void setUp() {
@@ -187,7 +189,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               notificationService,
               exportService,
               leagueRepository,
-              mock(SecurityUtils.class));
+              mock(SecurityUtils.class),
+              mock(NarrationParserService.class));
       java.util.Map<Integer, java.util.List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
       teamMap.put(1, List.of(wrestler1));
       teamMap.put(2, List.of(wrestler2));
@@ -280,7 +283,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               notificationService,
               exportService,
               leagueRepository,
-              mock(SecurityUtils.class));
+              mock(SecurityUtils.class),
+              mock(NarrationParserService.class));
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());
@@ -401,6 +405,7 @@ class ShowDetailViewTest extends AbstractViewTest {
         notificationService,
         exportService,
         leagueRepository,
-        su);
+        su,
+        narrationParserService);
   }
 }
