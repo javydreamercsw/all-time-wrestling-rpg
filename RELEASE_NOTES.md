@@ -4,6 +4,7 @@
 
 **Implemented enhancements:**
 
+- Release 2.2.0 [\#362](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/362) ([javydreamercsw](https://github.com/javydreamercsw))
 - feat: Universe member onboarding — invite links, join requests, and admin approval flow \(ATW-e145\) [\#355](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/355) ([javydreamercsw](https://github.com/javydreamercsw))
 - Feature: universe game settings [\#354](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/354) ([javydreamercsw](https://github.com/javydreamercsw))
 - feat: Add image export — download all custom images as a ZIP \(ATW-f4d4\) [\#353](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/353) ([javydreamercsw](https://github.com/javydreamercsw))
@@ -11,6 +12,7 @@
 
 **Fixed bugs:**
 
+- Release: 2.2.1 [\#363](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/363) ([javydreamercsw](https://github.com/javydreamercsw))
 - refactor: clean up Notion sync layer — remove dead code, fix bugs, extract utility [\#356](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/356) ([javydreamercsw](https://github.com/javydreamercsw))
 
 **Merged pull requests:**

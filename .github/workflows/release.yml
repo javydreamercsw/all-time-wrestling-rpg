@@ -335,6 +335,7 @@ jobs:
 
   build_and_release:
     needs: assemble_docs
+    if: needs.assemble_docs.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -386,6 +387,7 @@ jobs:
 
   build_desktop_installers:
     needs: build_and_release
+    if: needs.build_and_release.result == 'success'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2025-vs2026]
@@ -469,6 +471,7 @@ jobs:
     # exist (build_and_release) but we do NOT need to wait for desktop
     # installers — deploying pages in parallel with installer builds saves ~15 min.
     needs: [build_and_release]
+    if: needs.build_and_release.result == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -480,6 +483,9 @@ jobs:
 
   approve_release:
     needs: [build_desktop_installers, deploy_pages]
+    if: |
+      needs.build_desktop_installers.result == 'success' &&
+      needs.deploy_pages.result == 'success'
     runs-on: ubuntu-latest
     environment:
       name: release-approval
@@ -489,6 +495,7 @@ jobs:
 
   finalize_release:
     needs: approve_release
+    if: needs.approve_release.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -510,6 +517,7 @@ jobs:
 
   build_and_publish_docker:
     needs: finalize_release
+    if: needs.finalize_release.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -538,6 +546,7 @@ jobs:
 
   merge_to_main:
     needs: build_and_publish_docker
+    if: needs.build_and_publish_docker.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
