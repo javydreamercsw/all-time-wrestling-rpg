@@ -205,6 +205,30 @@ class MenuServiceTest {
     assertThat(helpMenu.getChildren().stream().map(MenuItem::getTitle)).contains("Game Guide");
   }
 
+  @Test
+  void getMenuItems_gameGuideIsExternalLinkToDocsSite() {
+    when(securityUtils.hasRole(any(RoleName.class))).thenReturn(false);
+
+    List<MenuItem> items = menuService.getMenuItems();
+
+    MenuItem helpMenu =
+        items.stream()
+            .filter(item -> "Help".equals(item.getTitle()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Help menu not found"));
+
+    MenuItem gameGuide =
+        helpMenu.getChildren().stream()
+            .filter(item -> "Game Guide".equals(item.getTitle()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Game Guide item not found"));
+
+    assertThat(gameGuide.isExternal()).as("Game Guide must be an external link").isTrue();
+    assertThat(gameGuide.getPath())
+        .as("Game Guide must point to the hosted docs site, not a local path")
+        .startsWith("https://javydreamercsw.github.io");
+  }
+
   // ── RouteRoleResolver integration ────────────────────────────────────────
 
   @Test

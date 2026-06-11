@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,6 +61,7 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.BeforeEvent;
@@ -109,6 +111,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private ArenaService arenaService;
   @Mock private NotificationService notificationService;
   @Mock private WrestlerRelationshipService relationshipService;
+  @Mock private SecurityUtils securityUtils;
 
   @BeforeEach
   public void setUp() {
@@ -308,5 +311,94 @@ class ShowDetailViewTest extends AbstractViewTest {
       assertEquals(1, saved.get(0).getSegmentOrder());
       assertEquals(2, saved.get(1).getSegmentOrder());
     }
+  }
+
+  @Test
+  void viewerRole_adjudicateAndAddSegmentButtonsHidden() {
+    when(securityUtils.isViewer()).thenReturn(true);
+
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setType(showType);
+
+    when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(any(Show.class))).thenReturn(Collections.emptyList());
+    when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(Collections.emptyList());
+
+    ShowDetailView view = buildView(securityUtils);
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
+    view.setParameter(event, 1L);
+
+    Button adjudicate = (Button) ReflectionTestUtils.getField(view, "adjudicateButton");
+    Button addSegment = (Button) ReflectionTestUtils.getField(view, "addSegmentButton");
+    assertThat(adjudicate.isVisible()).isFalse();
+    assertThat(addSegment.isVisible()).isFalse();
+  }
+
+  @Test
+  void nonViewerRole_adjudicateAndAddSegmentButtonsVisible() {
+    when(securityUtils.isViewer()).thenReturn(false);
+
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setType(showType);
+
+    when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(any(Show.class))).thenReturn(Collections.emptyList());
+    when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(Collections.emptyList());
+
+    ShowDetailView view = buildView(securityUtils);
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
+    view.setParameter(event, 1L);
+
+    Button adjudicate = (Button) ReflectionTestUtils.getField(view, "adjudicateButton");
+    Button addSegment = (Button) ReflectionTestUtils.getField(view, "addSegmentButton");
+    assertThat(adjudicate.isVisible()).isTrue();
+    assertThat(addSegment.isVisible()).isTrue();
+  }
+
+  private ShowDetailView buildView(final SecurityUtils su) {
+    ShowExportService exportService = mock(ShowExportService.class);
+    com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository =
+        mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class);
+    return new ShowDetailView(
+        showService,
+        segmentService,
+        segmentRepository,
+        segmentTypeRepository,
+        segmentRuleRepository,
+        npcService,
+        wrestlerService,
+        wrestlerStatsService,
+        titleService,
+        showTypeService,
+        seasonService,
+        showTemplateService,
+        rivalryService,
+        showPlanningService,
+        segmentNarrationServiceFactory,
+        segmentNarrationController,
+        showController,
+        matchFulfillmentRepository,
+        universeRepository,
+        universeContextService,
+        commentaryTeamRepository,
+        ringsideActionService,
+        arenaService,
+        relationshipService,
+        notificationService,
+        exportService,
+        leagueRepository,
+        su);
   }
 }
