@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -50,6 +51,7 @@ public class TitleService {
 
   private final TierBoundaryService tierBoundaryService;
   private final TitleRepository titleRepository;
+  private final TitleReignRepository titleReignRepository;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
   private final UniverseRepository universeRepository;
@@ -187,6 +189,24 @@ public class TitleService {
     return titleRepository.findByIsActiveTrue().stream()
         .filter(Title::isVacant)
         .collect(Collectors.toList());
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public Map<Long, String> getCurrentChampionNamesByTitleIds(
+      final java.util.Collection<Long> titleIds) {
+    Map<Long, String> result = new java.util.HashMap<>();
+    for (Long titleId : titleIds) {
+      List<com.github.javydreamercsw.management.domain.title.TitleReign> activeReigns =
+          titleReignRepository.findByTitleIdAndEndDateIsNull(titleId);
+      result.put(
+          titleId,
+          activeReigns.isEmpty()
+              ? "Vacant"
+              : activeReigns.get(0).getChampions().stream()
+                  .map(com.github.javydreamercsw.management.domain.wrestler.Wrestler::getName)
+                  .collect(Collectors.joining(" & ")));
+    }
+    return result;
   }
 
   @PreAuthorize("isAuthenticated()")

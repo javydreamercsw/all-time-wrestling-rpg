@@ -107,7 +107,14 @@ public class MenuService {
 
     MenuItem cardGame = new MenuItem("Card Game", VaadinIcon.RECORDS, null);
     cardGame.addChild(new MenuItem("Cards", VaadinIcon.CREDIT_CARD, "card-list"));
-    cardGame.addChild(new MenuItem("Decks", VaadinIcon.RECORDS, "deck-list"));
+    cardGame.addChild(
+        new MenuItem(
+            "Decks",
+            VaadinIcon.RECORDS,
+            "deck-list",
+            RoleName.ADMIN,
+            RoleName.BOOKER,
+            RoleName.PLAYER));
 
     // Configuration: Only ADMIN
     MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
@@ -119,7 +126,12 @@ public class MenuService {
 
     // Help menu: accessible to everyone
     MenuItem help = new MenuItem("Help", VaadinIcon.QUESTION_CIRCLE, null);
-    help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "/docs/index.html", true));
+    help.addChild(
+        new MenuItem(
+            "Game Guide",
+            VaadinIcon.BOOK,
+            "https://javydreamercsw.github.io/all-time-wrestling-rpg/",
+            true));
 
     // Multiplayer menu: Only PLAYER, BOOKER, and ADMIN
     MenuItem multiplayer =

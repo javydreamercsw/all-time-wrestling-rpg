@@ -84,6 +84,24 @@ class MenuServiceTest {
   }
 
   @Test
+  void getMenuItems_viewerDoesNotSeeDeckList() {
+    when(securityUtils.hasRole(RoleName.VIEWER)).thenReturn(true);
+    when(securityUtils.hasRole(RoleName.ADMIN)).thenReturn(false);
+    when(securityUtils.hasRole(RoleName.BOOKER)).thenReturn(false);
+    when(securityUtils.hasRole(RoleName.PLAYER)).thenReturn(false);
+
+    List<MenuItem> items = menuService.getMenuItems();
+
+    boolean deckListPresent =
+        items.stream()
+            .flatMap(i -> i.getChildren().stream())
+            .anyMatch(i -> "deck-list".equals(i.getPath()));
+    assertThat(deckListPresent)
+        .as("deck-list must not appear in the menu for VIEWER role")
+        .isFalse();
+  }
+
+  @Test
   void getMenuItems_noRole_returnsOnlyPublicItems() {
     when(securityUtils.hasRole(any(RoleName.class))).thenReturn(false);
 
@@ -203,6 +221,30 @@ class MenuServiceTest {
             .orElseThrow(() -> new AssertionError("Help menu not found"));
 
     assertThat(helpMenu.getChildren().stream().map(MenuItem::getTitle)).contains("Game Guide");
+  }
+
+  @Test
+  void getMenuItems_gameGuideIsExternalLinkToDocsSite() {
+    when(securityUtils.hasRole(any(RoleName.class))).thenReturn(false);
+
+    List<MenuItem> items = menuService.getMenuItems();
+
+    MenuItem helpMenu =
+        items.stream()
+            .filter(item -> "Help".equals(item.getTitle()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Help menu not found"));
+
+    MenuItem gameGuide =
+        helpMenu.getChildren().stream()
+            .filter(item -> "Game Guide".equals(item.getTitle()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Game Guide item not found"));
+
+    assertThat(gameGuide.isExternal()).as("Game Guide must be an external link").isTrue();
+    assertThat(gameGuide.getPath())
+        .as("Game Guide must point to the hosted docs site, not a local path")
+        .startsWith("https://javydreamercsw.github.io");
   }
 
   // ── RouteRoleResolver integration ────────────────────────────────────────

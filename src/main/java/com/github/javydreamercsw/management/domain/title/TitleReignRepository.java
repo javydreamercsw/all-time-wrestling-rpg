@@ -30,6 +30,8 @@ public interface TitleReignRepository extends JpaRepository<TitleReign, Long> {
 
   List<TitleReign> findByTitleAndEndDateIsNull(Title title);
 
+  List<TitleReign> findByTitleIdAndEndDateIsNull(Long titleId);
+
   Optional<TitleReign> findByTitleAndReignNumber(Title title, Integer reignNumber);
 
   Optional<TitleReign> findByExternalId(String externalId);

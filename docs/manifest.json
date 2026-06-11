@@ -638,5 +638,12 @@
     "description": "Pending membership requests appear here. Approve to add the user as a member, Reject to decline while allowing them to re-request, or Block to permanently prevent future requests from that account.",
     "imagePath": "screenshots/universe-join-requests.png",
     "order": 0
+  }, {
+    "id": "entities-entities-show-detail-viewer-readonly",
+    "category": "Entities",
+    "title": "Show Detail — Viewer Read-Only",
+    "description": "Users with the VIEWER role see the Show Detail page in read-only mode. Segment results, participants, and narration are all visible, but mutation controls (Adjudicate, Add Segment, Edit, Delete) are hidden.",
+    "imagePath": "screenshots/entities-show-detail-viewer-readonly.png",
+    "order": 0
   } ]
 }

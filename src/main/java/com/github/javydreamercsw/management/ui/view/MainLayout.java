@@ -220,7 +220,7 @@ public class MainLayout extends AppLayout {
     SideNavItem item = new SideNavItem(menuItem.getTitle());
     item.setPrefixComponent(menuItem.getIcon().create());
     String path = menuItem.getPath();
-    if (menuItem.isExternal() && path != null && !path.startsWith("http")) {
+    if (menuItem.isExternal() && path != null) {
       item.getElement().setAttribute("router-ignore", "");
       item.getElement().setAttribute("target", "_blank");
     }

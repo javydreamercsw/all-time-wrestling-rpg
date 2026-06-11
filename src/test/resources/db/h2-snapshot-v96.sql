@@ -1,7 +1,7 @@
 -- H2 2.4.240; 
 SET DB_CLOSE_DELAY -1;         
 ;              
-CREATE USER IF NOT EXISTS "SA" SALT 'a61fec8abc592463' HASH 'e0279ceb7500bbb6c9d280e433199fd568885f5d4d1dcfe77e50fa494a8e1c0e' ADMIN;          
+CREATE USER IF NOT EXISTS "SA" SALT '0fb161345c203a89' HASH '59524c8885f036fb43738f4f041300f06bd434b2aa415511b9e748fdcffd59d6' ADMIN;          
 CREATE SEQUENCE "PUBLIC"."PASSWORD_RESET_TOKEN_SEQ" START WITH 1 INCREMENT BY 50;              
 CREATE CACHED TABLE "PUBLIC"."flyway_schema_history"(
     "installed_rank" INTEGER NOT NULL,
@@ -18,104 +18,104 @@ CREATE CACHED TABLE "PUBLIC"."flyway_schema_history"(
 ALTER TABLE "PUBLIC"."flyway_schema_history" ADD CONSTRAINT "PUBLIC"."flyway_schema_history_pk" PRIMARY KEY("installed_rank"); 
 -- 95 +/- SELECT COUNT(*) FROM PUBLIC.flyway_schema_history;   
 INSERT INTO "PUBLIC"."flyway_schema_history" VALUES
-(-1, NULL, '<< Flyway Schema History table created >>', 'TABLE', '', NULL, 'SA', TIMESTAMP '2026-06-11 00:07:56.340897', 0, TRUE),
-(1, '1', 'Initial Schema', 'SQL', 'V1__Initial_Schema.sql', 1115964703, 'SA', TIMESTAMP '2026-06-11 00:07:56.56095', 129, TRUE),
-(2, '2', 'DeckCard SetId', 'SQL', 'V2__DeckCard_SetId.sql', -788503740, 'SA', TIMESTAMP '2026-06-11 00:07:56.594629', 20, TRUE),
-(3, '3', 'Add CardSet Name Column', 'SQL', 'V3__Add_CardSet_Name_Column.sql', 118948041, 'SA', TIMESTAMP '2026-06-11 00:07:56.612401', 9, TRUE),
-(4, '4', 'Update Card Unique Constraint', 'SQL', 'V4__Update_Card_Unique_Constraint.sql', 659202034, 'SA', TIMESTAMP '2026-06-11 00:07:56.620468', 1, TRUE),
-(5, '5', 'Add Adjudication Status To Segment', 'SQL', 'V5__Add_Adjudication_Status_To_Segment.sql', 2134148974, 'SA', TIMESTAMP '2026-06-11 00:07:56.638519', 12, TRUE),
-(6, '6', 'Add Segment Order And Main Event', 'SQL', 'V6__Add_Segment_Order_And_Main_Event.sql', 619297846, 'SA', TIMESTAMP '2026-06-11 00:07:56.664989', 20, TRUE),
-(7, '7', 'Add Inbox Item Table', 'SQL', 'V7__Add_Inbox_Item_Table.sql', 968071477, 'SA', TIMESTAMP '2026-06-11 00:07:56.672896', 2, TRUE),
-(8, '8', 'Add Reference Id To Inbox Item', 'SQL', 'V8__Add_Reference_Id_To_Inbox_Item.sql', 989049951, 'SA', TIMESTAMP '2026-06-11 00:07:56.682249', 3, TRUE),
-(9, '9', 'Add Bump Addition To Segment Rule', 'SQL', 'V9__Add_Bump_Addition_To_Segment_Rule.sql', 1037211787, 'SA', TIMESTAMP '2026-06-11 00:07:56.694181', 5, TRUE),
-(10, '10', 'Add Image Url To Wrestler', 'SQL', 'V10__Add_Image_Url_To_Wrestler.sql', -1445120071, 'SA', TIMESTAMP '2026-06-11 00:07:56.715032', 14, TRUE),
-(11, '11', 'Add Expected Matches And Promos To ShowType', 'SQL', 'V11__Add_Expected_Matches_And_Promos_To_ShowType.sql', -1728232004, 'SA', TIMESTAMP '2026-06-11 00:07:56.731187', 10, TRUE),
-(12, '12', 'Add Last Sync To Entities', 'SQL', 'V12__Add_Last_Sync_To_Entities.sql', 1145996377, 'SA', TIMESTAMP '2026-06-11 00:07:56.781014', 44, TRUE),
-(13, '13', 'Add External Id And Last Sync To SegmentRule', 'SQL', 'V13__Add_External_Id_And_Last_Sync_To_SegmentRule.sql', -566008599, 'SA', TIMESTAMP '2026-06-11 00:07:56.856623', 68, TRUE),
-(14, '14', 'Add External Id And Last Sync To Show Template', 'SQL', 'V14__Add_External_Id_And_Last_Sync_To_Show_Template.sql', -1336096513, 'SA', TIMESTAMP '2026-06-11 00:07:56.866811', 5, TRUE),
-(15, '15', 'Add Missing Sync Fields', 'SQL', 'V15__Add_Missing_Sync_Fields.sql', 1365334389, 'SA', TIMESTAMP '2026-06-11 00:07:56.937166', 63, TRUE),
-(16, '16', 'Create Tier Boundary Table', 'SQL', 'V16__Create_Tier_Boundary_Table.sql', -1179887120, 'SA', TIMESTAMP '2026-06-11 00:07:56.944292', 1, TRUE),
-(17, '18', 'Add Inbox Item Target', 'SQL', 'V18__Add_Inbox_Item_Target.sql', -1149624846, 'SA', TIMESTAMP '2026-06-11 00:07:56.951236', 2, TRUE),
-(18, '19', 'Remove Reference Id From Inbox Item', 'SQL', 'V19__Remove_Reference_Id_From_Inbox_Item.sql', -1540103389, 'SA', TIMESTAMP '2026-06-11 00:07:56.958405', 3, TRUE),
-(19, '20', 'Create Account Tables', 'SQL', 'V20__Create_Account_Tables.sql', 1011977414, 'SA', TIMESTAMP '2026-06-11 00:07:56.97038', 5, TRUE),
-(20, '21', 'Insert Default Accounts', 'SQL', 'V21__Insert_Default_Accounts.sql', -1923279678, 'SA', TIMESTAMP '2026-06-11 00:07:56.987031', 8, TRUE),
-(21, '22', 'Add Account To Wrestler', 'SQL', 'V22__Add_Account_To_Wrestler.sql', 76510181, 'SA', TIMESTAMP '2026-06-11 00:07:57.00133', 9, TRUE),
-(22, '23', 'Rename feud heat event column', 'SQL', 'V23__Rename_feud_heat_event_column.sql', -497843593, 'SA', TIMESTAMP '2026-06-11 00:07:57.007175', 1, TRUE),
-(23, '24', 'Create Game Setting Table', 'SQL', 'V24__Create_Game_Setting_Table.sql', 795307327, 'SA', TIMESTAMP '2026-06-11 00:07:57.012911', 1, TRUE),
-(24, '25', 'Create Password Reset Token Table', 'SQL', 'V25__Create_Password_Reset_Token_Table.sql', -332824989, 'SA', TIMESTAMP '2026-06-11 00:07:57.020164', 2, TRUE),
-(25, '26', 'Add Championship Type To Title', 'SQL', 'V26__Add_Championship_Type_To_Title.sql', -96901047, 'SA', TIMESTAMP '2026-06-11 00:07:57.029234', 4, TRUE);      
+(-1, NULL, '<< Flyway Schema History table created >>', 'TABLE', '', NULL, 'SA', TIMESTAMP '2026-06-11 18:24:59.102853', 0, TRUE),
+(1, '1', 'Initial Schema', 'SQL', 'V1__Initial_Schema.sql', 1115964703, 'SA', TIMESTAMP '2026-06-11 18:24:59.302815', 125, TRUE),
+(2, '2', 'DeckCard SetId', 'SQL', 'V2__DeckCard_SetId.sql', -788503740, 'SA', TIMESTAMP '2026-06-11 18:24:59.330763', 15, TRUE),
+(3, '3', 'Add CardSet Name Column', 'SQL', 'V3__Add_CardSet_Name_Column.sql', 118948041, 'SA', TIMESTAMP '2026-06-11 18:24:59.345212', 7, TRUE),
+(4, '4', 'Update Card Unique Constraint', 'SQL', 'V4__Update_Card_Unique_Constraint.sql', 659202034, 'SA', TIMESTAMP '2026-06-11 18:24:59.352766', 1, TRUE),
+(5, '5', 'Add Adjudication Status To Segment', 'SQL', 'V5__Add_Adjudication_Status_To_Segment.sql', 2134148974, 'SA', TIMESTAMP '2026-06-11 18:24:59.367398', 9, TRUE),
+(6, '6', 'Add Segment Order And Main Event', 'SQL', 'V6__Add_Segment_Order_And_Main_Event.sql', 619297846, 'SA', TIMESTAMP '2026-06-11 18:24:59.387597', 15, TRUE),
+(7, '7', 'Add Inbox Item Table', 'SQL', 'V7__Add_Inbox_Item_Table.sql', 968071477, 'SA', TIMESTAMP '2026-06-11 18:24:59.394194', 1, TRUE),
+(8, '8', 'Add Reference Id To Inbox Item', 'SQL', 'V8__Add_Reference_Id_To_Inbox_Item.sql', 989049951, 'SA', TIMESTAMP '2026-06-11 18:24:59.402069', 3, TRUE),
+(9, '9', 'Add Bump Addition To Segment Rule', 'SQL', 'V9__Add_Bump_Addition_To_Segment_Rule.sql', 1037211787, 'SA', TIMESTAMP '2026-06-11 18:24:59.411684', 4, TRUE),
+(10, '10', 'Add Image Url To Wrestler', 'SQL', 'V10__Add_Image_Url_To_Wrestler.sql', -1445120071, 'SA', TIMESTAMP '2026-06-11 18:24:59.428055', 11, TRUE),
+(11, '11', 'Add Expected Matches And Promos To ShowType', 'SQL', 'V11__Add_Expected_Matches_And_Promos_To_ShowType.sql', -1728232004, 'SA', TIMESTAMP '2026-06-11 18:24:59.439966', 7, TRUE),
+(12, '12', 'Add Last Sync To Entities', 'SQL', 'V12__Add_Last_Sync_To_Entities.sql', 1145996377, 'SA', TIMESTAMP '2026-06-11 18:24:59.486246', 41, TRUE),
+(13, '13', 'Add External Id And Last Sync To SegmentRule', 'SQL', 'V13__Add_External_Id_And_Last_Sync_To_SegmentRule.sql', -566008599, 'SA', TIMESTAMP '2026-06-11 18:24:59.548292', 56, TRUE),
+(14, '14', 'Add External Id And Last Sync To Show Template', 'SQL', 'V14__Add_External_Id_And_Last_Sync_To_Show_Template.sql', -1336096513, 'SA', TIMESTAMP '2026-06-11 18:24:59.55702', 4, TRUE),
+(15, '15', 'Add Missing Sync Fields', 'SQL', 'V15__Add_Missing_Sync_Fields.sql', 1365334389, 'SA', TIMESTAMP '2026-06-11 18:24:59.614509', 52, TRUE),
+(16, '16', 'Create Tier Boundary Table', 'SQL', 'V16__Create_Tier_Boundary_Table.sql', -1179887120, 'SA', TIMESTAMP '2026-06-11 18:24:59.62067', 1, TRUE),
+(17, '18', 'Add Inbox Item Target', 'SQL', 'V18__Add_Inbox_Item_Target.sql', -1149624846, 'SA', TIMESTAMP '2026-06-11 18:24:59.626491', 2, TRUE),
+(18, '19', 'Remove Reference Id From Inbox Item', 'SQL', 'V19__Remove_Reference_Id_From_Inbox_Item.sql', -1540103389, 'SA', TIMESTAMP '2026-06-11 18:24:59.633118', 2, TRUE),
+(19, '20', 'Create Account Tables', 'SQL', 'V20__Create_Account_Tables.sql', 1011977414, 'SA', TIMESTAMP '2026-06-11 18:24:59.643153', 4, TRUE),
+(20, '21', 'Insert Default Accounts', 'SQL', 'V21__Insert_Default_Accounts.sql', -1923279678, 'SA', TIMESTAMP '2026-06-11 18:24:59.658159', 7, TRUE),
+(21, '22', 'Add Account To Wrestler', 'SQL', 'V22__Add_Account_To_Wrestler.sql', 76510181, 'SA', TIMESTAMP '2026-06-11 18:24:59.671701', 9, TRUE),
+(22, '23', 'Rename feud heat event column', 'SQL', 'V23__Rename_feud_heat_event_column.sql', -497843593, 'SA', TIMESTAMP '2026-06-11 18:24:59.676272', 0, TRUE),
+(23, '24', 'Create Game Setting Table', 'SQL', 'V24__Create_Game_Setting_Table.sql', 795307327, 'SA', TIMESTAMP '2026-06-11 18:24:59.680665', 0, TRUE),
+(24, '25', 'Create Password Reset Token Table', 'SQL', 'V25__Create_Password_Reset_Token_Table.sql', -332824989, 'SA', TIMESTAMP '2026-06-11 18:24:59.686162', 1, TRUE),
+(25, '26', 'Add Championship Type To Title', 'SQL', 'V26__Add_Championship_Type_To_Title.sql', -96901047, 'SA', TIMESTAMP '2026-06-11 18:24:59.69336', 3, TRUE);        
 INSERT INTO "PUBLIC"."flyway_schema_history" VALUES
-(26, '27', 'Add AI Settings', 'SQL', 'V27__Add_AI_Settings.sql', 1962182044, 'SA', TIMESTAMP '2026-06-11 00:07:57.035323', 1, TRUE),
-(27, '28', 'Add Active To Wrestler', 'SQL', 'V28__Add_Active_To_Wrestler.sql', -338805172, 'SA', TIMESTAMP '2026-06-11 00:07:57.047368', 7, TRUE),
-(28, '29', 'Create Holiday Table', 'SQL', 'V29__Create_Holiday_Table.sql', 599478441, 'SA', TIMESTAMP '2026-06-11 00:07:57.054337', 2, TRUE),
-(29, '30', 'Populate Holiday Table', 'SQL', 'V30__Populate_Holiday_Table.sql', -1793461912, 'SA', TIMESTAMP '2026-06-11 00:07:57.069837', 4, TRUE),
-(30, '31', 'Add Manager To Wrestler And Faction And Team', 'SQL', 'V31__Add_Manager_To_Wrestler_And_Faction_And_Team.sql', 378765621, 'SA', TIMESTAMP '2026-06-11 00:07:57.097743', 22, TRUE),
-(31, '32', 'Add Description To Npc', 'SQL', 'V32__Add_Description_To_Npc.sql', 630994349, 'SA', TIMESTAMP '2026-06-11 00:07:57.104969', 3, TRUE),
-(32, '33', 'Add Include In Rankings To Title', 'SQL', 'V33__Add_Include_In_Rankings_To_Title.sql', -647497361, 'SA', TIMESTAMP '2026-06-11 00:07:57.113846', 4, TRUE),
-(33, '34', 'Add Won At Segment To Title Reign', 'SQL', 'V34__Add_Won_At_Segment_To_Title_Reign.sql', -332785961, 'SA', TIMESTAMP '2026-06-11 00:07:57.122652', 4, TRUE),
-(34, '35', 'Rename Show Table', 'SQL', 'V35__Rename_Show_Table.sql', -888951185, 'SA', TIMESTAMP '2026-06-11 00:07:57.127508', 0, TRUE),
-(35, '36', 'Add Unique Constraint To Wrestler Account', 'SQL', 'V36__Add_Unique_Constraint_To_Wrestler_Account.sql', -1288629724, 'SA', TIMESTAMP '2026-06-11 00:07:57.131675', 0, TRUE),
-(36, '37', 'Create Campaign System', 'SQL', 'V37__Create_Campaign_System.sql', 1504350749, 'SA', TIMESTAMP '2026-06-11 00:07:57.192736', 54, TRUE),
-(37, '38', 'Add Theme Preference And Default Setting', 'SQL', 'V38__Add_Theme_Preference_And_Default_Setting.sql', -913225845, 'SA', TIMESTAMP '2026-06-11 00:07:57.202443', 5, TRUE),
-(38, '39', 'Add League System', 'SQL', 'V39__Add_League_System.sql', 602764493, 'SA', TIMESTAMP '2026-06-11 00:07:57.246497', 30, TRUE),
-(39, '41', 'Add Image Url To Npc', 'SQL', 'V41__Add_Image_Url_To_Npc.sql', -1391881153, 'SA', TIMESTAMP '2026-06-11 00:07:57.253186', 2, TRUE),
-(40, '42', 'Add Image Url To Show Template', 'SQL', 'V42__Add_Image_Url_To_Show_Template.sql', 2091528606, 'SA', TIMESTAMP '2026-06-11 00:07:57.260764', 3, TRUE),
-(41, '43', 'Add Expected Matches And Promos To ShowTemplate', 'SQL', 'V43__Add_Expected_Matches_And_Promos_To_ShowTemplate.sql', -1363888031, 'SA', TIMESTAMP '2026-06-11 00:07:57.269891', 5, TRUE),
-(42, '44', 'Add Recurrence And Defense Frequency', 'SQL', 'V44__Add_Recurrence_And_Defense_Frequency.sql', -33215304, 'SA', TIMESTAMP '2026-06-11 00:07:57.293624', 19, TRUE),
-(43, '45', 'Remove LocalAI Settings', 'SQL', 'V45__Remove_LocalAI_Settings.sql', -2084740732, 'SA', TIMESTAMP '2026-06-11 00:07:57.300789', 3, TRUE),
-(44, '46', 'Create Commentary Tables', 'SQL', 'V46__Create_Commentary_Tables.sql', 1578209880, 'SA', TIMESTAMP '2026-06-11 00:07:57.320468', 14, TRUE),
-(45, '47', 'Create News Tables', 'SQL', 'V47__Create_News_Tables.sql', -2003982983, 'SA', TIMESTAMP '2026-06-11 00:07:57.325594', 1, TRUE),
-(46, '48', 'Add Gender Constraint To ShowTemplate', 'SQL', 'V48__Add_Gender_Constraint_To_ShowTemplate.sql', -1162501534, 'SA', TIMESTAMP '2026-06-11 00:07:57.332302', 3, TRUE),
-(47, '49', 'Add Legacy Fields To Account', 'SQL', 'V49__Add_Legacy_Fields_To_Account.sql', -508336936, 'SA', TIMESTAMP '2026-06-11 00:07:57.350381', 14, TRUE),
-(48, '50', 'Create Achievement Tables', 'SQL', 'V50__Create_Achievement_Tables.sql', 533959700, 'SA', TIMESTAMP '2026-06-11 00:07:57.357365', 3, TRUE),
-(49, '51', 'Add Affinity To Faction', 'SQL', 'V51__Add_Affinity_To_Faction.sql', 1676214726, 'SA', TIMESTAMP '2026-06-11 00:07:57.365475', 4, TRUE),
-(50, '52', 'Remove Rivalry Unique Constraint', 'SQL', 'V52__Remove_Rivalry_Unique_Constraint.sql', 858104277, 'SA', TIMESTAMP '2026-06-11 00:07:58.681074', 1311, TRUE),
-(51, '53', 'Create Storyline Tables', 'SQL', 'V53__Create_Storyline_Tables.sql', 1034900586, 'SA', TIMESTAMP '2026-06-11 00:07:58.698822', 12, TRUE);          
+(26, '27', 'Add AI Settings', 'SQL', 'V27__Add_AI_Settings.sql', 1962182044, 'SA', TIMESTAMP '2026-06-11 18:24:59.698841', 1, TRUE),
+(27, '28', 'Add Active To Wrestler', 'SQL', 'V28__Add_Active_To_Wrestler.sql', -338805172, 'SA', TIMESTAMP '2026-06-11 18:24:59.708883', 6, TRUE),
+(28, '29', 'Create Holiday Table', 'SQL', 'V29__Create_Holiday_Table.sql', 599478441, 'SA', TIMESTAMP '2026-06-11 18:24:59.713876', 1, TRUE),
+(29, '30', 'Populate Holiday Table', 'SQL', 'V30__Populate_Holiday_Table.sql', -1793461912, 'SA', TIMESTAMP '2026-06-11 18:24:59.725076', 3, TRUE),
+(30, '31', 'Add Manager To Wrestler And Faction And Team', 'SQL', 'V31__Add_Manager_To_Wrestler_And_Faction_And_Team.sql', 378765621, 'SA', TIMESTAMP '2026-06-11 18:24:59.746485', 17, TRUE),
+(31, '32', 'Add Description To Npc', 'SQL', 'V32__Add_Description_To_Npc.sql', 630994349, 'SA', TIMESTAMP '2026-06-11 18:24:59.753429', 2, TRUE),
+(32, '33', 'Add Include In Rankings To Title', 'SQL', 'V33__Add_Include_In_Rankings_To_Title.sql', -647497361, 'SA', TIMESTAMP '2026-06-11 18:24:59.760476', 3, TRUE),
+(33, '34', 'Add Won At Segment To Title Reign', 'SQL', 'V34__Add_Won_At_Segment_To_Title_Reign.sql', -332785961, 'SA', TIMESTAMP '2026-06-11 18:24:59.767817', 3, TRUE),
+(34, '35', 'Rename Show Table', 'SQL', 'V35__Rename_Show_Table.sql', -888951185, 'SA', TIMESTAMP '2026-06-11 18:24:59.772771', 1, TRUE),
+(35, '36', 'Add Unique Constraint To Wrestler Account', 'SQL', 'V36__Add_Unique_Constraint_To_Wrestler_Account.sql', -1288629724, 'SA', TIMESTAMP '2026-06-11 18:24:59.777231', 0, TRUE),
+(36, '37', 'Create Campaign System', 'SQL', 'V37__Create_Campaign_System.sql', 1504350749, 'SA', TIMESTAMP '2026-06-11 18:24:59.837536', 47, TRUE),
+(37, '38', 'Add Theme Preference And Default Setting', 'SQL', 'V38__Add_Theme_Preference_And_Default_Setting.sql', -913225845, 'SA', TIMESTAMP '2026-06-11 18:24:59.846702', 5, TRUE),
+(38, '39', 'Add League System', 'SQL', 'V39__Add_League_System.sql', 602764493, 'SA', TIMESTAMP '2026-06-11 18:24:59.877703', 25, TRUE),
+(39, '41', 'Add Image Url To Npc', 'SQL', 'V41__Add_Image_Url_To_Npc.sql', -1391881153, 'SA', TIMESTAMP '2026-06-11 18:24:59.883958', 2, TRUE),
+(40, '42', 'Add Image Url To Show Template', 'SQL', 'V42__Add_Image_Url_To_Show_Template.sql', 2091528606, 'SA', TIMESTAMP '2026-06-11 18:24:59.890665', 3, TRUE),
+(41, '43', 'Add Expected Matches And Promos To ShowTemplate', 'SQL', 'V43__Add_Expected_Matches_And_Promos_To_ShowTemplate.sql', -1363888031, 'SA', TIMESTAMP '2026-06-11 18:24:59.900103', 5, TRUE),
+(42, '44', 'Add Recurrence And Defense Frequency', 'SQL', 'V44__Add_Recurrence_And_Defense_Frequency.sql', -33215304, 'SA', TIMESTAMP '2026-06-11 18:24:59.922681', 18, TRUE),
+(43, '45', 'Remove LocalAI Settings', 'SQL', 'V45__Remove_LocalAI_Settings.sql', -2084740732, 'SA', TIMESTAMP '2026-06-11 18:24:59.929603', 3, TRUE),
+(44, '46', 'Create Commentary Tables', 'SQL', 'V46__Create_Commentary_Tables.sql', 1578209880, 'SA', TIMESTAMP '2026-06-11 18:24:59.948455', 14, TRUE),
+(45, '47', 'Create News Tables', 'SQL', 'V47__Create_News_Tables.sql', -2003982983, 'SA', TIMESTAMP '2026-06-11 18:24:59.953104', 0, TRUE),
+(46, '48', 'Add Gender Constraint To ShowTemplate', 'SQL', 'V48__Add_Gender_Constraint_To_ShowTemplate.sql', -1162501534, 'SA', TIMESTAMP '2026-06-11 18:24:59.960121', 3, TRUE),
+(47, '49', 'Add Legacy Fields To Account', 'SQL', 'V49__Add_Legacy_Fields_To_Account.sql', -508336936, 'SA', TIMESTAMP '2026-06-11 18:24:59.976667', 13, TRUE),
+(48, '50', 'Create Achievement Tables', 'SQL', 'V50__Create_Achievement_Tables.sql', 533959700, 'SA', TIMESTAMP '2026-06-11 18:24:59.983014', 2, TRUE),
+(49, '51', 'Add Affinity To Faction', 'SQL', 'V51__Add_Affinity_To_Faction.sql', 1676214726, 'SA', TIMESTAMP '2026-06-11 18:24:59.989928', 3, TRUE),
+(50, '52', 'Remove Rivalry Unique Constraint', 'SQL', 'V52__Remove_Rivalry_Unique_Constraint.sql', 858104277, 'SA', TIMESTAMP '2026-06-11 18:25:01.330381', 1335, TRUE),
+(51, '53', 'Create Storyline Tables', 'SQL', 'V53__Create_Storyline_Tables.sql', 1034900586, 'SA', TIMESTAMP '2026-06-11 18:25:01.347976', 11, TRUE);          
 INSERT INTO "PUBLIC"."flyway_schema_history" VALUES
-(52, '54', 'Add Npc Attributes', 'SQL', 'V54__Add_Npc_Attributes.sql', 1944315555, 'SA', TIMESTAMP '2026-06-11 00:07:58.705676', 3, TRUE),
-(53, '55', 'Add Referee To Segment', 'SQL', 'V55__Add_Referee_To_Segment.sql', -14042474, 'SA', TIMESTAMP '2026-06-11 00:07:58.716564', 7, TRUE),
-(54, '56', 'Add No Dq To Segment Rule', 'SQL', 'V56__Add_No_Dq_To_Segment_Rule.sql', 621834710, 'SA', TIMESTAMP '2026-06-11 00:07:58.723383', 3, TRUE),
-(55, '57', 'Add Ringside Actions', 'SQL', 'V57__Add_Ringside_Actions.sql', 551019052, 'SA', TIMESTAMP '2026-06-11 00:07:58.73082', 3, TRUE),
-(56, '58', 'Add Physical Condition To Wrestler', 'SQL', 'V58__Add_Physical_Condition_To_Wrestler.sql', -2031017789, 'SA', TIMESTAMP '2026-06-11 00:07:58.739555', 5, TRUE),
-(57, '59', 'Create Location Arena Tables And Link Show', 'SQL', 'V59__Create_Location_Arena_Tables_And_Link_Show.sql', -777877363, 'SA', TIMESTAMP '2026-06-11 00:07:58.760066', 16, TRUE),
-(58, '60', 'Remove Wrestler Account Unique Constraint', 'SQL', 'V60__Remove_Wrestler_Account_Unique_Constraint.sql', -1366350250, 'SA', TIMESTAMP '2026-06-11 00:07:58.763613', 0, TRUE),
-(59, '61', 'Add Faction Alignment And Team Fields', 'SQL', 'V61__Add_Faction_Alignment_And_Team_Fields.sql', -393460592, 'SA', TIMESTAMP '2026-06-11 00:07:58.775359', 8, TRUE),
-(60, '62', 'Add Updated At To Entities', 'SQL', 'V62__Add_Updated_At_To_Entities.sql', 588199953, 'SA', TIMESTAMP '2026-06-11 00:07:58.85319', 72, TRUE),
-(61, '63', 'Initialize Set Enablement Settings', 'SQL', 'V63__Initialize_Set_Enablement_Settings.sql', 727117897, 'SA', TIMESTAMP '2026-06-11 00:07:58.857365', 0, TRUE),
-(62, '64', 'Add Expansion Code To Wrestler', 'SQL', 'V64__Add_Expansion_Code_To_Wrestler.sql', -911082154, 'SA', TIMESTAMP '2026-06-11 00:07:58.865012', 5, TRUE),
-(63, '65', 'Add Expansion Code To Npc', 'SQL', 'V65__Add_Expansion_Code_To_Npc.sql', 1736603957, 'SA', TIMESTAMP '2026-06-11 00:07:58.869956', 1, TRUE),
-(64, '66', 'Add Image Url To Various Entities', 'SQL', 'V66__Add_Image_Url_To_Various_Entities.sql', 1061733307, 'SA', TIMESTAMP '2026-06-11 00:07:58.881233', 7, TRUE),
-(65, '67', 'Create Wrestler Relationship Table', 'SQL', 'V67__Create_Wrestler_Relationship_Table.sql', -401169771, 'SA', TIMESTAMP '2026-06-11 00:07:58.88722', 2, TRUE),
-(66, '68', 'Add GM Mode Financials And Logistics', 'SQL', 'V68__Add_GM_Mode_Financials_And_Logistics.sql', 1914270991, 'SA', TIMESTAMP '2026-06-11 00:07:58.913153', 21, TRUE),
-(67, '69', 'Add Effect Script To Title', 'SQL', 'V69__Add_Effect_Script_To_Title.sql', 1842801306, 'SA', TIMESTAMP '2026-06-11 00:07:58.930732', 12, TRUE),
-(68, '70', 'Add Show Attendance And Revenue', 'SQL', 'V70__Add_Show_Attendance_And_Revenue.sql', 1941232678, 'SA', TIMESTAMP '2026-06-11 00:07:58.944259', 8, TRUE),
-(69, '71', 'Add Notes To Segment', 'SQL', 'V71__Add_Notes_To_Segment.sql', 1957484762, 'SA', TIMESTAMP '2026-06-11 00:07:58.951764', 4, TRUE),
-(70, '72', 'Create Status Card Tables', 'SQL', 'V72__Create_Status_Card_Tables.sql', -1660610380, 'SA', TIMESTAMP '2026-06-11 00:07:58.960795', 4, TRUE),
-(71, '73', 'add campaign ability card constraint', 'SQL', 'V73__add_campaign_ability_card_constraint.sql', 215371348, 'SA', TIMESTAMP '2026-06-11 00:07:58.964423', 0, TRUE),
-(72, '74', 'Add Team Number To Segment Participant', 'SQL', 'V74__Add_Team_Number_To_Segment_Participant.sql', -1799038452, 'SA', TIMESTAMP '2026-06-11 00:07:58.982875', 6, TRUE),
-(73, '75', 'Create Universe Table', 'SQL', 'V75__Create_Universe_Table.sql', 360951789, 'SA', TIMESTAMP '2026-06-11 00:07:58.98842', 2, TRUE),
-(74, '76', 'Create Wrestler State Table', 'SQL', 'V76__Create_Wrestler_State_Table.sql', -2083864010, 'SA', TIMESTAMP '2026-06-11 00:07:58.996043', 3, TRUE),
-(75, '77', 'Add Universe Membership', 'SQL', 'V77__Add_Universe_Membership.sql', -834416382, 'SA', TIMESTAMP '2026-06-11 00:07:59.001299', 2, TRUE),
-(76, '78', 'Add Universe Settings Tables', 'SQL', 'V78__Add_Universe_Settings_Tables.sql', 1718709860, 'SA', TIMESTAMP '2026-06-11 00:07:59.00714', 2, TRUE),
-(77, '79', 'Deactivate Same Faction Rivalries', 'SQL', 'V79__Deactivate_Same_Faction_Rivalries.sql', -869186165, 'SA', TIMESTAMP '2026-06-11 00:07:59.013998', 4, TRUE);               
+(52, '54', 'Add Npc Attributes', 'SQL', 'V54__Add_Npc_Attributes.sql', 1944315555, 'SA', TIMESTAMP '2026-06-11 18:25:01.354236', 2, TRUE),
+(53, '55', 'Add Referee To Segment', 'SQL', 'V55__Add_Referee_To_Segment.sql', -14042474, 'SA', TIMESTAMP '2026-06-11 18:25:01.366162', 8, TRUE),
+(54, '56', 'Add No Dq To Segment Rule', 'SQL', 'V56__Add_No_Dq_To_Segment_Rule.sql', 621834710, 'SA', TIMESTAMP '2026-06-11 18:25:01.371151', 2, TRUE),
+(55, '57', 'Add Ringside Actions', 'SQL', 'V57__Add_Ringside_Actions.sql', 551019052, 'SA', TIMESTAMP '2026-06-11 18:25:01.376978', 2, TRUE),
+(56, '58', 'Add Physical Condition To Wrestler', 'SQL', 'V58__Add_Physical_Condition_To_Wrestler.sql', -2031017789, 'SA', TIMESTAMP '2026-06-11 18:25:01.387634', 7, TRUE),
+(57, '59', 'Create Location Arena Tables And Link Show', 'SQL', 'V59__Create_Location_Arena_Tables_And_Link_Show.sql', -777877363, 'SA', TIMESTAMP '2026-06-11 18:25:01.407518', 15, TRUE),
+(58, '60', 'Remove Wrestler Account Unique Constraint', 'SQL', 'V60__Remove_Wrestler_Account_Unique_Constraint.sql', -1366350250, 'SA', TIMESTAMP '2026-06-11 18:25:01.41163', 0, TRUE),
+(59, '61', 'Add Faction Alignment And Team Fields', 'SQL', 'V61__Add_Faction_Alignment_And_Team_Fields.sql', -393460592, 'SA', TIMESTAMP '2026-06-11 18:25:01.424544', 10, TRUE),
+(60, '62', 'Add Updated At To Entities', 'SQL', 'V62__Add_Updated_At_To_Entities.sql', 588199953, 'SA', TIMESTAMP '2026-06-11 18:25:01.532879', 101, TRUE),
+(61, '63', 'Initialize Set Enablement Settings', 'SQL', 'V63__Initialize_Set_Enablement_Settings.sql', 727117897, 'SA', TIMESTAMP '2026-06-11 18:25:01.539487', 1, TRUE),
+(62, '64', 'Add Expansion Code To Wrestler', 'SQL', 'V64__Add_Expansion_Code_To_Wrestler.sql', -911082154, 'SA', TIMESTAMP '2026-06-11 18:25:01.546345', 4, TRUE),
+(63, '65', 'Add Expansion Code To Npc', 'SQL', 'V65__Add_Expansion_Code_To_Npc.sql', 1736603957, 'SA', TIMESTAMP '2026-06-11 18:25:01.550164', 1, TRUE),
+(64, '66', 'Add Image Url To Various Entities', 'SQL', 'V66__Add_Image_Url_To_Various_Entities.sql', 1061733307, 'SA', TIMESTAMP '2026-06-11 18:25:01.558834', 6, TRUE),
+(65, '67', 'Create Wrestler Relationship Table', 'SQL', 'V67__Create_Wrestler_Relationship_Table.sql', -401169771, 'SA', TIMESTAMP '2026-06-11 18:25:01.563636', 1, TRUE),
+(66, '68', 'Add GM Mode Financials And Logistics', 'SQL', 'V68__Add_GM_Mode_Financials_And_Logistics.sql', 1914270991, 'SA', TIMESTAMP '2026-06-11 18:25:01.583396', 16, TRUE),
+(67, '69', 'Add Effect Script To Title', 'SQL', 'V69__Add_Effect_Script_To_Title.sql', 1842801306, 'SA', TIMESTAMP '2026-06-11 18:25:01.588052', 2, TRUE),
+(68, '70', 'Add Show Attendance And Revenue', 'SQL', 'V70__Add_Show_Attendance_And_Revenue.sql', 1941232678, 'SA', TIMESTAMP '2026-06-11 18:25:01.595153', 4, TRUE),
+(69, '71', 'Add Notes To Segment', 'SQL', 'V71__Add_Notes_To_Segment.sql', 1957484762, 'SA', TIMESTAMP '2026-06-11 18:25:01.600014', 2, TRUE),
+(70, '72', 'Create Status Card Tables', 'SQL', 'V72__Create_Status_Card_Tables.sql', -1660610380, 'SA', TIMESTAMP '2026-06-11 18:25:01.605767', 3, TRUE),
+(71, '73', 'add campaign ability card constraint', 'SQL', 'V73__add_campaign_ability_card_constraint.sql', 215371348, 'SA', TIMESTAMP '2026-06-11 18:25:01.607846', 0, TRUE),
+(72, '74', 'Add Team Number To Segment Participant', 'SQL', 'V74__Add_Team_Number_To_Segment_Participant.sql', -1799038452, 'SA', TIMESTAMP '2026-06-11 18:25:01.612405', 1, TRUE),
+(73, '75', 'Create Universe Table', 'SQL', 'V75__Create_Universe_Table.sql', 360951789, 'SA', TIMESTAMP '2026-06-11 18:25:01.616226', 1, TRUE),
+(74, '76', 'Create Wrestler State Table', 'SQL', 'V76__Create_Wrestler_State_Table.sql', -2083864010, 'SA', TIMESTAMP '2026-06-11 18:25:01.621051', 2, TRUE),
+(75, '77', 'Add Universe Membership', 'SQL', 'V77__Add_Universe_Membership.sql', -834416382, 'SA', TIMESTAMP '2026-06-11 18:25:01.625267', 1, TRUE),
+(76, '78', 'Add Universe Settings Tables', 'SQL', 'V78__Add_Universe_Settings_Tables.sql', 1718709860, 'SA', TIMESTAMP '2026-06-11 18:25:01.629639', 1, TRUE),
+(77, '79', 'Deactivate Same Faction Rivalries', 'SQL', 'V79__Deactivate_Same_Faction_Rivalries.sql', -869186165, 'SA', TIMESTAMP '2026-06-11 18:25:01.635327', 3, TRUE);          
 INSERT INTO "PUBLIC"."flyway_schema_history" VALUES
-(78, '80', 'Add RivalryId To Segment', 'SQL', 'V80__Add_RivalryId_To_Segment.sql', 1611206126, 'SA', TIMESTAMP '2026-06-11 00:07:59.019166', 2, TRUE),
-(79, '81', 'Decouple Wrestler State', 'SQL', 'V81__Decouple_Wrestler_State.sql', 699881626, 'SA', TIMESTAMP '2026-06-11 00:07:59.042957', 19, TRUE),
-(80, '82', 'Drop Deprecated Wrestler Columns', 'SQL', 'V82__Drop_Deprecated_Wrestler_Columns.sql', -479567210, 'SA', TIMESTAMP '2026-06-11 00:07:59.084437', 37, TRUE),
-(81, '83', 'Backfill Universe Id', 'SQL', 'V83__Backfill_Universe_Id.sql', -1009108233, 'SA', TIMESTAMP '2026-06-11 00:07:59.088901', 1, TRUE),
-(82, '84', 'Add Universe Alignment', 'SQL', 'V84__Add_Universe_Alignment.sql', -1733031706, 'SA', TIMESTAMP '2026-06-11 00:07:59.0937', 2, TRUE),
-(83, '85', 'Seed Rivalry Lifecycle Settings', 'SQL', 'V85__Seed_Rivalry_Lifecycle_Settings.sql', 246113347, 'SA', TIMESTAMP '2026-06-11 00:07:59.096662', 0, TRUE),
-(84, '86', 'Replace Defense Frequency With Type', 'SQL', 'V86__Replace_Defense_Frequency_With_Type.sql', 2101993557, 'SA', TIMESTAMP '2026-06-11 00:07:59.105029', 5, TRUE),
-(85, '87', 'Add Outcome Matrix', 'SQL', 'V87__Add_Outcome_Matrix.sql', 1095930633, 'SA', TIMESTAMP '2026-06-11 00:07:59.112241', 2, TRUE),
-(86, '88', 'Add DramaEvent Cleanup Index', 'SQL', 'V88__Add_DramaEvent_Cleanup_Index.sql', 1867476901, 'SA', TIMESTAMP '2026-06-11 00:07:59.116211', 0, TRUE),
-(87, '89', 'Link Injury To InjuryType', 'SQL', 'V89__Link_Injury_To_InjuryType.sql', 1285009657, 'SA', TIMESTAMP '2026-06-11 00:07:59.122944', 3, TRUE),
-(88, '90', 'Add Wrestler Season Snapshot', 'SQL', 'V90__Add_Wrestler_Season_Snapshot.sql', 710643383, 'SA', TIMESTAMP '2026-06-11 00:07:59.128194', 1, TRUE),
-(89, '91', 'Add Universe To Rivalry', 'SQL', 'V91__Add_Universe_To_Rivalry.sql', -1401405617, 'SA', TIMESTAMP '2026-06-11 00:07:59.136204', 5, TRUE),
-(90, '92', 'Add Universe Scoped Game Settings', 'SQL', 'V92__Add_Universe_Scoped_Game_Settings.sql', 865269514, 'SA', TIMESTAMP '2026-06-11 00:07:59.143927', 5, TRUE),
-(91, '93', 'Migrate Credentials To Default Universe', 'SQL', 'V93__Migrate_Credentials_To_Default_Universe.sql', -1857336965, 'SA', TIMESTAMP '2026-06-11 00:07:59.14798', 1, TRUE),
-(92, '94', 'Fix Universe Sequence', 'SQL', 'V94__Fix_Universe_Sequence.sql', -1386687509, 'SA', TIMESTAMP '2026-06-11 00:07:59.154523', 3, TRUE),
-(93, '95', 'Create Universe Invite And Join Request Tables', 'SQL', 'V95__Create_Universe_Invite_And_Join_Request_Tables.sql', -1494912489, 'SA', TIMESTAMP '2026-06-11 00:07:59.160062', 2, TRUE),
-(94, '96', 'Fix Account FK On Delete Rules', 'SQL', 'V96__Fix_Account_FK_On_Delete_Rules.sql', 1147779210, 'SA', TIMESTAMP '2026-06-11 00:07:59.172844', 9, TRUE);        
+(78, '80', 'Add RivalryId To Segment', 'SQL', 'V80__Add_RivalryId_To_Segment.sql', 1611206126, 'SA', TIMESTAMP '2026-06-11 18:25:01.639833', 2, TRUE),
+(79, '81', 'Decouple Wrestler State', 'SQL', 'V81__Decouple_Wrestler_State.sql', 699881626, 'SA', TIMESTAMP '2026-06-11 18:25:01.659571', 16, TRUE),
+(80, '82', 'Drop Deprecated Wrestler Columns', 'SQL', 'V82__Drop_Deprecated_Wrestler_Columns.sql', -479567210, 'SA', TIMESTAMP '2026-06-11 18:25:01.693792', 31, TRUE),
+(81, '83', 'Backfill Universe Id', 'SQL', 'V83__Backfill_Universe_Id.sql', -1009108233, 'SA', TIMESTAMP '2026-06-11 18:25:01.697669', 1, TRUE),
+(82, '84', 'Add Universe Alignment', 'SQL', 'V84__Add_Universe_Alignment.sql', -1733031706, 'SA', TIMESTAMP '2026-06-11 18:25:01.701975', 1, TRUE),
+(83, '85', 'Seed Rivalry Lifecycle Settings', 'SQL', 'V85__Seed_Rivalry_Lifecycle_Settings.sql', 246113347, 'SA', TIMESTAMP '2026-06-11 18:25:01.705548', 0, TRUE),
+(84, '86', 'Replace Defense Frequency With Type', 'SQL', 'V86__Replace_Defense_Frequency_With_Type.sql', 2101993557, 'SA', TIMESTAMP '2026-06-11 18:25:01.712779', 4, TRUE),
+(85, '87', 'Add Outcome Matrix', 'SQL', 'V87__Add_Outcome_Matrix.sql', 1095930633, 'SA', TIMESTAMP '2026-06-11 18:25:01.718424', 1, TRUE),
+(86, '88', 'Add DramaEvent Cleanup Index', 'SQL', 'V88__Add_DramaEvent_Cleanup_Index.sql', 1867476901, 'SA', TIMESTAMP '2026-06-11 18:25:01.721512', 0, TRUE),
+(87, '89', 'Link Injury To InjuryType', 'SQL', 'V89__Link_Injury_To_InjuryType.sql', 1285009657, 'SA', TIMESTAMP '2026-06-11 18:25:01.727068', 3, TRUE),
+(88, '90', 'Add Wrestler Season Snapshot', 'SQL', 'V90__Add_Wrestler_Season_Snapshot.sql', 710643383, 'SA', TIMESTAMP '2026-06-11 18:25:01.731144', 1, TRUE),
+(89, '91', 'Add Universe To Rivalry', 'SQL', 'V91__Add_Universe_To_Rivalry.sql', -1401405617, 'SA', TIMESTAMP '2026-06-11 18:25:01.737101', 3, TRUE),
+(90, '92', 'Add Universe Scoped Game Settings', 'SQL', 'V92__Add_Universe_Scoped_Game_Settings.sql', 865269514, 'SA', TIMESTAMP '2026-06-11 18:25:01.74354', 4, TRUE),
+(91, '93', 'Migrate Credentials To Default Universe', 'SQL', 'V93__Migrate_Credentials_To_Default_Universe.sql', -1857336965, 'SA', TIMESTAMP '2026-06-11 18:25:01.746803', 1, TRUE),
+(92, '94', 'Fix Universe Sequence', 'SQL', 'V94__Fix_Universe_Sequence.sql', -1386687509, 'SA', TIMESTAMP '2026-06-11 18:25:01.752584', 3, TRUE),
+(93, '95', 'Create Universe Invite And Join Request Tables', 'SQL', 'V95__Create_Universe_Invite_And_Join_Request_Tables.sql', -1494912489, 'SA', TIMESTAMP '2026-06-11 18:25:01.75739', 1, TRUE),
+(94, '96', 'Fix Account FK On Delete Rules', 'SQL', 'V96__Fix_Account_FK_On_Delete_Rules.sql', 1147779210, 'SA', TIMESTAMP '2026-06-11 18:25:01.768474', 8, TRUE);       
 CREATE INDEX "PUBLIC"."flyway_schema_history_s_idx" ON "PUBLIC"."flyway_schema_history"("success" NULLS FIRST);
 CREATE CACHED TABLE "PUBLIC"."SEGMENT_RULE"(
     "SEGMENT_RULE_ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
@@ -165,10 +165,10 @@ CREATE CACHED TABLE "PUBLIC"."ACCOUNT"(
 ALTER TABLE "PUBLIC"."ACCOUNT" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_E4" PRIMARY KEY("ID");      
 -- 4 +/- SELECT COUNT(*) FROM PUBLIC.ACCOUNT;  
 INSERT INTO "PUBLIC"."ACCOUNT" VALUES
-(1, 'admin', '$2a$10$wKGJ2IuP7HwMP66VaqSdYuqo3S1lcXpl9oqQkTGuLaDYHfbH57hD6', 'admin@atwrpg.local', TRUE, TRUE, TRUE, TRUE, 0, NULL, NULL, TIMESTAMP '2026-06-11 00:07:56.980331', TIMESTAMP '2026-06-11 00:07:56.980331', NULL, NULL, 0, 0, 0),
-(2, 'booker', '$2a$10$OrFNvKFkH5s/DvDzd301Me4v9bpIulbPNasymqmaxCqaUM.kVXHEi', 'booker@atwrpg.local', TRUE, TRUE, TRUE, TRUE, 0, NULL, NULL, TIMESTAMP '2026-06-11 00:07:56.980331', TIMESTAMP '2026-06-11 00:07:56.980331', NULL, NULL, 0, 0, 0),
-(3, 'player', '$2a$10$oHciydemMfshOLiGK7g4KO.Epu07svrzinu7PFvdJws5PYK3pIKx.', 'player@atwrpg.local', TRUE, TRUE, TRUE, TRUE, 0, NULL, NULL, TIMESTAMP '2026-06-11 00:07:56.980331', TIMESTAMP '2026-06-11 00:07:56.980331', NULL, NULL, 0, 0, 0),
-(4, 'viewer', '$2a$10$no8XHshPMFd14eBxIs9e2uYW8bXm/pT6MOZsXnw.RHyhmRWgvok06', 'viewer@atwrpg.local', TRUE, TRUE, TRUE, TRUE, 0, NULL, NULL, TIMESTAMP '2026-06-11 00:07:56.980331', TIMESTAMP '2026-06-11 00:07:56.980331', NULL, NULL, 0, 0, 0);    
+(1, 'admin', '$2a$10$wKGJ2IuP7HwMP66VaqSdYuqo3S1lcXpl9oqQkTGuLaDYHfbH57hD6', 'admin@atwrpg.local', TRUE, TRUE, TRUE, TRUE, 0, NULL, NULL, TIMESTAMP '2026-06-11 18:24:59.651817', TIMESTAMP '2026-06-11 18:24:59.651817', NULL, NULL, 0, 0, 0),
+(2, 'booker', '$2a$10$OrFNvKFkH5s/DvDzd301Me4v9bpIulbPNasymqmaxCqaUM.kVXHEi', 'booker@atwrpg.local', TRUE, TRUE, TRUE, TRUE, 0, NULL, NULL, TIMESTAMP '2026-06-11 18:24:59.651817', TIMESTAMP '2026-06-11 18:24:59.651817', NULL, NULL, 0, 0, 0),
+(3, 'player', '$2a$10$oHciydemMfshOLiGK7g4KO.Epu07svrzinu7PFvdJws5PYK3pIKx.', 'player@atwrpg.local', TRUE, TRUE, TRUE, TRUE, 0, NULL, NULL, TIMESTAMP '2026-06-11 18:24:59.651817', TIMESTAMP '2026-06-11 18:24:59.651817', NULL, NULL, 0, 0, 0),
+(4, 'viewer', '$2a$10$no8XHshPMFd14eBxIs9e2uYW8bXm/pT6MOZsXnw.RHyhmRWgvok06', 'viewer@atwrpg.local', TRUE, TRUE, TRUE, TRUE, 0, NULL, NULL, TIMESTAMP '2026-06-11 18:24:59.651817', TIMESTAMP '2026-06-11 18:24:59.651817', NULL, NULL, 0, 0, 0);    
 CREATE INDEX "PUBLIC"."IDX_ACCOUNT_USERNAME" ON "PUBLIC"."ACCOUNT"("USERNAME" NULLS FIRST);    
 CREATE INDEX "PUBLIC"."IDX_ACCOUNT_EMAIL" ON "PUBLIC"."ACCOUNT"("EMAIL" NULLS FIRST);          
 CREATE INDEX "PUBLIC"."IDX_ACCOUNT_ENABLED" ON "PUBLIC"."ACCOUNT"("ENABLED" NULLS FIRST);      
@@ -198,7 +198,7 @@ CREATE CACHED TABLE "PUBLIC"."DRAMA_EVENT"(
 ALTER TABLE "PUBLIC"."DRAMA_EVENT" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_C4" PRIMARY KEY("DRAMA_EVENT_ID");      
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.DRAMA_EVENT;              
 INSERT INTO "PUBLIC"."DRAMA_EVENT" VALUES
-(1, 'Reference Event', 'Test drama event', 'BACKSTAGE_INCIDENT', 'NEUTRAL', TIMESTAMP '2026-06-11 00:07:59.266938', TIMESTAMP '2026-06-11 00:07:59.266938', NULL, NULL, FALSE, FALSE, FALSE, FALSE, NULL, NULL, NULL, NULL, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.266938+00', NULL);             
+(1, 'Reference Event', 'Test drama event', 'BACKSTAGE_INCIDENT', 'NEUTRAL', TIMESTAMP '2026-06-11 18:25:01.860027', TIMESTAMP '2026-06-11 18:25:01.860027', NULL, NULL, FALSE, FALSE, FALSE, FALSE, NULL, NULL, NULL, NULL, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.860027+00', NULL);             
 CREATE INDEX "PUBLIC"."IDX_DRAMA_EVENT_PROCESSED_DATE" ON "PUBLIC"."DRAMA_EVENT"("IS_PROCESSED" NULLS FIRST, "EVENT_DATE" NULLS FIRST);        
 CREATE CACHED TABLE "PUBLIC"."ACHIEVEMENT"(
     "ACHIEVEMENT_ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
@@ -336,7 +336,7 @@ CREATE CACHED TABLE "PUBLIC"."SHOW_TEMPLATE"(
 ALTER TABLE "PUBLIC"."SHOW_TEMPLATE" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_5" PRIMARY KEY("TEMPLATE_ID");        
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.SHOW_TEMPLATE;            
 INSERT INTO "PUBLIC"."SHOW_TEMPLATE" VALUES
-(1, 'Reference Template', NULL, 1, NULL, NULL, TIMESTAMP '2026-06-11 00:07:59.266099', NULL, NULL, NULL, NULL, 1, 'NONE', NULL, NULL, NULL, NULL, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.266099+00');           
+(1, 'Reference Template', NULL, 1, NULL, NULL, TIMESTAMP '2026-06-11 18:25:01.859285', NULL, NULL, NULL, NULL, 1, 'NONE', NULL, NULL, NULL, NULL, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.859285+00');           
 CREATE CACHED TABLE "PUBLIC"."SEASON"(
     "SEASON_ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
     "NAME" CHARACTER VARYING(255) NOT NULL,
@@ -422,7 +422,7 @@ CREATE CACHED TABLE "PUBLIC"."SEGMENT_TYPE"(
 ALTER TABLE "PUBLIC"."SEGMENT_TYPE" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_A" PRIMARY KEY("SEGMENT_TYPE_ID");     
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.SEGMENT_TYPE;             
 INSERT INTO "PUBLIC"."SEGMENT_TYPE" VALUES
-(1, 'Match', NULL, TIMESTAMP '2026-06-11 00:07:59.267778', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.267778+00');   
+(1, 'Match', NULL, TIMESTAMP '2026-06-11 18:25:01.860707', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.860707+00');   
 CREATE CACHED TABLE "PUBLIC"."DECK"(
     "DECK_ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
     "WRESTLER_ID" BIGINT NOT NULL,
@@ -511,8 +511,8 @@ CREATE CACHED TABLE "PUBLIC"."WRESTLER"(
 ALTER TABLE "PUBLIC"."WRESTLER" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_B" PRIMARY KEY("WRESTLER_ID");             
 -- 2 +/- SELECT COUNT(*) FROM PUBLIC.WRESTLER; 
 INSERT INTO "PUBLIC"."WRESTLER" VALUES
-(1, 'Reference Wrestler', 12, 2, 12, 2, 12, TIMESTAMP '2026-06-11 00:07:59.264364', NULL, FALSE, 'MALE', NULL, NULL, NULL, NULL, TRUE, 1, 1, 1, 1, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.264364+00', 'BASE_GAME'),
-(2, 'Reference Wrestler 2', 14, 3, 14, 3, 14, TIMESTAMP '2026-06-11 00:07:59.264671', NULL, FALSE, 'FEMALE', NULL, NULL, NULL, NULL, TRUE, 1, 1, 1, 1, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.264671+00', 'BASE_GAME');   
+(1, 'Reference Wrestler', 12, 2, 12, 2, 12, TIMESTAMP '2026-06-11 18:25:01.857297', NULL, FALSE, 'MALE', NULL, NULL, NULL, NULL, TRUE, 1, 1, 1, 1, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.857297+00', 'BASE_GAME'),
+(2, 'Reference Wrestler 2', 14, 3, 14, 3, 14, TIMESTAMP '2026-06-11 18:25:01.857547', NULL, FALSE, 'FEMALE', NULL, NULL, NULL, NULL, TRUE, 1, 1, 1, 1, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.857547+00', 'BASE_GAME');   
 CREATE CACHED TABLE "PUBLIC"."UNIVERSE"(
     "ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1 RESTART WITH 2) NOT NULL,
     "NAME" CHARACTER VARYING(255) NOT NULL,
@@ -522,7 +522,7 @@ CREATE CACHED TABLE "PUBLIC"."UNIVERSE"(
 ALTER TABLE "PUBLIC"."UNIVERSE" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_1D" PRIMARY KEY("ID");     
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.UNIVERSE; 
 INSERT INTO "PUBLIC"."UNIVERSE" VALUES
-(1, 'Default Universe', 'GLOBAL', TIMESTAMP '2026-06-11 00:07:58.987567');              
+(1, 'Default Universe', 'GLOBAL', TIMESTAMP '2026-06-11 18:25:01.615479');              
 CREATE CACHED TABLE "PUBLIC"."HOLIDAY"(
     "ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1 RESTART WITH 10) NOT NULL,
     "DESCRIPTION" CHARACTER VARYING(255) NOT NULL,
@@ -541,16 +541,16 @@ CREATE CACHED TABLE "PUBLIC"."HOLIDAY"(
 ALTER TABLE "PUBLIC"."HOLIDAY" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_6B" PRIMARY KEY("ID");      
 -- 9 +/- SELECT COUNT(*) FROM PUBLIC.HOLIDAY;  
 INSERT INTO "PUBLIC"."HOLIDAY" VALUES
-(1, 'New Year''s Day', 'New Year''s Day', U&'New Year\2019s Day decorations are typically clean, festive, and hopeful in tone. They often feature metallic accents like gold, silver, and champagne, paired with white or soft neutrals to suggest a fresh start. Banners and signage display the new year, while streamers, balloons, and confetti add energy without feeling heavy. Clocks, stars, and fireworks motifs symbolize time, renewal, and celebration. Table settings may include sparkling centerpieces, candles, and subtle glitter, creating a bright, optimistic atmosphere that feels celebratory but calm\2014marking both reflection and new beginnings.', 1, 'JANUARY', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00'),
-(2, 'Valentine''s Day', 'Valentine''s Day', U&'Valentine\2019s Day decorations create a warm, romantic atmosphere centered on **reds, pinks, and soft whites**. Common elements include **hearts, roses, and love-themed banners**, often accented with **lace, ribbons, and soft lighting** like candles or string lights. **Floral arrangements, plush accents, and subtle metallic touches** add elegance, while table settings may feature **romantic centerpieces and themed place cards**, setting a cozy, intimate mood focused on love and affection.\000a', 14, 'FEBRUARY', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00'),
-(3, 'St. Patrick''s Day', 'St. Patrick''s Day', U&'St. Patrick\2019s Day decorations are bright and festive, dominated by **shades of green** with accents of **gold and white**. Common elements include **shamrocks, leprechauns, rainbows, and pots of gold**, often paired with **Irish flags or Celtic patterns**. **Banners, garlands, and themed table d\00e9cor** add a playful touch, while touches of **gold foil or glitter** bring a sense of luck and celebration, creating a cheerful, lively atmosphere rooted in Irish tradition.\000a', 17, 'MARCH', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00'),
-(4, 'Independence Day', 'Independence Day', U&'USA Independence Day decorations are bold and patriotic, featuring **red, white, and blue** throughout. Common elements include **American flags, stars, stripes, and bunting**, often paired with **fireworks imagery**. **Banners, balloons, and table d\00e9cor** showcase patriotic patterns, while **rustic or outdoor accents** like lanterns and string lights enhance the celebratory feel. The overall atmosphere is energetic and proud, reflecting national unity and summer celebration.\000a', 4, 'JULY', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00'),
-(5, 'Halloween', 'Halloween', U&'Halloween decorations create a spooky yet playful atmosphere using **black, orange, and purple** as the primary colors. Common elements include **pumpkins, jack-o\2019-lanterns, ghosts, bats, spiders, and cobwebs**, often paired with **dim lighting, candles, or colored lights**. **Haunted house props, eerie silhouettes, and fog effects** add drama, while whimsical touches keep the mood fun and festive rather than frightening.\000a', 31, 'OCTOBER', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00'),
-(6, 'Christmas Day', 'Christmas Day', U&'Christmas Day decorations create a warm, joyful atmosphere centered on **reds, greens, golds, and whites**. Common elements include **Christmas trees adorned with ornaments, lights, and garlands**, along with **wreaths, stockings, and nativity scenes**. **Twinkling lights, candles, and festive table settings** add warmth and sparkle, while touches of **pine, holly, and ribbon** evoke tradition, togetherness, and holiday cheer.\000a', 25, 'DECEMBER', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00');      
+(1, 'New Year''s Day', 'New Year''s Day', U&'New Year\2019s Day decorations are typically clean, festive, and hopeful in tone. They often feature metallic accents like gold, silver, and champagne, paired with white or soft neutrals to suggest a fresh start. Banners and signage display the new year, while streamers, balloons, and confetti add energy without feeling heavy. Clocks, stars, and fireworks motifs symbolize time, renewal, and celebration. Table settings may include sparkling centerpieces, candles, and subtle glitter, creating a bright, optimistic atmosphere that feels celebratory but calm\2014marking both reflection and new beginnings.', 1, 'JANUARY', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00'),
+(2, 'Valentine''s Day', 'Valentine''s Day', U&'Valentine\2019s Day decorations create a warm, romantic atmosphere centered on **reds, pinks, and soft whites**. Common elements include **hearts, roses, and love-themed banners**, often accented with **lace, ribbons, and soft lighting** like candles or string lights. **Floral arrangements, plush accents, and subtle metallic touches** add elegance, while table settings may feature **romantic centerpieces and themed place cards**, setting a cozy, intimate mood focused on love and affection.\000a', 14, 'FEBRUARY', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00'),
+(3, 'St. Patrick''s Day', 'St. Patrick''s Day', U&'St. Patrick\2019s Day decorations are bright and festive, dominated by **shades of green** with accents of **gold and white**. Common elements include **shamrocks, leprechauns, rainbows, and pots of gold**, often paired with **Irish flags or Celtic patterns**. **Banners, garlands, and themed table d\00e9cor** add a playful touch, while touches of **gold foil or glitter** bring a sense of luck and celebration, creating a cheerful, lively atmosphere rooted in Irish tradition.\000a', 17, 'MARCH', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00'),
+(4, 'Independence Day', 'Independence Day', U&'USA Independence Day decorations are bold and patriotic, featuring **red, white, and blue** throughout. Common elements include **American flags, stars, stripes, and bunting**, often paired with **fireworks imagery**. **Banners, balloons, and table d\00e9cor** showcase patriotic patterns, while **rustic or outdoor accents** like lanterns and string lights enhance the celebratory feel. The overall atmosphere is energetic and proud, reflecting national unity and summer celebration.\000a', 4, 'JULY', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00'),
+(5, 'Halloween', 'Halloween', U&'Halloween decorations create a spooky yet playful atmosphere using **black, orange, and purple** as the primary colors. Common elements include **pumpkins, jack-o\2019-lanterns, ghosts, bats, spiders, and cobwebs**, often paired with **dim lighting, candles, or colored lights**. **Haunted house props, eerie silhouettes, and fog effects** add drama, while whimsical touches keep the mood fun and festive rather than frightening.\000a', 31, 'OCTOBER', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00'),
+(6, 'Christmas Day', 'Christmas Day', U&'Christmas Day decorations create a warm, joyful atmosphere centered on **reds, greens, golds, and whites**. Common elements include **Christmas trees adorned with ornaments, lights, and garlands**, along with **wreaths, stockings, and nativity scenes**. **Twinkling lights, candles, and festive table settings** add warmth and sparkle, while touches of **pine, holly, and ribbon** evoke tradition, togetherness, and holiday cheer.\000a', 25, 'DECEMBER', NULL, NULL, 'FIXED', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00');
 INSERT INTO "PUBLIC"."HOLIDAY" VALUES
-(7, 'Memorial Day', 'Memorial Day', U&'Memorial Day decorations are respectful and patriotic, featuring **red, white, and blue** with a more subdued tone than other holidays. Common elements include **American flags, banners, and bunting**, often paired with **stars, ribbons, and wreaths**. **Floral arrangements**, especially red and white flowers, and **simple table d\00e9cor** reflect remembrance and honor, creating an atmosphere that balances national pride with solemn respect.\000a', NULL, 'MAY', 'MONDAY', -1, 'FLOATING', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00'),
-(8, 'Labor Day', 'Labor Day', U&'Labor Day decorations are casual and patriotic, reflecting both national pride and the spirit of the working community. They often feature **red, white, and blue** with simple, relaxed elements like **flags, banners, and bunting**. **Outdoor-friendly d\00e9cor**, such as table coverings, string lights, and picnic accents, is common, creating a laid-back, celebratory atmosphere that marks the end of summer and honors workers\2019 contributions.\000a', NULL, 'SEPTEMBER', 'MONDAY', 1, 'FLOATING', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00'),
-(9, 'Thanksgiving', 'Thanksgiving', U&'Thanksgiving decorations create a warm, welcoming atmosphere inspired by the **fall harvest**. They feature **earthy tones** like orange, brown, gold, and deep red, with elements such as **pumpkins, gourds, autumn leaves, and cornucopias**. **Rustic table settings, candles, and natural textures** like wood and burlap add coziness, emphasizing gratitude, abundance, and togetherness.\000a', NULL, 'NOVEMBER', 'THURSDAY', 4, 'FLOATING', TIMESTAMP '2026-06-11 00:07:57.066061', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:58.83789+00');            
+(7, 'Memorial Day', 'Memorial Day', U&'Memorial Day decorations are respectful and patriotic, featuring **red, white, and blue** with a more subdued tone than other holidays. Common elements include **American flags, banners, and bunting**, often paired with **stars, ribbons, and wreaths**. **Floral arrangements**, especially red and white flowers, and **simple table d\00e9cor** reflect remembrance and honor, creating an atmosphere that balances national pride with solemn respect.\000a', NULL, 'MAY', 'MONDAY', -1, 'FLOATING', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00'),
+(8, 'Labor Day', 'Labor Day', U&'Labor Day decorations are casual and patriotic, reflecting both national pride and the spirit of the working community. They often feature **red, white, and blue** with simple, relaxed elements like **flags, banners, and bunting**. **Outdoor-friendly d\00e9cor**, such as table coverings, string lights, and picnic accents, is common, creating a laid-back, celebratory atmosphere that marks the end of summer and honors workers\2019 contributions.\000a', NULL, 'SEPTEMBER', 'MONDAY', 1, 'FLOATING', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00'),
+(9, 'Thanksgiving', 'Thanksgiving', U&'Thanksgiving decorations create a warm, welcoming atmosphere inspired by the **fall harvest**. They feature **earthy tones** like orange, brown, gold, and deep red, with elements such as **pumpkins, gourds, autumn leaves, and cornucopias**. **Rustic table settings, candles, and natural textures** like wood and burlap add coziness, emphasizing gratitude, abundance, and togetherness.\000a', NULL, 'NOVEMBER', 'THURSDAY', 4, 'FLOATING', TIMESTAMP '2026-06-11 18:24:59.722202', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.500525+00');         
 CREATE CACHED TABLE "PUBLIC"."CAMPAIGN"(
     "ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1 RESTART WITH 2) NOT NULL,
     "WRESTLER_ID" BIGINT NOT NULL,
@@ -563,7 +563,7 @@ CREATE CACHED TABLE "PUBLIC"."CAMPAIGN"(
 ALTER TABLE "PUBLIC"."CAMPAIGN" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_264" PRIMARY KEY("ID");    
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.CAMPAIGN; 
 INSERT INTO "PUBLIC"."CAMPAIGN" VALUES
-(1, 1, 'ACTIVE', TIMESTAMP '2026-06-11 00:07:59.267296', NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.267296+00', NULL);         
+(1, 1, 'ACTIVE', TIMESTAMP '2026-06-11 18:25:01.860315', NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.860315+00', NULL);         
 CREATE INDEX "PUBLIC"."IDX_CAMPAIGN_WRESTLER" ON "PUBLIC"."CAMPAIGN"("WRESTLER_ID" NULLS FIRST);               
 CREATE CACHED TABLE "PUBLIC"."FACTION_RIVALRY"(
     "FACTION_RIVALRY_ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
@@ -691,7 +691,7 @@ CREATE CACHED TABLE "PUBLIC"."SHOW_TYPE"(
 ALTER TABLE "PUBLIC"."SHOW_TYPE" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_3" PRIMARY KEY("SHOW_TYPE_ID");           
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.SHOW_TYPE;
 INSERT INTO "PUBLIC"."SHOW_TYPE" VALUES
-(1, 'Weekly Show', NULL, FALSE, TIMESTAMP '2026-06-11 00:07:59.265792', 0, 0, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.265792+00');   
+(1, 'Weekly Show', NULL, FALSE, TIMESTAMP '2026-06-11 18:25:01.859009', 0, 0, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.859009+00');   
 CREATE CACHED TABLE "PUBLIC"."SEGMENT_TITLE"(
     "SEGMENT_ID" BIGINT NOT NULL,
     "TITLE_ID" BIGINT NOT NULL
@@ -733,8 +733,8 @@ CREATE CACHED TABLE "PUBLIC"."INJURY_TYPE"(
 ALTER TABLE "PUBLIC"."INJURY_TYPE" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_C" PRIMARY KEY("INJURY_TYPE_ID");       
 -- 2 +/- SELECT COUNT(*) FROM PUBLIC.INJURY_TYPE;              
 INSERT INTO "PUBLIC"."INJURY_TYPE" VALUES
-(1, 'Legacy Injury', 0, 0, 0, 'Placeholder for injuries that existed before injury types were introduced. Update to the correct type when known.', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.118599+00'),
-(2, 'Sprain', -2, -1, 0, NULL, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.2655+00');        
+(1, 'Legacy Injury', 0, 0, 0, 'Placeholder for injuries that existed before injury types were introduced. Update to the correct type when known.', NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.723419+00'),
+(2, 'Sprain', -2, -1, 0, NULL, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.858575+00');      
 CREATE CACHED TABLE "PUBLIC"."TITLE_CONTENDER"(
     "TITLE_ID" BIGINT NOT NULL,
     "WRESTLER_ID" BIGINT NOT NULL
@@ -818,8 +818,8 @@ CREATE CACHED TABLE "PUBLIC"."WRESTLER_STATE"(
 ALTER TABLE "PUBLIC"."WRESTLER_STATE" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_46" PRIMARY KEY("ID");               
 -- 2 +/- SELECT COUNT(*) FROM PUBLIC.WRESTLER_STATE;           
 INSERT INTO "PUBLIC"."WRESTLER_STATE" VALUES
-(1, 1, 1, 1000, 'ROOKIE', 0, 12, 100, 100, 100, NULL, NULL, TIMESTAMP '2026-06-11 00:07:59.264965'),
-(2, 2, 1, 500, 'VETERAN', 2, 14, 100, 100, 100, NULL, NULL, TIMESTAMP '2026-06-11 00:07:59.265318');         
+(1, 1, 1, 1000, 'ROOKIE', 0, 12, 100, 100, 100, NULL, NULL, TIMESTAMP '2026-06-11 18:25:01.857854'),
+(2, 2, 1, 500, 'VETERAN', 2, 14, 100, 100, 100, NULL, NULL, TIMESTAMP '2026-06-11 18:25:01.858293');         
 CREATE CACHED TABLE "PUBLIC"."LEAGUE"(
     "ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
     "NAME" CHARACTER VARYING(255) NOT NULL,
@@ -1053,7 +1053,7 @@ CREATE CACHED TABLE "PUBLIC"."TITLE"(
 ALTER TABLE "PUBLIC"."TITLE" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_4" PRIMARY KEY("TITLE_ID");   
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.TITLE;    
 INSERT INTO "PUBLIC"."TITLE" VALUES
-(1, 'Reference Championship', NULL, NULL, NULL, TRUE, TIMESTAMP '2026-06-11 00:07:59.265598', NULL, NULL, 'SINGLE', TRUE, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.265598+00', NULL, NULL, NULL, NULL);               
+(1, 'Reference Championship', NULL, NULL, NULL, TRUE, TIMESTAMP '2026-06-11 18:25:01.858769', NULL, NULL, 'SINGLE', TRUE, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.858769+00', NULL, NULL, NULL, NULL);               
 CREATE CACHED TABLE "PUBLIC"."CAMPAIGN_ENCOUNTER"(
     "ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
     "CAMPAIGN_ID" BIGINT NOT NULL,
@@ -1182,7 +1182,7 @@ CREATE CACHED TABLE "PUBLIC"."WRESTLING_SHOW"(
 ALTER TABLE "PUBLIC"."WRESTLING_SHOW" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_26" PRIMARY KEY("SHOW_ID");          
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.WRESTLING_SHOW;           
 INSERT INTO "PUBLIC"."WRESTLING_SHOW" VALUES
-(1, 'Reference Show', NULL, NULL, 1, NULL, NULL, NULL, TIMESTAMP '2026-06-11 00:07:59.266486', NULL, NULL, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.266486+00', 0, 0.00, NULL);  
+(1, 'Reference Show', NULL, NULL, 1, NULL, NULL, NULL, TIMESTAMP '2026-06-11 18:25:01.859611', NULL, NULL, NULL, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.859611+00', 0, 0.00, NULL);  
 CREATE CACHED TABLE "PUBLIC"."CAMPAIGN_STATE"(
     "ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
     "CAMPAIGN_ID" BIGINT NOT NULL,
@@ -1247,7 +1247,7 @@ CREATE CACHED TABLE "PUBLIC"."FACTION"(
 ALTER TABLE "PUBLIC"."FACTION" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_E" PRIMARY KEY("FACTION_ID");               
 -- 1 +/- SELECT COUNT(*) FROM PUBLIC.FACTION;  
 INSERT INTO "PUBLIC"."FACTION" VALUES
-(1, 'Test Faction', 'Reference snapshot faction', TRUE, NULL, NULL, NULL, TIMESTAMP '2026-06-11 00:07:59.263661', NULL, NULL, NULL, 0, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 00:07:59.263661+00', NULL, NULL);      
+(1, 'Test Faction', 'Reference snapshot faction', TRUE, NULL, NULL, NULL, TIMESTAMP '2026-06-11 18:25:01.856774', NULL, NULL, NULL, 0, NULL, TIMESTAMP WITH TIME ZONE '2026-06-11 18:25:01.856774+00', NULL, NULL);      
 CREATE CACHED TABLE "PUBLIC"."WRESTLER_STATUS_HISTORY"(
     "ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
     "WRESTLER_ID" BIGINT NOT NULL,
@@ -1288,10 +1288,10 @@ CREATE CACHED TABLE "PUBLIC"."UNIVERSE_MEMBERS"(
 ALTER TABLE "PUBLIC"."UNIVERSE_MEMBERS" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_AC" PRIMARY KEY("ID");             
 -- 4 +/- SELECT COUNT(*) FROM PUBLIC.UNIVERSE_MEMBERS;         
 INSERT INTO "PUBLIC"."UNIVERSE_MEMBERS" VALUES
-(1, 1, 1, 'MEMBER', TIMESTAMP '2026-06-11 00:07:58.999736'),
-(2, 1, 2, 'MEMBER', TIMESTAMP '2026-06-11 00:07:58.999736'),
-(3, 1, 3, 'MEMBER', TIMESTAMP '2026-06-11 00:07:58.999736'),
-(4, 1, 4, 'MEMBER', TIMESTAMP '2026-06-11 00:07:58.999736');             
+(1, 1, 1, 'MEMBER', TIMESTAMP '2026-06-11 18:25:01.623885'),
+(2, 1, 2, 'MEMBER', TIMESTAMP '2026-06-11 18:25:01.623885'),
+(3, 1, 3, 'MEMBER', TIMESTAMP '2026-06-11 18:25:01.623885'),
+(4, 1, 4, 'MEMBER', TIMESTAMP '2026-06-11 18:25:01.623885');             
 CREATE CACHED TABLE "PUBLIC"."UNIVERSE_EXPANSION_SETTINGS"(
     "ID" BIGINT GENERATED BY DEFAULT AS IDENTITY(START WITH 1) NOT NULL,
     "UNIVERSE_ID" BIGINT NOT NULL,

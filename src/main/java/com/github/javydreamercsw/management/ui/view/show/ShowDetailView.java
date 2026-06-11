@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
@@ -48,6 +49,7 @@ import com.github.javydreamercsw.management.service.relationship.WrestlerRelatio
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
+import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
@@ -58,6 +60,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.vaadin.flow.component.Component;
@@ -166,6 +169,8 @@ public class ShowDetailView extends Main
   private final NotificationService notificationService;
   private final ShowExportService exportService;
   private final LeagueRepository leagueRepository;
+  private final SecurityUtils securityUtils;
+  private final NarrationParserService narrationParserService;
 
   @Autowired
   public ShowDetailView(
@@ -195,7 +200,9 @@ public class ShowDetailView extends Main
       final WrestlerRelationshipService relationshipService,
       final NotificationService notificationService,
       final ShowExportService exportService,
-      final LeagueRepository leagueRepository) {
+      final LeagueRepository leagueRepository,
+      final SecurityUtils securityUtils,
+      final NarrationParserService narrationParserService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -223,6 +230,8 @@ public class ShowDetailView extends Main
     this.notificationService = notificationService;
     this.exportService = exportService;
     this.leagueRepository = leagueRepository;
+    this.securityUtils = securityUtils;
+    this.narrationParserService = narrationParserService;
     initializeComponents();
   }
 
@@ -354,6 +363,7 @@ public class ShowDetailView extends Main
     editNameButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editNameButton.setTooltipText("Edit Show Name");
     editNameButton.addClickListener(e -> new EditShowNameDialog(showService, show).open());
+    editNameButton.setVisible(!securityUtils.isViewer());
 
     Span typeBadge = new Span(show.getType().getName());
     typeBadge.addClassNames(
@@ -483,6 +493,7 @@ public class ShowDetailView extends Main
     planShowButton.setId("plan-show-button");
     planShowButton.addClickListener(
         e -> getUI().ifPresent(ui -> ui.navigate(ShowPlanningView.class, show.getId())));
+    planShowButton.setVisible(!securityUtils.isViewer());
 
     Button editDetailsButton =
         new Button(
@@ -500,6 +511,7 @@ public class ShowDetailView extends Main
                         show)
                     .open());
     editDetailsButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    editDetailsButton.setVisible(!securityUtils.isViewer());
 
     Button exportCardButton = new Button("Export Card", new Icon(VaadinIcon.DOWNLOAD));
     exportCardButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -553,21 +565,29 @@ public class ShowDetailView extends Main
         LumoUtility.Background.BASE);
     card.setSizeFull();
 
-    // Header with title and add button
+    H3 segmentsTitle = new H3("Segments");
+    segmentsTitle.addClassNames(LumoUtility.Margin.NONE);
+
     HorizontalLayout header = new HorizontalLayout();
     header.setWidthFull();
     header.setJustifyContentMode(HorizontalLayout.JustifyContentMode.BETWEEN);
     header.setAlignItems(HorizontalLayout.Alignment.CENTER);
 
-    H3 segmentsTitle = new H3("Segments");
-    segmentsTitle.addClassNames(LumoUtility.Margin.NONE);
+    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(show);
+    log.debug("Found {} segments for show: {}", segments.size(), show.getName());
 
+    if (securityUtils.isViewer()) {
+      header.add(segmentsTitle);
+      card.add(header, buildViewerFeed(show, segments));
+      return card;
+    }
+
+    // Non-viewer: full editing UI with grid
     adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
     adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     adjudicateButton.setId("adjudicate-show-btn");
     adjudicateButton.addClickListener(e -> adjudicateShow(show));
 
-    // Check if there are any pending segments
     boolean hasPendingSegments =
         segmentRepository.findByShow(show).stream()
             .anyMatch(
@@ -581,7 +601,6 @@ public class ShowDetailView extends Main
     addSegmentButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     addSegmentButton.setId("add-segment-btn");
 
-    // Disable "Add Segment" only when all existing segments have been adjudicated
     List<Segment> existingSegments = segmentRepository.findByShow(show);
     boolean allAdjudicated =
         !existingSegments.isEmpty()
@@ -599,11 +618,8 @@ public class ShowDetailView extends Main
     header.add(
         segmentsTitle, new HorizontalLayout(saveOrderButton, adjudicateButton, addSegmentButton));
 
-    // Get segments for this show — also seeds the in-memory order
-    List<Segment> segments = segmentRepository.findByShowOrderBySegmentOrderAsc(show);
     segmentOrder = new ArrayList<>(segments);
     orderDirty = false;
-    log.debug("Found {} segments for show: {}", segments.size(), show.getName());
 
     VerticalLayout segmentsLayout = new VerticalLayout();
     segmentsLayout.setSpacing(false);
@@ -611,7 +627,6 @@ public class ShowDetailView extends Main
     segmentsLayout.setSizeFull();
     segmentsLayout.addClassNames(LumoUtility.Width.FULL);
 
-    // Always initialize segmentsGrid and its wrapper
     segmentsGrid = createSegmentsGrid(segments);
     segmentsGrid.setSizeFull();
     segmentsGrid.setId("segments-grid");
@@ -623,7 +638,6 @@ public class ShowDetailView extends Main
     segmentsProgressBar.setId("segments-progress-bar");
     segmentsLayout.add(segmentsProgressBar);
 
-    // Wrap the grid in a Div to enable horizontal scrolling
     Div gridWrapper = new Div(segmentsGrid);
     gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
     gridWrapper.setSizeFull();
@@ -636,7 +650,6 @@ public class ShowDetailView extends Main
     noSegmentsMessage.setId("no-segments-message");
     segmentsLayout.add(noSegmentsMessage);
 
-    // Conditionally show/hide the grid and the "no segments" message
     if (segments.isEmpty()) {
       segmentsGrid.setVisible(false);
       noSegmentsMessage.setVisible(true);
@@ -646,6 +659,206 @@ public class ShowDetailView extends Main
     }
 
     card.add(header, segmentsLayout);
+    return card;
+  }
+
+  private VerticalLayout buildViewerFeed(
+      @NonNull final Show show, @NonNull final List<Segment> segments) {
+    VerticalLayout feed = new VerticalLayout();
+    feed.setSpacing(true);
+    feed.setPadding(false);
+    feed.setWidthFull();
+    feed.setId("viewer-segment-feed");
+
+    if (segments.isEmpty()) {
+      Span empty = new Span("No segments scheduled for this show yet.");
+      empty.addClassNames(LumoUtility.TextColor.SECONDARY);
+      empty.setId("no-segments-message");
+      feed.add(empty);
+      return feed;
+    }
+
+    // Build champion names for all title segments upfront (avoids lazy-load at render time)
+    java.util.Set<Long> titleIds =
+        segments.stream()
+            .filter(s -> Boolean.TRUE.equals(s.getIsTitleSegment()))
+            .flatMap(s -> s.getTitles().stream())
+            .map(com.github.javydreamercsw.management.domain.title.Title::getId)
+            .filter(java.util.Objects::nonNull)
+            .collect(java.util.stream.Collectors.toSet());
+    java.util.Map<Long, String> championNames =
+        titleIds.isEmpty()
+            ? java.util.Map.of()
+            : titleService.getCurrentChampionNamesByTitleIds(titleIds);
+
+    java.util.Map<String, String> alignments = new java.util.HashMap<>();
+    if (show.getCommentaryTeam() != null) {
+      show.getCommentaryTeam()
+          .getCommentators()
+          .forEach(
+              c -> {
+                if (c.getNpc().getAlignment() != null) {
+                  alignments.put(c.getNpc().getName(), c.getNpc().getAlignment().name());
+                }
+              });
+    }
+
+    Long mainEventId = null;
+    for (int i = segments.size() - 1; i >= 0; i--) {
+      Segment s = segments.get(i);
+      if (s.getSegmentType() == null
+          || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+        mainEventId = s.getId();
+        break;
+      }
+    }
+    final Long mainId = mainEventId;
+    for (Segment segment : segments) {
+      feed.add(
+          createViewerSegmentCard(
+              segment,
+              segment.getId() != null && segment.getId().equals(mainId),
+              alignments,
+              championNames));
+    }
+    return feed;
+  }
+
+  private Div createViewerSegmentCard(
+      @NonNull final Segment segment,
+      final boolean isMainEvent,
+      @NonNull final java.util.Map<String, String> alignments,
+      @NonNull final java.util.Map<Long, String> championNames) {
+    Div card = new Div();
+    card.addClassNames(
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Border.ALL,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Background.CONTRAST_5);
+
+    // Badge row: type + main-event + title on the left, date on the right
+    HorizontalLayout badgeRow = new HorizontalLayout();
+    badgeRow.setAlignItems(FlexComponent.Alignment.CENTER);
+    badgeRow.setWidthFull();
+    badgeRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+
+    HorizontalLayout leftBadges = new HorizontalLayout();
+    leftBadges.setSpacing(true);
+    leftBadges.setAlignItems(FlexComponent.Alignment.CENTER);
+
+    if (segment.getSegmentType() != null) {
+      Span typeBadge = new Span(segment.getSegmentType().getName());
+      typeBadge
+          .getStyle()
+          .set("background", "var(--lumo-primary-color-10pct)")
+          .set("color", "var(--lumo-primary-text-color)")
+          .set("border-radius", "4px")
+          .set("padding", "2px 8px")
+          .set("font-size", "var(--lumo-font-size-s)")
+          .set("font-weight", "bold");
+      leftBadges.add(typeBadge);
+    }
+
+    if (isMainEvent) {
+      Span mainBadge = new Span("★ Main Event");
+      mainBadge
+          .getStyle()
+          .set("background-color", "#fff3cd")
+          .set("color", "#856404")
+          .set("border-radius", "4px")
+          .set("padding", "2px 8px")
+          .set("font-weight", "bold")
+          .set("font-size", "var(--lumo-font-size-s)");
+      leftBadges.add(mainBadge);
+    }
+
+    if (Boolean.TRUE.equals(segment.getIsTitleSegment()) && !segment.getTitles().isEmpty()) {
+      for (Title title : segment.getTitles()) {
+        String champion =
+            title.getId() != null ? championNames.getOrDefault(title.getId(), "Vacant") : "Vacant";
+        Span titleBadge = new Span("🏆 " + title.getName() + " (c: " + champion + ")");
+        titleBadge
+            .getStyle()
+            .set("background", "#fff8e1")
+            .set("color", "#c17900")
+            .set("border-radius", "4px")
+            .set("padding", "2px 8px")
+            .set("font-size", "var(--lumo-font-size-s)")
+            .set("font-weight", "bold");
+        leftBadges.add(titleBadge);
+      }
+    }
+
+    Span dateLabel =
+        new Span(
+            segment
+                .getSegmentDate()
+                .atZone(java.time.ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("MMM d, yyyy")));
+    dateLabel.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+
+    badgeRow.add(leftBadges, dateLabel);
+    card.add(badgeRow);
+
+    // Participants
+    List<String> wrestlerNames = segment.getWrestlers().stream().map(Wrestler::getName).toList();
+    if (!wrestlerNames.isEmpty()) {
+      Span participants = new Span(String.join(" vs ", wrestlerNames));
+      participants.addClassNames(LumoUtility.FontSize.XLARGE, LumoUtility.FontWeight.SEMIBOLD);
+      participants.getStyle().set("display", "block").set("margin-top", "var(--lumo-space-s)");
+      card.add(participants);
+    }
+
+    // Stipulations
+    List<String> ruleNames = segment.getSegmentRules().stream().map(SegmentRule::getName).toList();
+    if (!ruleNames.isEmpty()) {
+      Span rules = new Span("Stipulation: " + String.join(", ", ruleNames));
+      rules.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+      rules.getStyle().set("display", "block");
+      card.add(rules);
+    }
+
+    // Narration (prefer full narration rendered as structured commentary, fall back to summary)
+    if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
+      CommentaryComponent commentary = new CommentaryComponent();
+      commentary.setCommentary(narrationParserService.parse(segment.getNarration()), alignments);
+      Details narrationDetails = new Details("Read narration", commentary);
+      narrationDetails.setOpened(false);
+      narrationDetails.setWidthFull();
+      narrationDetails.getStyle().set("margin-top", "var(--lumo-space-s)");
+      card.add(narrationDetails);
+    } else if (segment.getSummary() != null && !segment.getSummary().isBlank()) {
+      Paragraph summary = new Paragraph(segment.getSummary());
+      summary.addClassNames(LumoUtility.TextColor.SECONDARY);
+      summary.getStyle().set("margin-top", "var(--lumo-space-s)");
+      card.add(summary);
+    }
+
+    // Winners
+    List<String> winnerNames = segment.getWinners().stream().map(Wrestler::getName).toList();
+    if (!winnerNames.isEmpty()) {
+      Span winners = new Span("🏆 " + String.join(", ", winnerNames) + " wins");
+      winners.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+      winners
+          .getStyle()
+          .set("display", "block")
+          .set("color", "var(--lumo-success-text-color)")
+          .set("margin-top", "var(--lumo-space-xs)");
+      card.add(winners);
+    }
+
+    // League status
+    matchFulfillmentRepository
+        .findBySegment(segment)
+        .ifPresent(
+            f -> {
+              Span leagueStatus = new Span("League: " + f.getStatus());
+              leagueStatus.addClassNames(
+                  LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+              leagueStatus.getStyle().set("display", "block");
+              card.add(leagueStatus);
+            });
+
     return card;
   }
 
