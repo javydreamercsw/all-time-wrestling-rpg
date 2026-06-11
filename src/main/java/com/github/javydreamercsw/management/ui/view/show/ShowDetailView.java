@@ -578,7 +578,7 @@ public class ShowDetailView extends Main
 
     if (securityUtils.isViewer()) {
       header.add(segmentsTitle);
-      card.add(header, buildViewerFeed(segments));
+      card.add(header, buildViewerFeed(show, segments));
       return card;
     }
 
@@ -662,7 +662,8 @@ public class ShowDetailView extends Main
     return card;
   }
 
-  private VerticalLayout buildViewerFeed(@NonNull final List<Segment> segments) {
+  private VerticalLayout buildViewerFeed(
+      @NonNull final Show show, @NonNull final List<Segment> segments) {
     VerticalLayout feed = new VerticalLayout();
     feed.setSpacing(true);
     feed.setPadding(false);
@@ -675,6 +676,18 @@ public class ShowDetailView extends Main
       empty.setId("no-segments-message");
       feed.add(empty);
       return feed;
+    }
+
+    java.util.Map<String, String> alignments = new java.util.HashMap<>();
+    if (show.getCommentaryTeam() != null) {
+      show.getCommentaryTeam()
+          .getCommentators()
+          .forEach(
+              c -> {
+                if (c.getNpc().getAlignment() != null) {
+                  alignments.put(c.getNpc().getName(), c.getNpc().getAlignment().name());
+                }
+              });
     }
 
     Long mainEventId = null;
@@ -690,12 +703,15 @@ public class ShowDetailView extends Main
     for (Segment segment : segments) {
       feed.add(
           createViewerSegmentCard(
-              segment, segment.getId() != null && segment.getId().equals(mainId)));
+              segment, segment.getId() != null && segment.getId().equals(mainId), alignments));
     }
     return feed;
   }
 
-  private Div createViewerSegmentCard(@NonNull final Segment segment, final boolean isMainEvent) {
+  private Div createViewerSegmentCard(
+      @NonNull final Segment segment,
+      final boolean isMainEvent,
+      @NonNull final java.util.Map<String, String> alignments) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.MEDIUM,
@@ -785,19 +801,6 @@ public class ShowDetailView extends Main
 
     // Narration (prefer full narration rendered as structured commentary, fall back to summary)
     if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
-      java.util.Map<String, String> alignments = new java.util.HashMap<>();
-      if (segment.getShow() != null && segment.getShow().getCommentaryTeam() != null) {
-        segment
-            .getShow()
-            .getCommentaryTeam()
-            .getCommentators()
-            .forEach(
-                c -> {
-                  if (c.getNpc().getAlignment() != null) {
-                    alignments.put(c.getNpc().getName(), c.getNpc().getAlignment().name());
-                  }
-                });
-      }
       CommentaryComponent commentary = new CommentaryComponent();
       commentary.setCommentary(narrationParserService.parse(segment.getNarration()), alignments);
       commentary.getStyle().set("margin-top", "var(--lumo-space-s)");
