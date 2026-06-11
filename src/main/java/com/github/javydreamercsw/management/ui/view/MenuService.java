@@ -119,7 +119,12 @@ public class MenuService {
 
     // Help menu: accessible to everyone
     MenuItem help = new MenuItem("Help", VaadinIcon.QUESTION_CIRCLE, null);
-    help.addChild(new MenuItem("Game Guide", VaadinIcon.BOOK, "/docs/index.html", true));
+    help.addChild(
+        new MenuItem(
+            "Game Guide",
+            VaadinIcon.BOOK,
+            "https://javydreamercsw.github.io/all-time-wrestling-rpg/",
+            true));
 
     // Multiplayer menu: Only PLAYER, BOOKER, and ADMIN
     MenuItem multiplayer =
