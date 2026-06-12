@@ -21,6 +21,21 @@ import com.github.javydreamercsw.base.domain.account.Account;
 /** Defines one step in a mode-specific player tutorial. */
 public interface TutorialStep {
 
+  /**
+   * Controls how the player completes this step.
+   *
+   * <ul>
+   *   <li>{@code NAVIGATE} — show a "Go to X" button; player navigates away, returns, then
+   *       validates.
+   *   <li>{@code INLINE} — render a Vaadin component directly inside the tutorial view; no
+   *       navigation required (e.g. wrestler picker on Step 1).
+   * </ul>
+   */
+  enum InteractionMode {
+    NAVIGATE,
+    INLINE
+  }
+
   /** 1-based step number within the tutorial. */
   int getStepNumber();
 
@@ -32,6 +47,11 @@ public interface TutorialStep {
 
   /** Shown near the Validate button so the player knows what will be checked. */
   String getValidationHint();
+
+  /** Returns how this step expects the player to interact. Defaults to {@code NAVIGATE}. */
+  default InteractionMode getInteractionMode() {
+    return InteractionMode.NAVIGATE;
+  }
 
   /** Vaadin route the "Go to X" button navigates to (e.g. {@code "player"}). */
   String getTargetRoute();

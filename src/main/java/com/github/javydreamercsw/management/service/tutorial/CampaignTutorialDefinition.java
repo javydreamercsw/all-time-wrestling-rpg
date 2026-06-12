@@ -52,6 +52,11 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
       }
 
       @Override
+      public InteractionMode getInteractionMode() {
+        return InteractionMode.INLINE;
+      }
+
+      @Override
       public String getTitle() {
         return "Assign Your Wrestler";
       }

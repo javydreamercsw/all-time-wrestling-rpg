@@ -50,20 +50,25 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
       }
 
       @Override
+      public InteractionMode getInteractionMode() {
+        return InteractionMode.INLINE;
+      }
+
+      @Override
       public String getTitle() {
-        return "Create a Wrestler";
+        return "Pick Your Featured Wrestler";
       }
 
       @Override
       public String getInstructions() {
-        return "Navigate to Entities > Wrestlers and create your first wrestler. Give them a name,"
-            + " pick their alignment, and fill in their stats. This wrestler will be the star of"
-            + " your universe.";
+        return "Choose the wrestler you want to follow in your universe. This is the star whose"
+            + " story you'll be telling. You can manage all wrestlers later from Entities >"
+            + " Wrestlers.";
       }
 
       @Override
       public String getValidationHint() {
-        return "We'll check that at least one wrestler exists in your universe.";
+        return "We'll check that you have an active wrestler assigned to your account.";
       }
 
       @Override
@@ -83,9 +88,9 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String validate(final Account account) {
-        return wrestlerService.getAllWrestlers().isEmpty()
-            ? "No wrestlers found yet. Go to Entities > Wrestlers and create your first one."
-            : null;
+        return account.getActiveWrestlerId() != null
+            ? null
+            : "You haven't selected a wrestler yet. Pick one from the list below.";
       }
     };
   }

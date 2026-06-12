@@ -28,6 +28,9 @@ import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompl
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
+import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +52,9 @@ class TutorialServiceTest {
   @Mock private AccountRepository accountRepository;
   @Mock private TutorialDefinition globalDefinition;
   @Mock private TutorialStep stepMock;
+  @Mock private UniverseService universeService;
+  @Mock private UniverseMembershipService universeMembershipService;
+  @Mock private UniverseContextService universeContextService;
 
   private TutorialService service;
   private Account account;
@@ -61,7 +67,13 @@ class TutorialServiceTest {
     when(globalDefinition.getSteps()).thenReturn(List.of(stepMock, stepMock, stepMock));
     service =
         new TutorialService(
-            completionRepository, gameSettingService, accountRepository, List.of(globalDefinition));
+            completionRepository,
+            gameSettingService,
+            accountRepository,
+            List.of(globalDefinition),
+            universeService,
+            universeMembershipService,
+            universeContextService);
   }
 
   // ── shouldShowTutorial ────────────────────────────────────────────────────

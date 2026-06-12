@@ -22,9 +22,14 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
+import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -38,6 +43,9 @@ public class TutorialService {
   private final GameSettingService gameSettingService;
   private final AccountRepository accountRepository;
   private final List<TutorialDefinition> definitions;
+  private final UniverseService universeService;
+  private final UniverseMembershipService universeMembershipService;
+  private final UniverseContextService universeContextService;
 
   /** Returns the tutorial definition for the given universe mode. */
   public TutorialDefinition getDefinition(final Universe.UniverseType type) {
@@ -107,6 +115,41 @@ public class TutorialService {
   public void markSkipped(
       final Long accountId, final Universe.UniverseType type, final int totalSteps) {
     advanceStep(accountId, type, totalSteps, totalSteps);
+  }
+
+  /**
+   * Creates a new tutorial universe of the given type for the player, applies the requested feature
+   * settings, adds the player as OWNER, and sets it as the active universe for the current session.
+   * Runs entirely under admin security context since universe creation and game-setting writes
+   * require elevated authority.
+   *
+   * <p>{@code featureSettings} is a map from {@link GameSettingService} key constants to their
+   * desired boolean values (e.g. {@code WEAR_AND_TEAR_ENABLED_KEY → true}).
+   */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public Universe createTutorialUniverse(
+      final Account account,
+      final Universe.UniverseType type,
+      final Map<String, Boolean> featureSettings) {
+    return GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          Universe universe = new Universe();
+          universe.setName("Tutorial – " + account.getUsername());
+          universe.setType(type);
+          Universe saved = universeService.save(universe);
+
+          universeMembershipService.addMember(
+              saved, account, UniverseMembership.UniverseMemberRole.OWNER);
+
+          // Set as active universe BEFORE applying settings so saveInternal scopes to it.
+          universeContextService.setCurrentUniverse(saved);
+
+          featureSettings.forEach(
+              (key, enabled) -> gameSettingService.save(key, String.valueOf(enabled)));
+
+          return saved;
+        });
   }
 
   /** Deletes the completion record so the tutorial will be shown again on next login. */
