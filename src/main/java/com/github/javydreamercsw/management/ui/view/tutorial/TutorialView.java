@@ -373,12 +373,13 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     if (step.getInteractionMode() == TutorialStep.InteractionMode.INLINE) {
       add(buildWrestlerPicker(step, totalSteps));
     } else {
-      // Hint + navigate + validate
+      // Hint line
       Span hint = new Span(step.getValidationHint());
       hint.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
       hint.getStyle().set("font-style", "italic");
       add(hint);
 
+      // Error feedback slot (hidden until Next is clicked and validation fails)
       Div errorSlot = new Div();
       errorSlot.setVisible(false);
       errorSlot.addClassNames(
@@ -401,15 +402,17 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
         buttons.add(prevBtn);
       }
 
+      // "Go to X" lets the player navigate to the relevant view and come back
       Button goBtn = new Button("Go to " + step.getTargetViewLabel() + " ↗");
       goBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
       goBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(step.getTargetRoute())));
       buttons.add(goBtn);
 
+      // Next / Complete — validates on click, shows error inline if not ready
       boolean isLast = (currentStepIndex == totalSteps - 1);
-      Button validateBtn = new Button(isLast ? "✓ Complete Tutorial" : "✓ Validate");
-      validateBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-      validateBtn.addClickListener(
+      Button nextBtn = new Button(isLast ? "Complete Tutorial ✓" : "Next →");
+      nextBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      nextBtn.addClickListener(
           e -> {
             account = accountService.get(account.getId()).orElse(account);
             String error = step.validate(account);
@@ -421,7 +424,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
               advanceAfterSuccess(totalSteps);
             }
           });
-      buttons.add(validateBtn);
+      buttons.add(nextBtn);
       add(buttons);
     }
   }

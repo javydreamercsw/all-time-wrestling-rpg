@@ -241,14 +241,14 @@ class TutorialViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("NAVIGATE step renders Go-To and Validate buttons")
+  @DisplayName("NAVIGATE step renders Go-To and Next buttons")
   void navigateStep_rendersGoToAndValidate() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
     when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
 
     TutorialStep inlineStep = inlineStepMock("Pick Your Featured Wrestler", "hint1");
     TutorialStep navStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint");
-    // Add a trailing step so navStep (index 1) is NOT the last step → button reads "✓ Validate"
+    // Add a trailing step so navStep (index 1) is NOT the last step → button reads "Next →"
     TutorialStep finalStep = navigateStepMock("Run Your Show", "show-list", "Shows", "hint3");
     TutorialDefinition def =
         definitionOf(Universe.UniverseType.GLOBAL, inlineStep, navStep, finalStep);
@@ -259,7 +259,7 @@ class TutorialViewTest extends AbstractViewTest {
 
     List<Button> buttons = _find(view, Button.class);
     assertThat(buttons).extracting(Button::getText).anyMatch(t -> t.startsWith("Go to Shows"));
-    assertThat(buttons).extracting(Button::getText).contains("✓ Validate");
+    assertThat(buttons).extracting(Button::getText).contains("Next →");
   }
 
   @Test
@@ -290,7 +290,7 @@ class TutorialViewTest extends AbstractViewTest {
 
     TutorialStep navStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint");
     when(navStep.validate(testAccount)).thenReturn("No shows found yet.");
-    // Trailing step so navStep (index 0) is not the last → button reads "✓ Validate"
+    // Trailing step so navStep (index 0) is not the last → button reads "Next →"
     TutorialStep trailingStep = navigateStepMock("Run Your Show", "show-list", "Shows", "hint2");
 
     TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, navStep, trailingStep);
@@ -299,7 +299,7 @@ class TutorialViewTest extends AbstractViewTest {
 
     enter();
 
-    _get(view, Button.class, spec -> spec.withText("✓ Validate")).click();
+    _get(view, Button.class, spec -> spec.withText("Next →")).click();
 
     // advanceStep must NOT have been called
     verify(tutorialService, never()).advanceStep(anyLong(), any(), anyInt(), anyInt());
@@ -322,7 +322,7 @@ class TutorialViewTest extends AbstractViewTest {
 
     enter();
 
-    _get(view, Button.class, spec -> spec.withText("✓ Validate")).click();
+    _get(view, Button.class, spec -> spec.withText("Next →")).click();
 
     verify(tutorialService).runAfterStep(eq(testAccount), eq(Universe.UniverseType.GLOBAL), eq(0));
     verify(tutorialService).advanceStep(1L, Universe.UniverseType.GLOBAL, 1, 2);
@@ -341,7 +341,7 @@ class TutorialViewTest extends AbstractViewTest {
 
     enter();
 
-    _get(view, Button.class, spec -> spec.withText("✓ Complete Tutorial"));
+    _get(view, Button.class, spec -> spec.withText("Complete Tutorial ✓"));
     // If _get doesn't throw, the button is present
   }
 
