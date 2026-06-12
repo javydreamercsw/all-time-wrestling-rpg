@@ -309,13 +309,14 @@ class TutorialViewTest extends AbstractViewTest {
     when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep navStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint");
-    when(navStep.validate(testAccount)).thenReturn("No shows found yet.");
     // Trailing step so navStep (index 0) is not the last → button reads "Next →"
     TutorialStep trailingStep = navigateStepMock("Run Your Show", "show-list", "Shows", "hint2");
 
     TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, navStep, trailingStep);
     when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
+    when(tutorialService.validateStep(any(), eq(Universe.UniverseType.GLOBAL), eq(0)))
+        .thenReturn("No shows found yet.");
 
     enter();
 
@@ -332,13 +333,13 @@ class TutorialViewTest extends AbstractViewTest {
     when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep step1 = navigateStepMock("Step One", "route1", "View1", "hint1");
-    when(step1.validate(testAccount)).thenReturn(null); // success
-
     TutorialStep step2 = navigateStepMock("Step Two", "route2", "View2", "hint2");
 
     TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step1, step2);
     when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
+    when(tutorialService.validateStep(any(), eq(Universe.UniverseType.GLOBAL), eq(0)))
+        .thenReturn(null); // success
 
     enter();
 
@@ -372,13 +373,15 @@ class TutorialViewTest extends AbstractViewTest {
     when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep inlineStep = inlineStepMock("Pick Your Featured Wrestler", "hint");
-    when(inlineStep.validate(any())).thenReturn(null); // success after assignment
     // Add a trailing step so selection doesn't trigger the completion-screen navigation
     TutorialStep nextStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint2");
 
     TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, inlineStep, nextStep);
     when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
+    // validateStep is called after wrestler selection — return success
+    when(tutorialService.validateStep(any(), eq(Universe.UniverseType.GLOBAL), eq(0)))
+        .thenReturn(null);
 
     Wrestler w = wrestlerMock(42L, "Undertaker", null);
     when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of(w));

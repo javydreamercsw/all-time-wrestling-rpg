@@ -198,4 +198,18 @@ public class TutorialService {
     TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
     GeneralSecurityUtils.runAsAdmin(() -> step.afterStep(account));
   }
+
+  /**
+   * Invokes {@link TutorialStep#validate} under admin security context and within a read-only
+   * transaction so that validation logic can safely access lazy JPA collections.
+   *
+   * @return {@code null} on success; an error message string when the step is not yet satisfied.
+   */
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public String validateStep(
+      final Account account, final Universe.UniverseType type, final int stepIndex) {
+    TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
+    return GeneralSecurityUtils.runAsAdmin(() -> step.validate(account));
+  }
 }

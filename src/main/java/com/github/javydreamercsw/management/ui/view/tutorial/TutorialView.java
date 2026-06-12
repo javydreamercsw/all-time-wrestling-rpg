@@ -388,7 +388,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
 
     // ── Interaction area ──────────────────────────────────────────────────
     if (step.getInteractionMode() == TutorialStep.InteractionMode.INLINE) {
-      add(buildWrestlerPicker(step, totalSteps));
+      add(buildWrestlerPicker(totalSteps));
     } else {
       // Hint line
       Span hint = new Span(step.getValidationHint());
@@ -432,7 +432,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       nextBtn.addClickListener(
           e -> {
             account = accountService.get(account.getId()).orElse(account);
-            String error = step.validate(account);
+            String error = tutorialService.validateStep(account, universeType, currentStepIndex);
             if (error != null) {
               errorSlot.setText("⚠ " + error);
               errorSlot.setVisible(true);
@@ -452,7 +452,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
   private record WrestlerSnapshot(
       Long id, String name, String alignmentLabel, String description, String imageUrl) {}
 
-  private VerticalLayout buildWrestlerPicker(final TutorialStep step, final int totalSteps) {
+  private VerticalLayout buildWrestlerPicker(final int totalSteps) {
     VerticalLayout picker = new VerticalLayout();
     picker.setPadding(false);
     picker.setSpacing(true);
@@ -492,13 +492,12 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     picker.add(prompt);
 
     for (WrestlerSnapshot snapshot : snapshots) {
-      picker.add(wrestlerCard(snapshot, step, totalSteps));
+      picker.add(wrestlerCard(snapshot, totalSteps));
     }
     return picker;
   }
 
-  private HorizontalLayout wrestlerCard(
-      final WrestlerSnapshot wrestler, final TutorialStep step, final int totalSteps) {
+  private HorizontalLayout wrestlerCard(final WrestlerSnapshot wrestler, final int totalSteps) {
     HorizontalLayout card = new HorizontalLayout();
     card.setWidthFull();
     card.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -575,7 +574,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
           GeneralSecurityUtils.runAsAdmin(
               () -> accountService.setActiveWrestlerId(account.getId(), wrestler.id()));
           account = accountService.get(account.getId()).orElse(account);
-          String error = step.validate(account);
+          String error = tutorialService.validateStep(account, universeType, currentStepIndex);
           if (error == null) {
             Notification.show("✅ " + wrestler.name() + " is now your wrestler!")
                 .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
