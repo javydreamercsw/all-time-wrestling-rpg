@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ClassUtils;
@@ -36,9 +37,9 @@ public class NotionSyncServicesManager {
   private static final String ENTITY_SYNC_PACKAGE = ".sync.entity.notion";
 
   private final ApplicationContext applicationContext;
-  private final FactionRivalryNotionSyncService factionRivalryNotionSyncService;
-  private final ShowTemplateNotionSyncService showTemplateNotionSyncService;
-  private final WrestlerRepository wrestlerRepository;
+  @Getter private final FactionRivalryNotionSyncService factionRivalryNotionSyncService;
+  @Getter private final ShowTemplateNotionSyncService showTemplateNotionSyncService;
+  @Getter private final WrestlerRepository wrestlerRepository;
 
   private Map<Class<?>, BaseSyncService> registry;
 
@@ -133,17 +134,5 @@ public class NotionSyncServicesManager {
 
   public FactionRivalrySyncService getFactionRivalrySyncService() {
     return get(FactionRivalrySyncService.class);
-  }
-
-  public FactionRivalryNotionSyncService getFactionRivalryNotionSyncService() {
-    return factionRivalryNotionSyncService;
-  }
-
-  public ShowTemplateNotionSyncService getShowTemplateNotionSyncService() {
-    return showTemplateNotionSyncService;
-  }
-
-  public WrestlerRepository getWrestlerRepository() {
-    return wrestlerRepository;
   }
 }
