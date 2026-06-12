@@ -24,7 +24,6 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialDefinition;
@@ -429,19 +428,38 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
 
   // ── Inline wrestler picker ────────────────────────────────────────────────
 
+  /** Snapshot of wrestler display data extracted while the Hibernate session is open. */
+  private record WrestlerSnapshot(
+      Long id, String name, String alignmentLabel, String description, String imageUrl) {}
+
   private VerticalLayout buildWrestlerPicker(final TutorialStep step, final int totalSteps) {
     VerticalLayout picker = new VerticalLayout();
     picker.setPadding(false);
     picker.setSpacing(true);
 
-    List<Wrestler> wrestlers =
+    // Extract all display data inside runAsAdmin so the Hibernate session covers lazy fields.
+    List<WrestlerSnapshot> snapshots =
         GeneralSecurityUtils.runAsAdmin(
             () ->
                 wrestlerService.getAllWrestlers().stream()
                     .filter(w -> Boolean.TRUE.equals(w.getActive()))
+                    .map(
+                        w -> {
+                          String alignment =
+                              (w.getAlignment() != null
+                                      && w.getAlignment().getAlignmentType() != null)
+                                  ? w.getAlignment().getAlignmentType().name()
+                                  : null;
+                          return new WrestlerSnapshot(
+                              w.getId(),
+                              w.getName(),
+                              alignment,
+                              w.getDescription(),
+                              w.getImageUrl());
+                        })
                     .toList());
 
-    if (wrestlers.isEmpty()) {
+    if (snapshots.isEmpty()) {
       Span empty =
           new Span(
               "No wrestlers are available yet. The system is setting one up — please wait a"
@@ -455,14 +473,14 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     prompt.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.MEDIUM);
     picker.add(prompt);
 
-    for (Wrestler wrestler : wrestlers) {
-      picker.add(wrestlerCard(wrestler, step, totalSteps));
+    for (WrestlerSnapshot snapshot : snapshots) {
+      picker.add(wrestlerCard(snapshot, step, totalSteps));
     }
     return picker;
   }
 
   private HorizontalLayout wrestlerCard(
-      final Wrestler wrestler, final TutorialStep step, final int totalSteps) {
+      final WrestlerSnapshot wrestler, final TutorialStep step, final int totalSteps) {
     HorizontalLayout card = new HorizontalLayout();
     card.setWidthFull();
     card.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -482,9 +500,8 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
         .addEventListener("mouseleave", e -> card.getStyle().set("border-color", "transparent"))
         .synchronizeProperty("style");
 
-    // Optional portrait
-    if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isBlank()) {
-      Image portrait = new Image(wrestler.getImageUrl(), wrestler.getName());
+    if (wrestler.imageUrl() != null && !wrestler.imageUrl().isBlank()) {
+      Image portrait = new Image(wrestler.imageUrl(), wrestler.name());
       portrait.setHeight("72px");
       portrait.setWidth("56px");
       portrait.getStyle().set("object-fit", "cover").set("border-radius", "4px");
@@ -503,24 +520,23 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       card.add(placeholder);
     }
 
-    // Info pane
     VerticalLayout info = new VerticalLayout();
     info.setPadding(false);
     info.setSpacing(false);
     info.getStyle().set("flex", "1");
 
-    Span name = new Span(wrestler.getName());
+    Span name = new Span(wrestler.name());
     name.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.MEDIUM);
     info.add(name);
 
-    if (wrestler.getAlignment() != null && wrestler.getAlignment().getAlignmentType() != null) {
-      Span alignment = new Span(wrestler.getAlignment().getAlignmentType().name());
+    if (wrestler.alignmentLabel() != null) {
+      Span alignment = new Span(wrestler.alignmentLabel());
       alignment.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
       info.add(alignment);
     }
 
-    if (wrestler.getDescription() != null && !wrestler.getDescription().isBlank()) {
-      Span desc = new Span(wrestler.getDescription());
+    if (wrestler.description() != null && !wrestler.description().isBlank()) {
+      Span desc = new Span(wrestler.description());
       desc.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
       desc.getStyle()
           .set("display", "-webkit-box")
@@ -538,14 +554,13 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
         e -> {
           GeneralSecurityUtils.runAsAdmin(
               () -> {
-                wrestlerService.setAccountForWrestler(wrestler.getId(), account.getId());
+                wrestlerService.setAccountForWrestler(wrestler.id(), account.getId());
                 return null;
               });
-          // Reload account to pick up new activeWrestlerId
           account = accountService.get(account.getId()).orElse(account);
           String error = step.validate(account);
           if (error == null) {
-            Notification.show("✅ " + wrestler.getName() + " is now your wrestler!")
+            Notification.show("✅ " + wrestler.name() + " is now your wrestler!")
                 .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             advanceAfterSuccess(totalSteps);
           } else {
