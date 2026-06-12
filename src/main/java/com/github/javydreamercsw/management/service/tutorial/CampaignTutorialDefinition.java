@@ -119,9 +119,8 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String getInstructions() {
-        return "Navigate to the Campaign view and start a new campaign chapter for your wrestler."
-            + " Your wrestler will embark on a story-driven journey with choices that affect the"
-            + " outcome.";
+        return "A campaign has been started for your wrestler. Head over to the Campaign view to"
+            + " see your current chapter and the story-driven choices that await you.";
       }
 
       @Override
@@ -155,8 +154,24 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
             .flatMap(campaignService::getCampaignForWrestler)
             .map(campaign -> (String) null)
             .orElse(
-                "Your wrestler doesn't have an active campaign yet. Go to the Campaign view and"
-                    + " start one.");
+                "Your wrestler doesn't have an active campaign yet. Please wait a moment and try"
+                    + " again.");
+      }
+
+      @Override
+      public void beforeStep(final Account account) {
+        Long wrestlerId = account.getActiveWrestlerId();
+        if (wrestlerId == null) {
+          return;
+        }
+        wrestlerService
+            .findByIdWithDetails(wrestlerId)
+            .ifPresent(
+                wrestler -> {
+                  if (!campaignService.hasActiveCampaign(wrestler)) {
+                    campaignService.startCampaign(wrestler);
+                  }
+                });
       }
     };
   }
