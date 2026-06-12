@@ -451,12 +451,9 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
                                       && w.getAlignment().getAlignmentType() != null)
                                   ? w.getAlignment().getAlignmentType().name()
                                   : null;
+                          String imageUrl = wrestlerService.resolveWrestlerImage(w).url();
                           return new WrestlerSnapshot(
-                              w.getId(),
-                              w.getName(),
-                              alignment,
-                              w.getDescription(),
-                              w.getImageUrl());
+                              w.getId(), w.getName(), alignment, w.getDescription(), imageUrl);
                         })
                     .toList());
 
@@ -553,11 +550,10 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     selectBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
     selectBtn.addClickListener(
         e -> {
+          // setActiveWrestlerId handles both persisting and refreshing the SecurityContext
+          // so subsequent calls to account.getActiveWrestlerId() reflect the new value.
           GeneralSecurityUtils.runAsAdmin(
-              () -> {
-                wrestlerService.setAccountForWrestler(wrestler.id(), account.getId());
-                return null;
-              });
+              () -> accountService.setActiveWrestlerId(account.getId(), wrestler.id()));
           account = accountService.get(account.getId()).orElse(account);
           String error = step.validate(account);
           if (error == null) {

@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.image.ImageResolution;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
@@ -345,15 +346,17 @@ class TutorialViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Selecting a wrestler calls setAccountForWrestler and advances step")
+  @DisplayName("Selecting a wrestler calls setActiveWrestlerId and advances step")
   void selectWrestler_callsServiceAndAdvances() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
     when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
 
-    TutorialStep step = inlineStepMock("Pick Your Featured Wrestler", "hint");
-    when(step.validate(any())).thenReturn(null); // success after assignment
+    TutorialStep inlineStep = inlineStepMock("Pick Your Featured Wrestler", "hint");
+    when(inlineStep.validate(any())).thenReturn(null); // success after assignment
+    // Add a trailing step so selection doesn't trigger the completion-screen navigation
+    TutorialStep nextStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint2");
 
-    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step);
+    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, inlineStep, nextStep);
     when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
 
@@ -367,13 +370,14 @@ class TutorialViewTest extends AbstractViewTest {
     when(accountService.get(1L))
         .thenReturn(Optional.of(testAccount))
         .thenReturn(Optional.of(updatedAccount));
+    when(accountService.setActiveWrestlerId(1L, 42L)).thenReturn(updatedAccount);
 
     enter();
 
     _get(view, Button.class, spec -> spec.withText("Select")).click();
 
-    verify(wrestlerService).setAccountForWrestler(42L, 1L);
-    verify(tutorialService).advanceStep(eq(1L), eq(Universe.UniverseType.GLOBAL), eq(1), eq(1));
+    verify(accountService).setActiveWrestlerId(1L, 42L);
+    verify(tutorialService).advanceStep(eq(1L), eq(Universe.UniverseType.GLOBAL), eq(1), eq(2));
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -417,7 +421,7 @@ class TutorialViewTest extends AbstractViewTest {
     return def;
   }
 
-  private static Wrestler wrestlerMock(
+  private Wrestler wrestlerMock(
       final Long id, final String name, final AlignmentType alignmentType) {
     Wrestler w = mock(Wrestler.class);
     when(w.getId()).thenReturn(id);
@@ -425,6 +429,9 @@ class TutorialViewTest extends AbstractViewTest {
     when(w.getActive()).thenReturn(Boolean.TRUE);
     when(w.getDescription()).thenReturn(name + " description");
     when(w.getImageUrl()).thenReturn(null);
+    // resolveWrestlerImage is called inside runAsAdmin — stub it on the service mock
+    when(wrestlerService.resolveWrestlerImage(w))
+        .thenReturn(new ImageResolution("/images/placeholder.png", true));
     if (alignmentType != null) {
       WrestlerAlignment alignment = mock(WrestlerAlignment.class);
       when(alignment.getAlignmentType()).thenReturn(alignmentType);
