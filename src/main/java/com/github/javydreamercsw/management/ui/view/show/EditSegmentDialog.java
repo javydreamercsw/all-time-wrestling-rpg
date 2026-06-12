@@ -80,8 +80,7 @@ public class EditSegmentDialog extends Dialog {
         final Long universeId) {
       List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
       Map<String, Wrestler> byName =
-          wrestlerService.getAllWrestlers().stream()
-              .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
+          active.stream().collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
       return new PreloadedData(
           segmentTypeRepository.findAll().stream()
               .sorted(Comparator.comparing(SegmentType::getName))

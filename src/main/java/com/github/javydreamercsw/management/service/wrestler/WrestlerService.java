@@ -156,6 +156,12 @@ public class WrestlerService {
     return wrestlerRepository.findAll();
   }
 
+  @PreAuthorize("isAuthenticated()")
+  @Cacheable(value = CacheConfig.WRESTLERS_CACHE, key = "'active'")
+  public List<Wrestler> findAllActiveWrestlers() {
+    return wrestlerRepository.findAllByActiveTrue();
+  }
+
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public java.util.Map<Long, WrestlerState> getStateMapByUniverseId(
@@ -296,7 +302,7 @@ public class WrestlerService {
     final Set<Long> excludedIds =
         wrestlerExclusionRepository.findExcludedWrestlerIdsByUniverseId(finalUniverseId);
 
-    return wrestlerRepository.findAllByActiveTrue().stream()
+    return findAllActiveWrestlers().stream()
         .filter(
             w -> {
               if (includedWrestlers != null && includedWrestlers.contains(w)) {
