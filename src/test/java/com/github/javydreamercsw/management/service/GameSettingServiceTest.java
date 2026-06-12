@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.time.LocalDate;
@@ -222,5 +223,28 @@ class GameSettingServiceTest {
 
     verify(repository).save(gs);
     assertThat(result).isSameAs(gs);
+  }
+
+  // ── Tutorial settings ─────────────────────────────────────────────────────
+
+  @Test
+  void isTutorialEnabled_campaign_defaultsToTrue() {
+    when(repository.findGlobal(GameSettingService.TUTORIAL_ENABLED_CAMPAIGN_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.isTutorialEnabled(Universe.UniverseType.CAMPAIGN)).isTrue();
+  }
+
+  @Test
+  void isTutorialEnabled_league_defaultsToTrue() {
+    when(repository.findGlobal(GameSettingService.TUTORIAL_ENABLED_LEAGUE_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.isTutorialEnabled(Universe.UniverseType.LEAGUE)).isTrue();
+  }
+
+  @Test
+  void isTutorialEnabled_global_defaultsToTrue() {
+    when(repository.findGlobal(GameSettingService.TUTORIAL_ENABLED_GLOBAL_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.isTutorialEnabled(Universe.UniverseType.GLOBAL)).isTrue();
   }
 }
