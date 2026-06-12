@@ -14,14 +14,15 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.campaign;
+package com.github.javydreamercsw.management.service.tutorial;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import java.util.List;
 
-@Repository
-public interface BackstageActionHistoryRepository
-    extends JpaRepository<BackstageActionHistory, Long> {
+/** Provides the ordered list of {@link TutorialStep}s for a specific universe mode. */
+public interface TutorialDefinition {
 
-  boolean existsByCampaign(Campaign campaign);
+  Universe.UniverseType getMode();
+
+  List<TutorialStep> getSteps();
 }

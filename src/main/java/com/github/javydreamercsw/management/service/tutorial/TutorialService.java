@@ -1,0 +1,142 @@
+/*
+* Copyright (C) 2026 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
+package com.github.javydreamercsw.management.service.tutorial;
+
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
+import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import java.time.LocalDateTime;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class TutorialService {
+
+  private final AccountTutorialCompletionRepository completionRepository;
+  private final GameSettingService gameSettingService;
+  private final AccountRepository accountRepository;
+  private final List<TutorialDefinition> definitions;
+
+  /** Returns the tutorial definition for the given universe mode. */
+  public TutorialDefinition getDefinition(final Universe.UniverseType type) {
+    return definitions.stream()
+        .filter(d -> d.getMode() == type)
+        .findFirst()
+        .orElseThrow(
+            () -> new IllegalArgumentException("No tutorial definition for mode: " + type));
+  }
+
+  /**
+   * Returns {@code true} when the tutorial should be shown to this account for the given mode: the
+   * feature flag is on AND the player has not yet fully completed or skipped the tutorial.
+   */
+  @PreAuthorize("permitAll()")
+  public boolean shouldShowTutorial(final Account account, final Universe.UniverseType type) {
+    if (!gameSettingService.isTutorialEnabled(type)) {
+      return false;
+    }
+    return completionRepository
+        .findByAccountIdAndUniverseType(account.getId(), type)
+        .map(c -> c.getCompletedAt() == null)
+        .orElse(true);
+  }
+
+  /** Returns the 0-based index of the current tutorial step for this account and mode. */
+  @PreAuthorize("permitAll()")
+  public int getCurrentStep(final Long accountId, final Universe.UniverseType type) {
+    return completionRepository
+        .findByAccountIdAndUniverseType(accountId, type)
+        .map(AccountTutorialCompletion::getCurrentStep)
+        .orElse(0);
+  }
+
+  /**
+   * Advances (or retreats) the step index. When {@code newStep} equals {@code totalSteps} the
+   * tutorial is marked fully complete.
+   */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public void advanceStep(
+      final Long accountId,
+      final Universe.UniverseType type,
+      final int newStep,
+      final int totalSteps) {
+    Account account = accountRepository.getReferenceById(accountId);
+    AccountTutorialCompletion record =
+        completionRepository
+            .findByAccountIdAndUniverseType(accountId, type)
+            .orElseGet(
+                () -> {
+                  AccountTutorialCompletion r = new AccountTutorialCompletion();
+                  r.setAccount(account);
+                  r.setUniverseType(type);
+                  return r;
+                });
+    record.setCurrentStep(newStep);
+    if (newStep >= totalSteps) {
+      record.setCompletedAt(LocalDateTime.now());
+    }
+    completionRepository.save(record);
+  }
+
+  /** Marks the tutorial as skipped (treated as completed so the player is not redirected again). */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public void markSkipped(
+      final Long accountId, final Universe.UniverseType type, final int totalSteps) {
+    advanceStep(accountId, type, totalSteps, totalSteps);
+  }
+
+  /** Deletes the completion record so the tutorial will be shown again on next login. */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public void markIncomplete(final Long accountId, final Universe.UniverseType type) {
+    completionRepository.deleteByAccountIdAndUniverseType(accountId, type);
+  }
+
+  /**
+   * Invokes {@link TutorialStep#beforeStep} under admin security context. Must be idempotent —
+   * called every time a step is rendered, including after backwards navigation.
+   */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public void runBeforeStep(
+      final Account account, final Universe.UniverseType type, final int stepIndex) {
+    TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
+    GeneralSecurityUtils.runAsAdmin(() -> step.beforeStep(account));
+  }
+
+  /**
+   * Invokes {@link TutorialStep#afterStep} under admin security context. Called after successful
+   * validation, before the step index is advanced.
+   */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public void runAfterStep(
+      final Account account, final Universe.UniverseType type, final int stepIndex) {
+    TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
+    GeneralSecurityUtils.runAsAdmin(() -> step.afterStep(account));
+  }
+}
