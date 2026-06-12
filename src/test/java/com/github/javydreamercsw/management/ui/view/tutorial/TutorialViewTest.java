@@ -168,7 +168,7 @@ class TutorialViewTest extends AbstractViewTest {
     TutorialDefinition definition = definitionOf(Universe.UniverseType.CAMPAIGN, inlineStep);
     when(tutorialService.getDefinition(Universe.UniverseType.CAMPAIGN)).thenReturn(definition);
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.CAMPAIGN)).thenReturn(0);
-    when(wrestlerService.getAllWrestlers()).thenReturn(List.of());
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of());
 
     _get(view, Button.class, spec -> spec.withText("Create My Universe & Start Tutorial")).click();
 
@@ -188,7 +188,7 @@ class TutorialViewTest extends AbstractViewTest {
     TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step);
     when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
-    when(wrestlerService.getAllWrestlers()).thenReturn(List.of());
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of());
 
     enter();
 
@@ -206,7 +206,7 @@ class TutorialViewTest extends AbstractViewTest {
     TutorialDefinition def1 = definitionOf(Universe.UniverseType.GLOBAL, step);
     when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def1);
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
-    when(wrestlerService.getAllWrestlers()).thenReturn(List.of());
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of());
 
     enter();
 
@@ -231,7 +231,7 @@ class TutorialViewTest extends AbstractViewTest {
 
     Wrestler w1 = wrestlerMock(10L, "Stone Cold", AlignmentType.FACE);
     Wrestler w2 = wrestlerMock(11L, "Triple H", AlignmentType.HEEL);
-    when(wrestlerService.getAllWrestlers()).thenReturn(List.of(w1, w2));
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of(w1, w2));
 
     enter();
 
@@ -272,7 +272,7 @@ class TutorialViewTest extends AbstractViewTest {
     TutorialDefinition defSkip = definitionOf(Universe.UniverseType.GLOBAL, step);
     when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(defSkip);
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
-    when(wrestlerService.getAllWrestlers()).thenReturn(List.of());
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of());
 
     enter();
 
@@ -358,7 +358,7 @@ class TutorialViewTest extends AbstractViewTest {
     when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
 
     Wrestler w = wrestlerMock(42L, "Undertaker", null);
-    when(wrestlerService.getAllWrestlers()).thenReturn(List.of(w));
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of(w));
 
     // After selection, reload account reflects new wrestler
     Account updatedAccount = new Account("player", "password", "player@test.com");

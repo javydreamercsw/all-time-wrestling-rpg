@@ -437,12 +437,13 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     picker.setPadding(false);
     picker.setSpacing(true);
 
-    // Extract all display data inside runAsAdmin so the Hibernate session covers lazy fields.
+    // findAllActiveWithAlignments() is @Transactional(readOnly=true) and uses JOIN FETCH, so
+    // the alignments collection is fully loaded before the session closes. runAsAdmin handles
+    // the security elevation needed to call the service as a PLAYER.
     List<WrestlerSnapshot> snapshots =
         GeneralSecurityUtils.runAsAdmin(
             () ->
-                wrestlerService.getAllWrestlers().stream()
-                    .filter(w -> Boolean.TRUE.equals(w.getActive()))
+                wrestlerService.findAllActiveWithAlignments().stream()
                     .map(
                         w -> {
                           String alignment =
