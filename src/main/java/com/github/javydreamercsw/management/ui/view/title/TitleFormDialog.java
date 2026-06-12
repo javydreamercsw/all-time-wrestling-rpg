@@ -25,8 +25,6 @@ import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -51,35 +49,31 @@ public class TitleFormDialog extends Dialog {
 
   private final Title title;
   private final Binder<Title> binder = new Binder<>(Title.class);
-  private final TitleService titleService;
-  private final WrestlerRepository wrestlerRepository;
-  private final ImageStorageService imageStorageService;
+  // Used in tests via reflection
   private final TextField name;
-  private final TextArea description;
   private final ComboBox<WrestlerTier> tier;
   private final ComboBox<Gender> gender;
   private final MultiSelectComboBox<Wrestler> champion;
   private final TextField imageUrl;
   private final Image previewImage;
+  // Used in tests via reflection
   private final Button saveButton;
+  // Used in tests via reflection
   private final ComboBox<DefenseFrequencyType> defenseFrequencyType;
+  // Used in tests via reflection
   private final TextArea effectScript;
 
   public TitleFormDialog(
       @NonNull final TitleService titleService,
-      @NonNull final WrestlerRepository wrestlerRepository,
-      @NonNull final TierRecalculationService tierRecalculationService,
+      @NonNull final List<Wrestler> activeWrestlers,
       @NonNull final ImageStorageService imageStorageService,
       @NonNull final Title title,
       @NonNull final Runnable onSave,
       @NonNull final SecurityUtils securityUtils) {
     this.title = title;
-    this.titleService = titleService;
-    this.wrestlerRepository = wrestlerRepository;
-    this.imageStorageService = imageStorageService;
     name = new TextField("Name");
     name.setReadOnly(!securityUtils.canEdit());
-    description = new TextArea("Description");
+    TextArea description = new TextArea("Description");
     description.setReadOnly(!securityUtils.canEdit());
     tier = new ComboBox<>("Tier");
     tier.setItems(
@@ -120,7 +114,11 @@ public class TitleFormDialog extends Dialog {
             "%s (%s)"
                 .formatted(
                     w.getName(),
-                    w.getDefaultState().map(s -> s.getTier().getDisplayName()).orElse("Unknown")));
+                    org.hibernate.Hibernate.isInitialized(w.getWrestlerStates())
+                        ? w.getDefaultState()
+                            .map(s -> s.getTier().getDisplayName())
+                            .orElse("Unknown")
+                        : "Unknown"));
     champion.setReadOnly(!securityUtils.canEdit());
 
     imageUrl = new TextField("Image URL");
@@ -172,11 +170,7 @@ public class TitleFormDialog extends Dialog {
 
             var selected = champion.getValue();
             List<Wrestler> eligible =
-                wrestlerRepository.findAll().stream()
-                    .peek(
-                        w ->
-                            w.getDefaultState()
-                                .ifPresent(tierRecalculationService::recalculateTier))
+                activeWrestlers.stream()
                     .filter(
                         w ->
                             tempTitle.getGender() == null || w.getGender() == tempTitle.getGender())

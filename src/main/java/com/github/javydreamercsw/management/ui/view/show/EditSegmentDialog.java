@@ -489,6 +489,7 @@ public class EditSegmentDialog extends Dialog {
                       notesArea.getValue(),
                       isTitleSegmentCheckbox.getValue(),
                       titleMultiSelectComboBox.getValue()));
+              close();
             });
 
     saveButton.setId("edit-segment-save-button");
