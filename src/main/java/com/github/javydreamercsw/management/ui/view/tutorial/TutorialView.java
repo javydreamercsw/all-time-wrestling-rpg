@@ -20,6 +20,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
 import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -75,6 +76,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
   private final UniverseContextService universeContextService;
   private final AccountService accountService;
   private final WrestlerService wrestlerService;
+  private final AiSettingsService aiSettingsService;
 
   private Account account;
   private Universe.UniverseType universeType;
@@ -88,12 +90,14 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       final SecurityUtils securityUtils,
       final UniverseContextService universeContextService,
       final AccountService accountService,
-      final WrestlerService wrestlerService) {
+      final WrestlerService wrestlerService,
+      final AiSettingsService aiSettingsService) {
     this.tutorialService = tutorialService;
     this.securityUtils = securityUtils;
     this.universeContextService = universeContextService;
     this.accountService = accountService;
     this.wrestlerService = wrestlerService;
+    this.aiSettingsService = aiSettingsService;
     setSizeFull();
     setPadding(true);
     setSpacing(true);
@@ -275,12 +279,24 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     featureList.setPadding(false);
     featureList.setSpacing(false);
 
-    Map<String, Checkbox> checkboxes = new LinkedHashMap<>();
+    boolean aiConfigured =
+        aiSettingsService.isClaudeEnabled()
+            || aiSettingsService.isOpenAIEnabled()
+            || aiSettingsService.isGeminiEnabled()
+            || aiSettingsService.isPollinationsEnabled();
+
     labels.forEach(
         (key, label) -> {
           Checkbox cb = new Checkbox(label, features.get(key));
-          cb.addValueChangeListener(e -> features.put(key, e.getValue()));
-          checkboxes.put(key, cb);
+          boolean isAiFeature = GameSettingService.AI_NEWS_ENABLED_KEY.equals(key);
+          if (isAiFeature && !aiConfigured) {
+            cb.setValue(false);
+            cb.setEnabled(false);
+            features.put(key, false);
+            cb.setHelperText("Requires an AI provider configured in Game Settings");
+          } else {
+            cb.addValueChangeListener(e -> features.put(key, e.getValue()));
+          }
           featureList.add(cb);
         });
 

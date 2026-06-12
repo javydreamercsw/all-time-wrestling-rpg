@@ -136,6 +136,22 @@ public class ShowService {
     return showRepository.count();
   }
 
+  /** Returns true when at least one show with at least one segment exists. Avoids lazy loading. */
+  @PreAuthorize("isAuthenticated()")
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  public boolean existsShowWithSegments() {
+    return showRepository.countShowsWithAtLeastOneSegment() > 0;
+  }
+
+  /** Returns true when at least one segment has been adjudicated. Avoids lazy loading. */
+  @PreAuthorize("isAuthenticated()")
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  public boolean existsAdjudicatedSegment() {
+    return segmentRepository.countByAdjudicationStatus(
+            com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED)
+        > 0;
+  }
+
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Show save(@NonNull final Show show) {

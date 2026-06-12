@@ -134,8 +134,15 @@ public class TutorialService {
       final Map<String, Boolean> featureSettings) {
     return GeneralSecurityUtils.runAsAdmin(
         () -> {
+          String name = "Tutorial – " + account.getUsername();
+          // Return the existing universe if one was already created (idempotent).
+          Universe existing = universeService.findByName(name).orElse(null);
+          if (existing != null) {
+            universeContextService.setCurrentUniverse(existing);
+            return existing;
+          }
           Universe universe = new Universe();
-          universe.setName("Tutorial – " + account.getUsername());
+          universe.setName(name);
           universe.setType(type);
           Universe saved = universeService.save(universe);
 

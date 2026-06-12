@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.service.tutorial;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -153,8 +152,7 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String validate(final Account account) {
-        boolean hasShowWithSegment =
-            showService.findAll().stream().anyMatch(show -> !show.getSegments().isEmpty());
+        boolean hasShowWithSegment = showService.existsShowWithSegments();
         return hasShowWithSegment
             ? null
             : "Your show isn't ready yet. Please wait a moment and try again.";
@@ -162,8 +160,8 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
 
       @Override
       public void beforeStep(final Account account) {
-        // Idempotent: only seed the show if none exists yet.
-        if (showService.findAll().stream().anyMatch(show -> !show.getSegments().isEmpty())) {
+        // Idempotent: only seed the show if none with segments exists yet.
+        if (showService.existsShowWithSegments()) {
           return;
         }
 
@@ -296,12 +294,7 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String validate(final Account account) {
-        boolean hasAdjudicated =
-            showService.findAll().stream()
-                .flatMap(show -> show.getSegments().stream())
-                .anyMatch(
-                    segment ->
-                        AdjudicationStatus.ADJUDICATED.equals(segment.getAdjudicationStatus()));
+        boolean hasAdjudicated = showService.existsAdjudicatedSegment();
         return hasAdjudicated
             ? null
             : "No adjudicated segments found yet. Open your show, click Adjudicate, and simulate"

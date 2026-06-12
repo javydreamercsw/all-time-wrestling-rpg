@@ -263,4 +263,7 @@ public interface SegmentRepository
       WHERE s.id = :id
       """)
   Optional<Segment> findByIdWithDetails(@Param("id") Long id);
+
+  long countByAdjudicationStatus(
+      com.github.javydreamercsw.management.domain.AdjudicationStatus adjudicationStatus);
 }

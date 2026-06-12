@@ -28,6 +28,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.image.ImageResolution;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -63,6 +64,7 @@ class TutorialViewTest extends AbstractViewTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private AccountService accountService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private AiSettingsService aiSettingsService;
 
   private Account testAccount;
   private TutorialView view;
@@ -81,7 +83,8 @@ class TutorialViewTest extends AbstractViewTest {
             securityUtils,
             universeContextService,
             accountService,
-            wrestlerService);
+            wrestlerService,
+            aiSettingsService);
     UI.getCurrent().add(view);
   }
 
@@ -128,14 +131,34 @@ class TutorialViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Feature config screen: all checkboxes default to checked")
+  @DisplayName(
+      "Feature config screen: non-AI checkboxes default to checked; AI disabled when no provider")
   void featureConfig_allCheckboxesDefaultChecked() {
     when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    // No AI provider configured (mock default returns false/empty)
     enter();
     _get(view, Button.class, spec -> spec.withText("Choose League")).click();
 
     List<Checkbox> checkboxes = _find(view, Checkbox.class);
     assertThat(checkboxes).isNotEmpty();
+    // Non-AI checkboxes should be checked; AI News should be unchecked and disabled
+    List<Checkbox> enabled = checkboxes.stream().filter(Checkbox::isEnabled).toList();
+    List<Checkbox> disabled = checkboxes.stream().filter(cb -> !cb.isEnabled()).toList();
+    assertThat(enabled).allMatch(Checkbox::getValue);
+    assertThat(disabled).allMatch(cb -> !cb.getValue());
+  }
+
+  @Test
+  @DisplayName("Feature config screen: AI News checkbox enabled when AI is configured")
+  void featureConfig_aiNewsEnabledWhenAiConfigured() {
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    when(aiSettingsService.isClaudeEnabled()).thenReturn(true);
+    enter();
+    _get(view, Button.class, spec -> spec.withText("Choose League")).click();
+
+    List<Checkbox> checkboxes = _find(view, Checkbox.class);
+    assertThat(checkboxes).isNotEmpty();
+    assertThat(checkboxes).allMatch(Checkbox::isEnabled);
     assertThat(checkboxes).allMatch(Checkbox::getValue);
   }
 
