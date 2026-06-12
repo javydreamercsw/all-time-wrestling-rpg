@@ -47,6 +47,15 @@ public class TutorialService {
   private final UniverseMembershipService universeMembershipService;
   private final UniverseContextService universeContextService;
 
+  /**
+   * Returns the tutorial universe for the given player username if one was previously created, or
+   * empty if the player has not yet completed the mode-selection/setup step.
+   */
+  @PreAuthorize("permitAll()")
+  public java.util.Optional<Universe> findTutorialUniverse(final String username) {
+    return universeService.findByName("Tutorial – " + username);
+  }
+
   /** Returns the tutorial definition for the given universe mode. */
   public TutorialDefinition getDefinition(final Universe.UniverseType type) {
     return definitions.stream()

@@ -76,6 +76,8 @@ class TutorialViewTest extends AbstractViewTest {
 
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(1L));
     when(accountService.get(1L)).thenReturn(Optional.of(testAccount));
+    // Default: no tutorial universe exists → show mode-selection
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.empty());
 
     view =
         new TutorialView(
@@ -97,7 +99,6 @@ class TutorialViewTest extends AbstractViewTest {
   @Test
   @DisplayName("No active universe shows mode selection heading")
   void noUniverse_showsModeSelectionHeading() {
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     enter();
 
     H2 heading = _get(view, H2.class);
@@ -107,7 +108,6 @@ class TutorialViewTest extends AbstractViewTest {
   @Test
   @DisplayName("No active universe shows three mode cards")
   void noUniverse_showsThreeModeCards() {
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     enter();
 
     List<Button> buttons = _find(view, Button.class);
@@ -119,7 +119,6 @@ class TutorialViewTest extends AbstractViewTest {
   @Test
   @DisplayName("Clicking a mode card transitions to feature config screen")
   void clickModeCard_transitionsToFeatureConfig() {
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     enter();
 
     _get(view, Button.class, spec -> spec.withText("Choose Campaign")).click();
@@ -134,7 +133,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName(
       "Feature config screen: non-AI checkboxes default to checked; AI disabled when no provider")
   void featureConfig_allCheckboxesDefaultChecked() {
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    // setUp() default: findTutorialUniverse returns empty → SETUP_MODE phase
     // No AI provider configured (mock default returns false/empty)
     enter();
     _get(view, Button.class, spec -> spec.withText("Choose League")).click();
@@ -151,7 +150,7 @@ class TutorialViewTest extends AbstractViewTest {
   @Test
   @DisplayName("Feature config screen: AI News checkbox enabled when AI is configured")
   void featureConfig_aiNewsEnabledWhenAiConfigured() {
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    // setUp() default: findTutorialUniverse returns empty → SETUP_MODE phase
     when(aiSettingsService.isClaudeEnabled()).thenReturn(true);
     enter();
     _get(view, Button.class, spec -> spec.withText("Choose League")).click();
@@ -165,7 +164,6 @@ class TutorialViewTest extends AbstractViewTest {
   @Test
   @DisplayName("Back button from feature config returns to mode selection")
   void featureConfig_backButton_returnsModeSelection() {
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     enter();
     _get(view, Button.class, spec -> spec.withText("Choose Universe")).click();
 
@@ -178,7 +176,6 @@ class TutorialViewTest extends AbstractViewTest {
   @Test
   @DisplayName("Create Universe button calls tutorialService.createTutorialUniverse")
   void featureConfig_createButton_callsService() {
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     enter();
     _get(view, Button.class, spec -> spec.withText("Choose Campaign")).click();
 
@@ -206,7 +203,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("Active universe skips setup and shows wizard heading")
   void activeUniverse_showsWizardStep() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep step = inlineStepMock("Pick Your Featured Wrestler", "We'll check...");
     TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step);
@@ -224,7 +221,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("INLINE step renders wrestler picker — no Go-To button")
   void inlineStep_rendersWrestlerPicker_noNavigateButton() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep step = inlineStepMock("Assign Your Wrestler", "hint");
     TutorialDefinition def1 = definitionOf(Universe.UniverseType.GLOBAL, step);
@@ -246,7 +243,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("INLINE step shows wrestler cards for each returned wrestler")
   void inlineStep_showsWrestlerCards() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep step = inlineStepMock("Pick Your Featured Wrestler", "hint");
     TutorialDefinition defWrestlers = definitionOf(Universe.UniverseType.GLOBAL, step);
@@ -267,7 +264,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("NAVIGATE step renders Go-To and Next buttons")
   void navigateStep_rendersGoToAndValidate() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep inlineStep = inlineStepMock("Pick Your Featured Wrestler", "hint1");
     TutorialStep navStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint");
@@ -289,7 +286,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("Skip button calls tutorialService.markSkipped")
   void skipButton_callsMarkSkipped() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
     when(securityUtils.isPlayer()).thenReturn(true);
 
     TutorialStep step = inlineStepMock("Step", "hint");
@@ -309,7 +306,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("Validate failure on NAVIGATE step shows error message")
   void validate_failure_showsErrorSlot() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep navStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint");
     when(navStep.validate(testAccount)).thenReturn("No shows found yet.");
@@ -332,7 +329,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("Validate success advances to next step")
   void validate_success_advancesStep() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep step1 = navigateStepMock("Step One", "route1", "View1", "hint1");
     when(step1.validate(testAccount)).thenReturn(null); // success
@@ -355,7 +352,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("Last step Validate button reads 'Complete Tutorial'")
   void lastStep_validateButton_readsCompleteTutorial() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep onlyStep = navigateStepMock("Final Step", "route", "View", "hint");
     TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, onlyStep);
@@ -372,7 +369,7 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName("Selecting a wrestler calls setActiveWrestlerId and advances step")
   void selectWrestler_callsServiceAndAdvances() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep inlineStep = inlineStepMock("Pick Your Featured Wrestler", "hint");
     when(inlineStep.validate(any())).thenReturn(null); // success after assignment

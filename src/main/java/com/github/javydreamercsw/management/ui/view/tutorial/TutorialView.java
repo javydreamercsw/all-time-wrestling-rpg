@@ -112,14 +112,14 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       return;
     }
 
-    boolean hasActiveUniverse = universeContextService.getCurrentUniverse().isPresent();
+    // Only jump straight to the wizard if a tutorial universe specifically for this player
+    // was already created. The default universe (always present) must NOT bypass mode selection.
+    Universe tutorialUniverse =
+        tutorialService.findTutorialUniverse(account.getUsername()).orElse(null);
 
-    if (hasActiveUniverse) {
-      universeType =
-          universeContextService
-              .getCurrentUniverse()
-              .map(Universe::getType)
-              .orElse(Universe.UniverseType.GLOBAL);
+    if (tutorialUniverse != null) {
+      universeType = tutorialUniverse.getType();
+      universeContextService.setCurrentUniverse(tutorialUniverse);
       definition = tutorialService.getDefinition(universeType);
       currentStepIndex = tutorialService.getCurrentStep(account.getId(), universeType);
       if (currentStepIndex >= definition.getSteps().size()) {
