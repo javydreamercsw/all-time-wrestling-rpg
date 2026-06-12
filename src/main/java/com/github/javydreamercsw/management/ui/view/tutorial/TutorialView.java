@@ -328,10 +328,11 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     TutorialStep step = definition.getSteps().get(currentStepIndex);
     int totalSteps = definition.getSteps().size();
 
-    tutorialService.runBeforeStep(account, universeType, currentStepIndex);
-
-    // Refresh account so activeWrestlerId reflects DB state
+    // Refresh account first so beforeStep hooks see the latest DB state (e.g. activeWrestlerId
+    // set in the previous step is visible when the next step's hook runs).
     account = accountService.get(account.getId()).orElse(account);
+
+    tutorialService.runBeforeStep(account, universeType, currentStepIndex);
 
     // ── Header ────────────────────────────────────────────────────────────
     HorizontalLayout header = new HorizontalLayout();
