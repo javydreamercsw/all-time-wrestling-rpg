@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
@@ -86,6 +87,7 @@ public class MainLayout extends AppLayout {
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
   private UniverseMembershipService universeMembershipService;
+  private TutorialService tutorialService;
 
   @Autowired
   public MainLayout(
@@ -98,7 +100,8 @@ public class MainLayout extends AppLayout {
       final ThemeService themeService,
       final UniverseContextService universeContextService,
       final UniverseRepository universeRepository,
-      final UniverseMembershipService universeMembershipService) {
+      final UniverseMembershipService universeMembershipService,
+      final TutorialService tutorialService) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -109,6 +112,7 @@ public class MainLayout extends AppLayout {
     this.universeContextService = universeContextService;
     this.universeRepository = universeRepository;
     this.universeMembershipService = universeMembershipService;
+    this.tutorialService = tutorialService;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -257,7 +261,13 @@ public class MainLayout extends AppLayout {
                   .flatMap(user -> accountService.findByUsername(user.getUsername()))
                   .ifPresent(
                       account ->
-                          new ProfileDrawer(account, accountService, passwordEncoder, themeService)
+                          new ProfileDrawer(
+                                  account,
+                                  accountService,
+                                  passwordEncoder,
+                                  themeService,
+                                  tutorialService,
+                                  universeContextService)
                               .open()));
 
       // Logout button

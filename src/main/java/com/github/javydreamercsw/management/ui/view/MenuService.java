@@ -132,6 +132,14 @@ public class MenuService {
             VaadinIcon.BOOK,
             "https://javydreamercsw.github.io/all-time-wrestling-rpg/",
             true));
+    help.addChild(
+        new MenuItem(
+            "Tutorial",
+            VaadinIcon.ACADEMY_CAP,
+            "tutorial",
+            RoleName.ADMIN,
+            RoleName.BOOKER,
+            RoleName.PLAYER));
 
     // Multiplayer menu: Only PLAYER, BOOKER, and ADMIN
     MenuItem multiplayer =
