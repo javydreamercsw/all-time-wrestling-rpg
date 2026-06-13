@@ -315,6 +315,17 @@ public class CampaignService {
     return campaignProgressionService.advanceChapter(campaignParam);
   }
 
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  public java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+      getAvailableNextChapters(@NonNull final Campaign campaignParam) {
+    return campaignProgressionService.getAvailableNextChapters(campaignParam);
+  }
+
+  public Optional<String> advanceToChapter(
+      @NonNull final Campaign campaignParam, @NonNull final String targetChapterId) {
+    return campaignProgressionService.advanceToChapter(campaignParam, targetChapterId);
+  }
+
   public void completeCampaign(@NonNull Campaign campaign) {
     campaignProgressionService.completeCampaign(campaign);
   }

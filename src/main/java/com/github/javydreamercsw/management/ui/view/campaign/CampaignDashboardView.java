@@ -57,10 +57,12 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -449,13 +451,20 @@ public class CampaignDashboardView extends VerticalLayout {
           new Button(
               "Complete Chapter & Advance",
               e -> {
-                campaignService
-                    .advanceChapter(currentCampaign)
-                    .ifPresent(
-                        newChapterId -> {
-                          // Navigate to narrative to show new chapter intro
-                          UI.getCurrent().navigate("campaign/narrative");
-                        });
+                java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+                    options = campaignService.getAvailableNextChapters(currentCampaign);
+                if (options.size() == 1) {
+                  campaignService
+                      .advanceToChapter(currentCampaign, options.get(0).getId())
+                      .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
+                } else if (options.size() > 1) {
+                  openChapterSelectionDialog(options);
+                } else {
+                  // No static successor — let the AI-driven storyline path handle it
+                  campaignService
+                      .advanceChapter(currentCampaign)
+                      .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
+                }
               });
       advanceButton.addThemeVariants(
           com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
@@ -752,6 +761,90 @@ public class CampaignDashboardView extends VerticalLayout {
     }
 
     parent.add(bracketContainer);
+  }
+
+  private void openChapterSelectionDialog(
+      java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+          options) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Choose Your Next Path");
+    dialog.setWidth("600px");
+    dialog.setCloseOnOutsideClick(false);
+
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    content.setSpacing(true);
+
+    Paragraph intro =
+        new Paragraph("Your story has reached a crossroads. Choose where it goes next.");
+    intro.addClassNames(TextColor.SECONDARY, FontSize.SMALL);
+    content.add(intro);
+
+    for (com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO option : options) {
+      VerticalLayout card = new VerticalLayout();
+      card.addClassNames(Background.CONTRAST_5, BorderRadius.MEDIUM, Padding.MEDIUM);
+      card.setSpacing(false);
+
+      H3 title = new H3(option.getTitle());
+      title.addClassNames(Margin.Bottom.XSMALL, Margin.Top.NONE);
+      card.add(title);
+
+      if (option.getShortDescription() != null && !option.getShortDescription().isBlank()) {
+        Paragraph desc = new Paragraph(option.getShortDescription());
+        desc.addClassNames(
+            TextColor.SECONDARY, FontSize.SMALL, Margin.Bottom.SMALL, Margin.Top.NONE);
+        card.add(desc);
+      }
+
+      HorizontalLayout badges = new HorizontalLayout();
+      badges.setSpacing(true);
+      badges.addClassName(Margin.Bottom.SMALL);
+
+      if (option.getDifficulty() != null) {
+        Span diff = new Span(option.getDifficulty().name());
+        diff.getElement().getThemeList().add("badge contrast");
+        badges.add(diff);
+      }
+
+      Span modeBadge = new Span(option.getMode().name().replace("_", " "));
+      String modeTheme =
+          switch (option.getMode()) {
+            case STATIC_ONLY -> "badge success";
+            case AI_WITH_FALLBACK -> "badge";
+            default -> "badge contrast";
+          };
+      modeBadge.getElement().getThemeList().add(modeTheme);
+      badges.add(modeBadge);
+
+      if (option.getRequiredExpansions() != null && !option.getRequiredExpansions().isEmpty()) {
+        Span expBadge = new Span("Requires: " + String.join(", ", option.getRequiredExpansions()));
+        expBadge.getElement().getThemeList().add("badge error");
+        badges.add(expBadge);
+      }
+
+      card.add(badges);
+
+      Button chooseBtn =
+          new Button(
+              "Choose this path",
+              ev -> {
+                dialog.close();
+                campaignService
+                    .advanceToChapter(currentCampaign, option.getId())
+                    .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
+              });
+      chooseBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      card.add(chooseBtn);
+
+      content.add(card);
+    }
+
+    dialog.add(content);
+
+    Button cancelBtn = new Button("Decide later", ev -> dialog.close());
+    dialog.getFooter().add(cancelBtn);
+
+    dialog.open();
   }
 
   private void refreshUI() {
