@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -82,7 +84,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "campaign", layout = MainLayout.class)
 @PageTitle("Campaign Dashboard")
-@RolesAllowed(ADMIN_ROLE)
+@RolesAllowed({ADMIN_ROLE, BOOKER_ROLE, PLAYER_ROLE})
 @Slf4j
 public class CampaignDashboardView extends VerticalLayout {
 

@@ -70,13 +70,21 @@ public class MenuService {
             RoleName.BOOKER,
             RoleName.PLAYER);
 
-    // Campaign: Only ADMIN
-    // RouteRoleResolver will also enforce @RolesAllowed(ADMIN_ROLE) on each view.
-    MenuItem campaignMenu = new MenuItem("Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN);
+    // Campaign: Dashboard open to ADMIN/BOOKER/PLAYER; admin-only sub-views restricted at route
+    // level
+    MenuItem campaignMenu =
+        new MenuItem(
+            "Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN, RoleName.BOOKER, RoleName.PLAYER);
     campaignMenu.addChild(
         new MenuItem("Campaigns", VaadinIcon.FILM, "campaign-list", RoleName.ADMIN));
     campaignMenu.addChild(
-        new MenuItem("Dashboard", VaadinIcon.DASHBOARD, "campaign", RoleName.ADMIN));
+        new MenuItem(
+            "Dashboard",
+            VaadinIcon.DASHBOARD,
+            "campaign",
+            RoleName.ADMIN,
+            RoleName.BOOKER,
+            RoleName.PLAYER));
 
     // Entities menu: Only ADMIN can access
     // BOOKER, PLAYER, and VIEWER have their own dedicated views
