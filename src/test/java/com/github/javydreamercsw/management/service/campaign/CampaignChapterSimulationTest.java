@@ -514,7 +514,7 @@ class CampaignChapterSimulationTest {
       String border =
           chapter.isExpansionBoundary() ? ", style=\"filled,dashed\"" : ", style=filled";
       String expansionLabel =
-          (chapter.getRequiredExpansions() != null && !chapter.getRequiredExpansions().isEmpty())
+          chapter.getRequiredExpansions() != null && !chapter.getRequiredExpansions().isEmpty()
               ? "\\n[requires: " + String.join(", ", chapter.getRequiredExpansions()) + "]"
               : "";
       String diff =
