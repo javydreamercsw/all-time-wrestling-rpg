@@ -17,7 +17,9 @@ Scripts are Groovy snippets. You can call available methods directly. Multiple c
 **Example:**
 
 ```groovy
-spendStamina(1); gainInitiative(); gainMomentum(2)
+spendStamina(1);
+gainInitiative();
+gainMomentum(2)
 ```
 
 ## Available Script Methods
