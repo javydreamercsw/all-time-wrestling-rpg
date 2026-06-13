@@ -91,6 +91,7 @@ public class CampaignDashboardView extends VerticalLayout {
   private final CampaignRepository campaignRepository;
   private final CampaignService campaignService;
   private final WrestlerRepository wrestlerRepository;
+  private final com.github.javydreamercsw.base.domain.account.AccountRepository accountRepository;
   private final CampaignAbilityCardRepository cardRepository;
   private final CampaignUpgradeService upgradeService;
   private final SecurityUtils securityUtils;
@@ -108,6 +109,7 @@ public class CampaignDashboardView extends VerticalLayout {
       final CampaignRepository campaignRepository,
       final CampaignService campaignService,
       final WrestlerRepository wrestlerRepository,
+      final com.github.javydreamercsw.base.domain.account.AccountRepository accountRepository,
       final CampaignAbilityCardRepository cardRepository,
       final CampaignUpgradeService upgradeService,
       final SecurityUtils securityUtils,
@@ -120,6 +122,7 @@ public class CampaignDashboardView extends VerticalLayout {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
+    this.accountRepository = accountRepository;
     this.cardRepository = cardRepository;
     this.upgradeService = upgradeService;
     this.securityUtils = securityUtils;
@@ -159,12 +162,20 @@ public class CampaignDashboardView extends VerticalLayout {
         .ifPresentOrElse(
             user -> {
               log.debug("Authenticated user: {}", user.getUsername());
-              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
+              // Re-load the account from DB to get the current activeWrestlerId — the principal's
+              // Account object is stale when the wrestler was assigned after login (e.g. tutorial).
+              Long accountId = user.getId();
+              com.github.javydreamercsw.base.domain.account.Account freshAccount =
+                  accountId != null
+                      ? accountRepository.findById(accountId).orElse(user.getAccount())
+                      : user.getAccount();
               java.util.List<Wrestler> wrestlers =
-                  wrestlerRepository.findByAccountWithDetails(account);
+                  accountId != null
+                      ? wrestlerRepository.findByAccountId(accountId)
+                      : java.util.List.of();
               Wrestler active =
                   wrestlers.stream()
-                      .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
+                      .filter(w -> w.getId().equals(freshAccount.getActiveWrestlerId()))
                       .findFirst()
                       .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
 
