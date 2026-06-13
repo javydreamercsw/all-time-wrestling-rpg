@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * Structural simulation of campaign_chapters.json. Catches authoring errors that would trap players
  * before anyone reaches that point in the game.
  *
- * <p>Seven checks:
+ * <p>Eight checks:
  *
  * <ol>
  *   <li>FAIL — every exit point must be reachable under some achievable state.
@@ -59,6 +59,8 @@ import org.slf4j.LoggerFactory;
  *       criteria that require minMatchesPlayed.
  *   <li>FAIL — expansion codes in requiredExpansions / requiredExpansion fields must match a known
  *       code in expansions.json.
+ *   <li>FAIL — every ungated static encounter must have at least one choice with no
+ *       requiredExpansion, so the player can always proceed without an optional pack.
  *   <li>WARN — every exit state should have at least one static successor chapter; if not, logs a
  *       warning (expansion boundary or AI handoff, not a bug).
  * </ol>
@@ -360,7 +362,47 @@ class CampaignChapterSimulationTest {
         .isEmpty();
   }
 
-  // Check 7: successor availability (WARN only — never fails the build)
+  // ---------------------------------------------------------------------------
+  // Check 7: encounters without an encounter-level gate must have ≥1 ungated choice
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Every ungated static encounter has at least one choice with no requiredExpansion")
+  void ungatedEncountersHaveAtLeastOneBaseChoice() {
+    List<String> failures = new ArrayList<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      if (!chapter.hasStaticEncounters()) {
+        continue;
+      }
+      for (var encounter : chapter.getStaticEncounters()) {
+        // Encounters gated by an expansion are only shown when that pack is present,
+        // so all their choices may require the same expansion — that's fine.
+        if (encounter.getRequiredExpansion() != null) {
+          continue;
+        }
+        if (encounter.getChoices() == null || encounter.getChoices().isEmpty()) {
+          continue; // No choices — handled by other checks or intentional terminal card
+        }
+        boolean hasBaseChoice =
+            encounter.getChoices().stream().anyMatch(c -> c.getRequiredExpansion() == null);
+        if (!hasBaseChoice) {
+          failures.add(
+              String.format(
+                  "[%s] Encounter '%s': all choices require an expansion — player will be stuck"
+                      + " if no expansion is installed. Add a base-game fallback choice or"
+                      + " gate the entire encounter with requiredExpansion.",
+                  chapter.getId(), encounter.getId()));
+        }
+      }
+    }
+
+    assertThat(failures)
+        .as("EXPANSION-GATED-ALL-CHOICES FAILURES:\n" + String.join("\n", failures))
+        .isEmpty();
+  }
+
+  // Check 8: successor availability (WARN only — never fails the build)
   // ---------------------------------------------------------------------------
 
   @Test
@@ -398,6 +440,132 @@ class CampaignChapterSimulationTest {
       }
     }
     // This test always passes — it only produces log warnings
+  }
+
+  // ---------------------------------------------------------------------------
+  // Graph: write target/campaign-graph.dot (always passes, purely for authors)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Generate campaign-graph.dot in target/ for visualization")
+  void generateChapterGraph() throws Exception {
+    // Build edge map: chapter → list of (exitName, successor)
+    java.util.Map<String, java.util.List<String[]>> edges = new java.util.LinkedHashMap<>();
+    java.util.Set<String> aiHandoffNodes = new java.util.HashSet<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      edges.put(chapter.getId(), new java.util.ArrayList<>());
+
+      if (chapter.getExitPoints() == null || chapter.getExitPoints().isEmpty()) {
+        continue;
+      }
+      int vpWin = vpWin(chapter);
+      int vpLoss = vpLoss(chapter);
+
+      for (ChapterPointDTO point : chapter.getExitPoints()) {
+        CampaignState exitState = buildSatisfyingState(chapter, point, vpWin, vpLoss);
+        if (exitState == null) {
+          continue;
+        }
+        exitState.getCompletedChapterIds().add(chapter.getId());
+        List<CampaignChapterDTO> successors = chapterService.findAvailableChapters(exitState);
+
+        if (successors.isEmpty()) {
+          // AI handoff or expansion boundary — add a virtual sink node
+          String sinkId = chapter.getId() + "_exit_" + point.getName().replaceAll("\\W+", "_");
+          edges.get(chapter.getId()).add(new String[] {point.getName(), sinkId, "sink"});
+          aiHandoffNodes.add(sinkId);
+        } else {
+          for (CampaignChapterDTO successor : successors) {
+            edges
+                .get(chapter.getId())
+                .add(new String[] {point.getName(), successor.getId(), "normal"});
+          }
+        }
+      }
+    }
+
+    // Build DOT source
+    StringBuilder dot = new StringBuilder();
+    dot.append("digraph CampaignChapters {\n");
+    dot.append("  rankdir=LR;\n");
+    dot.append("  node [fontname=\"Helvetica\", fontsize=10];\n");
+    dot.append("  edge [fontname=\"Helvetica\", fontsize=9];\n\n");
+
+    // Legend
+    dot.append("  subgraph cluster_legend {\n");
+    dot.append("    label=\"Legend\"; style=dotted; fontsize=9;\n");
+    dot.append("    l1 [label=\"STATIC_ONLY\",  style=filled, fillcolor=lightblue,  shape=box];\n");
+    dot.append(
+        "    l2 [label=\"AI_WITH_FALLBACK\", style=filled, fillcolor=lightyellow, shape=box];\n");
+    dot.append("    l3 [label=\"AI_ONLY\",      style=filled, fillcolor=white,      shape=box];\n");
+    dot.append(
+        "    l4 [label=\"AI handoff / expansion boundary\", style=dashed, shape=ellipse];\n");
+    dot.append("  }\n\n");
+
+    // Chapter nodes
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      String fillColor =
+          switch (chapter.getMode()) {
+            case STATIC_ONLY -> "lightblue";
+            case AI_WITH_FALLBACK -> "lightyellow";
+            default -> "white";
+          };
+      String border =
+          chapter.isExpansionBoundary() ? ", style=\"filled,dashed\"" : ", style=filled";
+      String expansionLabel =
+          (chapter.getRequiredExpansions() != null && !chapter.getRequiredExpansions().isEmpty())
+              ? "\\n[requires: " + String.join(", ", chapter.getRequiredExpansions()) + "]"
+              : "";
+      String diff =
+          chapter.getDifficulty() != null ? "\\n(" + chapter.getDifficulty().name() + ")" : "";
+      String modeLabel = chapter.getMode().name();
+      dot.append(
+          String.format(
+              "  \"%s\" [label=\"%s\\n%s\\n%s%s%s\", shape=box, fillcolor=%s%s];\n",
+              chapter.getId(),
+              chapter.getId(),
+              chapter.getTitle(),
+              modeLabel,
+              diff,
+              expansionLabel,
+              fillColor,
+              border));
+    }
+
+    // AI handoff sink nodes
+    for (String sink : aiHandoffNodes) {
+      dot.append(
+          String.format(
+              "  \"%s\" [label=\"AI handoff\", shape=ellipse, style=dashed,"
+                  + " fillcolor=lightgrey];\n",
+              sink));
+    }
+
+    dot.append("\n");
+
+    // Edges
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      for (String[] edge : edges.getOrDefault(chapter.getId(), java.util.Collections.emptyList())) {
+        String exitName = edge[0];
+        String targetId = edge[1];
+        dot.append(
+            String.format(
+                "  \"%s\" -> \"%s\" [label=\"%s\"];\n", chapter.getId(), targetId, exitName));
+      }
+    }
+
+    dot.append("}\n");
+
+    // Write to target/
+    java.nio.file.Path outDir = java.nio.file.Paths.get("target");
+    java.nio.file.Files.createDirectories(outDir);
+    java.nio.file.Path outFile = outDir.resolve("campaign-graph.dot");
+    java.nio.file.Files.writeString(outFile, dot.toString());
+
+    log.info("Campaign chapter graph written to: {}", outFile.toAbsolutePath());
+    log.info("Render with: dot -Tsvg {} -o target/campaign-graph.svg", outFile.getFileName());
+    // This test always passes — the file is an author aid, not a correctness check
   }
 
   // ---------------------------------------------------------------------------
