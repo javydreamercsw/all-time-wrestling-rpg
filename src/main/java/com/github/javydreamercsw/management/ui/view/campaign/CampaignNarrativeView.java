@@ -283,8 +283,12 @@ public class CampaignNarrativeView extends VerticalLayout {
         .ifPresent(
             ch -> {
               CampaignState state = currentCampaign.getState();
-              if (choice.isUnlockPromo()) state.setPromoUnlocked(true);
-              if (choice.isUnlockAttack()) state.setAttackUnlocked(true);
+              if (choice.isUnlockPromo()) {
+                state.setPromoUnlocked(true);
+              }
+              if (choice.isUnlockAttack()) {
+                state.setAttackUnlocked(true);
+              }
               if (choice.getFeatureFlags() != null) {
                 choice
                     .getFeatureFlags()

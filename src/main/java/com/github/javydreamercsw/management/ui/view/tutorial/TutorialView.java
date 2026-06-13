@@ -426,7 +426,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       buttons.add(goBtn);
 
       // Next / Complete — validates on click, shows error inline if not ready
-      boolean isLast = (currentStepIndex == totalSteps - 1);
+      boolean isLast = currentStepIndex == totalSteps - 1;
       Button nextBtn = new Button(isLast ? "Complete Tutorial ✓" : "Next →");
       nextBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
       nextBtn.addClickListener(
@@ -467,8 +467,8 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
                     .map(
                         w -> {
                           String alignment =
-                              (w.getAlignment() != null
-                                      && w.getAlignment().getAlignmentType() != null)
+                              w.getAlignment() != null
+                                      && w.getAlignment().getAlignmentType() != null
                                   ? w.getAlignment().getAlignmentType().name()
                                   : null;
                           String imageUrl = wrestlerService.resolveWrestlerImage(w).url();
@@ -648,8 +648,12 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
   }
 
   private String getDashboardRoute() {
-    if (securityUtils.isPlayer()) return "player";
-    if (securityUtils.isBooker()) return "booker-dashboard";
+    if (securityUtils.isPlayer()) {
+      return "player";
+    }
+    if (securityUtils.isBooker()) {
+      return "booker-dashboard";
+    }
     return "";
   }
 }
