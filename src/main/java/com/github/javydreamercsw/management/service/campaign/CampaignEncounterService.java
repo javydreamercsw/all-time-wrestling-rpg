@@ -47,6 +47,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class CampaignEncounterService {
 
+  private static final String PENDING_WIN_CARD = "_pendingWinCard";
+  private static final String PENDING_LOSS_CARD = "_pendingLossCard";
+  private static final String PRE_MATCH_WINS = "_preMatchWins";
+
   private final SegmentNarrationServiceFactory aiFactory;
   private final CampaignEncounterRepository encounterRepository;
   private final CampaignStateRepository stateRepository;
@@ -59,6 +63,7 @@ public class CampaignEncounterService {
   private final FactionRepository factionRepository;
   private final CommentatorRepository commentatorRepository;
   private final ObjectMapper objectMapper;
+  private final FeatureDataService featureDataService;
 
   public CampaignEncounterService(
       final SegmentNarrationServiceFactory aiFactory,
@@ -72,7 +77,8 @@ public class CampaignEncounterService {
       final TeamRepository teamRepository,
       final FactionRepository factionRepository,
       final CommentatorRepository commentatorRepository,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final FeatureDataService featureDataService) {
     this.aiFactory = aiFactory;
     this.encounterRepository = encounterRepository;
     this.stateRepository = stateRepository;
@@ -85,6 +91,7 @@ public class CampaignEncounterService {
     this.factionRepository = factionRepository;
     this.commentatorRepository = commentatorRepository;
     this.objectMapper = objectMapper;
+    this.featureDataService = featureDataService;
   }
 
   @Transactional
@@ -489,6 +496,21 @@ public class CampaignEncounterService {
 
     CampaignState state = campaign.getState();
     state.setVictoryPoints(state.getVictoryPoints() + finalVp);
+
+    // Persist gamebook routing for this choice
+    if ("MATCH".equals(choice.getNextPhase())
+        && (choice.getOnWinNextEncounterId() != null
+            || choice.getOnLossNextEncounterId() != null)) {
+      // Store pending win/loss targets; resolved when the player returns from the match
+      featureDataService.setFeatureValue(state, PENDING_WIN_CARD, choice.getOnWinNextEncounterId());
+      featureDataService.setFeatureValue(
+          state, PENDING_LOSS_CARD, choice.getOnLossNextEncounterId());
+      featureDataService.setFeatureValue(state, PRE_MATCH_WINS, state.getWins());
+      state.setCurrentEncounterId(null);
+    } else if (choice.getNextEncounterId() != null) {
+      state.setCurrentEncounterId(choice.getNextEncounterId());
+    }
+
     stateRepository.save(state);
 
     log.debug(
@@ -507,25 +529,74 @@ public class CampaignEncounterService {
   }
 
   /**
-   * Builds a {@link CampaignEncounterResponseDTO} from pre-authored static content. The step index
-   * is derived from the number of encounters already recorded for this chapter, so no separate
-   * counter is needed. Persists a {@link CampaignEncounter} record (same as the AI path), which
-   * advances the index on the next call.
+   * Builds a {@link CampaignEncounterResponseDTO} from pre-authored static content.
    *
-   * @throws IllegalStateException when all scripted steps have been played through
+   * <p>Routing priority:
+   *
+   * <ol>
+   *   <li>If pending match-outcome routing exists in featureData ({@code _pendingWinCard} / {@code
+   *       _pendingLossCard}), resolve via win count delta and set {@code currentEncounterId}.
+   *   <li>If {@code state.currentEncounterId} is set, look up that card by ID.
+   *   <li>Otherwise fall back to sequential order using the encounter count as an index (supports
+   *       chapters authored without explicit routing).
+   * </ol>
+   *
+   * @throws IllegalStateException when no matching encounter can be found or all sequential steps
+   *     have been exhausted
    */
   @Transactional
   public CampaignEncounterResponseDTO generateStaticEncounter(
       final Campaign campaign, final CampaignChapterDTO chapter) {
-    long stepIndex = encounterRepository.countByCampaignAndChapterId(campaign, chapter.getId());
-
+    CampaignState state = campaign.getState();
     List<StaticEncounterDTO> encounters = chapter.getStaticEncounters();
-
-    if (stepIndex >= encounters.size()) {
-      throw new IllegalStateException("No more static encounters for chapter " + chapter.getId());
+    if (encounters.isEmpty()) {
+      throw new IllegalStateException("No static encounters for chapter " + chapter.getId());
     }
 
-    StaticEncounterDTO encounter = encounters.get((int) stepIndex);
+    // 1. Resolve pending match-outcome routing
+    String pendingWin =
+        featureDataService.getFeatureValue(state, PENDING_WIN_CARD, String.class, null);
+    if (pendingWin != null
+        || featureDataService.getFeatureValue(state, PENDING_LOSS_CARD, String.class, null)
+            != null) {
+      String pendingLoss =
+          featureDataService.getFeatureValue(state, PENDING_LOSS_CARD, String.class, null);
+      int preMatchWins =
+          featureDataService.getFeatureValue(state, PRE_MATCH_WINS, Integer.class, 0);
+      boolean won = state.getWins() > preMatchWins;
+      String resolved = won ? pendingWin : pendingLoss;
+      featureDataService.removeFeatureValue(state, PENDING_WIN_CARD);
+      featureDataService.removeFeatureValue(state, PENDING_LOSS_CARD);
+      featureDataService.removeFeatureValue(state, PRE_MATCH_WINS);
+      if (resolved != null) {
+        state.setCurrentEncounterId(resolved);
+        stateRepository.save(state);
+      }
+    }
+
+    // 2. ID-based lookup
+    StaticEncounterDTO encounter;
+    String currentId = state.getCurrentEncounterId();
+    if (currentId != null) {
+      encounter =
+          encounters.stream()
+              .filter(e -> currentId.equals(e.getId()))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Static encounter '"
+                              + currentId
+                              + "' not found in chapter "
+                              + chapter.getId()));
+    } else {
+      // 3. Sequential fallback — use encounter count as index
+      long stepIndex = encounterRepository.countByCampaignAndChapterId(campaign, chapter.getId());
+      if (stepIndex >= encounters.size()) {
+        throw new IllegalStateException("No more static encounters for chapter " + chapter.getId());
+      }
+      encounter = encounters.get((int) stepIndex);
+    }
 
     List<CampaignEncounterResponseDTO.Choice> choices =
         encounter.getChoices().stream()
@@ -543,6 +614,9 @@ public class CampaignEncounterService {
                         .nextPhase(sc.getNextPhase() != null ? sc.getNextPhase().name() : null)
                         .statusCardKeys(sc.getStatusCardKeys())
                         .outcomeText(sc.getOutcomeText())
+                        .nextEncounterId(sc.getNextEncounterId())
+                        .onWinNextEncounterId(sc.getOnWinNextEncounterId())
+                        .onLossNextEncounterId(sc.getOnLossNextEncounterId())
                         .build())
             .toList();
 

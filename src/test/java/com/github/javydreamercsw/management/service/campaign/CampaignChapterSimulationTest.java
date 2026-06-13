@@ -48,10 +48,13 @@ import org.slf4j.LoggerFactory;
  * Structural simulation of campaign_chapters.json. Catches authoring errors that would trap players
  * before anyone reaches that point in the game.
  *
- * <p>Three checks:
+ * <p>Five checks:
  *
  * <ol>
  *   <li>FAIL — every exit point must be reachable under some achievable state.
+ *   <li>FAIL — static encounter IDs must be unique within each chapter.
+ *   <li>FAIL — routing targets (nextEncounterId / onWinNextEncounterId / onLossNextEncounterId)
+ *       must reference encounter IDs that exist in the same chapter.
  *   <li>FAIL — STATIC_ONLY / AI_WITH_FALLBACK chapters must have enough MATCH steps to satisfy exit
  *       criteria that require minMatchesPlayed.
  *   <li>WARN — every exit state should have at least one static successor chapter; if not, logs a
@@ -138,7 +141,103 @@ class CampaignChapterSimulationTest {
   }
 
   // ---------------------------------------------------------------------------
-  // Check 2: static chapters have enough MATCH steps
+  // Check 2: static encounter IDs are unique within each chapter
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Static encounter IDs are unique within each chapter")
+  void staticEncounterIdsAreUnique() {
+    List<String> failures = new ArrayList<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      if (!chapter.hasStaticEncounters()) {
+        continue;
+      }
+      java.util.Set<String> seen = new java.util.HashSet<>();
+      for (var encounter : chapter.getStaticEncounters()) {
+        if (encounter.getId() == null) {
+          failures.add("[" + chapter.getId() + "] Encounter has null id: " + encounter.getTitle());
+          continue;
+        }
+        if (!seen.add(encounter.getId())) {
+          failures.add("[" + chapter.getId() + "] Duplicate encounter id: " + encounter.getId());
+        }
+      }
+    }
+
+    assertThat(failures)
+        .as("DUPLICATE ENCOUNTER ID FAILURES:\n" + String.join("\n", failures))
+        .isEmpty();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check 3: routing targets exist within the same chapter
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Routing targets in static choices point to valid encounter IDs within the chapter")
+  void staticChoiceRoutingTargetsExist() {
+    List<String> failures = new ArrayList<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      if (!chapter.hasStaticEncounters()) {
+        continue;
+      }
+      java.util.Set<String> ids =
+          chapter.getStaticEncounters().stream()
+              .map(com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO::getId)
+              .collect(java.util.stream.Collectors.toSet());
+
+      for (var encounter : chapter.getStaticEncounters()) {
+        if (encounter.getChoices() == null) {
+          continue;
+        }
+        for (var choice : encounter.getChoices()) {
+          checkRoutingTarget(
+              failures,
+              chapter.getId(),
+              encounter.getId(),
+              "nextEncounterId",
+              choice.getNextEncounterId(),
+              ids);
+          checkRoutingTarget(
+              failures,
+              chapter.getId(),
+              encounter.getId(),
+              "onWinNextEncounterId",
+              choice.getOnWinNextEncounterId(),
+              ids);
+          checkRoutingTarget(
+              failures,
+              chapter.getId(),
+              encounter.getId(),
+              "onLossNextEncounterId",
+              choice.getOnLossNextEncounterId(),
+              ids);
+        }
+      }
+    }
+
+    assertThat(failures).as("ROUTING TARGET FAILURES:\n" + String.join("\n", failures)).isEmpty();
+  }
+
+  private void checkRoutingTarget(
+      List<String> failures,
+      String chapterId,
+      String encounterId,
+      String field,
+      String target,
+      java.util.Set<String> validIds) {
+    if (target != null && !validIds.contains(target)) {
+      failures.add(
+          String.format(
+              "[%s] Encounter '%s': %s='%s' does not exist in chapter",
+              chapterId, encounterId, field, target));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check 5: static chapters have enough MATCH steps
   // ---------------------------------------------------------------------------
 
   @Test
@@ -181,7 +280,7 @@ class CampaignChapterSimulationTest {
   }
 
   // ---------------------------------------------------------------------------
-  // Check 3: successor availability (WARN only — never fails the build)
+  // Check 6: successor availability (WARN only — never fails the build)
   // ---------------------------------------------------------------------------
 
   @Test

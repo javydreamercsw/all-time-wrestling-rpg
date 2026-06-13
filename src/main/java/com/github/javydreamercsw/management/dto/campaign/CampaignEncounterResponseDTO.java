@@ -51,5 +51,14 @@ public class CampaignEncounterResponseDTO {
     private boolean unlockPromo;
     private boolean unlockAttack;
     private Map<String, Object> featureFlags;
+
+    /** For non-match choices: jump directly to this encounter card ID. */
+    private String nextEncounterId;
+
+    /** After a MATCH win: jump to this encounter card ID. */
+    private String onWinNextEncounterId;
+
+    /** After a MATCH loss: jump to this encounter card ID. */
+    private String onLossNextEncounterId;
   }
 }

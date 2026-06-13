@@ -108,6 +108,7 @@ public class CampaignProgressionService {
       CampaignChapterDTO nextChapter = available.get(0);
       String newChapterId = nextChapter.getId();
       state.setCurrentChapterId(newChapterId);
+      state.setCurrentEncounterId(null);
       state.setMatchesPlayed(0);
       state.setWins(0);
       state.setLosses(0);

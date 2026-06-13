@@ -899,6 +899,7 @@ public class CampaignDashboardView extends VerticalLayout {
               if (selected != null) {
                 CampaignState state = currentCampaign.getState();
                 state.setCurrentChapterId(selected.getId());
+                state.setCurrentEncounterId(null);
                 // Reset Counters
                 state.setMatchesPlayed(0);
                 state.setWins(0);

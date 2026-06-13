@@ -55,5 +55,14 @@ public class StaticEncounterDTO {
     private CampaignPhase nextPhase;
     private List<String> statusCardKeys;
     private String outcomeText;
+
+    /** For non-match choices: jump directly to this encounter card ID. */
+    private String nextEncounterId;
+
+    /** After a MATCH win: jump to this encounter card ID. */
+    private String onWinNextEncounterId;
+
+    /** After a MATCH loss: jump to this encounter card ID. */
+    private String onLossNextEncounterId;
   }
 }

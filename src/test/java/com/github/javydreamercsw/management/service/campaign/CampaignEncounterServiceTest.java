@@ -61,6 +61,7 @@ class CampaignEncounterServiceTest {
   @Mock private TeamRepository teamRepository;
   @Mock private FactionRepository factionRepository;
   @Mock private CommentatorRepository commentatorRepository;
+  @Mock private FeatureDataService featureDataService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignEncounterService encounterService;
@@ -83,7 +84,8 @@ class CampaignEncounterServiceTest {
             teamRepository,
             factionRepository,
             commentatorRepository,
-            objectMapper);
+            objectMapper,
+            featureDataService);
 
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler");
