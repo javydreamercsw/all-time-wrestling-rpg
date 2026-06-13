@@ -56,17 +56,28 @@ public class TutorialRedirectInitializer {
                                 return;
                               }
 
-                              Universe.UniverseType type =
-                                  universeContextService
-                                      .getCurrentUniverse()
-                                      .map(Universe::getType)
-                                      .orElse(Universe.UniverseType.GLOBAL);
-
                               securityUtils
                                   .getCurrentAccountId()
                                   .flatMap(accountService::get)
                                   .ifPresent(
                                       account -> {
+                                        // Once the player has a tutorial universe they are
+                                        // actively working through the wizard — let them
+                                        // navigate freely to complete each step's required action.
+                                        if (tutorialService
+                                            .findTutorialUniverse(account.getUsername())
+                                            .isPresent()) {
+                                          return;
+                                        }
+
+                                        // No tutorial universe yet: redirect to /tutorial so the
+                                        // player picks a mode before doing anything else.
+                                        Universe.UniverseType type =
+                                            universeContextService
+                                                .getCurrentUniverse()
+                                                .map(Universe::getType)
+                                                .orElse(Universe.UniverseType.GLOBAL);
+
                                         if (tutorialService.shouldShowTutorial(account, type)) {
                                           enterEvent.rerouteTo(TutorialView.class);
                                         }
