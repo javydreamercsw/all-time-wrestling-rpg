@@ -47,6 +47,12 @@ public class CampaignChapterDTO {
   @Builder.Default private List<StaticEncounterDTO> staticEncounters = new ArrayList<>();
 
   /**
+   * Expansion codes that must ALL be enabled for this chapter to appear in {@code
+   * findAvailableChapters}. Empty list = no restriction (available in base game).
+   */
+  @Builder.Default private List<String> requiredExpansions = new ArrayList<>();
+
+  /**
    * When true, the successor-availability check in the chapter simulation validator emits no
    * warning if this chapter has no static successor. Use for intentional content boundaries (e.g.
    * end of a campaign expansion) where the AI storyline handoff is the designed outcome.

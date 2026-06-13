@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +65,7 @@ public class CampaignEncounterService {
   private final CommentatorRepository commentatorRepository;
   private final ObjectMapper objectMapper;
   private final FeatureDataService featureDataService;
+  private final ExpansionService expansionService;
 
   public CampaignEncounterService(
       final SegmentNarrationServiceFactory aiFactory,
@@ -78,7 +80,8 @@ public class CampaignEncounterService {
       final FactionRepository factionRepository,
       final CommentatorRepository commentatorRepository,
       final ObjectMapper objectMapper,
-      final FeatureDataService featureDataService) {
+      final FeatureDataService featureDataService,
+      final ExpansionService expansionService) {
     this.aiFactory = aiFactory;
     this.encounterRepository = encounterRepository;
     this.stateRepository = stateRepository;
@@ -92,6 +95,7 @@ public class CampaignEncounterService {
     this.commentatorRepository = commentatorRepository;
     this.objectMapper = objectMapper;
     this.featureDataService = featureDataService;
+    this.expansionService = expansionService;
   }
 
   @Transactional
@@ -590,16 +594,27 @@ public class CampaignEncounterService {
                               + "' not found in chapter "
                               + chapter.getId()));
     } else {
-      // 3. Sequential fallback — use encounter count as index
+      // 3. Sequential fallback — filter expansion-gated encounters, then use count as index
+      List<StaticEncounterDTO> available =
+          encounters.stream()
+              .filter(
+                  e ->
+                      e.getRequiredExpansion() == null
+                          || expansionService.isExpansionEnabled(e.getRequiredExpansion()))
+              .toList();
       long stepIndex = encounterRepository.countByCampaignAndChapterId(campaign, chapter.getId());
-      if (stepIndex >= encounters.size()) {
+      if (stepIndex >= available.size()) {
         throw new IllegalStateException("No more static encounters for chapter " + chapter.getId());
       }
-      encounter = encounters.get((int) stepIndex);
+      encounter = available.get((int) stepIndex);
     }
 
     List<CampaignEncounterResponseDTO.Choice> choices =
         encounter.getChoices().stream()
+            .filter(
+                sc ->
+                    sc.getRequiredExpansion() == null
+                        || expansionService.isExpansionEnabled(sc.getRequiredExpansion()))
             .map(
                 sc ->
                     CampaignEncounterResponseDTO.Choice.builder()

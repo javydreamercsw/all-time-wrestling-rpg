@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * Structural simulation of campaign_chapters.json. Catches authoring errors that would trap players
  * before anyone reaches that point in the game.
  *
- * <p>Five checks:
+ * <p>Seven checks:
  *
  * <ol>
  *   <li>FAIL — every exit point must be reachable under some achievable state.
@@ -57,6 +57,8 @@ import org.slf4j.LoggerFactory;
  *       must reference encounter IDs that exist in the same chapter.
  *   <li>FAIL — STATIC_ONLY / AI_WITH_FALLBACK chapters must have enough MATCH steps to satisfy exit
  *       criteria that require minMatchesPlayed.
+ *   <li>FAIL — expansion codes in requiredExpansions / requiredExpansion fields must match a known
+ *       code in expansions.json.
  *   <li>WARN — every exit state should have at least one static successor chapter; if not, logs a
  *       warning (expansion boundary or AI handoff, not a bug).
  * </ol>
@@ -72,7 +74,12 @@ class CampaignChapterSimulationTest {
     ObjectMapper objectMapper = new ObjectMapper();
     FeatureDataService featureDataService =
         new FeatureDataService(objectMapper, mock(CampaignStateRepository.class));
-    chapterService = new CampaignChapterService(objectMapper, featureDataService);
+    com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService =
+        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class);
+    org.mockito.Mockito.when(
+            expansionService.isExpansionEnabled(org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(true);
+    chapterService = new CampaignChapterService(objectMapper, featureDataService, expansionService);
     chapterService.init();
   }
 
@@ -280,7 +287,80 @@ class CampaignChapterSimulationTest {
   }
 
   // ---------------------------------------------------------------------------
-  // Check 6: successor availability (WARN only — never fails the build)
+  // ---------------------------------------------------------------------------
+  // Check 6: requiredExpansions and requiredExpansion codes are known
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Expansion codes in chapters and choices reference known expansions")
+  void expansionCodesAreKnown() {
+    // Load known codes from expansions.json
+    java.util.Set<String> known;
+    try {
+      com.fasterxml.jackson.databind.ObjectMapper om =
+          new com.fasterxml.jackson.databind.ObjectMapper();
+      java.io.InputStream is = getClass().getResourceAsStream("/expansions.json");
+      java.util.List<java.util.Map<String, String>> raw =
+          om.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+      known =
+          raw.stream()
+              .map(m -> m.get("expansion_code"))
+              .collect(java.util.stream.Collectors.toSet());
+    } catch (Exception e) {
+      throw new RuntimeException("Could not load expansions.json", e);
+    }
+
+    List<String> failures = new ArrayList<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      if (chapter.getRequiredExpansions() != null) {
+        for (String code : chapter.getRequiredExpansions()) {
+          if (!known.contains(code)) {
+            failures.add(
+                "[" + chapter.getId() + "] Unknown requiredExpansion code on chapter: " + code);
+          }
+        }
+      }
+      if (!chapter.hasStaticEncounters()) {
+        continue;
+      }
+      for (var encounter : chapter.getStaticEncounters()) {
+        if (encounter.getRequiredExpansion() != null
+            && !known.contains(encounter.getRequiredExpansion())) {
+          failures.add(
+              "["
+                  + chapter.getId()
+                  + "] Encounter '"
+                  + encounter.getId()
+                  + "': unknown requiredExpansion: "
+                  + encounter.getRequiredExpansion());
+        }
+        if (encounter.getChoices() == null) {
+          continue;
+        }
+        for (var choice : encounter.getChoices()) {
+          if (choice.getRequiredExpansion() != null
+              && !known.contains(choice.getRequiredExpansion())) {
+            failures.add(
+                "["
+                    + chapter.getId()
+                    + "] Encounter '"
+                    + encounter.getId()
+                    + "' choice '"
+                    + choice.getId()
+                    + "': unknown requiredExpansion: "
+                    + choice.getRequiredExpansion());
+          }
+        }
+      }
+    }
+
+    assertThat(failures)
+        .as("UNKNOWN EXPANSION CODE FAILURES:\n" + String.join("\n", failures))
+        .isEmpty();
+  }
+
+  // Check 7: successor availability (WARN only — never fails the build)
   // ---------------------------------------------------------------------------
 
   @Test

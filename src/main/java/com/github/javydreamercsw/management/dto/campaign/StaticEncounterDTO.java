@@ -35,6 +35,12 @@ public class StaticEncounterDTO {
   private String narrativeText;
   private List<StaticChoiceDTO> choices;
 
+  /**
+   * Expansion code required for this encounter to be shown. In sequential mode, encounters whose
+   * expansion is not enabled are skipped. Null = available in base game.
+   */
+  private String requiredExpansion;
+
   @Data
   @Builder
   @NoArgsConstructor
@@ -64,5 +70,12 @@ public class StaticEncounterDTO {
 
     /** After a MATCH loss: jump to this encounter card ID. */
     private String onLossNextEncounterId;
+
+    /**
+     * Expansion code required for this choice to be offered. Filtered out of the choices list if
+     * the expansion is not enabled — lets authors write "if you have X go to card Y, else end here"
+     * by pairing an expansion-gated choice with an ungated fallback. Null = always shown.
+     */
+    private String requiredExpansion;
   }
 }

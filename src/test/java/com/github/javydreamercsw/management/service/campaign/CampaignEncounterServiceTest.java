@@ -62,6 +62,10 @@ class CampaignEncounterServiceTest {
   @Mock private FactionRepository factionRepository;
   @Mock private CommentatorRepository commentatorRepository;
   @Mock private FeatureDataService featureDataService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignEncounterService encounterService;
@@ -85,7 +89,8 @@ class CampaignEncounterServiceTest {
             factionRepository,
             commentatorRepository,
             objectMapper,
-            featureDataService);
+            featureDataService,
+            expansionService);
 
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler");
