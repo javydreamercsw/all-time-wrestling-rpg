@@ -20,7 +20,9 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
 import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -91,12 +93,12 @@ public class CampaignDashboardView extends VerticalLayout {
   private final CampaignRepository campaignRepository;
   private final CampaignService campaignService;
   private final WrestlerRepository wrestlerRepository;
-  private final com.github.javydreamercsw.base.domain.account.AccountRepository accountRepository;
+  private final AccountRepository accountRepository;
   private final CampaignAbilityCardRepository cardRepository;
   private final CampaignUpgradeService upgradeService;
   private final SecurityUtils securityUtils;
   private final TournamentService tournamentService;
-  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
   private final CampaignChapterService chapterService;
   private final TitleService titleService;
   private final TitleRepository titleRepository;
@@ -109,12 +111,12 @@ public class CampaignDashboardView extends VerticalLayout {
       final CampaignRepository campaignRepository,
       final CampaignService campaignService,
       final WrestlerRepository wrestlerRepository,
-      final com.github.javydreamercsw.base.domain.account.AccountRepository accountRepository,
+      final AccountRepository accountRepository,
       final CampaignAbilityCardRepository cardRepository,
       final CampaignUpgradeService upgradeService,
       final SecurityUtils securityUtils,
       final TournamentService tournamentService,
-      final com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final CampaignChapterService chapterService,
       final TitleService titleService,
       final TitleRepository titleRepository,

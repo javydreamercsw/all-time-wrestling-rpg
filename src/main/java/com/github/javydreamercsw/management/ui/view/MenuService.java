@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -229,7 +230,7 @@ public class MenuService {
    *
    * @return a filtered copy of the item, or {@code null} if the user has no access
    */
-  private MenuItem filterMenuItem(final MenuItem menuItem) {
+  private MenuItem filterMenuItem(@NonNull final MenuItem menuItem) {
     boolean hasAccess;
 
     if (menuItem.getPath() != null && !menuItem.isExternal()) {

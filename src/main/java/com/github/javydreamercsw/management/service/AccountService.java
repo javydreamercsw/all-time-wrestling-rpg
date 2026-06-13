@@ -228,6 +228,19 @@ public class AccountService {
     account.setActiveWrestlerId(wrestlerId);
     Account saved = accountRepository.save(account);
 
+    // Ensure the wrestler is linked back to this account so findByAccountId queries work.
+    // This matters for wrestlers created without an account (e.g. tutorial-seeded wrestlers).
+    if (wrestlerId != null) {
+      wrestlerRepository
+          .findById(wrestlerId)
+          .filter(w -> !saved.equals(w.getAccount()))
+          .ifPresent(
+              w -> {
+                w.setAccount(saved);
+                wrestlerRepository.save(w);
+              });
+    }
+
     // Refresh SecurityContext so the in-memory CustomUserDetails reflects the new active wrestler
     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
     if (currentAuth != null

@@ -62,6 +62,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private CampaignRepository campaignRepository;
   @Mock private CampaignService campaignService;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private com.github.javydreamercsw.base.domain.account.AccountRepository accountRepository;
   @Mock private CampaignAbilityCardRepository cardRepository;
   @Mock private CampaignUpgradeService upgradeService;
   @Mock private SecurityUtils securityUtils;
@@ -86,10 +87,12 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
 
     mockAccount = new Account();
     mockAccount.setUsername("testuser");
+    mockAccount.setActiveWrestlerId(1L);
 
     mockUser = mock(CustomUserDetails.class);
     when(mockUser.getUsername()).thenReturn("testuser");
     when(mockUser.getAccount()).thenReturn(mockAccount);
+    when(mockUser.getId()).thenReturn(42L);
 
     mockWrestler = Wrestler.builder().id(1L).name("Test Wrestler").account(mockAccount).build();
 
@@ -99,6 +102,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     mockCampaign = Campaign.builder().id(1L).wrestler(mockWrestler).state(mockState).build();
 
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(mockUser));
+    when(accountRepository.findById(42L)).thenReturn(Optional.of(mockAccount));
+    when(wrestlerRepository.findByAccountId(42L)).thenReturn(List.of(mockWrestler));
     when(wrestlerRepository.findByAccountWithDetails(mockAccount))
         .thenReturn(List.of(mockWrestler));
     when(campaignRepository.findActiveByWrestler(mockWrestler))
@@ -118,6 +123,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             campaignRepository,
             campaignService,
             wrestlerRepository,
+            accountRepository,
             cardRepository,
             upgradeService,
             securityUtils,
@@ -174,6 +180,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             campaignRepository,
             campaignService,
             wrestlerRepository,
+            accountRepository,
             cardRepository,
             upgradeService,
             securityUtils,
@@ -199,6 +206,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             campaignRepository,
             campaignService,
             wrestlerRepository,
+            accountRepository,
             cardRepository,
             upgradeService,
             securityUtils,
@@ -237,6 +245,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             campaignRepository,
             campaignService,
             wrestlerRepository,
+            accountRepository,
             cardRepository,
             upgradeService,
             securityUtils,

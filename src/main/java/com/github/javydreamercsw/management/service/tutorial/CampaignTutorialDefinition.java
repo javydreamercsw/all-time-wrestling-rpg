@@ -19,10 +19,10 @@ package com.github.javydreamercsw.management.service.tutorial;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -97,7 +97,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
       }
 
       @Override
-      public void beforeStep(final Account account) {
+      public void beforeStep(@NonNull final Account account) {
         if (wrestlerService.getAllWrestlers().isEmpty()) {
           wrestlerService.createWrestler("Tutorial Wrestler", true, "A starter wrestler.");
         }
@@ -159,7 +159,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
       }
 
       @Override
-      public void beforeStep(final Account account) {
+      public void beforeStep(@NonNull final Account account) {
         Long wrestlerId = account.getActiveWrestlerId();
         if (wrestlerId == null) {
           return;
@@ -215,7 +215,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
       }
 
       @Override
-      public String validate(final Account account) {
+      public String validate(@NonNull final Account account) {
         Long wrestlerId = account.getActiveWrestlerId();
         if (wrestlerId == null) {
           return "You need to select a wrestler first (complete Step 1).";
@@ -232,11 +232,5 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
                 + " first choice.";
       }
     };
-  }
-
-  private Wrestler requireWrestler(final Account account) {
-    Long id = account.getActiveWrestlerId();
-    if (id == null) return null;
-    return wrestlerService.findByIdWithDetails(id).orElse(null);
   }
 }

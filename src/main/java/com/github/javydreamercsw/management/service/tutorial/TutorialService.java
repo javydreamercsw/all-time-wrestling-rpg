@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -52,12 +53,12 @@ public class TutorialService {
    * empty if the player has not yet completed the mode-selection/setup step.
    */
   @PreAuthorize("permitAll()")
-  public java.util.Optional<Universe> findTutorialUniverse(final String username) {
+  public java.util.Optional<Universe> findTutorialUniverse(@NonNull final String username) {
     return universeService.findByName("Tutorial – " + username);
   }
 
   /** Returns the tutorial definition for the given universe mode. */
-  public TutorialDefinition getDefinition(final Universe.UniverseType type) {
+  public TutorialDefinition getDefinition(@NonNull final Universe.UniverseType type) {
     return definitions.stream()
         .filter(d -> d.getMode() == type)
         .findFirst()
@@ -70,7 +71,8 @@ public class TutorialService {
    * feature flag is on AND the player has not yet fully completed or skipped the tutorial.
    */
   @PreAuthorize("permitAll()")
-  public boolean shouldShowTutorial(final Account account, final Universe.UniverseType type) {
+  public boolean shouldShowTutorial(
+      @NonNull final Account account, @NonNull final Universe.UniverseType type) {
     if (!gameSettingService.isTutorialEnabled(type)) {
       return false;
     }
@@ -82,7 +84,7 @@ public class TutorialService {
 
   /** Returns the 0-based index of the current tutorial step for this account and mode. */
   @PreAuthorize("permitAll()")
-  public int getCurrentStep(final Long accountId, final Universe.UniverseType type) {
+  public int getCurrentStep(final Long accountId, @NonNull final Universe.UniverseType type) {
     return completionRepository
         .findByAccountIdAndUniverseType(accountId, type)
         .map(AccountTutorialCompletion::getCurrentStep)
@@ -96,8 +98,8 @@ public class TutorialService {
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public void advanceStep(
-      final Long accountId,
-      final Universe.UniverseType type,
+      @NonNull final Long accountId,
+      @NonNull final Universe.UniverseType type,
       final int newStep,
       final int totalSteps) {
     Account account = accountRepository.getReferenceById(accountId);
@@ -122,7 +124,7 @@ public class TutorialService {
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public void markSkipped(
-      final Long accountId, final Universe.UniverseType type, final int totalSteps) {
+      final Long accountId, @NonNull final Universe.UniverseType type, final int totalSteps) {
     advanceStep(accountId, type, totalSteps, totalSteps);
   }
 
@@ -138,9 +140,9 @@ public class TutorialService {
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public Universe createTutorialUniverse(
-      final Account account,
-      final Universe.UniverseType type,
-      final Map<String, Boolean> featureSettings) {
+      @NonNull final Account account,
+      @NonNull final Universe.UniverseType type,
+      @NonNull final Map<String, Boolean> featureSettings) {
     return GeneralSecurityUtils.runAsAdmin(
         () -> {
           String name = "Tutorial – " + account.getUsername();
@@ -171,7 +173,7 @@ public class TutorialService {
   /** Deletes the completion record so the tutorial will be shown again on next login. */
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
-  public void markIncomplete(final Long accountId, final Universe.UniverseType type) {
+  public void markIncomplete(final Long accountId, @NonNull final Universe.UniverseType type) {
     completionRepository.deleteByAccountIdAndUniverseType(accountId, type);
   }
 
@@ -182,7 +184,9 @@ public class TutorialService {
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public void runBeforeStep(
-      final Account account, final Universe.UniverseType type, final int stepIndex) {
+      @NonNull final Account account,
+      @NonNull final Universe.UniverseType type,
+      final int stepIndex) {
     TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
     GeneralSecurityUtils.runAsAdmin(() -> step.beforeStep(account));
   }
@@ -194,7 +198,9 @@ public class TutorialService {
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public void runAfterStep(
-      final Account account, final Universe.UniverseType type, final int stepIndex) {
+      @NonNull final Account account,
+      @NonNull final Universe.UniverseType type,
+      final int stepIndex) {
     TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
     GeneralSecurityUtils.runAsAdmin(() -> step.afterStep(account));
   }
@@ -208,7 +214,9 @@ public class TutorialService {
   @org.springframework.transaction.annotation.Transactional(readOnly = true)
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public String validateStep(
-      final Account account, final Universe.UniverseType type, final int stepIndex) {
+      @NonNull final Account account,
+      @NonNull final Universe.UniverseType type,
+      final int stepIndex) {
     TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
     return GeneralSecurityUtils.runAsAdmin(() -> step.validate(account));
   }
