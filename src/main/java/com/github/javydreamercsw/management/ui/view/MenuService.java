@@ -56,7 +56,13 @@ public class MenuService {
 
     // General Manager: Only BOOKER and ADMIN
     MenuItem gmMenu =
-        new MenuItem("General Manager", VaadinIcon.OFFICE, null, RoleName.ADMIN, RoleName.BOOKER);
+        new MenuItem(
+            "General Manager",
+            VaadinIcon.OFFICE,
+            null,
+            RoleName.ADMIN,
+            RoleName.BOOKER,
+            RoleName.PLAYER);
     gmMenu.addChild(new MenuItem("GM Dashboard", VaadinIcon.DASHBOARD, "gm-dashboard"));
     gmMenu.addChild(new MenuItem("Contract Management", VaadinIcon.CLIPBOARD_CHECK, "contracts"));
 
