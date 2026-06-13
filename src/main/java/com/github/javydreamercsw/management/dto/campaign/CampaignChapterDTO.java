@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.dto.campaign;
 
 import com.github.javydreamercsw.management.domain.campaign.Difficulty;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,6 +41,16 @@ public class CampaignChapterDTO {
   private List<ChapterPointDTO> exitPoints;
   private ChapterRules rules;
   private ChapterExclusions exclusions;
+
+  @Builder.Default private CampaignChapterMode mode = CampaignChapterMode.AI_ONLY;
+
+  @Builder.Default private List<StaticEncounterDTO> staticEncounters = new ArrayList<>();
+
+  public boolean hasStaticEncounters() {
+    return mode != CampaignChapterMode.AI_ONLY
+        && staticEncounters != null
+        && !staticEncounters.isEmpty();
+  }
 
   @Data
   @Builder

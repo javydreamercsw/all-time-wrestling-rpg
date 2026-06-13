@@ -21,14 +21,18 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterMode;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.campaign.FeatureDataService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
@@ -65,6 +69,8 @@ public class CampaignNarrativeView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final SegmentNarrationServiceFactory aiFactory;
   private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final FeatureDataService featureDataService;
+  private final CampaignStateRepository campaignStateRepository;
 
   private Campaign currentCampaign;
   private VerticalLayout narrativeContainer;
@@ -78,13 +84,17 @@ public class CampaignNarrativeView extends VerticalLayout {
       final CampaignService campaignService,
       final SecurityUtils securityUtils,
       final SegmentNarrationServiceFactory aiFactory,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
+      final FeatureDataService featureDataService,
+      final CampaignStateRepository campaignStateRepository) {
     this.wrestlerRepository = wrestlerRepository;
     this.encounterService = encounterService;
     this.campaignService = campaignService;
     this.securityUtils = securityUtils;
     this.aiFactory = aiFactory;
     this.notificationService = notificationService;
+    this.featureDataService = featureDataService;
+    this.campaignStateRepository = campaignStateRepository;
 
     setSpacing(true);
     setPadding(true);
@@ -171,7 +181,40 @@ public class CampaignNarrativeView extends VerticalLayout {
   }
 
   private void generateNextEncounter() {
-    if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
+    boolean aiAvailable = !aiFactory.getAvailableServicesInPriorityOrder().isEmpty();
+    Optional<CampaignChapterDTO> chapterOpt = campaignService.getCurrentChapter(currentCampaign);
+    CampaignChapterMode mode =
+        chapterOpt.map(CampaignChapterDTO::getMode).orElse(CampaignChapterMode.AI_ONLY);
+
+    boolean useStatic =
+        chapterOpt.map(CampaignChapterDTO::hasStaticEncounters).orElse(false)
+            && (mode == CampaignChapterMode.STATIC_ONLY
+                || (mode == CampaignChapterMode.AI_WITH_FALLBACK && !aiAvailable));
+
+    if (useStatic) {
+      showLoading(false);
+      narrativeContainer.removeAll();
+      choicesContainer.removeAll();
+      try {
+        CampaignEncounterResponseDTO encounter =
+            encounterService.generateStaticEncounter(currentCampaign, chapterOpt.get());
+        displayEncounter(encounter);
+      } catch (IllegalStateException e) {
+        H2 title = new H2("All Story Events Complete");
+        narrativeContainer.add(title);
+        narrativeContainer.add(
+            new Paragraph(
+                "You've played through all scripted events for this chapter. "
+                    + "Complete your matches and return when you're ready to advance."));
+        Button backBtn =
+            new Button("Back to Dashboard", ev -> UI.getCurrent().navigate("campaign"));
+        backBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        choicesContainer.add(backBtn);
+      }
+      return;
+    }
+
+    if (!aiAvailable) {
       showLoading(false);
       narrativeContainer.removeAll();
       choicesContainer.removeAll();
@@ -181,11 +224,9 @@ public class CampaignNarrativeView extends VerticalLayout {
       narrativeContainer.add(title);
 
       String reason = "No AI providers are currently enabled or reachable.";
-
-      Paragraph p =
+      narrativeContainer.add(
           new Paragraph(
-              reason + " Please check your configuration and ensure the AI service is running.");
-      narrativeContainer.add(p);
+              reason + " Please check your configuration and ensure the AI service is running."));
 
       notificationService.showError(reason);
       addRetryButton();
@@ -234,6 +275,23 @@ public class CampaignNarrativeView extends VerticalLayout {
       final CampaignEncounterResponseDTO response,
       final CampaignEncounterResponseDTO.Choice choice) {
     encounterService.recordEncounterChoice(currentCampaign, choice);
+
+    // Apply static-encounter effects when the chapter uses scripted content.
+    campaignService
+        .getCurrentChapter(currentCampaign)
+        .filter(ch -> ch.getMode() != CampaignChapterMode.AI_ONLY)
+        .ifPresent(
+            ch -> {
+              CampaignState state = currentCampaign.getState();
+              if (choice.isUnlockPromo()) state.setPromoUnlocked(true);
+              if (choice.isUnlockAttack()) state.setAttackUnlocked(true);
+              if (choice.getFeatureFlags() != null) {
+                choice
+                    .getFeatureFlags()
+                    .forEach((k, v) -> featureDataService.setFeatureValue(state, k, v));
+              }
+              campaignStateRepository.save(state);
+            });
 
     narrativeContainer.removeAll();
     choicesContainer.removeAll();

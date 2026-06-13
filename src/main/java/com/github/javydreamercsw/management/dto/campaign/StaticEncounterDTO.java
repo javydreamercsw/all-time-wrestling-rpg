@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.campaign;
 
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -23,33 +24,36 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/** A pre-authored narrative encounter used when a chapter runs in static or fallback mode. */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CampaignEncounterResponseDTO {
-  private String narrative;
-  private List<Choice> choices;
+public class StaticEncounterDTO {
+  private String id;
+  private String title;
+  private String narrativeText;
+  private List<StaticChoiceDTO> choices;
 
   @Data
   @Builder
   @NoArgsConstructor
   @AllArgsConstructor
-  public static class Choice {
+  public static class StaticChoiceDTO {
+    private String id;
     private String text;
-    private String label; // Short label for UI buttons
-    private int alignmentShift;
+    private String label;
     private int vpReward;
-    private int momentumBonus; // Extra momentum for the next match
-    private String outcomeText; // Immediate narrative feedback after choice
-    private String forcedOpponentName;
-    private String matchType; // e.g., "One on One", "Triple Threat"
-    private List<String> segmentRules; // e.g., ["No DQ", "Cage Match"]
-    private String nextPhase; // e.g., "MATCH", "POST_MATCH", "BACKSTAGE"
-    private List<String> statusCardKeys; // Keys of Status Cards to grant/flip
-    // Static-encounter effects (null/false for AI-generated choices — no behaviour change)
+    private int alignmentShift;
+    private int momentumBonus;
     private boolean unlockPromo;
     private boolean unlockAttack;
+
+    /** Arbitrary key/value pairs merged into featureData via FeatureDataService. */
     private Map<String, Object> featureFlags;
+
+    private CampaignPhase nextPhase;
+    private List<String> statusCardKeys;
+    private String outcomeText;
   }
 }

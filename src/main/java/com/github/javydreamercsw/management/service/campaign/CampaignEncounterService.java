@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -503,5 +504,60 @@ public class CampaignEncounterService {
     return encounters.isEmpty()
         ? java.util.Optional.empty()
         : java.util.Optional.of(encounters.get(encounters.size() - 1));
+  }
+
+  /**
+   * Builds a {@link CampaignEncounterResponseDTO} from pre-authored static content. The step index
+   * is derived from the number of encounters already recorded for this chapter, so no separate
+   * counter is needed. Persists a {@link CampaignEncounter} record (same as the AI path), which
+   * advances the index on the next call.
+   *
+   * @throws IllegalStateException when all scripted steps have been played through
+   */
+  @Transactional
+  public CampaignEncounterResponseDTO generateStaticEncounter(
+      final Campaign campaign, final CampaignChapterDTO chapter) {
+    long stepIndex = encounterRepository.countByCampaignAndChapterId(campaign, chapter.getId());
+
+    List<StaticEncounterDTO> encounters = chapter.getStaticEncounters();
+
+    if (stepIndex >= encounters.size()) {
+      throw new IllegalStateException("No more static encounters for chapter " + chapter.getId());
+    }
+
+    StaticEncounterDTO encounter = encounters.get((int) stepIndex);
+
+    List<CampaignEncounterResponseDTO.Choice> choices =
+        encounter.getChoices().stream()
+            .map(
+                sc ->
+                    CampaignEncounterResponseDTO.Choice.builder()
+                        .text(sc.getText())
+                        .label(sc.getLabel())
+                        .vpReward(sc.getVpReward())
+                        .alignmentShift(sc.getAlignmentShift())
+                        .momentumBonus(sc.getMomentumBonus())
+                        .unlockPromo(sc.isUnlockPromo())
+                        .unlockAttack(sc.isUnlockAttack())
+                        .featureFlags(sc.getFeatureFlags())
+                        .nextPhase(sc.getNextPhase() != null ? sc.getNextPhase().name() : null)
+                        .statusCardKeys(sc.getStatusCardKeys())
+                        .outcomeText(sc.getOutcomeText())
+                        .build())
+            .toList();
+
+    CampaignEncounter record =
+        CampaignEncounter.builder()
+            .campaign(campaign)
+            .chapterId(chapter.getId())
+            .narrativeText(encounter.getNarrativeText())
+            .encounterDate(LocalDateTime.now())
+            .build();
+    encounterRepository.save(record);
+
+    return CampaignEncounterResponseDTO.builder()
+        .narrative(encounter.getTitle() + "\n\n" + encounter.getNarrativeText())
+        .choices(choices)
+        .build();
   }
 }
