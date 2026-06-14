@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.segment;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -28,6 +29,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
@@ -283,7 +285,7 @@ public class SegmentService {
                         // Check if user owns any participant
                         boolean isOwner =
                             segment.getParticipants().stream()
-                                .map(p -> p.getWrestler())
+                                .map(SegmentParticipant::getWrestler)
                                 .anyMatch(
                                     w ->
                                         w.getAccount() != null
@@ -299,7 +301,7 @@ public class SegmentService {
 
                         Wrestler ownerWrestler =
                             segment.getParticipants().stream()
-                                .map(p -> p.getWrestler())
+                                .map(SegmentParticipant::getWrestler)
                                 .filter(
                                     w ->
                                         w.getAccount() != null
@@ -670,7 +672,7 @@ public class SegmentService {
                   matchFulfillmentRepository.save(fulfillment);
 
                   // Send Notification to the owner
-                  com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+                  InboxItem inboxItem =
                       inboxService.createInboxItem(
                           matchRequestEventType,
                           "Pending match on show: "
