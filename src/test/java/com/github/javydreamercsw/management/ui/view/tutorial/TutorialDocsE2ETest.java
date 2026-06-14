@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -108,6 +109,15 @@ class TutorialDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void playerTutorialSkipDismissesAndDoesNotRedirectAgain() {
+    // Pre-create the tutorial universe so the wizard (with Skip button) shows, not mode-selection.
+    // markIncomplete() in @BeforeEach deletes the completion record but not the universe.
+    accountRepository
+        .findByUsername("player")
+        .ifPresent(
+            account ->
+                tutorialService.createTutorialUniverse(
+                    account, Universe.UniverseType.GLOBAL, Map.of()));
+
     login("player", "player123");
     navigateTo("tutorial");
     waitForVaadinClientToLoad();
