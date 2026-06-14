@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
@@ -55,19 +56,7 @@ public class InboxService {
       @NonNull final String message,
       @NonNull final String referenceId,
       @NonNull final InboxItemTarget.TargetType type) {
-    return createInboxItem(eventType, message, referenceId, type, null, InboxItem.Urgency.INFO);
-  }
-
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public InboxItem createInboxItem(
-      @NonNull final InboxEventType eventType,
-      @NonNull final String message,
-      @NonNull final String referenceId,
-      @NonNull final InboxItemTarget.TargetType type,
-      final String subject,
-      @NonNull final InboxItem.Urgency urgency) {
-    return createInboxItem(
-        eventType, message, List.of(new TargetInfo(referenceId, type)), subject, urgency);
+    return createInboxItem(eventType, message, List.of(new TargetInfo(referenceId, type)));
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -75,21 +64,9 @@ public class InboxService {
       @NonNull final InboxEventType eventType,
       @NonNull final String message,
       @NonNull final List<TargetInfo> targets) {
-    return createInboxItem(eventType, message, targets, null, InboxItem.Urgency.INFO);
-  }
-
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public InboxItem createInboxItem(
-      @NonNull final InboxEventType eventType,
-      @NonNull final String message,
-      @NonNull final List<TargetInfo> targets,
-      final String subject,
-      @NonNull final InboxItem.Urgency urgency) {
     InboxItem inboxItem = new InboxItem();
     inboxItem.setDescription(message);
     inboxItem.setEventType(eventType);
-    inboxItem.setSubject(subject);
-    inboxItem.setUrgency(urgency);
     targets.forEach(t -> inboxItem.addTarget(t.targetId(), t.type()));
     return inboxRepository.save(inboxItem);
   }
@@ -241,7 +218,7 @@ public class InboxService {
 
   @PreAuthorize("isAuthenticated()")
   public long countUnread(final Long accountId) {
-    return search(java.util.Collections.emptySet(), "Unread", "All", false, accountId).size();
+    return search(Collections.emptySet(), "Unread", "All", false, accountId).size();
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -266,13 +243,7 @@ public class InboxService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public InboxItem addInboxItem(@NonNull final Wrestler wrestler, @NonNull final String message) {
     InboxEventType eventType = eventTypeRegistry.getEventTypes().get(0);
-    String subject = message.length() > 80 ? message.substring(0, 80) : message;
     return createInboxItem(
-        eventType,
-        message,
-        wrestler.getId().toString(),
-        InboxItemTarget.TargetType.WRESTLER,
-        subject,
-        InboxItem.Urgency.INFO);
+        eventType, message, wrestler.getId().toString(), InboxItemTarget.TargetType.WRESTLER);
   }
 }

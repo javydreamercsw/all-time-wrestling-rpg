@@ -41,6 +41,9 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "event_type", nullable = false)
   private InboxEventType eventType;
 
+  @Column(name = "subject", length = 255)
+  private String subject;
+
   @Column(name = "description", nullable = false)
   @Size(max = 1024) private String description;
 
@@ -49,6 +52,16 @@ public class InboxItem extends AbstractEntity<Long> {
 
   @Column(name = "is_read", nullable = false)
   private boolean isRead = false;
+
+  public enum Urgency {
+    INFO,
+    WARNING,
+    ACTION_REQUIRED
+  }
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "urgency", nullable = false, length = 30)
+  private Urgency urgency = Urgency.INFO;
 
   @OneToMany(
       mappedBy = "inboxItem",
