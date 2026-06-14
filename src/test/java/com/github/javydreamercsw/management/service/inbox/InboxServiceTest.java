@@ -352,4 +352,26 @@ class InboxServiceTest {
     assertThat(saved.getUrgency()).isEqualTo(InboxItem.Urgency.INFO);
     assertThat(saved.getDescription()).isEqualTo("Legacy message");
   }
+
+  @Test
+  void save_persistsActionTypeAndActionPayload() {
+    InboxItem item = new InboxItem();
+    item.setEventType(testEventType);
+    item.setDescription("Action item");
+    item.setActionType("MATCH_REPORT");
+    item.setActionPayload("{\"fulfillmentId\":\"42\"}");
+
+    InboxItem saved = inboxService.save(item);
+
+    verify(inboxRepository).save(item);
+    assertThat(saved.getActionType()).isEqualTo("MATCH_REPORT");
+    assertThat(saved.getActionPayload()).isEqualTo("{\"fulfillmentId\":\"42\"}");
+  }
+
+  @Test
+  void inboxItem_actionTypeIsNullByDefault() {
+    InboxItem item = new InboxItem();
+    assertThat(item.getActionType()).isNull();
+    assertThat(item.getActionPayload()).isNull();
+  }
 }

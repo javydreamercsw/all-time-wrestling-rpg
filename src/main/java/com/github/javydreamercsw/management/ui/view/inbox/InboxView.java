@@ -301,44 +301,56 @@ public class InboxView extends VerticalLayout {
     layout.setPadding(false);
     layout.setSpacing(true);
 
-    if ("MATCH_REQUEST".equals(item.getEventType().getName())) {
-      Button reportButton =
-          new Button(
-              "Report Result",
-              e -> {
-                // Find fulfillment ID from targets
-                item.getTargets().stream()
-                    .filter(
-                        t ->
-                            t.getTargetType()
-                                == com.github.javydreamercsw.management.domain.inbox.InboxItemTarget
-                                    .TargetType.MATCH_FULFILLMENT)
-                    .findFirst()
-                    .ifPresent(
-                        target -> {
-                          try {
-                            matchFulfillmentService
-                                .getFulfillmentWithDetails(Long.parseLong(target.getTargetId()))
-                                .ifPresent(
-                                    f ->
-                                        new MatchReportDialog(
-                                                matchFulfillmentService,
-                                                f,
-                                                securityUtils,
-                                                this::updateList)
-                                            .open());
-                          } catch (NumberFormatException ex) {
-                            // Ignore
-                          }
-                        });
-              });
-      reportButton.setId("report-result-btn-" + item.getId());
-      reportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
-      layout.add(reportButton);
+    if (item.getActionType() != null) {
+      switch (item.getActionType()) {
+        case "MATCH_REPORT" -> layout.add(createMatchReportButton(item));
+        default -> {
+          // Unknown action type — no extra button rendered
+        }
+      }
+    } else if ("MATCH_REQUEST".equals(item.getEventType().getName())) {
+      // Backward-compat: old items without actionType but with MATCH_REQUEST event type
+      layout.add(createMatchReportButton(item));
     }
 
     layout.add(createReadToggleButton(item));
     return layout;
+  }
+
+  private Button createMatchReportButton(@NonNull final InboxItem item) {
+    Button reportButton =
+        new Button(
+            "Report Result",
+            e -> {
+              // Find fulfillment ID from targets
+              item.getTargets().stream()
+                  .filter(
+                      t ->
+                          t.getTargetType()
+                              == com.github.javydreamercsw.management.domain.inbox.InboxItemTarget
+                                  .TargetType.MATCH_FULFILLMENT)
+                  .findFirst()
+                  .ifPresent(
+                      target -> {
+                        try {
+                          matchFulfillmentService
+                              .getFulfillmentWithDetails(Long.parseLong(target.getTargetId()))
+                              .ifPresent(
+                                  f ->
+                                      new MatchReportDialog(
+                                              matchFulfillmentService,
+                                              f,
+                                              securityUtils,
+                                              this::updateList)
+                                          .open());
+                        } catch (NumberFormatException ex) {
+                          // Ignore
+                        }
+                      });
+            });
+    reportButton.setId("report-result-btn-" + item.getId());
+    reportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+    return reportButton;
   }
 
   private String getTargetNames(@NonNull final InboxItem item) {

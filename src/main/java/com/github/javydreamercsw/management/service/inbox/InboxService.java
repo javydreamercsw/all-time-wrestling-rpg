@@ -270,6 +270,11 @@ public class InboxService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public InboxItem save(@NonNull final InboxItem inboxItem) {
+    return inboxRepository.save(inboxItem);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public InboxItem addInboxItem(@NonNull final Wrestler wrestler, @NonNull final String message) {
     InboxEventType eventType = eventTypeRegistry.getEventTypes().get(0);
     return createInboxItem(

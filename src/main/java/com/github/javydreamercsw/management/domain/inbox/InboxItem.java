@@ -63,6 +63,16 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "urgency", nullable = false, length = 30)
   private Urgency urgency = Urgency.INFO;
 
+  /**
+   * Discriminator for what CTA button to render (e.g. "MATCH_REPORT", "NAVIGATE", "OPEN_DRAWER").
+   */
+  @Column(name = "action_type", length = 50)
+  private String actionType;
+
+  /** JSON payload for the action handler (e.g. {"fulfillmentId":"42"} or {"route":"inbox"}). */
+  @Column(name = "action_payload", length = 512)
+  private String actionPayload;
+
   @OneToMany(
       mappedBy = "inboxItem",
       cascade = CascadeType.ALL,
