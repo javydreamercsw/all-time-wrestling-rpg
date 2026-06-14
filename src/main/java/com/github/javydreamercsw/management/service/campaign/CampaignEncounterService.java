@@ -36,6 +36,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 public class CampaignEncounterService {
+
+  private static final String PENDING_WIN_CARD = "_pendingWinCard";
+  private static final String PENDING_LOSS_CARD = "_pendingLossCard";
+  private static final String PRE_MATCH_WINS = "_preMatchWins";
 
   private final SegmentNarrationServiceFactory aiFactory;
   private final CampaignEncounterRepository encounterRepository;
@@ -58,6 +64,8 @@ public class CampaignEncounterService {
   private final FactionRepository factionRepository;
   private final CommentatorRepository commentatorRepository;
   private final ObjectMapper objectMapper;
+  private final FeatureDataService featureDataService;
+  private final ExpansionService expansionService;
 
   public CampaignEncounterService(
       final SegmentNarrationServiceFactory aiFactory,
@@ -71,7 +79,9 @@ public class CampaignEncounterService {
       final TeamRepository teamRepository,
       final FactionRepository factionRepository,
       final CommentatorRepository commentatorRepository,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final FeatureDataService featureDataService,
+      final ExpansionService expansionService) {
     this.aiFactory = aiFactory;
     this.encounterRepository = encounterRepository;
     this.stateRepository = stateRepository;
@@ -84,6 +94,8 @@ public class CampaignEncounterService {
     this.factionRepository = factionRepository;
     this.commentatorRepository = commentatorRepository;
     this.objectMapper = objectMapper;
+    this.featureDataService = featureDataService;
+    this.expansionService = expansionService;
   }
 
   @Transactional
@@ -488,6 +500,21 @@ public class CampaignEncounterService {
 
     CampaignState state = campaign.getState();
     state.setVictoryPoints(state.getVictoryPoints() + finalVp);
+
+    // Persist gamebook routing for this choice
+    if ("MATCH".equals(choice.getNextPhase())
+        && (choice.getOnWinNextEncounterId() != null
+            || choice.getOnLossNextEncounterId() != null)) {
+      // Store pending win/loss targets; resolved when the player returns from the match
+      featureDataService.setFeatureValue(state, PENDING_WIN_CARD, choice.getOnWinNextEncounterId());
+      featureDataService.setFeatureValue(
+          state, PENDING_LOSS_CARD, choice.getOnLossNextEncounterId());
+      featureDataService.setFeatureValue(state, PRE_MATCH_WINS, state.getWins());
+      state.setCurrentEncounterId(null);
+    } else if (choice.getNextEncounterId() != null) {
+      state.setCurrentEncounterId(choice.getNextEncounterId());
+    }
+
     stateRepository.save(state);
 
     log.debug(
@@ -503,5 +530,123 @@ public class CampaignEncounterService {
     return encounters.isEmpty()
         ? java.util.Optional.empty()
         : java.util.Optional.of(encounters.get(encounters.size() - 1));
+  }
+
+  /**
+   * Builds a {@link CampaignEncounterResponseDTO} from pre-authored static content.
+   *
+   * <p>Routing priority:
+   *
+   * <ol>
+   *   <li>If pending match-outcome routing exists in featureData ({@code _pendingWinCard} / {@code
+   *       _pendingLossCard}), resolve via win count delta and set {@code currentEncounterId}.
+   *   <li>If {@code state.currentEncounterId} is set, look up that card by ID.
+   *   <li>Otherwise fall back to sequential order using the encounter count as an index (supports
+   *       chapters authored without explicit routing).
+   * </ol>
+   *
+   * @throws IllegalStateException when no matching encounter can be found or all sequential steps
+   *     have been exhausted
+   */
+  @Transactional
+  public CampaignEncounterResponseDTO generateStaticEncounter(
+      final Campaign campaign, final CampaignChapterDTO chapter) {
+    CampaignState state = campaign.getState();
+    List<StaticEncounterDTO> encounters = chapter.getStaticEncounters();
+    if (encounters.isEmpty()) {
+      throw new IllegalStateException("No static encounters for chapter " + chapter.getId());
+    }
+
+    // 1. Resolve pending match-outcome routing
+    String pendingWin =
+        featureDataService.getFeatureValue(state, PENDING_WIN_CARD, String.class, null);
+    if (pendingWin != null
+        || featureDataService.getFeatureValue(state, PENDING_LOSS_CARD, String.class, null)
+            != null) {
+      String pendingLoss =
+          featureDataService.getFeatureValue(state, PENDING_LOSS_CARD, String.class, null);
+      int preMatchWins =
+          featureDataService.getFeatureValue(state, PRE_MATCH_WINS, Integer.class, 0);
+      boolean won = state.getWins() > preMatchWins;
+      String resolved = won ? pendingWin : pendingLoss;
+      featureDataService.removeFeatureValue(state, PENDING_WIN_CARD);
+      featureDataService.removeFeatureValue(state, PENDING_LOSS_CARD);
+      featureDataService.removeFeatureValue(state, PRE_MATCH_WINS);
+      if (resolved != null) {
+        state.setCurrentEncounterId(resolved);
+        stateRepository.save(state);
+      }
+    }
+
+    // 2. ID-based lookup
+    StaticEncounterDTO encounter;
+    String currentId = state.getCurrentEncounterId();
+    if (currentId != null) {
+      encounter =
+          encounters.stream()
+              .filter(e -> currentId.equals(e.getId()))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Static encounter '"
+                              + currentId
+                              + "' not found in chapter "
+                              + chapter.getId()));
+    } else {
+      // 3. Sequential fallback — filter expansion-gated encounters, then use count as index
+      List<StaticEncounterDTO> available =
+          encounters.stream()
+              .filter(
+                  e ->
+                      e.getRequiredExpansion() == null
+                          || expansionService.isExpansionEnabled(e.getRequiredExpansion()))
+              .toList();
+      long stepIndex = encounterRepository.countByCampaignAndChapterId(campaign, chapter.getId());
+      if (stepIndex >= available.size()) {
+        throw new IllegalStateException("No more static encounters for chapter " + chapter.getId());
+      }
+      encounter = available.get((int) stepIndex);
+    }
+
+    List<CampaignEncounterResponseDTO.Choice> choices =
+        encounter.getChoices().stream()
+            .filter(
+                sc ->
+                    sc.getRequiredExpansion() == null
+                        || expansionService.isExpansionEnabled(sc.getRequiredExpansion()))
+            .map(
+                sc ->
+                    CampaignEncounterResponseDTO.Choice.builder()
+                        .text(sc.getText())
+                        .label(sc.getLabel())
+                        .vpReward(sc.getVpReward())
+                        .alignmentShift(sc.getAlignmentShift())
+                        .momentumBonus(sc.getMomentumBonus())
+                        .unlockPromo(sc.isUnlockPromo())
+                        .unlockAttack(sc.isUnlockAttack())
+                        .featureFlags(sc.getFeatureFlags())
+                        .nextPhase(sc.getNextPhase() != null ? sc.getNextPhase().name() : null)
+                        .statusCardKeys(sc.getStatusCardKeys())
+                        .outcomeText(sc.getOutcomeText())
+                        .nextEncounterId(sc.getNextEncounterId())
+                        .onWinNextEncounterId(sc.getOnWinNextEncounterId())
+                        .onLossNextEncounterId(sc.getOnLossNextEncounterId())
+                        .build())
+            .toList();
+
+    CampaignEncounter record =
+        CampaignEncounter.builder()
+            .campaign(campaign)
+            .chapterId(chapter.getId())
+            .narrativeText(encounter.getNarrativeText())
+            .encounterDate(LocalDateTime.now())
+            .build();
+    encounterRepository.save(record);
+
+    return CampaignEncounterResponseDTO.builder()
+        .narrative(encounter.getTitle() + "\n\n" + encounter.getNarrativeText())
+        .choices(choices)
+        .build();
   }
 }

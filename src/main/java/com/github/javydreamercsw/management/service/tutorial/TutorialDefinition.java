@@ -14,15 +14,15 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.campaign;
+package com.github.javydreamercsw.management.service.tutorial;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import java.util.List;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
-public interface CampaignEncounterRepository extends JpaRepository<CampaignEncounter, Long> {
-  List<CampaignEncounter> findByCampaignOrderByEncounterDateAsc(Campaign campaign);
+/** Provides the ordered list of {@link TutorialStep}s for a specific universe mode. */
+public interface TutorialDefinition {
 
-  long countByCampaignAndChapterId(Campaign campaign, String chapterId);
+  Universe.UniverseType getMode();
+
+  List<TutorialStep> getSteps();
 }

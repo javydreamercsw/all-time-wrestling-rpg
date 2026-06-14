@@ -147,6 +147,7 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
             campaignRepository,
             campaignService,
             wrestlerRepository,
+            accountRepository,
             cardRepository,
             upgradeService,
             securityUtils,

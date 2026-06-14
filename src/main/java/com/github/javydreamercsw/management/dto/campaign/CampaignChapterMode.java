@@ -14,15 +14,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.campaign;
+package com.github.javydreamercsw.management.dto.campaign;
 
-import java.util.List;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface CampaignEncounterRepository extends JpaRepository<CampaignEncounter, Long> {
-  List<CampaignEncounter> findByCampaignOrderByEncounterDateAsc(Campaign campaign);
-
-  long countByCampaignAndChapterId(Campaign campaign, String chapterId);
+/** Controls how a campaign chapter generates narrative encounters. */
+public enum CampaignChapterMode {
+  /** Default. Always calls AI; shows "Story Director Offline" error when unavailable. */
+  AI_ONLY,
+  /** Prefers AI; falls back to scripted static steps when no AI provider is available. */
+  AI_WITH_FALLBACK,
+  /** Always uses scripted static steps; never calls AI. */
+  STATIC_ONLY
 }

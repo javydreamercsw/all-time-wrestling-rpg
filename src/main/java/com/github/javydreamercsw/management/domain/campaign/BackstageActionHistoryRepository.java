@@ -21,4 +21,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BackstageActionHistoryRepository
-    extends JpaRepository<BackstageActionHistory, Long> {}
+    extends JpaRepository<BackstageActionHistory, Long> {
+
+  boolean existsByCampaign(Campaign campaign);
+}
