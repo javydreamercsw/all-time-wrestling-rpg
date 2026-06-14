@@ -63,6 +63,11 @@ public class NewsGenerationService {
 
       For show roundups, synthesize multiple results into 1-2 major headlines that highlight the most important events.
 
+      CRITICAL ACCURACY RULES — violating these is a factual error:
+      - Title matches include the champion name(s) before the match. Only report a title change when the winner is NOT listed as the pre-match champion. If the winner IS the champion, it is a successful title defense — do NOT report it as a title change.
+      - Never invent title changes, title names, or match outcomes that are not in the provided data.
+      - Do not fabricate wrestler names or match results not present in the context.
+
       Output MUST be a valid JSON object with the following fields:
       - headline: A catchy, sports-journalism style headline (max 255 chars).
       - content: A detailed summary of the event or rumor (max 2000 chars).
@@ -159,7 +164,36 @@ public class NewsGenerationService {
     prompt.append("Match Type: ").append(segment.getSegmentType().getName()).append("\n");
     prompt.append("Winners: ").append(winners).append("\n");
     prompt.append("Losers: ").append(losers).append("\n");
-    if (segment.getIsTitleSegment()) {
+    if (segment.getIsTitleSegment()
+        && segment.getTitles() != null
+        && !segment.getTitles().isEmpty()) {
+      java.util.Set<String> winnerNames =
+          segment.getWinners().stream()
+              .map(Wrestler::getName)
+              .collect(java.util.stream.Collectors.toSet());
+      for (com.github.javydreamercsw.management.domain.title.Title title : segment.getTitles()) {
+        String preMatchChampions =
+            title.isVacant()
+                ? "VACANT"
+                : title.getCurrentChampions().stream()
+                    .map(Wrestler::getName)
+                    .collect(Collectors.joining(" & "));
+        java.util.Set<String> champNames =
+            title.getCurrentChampions().stream()
+                .map(Wrestler::getName)
+                .collect(java.util.stream.Collectors.toSet());
+        boolean isDefense =
+            !champNames.isEmpty() && champNames.stream().anyMatch(winnerNames::contains);
+        String outcome = isDefense ? "TITLE DEFENSE" : "TITLE CHANGE";
+        prompt
+            .append(outcome)
+            .append(" — ")
+            .append(title.getName())
+            .append(", pre-match champion(s): ")
+            .append(preMatchChampions)
+            .append("\n");
+      }
+    } else if (segment.getIsTitleSegment()) {
       prompt.append("This was a TITLE match!\n");
     }
     if (segment.getNarration() != null && !segment.getNarration().isEmpty()) {
@@ -201,7 +235,36 @@ public class NewsGenerationService {
           .append(": ")
           .append(winners)
           .append(" won");
-      if (s.getIsTitleSegment()) {
+      if (s.getIsTitleSegment() && s.getTitles() != null && !s.getTitles().isEmpty()) {
+        for (com.github.javydreamercsw.management.domain.title.Title title : s.getTitles()) {
+          String preMatchChampions =
+              title.isVacant()
+                  ? "VACANT"
+                  : title.getCurrentChampions().stream()
+                      .map(Wrestler::getName)
+                      .collect(Collectors.joining(" & "));
+          // Determine outcome: defense if winner(s) overlap with pre-match champions
+          java.util.Set<String> winnerNames =
+              s.getWinners().stream()
+                  .map(Wrestler::getName)
+                  .collect(java.util.stream.Collectors.toSet());
+          java.util.Set<String> champNames =
+              title.getCurrentChampions().stream()
+                  .map(Wrestler::getName)
+                  .collect(java.util.stream.Collectors.toSet());
+          boolean isDefense =
+              !champNames.isEmpty() && champNames.stream().anyMatch(winnerNames::contains);
+          String outcome = isDefense ? "TITLE DEFENSE" : "TITLE CHANGE";
+          context
+              .append(" [")
+              .append(outcome)
+              .append(" — ")
+              .append(title.getName())
+              .append(", pre-match champion(s): ")
+              .append(preMatchChampions)
+              .append("]");
+        }
+      } else if (s.getIsTitleSegment()) {
         context.append(" (TITLE MATCH)");
       }
       context.append("\n");
