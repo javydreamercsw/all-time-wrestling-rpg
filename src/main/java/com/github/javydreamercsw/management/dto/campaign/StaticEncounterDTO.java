@@ -62,6 +62,25 @@ public class StaticEncounterDTO {
     private List<String> statusCardKeys;
     private String outcomeText;
 
+    /**
+     * When nextPhase is MATCH: the segment type name (e.g. "One on One", "Tag Team"). Null defaults
+     * to One on One.
+     */
+    private String matchType;
+
+    /**
+     * When nextPhase is MATCH: segment rule names to apply (e.g. ["No DQ"]). Null or empty defaults
+     * to Normal rules.
+     */
+    private List<String> segmentRules;
+
+    /**
+     * When nextPhase is MATCH: a specific opponent wrestler name. Null means the opponent is
+     * selected randomly from the available roster, excluding the player's own wrestler and any
+     * chapter-excluded wrestlers.
+     */
+    private String forcedOpponentName;
+
     /** For non-match choices: jump directly to this encounter card ID. */
     private String nextEncounterId;
 

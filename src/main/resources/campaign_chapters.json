@@ -47,7 +47,9 @@
       "label": "Step Into the Ring",
       "text": "There is no other way forward. It's time to prove yourself.",
       "vpReward": 0,
-      "nextPhase": "MATCH"
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ]
     } ]
   }, {
     "id": "match_2",
@@ -58,40 +60,48 @@
       "label": "Step Into the Ring",
       "text": "There is no other way forward. It's time to prove yourself.",
       "vpReward": 0,
-      "nextPhase": "MATCH"
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ]
     } ]
   }, {
     "id": "match_3",
     "title": "Your Third Match",
-    "narrativeText": "Your are now getting back into the rhythm. Let's go all in tonight!",
+    "narrativeText": "You are now getting back into the rhythm. Let's go all in tonight!",
     "choices": [ {
       "id": "go_to_match_3",
       "label": "Step Into the Ring",
       "text": "There is no other way forward. It's time to prove yourself.",
       "vpReward": 0,
-      "nextPhase": "MATCH"
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ]
     } ]
   }, {
     "id": "match_4",
-    "title": "Your Third Match",
-    "narrativeText": "Your are now getting back into the rhythm. Let's go all in tonight!",
+    "title": "Your Fourth Match",
+    "narrativeText": "Four matches in. The crowd is starting to recognise your face. Keep the momentum going.",
     "choices": [ {
       "id": "go_to_match_4",
       "label": "Step Into the Ring",
       "text": "There is no other way forward. It's time to prove yourself.",
       "vpReward": 0,
-      "nextPhase": "MATCH"
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ]
     } ]
   }, {
     "id": "match_5",
-    "title": "Your Third Match",
-    "narrativeText": "Your are now getting back into the rhythm. Let's go all in tonight!",
+    "title": "Your Fifth Match",
+    "narrativeText": "Five matches. This is your proving ground. Make it count.",
     "choices": [ {
       "id": "go_to_match_5",
       "label": "Step Into the Ring",
       "text": "There is no other way forward. It's time to prove yourself.",
       "vpReward": 0,
-      "nextPhase": "MATCH"
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ]
     } ]
   } ]
 }, {

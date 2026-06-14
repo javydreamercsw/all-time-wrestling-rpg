@@ -313,8 +313,9 @@ public class CampaignNarrativeView extends VerticalLayout {
 
         String opponentName = choice.getForcedOpponentName();
         if (opponentName == null || opponentName.isBlank()) {
-          List<Wrestler> roster = wrestlerRepository.findAll();
-          roster.remove(currentCampaign.getWrestler());
+          List<Wrestler> roster = new java.util.ArrayList<>(wrestlerRepository.findAll());
+          Long playerId = currentCampaign.getWrestler().getId();
+          roster.removeIf(w -> w.getId().equals(playerId));
           if (!roster.isEmpty()) {
             opponentName = roster.get(new Random().nextInt(roster.size())).getName();
             log.info("AI did not provide an opponent. Randomly selected: {}", opponentName);
