@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.vaadin.flow.server.VaadinServiceInitListener;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,6 +33,9 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class TutorialRedirectInitializer {
+
+  @Value("${atw.tutorial.redirect.enabled:true}")
+  private boolean redirectEnabled;
 
   @Bean
   public VaadinServiceInitListener tutorialRedirectInitListener(
@@ -49,6 +53,9 @@ public class TutorialRedirectInitializer {
                         .getUI()
                         .addBeforeEnterListener(
                             enterEvent -> {
+                              if (!redirectEnabled) {
+                                return;
+                              }
                               if (TutorialView.class.equals(enterEvent.getNavigationTarget())) {
                                 return;
                               }
