@@ -388,7 +388,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
 
     // ── Interaction area ──────────────────────────────────────────────────
     if (step.getInteractionMode() == TutorialStep.InteractionMode.INLINE) {
-      add(buildWrestlerPicker(totalSteps));
+      add(buildWrestlerPicker(totalSteps, step.getAllowedWrestlerNames()));
     } else {
       // Hint line
       Span hint = new Span(step.getValidationHint());
@@ -452,7 +452,8 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
   private record WrestlerSnapshot(
       Long id, String name, String alignmentLabel, String description, String imageUrl) {}
 
-  private VerticalLayout buildWrestlerPicker(final int totalSteps) {
+  private VerticalLayout buildWrestlerPicker(
+      final int totalSteps, final java.util.List<String> allowedNames) {
     VerticalLayout picker = new VerticalLayout();
     picker.setPadding(false);
     picker.setSpacing(true);
@@ -464,6 +465,11 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
         GeneralSecurityUtils.runAsAdmin(
             () ->
                 wrestlerService.findAllActiveWithAlignments().stream()
+                    .filter(
+                        w ->
+                            allowedNames == null
+                                || allowedNames.isEmpty()
+                                || allowedNames.contains(w.getName()))
                     .map(
                         w -> {
                           String alignment =

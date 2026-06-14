@@ -126,20 +126,20 @@ public class CampaignService {
       throw new IllegalStateException("Wrestler already has an active campaign.");
     }
 
-    // Ensure alignment is initialized
+    // Every new campaign starts at NEUTRAL regardless of the wrestler's previous alignment.
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
             .findByWrestler(wrestler)
             .orElseGet(
-                () -> {
-                  WrestlerAlignment newAlignment =
-                      WrestlerAlignment.builder()
-                          .wrestler(wrestler)
-                          .alignmentType(AlignmentType.NEUTRAL)
-                          .level(0)
-                          .build();
-                  return wrestlerAlignmentRepository.save(newAlignment);
-                });
+                () ->
+                    WrestlerAlignment.builder()
+                        .wrestler(wrestler)
+                        .alignmentType(AlignmentType.NEUTRAL)
+                        .level(0)
+                        .build());
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+    alignment.setLevel(0);
+    wrestlerAlignmentRepository.save(alignment);
 
     Universe universe =
         universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
@@ -171,7 +171,8 @@ public class CampaignService {
             .build();
 
     // Select initial chapter
-    List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
+    List<CampaignChapterDTO> available =
+        chapterService.findAvailableChapters(state, wrestler.getName());
     if (!available.isEmpty()) {
       state.setCurrentChapterId(available.get(0).getId());
     }

@@ -59,6 +59,26 @@ public class CampaignChapterDTO {
    */
   @Builder.Default private boolean expansionBoundary = false;
 
+  /**
+   * Wrestler names permitted to play this chapter. The tutorial wrestler picker filters to these
+   * names when they are set. {@code CampaignChapterService.findAvailableChapters()} also filters
+   * out this chapter if the active wrestler is not in the list. Empty list = no restriction.
+   */
+  @Builder.Default private List<String> allowedWrestlerNames = new ArrayList<>();
+
+  /**
+   * Opponent names (or placeholders) to exclude from every match in this chapter unless a choice
+   * overrides it. Applied in addition to any per-choice {@code excludedOpponents}. Supports {@code
+   * {{CHAMP}}} so the current champion is always excluded without hardcoding a name.
+   */
+  @Builder.Default private List<String> defaultExcludedOpponents = new ArrayList<>();
+
+  /**
+   * Default opponent gender filter applied to every match in this chapter unless a choice sets its
+   * own {@code opponentGenderFilter}. Null = no restriction.
+   */
+  private com.github.javydreamercsw.base.domain.wrestler.Gender defaultOpponentGenderFilter;
+
   public boolean hasStaticEncounters() {
     return mode != CampaignChapterMode.AI_ONLY
         && staticEncounters != null

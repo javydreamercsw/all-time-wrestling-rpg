@@ -87,7 +87,8 @@ public class CampaignProgressionService {
     // Temporarily mark the current chapter as completed so entry criteria that require it
     // resolve correctly. readOnly = true prevents Hibernate from flushing this change.
     boolean added = oldId != null && state.getCompletedChapterIds().add(oldId);
-    List<CampaignChapterDTO> result = chapterService.findAvailableChapters(state);
+    List<CampaignChapterDTO> result =
+        chapterService.findAvailableChapters(state, campaign.getWrestler().getName());
     if (added) {
       state.getCompletedChapterIds().remove(oldId);
     }

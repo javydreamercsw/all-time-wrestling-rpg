@@ -92,6 +92,18 @@ public class CampaignChapterService {
    * @return List of eligible chapters.
    */
   public List<CampaignChapterDTO> findAvailableChapters(@NonNull final CampaignState state) {
+    return findAvailableChapters(state, null);
+  }
+
+  /**
+   * Finds all chapters the player is currently eligible to enter, additionally filtering out
+   * chapters whose {@code allowedWrestlerNames} list does not include {@code wrestlerName}.
+   *
+   * @param state The current campaign state.
+   * @param wrestlerName The active wrestler's name, or null to skip the wrestler restriction check.
+   */
+  public List<CampaignChapterDTO> findAvailableChapters(
+      @NonNull final CampaignState state, final String wrestlerName) {
     return chapters.stream()
         .filter(c -> !state.getCompletedChapterIds().contains(c.getId())) // Not already completed
         // Exclude "beginning" chapter if any other chapter has been completed.
@@ -103,6 +115,11 @@ public class CampaignChapterService {
                         .anyMatch(id -> !"beginning".equals(id)))
         .filter(c -> isAnyPointActive(c.getEntryPoints(), state))
         .filter(c -> allExpansionsEnabled(c.getRequiredExpansions()))
+        .filter(
+            c ->
+                c.getAllowedWrestlerNames().isEmpty()
+                    || wrestlerName == null
+                    || c.getAllowedWrestlerNames().contains(wrestlerName))
         .toList();
   }
 

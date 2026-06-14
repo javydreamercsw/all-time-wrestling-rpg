@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.campaign;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,57 @@ public class StaticEncounterDTO {
     private CampaignPhase nextPhase;
     private List<String> statusCardKeys;
     private String outcomeText;
+
+    /**
+     * When nextPhase is MATCH: the segment type name (e.g. "One on One", "Tag Team"). Null defaults
+     * to One on One.
+     */
+    private String matchType;
+
+    /**
+     * When nextPhase is MATCH: segment rule names to apply (e.g. ["No DQ"]). Null or empty defaults
+     * to Normal rules.
+     */
+    private List<String> segmentRules;
+
+    /**
+     * When nextPhase is MATCH: a specific opponent wrestler name. Supports {{RIVAL}} and {{CHAMP}}
+     * placeholders. Null means select from opponentPool (if set) or the full active roster.
+     */
+    private String forcedOpponentName;
+
+    /**
+     * When nextPhase is MATCH and forcedOpponentName is null: pick one wrestler at random from this
+     * named list. Entries may include {{RIVAL}} and {{CHAMP}} placeholders. Null or empty falls
+     * back to the full active roster filtered by opponentGenderFilter / excludedOpponents.
+     */
+    private List<String> opponentPool;
+
+    /**
+     * When nextPhase is MATCH: restrict random opponent selection to this gender. Null = any
+     * gender. Applied to both opponentPool resolution and full-roster fallback.
+     */
+    private Gender opponentGenderFilter;
+
+    /**
+     * When nextPhase is MATCH: wrestler names to exclude from random selection (e.g. the hidden
+     * champion who should not appear as an early opponent). Ignored when forcedOpponentName is set.
+     */
+    private List<String> excludedOpponents;
+
+    /**
+     * When nextPhase is MATCH: if true, the opponent selected for this match becomes the player's
+     * campaign rival after the match is created. Has no effect if forcedOpponentName is {{RIVAL}}.
+     */
+    private boolean setRivalFromMatchOpponent;
+
+    /**
+     * When nextPhase is MATCH: if set, pick one wrestler from this pool/filter and assign them as
+     * the player's campaign rival BEFORE creating the match. The rival is then available as
+     * {{RIVAL}} in forcedOpponentName and in subsequent encounter narrative text. Uses the same
+     * pool/filter logic as opponentPool + opponentGenderFilter + excludedOpponents.
+     */
+    private boolean assignRivalBeforeMatch;
 
     /** For non-match choices: jump directly to this encounter card ID. */
     private String nextEncounterId;

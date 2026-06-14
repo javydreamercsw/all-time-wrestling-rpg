@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.campaign;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -43,6 +44,11 @@ public class CampaignEncounterResponseDTO {
     private int momentumBonus; // Extra momentum for the next match
     private String outcomeText; // Immediate narrative feedback after choice
     private String forcedOpponentName;
+    private List<String> opponentPool;
+    private Gender opponentGenderFilter;
+    private List<String> excludedOpponents;
+    private boolean setRivalFromMatchOpponent;
+    private boolean assignRivalBeforeMatch;
     private String matchType; // e.g., "One on One", "Triple Threat"
     private List<String> segmentRules; // e.g., ["No DQ", "Cage Match"]
     private String nextPhase; // e.g., "MATCH", "POST_MATCH", "BACKSTAGE"

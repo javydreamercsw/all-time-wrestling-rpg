@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.tutorial;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
@@ -32,6 +33,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
 
   private final WrestlerService wrestlerService;
   private final CampaignService campaignService;
+  private final CampaignChapterService campaignChapterService;
   private final BackstageActionHistoryRepository backstageActionHistoryRepository;
 
   @Override
@@ -94,6 +96,20 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
             ? null
             : "You haven't selected an active wrestler yet. Go to the Player Dashboard and choose"
                 + " a wrestler to represent you.";
+      }
+
+      @Override
+      public List<String> getAllowedWrestlerNames() {
+        // Derive allowed wrestlers from the first available campaign chapter's restriction.
+        // This ensures the tutorial picker stays in sync with campaign_chapters.json without
+        // hardcoding names here.
+        return campaignChapterService.getAllChapters().stream()
+            .filter(c -> !c.getAllowedWrestlerNames().isEmpty())
+            .findFirst()
+            .map(
+                com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO
+                    ::getAllowedWrestlerNames)
+            .orElse(List.of());
       }
 
       @Override

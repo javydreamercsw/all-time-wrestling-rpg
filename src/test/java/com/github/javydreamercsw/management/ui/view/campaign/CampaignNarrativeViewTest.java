@@ -66,11 +66,18 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
   @Mock private FeatureDataService featureDataService;
   @Mock private CampaignStateRepository campaignStateRepository;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.campaign.PlaceholderResolverService
+      placeholderResolverService;
+
   private CampaignNarrativeView view;
 
   @BeforeEach
   void setup() {
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+    // Pass narrative text through unchanged by default
+    when(placeholderResolverService.resolve(any(), any()))
+        .thenAnswer(inv -> inv.getArgument(1, String.class));
 
     view =
         new CampaignNarrativeView(
@@ -81,7 +88,8 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
             aiFactory,
             notificationService,
             featureDataService,
-            campaignStateRepository);
+            campaignStateRepository,
+            placeholderResolverService);
     UI.getCurrent().add(view);
   }
 
@@ -121,7 +129,8 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
             aiFactory,
             notificationService,
             featureDataService,
-            campaignStateRepository);
+            campaignStateRepository,
+            placeholderResolverService);
     UI.getCurrent().add(v);
     return v;
   }
