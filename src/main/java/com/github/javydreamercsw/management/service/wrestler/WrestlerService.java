@@ -156,6 +156,20 @@ public class WrestlerService {
     return wrestlerRepository.findAll();
   }
 
+  /**
+   * Returns all active wrestlers with their {@code alignments} collection eagerly loaded, safe to
+   * call from detached / non-transactional contexts such as Vaadin views. Uses a single JOIN FETCH
+   * query to avoid LazyInitializationException when {@link Wrestler#getAlignment()} is called after
+   * the session closes.
+   */
+  @PreAuthorize("isAuthenticated()")
+  @Transactional(readOnly = true)
+  public List<Wrestler> findAllActiveWithAlignments() {
+    return wrestlerRepository.findAllWithAlignments().stream()
+        .filter(w -> Boolean.TRUE.equals(w.getActive()))
+        .toList();
+  }
+
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.WRESTLERS_CACHE, key = "'active'")
   public List<Wrestler> findAllActiveWrestlers() {

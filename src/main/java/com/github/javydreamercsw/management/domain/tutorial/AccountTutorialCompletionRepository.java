@@ -14,15 +14,19 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.campaign;
+package com.github.javydreamercsw.management.domain.tutorial;
 
-import java.util.List;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
-public interface CampaignEncounterRepository extends JpaRepository<CampaignEncounter, Long> {
-  List<CampaignEncounter> findByCampaignOrderByEncounterDateAsc(Campaign campaign);
+public interface AccountTutorialCompletionRepository
+    extends JpaRepository<AccountTutorialCompletion, Long> {
 
-  long countByCampaignAndChapterId(Campaign campaign, String chapterId);
+  Optional<AccountTutorialCompletion> findByAccountIdAndUniverseType(
+      Long accountId, Universe.UniverseType universeType);
+
+  boolean existsByAccountIdAndUniverseType(Long accountId, Universe.UniverseType universeType);
+
+  void deleteByAccountIdAndUniverseType(Long accountId, Universe.UniverseType universeType);
 }

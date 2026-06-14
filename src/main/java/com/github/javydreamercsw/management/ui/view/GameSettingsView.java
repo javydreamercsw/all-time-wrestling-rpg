@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view;
 import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -343,6 +344,46 @@ public class GameSettingsView extends VerticalLayout {
             decayInterval);
     rivalrySection.setPadding(false);
 
+    // ── Tutorial Configuration ────────────────────────────────────────────────
+    H4 tutorialHeader = new H4("Tutorial Settings");
+
+    Checkbox campaignTutorial = new Checkbox("Enable Campaign Tutorial");
+    campaignTutorial.setHelperText(
+        universeInheritanceLabel(GameSettingService.TUTORIAL_ENABLED_CAMPAIGN_KEY, universeId));
+    campaignTutorial.setValue(gameSettingService.isTutorialEnabled(Universe.UniverseType.CAMPAIGN));
+    campaignTutorial.addValueChangeListener(
+        event -> {
+          gameSettingService.setTutorialEnabled(Universe.UniverseType.CAMPAIGN, event.getValue());
+          Notification.show("Campaign tutorial " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    Checkbox leagueTutorial = new Checkbox("Enable League Tutorial");
+    leagueTutorial.setHelperText(
+        universeInheritanceLabel(GameSettingService.TUTORIAL_ENABLED_LEAGUE_KEY, universeId));
+    leagueTutorial.setValue(gameSettingService.isTutorialEnabled(Universe.UniverseType.LEAGUE));
+    leagueTutorial.addValueChangeListener(
+        event -> {
+          gameSettingService.setTutorialEnabled(Universe.UniverseType.LEAGUE, event.getValue());
+          Notification.show("League tutorial " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    Checkbox globalTutorial = new Checkbox("Enable Universe (Global) Tutorial");
+    globalTutorial.setHelperText(
+        universeInheritanceLabel(GameSettingService.TUTORIAL_ENABLED_GLOBAL_KEY, universeId));
+    globalTutorial.setValue(gameSettingService.isTutorialEnabled(Universe.UniverseType.GLOBAL));
+    globalTutorial.addValueChangeListener(
+        event -> {
+          gameSettingService.setTutorialEnabled(Universe.UniverseType.GLOBAL, event.getValue());
+          Notification.show("Universe tutorial " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    VerticalLayout tutorialSection =
+        new VerticalLayout(tutorialHeader, campaignTutorial, leagueTutorial, globalTutorial);
+    tutorialSection.setPadding(false);
+
     add(
         gameDatePicker,
         aiNewsEnabled,
@@ -350,7 +391,8 @@ public class GameSettingsView extends VerticalLayout {
         statusCardsEnabled,
         rumorChance,
         newsStrategy,
-        rivalrySection);
+        rivalrySection,
+        tutorialSection);
   }
 
   /**

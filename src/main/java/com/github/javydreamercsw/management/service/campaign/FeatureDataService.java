@@ -72,6 +72,14 @@ public class FeatureDataService {
     saveFeatureData(state, data);
   }
 
+  /** Removes the key from featureData. No-op if the key does not exist. */
+  public void removeFeatureValue(final CampaignState state, final String key) {
+    Map<String, Object> data = getFeatureData(state);
+    if (data.remove(key) != null) {
+      saveFeatureData(state, data);
+    }
+  }
+
   /** Reads the int stored under {@code key}, removes it, persists state, and returns the value. */
   public int consumeFeatureInt(final CampaignState state, final String key) {
     if (state.getFeatureData() == null) {
