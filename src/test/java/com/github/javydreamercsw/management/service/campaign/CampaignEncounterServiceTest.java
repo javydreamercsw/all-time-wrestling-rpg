@@ -308,6 +308,59 @@ class CampaignEncounterServiceTest {
   }
 
   @Test
+  void testGenerateStaticEncounter_matchChoice_propagatesMatchSetupFields() {
+    // match-type, rules, and forcedOpponentName must flow through to the response DTO
+    StaticChoiceDTO matchChoice =
+        StaticChoiceDTO.builder()
+            .text("Step into the ring")
+            .label("Fight")
+            .nextPhase(com.github.javydreamercsw.management.domain.campaign.CampaignPhase.MATCH)
+            .matchType("One on One")
+            .segmentRules(List.of("Normal"))
+            .forcedOpponentName("The Villain")
+            .build();
+    StaticEncounterDTO enc = encounter("first_match", "Your debut awaits.", matchChoice);
+    CampaignChapterDTO ch = staticChapterWith(enc);
+    campaign.getState().setCurrentEncounterId("first_match");
+
+    CampaignEncounterResponseDTO response = encounterService.generateStaticEncounter(campaign, ch);
+
+    assertThat(response.getChoices()).hasSize(1);
+    CampaignEncounterResponseDTO.Choice choice = response.getChoices().get(0);
+    assertThat(choice.getNextPhase()).isEqualTo("MATCH");
+    assertThat(choice.getMatchType()).isEqualTo("One on One");
+    assertThat(choice.getSegmentRules()).containsExactly("Normal");
+    assertThat(choice.getForcedOpponentName()).isEqualTo("The Villain");
+  }
+
+  @Test
+  void testRecordEncounterChoice_matchNoRouting_doesNotSetPendingCards() {
+    // A simple MATCH choice with no win/loss routing should not store pending cards
+    // and should NOT set currentEncounterId to null
+    CampaignEncounter encounter = new CampaignEncounter();
+    encounter.setNarrativeText("Story");
+    when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
+        .thenReturn(List.of(encounter));
+
+    CampaignEncounterResponseDTO.Choice choice = new CampaignEncounterResponseDTO.Choice();
+    choice.setText("Step into the ring");
+    choice.setNextPhase("MATCH");
+    // no onWinNextEncounterId / onLossNextEncounterId
+    campaign.getState().setCurrentEncounterId("first_match");
+
+    encounterService.recordEncounterChoice(campaign, choice);
+
+    // Pending cards must NOT be stored when there is no routing
+    verify(featureDataService, org.mockito.Mockito.never())
+        .setFeatureValue(any(), eq("_pendingWinCard"), any());
+    verify(featureDataService, org.mockito.Mockito.never())
+        .setFeatureValue(any(), eq("_pendingLossCard"), any());
+    // currentEncounterId must remain unchanged (not cleared) for sequential fallback to work
+    assertThat(campaign.getState().getCurrentEncounterId()).isEqualTo("first_match");
+    verify(stateRepository).save(campaign.getState());
+  }
+
+  @Test
   void testRecordEncounterChoice() {
     CampaignEncounter encounter = new CampaignEncounter();
     encounter.setNarrativeText("Story");
