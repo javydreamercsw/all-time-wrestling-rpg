@@ -37,7 +37,7 @@
     "excludeChampions": true,
     "npcIds": [ ]
   },
-  "allowedWrestlerNames": [ "Kurt Angle", "British Bulldog", "Randy Savage" ],
+  "allowedWrestlerNames": [ "Kurt Angle", "The British Bulldog", "Randy Savage" ],
   "defaultExcludedOpponents": [ "{{CHAMP}}" ],
   "defaultOpponentGenderFilter": "MALE",
   "mode": "STATIC_ONLY",
