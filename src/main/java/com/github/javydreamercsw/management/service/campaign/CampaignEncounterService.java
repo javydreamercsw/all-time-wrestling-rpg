@@ -671,8 +671,12 @@ public class CampaignEncounterService {
       return null;
     }
     java.util.LinkedHashSet<String> merged = new java.util.LinkedHashSet<>();
-    if (choiceLevel != null) merged.addAll(choiceLevel);
-    if (chapterLevel != null) merged.addAll(chapterLevel);
+    if (choiceLevel != null) {
+      merged.addAll(choiceLevel);
+    }
+    if (chapterLevel != null) {
+      merged.addAll(chapterLevel);
+    }
     return new java.util.ArrayList<>(merged);
   }
 }
