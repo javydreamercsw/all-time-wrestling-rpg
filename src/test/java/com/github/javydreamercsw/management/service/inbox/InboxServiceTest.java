@@ -304,4 +304,52 @@ class InboxServiceTest {
   void getAccountRepository_returnsInjectedRepository() {
     assertThat(inboxService.getAccountRepository()).isSameAs(accountRepository);
   }
+
+  @Test
+  void createInboxItem_withSubjectAndUrgency_singleTarget_setsAllFields() {
+    InboxItem saved =
+        inboxService.createInboxItem(
+            testEventType,
+            "Test Subject",
+            "Test message",
+            InboxItem.Urgency.ACTION_REQUIRED,
+            "123",
+            InboxItemTarget.TargetType.WRESTLER);
+
+    verify(inboxRepository).save(any(InboxItem.class));
+    assertThat(saved.getSubject()).isEqualTo("Test Subject");
+    assertThat(saved.getDescription()).isEqualTo("Test message");
+    assertThat(saved.getUrgency()).isEqualTo(InboxItem.Urgency.ACTION_REQUIRED);
+    assertThat(saved.getEventType()).isEqualTo(testEventType);
+    assertThat(saved.getTargets()).hasSize(1);
+  }
+
+  @Test
+  void createInboxItem_withSubjectAndUrgency_multipleTargets_setsAllFields() {
+    List<InboxService.TargetInfo> targets =
+        List.of(
+            new InboxService.TargetInfo("100", InboxItemTarget.TargetType.WRESTLER),
+            new InboxService.TargetInfo("200", InboxItemTarget.TargetType.ACCOUNT));
+
+    InboxItem saved =
+        inboxService.createInboxItem(
+            testEventType, "Warning Subject", "Warning body", InboxItem.Urgency.WARNING, targets);
+
+    verify(inboxRepository).save(any(InboxItem.class));
+    assertThat(saved.getSubject()).isEqualTo("Warning Subject");
+    assertThat(saved.getDescription()).isEqualTo("Warning body");
+    assertThat(saved.getUrgency()).isEqualTo(InboxItem.Urgency.WARNING);
+    assertThat(saved.getTargets()).hasSize(2);
+  }
+
+  @Test
+  void createInboxItem_legacyOverload_defaultsToInfoUrgencyAndNullSubject() {
+    InboxItem saved =
+        inboxService.createInboxItem(
+            testEventType, "Legacy message", "456", InboxItemTarget.TargetType.ACCOUNT);
+
+    assertThat(saved.getSubject()).isNull();
+    assertThat(saved.getUrgency()).isEqualTo(InboxItem.Urgency.INFO);
+    assertThat(saved.getDescription()).isEqualTo("Legacy message");
+  }
 }
