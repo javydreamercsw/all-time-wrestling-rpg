@@ -183,6 +183,30 @@ class InboxServiceTest {
   }
 
   @Test
+  void countUnread_returnsNumberOfUnreadItemsForAccount() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(1L));
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1, item2));
+
+    assertThat(inboxService.countUnread(1L)).isEqualTo(2L);
+  }
+
+  @Test
+  void countUnread_withNoUnreadItems_returnsZero() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(1L));
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of());
+
+    assertThat(inboxService.countUnread(1L)).isEqualTo(0L);
+  }
+
+  @Test
   void addInboxItem_usesFirstEventTypeFromRegistry() {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(10L);

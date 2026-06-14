@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
@@ -86,6 +87,8 @@ public class MainLayout extends AppLayout {
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
   private UniverseMembershipService universeMembershipService;
+  private InboxService inboxService;
+  private Span inboxBadge;
 
   @Autowired
   public MainLayout(
@@ -98,7 +101,8 @@ public class MainLayout extends AppLayout {
       final ThemeService themeService,
       final UniverseContextService universeContextService,
       final UniverseRepository universeRepository,
-      final UniverseMembershipService universeMembershipService) {
+      final UniverseMembershipService universeMembershipService,
+      final InboxService inboxService) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -109,6 +113,7 @@ public class MainLayout extends AppLayout {
     this.universeContextService = universeContextService;
     this.universeRepository = universeRepository;
     this.universeMembershipService = universeMembershipService;
+    this.inboxService = inboxService;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -247,6 +252,24 @@ public class MainLayout extends AppLayout {
       Span usernameLabel = new Span(username);
       usernameLabel.addClassNames(FontWeight.SEMIBOLD, FontSize.SMALL);
 
+      // Inbox badge (pill showing unread count)
+      inboxBadge = new Span();
+      inboxBadge.setId("inbox-unread-badge");
+      inboxBadge.getElement().getThemeList().add("badge pill");
+      inboxBadge.setVisible(false);
+
+      // Inbox button with badge
+      Span inboxLabel = new Span("Inbox");
+      Div inboxContent = new Div(inboxLabel, inboxBadge);
+      inboxContent.addClassNames(Display.FLEX, AlignItems.CENTER, Gap.SMALL);
+      Button inboxButton = new Button(inboxContent);
+      inboxButton.setId("inbox-button");
+      inboxButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+      inboxButton.addClickListener(e -> UI.getCurrent().navigate("inbox"));
+
+      // Initialise the badge count
+      refreshInboxBadge();
+
       // Profile button (opens drawer)
       Button profileButton = new Button("Profile", VaadinIcon.USER.create());
       profileButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
@@ -266,10 +289,25 @@ public class MainLayout extends AppLayout {
       logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       logoutButton.addClickListener(e -> securityUtils.logout());
 
-      navbar.add(avatar, usernameLabel, profileButton, logoutButton);
+      navbar.add(avatar, usernameLabel, inboxButton, profileButton, logoutButton);
     }
 
     return navbar;
+  }
+
+  private void refreshInboxBadge() {
+    if (inboxBadge == null || securityUtils == null || !securityUtils.isAuthenticated()) {
+      return;
+    }
+    Long accountId =
+        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    long unread = inboxService != null ? inboxService.countUnread(accountId) : 0L;
+    if (unread > 0) {
+      inboxBadge.setText(String.valueOf(unread));
+      inboxBadge.setVisible(true);
+    } else {
+      inboxBadge.setVisible(false);
+    }
   }
 
   @Override
@@ -285,6 +323,7 @@ public class MainLayout extends AppLayout {
                       () -> {
                         Notification.show("New inbox item!", 3000, Notification.Position.BOTTOM_END)
                             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        refreshInboxBadge();
                       });
                 }
               });
