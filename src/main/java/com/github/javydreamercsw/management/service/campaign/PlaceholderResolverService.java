@@ -122,7 +122,9 @@ public class PlaceholderResolverService {
 
     Long playerId = campaign.getWrestler().getId();
 
-    // Resolve placeholders in the exclusion list once, reuse for both pool and roster paths
+    // Resolve placeholders in the exclusion list once, reuse for both pool and roster paths.
+    // Entries that still contain {{ after resolution (e.g. {{CHAMP}} when no champion exists)
+    // are silently dropped — an unresolvable exclusion should not block all opponent selection.
     List<String> resolvedExcluded =
         excluded == null
             ? List.of()

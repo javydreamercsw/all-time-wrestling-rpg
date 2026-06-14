@@ -4,7 +4,8 @@
   "description": "The top title in All Time Wrestling.",
   "gender": "MALE",
   "championshipType": "SINGLE",
-  "effect_script": "gainInitiative()"
+  "effect_script": "gainInitiative()",
+  "currentChampionName": "Oda Tsurugi"
 }, {
   "name": "ATW Tag Team",
   "tier": "MIDCARDER",
