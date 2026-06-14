@@ -171,7 +171,8 @@ public class CampaignService {
             .build();
 
     // Select initial chapter
-    List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
+    List<CampaignChapterDTO> available =
+        chapterService.findAvailableChapters(state, wrestler.getName());
     if (!available.isEmpty()) {
       state.setCurrentChapterId(available.get(0).getId());
     }

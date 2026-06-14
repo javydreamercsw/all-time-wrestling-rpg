@@ -74,6 +74,15 @@ public interface TutorialStep {
   String validate(Account account);
 
   /**
+   * When this step uses an INLINE wrestler picker, returns the names of wrestlers the player is
+   * allowed to choose. An empty list means all active wrestlers are eligible. The default
+   * implementation returns an empty list (no restriction).
+   */
+  default java.util.List<String> getAllowedWrestlerNames() {
+    return java.util.List.of();
+  }
+
+  /**
    * Called before the step is displayed, executed under admin security context (via {@code
    * GeneralSecurityUtils.runAsAdmin}). Implementations may call services requiring elevated
    * authority — for example, seeding a default campaign or league so the player has something to

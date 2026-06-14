@@ -120,6 +120,15 @@ public class PlaceholderResolverService {
 
     Long playerId = campaign.getWrestler().getId();
 
+    // Resolve placeholders in the exclusion list once, reuse for both pool and roster paths
+    List<String> resolvedExcluded =
+        excluded == null
+            ? List.of()
+            : excluded.stream()
+                .map(e -> resolve(campaign, e))
+                .filter(e -> e != null && !e.contains("{{"))
+                .toList();
+
     // 2. Named pool
     if (pool != null && !pool.isEmpty()) {
       List<String> resolvedPool = new ArrayList<>();
@@ -135,7 +144,7 @@ public class PlaceholderResolverService {
               .filter(w -> !w.getId().equals(playerId))
               .filter(w -> Boolean.TRUE.equals(w.getActive()))
               .filter(w -> genderFilter == null || genderFilter == w.getGender())
-              .filter(w -> excluded == null || !excluded.contains(w.getName()))
+              .filter(w -> !resolvedExcluded.contains(w.getName()))
               .toList();
       if (!candidates.isEmpty()) {
         return candidates.get(random.nextInt(candidates.size())).getName();
@@ -149,7 +158,7 @@ public class PlaceholderResolverService {
             .filter(w -> !w.getId().equals(playerId))
             .filter(w -> Boolean.TRUE.equals(w.getActive()))
             .filter(w -> genderFilter == null || genderFilter == w.getGender())
-            .filter(w -> excluded == null || !excluded.contains(w.getName()))
+            .filter(w -> !resolvedExcluded.contains(w.getName()))
             .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
     if (roster.isEmpty()) {

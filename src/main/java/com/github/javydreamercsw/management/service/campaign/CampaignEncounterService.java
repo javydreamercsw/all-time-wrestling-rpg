@@ -633,8 +633,13 @@ public class CampaignEncounterService {
                         .segmentRules(sc.getSegmentRules())
                         .forcedOpponentName(sc.getForcedOpponentName())
                         .opponentPool(sc.getOpponentPool())
-                        .opponentGenderFilter(sc.getOpponentGenderFilter())
-                        .excludedOpponents(sc.getExcludedOpponents())
+                        .opponentGenderFilter(
+                            sc.getOpponentGenderFilter() != null
+                                ? sc.getOpponentGenderFilter()
+                                : chapter.getDefaultOpponentGenderFilter())
+                        .excludedOpponents(
+                            mergeExclusions(
+                                sc.getExcludedOpponents(), chapter.getDefaultExcludedOpponents()))
                         .setRivalFromMatchOpponent(sc.isSetRivalFromMatchOpponent())
                         .assignRivalBeforeMatch(sc.isAssignRivalBeforeMatch())
                         .nextEncounterId(sc.getNextEncounterId())
@@ -656,5 +661,18 @@ public class CampaignEncounterService {
         .narrative(encounter.getTitle() + "\n\n" + encounter.getNarrativeText())
         .choices(choices)
         .build();
+  }
+
+  /** Merges choice-level and chapter-level exclusion lists, deduplicating entries. */
+  private java.util.List<String> mergeExclusions(
+      java.util.List<String> choiceLevel, java.util.List<String> chapterLevel) {
+    if ((choiceLevel == null || choiceLevel.isEmpty())
+        && (chapterLevel == null || chapterLevel.isEmpty())) {
+      return null;
+    }
+    java.util.LinkedHashSet<String> merged = new java.util.LinkedHashSet<>();
+    if (choiceLevel != null) merged.addAll(choiceLevel);
+    if (chapterLevel != null) merged.addAll(chapterLevel);
+    return new java.util.ArrayList<>(merged);
   }
 }
