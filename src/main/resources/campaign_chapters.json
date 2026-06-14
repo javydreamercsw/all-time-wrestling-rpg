@@ -37,6 +37,9 @@
     "excludeChampions": true,
     "npcIds": [ ]
   },
+  "allowedWrestlerNames": [ "Kurt Angle", "British Bulldog", "Randy Savage" ],
+  "defaultExcludedOpponents": [ "{{CHAMP}}" ],
+  "defaultOpponentGenderFilter": "MALE",
   "mode": "STATIC_ONLY",
   "staticEncounters": [ {
     "id": "first_match_brief",
@@ -50,8 +53,7 @@
       "nextPhase": "MATCH",
       "matchType": "One on One",
       "segmentRules": [ "Normal" ],
-      "opponentGenderFilter": "MALE",
-      "excludedOpponents": [ "Oda Tsurugi" ]
+      "setRivalFromMatchOpponent": true
     } ]
   }, {
     "id": "match_2",
@@ -65,7 +67,7 @@
       "nextPhase": "MATCH",
       "matchType": "One on One",
       "segmentRules": [ "Normal" ],
-      "excludedOpponents": [ "Oda Tsurugi" ]
+      "forcedOpponentName": "{{RIVAL}}"
     } ]
   }, {
     "id": "match_3",
@@ -78,9 +80,7 @@
       "vpReward": 0,
       "nextPhase": "MATCH",
       "matchType": "One on One",
-      "segmentRules": [ "Normal" ],
-      "opponentGenderFilter": "MALE",
-      "excludedOpponents": [ "Oda Tsurugi" ]
+      "segmentRules": [ "Normal" ]
     } ]
   }, {
     "id": "match_4",
@@ -93,9 +93,7 @@
       "vpReward": 0,
       "nextPhase": "MATCH",
       "matchType": "One on One",
-      "segmentRules": [ "Normal" ],
-      "opponentGenderFilter": "MALE",
-      "excludedOpponents": [ "Oda Tsurugi" ]
+      "segmentRules": [ "Normal" ]
     } ]
   }, {
     "id": "match_5",
@@ -108,9 +106,7 @@
       "vpReward": 0,
       "nextPhase": "MATCH",
       "matchType": "One on One",
-      "segmentRules": [ "Normal" ],
-      "opponentGenderFilter": "MALE",
-      "excludedOpponents": [ "Oda Tsurugi" ]
+      "segmentRules": [ "Normal" ]
     } ]
   } ]
 }, {
