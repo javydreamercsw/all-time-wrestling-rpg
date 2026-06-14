@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * Structural simulation of campaign_chapters.json. Catches authoring errors that would trap players
  * before anyone reaches that point in the game.
  *
- * <p>Ten checks:
+ * <p>Twelve checks:
  *
  * <ol>
  *   <li>FAIL — every exit point must be reachable under some achievable state.
@@ -67,6 +67,8 @@ import org.slf4j.LoggerFactory;
  *   <li>FAIL — allowedWrestlerNames entries must reference real wrestlers in wrestlers.json.
  *   <li>FAIL — opponentPool, forcedOpponentName, and excludedOpponents entries (excluding
  *       placeholders like {{RIVAL}}, {{CHAMP}}) must reference real wrestlers in wrestlers.json.
+ *   <li>FAIL — initialChampions wrestler values must reference real wrestlers in wrestlers.json.
+ *   <li>FAIL — initialChampions title keys must reference real titles in championships.json.
  * </ol>
  */
 class CampaignChapterSimulationTest {
@@ -674,11 +676,81 @@ class CampaignChapterSimulationTest {
     assertThat(failures).as("OPPONENT NAME FAILURES:\n" + String.join("\n", failures)).isEmpty();
   }
 
+  // ---------------------------------------------------------------------------
+  // Check 11: initialChampions wrestler names exist in wrestlers.json
+  // Check 12: initialChampions title names exist in championships.json
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("initialChampions wrestler names reference wrestlers that exist in wrestlers.json")
+  void initialChampionsWrestlerNamesExistInWrestlersJson() throws Exception {
+    java.util.Set<String> knownWrestlers = loadWrestlerNames();
+    List<String> failures = new ArrayList<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      if (chapter.getInitialChampions() == null || chapter.getInitialChampions().isEmpty()) {
+        continue;
+      }
+      for (java.util.Map.Entry<String, String> entry : chapter.getInitialChampions().entrySet()) {
+        String wrestlerName = entry.getValue();
+        if (!knownWrestlers.contains(wrestlerName)) {
+          failures.add(
+              String.format(
+                  "[%s] initialChampions: wrestler '%s' (for title '%s') does not match any"
+                      + " wrestler in wrestlers.json",
+                  chapter.getId(), wrestlerName, entry.getKey()));
+        }
+      }
+    }
+
+    assertThat(failures)
+        .as("INITIAL CHAMPION WRESTLER NAME FAILURES:\n" + String.join("\n", failures))
+        .isEmpty();
+  }
+
+  @Test
+  @DisplayName("initialChampions title names reference titles that exist in championships.json")
+  void initialChampionsTitleNamesExistInChampionshipsJson() throws Exception {
+    java.util.Set<String> knownTitles = loadTitleNames();
+    List<String> failures = new ArrayList<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      if (chapter.getInitialChampions() == null || chapter.getInitialChampions().isEmpty()) {
+        continue;
+      }
+      for (String titleName : chapter.getInitialChampions().keySet()) {
+        if (!knownTitles.contains(titleName)) {
+          failures.add(
+              String.format(
+                  "[%s] initialChampions: title '%s' does not match any title in"
+                      + " championships.json",
+                  chapter.getId(), titleName));
+        }
+      }
+    }
+
+    assertThat(failures)
+        .as("INITIAL CHAMPION TITLE NAME FAILURES:\n" + String.join("\n", failures))
+        .isEmpty();
+  }
+
   /** Loads all wrestler names from wrestlers.json as a Set for O(1) lookup. */
   private java.util.Set<String> loadWrestlerNames() throws Exception {
     com.fasterxml.jackson.databind.ObjectMapper om =
         new com.fasterxml.jackson.databind.ObjectMapper();
     java.io.InputStream is = getClass().getResourceAsStream("/wrestlers.json");
+    java.util.List<java.util.Map<String, Object>> raw =
+        om.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+    return raw.stream()
+        .map(m -> (String) m.get("name"))
+        .collect(java.util.stream.Collectors.toSet());
+  }
+
+  /** Loads all title names from championships.json as a Set for O(1) lookup. */
+  private java.util.Set<String> loadTitleNames() throws Exception {
+    com.fasterxml.jackson.databind.ObjectMapper om =
+        new com.fasterxml.jackson.databind.ObjectMapper();
+    java.io.InputStream is = getClass().getResourceAsStream("/championships.json");
     java.util.List<java.util.Map<String, Object>> raw =
         om.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
     return raw.stream()
