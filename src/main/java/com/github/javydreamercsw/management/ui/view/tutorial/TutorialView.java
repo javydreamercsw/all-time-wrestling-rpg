@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialDefinition;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
@@ -57,8 +58,10 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Route(value = "tutorial", layout = MainLayout.class)
 @PageTitle("Tutorial")
@@ -77,6 +80,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
   private final AccountService accountService;
   private final WrestlerService wrestlerService;
   private final AiSettingsService aiSettingsService;
+  private final ExpansionService expansionService;
 
   private Account account;
   private Universe.UniverseType universeType;
@@ -91,13 +95,15 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       final UniverseContextService universeContextService,
       final AccountService accountService,
       final WrestlerService wrestlerService,
-      final AiSettingsService aiSettingsService) {
+      final AiSettingsService aiSettingsService,
+      final ExpansionService expansionService) {
     this.tutorialService = tutorialService;
     this.securityUtils = securityUtils;
     this.universeContextService = universeContextService;
     this.accountService = accountService;
     this.wrestlerService = wrestlerService;
     this.aiSettingsService = aiSettingsService;
+    this.expansionService = expansionService;
     setSizeFull();
     setPadding(true);
     setSpacing(true);
@@ -264,6 +270,9 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     features.put(GameSettingService.AI_NEWS_ENABLED_KEY, true);
     features.put(GameSettingService.STATUS_CARDS_ENABLED_KEY, true);
 
+    // Expansion opt-in set — BASE_GAME is always enabled, others are off by default
+    Set<String> enabledExpansions = new LinkedHashSet<>();
+
     Map<String, String> labels = new LinkedHashMap<>();
     labels.put(
         GameSettingService.WEAR_AND_TEAR_ENABLED_KEY,
@@ -302,13 +311,51 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
 
     add(featureList);
 
+    // Expansion selection — all off by default (opt-in)
+    java.util.List<com.github.javydreamercsw.management.service.expansion.Expansion> expansions =
+        expansionService.getExpansions().stream()
+            .filter(exp -> !"BASE_GAME".equals(exp.getCode()))
+            .toList();
+
+    if (!expansions.isEmpty()) {
+      H2 expHeading = new H2("Expansions");
+      expHeading.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.Margin.Bottom.XSMALL);
+      add(expHeading);
+
+      Paragraph expSub =
+          new Paragraph(
+              "Select the expansions you own. Only wrestlers from enabled expansions will appear"
+                  + " as opponents. BASE_GAME is always included.");
+      expSub.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.SMALL);
+      add(expSub);
+
+      VerticalLayout expList = new VerticalLayout();
+      expList.setPadding(false);
+      expList.setSpacing(false);
+
+      for (com.github.javydreamercsw.management.service.expansion.Expansion exp : expansions) {
+        Checkbox cb = new Checkbox(exp.getName(), false);
+        cb.addValueChangeListener(
+            ev -> {
+              if (ev.getValue()) {
+                enabledExpansions.add(exp.getCode());
+              } else {
+                enabledExpansions.remove(exp.getCode());
+              }
+            });
+        expList.add(cb);
+      }
+      add(expList);
+    }
+
     Button startBtn =
         new Button(
             "Create My Universe & Start Tutorial",
             VaadinIcon.PLAY.create(),
             e -> {
               Universe created =
-                  tutorialService.createTutorialUniverse(account, selectedMode, features);
+                  tutorialService.createTutorialUniverse(
+                      account, selectedMode, features, enabledExpansions);
               universeType = selectedMode;
               definition = tutorialService.getDefinition(universeType);
               currentStepIndex = 0;

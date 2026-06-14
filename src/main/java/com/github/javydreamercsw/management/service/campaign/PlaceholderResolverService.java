@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +59,7 @@ public class PlaceholderResolverService {
   private final TitleRepository titleRepository;
   private final TitleReignRepository titleReignRepository;
   private final CampaignStateRepository campaignStateRepository;
+  private final ExpansionService expansionService;
 
   private final Random random = new Random();
 
@@ -143,6 +145,7 @@ public class PlaceholderResolverService {
               .flatMap(name -> wrestlerRepository.findByName(name).stream())
               .filter(w -> !w.getId().equals(playerId))
               .filter(w -> Boolean.TRUE.equals(w.getActive()))
+              .filter(w -> expansionService.isExpansionEnabled(w.getExpansionCode()))
               .filter(w -> genderFilter == null || genderFilter == w.getGender())
               .filter(w -> !resolvedExcluded.contains(w.getName()))
               .toList();
@@ -157,6 +160,7 @@ public class PlaceholderResolverService {
         wrestlerRepository.findAll().stream()
             .filter(w -> !w.getId().equals(playerId))
             .filter(w -> Boolean.TRUE.equals(w.getActive()))
+            .filter(w -> expansionService.isExpansionEnabled(w.getExpansionCode()))
             .filter(w -> genderFilter == null || genderFilter == w.getGender())
             .filter(w -> !resolvedExcluded.contains(w.getName()))
             .collect(java.util.stream.Collectors.toCollection(ArrayList::new));

@@ -24,12 +24,14 @@ import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompl
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,6 +44,7 @@ public class TutorialService {
 
   private final AccountTutorialCompletionRepository completionRepository;
   private final GameSettingService gameSettingService;
+  private final ExpansionService expansionService;
   private final AccountRepository accountRepository;
   private final List<TutorialDefinition> definitions;
   private final UniverseService universeService;
@@ -157,13 +160,8 @@ public class TutorialService {
   }
 
   /**
-   * Creates a new tutorial universe of the given type for the player, applies the requested feature
-   * settings, adds the player as OWNER, and sets it as the active universe for the current session.
-   * Runs entirely under admin security context since universe creation and game-setting writes
-   * require elevated authority.
-   *
-   * <p>{@code featureSettings} is a map from {@link GameSettingService} key constants to their
-   * desired boolean values (e.g. {@code WEAR_AND_TEAR_ENABLED_KEY → true}).
+   * Creates a tutorial universe with feature settings only (no expansion changes). Delegates to the
+   * full overload with an empty expansion set — all expansions retain their current state.
    */
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
@@ -171,6 +169,21 @@ public class TutorialService {
       @NonNull final Account account,
       @NonNull final Universe.UniverseType type,
       @NonNull final Map<String, Boolean> featureSettings) {
+    return createTutorialUniverse(account, type, featureSettings, Set.of());
+  }
+
+  /**
+   * Creates a new tutorial universe, applies feature settings, and configures expansions. BASE_GAME
+   * is always enabled. Expansions in {@code enabledExpansionCodes} are enabled; all others are
+   * disabled. Pass an empty set to leave expansion state unchanged.
+   */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public Universe createTutorialUniverse(
+      @NonNull final Account account,
+      @NonNull final Universe.UniverseType type,
+      @NonNull final Map<String, Boolean> featureSettings,
+      @NonNull final Set<String> enabledExpansionCodes) {
     return GeneralSecurityUtils.runAsAdmin(
         () -> {
           String name = "Tutorial – " + account.getUsername();
@@ -193,6 +206,20 @@ public class TutorialService {
 
           featureSettings.forEach(
               (key, enabled) -> gameSettingService.save(key, String.valueOf(enabled)));
+
+          // Apply expansion selections when the caller provided an explicit set.
+          if (!enabledExpansionCodes.isEmpty()) {
+            expansionService.setExpansionEnabled("BASE_GAME", true);
+            expansionService
+                .getExpansions()
+                .forEach(
+                    exp -> {
+                      if (!"BASE_GAME".equals(exp.getCode())) {
+                        expansionService.setExpansionEnabled(
+                            exp.getCode(), enabledExpansionCodes.contains(exp.getCode()));
+                      }
+                    });
+          }
 
           return saved;
         });
