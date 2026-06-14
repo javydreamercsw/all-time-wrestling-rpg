@@ -17,8 +17,12 @@
 package com.github.javydreamercsw.management.ui.view.account;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -45,7 +49,9 @@ public class ProfileDrawer extends Dialog {
       final Account account,
       final AccountService accountService,
       final PasswordEncoder passwordEncoder,
-      final ThemeService themeService) {
+      final ThemeService themeService,
+      final TutorialService tutorialService,
+      final UniverseContextService universeContextService) {
 
     addClassName("profile-drawer");
     setModality(ModalityMode.STRICT);
@@ -152,7 +158,24 @@ public class ProfileDrawer extends Dialog {
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveButton.setWidthFull();
 
-    actions.add(changePasswordButton, saveButton);
+    Button replayTutorialButton =
+        new Button(
+            "Replay Tutorial",
+            VaadinIcon.ACADEMY_CAP.create(),
+            event -> {
+              Universe.UniverseType type =
+                  universeContextService
+                      .getCurrentUniverse()
+                      .map(Universe::getType)
+                      .orElse(Universe.UniverseType.GLOBAL);
+              tutorialService.markIncomplete(account.getId(), type);
+              close();
+              UI.getCurrent().navigate("tutorial");
+            });
+    replayTutorialButton.setWidthFull();
+    replayTutorialButton.setVisible(account.hasRole(RoleName.PLAYER));
+
+    actions.add(replayTutorialButton, changePasswordButton, saveButton);
     content.add(actions);
 
     add(header, content);

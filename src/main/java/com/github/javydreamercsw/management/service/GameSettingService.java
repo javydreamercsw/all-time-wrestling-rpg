@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service;
 
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.time.LocalDate;
@@ -44,6 +45,11 @@ public class GameSettingService {
   public static final String WEAR_AND_TEAR_ENABLED_KEY = "wear_and_tear_enabled";
   public static final String STATUS_CARDS_ENABLED_KEY = "status_cards_enabled";
   public static final String NOTION_TOKEN_KEY = "notion_token";
+
+  // Tutorial enable/disable settings (gameplay keys, default true)
+  public static final String TUTORIAL_ENABLED_CAMPAIGN_KEY = "tutorial.enabled.CAMPAIGN";
+  public static final String TUTORIAL_ENABLED_LEAGUE_KEY = "tutorial.enabled.LEAGUE";
+  public static final String TUTORIAL_ENABLED_GLOBAL_KEY = "tutorial.enabled.GLOBAL";
 
   // Rivalry lifecycle settings
   public static final String RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY =
@@ -185,6 +191,29 @@ public class GameSettingService {
   @Transactional
   public void setStatusCardsEnabled(final boolean enabled) {
     saveInternal(STATUS_CARDS_ENABLED_KEY, String.valueOf(enabled));
+  }
+
+  @PreAuthorize("permitAll()")
+  public boolean isTutorialEnabled(final Universe.UniverseType type) {
+    String key =
+        switch (type) {
+          case CAMPAIGN -> TUTORIAL_ENABLED_CAMPAIGN_KEY;
+          case LEAGUE -> TUTORIAL_ENABLED_LEAGUE_KEY;
+          case GLOBAL -> TUTORIAL_ENABLED_GLOBAL_KEY;
+        };
+    return resolveValue(key).map(Boolean::parseBoolean).orElse(true);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setTutorialEnabled(final Universe.UniverseType type, final boolean enabled) {
+    String key =
+        switch (type) {
+          case CAMPAIGN -> TUTORIAL_ENABLED_CAMPAIGN_KEY;
+          case LEAGUE -> TUTORIAL_ENABLED_LEAGUE_KEY;
+          case GLOBAL -> TUTORIAL_ENABLED_GLOBAL_KEY;
+        };
+    saveInternal(key, String.valueOf(enabled));
   }
 
   @PreAuthorize("permitAll()")

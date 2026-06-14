@@ -64,6 +64,13 @@ public class CampaignState {
   @Column(name = "current_chapter_id")
   private String currentChapterId;
 
+  /**
+   * Tracks which static encounter card the player is on. Null = use sequential fallback
+   * (count-based index). Reset to null on every chapter transition.
+   */
+  @Column(name = "current_encounter_id")
+  private String currentEncounterId;
+
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(
       name = "campaign_completed_chapters",

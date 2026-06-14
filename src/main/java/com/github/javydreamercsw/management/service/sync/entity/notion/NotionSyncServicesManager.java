@@ -17,46 +17,122 @@
 package com.github.javydreamercsw.management.service.sync.entity.notion;
 
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.sync.base.BaseSyncService;
+import jakarta.annotation.PostConstruct;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ClassUtils;
 
+/**
+ * Registry for entity-specific Notion sync services. Uses @PostConstruct to avoid the circular
+ * dependency that arises when constructor-injecting List<BaseSyncService> (NotionSyncService also
+ * extends BaseSyncService and depends on this manager).
+ */
 @Component
-@Getter
 public class NotionSyncServicesManager {
-  // Entity-specific sync services
-  @Autowired private ShowSyncService showSyncService;
-  @Autowired private WrestlerSyncService wrestlerSyncService;
-  @Autowired private FactionSyncService factionSyncService;
-  @Autowired private TeamSyncService teamSyncService;
-  @Autowired private SegmentSyncService segmentSyncService;
-  @Autowired private SeasonSyncService seasonSyncService;
-  @Autowired private ShowTypeSyncService showTypeSyncService;
-  @Autowired private ShowTemplateSyncService showTemplateSyncService;
-  @Autowired private InjuryTypeSyncService injuryTypeSyncService;
-  @Autowired private InjurySyncService injurySyncService;
-  @Autowired private NpcSyncService npcSyncService;
-  @Autowired private TitleSyncService titleSyncService;
-  @Autowired private TitleReignSyncService titleReignSyncService;
-  @Autowired private RivalrySyncService rivalrySyncService;
-  @Autowired private FactionRivalrySyncService factionRivalrySyncService;
 
-  // Outbound to Notion sync services
-  @Autowired @Lazy private WrestlerNotionSyncService wrestlerNotionSyncService;
-  @Autowired private TitleNotionSyncService titleNotionSyncService;
-  @Autowired private TitleReignNotionSyncService titleReignNotionSyncService;
-  @Autowired private NpcNotionSyncService npcNotionSyncService;
-  @Autowired private RivalryNotionSyncService rivalryNotionSyncService;
-  @Autowired private SeasonNotionSyncService seasonNotionSyncService;
-  @Autowired private ShowNotionSyncService showNotionSyncService;
-  @Autowired private FactionNotionSyncService factionNotionSyncService;
-  @Autowired private TeamNotionSyncService teamNotionSyncService;
-  @Autowired private FactionRivalryNotionSyncService factionRivalryNotionSyncService;
-  @Autowired private SegmentNotionSyncService segmentNotionSyncService;
-  @Autowired private ShowTemplateNotionSyncService showTemplateNotionSyncService;
-  @Autowired private ShowTypeNotionSyncService showTypeNotionSyncService;
-  @Autowired private InjuryNotionSyncService injuryNotionSyncService;
-  @Autowired private InjuryTypeNotionSyncService injuryTypeNotionSyncService;
-  @Autowired private WrestlerRepository wrestlerRepository;
+  private static final String ENTITY_SYNC_PACKAGE = ".sync.entity.notion";
+
+  private final ApplicationContext applicationContext;
+  @Getter private final FactionRivalryNotionSyncService factionRivalryNotionSyncService;
+  @Getter private final ShowTemplateNotionSyncService showTemplateNotionSyncService;
+  @Getter private final WrestlerRepository wrestlerRepository;
+
+  private Map<Class<?>, BaseSyncService> registry;
+
+  public NotionSyncServicesManager(
+      final ApplicationContext applicationContext,
+      final FactionRivalryNotionSyncService factionRivalryNotionSyncService,
+      final ShowTemplateNotionSyncService showTemplateNotionSyncService,
+      final WrestlerRepository wrestlerRepository) {
+    this.applicationContext = applicationContext;
+    this.factionRivalryNotionSyncService = factionRivalryNotionSyncService;
+    this.showTemplateNotionSyncService = showTemplateNotionSyncService;
+    this.wrestlerRepository = wrestlerRepository;
+  }
+
+  @PostConstruct
+  void buildRegistry() {
+    registry =
+        applicationContext.getBeansOfType(BaseSyncService.class).values().stream()
+            .filter(
+                s ->
+                    ClassUtils.getUserClass(s.getClass())
+                        .getPackageName()
+                        .contains(ENTITY_SYNC_PACKAGE))
+            .collect(
+                Collectors.toUnmodifiableMap(s -> ClassUtils.getUserClass(s.getClass()), s -> s));
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T extends BaseSyncService> T get(final Class<T> type) {
+    T service = (T) registry.get(type);
+    if (service == null) {
+      throw new IllegalStateException("No sync service registered for " + type.getSimpleName());
+    }
+    return service;
+  }
+
+  public ShowSyncService getShowSyncService() {
+    return get(ShowSyncService.class);
+  }
+
+  public WrestlerSyncService getWrestlerSyncService() {
+    return get(WrestlerSyncService.class);
+  }
+
+  public FactionSyncService getFactionSyncService() {
+    return get(FactionSyncService.class);
+  }
+
+  public TeamSyncService getTeamSyncService() {
+    return get(TeamSyncService.class);
+  }
+
+  public SegmentSyncService getSegmentSyncService() {
+    return get(SegmentSyncService.class);
+  }
+
+  public SeasonSyncService getSeasonSyncService() {
+    return get(SeasonSyncService.class);
+  }
+
+  public ShowTypeSyncService getShowTypeSyncService() {
+    return get(ShowTypeSyncService.class);
+  }
+
+  public ShowTemplateSyncService getShowTemplateSyncService() {
+    return get(ShowTemplateSyncService.class);
+  }
+
+  public InjuryTypeSyncService getInjuryTypeSyncService() {
+    return get(InjuryTypeSyncService.class);
+  }
+
+  public InjurySyncService getInjurySyncService() {
+    return get(InjurySyncService.class);
+  }
+
+  public NpcSyncService getNpcSyncService() {
+    return get(NpcSyncService.class);
+  }
+
+  public TitleSyncService getTitleSyncService() {
+    return get(TitleSyncService.class);
+  }
+
+  public TitleReignSyncService getTitleReignSyncService() {
+    return get(TitleReignSyncService.class);
+  }
+
+  public RivalrySyncService getRivalrySyncService() {
+    return get(RivalrySyncService.class);
+  }
+
+  public FactionRivalrySyncService getFactionRivalrySyncService() {
+    return get(FactionRivalrySyncService.class);
+  }
 }

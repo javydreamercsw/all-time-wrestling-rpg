@@ -17,8 +17,12 @@
 package com.github.javydreamercsw.management.ui.view.campaign;
 
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
+import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -53,10 +57,12 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -82,18 +88,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "campaign", layout = MainLayout.class)
 @PageTitle("Campaign Dashboard")
-@RolesAllowed(ADMIN_ROLE)
+@RolesAllowed({ADMIN_ROLE, BOOKER_ROLE, PLAYER_ROLE})
 @Slf4j
 public class CampaignDashboardView extends VerticalLayout {
 
   private final CampaignRepository campaignRepository;
   private final CampaignService campaignService;
   private final WrestlerRepository wrestlerRepository;
+  private final AccountRepository accountRepository;
   private final CampaignAbilityCardRepository cardRepository;
   private final CampaignUpgradeService upgradeService;
   private final SecurityUtils securityUtils;
   private final TournamentService tournamentService;
-  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
   private final CampaignChapterService chapterService;
   private final TitleService titleService;
   private final TitleRepository titleRepository;
@@ -106,11 +113,12 @@ public class CampaignDashboardView extends VerticalLayout {
       final CampaignRepository campaignRepository,
       final CampaignService campaignService,
       final WrestlerRepository wrestlerRepository,
+      final AccountRepository accountRepository,
       final CampaignAbilityCardRepository cardRepository,
       final CampaignUpgradeService upgradeService,
       final SecurityUtils securityUtils,
       final TournamentService tournamentService,
-      final com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+      final ObjectMapper objectMapper,
       final CampaignChapterService chapterService,
       final TitleService titleService,
       final TitleRepository titleRepository,
@@ -118,6 +126,7 @@ public class CampaignDashboardView extends VerticalLayout {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
+    this.accountRepository = accountRepository;
     this.cardRepository = cardRepository;
     this.upgradeService = upgradeService;
     this.securityUtils = securityUtils;
@@ -157,12 +166,20 @@ public class CampaignDashboardView extends VerticalLayout {
         .ifPresentOrElse(
             user -> {
               log.debug("Authenticated user: {}", user.getUsername());
-              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
+              // Re-load the account from DB to get the current activeWrestlerId — the principal's
+              // Account object is stale when the wrestler was assigned after login (e.g. tutorial).
+              Long accountId = user.getId();
+              com.github.javydreamercsw.base.domain.account.Account freshAccount =
+                  accountId != null
+                      ? accountRepository.findById(accountId).orElse(user.getAccount())
+                      : user.getAccount();
               java.util.List<Wrestler> wrestlers =
-                  wrestlerRepository.findByAccountWithDetails(account);
+                  accountId != null
+                      ? wrestlerRepository.findByAccountId(accountId)
+                      : java.util.List.of();
               Wrestler active =
                   wrestlers.stream()
-                      .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
+                      .filter(w -> w.getId().equals(freshAccount.getActiveWrestlerId()))
                       .findFirst()
                       .orElse(wrestlers.isEmpty() ? null : wrestlers.get(0));
 
@@ -434,13 +451,20 @@ public class CampaignDashboardView extends VerticalLayout {
           new Button(
               "Complete Chapter & Advance",
               e -> {
-                campaignService
-                    .advanceChapter(currentCampaign)
-                    .ifPresent(
-                        newChapterId -> {
-                          // Navigate to narrative to show new chapter intro
-                          UI.getCurrent().navigate("campaign/narrative");
-                        });
+                java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+                    options = campaignService.getAvailableNextChapters(currentCampaign);
+                if (options.size() == 1) {
+                  campaignService
+                      .advanceToChapter(currentCampaign, options.get(0).getId())
+                      .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
+                } else if (options.size() > 1) {
+                  openChapterSelectionDialog(options);
+                } else {
+                  // No static successor — let the AI-driven storyline path handle it
+                  campaignService
+                      .advanceChapter(currentCampaign)
+                      .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
+                }
               });
       advanceButton.addThemeVariants(
           com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
@@ -739,6 +763,90 @@ public class CampaignDashboardView extends VerticalLayout {
     parent.add(bracketContainer);
   }
 
+  private void openChapterSelectionDialog(
+      java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+          options) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Choose Your Next Path");
+    dialog.setWidth("600px");
+    dialog.setCloseOnOutsideClick(false);
+
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    content.setSpacing(true);
+
+    Paragraph intro =
+        new Paragraph("Your story has reached a crossroads. Choose where it goes next.");
+    intro.addClassNames(TextColor.SECONDARY, FontSize.SMALL);
+    content.add(intro);
+
+    for (com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO option : options) {
+      VerticalLayout card = new VerticalLayout();
+      card.addClassNames(Background.CONTRAST_5, BorderRadius.MEDIUM, Padding.MEDIUM);
+      card.setSpacing(false);
+
+      H3 title = new H3(option.getTitle());
+      title.addClassNames(Margin.Bottom.XSMALL, Margin.Top.NONE);
+      card.add(title);
+
+      if (option.getShortDescription() != null && !option.getShortDescription().isBlank()) {
+        Paragraph desc = new Paragraph(option.getShortDescription());
+        desc.addClassNames(
+            TextColor.SECONDARY, FontSize.SMALL, Margin.Bottom.SMALL, Margin.Top.NONE);
+        card.add(desc);
+      }
+
+      HorizontalLayout badges = new HorizontalLayout();
+      badges.setSpacing(true);
+      badges.addClassName(Margin.Bottom.SMALL);
+
+      if (option.getDifficulty() != null) {
+        Span diff = new Span(option.getDifficulty().name());
+        diff.getElement().getThemeList().add("badge contrast");
+        badges.add(diff);
+      }
+
+      Span modeBadge = new Span(option.getMode().name().replace("_", " "));
+      String modeTheme =
+          switch (option.getMode()) {
+            case STATIC_ONLY -> "badge success";
+            case AI_WITH_FALLBACK -> "badge";
+            default -> "badge contrast";
+          };
+      modeBadge.getElement().getThemeList().add(modeTheme);
+      badges.add(modeBadge);
+
+      if (option.getRequiredExpansions() != null && !option.getRequiredExpansions().isEmpty()) {
+        Span expBadge = new Span("Requires: " + String.join(", ", option.getRequiredExpansions()));
+        expBadge.getElement().getThemeList().add("badge error");
+        badges.add(expBadge);
+      }
+
+      card.add(badges);
+
+      Button chooseBtn =
+          new Button(
+              "Choose this path",
+              ev -> {
+                dialog.close();
+                campaignService
+                    .advanceToChapter(currentCampaign, option.getId())
+                    .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
+              });
+      chooseBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      card.add(chooseBtn);
+
+      content.add(card);
+    }
+
+    dialog.add(content);
+
+    Button cancelBtn = new Button("Decide later", ev -> dialog.close());
+    dialog.getFooter().add(cancelBtn);
+
+    dialog.open();
+  }
+
   private void refreshUI() {
     removeAll();
     loadCampaign();
@@ -884,6 +992,7 @@ public class CampaignDashboardView extends VerticalLayout {
               if (selected != null) {
                 CampaignState state = currentCampaign.getState();
                 state.setCurrentChapterId(selected.getId());
+                state.setCurrentEncounterId(null);
                 // Reset Counters
                 state.setMatchesPlayed(0);
                 state.setWins(0);

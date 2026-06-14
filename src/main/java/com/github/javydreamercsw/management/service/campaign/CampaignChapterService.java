@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import jakarta.annotation.PostConstruct;
@@ -45,13 +46,17 @@ public class CampaignChapterService {
 
   private final ObjectMapper objectMapper;
   private final FeatureDataService featureDataService;
+  private final ExpansionService expansionService;
   private List<CampaignChapterDTO> chapters = Collections.emptyList();
 
   @Autowired
   public CampaignChapterService(
-      @NonNull final ObjectMapper objectMapper, final FeatureDataService featureDataService) {
+      @NonNull final ObjectMapper objectMapper,
+      final FeatureDataService featureDataService,
+      final ExpansionService expansionService) {
     this.objectMapper = objectMapper;
     this.featureDataService = featureDataService;
+    this.expansionService = expansionService;
   }
 
   @PostConstruct
@@ -97,6 +102,7 @@ public class CampaignChapterService {
                     || !state.getCompletedChapterIds().stream()
                         .anyMatch(id -> !"beginning".equals(id)))
         .filter(c -> isAnyPointActive(c.getEntryPoints(), state))
+        .filter(c -> allExpansionsEnabled(c.getRequiredExpansions()))
         .toList();
   }
 
@@ -119,6 +125,13 @@ public class CampaignChapterService {
   public Optional<ChapterPointDTO> getActivePoint(
       @NonNull final List<ChapterPointDTO> points, @NonNull final CampaignState state) {
     return points.stream().filter(p -> areAllCriteriaMet(p.getCriteria(), state)).findFirst();
+  }
+
+  public boolean allExpansionsEnabled(final List<String> required) {
+    if (required == null || required.isEmpty()) {
+      return true;
+    }
+    return required.stream().allMatch(expansionService::isExpansionEnabled);
   }
 
   private boolean isAnyPointActive(
