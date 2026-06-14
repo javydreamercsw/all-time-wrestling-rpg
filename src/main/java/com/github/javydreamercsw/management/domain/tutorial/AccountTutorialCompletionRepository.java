@@ -26,5 +26,7 @@ public interface AccountTutorialCompletionRepository
   Optional<AccountTutorialCompletion> findByAccountIdAndUniverseType(
       Long accountId, Universe.UniverseType universeType);
 
+  boolean existsByAccountIdAndUniverseType(Long accountId, Universe.UniverseType universeType);
+
   void deleteByAccountIdAndUniverseType(Long accountId, Universe.UniverseType universeType);
 }

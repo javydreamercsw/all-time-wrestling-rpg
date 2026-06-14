@@ -120,6 +120,34 @@ public class TutorialService {
     completionRepository.save(record);
   }
 
+  /**
+   * Returns {@code true} if the player has already been redirected to the tutorial at least once (a
+   * completion record exists, regardless of whether they finished it).
+   */
+  @PreAuthorize("permitAll()")
+  public boolean hasBeenRedirected(
+      @NonNull final Account account, @NonNull final Universe.UniverseType type) {
+    return completionRepository.existsByAccountIdAndUniverseType(account.getId(), type);
+  }
+
+  /**
+   * Creates the tutorial completion record with step 0, marking that the player has been shown the
+   * tutorial redirect. Subsequent logins will show a notification instead of redirecting.
+   */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public void recordFirstRedirect(
+      @NonNull final Account account, @NonNull final Universe.UniverseType type) {
+    if (completionRepository.existsByAccountIdAndUniverseType(account.getId(), type)) {
+      return;
+    }
+    AccountTutorialCompletion record = new AccountTutorialCompletion();
+    record.setAccount(account);
+    record.setUniverseType(type);
+    record.setCurrentStep(0);
+    completionRepository.save(record);
+  }
+
   /** Marks the tutorial as skipped (treated as completed so the player is not redirected again). */
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")

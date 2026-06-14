@@ -21,6 +21,9 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.server.VaadinServiceInitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -86,7 +89,19 @@ public class TutorialRedirectInitializer {
                                                 .orElse(Universe.UniverseType.GLOBAL);
 
                                         if (tutorialService.shouldShowTutorial(account, type)) {
-                                          enterEvent.rerouteTo(TutorialView.class);
+                                          if (!tutorialService.hasBeenRedirected(account, type)) {
+                                            tutorialService.recordFirstRedirect(account, type);
+                                            enterEvent.rerouteTo(TutorialView.class);
+                                          } else {
+                                            Notification notification =
+                                                Notification.show(
+                                                    "You have an unfinished tutorial. Find it in"
+                                                        + " your Profile drawer.",
+                                                    5000,
+                                                    Position.BOTTOM_START);
+                                            notification.addThemeVariants(
+                                                NotificationVariant.LUMO_PRIMARY);
+                                          }
                                         }
                                       });
                             }));
