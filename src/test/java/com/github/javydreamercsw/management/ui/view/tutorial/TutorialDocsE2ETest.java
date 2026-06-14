@@ -27,7 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(properties = "atw.tutorial.redirect.enabled=true")
 class TutorialDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private TutorialService tutorialService;
