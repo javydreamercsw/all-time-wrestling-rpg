@@ -170,11 +170,13 @@ public class CampaignService {
             .lastSync(LocalDateTime.now())
             .build();
 
-    // Select initial chapter
+    // Select initial chapter and apply any title setup it declares
     List<CampaignChapterDTO> available =
         chapterService.findAvailableChapters(state, wrestler.getName());
     if (!available.isEmpty()) {
-      state.setCurrentChapterId(available.get(0).getId());
+      CampaignChapterDTO initialChapter = available.get(0);
+      state.setCurrentChapterId(initialChapter.getId());
+      campaignProgressionService.applyInitialChampions(initialChapter);
     }
 
     campaignStateRepository.save(state);

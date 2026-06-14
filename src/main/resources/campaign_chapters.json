@@ -38,6 +38,9 @@
     "npcIds": [ ]
   },
   "allowedWrestlerNames": [ "Kurt Angle", "The British Bulldog", "Randy Savage" ],
+  "initialChampions": {
+    "ATW World": "Oda Tsurugi"
+  },
   "defaultExcludedOpponents": [ "{{CHAMP}}" ],
   "defaultOpponentGenderFilter": "MALE",
   "mode": "STATIC_ONLY",
