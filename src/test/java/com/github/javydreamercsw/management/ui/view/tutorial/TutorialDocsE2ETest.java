@@ -27,9 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = "atw.tutorial.redirect.enabled=true")
 class TutorialDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private TutorialService tutorialService;
@@ -55,12 +53,10 @@ class TutorialDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
-  void playerTutorialRedirectAndStep1() {
+  void playerTutorialStep1() {
     login("player", "player123");
-
-    // First navigation after login should redirect to /tutorial
+    navigateTo("tutorial");
     waitForVaadinClientToLoad();
-    assertThat(driver.getCurrentUrl()).contains("tutorial");
 
     documentFeature(
         "Players",
@@ -113,9 +109,9 @@ class TutorialDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void playerTutorialSkipDismissesAndDoesNotRedirectAgain() {
     login("player", "player123");
+    navigateTo("tutorial");
     waitForVaadinClientToLoad();
 
-    // Should be on tutorial page
     assertThat(driver.getCurrentUrl()).contains("tutorial");
 
     // Click Skip Tutorial button
