@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * Structural simulation of campaign_chapters.json. Catches authoring errors that would trap players
  * before anyone reaches that point in the game.
  *
- * <p>Eight checks:
+ * <p>Ten checks:
  *
  * <ol>
  *   <li>FAIL — every exit point must be reachable under some achievable state.
@@ -63,6 +63,10 @@ import org.slf4j.LoggerFactory;
  *       requiredExpansion, so the player can always proceed without an optional pack.
  *   <li>WARN — every exit state should have at least one static successor chapter; if not, logs a
  *       warning (expansion boundary or AI handoff, not a bug).
+ *   <li>PASS — chapter graph written to target/campaign-graph.dot for authors.
+ *   <li>FAIL — allowedWrestlerNames entries must reference real wrestlers in wrestlers.json.
+ *   <li>FAIL — opponentPool, forcedOpponentName, and excludedOpponents entries (excluding
+ *       placeholders like {{RIVAL}}, {{CHAMP}}) must reference real wrestlers in wrestlers.json.
  * </ol>
  */
 class CampaignChapterSimulationTest {
@@ -566,6 +570,120 @@ class CampaignChapterSimulationTest {
     log.info("Campaign chapter graph written to: {}", outFile.toAbsolutePath());
     log.info("Render with: dot -Tsvg {} -o target/campaign-graph.svg", outFile.getFileName());
     // This test always passes — the file is an author aid, not a correctness check
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check 9: allowedWrestlerNames references real wrestlers in wrestlers.json
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("allowedWrestlerNames entries reference wrestlers that exist in wrestlers.json")
+  void allowedWrestlerNamesExistInWrestlersJson() throws Exception {
+    java.util.Set<String> knownWrestlers = loadWrestlerNames();
+    List<String> failures = new ArrayList<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      if (chapter.getAllowedWrestlerNames() == null
+          || chapter.getAllowedWrestlerNames().isEmpty()) {
+        continue;
+      }
+      for (String name : chapter.getAllowedWrestlerNames()) {
+        if (!knownWrestlers.contains(name)) {
+          failures.add(
+              String.format(
+                  "[%s] allowedWrestlerNames entry '%s' does not match any wrestler in"
+                      + " wrestlers.json",
+                  chapter.getId(), name));
+        }
+      }
+    }
+
+    assertThat(failures)
+        .as("ALLOWED WRESTLER NAME FAILURES:\n" + String.join("\n", failures))
+        .isEmpty();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check 10: opponentPool and non-placeholder forcedOpponentName reference real wrestlers
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("opponentPool and forcedOpponentName entries reference wrestlers in wrestlers.json")
+  void opponentPoolAndForcedOpponentNamesExistInWrestlersJson() throws Exception {
+    java.util.Set<String> knownWrestlers = loadWrestlerNames();
+    List<String> failures = new ArrayList<>();
+
+    for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
+      if (!chapter.hasStaticEncounters()) {
+        continue;
+      }
+      for (var encounter : chapter.getStaticEncounters()) {
+        if (encounter.getChoices() == null) {
+          continue;
+        }
+        for (var choice : encounter.getChoices()) {
+          // Validate opponentPool entries (skip placeholder tokens)
+          if (choice.getOpponentPool() != null) {
+            for (String name : choice.getOpponentPool()) {
+              if (!name.contains("{{") && !knownWrestlers.contains(name)) {
+                failures.add(
+                    String.format(
+                        "[%s] Encounter '%s': opponentPool entry '%s' does not match any wrestler"
+                            + " in wrestlers.json",
+                        chapter.getId(), encounter.getId(), name));
+              }
+            }
+          }
+          // Validate forcedOpponentName (skip placeholder tokens like {{RIVAL}}, {{CHAMP}})
+          String forced = choice.getForcedOpponentName();
+          if (forced != null && !forced.contains("{{") && !knownWrestlers.contains(forced)) {
+            failures.add(
+                String.format(
+                    "[%s] Encounter '%s': forcedOpponentName '%s' does not match any wrestler in"
+                        + " wrestlers.json",
+                    chapter.getId(), encounter.getId(), forced));
+          }
+          // Validate excludedOpponents entries (skip placeholder tokens)
+          if (choice.getExcludedOpponents() != null) {
+            for (String name : choice.getExcludedOpponents()) {
+              if (!name.contains("{{") && !knownWrestlers.contains(name)) {
+                failures.add(
+                    String.format(
+                        "[%s] Encounter '%s': excludedOpponents entry '%s' does not match any"
+                            + " wrestler in wrestlers.json",
+                        chapter.getId(), encounter.getId(), name));
+              }
+            }
+          }
+        }
+      }
+      // Also validate chapter-level defaultExcludedOpponents
+      if (chapter.getDefaultExcludedOpponents() != null) {
+        for (String name : chapter.getDefaultExcludedOpponents()) {
+          if (!name.contains("{{") && !knownWrestlers.contains(name)) {
+            failures.add(
+                String.format(
+                    "[%s] defaultExcludedOpponents entry '%s' does not match any wrestler in"
+                        + " wrestlers.json",
+                    chapter.getId(), name));
+          }
+        }
+      }
+    }
+
+    assertThat(failures).as("OPPONENT NAME FAILURES:\n" + String.join("\n", failures)).isEmpty();
+  }
+
+  /** Loads all wrestler names from wrestlers.json as a Set for O(1) lookup. */
+  private java.util.Set<String> loadWrestlerNames() throws Exception {
+    com.fasterxml.jackson.databind.ObjectMapper om =
+        new com.fasterxml.jackson.databind.ObjectMapper();
+    java.io.InputStream is = getClass().getResourceAsStream("/wrestlers.json");
+    java.util.List<java.util.Map<String, Object>> raw =
+        om.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+    return raw.stream()
+        .map(m -> (String) m.get("name"))
+        .collect(java.util.stream.Collectors.toSet());
   }
 
   // ---------------------------------------------------------------------------
