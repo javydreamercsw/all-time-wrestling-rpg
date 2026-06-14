@@ -49,12 +49,16 @@
       "vpReward": 0,
       "nextPhase": "MATCH",
       "matchType": "One on One",
-      "segmentRules": [ "Normal" ]
+      "segmentRules": [ "Normal" ],
+      "opponentPool": [ "Kurt Angle", "British Bulldog", "Randy Savage" ],
+      "opponentGenderFilter": "MALE",
+      "excludedOpponents": [ "Oda Tsurugi" ],
+      "setRivalFromMatchOpponent": true
     } ]
   }, {
     "id": "match_2",
     "title": "Your Second Match",
-    "narrativeText": "Your debut match is in the past. Let's prove last match was not a fluke!",
+    "narrativeText": "Your debut match is in the past. Let's prove last match was not a fluke! You face {{RIVAL}} again.",
     "choices": [ {
       "id": "go_to_match_2",
       "label": "Step Into the Ring",
@@ -62,12 +66,14 @@
       "vpReward": 0,
       "nextPhase": "MATCH",
       "matchType": "One on One",
-      "segmentRules": [ "Normal" ]
+      "segmentRules": [ "Normal" ],
+      "forcedOpponentName": "{{RIVAL}}",
+      "excludedOpponents": [ "Oda Tsurugi" ]
     } ]
   }, {
     "id": "match_3",
     "title": "Your Third Match",
-    "narrativeText": "You are now getting back into the rhythm. Let's go all in tonight!",
+    "narrativeText": "You are now getting back into the rhythm. The landscape is opening up — time to prove yourself against fresh competition.",
     "choices": [ {
       "id": "go_to_match_3",
       "label": "Step Into the Ring",
@@ -75,7 +81,10 @@
       "vpReward": 0,
       "nextPhase": "MATCH",
       "matchType": "One on One",
-      "segmentRules": [ "Normal" ]
+      "segmentRules": [ "Normal" ],
+      "opponentPool": [ "Kurt Angle", "British Bulldog", "Randy Savage" ],
+      "opponentGenderFilter": "MALE",
+      "excludedOpponents": [ "Oda Tsurugi" ]
     } ]
   }, {
     "id": "match_4",
@@ -88,12 +97,15 @@
       "vpReward": 0,
       "nextPhase": "MATCH",
       "matchType": "One on One",
-      "segmentRules": [ "Normal" ]
+      "segmentRules": [ "Normal" ],
+      "opponentPool": [ "Kurt Angle", "British Bulldog", "Randy Savage" ],
+      "opponentGenderFilter": "MALE",
+      "excludedOpponents": [ "Oda Tsurugi" ]
     } ]
   }, {
     "id": "match_5",
     "title": "Your Fifth Match",
-    "narrativeText": "Five matches. This is your proving ground. Make it count.",
+    "narrativeText": "Five matches. This is your proving ground. Make it count. The current champion is {{CHAMP}} — will you be next?",
     "choices": [ {
       "id": "go_to_match_5",
       "label": "Step Into the Ring",
@@ -101,7 +113,10 @@
       "vpReward": 0,
       "nextPhase": "MATCH",
       "matchType": "One on One",
-      "segmentRules": [ "Normal" ]
+      "segmentRules": [ "Normal" ],
+      "opponentPool": [ "Kurt Angle", "British Bulldog", "Randy Savage" ],
+      "opponentGenderFilter": "MALE",
+      "excludedOpponents": [ "Oda Tsurugi" ]
     } ]
   } ]
 }, {

@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterRespon
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.FeatureDataService;
+import com.github.javydreamercsw.management.service.campaign.PlaceholderResolverService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
@@ -50,9 +51,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +70,7 @@ public class CampaignNarrativeView extends VerticalLayout {
   private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
   private final FeatureDataService featureDataService;
   private final CampaignStateRepository campaignStateRepository;
+  private final PlaceholderResolverService placeholderResolver;
 
   private Campaign currentCampaign;
   private VerticalLayout narrativeContainer;
@@ -86,7 +86,8 @@ public class CampaignNarrativeView extends VerticalLayout {
       final SegmentNarrationServiceFactory aiFactory,
       final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
       final FeatureDataService featureDataService,
-      final CampaignStateRepository campaignStateRepository) {
+      final CampaignStateRepository campaignStateRepository,
+      final PlaceholderResolverService placeholderResolver) {
     this.wrestlerRepository = wrestlerRepository;
     this.encounterService = encounterService;
     this.campaignService = campaignService;
@@ -95,6 +96,7 @@ public class CampaignNarrativeView extends VerticalLayout {
     this.notificationService = notificationService;
     this.featureDataService = featureDataService;
     this.campaignStateRepository = campaignStateRepository;
+    this.placeholderResolver = placeholderResolver;
 
     setSpacing(true);
     setPadding(true);
@@ -258,7 +260,11 @@ public class CampaignNarrativeView extends VerticalLayout {
     narrativeContainer.removeAll();
     choicesContainer.removeAll();
 
-    Paragraph p = new Paragraph(encounter.getNarrative());
+    String narrative =
+        currentCampaign != null
+            ? placeholderResolver.resolve(currentCampaign, encounter.getNarrative())
+            : encounter.getNarrative();
+    Paragraph p = new Paragraph(narrative);
     p.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.LineHeight.MEDIUM);
     narrativeContainer.add(p);
 
@@ -311,18 +317,22 @@ public class CampaignNarrativeView extends VerticalLayout {
                 ? choice.getSegmentRules().toArray(new String[0])
                 : new String[0];
 
-        String opponentName = choice.getForcedOpponentName();
-        if (opponentName == null || opponentName.isBlank()) {
-          List<Wrestler> roster = new java.util.ArrayList<>(wrestlerRepository.findAll());
-          Long playerId = currentCampaign.getWrestler().getId();
-          roster.removeIf(w -> w.getId().equals(playerId));
-          if (!roster.isEmpty()) {
-            opponentName = roster.get(new Random().nextInt(roster.size())).getName();
-            log.info("AI did not provide an opponent. Randomly selected: {}", opponentName);
-          } else {
-            throw new IllegalStateException("No opponents available for match.");
-          }
+        // Assign rival before match if requested (e.g. first time meeting the antagonist)
+        if (choice.isAssignRivalBeforeMatch() && currentCampaign.getState().getRival() == null) {
+          placeholderResolver.assignRival(
+              currentCampaign,
+              choice.getOpponentPool(),
+              choice.getOpponentGenderFilter(),
+              choice.getExcludedOpponents());
         }
+
+        String opponentName =
+            placeholderResolver.resolveOpponent(
+                currentCampaign,
+                choice.getForcedOpponentName(),
+                choice.getOpponentPool(),
+                choice.getOpponentGenderFilter(),
+                choice.getExcludedOpponents());
 
         Segment match =
             campaignService.createMatchForEncounter(
@@ -331,6 +341,18 @@ public class CampaignNarrativeView extends VerticalLayout {
                 response.getNarrative(),
                 choice.getMatchType(),
                 rules);
+
+        // Assign rival from match opponent after match is created if requested
+        if (choice.isSetRivalFromMatchOpponent()) {
+          wrestlerRepository
+              .findByName(opponentName)
+              .ifPresent(
+                  rival -> {
+                    currentCampaign.getState().setRival(rival);
+                    campaignStateRepository.save(currentCampaign.getState());
+                    log.info("Set rival to match opponent: {}", rival.getName());
+                  });
+        }
 
         Button startMatchBtn =
             new Button("Proceed to Match", e -> UI.getCurrent().navigate("match/" + match.getId()));
