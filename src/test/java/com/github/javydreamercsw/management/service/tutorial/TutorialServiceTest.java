@@ -49,6 +49,10 @@ class TutorialServiceTest {
 
   @Mock private AccountTutorialCompletionRepository completionRepository;
   @Mock private GameSettingService gameSettingService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+
   @Mock private AccountRepository accountRepository;
   @Mock private TutorialDefinition globalDefinition;
   @Mock private TutorialStep stepMock;
@@ -69,6 +73,7 @@ class TutorialServiceTest {
         new TutorialService(
             completionRepository,
             gameSettingService,
+            expansionService,
             accountRepository,
             List.of(globalDefinition),
             universeService,

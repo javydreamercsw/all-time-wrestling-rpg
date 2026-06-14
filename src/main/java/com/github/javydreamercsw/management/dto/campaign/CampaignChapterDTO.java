@@ -18,7 +18,9 @@ package com.github.javydreamercsw.management.dto.campaign;
 
 import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -58,6 +60,26 @@ public class CampaignChapterDTO {
    * end of a campaign expansion) where the AI storyline handoff is the designed outcome.
    */
   @Builder.Default private boolean expansionBoundary = false;
+
+  /**
+   * Title setup applied when this chapter is entered via {@code advanceToChapter}. Each entry maps
+   * a title name (e.g. {@code "ATW World"}) to the wrestler name who should hold it at chapter
+   * start. Applied according to {@code overrideExistingChampion}:
+   *
+   * <ul>
+   *   <li>{@code false} (default) — only assign if the title is currently vacant.
+   *   <li>{@code true} — always replace the current champion.
+   * </ul>
+   *
+   * Supports {{CHAMP}} as the wrestler name to leave the current champion unchanged (no-op).
+   */
+  @Builder.Default private Map<String, String> initialChampions = new LinkedHashMap<>();
+
+  /**
+   * When {@code true}, {@code initialChampions} entries always replace the current champion even if
+   * the title is already held. Default {@code false} = only set when title is vacant.
+   */
+  @Builder.Default private boolean overrideExistingChampion = false;
 
   /**
    * Wrestler names permitted to play this chapter. The tutorial wrestler picker filters to these

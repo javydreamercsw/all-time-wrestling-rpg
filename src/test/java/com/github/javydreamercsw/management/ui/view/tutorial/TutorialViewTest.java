@@ -66,6 +66,9 @@ class TutorialViewTest extends AbstractViewTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private AiSettingsService aiSettingsService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+
   private Account testAccount;
   private TutorialView view;
 
@@ -79,6 +82,8 @@ class TutorialViewTest extends AbstractViewTest {
     // Default: no tutorial universe exists → show mode-selection
     when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.empty());
 
+    when(expansionService.getExpansions()).thenReturn(java.util.List.of());
+
     view =
         new TutorialView(
             tutorialService,
@@ -86,7 +91,8 @@ class TutorialViewTest extends AbstractViewTest {
             universeContextService,
             accountService,
             wrestlerService,
-            aiSettingsService);
+            aiSettingsService,
+            expansionService);
     UI.getCurrent().add(view);
   }
 
@@ -182,7 +188,7 @@ class TutorialViewTest extends AbstractViewTest {
     Universe created = mock(Universe.class);
     when(created.getName()).thenReturn("Tutorial – player");
     when(created.getType()).thenReturn(Universe.UniverseType.CAMPAIGN);
-    when(tutorialService.createTutorialUniverse(any(), any(), any())).thenReturn(created);
+    when(tutorialService.createTutorialUniverse(any(), any(), any(), any())).thenReturn(created);
 
     // Set up wizard state for after creation
     TutorialStep inlineStep = inlineStepMock("Assign Your Wrestler", "hint");
@@ -194,7 +200,7 @@ class TutorialViewTest extends AbstractViewTest {
     _get(view, Button.class, spec -> spec.withText("Create My Universe & Start Tutorial")).click();
 
     verify(tutorialService)
-        .createTutorialUniverse(eq(testAccount), eq(Universe.UniverseType.CAMPAIGN), any());
+        .createTutorialUniverse(eq(testAccount), eq(Universe.UniverseType.CAMPAIGN), any(), any());
   }
 
   // ── WIZARD phase ──────────────────────────────────────────────────────────

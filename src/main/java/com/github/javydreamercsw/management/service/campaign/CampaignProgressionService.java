@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.LocalDateTime;
@@ -55,6 +56,7 @@ public class CampaignProgressionService {
   private final TitleRepository titleRepository;
   private final TeamRepository teamRepository;
   private final TitleService titleService;
+  private final WrestlerRepository wrestlerRepository;
   private final StorylineDirectorService storylineDirectorService;
   private final WrestlerStatusService wrestlerStatusService;
   private final FeatureDataService featureDataService;
@@ -143,6 +145,8 @@ public class CampaignProgressionService {
     state.setMatchesPlayed(0);
     state.setWins(0);
     state.setLosses(0);
+
+    applyInitialChampions(nextChapter);
 
     chapterService
         .getActivePoint(nextChapter.getEntryPoints(), state)
@@ -263,5 +267,44 @@ public class CampaignProgressionService {
 
     featureDataService.setFeatureValue(campaign.getState(), KEY_PARTNER_ID, null);
     featureDataService.setFeatureValue(campaign.getState(), KEY_RECRUITING_PARTNER, true);
+  }
+
+  /**
+   * Sets title holders declared in {@code chapter.getInitialChampions()} when the chapter is
+   * entered. Respects {@code chapter.isOverrideExistingChampion()}:
+   *
+   * <ul>
+   *   <li>{@code false} — only assigns when the title is currently vacant.
+   *   <li>{@code true} — always replaces the current champion.
+   * </ul>
+   */
+  void applyInitialChampions(@NonNull final CampaignChapterDTO chapter) {
+    if (chapter.getInitialChampions() == null || chapter.getInitialChampions().isEmpty()) {
+      return;
+    }
+    chapter
+        .getInitialChampions()
+        .forEach(
+            (titleName, wrestlerName) ->
+                titleRepository
+                    .findByName(titleName)
+                    .ifPresent(
+                        title -> {
+                          boolean vacant = title.isVacant();
+                          if (!vacant && !chapter.isOverrideExistingChampion()) {
+                            return;
+                          }
+                          wrestlerRepository
+                              .findByName(wrestlerName)
+                              .ifPresentOrElse(
+                                  wrestler ->
+                                      titleService.awardTitleTo(title, java.util.List.of(wrestler)),
+                                  () ->
+                                      log.warn(
+                                          "initialChampions: wrestler '{}' not found for title"
+                                              + " '{}'",
+                                          wrestlerName,
+                                          titleName));
+                        }));
   }
 }
