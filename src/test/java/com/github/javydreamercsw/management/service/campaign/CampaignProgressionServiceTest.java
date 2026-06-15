@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -94,7 +95,7 @@ class CampaignProgressionServiceTest {
 
     CampaignChapterDTO ch2 = new CampaignChapterDTO();
     ch2.setId("ch2");
-    when(chapterService.findAvailableChapters(any())).thenReturn(List.of(ch2));
+    when(chapterService.findAvailableChapters(any(), isNull())).thenReturn(List.of(ch2));
     when(chapterService.getChapter("ch2")).thenReturn(Optional.of(ch2));
     when(chapterService.getChapter("ch1")).thenReturn(Optional.empty());
     when(chapterService.getActivePoint(any(), any())).thenReturn(Optional.empty());
@@ -124,7 +125,7 @@ class CampaignProgressionServiceTest {
     List<Set<String>> callTimeSnapshot = new ArrayList<>();
     CampaignChapterDTO ch2 = new CampaignChapterDTO();
     ch2.setId("ch2");
-    when(chapterService.findAvailableChapters(any()))
+    when(chapterService.findAvailableChapters(any(), isNull()))
         .thenAnswer(
             inv -> {
               CampaignState s = inv.getArgument(0);

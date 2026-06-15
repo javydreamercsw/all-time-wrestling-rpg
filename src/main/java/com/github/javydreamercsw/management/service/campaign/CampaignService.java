@@ -170,9 +170,14 @@ public class CampaignService {
             .lastSync(LocalDateTime.now())
             .build();
 
-    // Select initial chapter and apply any title setup it declares
+    // Select initial chapter and apply any title setup it declares.
+    // First try wrestler-specific chapters; fall back to unrestricted so generic wrestlers
+    // (e.g. those whose name isn't listed in allowedWrestlerNames) still get a starting chapter.
     List<CampaignChapterDTO> available =
         chapterService.findAvailableChapters(state, wrestler.getName());
+    if (available.isEmpty()) {
+      available = chapterService.findAvailableChapters(state, null);
+    }
     if (!available.isEmpty()) {
       CampaignChapterDTO initialChapter = available.get(0);
       state.setCurrentChapterId(initialChapter.getId());

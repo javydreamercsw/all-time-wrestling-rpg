@@ -126,8 +126,9 @@ class InboxViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
 
-    // 5 headers + 3 rows * 5 columns + 1 selection column = 24 cells
-    Assertions.assertEquals(24, cells.size());
+    // 1 header row * 7 columns + 3 data rows * 7 columns = 28 cells
+    // (1 selection col + 6 data cols: eventType, urgency, subject, timestamp, targets, actions)
+    Assertions.assertEquals(28, cells.size());
 
     // Explicitly set "Read Status" to "All" (this should already be the default, but we'll keep it
     // for robustness)
@@ -213,7 +214,9 @@ class InboxViewE2ETest extends AbstractE2ETest {
 
     // Select all using the ID we added
     WebElement selectAllCheckbox = waitForVaadinElement(driver, By.id("select-all-checkbox"));
-    selectAllCheckbox.click();
+    wait.until(
+        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-notification-card")));
+    clickElement(selectAllCheckbox);
 
     // Delete selected
     WebElement deleteSelectedButton =
@@ -272,12 +275,17 @@ class InboxViewE2ETest extends AbstractE2ETest {
                     //vaadin-grid-cell-content[contains(text(), 'Unread\
                      Item')]//preceding-sibling::vaadin-grid-cell-content//vaadin-checkbox\
                     """)));
-    firstRowCheckbox.click();
+    WebDriverWait notifWait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    notifWait.until(
+        ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-notification-card")));
+    clickElement(firstRowCheckbox);
 
     // Mark as read
     WebElement markAsReadButton =
-        driver.findElement(By.xpath("//vaadin-button[text()='Mark Selected as Read']"));
-    markAsReadButton.click();
+        wait.until(
+            ExpectedConditions.elementToBeClickable(
+                By.xpath("//vaadin-button[text()='Mark Selected as Read']")));
+    clickElement(markAsReadButton);
 
     // Verify item is marked as read (button text changes to "Mark as Unread")
     wait.until(
