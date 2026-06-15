@@ -374,4 +374,93 @@ class InboxServiceTest {
     assertThat(item.getActionType()).isNull();
     assertThat(item.getActionPayload()).isNull();
   }
+
+  @Test
+  void search_withReadStatus_unread_appliesUnreadFilter() {
+    when(securityUtils.isAdmin()).thenReturn(true);
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item2));
+
+    List<InboxItem> result = inboxService.search(null, "Unread", null, null, null);
+
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void search_asNonAdmin_withAccountId_appliesAccountTargetFilter() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(5L));
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1));
+
+    List<InboxItem> result = inboxService.search(null, null, null, null, 5L);
+
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void search_asNonAdmin_noTargetsNoAccount_returnsEmpty() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.empty());
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of());
+
+    List<InboxItem> result = inboxService.search(null, null, null, null, null);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void search_asNonAdmin_withWrestlerTargets_filtersToOwnedWrestlers() {
+    Wrestler owned = new Wrestler();
+    owned.setId(1L);
+    Wrestler notOwned = new Wrestler();
+    notOwned.setId(2L);
+
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(10L));
+    when(securityUtils.isOwner(owned)).thenReturn(true);
+    when(securityUtils.isOwner(notOwned)).thenReturn(false);
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1));
+
+    List<InboxItem> result = inboxService.search(Set.of(owned, notOwned), null, null, null, 10L);
+
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void search_asAdmin_withWrestlerTargets_appliesTargetPredicate() {
+    Wrestler w = new Wrestler();
+    w.setId(7L);
+    when(securityUtils.isAdmin()).thenReturn(true);
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1));
+
+    List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, null);
+
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void search_asAdmin_withBothWrestlerTargetsAndAccountId_appliesCombinedPredicate() {
+    Wrestler w = new Wrestler();
+    w.setId(3L);
+    when(securityUtils.isAdmin()).thenReturn(true);
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1, item2));
+
+    List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, 5L);
+
+    assertThat(result).hasSize(2);
+  }
 }
