@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.inbox;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
@@ -26,6 +28,7 @@ import com.github.javydreamercsw.management.service.league.MatchFulfillmentServi
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.league.MatchReportDialog;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -67,6 +70,7 @@ public class InboxView extends VerticalLayout {
   private final InboxEventTypeRegistry eventTypeRegistry;
   private final WrestlerRepository wrestlerRepository;
   private final MatchFulfillmentService matchFulfillmentService;
+  private final ObjectMapper objectMapper;
   private final Grid<InboxItem> grid = new Grid<>(InboxItem.class);
   private final MultiSelectComboBox<Wrestler> targetFilter = new MultiSelectComboBox<>("Targets");
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
@@ -85,12 +89,14 @@ public class InboxView extends VerticalLayout {
       final InboxEventTypeRegistry eventTypeRegistry,
       final WrestlerRepository wrestlerRepository,
       final MatchFulfillmentService matchFulfillmentService,
-      final SecurityUtils securityUtils) {
+      final SecurityUtils securityUtils,
+      final ObjectMapper objectMapper) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
     this.matchFulfillmentService = matchFulfillmentService;
     this.securityUtils = securityUtils;
+    this.objectMapper = objectMapper;
 
     addClassName("inbox-view");
     setSizeFull();
@@ -304,6 +310,7 @@ public class InboxView extends VerticalLayout {
     if (item.getActionType() != null) {
       switch (item.getActionType()) {
         case "MATCH_REPORT" -> layout.add(createMatchReportButton(item));
+        case "NAVIGATE" -> createNavigateButton(item).ifPresent(layout::add);
         default -> {
           // Unknown action type — no extra button rendered
         }
@@ -351,6 +358,26 @@ public class InboxView extends VerticalLayout {
     reportButton.setId("report-result-btn-" + item.getId());
     reportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
     return reportButton;
+  }
+
+  private Optional<Button> createNavigateButton(@NonNull final InboxItem item) {
+    if (item.getActionPayload() == null) {
+      return Optional.empty();
+    }
+    try {
+      java.util.Map<String, String> payload =
+          objectMapper.readValue(item.getActionPayload(), new TypeReference<>() {});
+      String route = payload.get("route");
+      if (route == null || route.isBlank()) {
+        return Optional.empty();
+      }
+      Button button = new Button("View", e -> UI.getCurrent().navigate(route));
+      button.setId("navigate-btn-" + item.getId());
+      button.addThemeVariants(ButtonVariant.LUMO_SMALL);
+      return Optional.of(button);
+    } catch (Exception e) {
+      return Optional.empty();
+    }
   }
 
   private String getTargetNames(@NonNull final InboxItem item) {

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -57,6 +58,7 @@ class InboxViewTest extends AbstractViewTest {
   @Mock private MatchFulfillmentService matchFulfillmentService;
   @Mock private SecurityUtils securityUtils;
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
   private InboxView view;
 
   @BeforeEach
@@ -72,7 +74,8 @@ class InboxViewTest extends AbstractViewTest {
             eventTypeRegistry,
             wrestlerRepository,
             matchFulfillmentService,
-            securityUtils);
+            securityUtils,
+            objectMapper);
     UI.getCurrent().add(view);
   }
 
@@ -103,7 +106,8 @@ class InboxViewTest extends AbstractViewTest {
             eventTypeRegistry,
             wrestlerRepository,
             matchFulfillmentService,
-            securityUtils);
+            securityUtils,
+            objectMapper);
     UI.getCurrent().add(playerView);
 
     MultiSelectComboBox<?> targetFilter = _get(playerView, MultiSelectComboBox.class);
@@ -131,7 +135,8 @@ class InboxViewTest extends AbstractViewTest {
             eventTypeRegistry,
             wrestlerRepository,
             matchFulfillmentService,
-            securityUtils);
+            securityUtils,
+            objectMapper);
     UI.getCurrent().add(freshView);
 
     Button markRead = _get(freshView, Button.class, spec -> spec.withText("Mark Selected as Read"));
@@ -164,13 +169,84 @@ class InboxViewTest extends AbstractViewTest {
             eventTypeRegistry,
             wrestlerRepository,
             matchFulfillmentService,
-            securityUtils);
+            securityUtils,
+            objectMapper);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
     GridKt._clickItem(grid, 0, 1, false, false, false, false);
 
     verify(inboxService).toggleReadStatus(unreadItem);
+  }
+
+  @Test
+  @DisplayName("NAVIGATE action type renders a View button")
+  void createActionComponent_navigate_rendersViewButton() {
+    InboxEventType eventType = new InboxEventType("CHAMPIONSHIP_CHANGE", "Championship Change");
+    InboxItem item = new InboxItem();
+    item.setId(20L);
+    item.setEventType(eventType);
+    item.setRead(false);
+    item.setDescription("New champion crowned");
+    item.setActionType("NAVIGATE");
+    item.setActionPayload("{\"route\":\"titles/5\"}");
+
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(item));
+    when(inboxService.toggleReadStatus(any())).thenReturn(item);
+    when(securityUtils.canEdit(any())).thenReturn(true);
+
+    InboxView freshView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper);
+    UI.getCurrent().add(freshView);
+
+    Grid<InboxItem> grid = _get(freshView, Grid.class);
+    GridKt._clickItem(grid, 0, 1, false, false, false, false);
+
+    _get(freshView, Button.class, spec -> spec.withId("navigate-btn-20"));
+  }
+
+  @Test
+  @DisplayName("NAVIGATE action with missing payload renders no View button")
+  void createActionComponent_navigate_missingPayload_noButton() {
+    InboxEventType eventType = new InboxEventType("CHAMPIONSHIP_CHANGE", "Championship Change");
+    InboxItem item = new InboxItem();
+    item.setId(21L);
+    item.setEventType(eventType);
+    item.setRead(false);
+    item.setDescription("New champion crowned");
+    item.setActionType("NAVIGATE");
+    item.setActionPayload(null);
+
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(item));
+    when(inboxService.toggleReadStatus(any())).thenReturn(item);
+    when(securityUtils.canEdit(any())).thenReturn(true);
+
+    InboxView freshView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper);
+    UI.getCurrent().add(freshView);
+
+    Grid<InboxItem> grid = _get(freshView, Grid.class);
+    GridKt._clickItem(grid, 0, 1, false, false, false, false);
+
+    boolean found = false;
+    try {
+      _get(freshView, Button.class, spec -> spec.withId("navigate-btn-21"));
+      found = true;
+    } catch (AssertionError ignored) {
+    }
+    assertFalse(found);
   }
 
   @Test
@@ -192,7 +268,8 @@ class InboxViewTest extends AbstractViewTest {
             eventTypeRegistry,
             wrestlerRepository,
             matchFulfillmentService,
-            securityUtils);
+            securityUtils,
+            objectMapper);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
