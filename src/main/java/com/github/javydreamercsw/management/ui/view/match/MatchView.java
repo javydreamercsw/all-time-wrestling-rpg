@@ -565,8 +565,13 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
     sideCol.add(infoCard);
 
-    // Ringside Actions Section
-    if (!isPromo) {
+    // Ringside Actions Section — only available in GLOBAL universe matches
+    boolean isGlobalUniverse =
+        segment.getShow() != null
+            && segment.getShow().getUniverse() != null
+            && com.github.javydreamercsw.management.domain.universe.Universe.UniverseType.GLOBAL
+                == segment.getShow().getUniverse().getType();
+    if (!isPromo && isGlobalUniverse) {
       final RingsideActionComponent[] actionComponentWrapper = new RingsideActionComponent[1];
 
       actionComponentWrapper[0] =
