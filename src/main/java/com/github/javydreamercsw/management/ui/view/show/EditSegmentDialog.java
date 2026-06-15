@@ -79,7 +79,8 @@ public class EditSegmentDialog extends Dialog {
         final Long universeId) {
       List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
       Map<String, Wrestler> byName =
-          active.stream().collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
+          wrestlerService.getAllWrestlers().stream()
+              .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
       return new PreloadedData(
           segmentTypeRepository.findAll().stream()
               .sorted(Comparator.comparing(SegmentType::getName))
@@ -487,7 +488,6 @@ public class EditSegmentDialog extends Dialog {
                       notesArea.getValue(),
                       isTitleSegmentCheckbox.getValue(),
                       titleMultiSelectComboBox.getValue()));
-              close();
             });
 
     saveButton.setId("edit-segment-save-button");

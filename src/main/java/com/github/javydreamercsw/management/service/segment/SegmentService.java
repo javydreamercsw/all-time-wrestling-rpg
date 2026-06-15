@@ -16,8 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.segment;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
-import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -29,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -36,6 +38,7 @@ import com.github.javydreamercsw.management.dto.SegmentDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
@@ -48,6 +51,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -62,7 +66,10 @@ public class SegmentService {
 
   private final SegmentRepository segmentRepository;
   private final TitleRepository titleRepository;
+  private final WrestlerService wrestlerService;
   private final GameSettingService gameSettingService;
+  private final SecurityUtils securityUtils;
+  private final CampaignRepository campaignRepository;
   private final LeagueRepository leagueRepository;
   private final LeagueRosterRepository leagueRosterRepository;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
@@ -76,7 +83,10 @@ public class SegmentService {
   public SegmentService(
       final SegmentRepository segmentRepository,
       final TitleRepository titleRepository,
+      @Lazy final WrestlerService wrestlerService,
       final GameSettingService gameSettingService,
+      final SecurityUtils securityUtils,
+      final CampaignRepository campaignRepository,
       final LeagueRepository leagueRepository,
       final LeagueRosterRepository leagueRosterRepository,
       final MatchFulfillmentRepository matchFulfillmentRepository,
@@ -85,13 +95,72 @@ public class SegmentService {
       @Qualifier("MATCH_REQUEST") final InboxEventType matchRequestEventType) {
     this.segmentRepository = segmentRepository;
     this.titleRepository = titleRepository;
+    this.wrestlerService = wrestlerService;
     this.gameSettingService = gameSettingService;
+    this.securityUtils = securityUtils;
+    this.campaignRepository = campaignRepository;
     this.leagueRepository = leagueRepository;
     this.leagueRosterRepository = leagueRosterRepository;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.inboxService = inboxService;
     this.newsGenerationService = newsGenerationService;
     this.matchRequestEventType = matchRequestEventType;
+  }
+
+  /**
+   * Converts a SegmentDTO to a Segment entity.
+   *
+   * @param dto The SegmentDTO to convert.
+   * @return The corresponding Segment entity.
+   */
+  public Segment toEntity(@NonNull final SegmentDTO dto) {
+    Segment segment = new Segment();
+    segment.setExternalId(dto.getExternalId());
+    segment.setNarration(dto.getNarration());
+    // Assuming show, segmentType, participants, and winners are handled elsewhere or are not
+    // directly mapped from DTO
+    segment.setSegmentDate(dto.getSegmentDate());
+    // Titles
+    if (dto.getTitleIds() != null && !dto.getTitleIds().isEmpty()) {
+      Set<Title> titles = new java.util.HashSet<>();
+      for (Long titleId : dto.getTitleIds()) {
+        titleRepository.findById(titleId).ifPresent(titles::add);
+      }
+      segment.setTitles(titles);
+    }
+    return segment;
+  }
+
+  /**
+   * Converts a Segment entity to a SegmentDTO.
+   *
+   * @param segment The Segment entity to convert.
+   * @return The corresponding SegmentDTO.
+   */
+  public SegmentDTO toDto(@NonNull final Segment segment) {
+    SegmentDTO dto = new SegmentDTO();
+    dto.setExternalId(segment.getExternalId());
+    dto.setName(segment.getNarration()); // Assuming narration is used as name for DTO
+    dto.setShowName(segment.getShow().getName());
+    dto.setShowExternalId(segment.getShow().getExternalId());
+    dto.setParticipantNames(
+        segment.getParticipants().stream()
+            .map(p -> p.getWrestler().getName())
+            .collect(java.util.stream.Collectors.toList()));
+    dto.setWinnerNames(
+        segment.getWinners().stream()
+            .map(Wrestler::getName)
+            .collect(java.util.stream.Collectors.toList()));
+    dto.setSegmentTypeName(segment.getSegmentType().getName());
+    dto.setSegmentDate(segment.getSegmentDate());
+    dto.setNarration(segment.getNarration());
+    dto.setTitleIds(
+        segment.getTitles().stream()
+            .map(Title::getId)
+            .collect(java.util.stream.Collectors.toList()));
+    dto.setSegmentOrder(segment.getSegmentOrder());
+    dto.setMainEvent(segment.isMainEvent());
+    return dto;
   }
 
   /**
@@ -192,6 +261,78 @@ public class SegmentService {
   }
 
   /**
+   * Helper method for security checks. Checks if the current user is a participant in the segment
+   * and if the segment is part of an active campaign or universe.
+   *
+   * @param segmentId The ID of the segment.
+   * @return true if the user is authorized to update the segment.
+   */
+  public boolean canUserUpdateSegment(final Long segmentId) {
+    if (securityUtils.isAdmin() || securityUtils.isBooker()) {
+      return true;
+    }
+
+    return securityUtils
+        .getAuthenticatedUser()
+        .map(
+            user -> {
+              return segmentRepository
+                  .findById(segmentId)
+                  .map(
+                      segment -> {
+                        // Check if user owns any participant
+                        boolean isOwner =
+                            segment.getParticipants().stream()
+                                .map(p -> p.getWrestler())
+                                .anyMatch(
+                                    w ->
+                                        w.getAccount() != null
+                                            && w.getAccount().getId().equals(user.getId()));
+
+                        if (!isOwner) {
+                          log.debug(
+                              "User {} is not an owner of any participant in segment {}",
+                              user.getUsername(),
+                              segmentId);
+                          return false;
+                        }
+
+                        Wrestler ownerWrestler =
+                            segment.getParticipants().stream()
+                                .map(p -> p.getWrestler())
+                                .filter(
+                                    w ->
+                                        w.getAccount() != null
+                                            && w.getAccount().getId().equals(user.getId()))
+                                .findFirst()
+                                .orElse(null);
+
+                        boolean isCampaignMatch = false;
+                        if (ownerWrestler != null) {
+                          isCampaignMatch =
+                              campaignRepository
+                                  .findActiveByWrestler(ownerWrestler)
+                                  .map(
+                                      campaign ->
+                                          segment.equals(campaign.getState().getCurrentMatch()))
+                                  .orElse(false);
+                        }
+
+                        // Check if it's a universe match
+                        boolean isUniverseMatch =
+                            segment.getShow().getUniverse() != null
+                                || (segment.getSegmentType() != null
+                                    && SegmentTypeNames.PROMO.equalsIgnoreCase(
+                                        segment.getSegmentType().getName()));
+
+                        return isCampaignMatch || isUniverseMatch;
+                      })
+                  .orElse(false);
+            })
+        .orElse(false);
+  }
+
+  /**
    * Finds a match by ID.
    *
    * @param id The match ID
@@ -201,6 +342,18 @@ public class SegmentService {
   @PreAuthorize("isAuthenticated()")
   public Optional<Segment> findById(@NonNull final Long id) {
     return segmentRepository.findById(id);
+  }
+
+  /**
+   * Finds a match by ID with the show eagerly fetched.
+   *
+   * @param id The match ID
+   * @return Optional containing the Segment if found
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Segment> findByIdWithShow(@NonNull final Long id) {
+    return segmentRepository.findByIdWithShow(id);
   }
 
   /**
@@ -215,6 +368,18 @@ public class SegmentService {
     Optional<Segment> result = segmentRepository.findByIdWithDetails(id);
     result.ifPresent(s -> s.getParticipants().forEach(p -> p.getWrestler().getAlignments().size()));
     return result;
+  }
+
+  /**
+   * Find a segment by ID and return it as a DTO.
+   *
+   * @param id The segment ID
+   * @return Optional containing the segment DTO if found, otherwise empty
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<SegmentDTO> findByIdAsDTO(@NonNull final Long id) {
+    return findByIdWithDetails(id).map(this::toDto);
   }
 
   /**
@@ -332,6 +497,12 @@ public class SegmentService {
     return segmentRepository.countWinsByWrestler(wrestler, universeId);
   }
 
+  @PreAuthorize("isAuthenticated()")
+  public long countMatchSegmentsByWrestler(
+      @NonNull final Wrestler wrestler, @NonNull final Long universeId) {
+    return segmentRepository.countMatchSegmentsByWrestler(wrestler, universeId);
+  }
+
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public long countLossesByWrestler(
@@ -354,6 +525,11 @@ public class SegmentService {
   @PreAuthorize("isAuthenticated()")
   public long countSegmentsByWrestler(final Wrestler wrestler) {
     return segmentRepository.countSegmentsByWrestler(wrestler);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public long countMatchSegmentsByWrestler(final Wrestler wrestler) {
+    return segmentRepository.countMatchSegmentsByWrestler(wrestler);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -406,6 +582,19 @@ public class SegmentService {
   @PreAuthorize("isAuthenticated()")
   public List<String> getAllExternalIds() {
     return segmentRepository.findAllExternalIds();
+  }
+
+  /**
+   * Gets all matches where a wrestler participated with the show eagerly fetched.
+   *
+   * @param wrestler The wrestler to search for
+   * @return List of Segment objects where the wrestler participated
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Segment> getSegmentsByWrestlerParticipationWithShow(
+      @NonNull final Wrestler wrestler) {
+    return segmentRepository.findByWrestlerParticipationWithShow(wrestler);
   }
 
   @Transactional(readOnly = true)
@@ -481,26 +670,21 @@ public class SegmentService {
                   matchFulfillmentRepository.save(fulfillment);
 
                   // Send Notification to the owner
-                  InboxItem inboxItem =
-                      inboxService.createInboxItem(
-                          matchRequestEventType,
-                          "Pending match on show: "
-                              + show.getName()
-                              + " for wrestler: "
-                              + wrestler.getName(),
-                          List.of(
-                              new InboxService.TargetInfo(
-                                  roster.getOwner().getId().toString(),
-                                  InboxItemTarget.TargetType.ACCOUNT),
-                              new InboxService.TargetInfo(
-                                  fulfillment.getId().toString(),
-                                  InboxItemTarget.TargetType.MATCH_FULFILLMENT),
-                              new InboxService.TargetInfo(
-                                  wrestler.getId().toString(),
-                                  InboxItemTarget.TargetType.WRESTLER)));
-                  inboxItem.setActionType("MATCH_REPORT");
-                  inboxItem.setActionPayload("{\"fulfillmentId\":\"" + fulfillment.getId() + "\"}");
-                  inboxService.save(inboxItem);
+                  inboxService.createInboxItem(
+                      matchRequestEventType,
+                      "Pending match on show: "
+                          + show.getName()
+                          + " for wrestler: "
+                          + wrestler.getName(),
+                      List.of(
+                          new InboxService.TargetInfo(
+                              roster.getOwner().getId().toString(),
+                              InboxItemTarget.TargetType.ACCOUNT),
+                          new InboxService.TargetInfo(
+                              fulfillment.getId().toString(),
+                              InboxItemTarget.TargetType.MATCH_FULFILLMENT),
+                          new InboxService.TargetInfo(
+                              wrestler.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
                 }
               }
             });
