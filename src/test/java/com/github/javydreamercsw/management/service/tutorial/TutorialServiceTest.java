@@ -207,6 +207,13 @@ class TutorialServiceTest {
     verify(completionRepository).deleteByAccountIdAndUniverseType(1L, Universe.UniverseType.GLOBAL);
   }
 
+  @Test
+  void resetCampaignTutorial_deletesCompletionRecordForCampaignMode() {
+    service.resetCampaignTutorial(account);
+    verify(completionRepository)
+        .deleteByAccountIdAndUniverseType(account.getId(), Universe.UniverseType.CAMPAIGN);
+  }
+
   // ── getDefinition ─────────────────────────────────────────────────────────
 
   @Test

@@ -227,6 +227,12 @@ public class CampaignProgressionService {
     campaignRepository.save(campaign);
   }
 
+  public void abandonCampaign(@NonNull Campaign campaign) {
+    campaign.setStatus(CampaignStatus.ABANDONED);
+    campaign.setEndedAt(LocalDateTime.now());
+    campaignRepository.save(campaign);
+  }
+
   @Transactional(readOnly = true)
   public boolean isChapterComplete(@NonNull final Campaign campaignParam) {
     Campaign campaign =

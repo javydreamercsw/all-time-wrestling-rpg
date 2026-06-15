@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import java.util.ArrayList;
@@ -167,5 +168,29 @@ class CampaignProgressionServiceTest {
     assertThat(state.getLosses()).isZero();
     assertThat(state.getCompletedChapterIds()).contains("ch1");
     verify(campaignStateRepository).save(state);
+  }
+
+  @Test
+  void testCompleteCampaign_setsStatusAndEndedAt() {
+    Campaign campaign = new Campaign();
+    campaign.setStatus(CampaignStatus.ACTIVE);
+
+    service.completeCampaign(campaign);
+
+    assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.COMPLETED);
+    assertThat(campaign.getEndedAt()).isNotNull();
+    verify(campaignRepository).save(campaign);
+  }
+
+  @Test
+  void testAbandonCampaign_setsStatusAndEndedAt() {
+    Campaign campaign = new Campaign();
+    campaign.setStatus(CampaignStatus.ACTIVE);
+
+    service.abandonCampaign(campaign);
+
+    assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.ABANDONED);
+    assertThat(campaign.getEndedAt()).isNotNull();
+    verify(campaignRepository).save(campaign);
   }
 }

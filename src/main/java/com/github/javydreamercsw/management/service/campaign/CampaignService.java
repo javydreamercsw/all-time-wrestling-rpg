@@ -319,6 +319,14 @@ public class CampaignService {
     matchResultProcessorService.saveSegment(segment);
   }
 
+  public void completeCampaign(@NonNull final Campaign campaign) {
+    campaignProgressionService.completeCampaign(campaign);
+  }
+
+  public void abandonCampaign(@NonNull final Campaign campaign) {
+    campaignProgressionService.abandonCampaign(campaign);
+  }
+
   public Optional<String> advanceChapter(@NonNull final Campaign campaignParam) {
     return campaignProgressionService.advanceChapter(campaignParam);
   }

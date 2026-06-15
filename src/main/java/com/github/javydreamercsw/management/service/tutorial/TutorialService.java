@@ -232,6 +232,13 @@ public class TutorialService {
     completionRepository.deleteByAccountIdAndUniverseType(accountId, type);
   }
 
+  /** Resets the campaign tutorial so the player is shown mode/wrestler selection again. */
+  @Transactional
+  @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
+  public void resetCampaignTutorial(@NonNull final Account account) {
+    markIncomplete(account.getId(), Universe.UniverseType.CAMPAIGN);
+  }
+
   /**
    * Invokes {@link TutorialStep#beforeStep} under admin security context. Must be idempotent —
    * called every time a step is rendered, including after backwards navigation.
