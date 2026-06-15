@@ -307,6 +307,8 @@ public class CampaignEncounterService {
     sb.append("\nAVAILABLE ROSTER (Possible Opponents/Participants):\n");
     wrestlerRepository.findAll().stream()
         .filter(w -> !w.getName().equals(campaign.getWrestler().getName()))
+        .filter(w -> Boolean.TRUE.equals(w.getActive()))
+        .filter(w -> expansionService.isExpansionEnabled(w.getExpansionCode()))
         .limit(20) // Don't overwhelm but give choice
         .forEach(
             w -> {

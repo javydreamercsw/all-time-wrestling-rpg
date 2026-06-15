@@ -342,15 +342,23 @@ public class CampaignNarrativeView extends VerticalLayout {
                 choice.getMatchType(),
                 rules);
 
-        // Assign rival from match opponent after match is created if requested
+        // Assign rival from match opponent after match is created if requested.
+        // Re-load the state from DB first — createMatchForEncounter already saved
+        // phase=MATCH and currentMatch; saving currentCampaign.getState() directly
+        // would overwrite those with stale in-memory values.
         if (choice.isSetRivalFromMatchOpponent()) {
           wrestlerRepository
               .findByName(opponentName)
               .ifPresent(
                   rival -> {
-                    currentCampaign.getState().setRival(rival);
-                    campaignStateRepository.save(currentCampaign.getState());
-                    log.info("Set rival to match opponent: {}", rival.getName());
+                    campaignStateRepository
+                        .findById(currentCampaign.getState().getId())
+                        .ifPresent(
+                            freshState -> {
+                              freshState.setRival(rival);
+                              campaignStateRepository.save(freshState);
+                              log.info("Set rival to match opponent: {}", rival.getName());
+                            });
                   });
         }
 

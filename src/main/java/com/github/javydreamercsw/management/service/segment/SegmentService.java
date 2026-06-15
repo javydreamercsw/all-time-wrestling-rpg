@@ -280,7 +280,31 @@ public class SegmentService {
                   .findById(segmentId)
                   .map(
                       segment -> {
-                        // Check if user owns any participant
+                        // Campaign match check: evaluated independently of account ownership
+                        // because campaign wrestlers are shared roster entities and may not have
+                        // wrestler.account set (they're identified via campaign.wrestler, not
+                        // wrestler.account). Any authenticated participant in an active campaign
+                        // whose currentMatch is this segment is allowed to report the result.
+                        boolean isCampaignMatch =
+                            segment.getParticipants().stream()
+                                .map(p -> p.getWrestler())
+                                .anyMatch(
+                                    w ->
+                                        campaignRepository
+                                            .findActiveByWrestler(w)
+                                            .map(
+                                                c ->
+                                                    c.getState().getCurrentMatch() != null
+                                                        && segmentId.equals(
+                                                            c.getState().getCurrentMatch().getId()))
+                                            .orElse(false));
+
+                        if (isCampaignMatch) {
+                          return true;
+                        }
+
+                        // Universe / promo match check: requires the user to own a participant
+                        // wrestler (wrestler.account links to the user's account).
                         boolean isOwner =
                             segment.getParticipants().stream()
                                 .map(p -> p.getWrestler())
@@ -297,35 +321,10 @@ public class SegmentService {
                           return false;
                         }
 
-                        Wrestler ownerWrestler =
-                            segment.getParticipants().stream()
-                                .map(p -> p.getWrestler())
-                                .filter(
-                                    w ->
-                                        w.getAccount() != null
-                                            && w.getAccount().getId().equals(user.getId()))
-                                .findFirst()
-                                .orElse(null);
-
-                        boolean isCampaignMatch = false;
-                        if (ownerWrestler != null) {
-                          isCampaignMatch =
-                              campaignRepository
-                                  .findActiveByWrestler(ownerWrestler)
-                                  .map(
-                                      campaign ->
-                                          segment.equals(campaign.getState().getCurrentMatch()))
-                                  .orElse(false);
-                        }
-
-                        // Check if it's a universe match
-                        boolean isUniverseMatch =
-                            segment.getShow().getUniverse() != null
-                                || (segment.getSegmentType() != null
-                                    && SegmentTypeNames.PROMO.equalsIgnoreCase(
-                                        segment.getSegmentType().getName()));
-
-                        return isCampaignMatch || isUniverseMatch;
+                        return segment.getShow().getUniverse() != null
+                            || (segment.getSegmentType() != null
+                                && SegmentTypeNames.PROMO.equalsIgnoreCase(
+                                    segment.getSegmentType().getName()));
                       })
                   .orElse(false);
             })

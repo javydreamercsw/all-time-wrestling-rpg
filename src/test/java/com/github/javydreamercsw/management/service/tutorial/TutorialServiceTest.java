@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.tutorial;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,12 +29,15 @@ import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompl
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.expansion.Expansion;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -208,5 +212,62 @@ class TutorialServiceTest {
   @Test
   void getDefinition_returnsMatchingDefinition() {
     assertThat(service.getDefinition(Universe.UniverseType.GLOBAL)).isSameAs(globalDefinition);
+  }
+
+  // ── createTutorialUniverse — expansion setup ──────────────────────────────
+
+  private void setUpUniverseCreationMocks() {
+    Universe saved = new Universe();
+    saved.setName("Tutorial – player");
+    saved.setType(Universe.UniverseType.CAMPAIGN);
+    when(universeService.findByName("Tutorial – player")).thenReturn(java.util.Optional.empty());
+    when(universeService.save(any())).thenReturn(saved);
+    when(universeMembershipService.addMember(any(), any(), any())).thenReturn(null);
+
+    Expansion base = new Expansion();
+    base.setCode("BASE_GAME");
+    base.setName("Base Game");
+    Expansion rumble = new Expansion();
+    rumble.setCode("RUMBLE");
+    rumble.setName("Abu Dhabi Rumble Expansion");
+    Expansion trailblazers = new Expansion();
+    trailblazers.setCode("TRAILBLAZERS");
+    trailblazers.setName("Trailblazers Expansion");
+    when(expansionService.getExpansions()).thenReturn(List.of(base, rumble, trailblazers));
+  }
+
+  @Test
+  void createTutorialUniverse_noExpansionsSelected_disablesAllNonBase() {
+    setUpUniverseCreationMocks();
+
+    service.createTutorialUniverse(account, Universe.UniverseType.CAMPAIGN, Map.of(), Set.of());
+
+    verify(expansionService).setExpansionEnabled("BASE_GAME", true);
+    verify(expansionService).setExpansionEnabled("RUMBLE", false);
+    verify(expansionService).setExpansionEnabled("TRAILBLAZERS", false);
+  }
+
+  @Test
+  void createTutorialUniverse_someExpansionsSelected_enablesOnlySelected() {
+    setUpUniverseCreationMocks();
+
+    service.createTutorialUniverse(
+        account, Universe.UniverseType.CAMPAIGN, Map.of(), Set.of("RUMBLE"));
+
+    verify(expansionService).setExpansionEnabled("BASE_GAME", true);
+    verify(expansionService).setExpansionEnabled(eq("RUMBLE"), eq(true));
+    verify(expansionService).setExpansionEnabled(eq("TRAILBLAZERS"), eq(false));
+  }
+
+  @Test
+  void createTutorialUniverse_allExpansionsSelected_enablesAll() {
+    setUpUniverseCreationMocks();
+
+    service.createTutorialUniverse(
+        account, Universe.UniverseType.CAMPAIGN, Map.of(), Set.of("RUMBLE", "TRAILBLAZERS"));
+
+    verify(expansionService).setExpansionEnabled("BASE_GAME", true);
+    verify(expansionService).setExpansionEnabled(eq("RUMBLE"), eq(true));
+    verify(expansionService).setExpansionEnabled(eq("TRAILBLAZERS"), eq(true));
   }
 }

@@ -512,6 +512,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
         GeneralSecurityUtils.runAsAdmin(
             () ->
                 wrestlerService.findAllActiveWithAlignments().stream()
+                    .filter(w -> expansionService.isExpansionEnabled(w.getExpansionCode()))
                     .filter(
                         w ->
                             allowedNames == null

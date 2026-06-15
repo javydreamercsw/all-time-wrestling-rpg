@@ -207,19 +207,19 @@ public class TutorialService {
           featureSettings.forEach(
               (key, enabled) -> gameSettingService.save(key, String.valueOf(enabled)));
 
-          // Apply expansion selections when the caller provided an explicit set.
-          if (!enabledExpansionCodes.isEmpty()) {
-            expansionService.setExpansionEnabled("BASE_GAME", true);
-            expansionService
-                .getExpansions()
-                .forEach(
-                    exp -> {
-                      if (!"BASE_GAME".equals(exp.getCode())) {
-                        expansionService.setExpansionEnabled(
-                            exp.getCode(), enabledExpansionCodes.contains(exp.getCode()));
-                      }
-                    });
-          }
+          // Always apply expansion selections so unchecked expansions are explicitly disabled.
+          // An empty set means BASE_GAME only; omitting this block would leave all expansions
+          // at their default (enabled), causing expansion wrestlers to appear as opponents.
+          expansionService.setExpansionEnabled("BASE_GAME", true);
+          expansionService
+              .getExpansions()
+              .forEach(
+                  exp -> {
+                    if (!"BASE_GAME".equals(exp.getCode())) {
+                      expansionService.setExpansionEnabled(
+                          exp.getCode(), enabledExpansionCodes.contains(exp.getCode()));
+                    }
+                  });
 
           return saved;
         });

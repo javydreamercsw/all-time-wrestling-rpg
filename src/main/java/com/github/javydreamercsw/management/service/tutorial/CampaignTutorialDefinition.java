@@ -184,6 +184,11 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
             .findByIdWithDetails(wrestlerId)
             .ifPresent(
                 wrestler -> {
+                  if (wrestler.getAccount() == null) {
+                    wrestler.setAccount(account);
+                    wrestler.setIsPlayer(true);
+                    wrestlerService.save(wrestler);
+                  }
                   if (!campaignService.hasActiveCampaign(wrestler)) {
                     campaignService.startCampaign(wrestler);
                   }

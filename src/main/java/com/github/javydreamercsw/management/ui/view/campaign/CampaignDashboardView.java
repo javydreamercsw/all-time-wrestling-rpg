@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeServ
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
 import com.github.javydreamercsw.management.ui.component.PlayerCampaignCard;
@@ -105,6 +106,7 @@ public class CampaignDashboardView extends VerticalLayout {
   private final TitleService titleService;
   private final TitleRepository titleRepository;
   private final StorylineExportService storylineExportService;
+  private final WrestlerService wrestlerService;
 
   private Campaign currentCampaign;
 
@@ -122,7 +124,8 @@ public class CampaignDashboardView extends VerticalLayout {
       final CampaignChapterService chapterService,
       final TitleService titleService,
       final TitleRepository titleRepository,
-      final StorylineExportService storylineExportService) {
+      final StorylineExportService storylineExportService,
+      final WrestlerService wrestlerService) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
@@ -136,6 +139,7 @@ public class CampaignDashboardView extends VerticalLayout {
     this.titleService = titleService;
     this.titleRepository = titleRepository;
     this.storylineExportService = storylineExportService;
+    this.wrestlerService = wrestlerService;
 
     setSpacing(true);
     setPadding(true);
@@ -338,7 +342,9 @@ public class CampaignDashboardView extends VerticalLayout {
     // --- LEFT COLUMN CONTENT ---
 
     // Player Card
-    leftColumn.add(new PlayerCampaignCard(currentCampaign));
+    String wrestlerImageUrl =
+        wrestlerService.resolveWrestlerImage(currentCampaign.getWrestler()).url();
+    leftColumn.add(new PlayerCampaignCard(currentCampaign, wrestlerImageUrl));
 
     // My Cards Section
     leftColumn.add(new H4("My Ability Cards"));

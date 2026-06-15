@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeServ
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -76,6 +77,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private CampaignChapterService chapterService;
   @Mock private TitleService titleService;
   @Mock private TitleRepository titleRepository;
+  @Mock private WrestlerService wrestlerService;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -118,6 +120,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     when(campaignService.getCurrentChapter(any()))
         .thenReturn(Optional.of(new CampaignChapterDTO()));
     when(titleRepository.findByName(any())).thenReturn(Optional.empty());
+    when(wrestlerService.resolveWrestlerImage(any()))
+        .thenReturn(new com.github.javydreamercsw.base.image.ImageResolution(null, true));
   }
 
   @Test
@@ -136,7 +140,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineExportService);
+            storylineExportService,
+            wrestlerService);
 
     UI.getCurrent().add(view);
 
@@ -193,7 +198,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineExportService);
+            storylineExportService,
+            wrestlerService);
 
     UI.getCurrent().add(view);
 
@@ -219,7 +225,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineExportService);
+            storylineExportService,
+            wrestlerService);
 
     UI.getCurrent().add(view);
 
@@ -249,7 +256,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
         chapterService,
         titleService,
         titleRepository,
-        storylineExportService);
+        storylineExportService,
+        wrestlerService);
   }
 
   @Test
@@ -337,7 +345,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineExportService);
+            storylineExportService,
+            wrestlerService);
 
     UI.getCurrent().add(view);
 
