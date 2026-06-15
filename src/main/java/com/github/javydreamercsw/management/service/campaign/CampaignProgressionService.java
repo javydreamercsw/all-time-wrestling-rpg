@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
@@ -123,21 +124,18 @@ public class CampaignProgressionService {
       state.getCompletedChapterIds().add(oldId);
       chapterService
           .getChapter(oldId)
+          .flatMap(oldChapter -> chapterService.getActivePoint(oldChapter.getExitPoints(), state))
           .ifPresent(
-              oldChapter ->
-                  chapterService
-                      .getActivePoint(oldChapter.getExitPoints(), state)
-                      .ifPresent(
-                          point -> {
-                            if (point.getStatusCardRewards() != null) {
-                              point
-                                  .getStatusCardRewards()
-                                  .forEach(
-                                      key ->
-                                          wrestlerStatusService.assignStatus(
-                                              campaign.getWrestler().getId(), key));
-                            }
-                          }));
+              point -> {
+                if (point.getStatusCardRewards() != null) {
+                  point
+                      .getStatusCardRewards()
+                      .forEach(
+                          key ->
+                              wrestlerStatusService.assignStatus(
+                                  campaign.getWrestler().getId(), key));
+                }
+              });
     }
 
     state.setCurrentChapterId(nextChapter.getId());
@@ -189,7 +187,7 @@ public class CampaignProgressionService {
 
     List<CampaignChapterDTO> available = getAvailableNextChapters(campaignParam);
     if (!available.isEmpty()) {
-      return advanceToChapter(campaignParam, available.get(0).getId());
+      return advanceToChapter(campaignParam, available.getFirst().getId());
     } else {
       CampaignState state = campaign.getState();
       String oldId = state.getCurrentChapterId();
@@ -197,21 +195,18 @@ public class CampaignProgressionService {
         state.getCompletedChapterIds().add(oldId);
         chapterService
             .getChapter(oldId)
+            .flatMap(oldChapter -> chapterService.getActivePoint(oldChapter.getExitPoints(), state))
             .ifPresent(
-                oldChapter ->
-                    chapterService
-                        .getActivePoint(oldChapter.getExitPoints(), state)
-                        .ifPresent(
-                            point -> {
-                              if (point.getStatusCardRewards() != null) {
-                                point
-                                    .getStatusCardRewards()
-                                    .forEach(
-                                        key ->
-                                            wrestlerStatusService.assignStatus(
-                                                campaign.getWrestler().getId(), key));
-                              }
-                            }));
+                point -> {
+                  if (point.getStatusCardRewards() != null) {
+                    point
+                        .getStatusCardRewards()
+                        .forEach(
+                            key ->
+                                wrestlerStatusService.assignStatus(
+                                    campaign.getWrestler().getId(), key));
+                  }
+                });
       }
       log.info("No predefined next chapter found. Initializing AI-driven storyline.");
       if (state.getActiveStoryline() != null) {
@@ -257,8 +252,8 @@ public class CampaignProgressionService {
                   Team newChamps = teams.get(random.nextInt(teams.size()));
                   List<Wrestler> champs =
                       List.of(newChamps.getWrestler1(), newChamps.getWrestler2());
-                  titleService.awardTitleTo(title, champs);
-                  log.info(
+                  GeneralSecurityUtils.runAsAdmin(() -> titleService.awardTitleTo(title, champs));
+                  log.debug(
                       "Initialized Tag Team Chapter: Awarded vacant title to {}",
                       newChamps.getName());
                 }
@@ -298,7 +293,10 @@ public class CampaignProgressionService {
                               .findByName(wrestlerName)
                               .ifPresentOrElse(
                                   wrestler ->
-                                      titleService.awardTitleTo(title, java.util.List.of(wrestler)),
+                                      GeneralSecurityUtils.runAsAdmin(
+                                          () ->
+                                              titleService.awardTitleTo(
+                                                  title, java.util.List.of(wrestler))),
                                   () ->
                                       log.warn(
                                           "initialChampions: wrestler '{}' not found for title"

@@ -334,10 +334,6 @@ public class CampaignService {
     return campaignProgressionService.advanceToChapter(campaignParam, targetChapterId);
   }
 
-  public void completeCampaign(@NonNull Campaign campaign) {
-    campaignProgressionService.completeCampaign(campaign);
-  }
-
   @Transactional(readOnly = true)
   public boolean isChapterComplete(@NonNull final Campaign campaignParam) {
     return campaignProgressionService.isChapterComplete(campaignParam);

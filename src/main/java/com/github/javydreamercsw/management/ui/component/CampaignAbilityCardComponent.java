@@ -82,7 +82,7 @@ public class CampaignAbilityCardComponent extends Div {
     add(header, desc);
 
     // Primary effect
-    addEffect(card.getTiming(), card.getEffectScript(), card.isOneTimeUse(), "Primary Effect");
+    addEffect(card.getTiming(), card.getEffectScript(), card.isOneTimeUse());
 
     // Secondary effect (if present)
     if (card.getSecondaryEffectScript() != null && !card.getSecondaryEffectScript().isBlank()) {
@@ -92,15 +92,11 @@ public class CampaignAbilityCardComponent extends Div {
       divider.addClassNames(LumoUtility.Margin.Vertical.SMALL);
       add(divider);
       addEffect(
-          card.getSecondaryTiming(),
-          card.getSecondaryEffectScript(),
-          card.isSecondaryOneTimeUse(),
-          "Secondary Effect");
+          card.getSecondaryTiming(), card.getSecondaryEffectScript(), card.isSecondaryOneTimeUse());
     }
   }
 
-  private void addEffect(
-      final AbilityTiming timing, final String script, final boolean oneTime, final String label) {
+  private void addEffect(final AbilityTiming timing, final String script, final boolean oneTime) {
     Div effectDiv = new Div();
     effectDiv.addClassNames(
         LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN, LumoUtility.Gap.XSMALL);

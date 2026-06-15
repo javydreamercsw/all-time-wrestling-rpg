@@ -123,15 +123,6 @@ public class Account {
   }
 
   /**
-   * Remove a role from this account.
-   *
-   * @param role the role to remove
-   */
-  public void removeRole(final Role role) {
-    roles.remove(role);
-  }
-
-  /**
    * Check if this account has a specific role.
    *
    * @param roleName the role name to check

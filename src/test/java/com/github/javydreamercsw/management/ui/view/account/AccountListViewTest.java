@@ -47,7 +47,7 @@ class AccountListViewTest extends AbstractViewTest {
   void setup() {
     when(accountService.list(any(Pageable.class))).thenReturn(Page.empty());
 
-    view = new AccountListView(accountService, securityUtils);
+    view = new AccountListView(accountService);
     UI.getCurrent().add(view);
   }
 

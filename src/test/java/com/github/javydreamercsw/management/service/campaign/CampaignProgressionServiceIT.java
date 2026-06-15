@@ -86,7 +86,7 @@ class CampaignProgressionServiceIT extends AbstractMockUserIntegrationTest {
     List<CampaignChapterDTO> available =
         campaignProgressionService.getAvailableNextChapters(campaign);
     assumeTrue(!available.isEmpty(), "Need at least one available next chapter");
-    String nextId = available.get(0).getId();
+    String nextId = available.getFirst().getId();
 
     Optional<String> result = campaignProgressionService.advanceToChapter(campaign, nextId);
 

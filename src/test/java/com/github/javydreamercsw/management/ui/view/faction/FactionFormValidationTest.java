@@ -90,7 +90,6 @@ class FactionFormValidationTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);

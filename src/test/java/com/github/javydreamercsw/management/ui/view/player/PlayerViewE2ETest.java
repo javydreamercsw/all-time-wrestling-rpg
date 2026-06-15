@@ -340,7 +340,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     // Navigate to the PlayerView
     navigateTo("player");
 
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     captureCaption(
         "Upcoming matches grid — each scheduled segment has a 'Go to Match' button that"
@@ -391,7 +391,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     login("player", "player123");
     navigateTo("player");
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     assertDoesNotThrow(
         () -> {
@@ -445,7 +445,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     login("player", "player123");
     navigateTo("player");
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     assertDoesNotThrow(
         () -> {
@@ -529,7 +529,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     // Navigate to the PlayerView
     navigateTo("player");
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     assertDoesNotThrow(
         () -> {

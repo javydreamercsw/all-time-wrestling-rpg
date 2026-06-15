@@ -546,17 +546,17 @@ public abstract class AbstractIntegrationTest {
       }
 
       if (principalName != null) {
-        // Re-create the account if missing (e.g. after wipe)
         final String finalName = principalName;
+        final Collection<? extends GrantedAuthority> authorities = currentAuth.getAuthorities();
         accountRepository
             .findByUsername(finalName)
-            .orElseGet(
+            .ifPresentOrElse(
+                savedAccount -> login(savedAccount, authorities),
                 () -> {
-                  log.info("Re-creating missing account '{}' after database wipe...", finalName);
-                  Account a = new Account(finalName, "password", finalName + "@test.com");
-                  // Give it some default roles based on authorities if possible, or just ROLE_USER
-                  return accountRepository.saveAndFlush(a);
+                  log.info("Account '{}' not found - clearing security context", finalName);
+                  clearSecurityContext();
                 });
+        return;
       }
 
       login(currentAuth.getPrincipal(), currentAuth.getAuthorities());

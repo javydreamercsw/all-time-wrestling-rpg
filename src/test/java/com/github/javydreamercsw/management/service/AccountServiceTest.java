@@ -27,7 +27,6 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
-import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDateTime;
@@ -54,7 +53,6 @@ class AccountServiceTest {
   @Mock private RoleRepository roleRepository;
   @Mock private PasswordEncoder passwordEncoder;
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private UniverseMembershipRepository universeMembershipRepository;
 
   @InjectMocks private AccountService accountService;
 
@@ -268,7 +266,7 @@ class AccountServiceTest {
   void testSetLockExpiredAndSave() {
     when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
-    Account result = accountService.setLockExpiredAndSave(account);
+    accountService.setLockExpiredAndSave(account);
 
     verify(accountRepository).save(account);
     assertThat(account.getLockedUntil()).isBefore(LocalDateTime.now());

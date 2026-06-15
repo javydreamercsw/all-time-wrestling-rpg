@@ -157,8 +157,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add a member to the faction. */
-  public void addMember(
-      final com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+  public void addMember(final WrestlerState state) {
     if (state != null && !members.contains(state)) {
       members.add(state);
       state.setFaction(this);
@@ -166,8 +165,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   }
 
   /** Remove a member from the faction. */
-  public void removeMember(
-      final com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+  public void removeMember(final WrestlerState state) {
     if (state != null) {
       members.remove(state);
       if (state.getFaction() != null && state.getFaction().equals(this)) {
@@ -213,8 +211,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
     this.disbandedDate = Instant.now();
 
     // Remove all members from faction
-    for (com.github.javydreamercsw.management.domain.wrestler.WrestlerState member :
-        new ArrayList<>(members)) {
+    for (WrestlerState member : new ArrayList<>(members)) {
       removeMember(member);
     }
   }

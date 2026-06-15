@@ -19,7 +19,6 @@ package com.github.javydreamercsw.base.domain.account;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /** Repository for Account entity. */
@@ -41,31 +40,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
    * @return the account if found
    */
   Optional<Account> findByEmail(String email);
-
-  /**
-   * Check if an account exists with the given username.
-   *
-   * @param username the username
-   * @return true if an account exists
-   */
-  boolean existsByUsername(String username);
-
-  /**
-   * Check if an account exists with the given email.
-   *
-   * @param email the email address
-   * @return true if an account exists
-   */
-  boolean existsByEmail(String email);
-
-  /**
-   * Find an account by username with roles eagerly loaded.
-   *
-   * @param username the username
-   * @return the account if found
-   */
-  @Query("SELECT a FROM Account a LEFT JOIN FETCH a.roles WHERE a.username = :username")
-  Optional<Account> findByUsernameWithRoles(@Param("username") String username);
 
   @Query(
       "SELECT a FROM Account a WHERE a.id NOT IN "

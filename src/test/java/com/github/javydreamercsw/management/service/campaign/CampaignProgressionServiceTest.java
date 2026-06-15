@@ -26,11 +26,8 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
-import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -53,12 +50,6 @@ class CampaignProgressionServiceTest {
   @Mock private CampaignRepository campaignRepository;
   @Mock private CampaignStateRepository campaignStateRepository;
   @Mock private CampaignChapterService chapterService;
-  @Mock private TournamentService tournamentService;
-  @Mock private TitleRepository titleRepository;
-  @Mock private TeamRepository teamRepository;
-  @Mock private TitleService titleService;
-  @Mock private StorylineDirectorService storylineDirectorService;
-  @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private FeatureDataService featureDataService;
   @Mock private CampaignService campaignService;
 
@@ -136,7 +127,7 @@ class CampaignProgressionServiceTest {
     List<CampaignChapterDTO> result = service.getAvailableNextChapters(campaign);
 
     assertThat(callTimeSnapshot).hasSize(1);
-    assertThat(callTimeSnapshot.get(0)).contains("ch1");
+    assertThat(callTimeSnapshot.getFirst()).contains("ch1");
     assertThat(result).extracting(CampaignChapterDTO::getId).containsExactly("ch2");
     // State must not be permanently mutated after the read-only call returns
     assertThat(state.getCompletedChapterIds()).doesNotContain("ch1");

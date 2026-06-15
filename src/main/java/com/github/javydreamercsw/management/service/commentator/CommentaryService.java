@@ -109,10 +109,6 @@ public class CommentaryService {
     return commentaryTeamRepository.save(team);
   }
 
-  public List<CommentaryTeam> getAllTeams() {
-    return commentaryTeamRepository.findAll();
-  }
-
   public long countCommentators() {
     return commentatorRepository.count();
   }

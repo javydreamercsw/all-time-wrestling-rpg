@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistory;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
@@ -52,7 +51,6 @@ public class BackstageActionService {
   private final CampaignService campaignService;
   private final SegmentRuleRepository segmentRuleRepository;
   private final WrestlerService wrestlerService;
-  private final ObjectMapper objectMapper;
   @Getter private final BackstageEncounterService backstageEncounterService;
   private final FeatureDataService featureDataService;
 
@@ -63,7 +61,6 @@ public class BackstageActionService {
       @Lazy final CampaignService campaignService,
       final SegmentRuleRepository segmentRuleRepository,
       final WrestlerService wrestlerService,
-      final ObjectMapper objectMapper,
       final BackstageEncounterService backstageEncounterService,
       final FeatureDataService featureDataService) {
     this.campaignStateRepository = campaignStateRepository;
@@ -72,7 +69,6 @@ public class BackstageActionService {
     this.campaignService = campaignService;
     this.segmentRuleRepository = segmentRuleRepository;
     this.wrestlerService = wrestlerService;
-    this.objectMapper = objectMapper;
     this.backstageEncounterService = backstageEncounterService;
     this.featureDataService = featureDataService;
   }
@@ -155,7 +151,7 @@ public class BackstageActionService {
         break;
       case RECOVERY:
         Long recoveryUniverseId =
-            campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
+            campaign.getUniverse() != null ? campaign.getUniverse().getId() : Long.valueOf(1L);
         var activeInjuries =
             injuryService.getActiveInjuriesForWrestler(
                 campaign.getWrestler().getId(), recoveryUniverseId);
@@ -165,7 +161,7 @@ public class BackstageActionService {
         if (successes >= 2) {
           // Prioritize healing 1 injury over 2 bumps (Injury is more severe)
           if (!activeInjuries.isEmpty()) {
-            var injuryToHeal = activeInjuries.get(0); // Heal the first one found
+            var injuryToHeal = activeInjuries.getFirst(); // Heal the first one found
             injuryService.healInjuryFree(injuryToHeal.getId());
             outcomeDescription =
                 "Recovery successful. Healed injury: "
@@ -209,7 +205,6 @@ public class BackstageActionService {
           }
         } else {
           outcomeDescription = "Recovery failed. (Successes: 0)";
-          isSuccess = false;
         }
         break;
       case PROMO:

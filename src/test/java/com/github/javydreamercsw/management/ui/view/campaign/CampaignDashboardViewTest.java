@@ -41,7 +41,6 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignChapterMode;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
-import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -72,7 +71,6 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private CampaignAbilityCardRepository cardRepository;
   @Mock private CampaignUpgradeService upgradeService;
   @Mock private SecurityUtils securityUtils;
-  @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private StorylineExportService storylineExportService;
   @Mock private TournamentService tournamentService;
   @Mock private CampaignChapterService chapterService;
