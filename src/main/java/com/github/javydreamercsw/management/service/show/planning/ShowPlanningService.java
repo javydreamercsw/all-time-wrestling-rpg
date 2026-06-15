@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
@@ -71,6 +72,7 @@ public class ShowPlanningService {
   private final SegmentRuleRepository segmentRuleRepository;
   private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final ApplicationEventPublisher eventPublisher;
+  private final TitleReignRepository titleReignRepository;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -177,17 +179,20 @@ public class ShowPlanningService {
         championship.getContenders().addAll(numberOneContenders);
       }
 
-      // Calculate days since last defense
+      // Calculate days since last defense.
+      // Query directly instead of title.getCurrentReign() — getActiveTitles() may return
+      // cached detached entities whose lazy titleReigns collection cannot be initialized
+      // outside the original session (causes LazyInitializationException in async context).
       Instant lastDefense =
-          title
-              .getCurrentReign()
+          titleReignRepository.findByTitleAndEndDateIsNull(title).stream()
               .map(com.github.javydreamercsw.management.domain.title.TitleReign::getStartDate)
+              .findFirst()
               .orElse(null);
 
-      // Check if there are any title matches after the start of the reign
+      // Check if there are any title matches after the start of the reign.
+      // Query directly instead of title.getSegments() — same lazy-collection issue as above.
       Optional<Instant> lastMatch =
-          title.getSegments().stream()
-              .filter(s -> s.getIsTitleSegment() != null && s.getIsTitleSegment())
+          segmentRepository.findByTitle(title).stream()
               .map(com.github.javydreamercsw.management.domain.show.segment.Segment::getSegmentDate)
               .max(Comparator.naturalOrder());
 
