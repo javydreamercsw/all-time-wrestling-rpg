@@ -50,12 +50,17 @@ public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBu
   @Override
   public void onApplicationEvent(@NonNull final WrestlerBumpEvent event) {
     log.debug("Received WrestlerBumpEvent for wrestler: {}", event.getWrestlerState().getName());
-    inboxService.createInboxItem(
-        wrestlerBump,
-        "Wrestler %s received a bump. Total bumps: %d"
-            .formatted(event.getWrestlerState().getName(), event.getWrestlerState().getBumps()),
-        event.getWrestlerState().getWrestler().getId().toString(),
-        InboxItemTarget.TargetType.WRESTLER);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            wrestlerBump,
+            "Wrestler %s received a bump. Total bumps: %d"
+                .formatted(event.getWrestlerState().getName(), event.getWrestlerState().getBumps()),
+            event.getWrestlerState().getWrestler().getId().toString(),
+            InboxItemTarget.TargetType.WRESTLER);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload(
+        "{\"route\":\"wrestler-profile/" + event.getWrestlerState().getWrestler().getId() + "\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

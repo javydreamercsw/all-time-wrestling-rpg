@@ -69,10 +69,15 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
               InboxItemTarget.TargetType.WRESTLER));
     }
 
-    inboxService.createInboxItem(
-        dramaEventCreated,
-        "%s: %s".formatted(dramaEvent.getTitle(), dramaEvent.getDescription()),
-        targets);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            dramaEventCreated,
+            "%s: %s".formatted(dramaEvent.getTitle(), dramaEvent.getDescription()),
+            targets);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload(
+        "{\"route\":\"wrestler-profile/" + dramaEvent.getPrimaryWrestler().getId() + "\"}");
+    inboxService.save(inboxItem);
 
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));

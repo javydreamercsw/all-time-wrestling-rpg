@@ -85,7 +85,11 @@ public class ChampionshipDefendedInboxListener
                     new InboxService.TargetInfo(
                         w.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
 
-    inboxService.createInboxItem(championshipDefended, message, targets);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(championshipDefended, message, targets);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload("{\"route\":\"title-list\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

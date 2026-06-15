@@ -52,12 +52,17 @@ public class WrestlerInjuryHealedInboxListener
   public void onApplicationEvent(@NonNull final WrestlerInjuryHealedEvent event) {
     log.debug(
         "Received WrestlerInjuryHealedEvent for wrestler: {}", event.getWrestlerState().getName());
-    inboxService.createInboxItem(
-        wrestlerInjuryHealed,
-        "Wrestler %s's %s injury has healed."
-            .formatted(event.getWrestlerState().getName(), event.getInjury().getDescription()),
-        event.getWrestlerState().getWrestler().getId().toString(),
-        InboxItemTarget.TargetType.WRESTLER);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            wrestlerInjuryHealed,
+            "Wrestler %s's %s injury has healed."
+                .formatted(event.getWrestlerState().getName(), event.getInjury().getDescription()),
+            event.getWrestlerState().getWrestler().getId().toString(),
+            InboxItemTarget.TargetType.WRESTLER);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload(
+        "{\"route\":\"wrestler-profile/" + event.getWrestlerState().getWrestler().getId() + "\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

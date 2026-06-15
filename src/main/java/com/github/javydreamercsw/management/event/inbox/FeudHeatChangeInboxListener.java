@@ -66,8 +66,12 @@ public class FeudHeatChangeInboxListener implements ApplicationListener<FeudHeat
                 event.getNewHeat(),
                 event.getReason());
 
-    inboxService.createInboxItem(
-        feudHeatChange, message, event.getFeudId().toString(), InboxItemTarget.TargetType.FEUD);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            feudHeatChange, message, event.getFeudId().toString(), InboxItemTarget.TargetType.FEUD);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload("{\"route\":\"rivalry-list\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -45,6 +46,8 @@ class FactionHeatChangeInboxListenerTest {
     factionHeatChange = mock(InboxEventType.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
     inboxUpdateBroadcaster = mock(InboxUpdateBroadcaster.class);
+    when(inboxService.createInboxItem(any(), any(), any(), any())).thenReturn(new InboxItem());
+    when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
     listener =
         new FactionHeatChangeInboxListener(
             inboxService, factionHeatChange, eventPublisher, inboxUpdateBroadcaster);

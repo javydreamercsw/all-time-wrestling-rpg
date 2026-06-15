@@ -59,11 +59,15 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
                 event.getReason());
 
     // Assuming the rivalry ID is the relevant reference for the inbox item
-    inboxService.createInboxItem(
-        rivalryHeatChange,
-        message,
-        event.getRivalryId().toString(),
-        InboxItemTarget.TargetType.RIVALRY);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            rivalryHeatChange,
+            message,
+            event.getRivalryId().toString(),
+            InboxItemTarget.TargetType.RIVALRY);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload("{\"route\":\"rivalry-list\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

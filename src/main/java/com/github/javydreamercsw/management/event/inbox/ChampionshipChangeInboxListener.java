@@ -72,11 +72,15 @@ public class ChampionshipChangeInboxListener
               .formatted(event.getTitleId(), newChampions, oldChampions);
     }
 
-    inboxService.createInboxItem(
-        championshipChange,
-        message,
-        event.getTitleId().toString(),
-        InboxItemTarget.TargetType.TITLE);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            championshipChange,
+            message,
+            event.getTitleId().toString(),
+            InboxItemTarget.TargetType.TITLE);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload("{\"route\":\"title-list\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

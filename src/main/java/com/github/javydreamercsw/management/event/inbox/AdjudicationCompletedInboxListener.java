@@ -51,11 +51,15 @@ public class AdjudicationCompletedInboxListener
   @Override
   public void onApplicationEvent(@NonNull final AdjudicationCompletedEvent event) {
     log.debug("Received AdjudicationCompletedEvent for show: {}", event.getShow().getName());
-    inboxService.createInboxItem(
-        adjudicationCompleted,
-        "Adjudication completed for show: %s".formatted(event.getShow().getName()),
-        event.getShow().getId().toString(),
-        InboxItemTarget.TargetType.SHOW);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            adjudicationCompleted,
+            "Adjudication completed for show: %s".formatted(event.getShow().getName()),
+            event.getShow().getId().toString(),
+            InboxItemTarget.TargetType.SHOW);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload("{\"route\":\"show-list\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }
