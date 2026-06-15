@@ -93,7 +93,11 @@ public class JoinRequestInboxListener implements ApplicationListener<JoinRequest
           }
 
           try {
-            inboxService.createInboxItem(joinRequestEventType, message, targets);
+            com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+                inboxService.createInboxItem(joinRequestEventType, message, targets);
+            inboxItem.setActionType("NAVIGATE");
+            inboxItem.setActionPayload("{\"route\":\"universe-list\"}");
+            inboxService.save(inboxItem);
             InboxUpdateEvent updateEvent = new InboxUpdateEvent(this);
             eventPublisher.publishEvent(updateEvent);
             inboxUpdateBroadcaster.broadcast(updateEvent);

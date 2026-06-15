@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
@@ -84,6 +86,14 @@ class JoinRequestInboxListenerTest {
     memberAccount.setId(11L);
   }
 
+  private InboxItem stubInboxItem() {
+    InboxItem item = new InboxItem();
+    item.setEventType(eventType);
+    when(inboxService.createInboxItem(any(), any(), anyList())).thenReturn(item);
+    when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    return item;
+  }
+
   @Test
   void onApplicationEvent_notifiesAdminMembers() {
     UniverseMembership adminMembership = new UniverseMembership();
@@ -96,6 +106,7 @@ class JoinRequestInboxListenerTest {
 
     when(membershipService.getMembersForUniverse(universe))
         .thenReturn(List.of(adminMembership, memberMembership));
+    stubInboxItem();
 
     UniverseJoinRequest request = new UniverseJoinRequest();
     request.setId(1L);
@@ -112,6 +123,27 @@ class JoinRequestInboxListenerTest {
             argThat(targets -> targets.size() == 1 && targets.get(0).targetId().equals("10")));
     verify(eventPublisher).publishEvent(any());
     verify(inboxUpdateBroadcaster).broadcast(any());
+  }
+
+  @Test
+  void onApplicationEvent_setsNavigateActionTypeAndPayload() {
+    UniverseMembership adminMembership = new UniverseMembership();
+    adminMembership.setAccount(adminAccount);
+    adminMembership.setRole(UniverseMemberRole.OWNER);
+
+    when(membershipService.getMembersForUniverse(universe)).thenReturn(List.of(adminMembership));
+    InboxItem item = stubInboxItem();
+
+    UniverseJoinRequest request = new UniverseJoinRequest();
+    request.setId(1L);
+    request.setUniverse(universe);
+    request.setRequesterName("New Player");
+
+    listener.onApplicationEvent(new JoinRequestSubmittedEvent(this, request));
+
+    assertThat(item.getActionType()).isEqualTo("NAVIGATE");
+    assertThat(item.getActionPayload()).contains("universe-list");
+    verify(inboxService).save(item);
   }
 
   @Test
@@ -141,6 +173,7 @@ class JoinRequestInboxListenerTest {
     when(membershipService.getMembersForUniverse(universe)).thenReturn(List.of(adminMembership));
     when(inboxService.createInboxItem(any(), any(), anyList()))
         .thenThrow(new RuntimeException("DB down"));
+    when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     UniverseJoinRequest request = new UniverseJoinRequest();
     request.setId(1L);

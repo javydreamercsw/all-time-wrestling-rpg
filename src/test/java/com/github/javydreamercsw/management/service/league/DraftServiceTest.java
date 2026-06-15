@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.league.Draft;
 import com.github.javydreamercsw.management.domain.league.DraftPick;
 import com.github.javydreamercsw.management.domain.league.DraftPickRepository;
@@ -66,6 +68,7 @@ class DraftServiceTest {
   @Mock private SalaryCalculator salaryCalculator;
   @Mock private DraftBroadcaster draftBroadcaster;
   @Mock private InboxService inboxService;
+  @Mock private InboxEventType draftStartedEventType;
 
   @Test
   void testStartDraft() {
@@ -80,6 +83,9 @@ class DraftServiceTest {
     LeagueMembership m2 = new LeagueMembership();
     m2.setMember(p2);
 
+    InboxItem inboxItem = new InboxItem();
+    when(inboxService.createInboxItem(any(), any(), any(), any())).thenReturn(inboxItem);
+    when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
     when(draftRepository.findByLeague(league)).thenReturn(Optional.empty());
     // Fix: Mock findByLeagueAndRoleIn
     when(leagueMembershipRepository.findByLeagueAndRoleIn(eq(league), any()))
@@ -94,6 +100,33 @@ class DraftServiceTest {
 
     assertThat(draft.getCurrentTurnUser()).isEqualTo(p1); // Should sort by ID
     assertThat(draft.getStatus()).isEqualTo(Draft.DraftStatus.ACTIVE);
+  }
+
+  @Test
+  void startDraft_setsNavigateActionTypeAndPayload() {
+    League league = new League();
+    league.setName("Test League");
+    Account p1 = new Account("player1", "pw", "p1@test.com");
+    p1.setId(1L);
+
+    LeagueMembership m1 = new LeagueMembership();
+    m1.setMember(p1);
+    m1.setRole(LeagueMembership.LeagueRole.PLAYER);
+
+    InboxItem inboxItem = new InboxItem();
+    when(inboxService.createInboxItem(any(), any(), any(), any())).thenReturn(inboxItem);
+    when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(draftRepository.findByLeague(league)).thenReturn(Optional.empty());
+    when(leagueMembershipRepository.findByLeagueAndRoleIn(eq(league), any()))
+        .thenReturn(new ArrayList<>(List.of(m1)));
+    when(leagueMembershipRepository.findByLeague(league)).thenReturn(new ArrayList<>(List.of(m1)));
+    when(draftRepository.save(any(Draft.class))).thenAnswer(i -> i.getArgument(0));
+
+    draftService.startDraft(league);
+
+    assertThat(inboxItem.getActionType()).isEqualTo("NAVIGATE");
+    assertThat(inboxItem.getActionPayload()).contains("draft");
+    verify(inboxService, times(1)).save(inboxItem);
   }
 
   @Test
