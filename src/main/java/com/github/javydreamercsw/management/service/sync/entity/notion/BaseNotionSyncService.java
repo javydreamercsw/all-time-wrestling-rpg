@@ -362,11 +362,6 @@ public abstract class BaseNotionSyncService<T extends AbstractSyncableEntity>
         getEntityName(), "Error syncing " + getEntityName() + "!");
   }
 
-  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
-  protected void saveEntity(final T entity) {
-    repository.saveAndFlush(entity);
-  }
-
   @Transactional
   protected abstract Map<String, PageProperty> getProperties(T entity);
 

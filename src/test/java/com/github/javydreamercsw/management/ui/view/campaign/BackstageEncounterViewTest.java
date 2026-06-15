@@ -53,7 +53,6 @@ class BackstageEncounterViewTest extends AbstractViewTest {
     view =
         new BackstageEncounterView(
             backstageEncounterService,
-            campaignRepository,
             wrestlerRepository,
             securityUtils,
             campaignService,

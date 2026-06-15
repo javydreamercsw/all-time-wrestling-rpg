@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.world.Location;
@@ -40,9 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ArenaServiceTest {
 
   @Mock private ArenaRepository arenaRepository;
-  @Mock private LocationService locationService;
-  @Mock private ImageGenerationServiceFactory imageGenerationServiceFactory;
-  @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
 
   @InjectMocks private ArenaService arenaService;
 

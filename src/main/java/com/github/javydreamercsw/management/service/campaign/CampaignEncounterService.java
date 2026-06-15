@@ -28,9 +28,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
 import com.github.javydreamercsw.management.domain.campaign.StorylineMilestone;
 import com.github.javydreamercsw.management.domain.commentator.Commentator;
 import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
-import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -55,13 +53,10 @@ public class CampaignEncounterService {
   private final SegmentNarrationServiceFactory aiFactory;
   private final CampaignEncounterRepository encounterRepository;
   private final CampaignStateRepository stateRepository;
-  private final CampaignChapterService chapterService;
   private final CampaignService campaignService;
   private final StorylineDirectorService storylineDirectorService;
   private final WrestlerStatusService wrestlerStatusService;
   private final WrestlerRepository wrestlerRepository;
-  private final TeamRepository teamRepository;
-  private final FactionRepository factionRepository;
   private final CommentatorRepository commentatorRepository;
   private final ObjectMapper objectMapper;
   private final FeatureDataService featureDataService;
@@ -71,13 +66,10 @@ public class CampaignEncounterService {
       final SegmentNarrationServiceFactory aiFactory,
       final CampaignEncounterRepository encounterRepository,
       final CampaignStateRepository stateRepository,
-      final CampaignChapterService chapterService,
       @org.springframework.context.annotation.Lazy final CampaignService campaignService,
       final StorylineDirectorService storylineDirectorService,
       final WrestlerStatusService wrestlerStatusService,
       final WrestlerRepository wrestlerRepository,
-      final TeamRepository teamRepository,
-      final FactionRepository factionRepository,
       final CommentatorRepository commentatorRepository,
       final ObjectMapper objectMapper,
       final FeatureDataService featureDataService,
@@ -85,13 +77,10 @@ public class CampaignEncounterService {
     this.aiFactory = aiFactory;
     this.encounterRepository = encounterRepository;
     this.stateRepository = stateRepository;
-    this.chapterService = chapterService;
     this.campaignService = campaignService;
     this.storylineDirectorService = storylineDirectorService;
     this.wrestlerStatusService = wrestlerStatusService;
     this.wrestlerRepository = wrestlerRepository;
-    this.teamRepository = teamRepository;
-    this.factionRepository = factionRepository;
     this.commentatorRepository = commentatorRepository;
     this.objectMapper = objectMapper;
     this.featureDataService = featureDataService;
@@ -522,14 +511,6 @@ public class CampaignEncounterService {
         campaign.getWrestler().getName(),
         choice.getText(),
         choice.getAlignmentShift());
-  }
-
-  public java.util.Optional<CampaignEncounter> getLatestEncounter(final Campaign campaign) {
-    List<CampaignEncounter> encounters =
-        encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign);
-    return encounters.isEmpty()
-        ? java.util.Optional.empty()
-        : java.util.Optional.of(encounters.get(encounters.size() - 1));
   }
 
   /**

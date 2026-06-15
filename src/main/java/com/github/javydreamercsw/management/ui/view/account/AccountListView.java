@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.ui.view.account;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.vaadin.flow.component.button.Button;
@@ -41,14 +40,11 @@ import org.springframework.data.domain.PageRequest;
 public class AccountListView extends Main {
 
   private final AccountService accountService;
-  private final SecurityUtils securityUtils;
   private final Grid<Account> grid = new Grid<>(Account.class, false);
 
   public AccountListView(
-      @Qualifier("managementAccountService") final AccountService accountService,
-      final SecurityUtils securityUtils) {
+      @Qualifier("managementAccountService") final AccountService accountService) {
     this.accountService = accountService;
-    this.securityUtils = securityUtils;
 
     Button createButton = new Button("New Account", VaadinIcon.PLUS.create());
     createButton.setId("new-account-button");

@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -55,13 +56,6 @@ import org.springframework.data.domain.Pageable;
 public class EditShowDetailsDialog extends Dialog {
 
   private final ShowService showService;
-  private final ShowTypeService showTypeService;
-  private final SeasonService seasonService;
-  private final ShowTemplateService showTemplateService;
-  private final UniverseRepository universeRepository;
-  private final CommentaryTeamRepository commentaryTeamRepository;
-  private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
-  private final LeagueRepository leagueRepository;
   private final Show show;
   private final Binder<Show> binder = new Binder<>(Show.class);
 
@@ -84,17 +78,10 @@ public class EditShowDetailsDialog extends Dialog {
       @NonNull final ShowTemplateService showTemplateService,
       @NonNull final UniverseRepository universeRepository,
       @NonNull final CommentaryTeamRepository commentaryTeamRepository,
-      @NonNull final com.github.javydreamercsw.management.service.world.ArenaService arenaService,
+      @NonNull final ArenaService arenaService,
       @NonNull final LeagueRepository leagueRepository,
       @NonNull final Show show) {
     this.showService = showService;
-    this.showTypeService = showTypeService;
-    this.seasonService = seasonService;
-    this.showTemplateService = showTemplateService;
-    this.universeRepository = universeRepository;
-    this.commentaryTeamRepository = commentaryTeamRepository;
-    this.arenaService = arenaService;
-    this.leagueRepository = leagueRepository;
     this.show = show;
 
     setHeaderTitle("Edit Show Details");

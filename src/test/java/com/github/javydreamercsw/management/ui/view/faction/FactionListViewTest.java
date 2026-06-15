@@ -70,7 +70,6 @@ class FactionListViewTest extends AbstractViewTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);

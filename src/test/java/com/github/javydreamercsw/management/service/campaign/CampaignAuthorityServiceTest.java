@@ -22,7 +22,6 @@ import static org.mockito.Mockito.verify;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +32,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CampaignAuthorityServiceTest {
 
-  @Mock private NpcRepository npcRepository;
   @Mock private CampaignStateRepository stateRepository;
   @InjectMocks private CampaignAuthorityService authorityService;
 

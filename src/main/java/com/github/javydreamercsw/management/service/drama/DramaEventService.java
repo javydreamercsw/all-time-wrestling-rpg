@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.service.drama;
 
-import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
@@ -27,12 +26,10 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.outcome.OutcomeMatrixService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Clock;
 import java.time.Instant;
@@ -63,11 +60,8 @@ public class DramaEventService {
   private final DramaEventRepository dramaEventRepository;
   private final WrestlerRepository wrestlerRepository;
   private final UniverseRepository universeRepository;
-  private final WrestlerStateRepository wrestlerStateRepository;
-  private final WrestlerService wrestlerService;
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
-  private final SecurityUtils securityUtils;
   private final Clock clock;
   private final Random random;
   private final ApplicationEventPublisher eventPublisher;
@@ -80,22 +74,16 @@ public class DramaEventService {
       final DramaEventRepository dramaEventRepository,
       final WrestlerRepository wrestlerRepository,
       final UniverseRepository universeRepository,
-      final WrestlerStateRepository wrestlerStateRepository,
-      final WrestlerService wrestlerService,
       final RivalryService rivalryService,
       final InjuryService injuryService,
-      final SecurityUtils securityUtils,
       final Clock clock,
       final Random random,
       final ApplicationEventPublisher eventPublisher) {
     this.dramaEventRepository = dramaEventRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.universeRepository = universeRepository;
-    this.wrestlerStateRepository = wrestlerStateRepository;
-    this.wrestlerService = wrestlerService;
     this.rivalryService = rivalryService;
     this.injuryService = injuryService;
-    this.securityUtils = securityUtils;
     this.clock = clock;
     this.random = random;
     this.eventPublisher = eventPublisher;

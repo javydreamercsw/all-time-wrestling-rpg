@@ -68,7 +68,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
   @Test
   void testInboxViewLoads() {
     navigateTo("inbox");
-    waitForVaadinToLoad(driver); // Wait for Vaadin to load
+    waitForVaadinToLoad(); // Wait for Vaadin to load
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     WebElement grid =
@@ -108,7 +108,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
 
     navigateTo("inbox");
 
-    waitForVaadinToLoad(driver); // Wait for Vaadin to load
+    waitForVaadinToLoad(); // Wait for Vaadin to load
     waitForGridToPopulate("inbox-grid"); // Use helper to ensure grid is ready
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
@@ -146,7 +146,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
 
     selectFromVaadinComboBox(readStatusComboBox, "All");
 
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     // Verify items after setting filter to "All" (should still be 3)
     wait.until(
@@ -164,7 +164,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     filterField.click();
     filterField.sendKeys(w1.getName(), Keys.TAB);
 
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
     // Verify filtered item appears
     List<WebElement> filteredDescriptionCells =
         wait.until(
@@ -252,7 +252,7 @@ class InboxViewE2ETest extends AbstractE2ETest {
     inboxRepository.saveAndFlush(unreadItem);
 
     navigateTo("inbox");
-    waitForVaadinToLoad(driver); // Wait for Vaadin to load
+    waitForVaadinToLoad(); // Wait for Vaadin to load
     waitForGridToPopulate("inbox-grid"); // Use helper to ensure grid is ready
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 

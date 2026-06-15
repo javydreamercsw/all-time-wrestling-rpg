@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.league.Draft;
 import com.github.javydreamercsw.management.domain.league.DraftPick;
 import com.github.javydreamercsw.management.domain.league.DraftPickRepository;
@@ -37,8 +36,10 @@ import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.league.DraftBroadcaster;
+import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DraftServiceTest {
+  @InjectMocks private DraftService draftService;
 
   @Mock private DraftRepository draftRepository;
   @Mock private DraftPickRepository draftPickRepository;
@@ -59,17 +61,11 @@ class DraftServiceTest {
   @Mock private AccountRepository accountRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private LeagueRepository leagueRepository;
+  @Mock private WrestlerContractRepository contractRepository;
+  // Not used but needed
+  @Mock private SalaryCalculator salaryCalculator;
   @Mock private DraftBroadcaster draftBroadcaster;
   @Mock private InboxService inboxService;
-  @Mock private InboxEventType draftStartedEventType;
-
-  @Mock
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository
-      contractRepository;
-
-  @Mock private com.github.javydreamercsw.management.service.gm.SalaryCalculator salaryCalculator;
-
-  @InjectMocks private DraftService draftService;
 
   @Test
   void testStartDraft() {
