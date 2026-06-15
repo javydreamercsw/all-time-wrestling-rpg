@@ -666,24 +666,29 @@ public class SegmentService {
                   fulfillment.setSegment(segment);
                   fulfillment.setLeague(league);
                   fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.PENDING_RESULTS);
-                  matchFulfillmentRepository.save(fulfillment);
+                  fulfillment = matchFulfillmentRepository.save(fulfillment);
 
                   // Send Notification to the owner
-                  inboxService.createInboxItem(
-                      matchRequestEventType,
-                      "Pending match on show: "
-                          + show.getName()
-                          + " for wrestler: "
-                          + wrestler.getName(),
-                      List.of(
-                          new InboxService.TargetInfo(
-                              roster.getOwner().getId().toString(),
-                              InboxItemTarget.TargetType.ACCOUNT),
-                          new InboxService.TargetInfo(
-                              fulfillment.getId().toString(),
-                              InboxItemTarget.TargetType.MATCH_FULFILLMENT),
-                          new InboxService.TargetInfo(
-                              wrestler.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
+                  com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+                      inboxService.createInboxItem(
+                          matchRequestEventType,
+                          "Pending match on show: "
+                              + show.getName()
+                              + " for wrestler: "
+                              + wrestler.getName(),
+                          List.of(
+                              new InboxService.TargetInfo(
+                                  roster.getOwner().getId().toString(),
+                                  InboxItemTarget.TargetType.ACCOUNT),
+                              new InboxService.TargetInfo(
+                                  fulfillment.getId().toString(),
+                                  InboxItemTarget.TargetType.MATCH_FULFILLMENT),
+                              new InboxService.TargetInfo(
+                                  wrestler.getId().toString(),
+                                  InboxItemTarget.TargetType.WRESTLER)));
+                  inboxItem.setActionType("MATCH_REPORT");
+                  inboxItem.setActionPayload("{\"fulfillmentId\":\"" + fulfillment.getId() + "\"}");
+                  inboxService.save(inboxItem);
                 }
               }
             });
