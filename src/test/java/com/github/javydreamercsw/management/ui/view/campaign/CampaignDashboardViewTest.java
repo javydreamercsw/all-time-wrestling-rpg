@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeServ
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -78,6 +79,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private TitleService titleService;
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerService wrestlerService;
+  @Mock private TutorialService tutorialService;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -141,7 +143,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             titleService,
             titleRepository,
             storylineExportService,
-            wrestlerService);
+            wrestlerService,
+            tutorialService);
 
     UI.getCurrent().add(view);
 
@@ -199,7 +202,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             titleService,
             titleRepository,
             storylineExportService,
-            wrestlerService);
+            wrestlerService,
+            tutorialService);
 
     UI.getCurrent().add(view);
 
@@ -226,7 +230,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             titleService,
             titleRepository,
             storylineExportService,
-            wrestlerService);
+            wrestlerService,
+            tutorialService);
 
     UI.getCurrent().add(view);
 
@@ -257,7 +262,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
         titleService,
         titleRepository,
         storylineExportService,
-        wrestlerService);
+        wrestlerService,
+        tutorialService);
   }
 
   @Test
@@ -323,6 +329,46 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   }
 
   @Test
+  public void testAbandonCampaignButton_isPresent() {
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    _get(view, Button.class, spec -> spec.withId("abandon-campaign-button"));
+  }
+
+  @Test
+  public void testAbandonCampaignButton_confirmsBeforeAbandoning() {
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    _click(_get(view, Button.class, spec -> spec.withId("abandon-campaign-button")));
+
+    // ConfirmDialog should be open; campaign must NOT be abandoned yet
+    com.github.mvysny.kaributesting.v10.LocatorJ._get(
+        com.vaadin.flow.component.confirmdialog.ConfirmDialog.class);
+    org.mockito.Mockito.verify(campaignService, org.mockito.Mockito.never()).abandonCampaign(any());
+  }
+
+  @Test
+  public void testAdvanceButton_wonFinale_completesCampaignAndReturnsToTutorial() {
+    when(campaignService.isChapterComplete(mockCampaign)).thenReturn(true);
+    when(campaignService.getAvailableNextChapters(mockCampaign)).thenReturn(List.of());
+    // Simulate wonFinale flag set in feature data
+    try {
+      mockState.setFeatureData("{\"wonFinale\":true}");
+    } catch (Exception ignored) {
+    }
+
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    _click(_get(view, Button.class, spec -> spec.withText("Complete Chapter & Advance")));
+
+    verify(campaignService).completeCampaign(mockCampaign);
+    verify(tutorialService).resetCampaignTutorial(mockAccount);
+  }
+
+  @Test
   public void testStoryJournalDownloadLink() {
     CampaignStoryline storyline = new CampaignStoryline();
     storyline.setTitle("AI Epic Arc");
@@ -346,7 +392,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             titleService,
             titleRepository,
             storylineExportService,
-            wrestlerService);
+            wrestlerService,
+            tutorialService);
 
     UI.getCurrent().add(view);
 

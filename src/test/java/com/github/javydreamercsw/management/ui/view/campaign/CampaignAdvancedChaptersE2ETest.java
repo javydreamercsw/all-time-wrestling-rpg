@@ -85,6 +85,9 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
   @Autowired private TitleService titleService;
   @Autowired private WrestlerService wrestlerService;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.tutorial.TutorialService tutorialService;
+
   private Campaign campaign;
   private Wrestler player;
 
@@ -157,7 +160,8 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
             titleService,
             titleRepository,
             storylineExportService,
-            wrestlerService);
+            wrestlerService,
+            tutorialService);
     UI.getCurrent().add(dashboard);
   }
 

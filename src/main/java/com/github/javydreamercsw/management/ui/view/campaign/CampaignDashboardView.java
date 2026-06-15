@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeServ
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
@@ -107,6 +108,7 @@ public class CampaignDashboardView extends VerticalLayout {
   private final TitleRepository titleRepository;
   private final StorylineExportService storylineExportService;
   private final WrestlerService wrestlerService;
+  private final TutorialService tutorialService;
 
   private Campaign currentCampaign;
 
@@ -125,7 +127,8 @@ public class CampaignDashboardView extends VerticalLayout {
       final TitleService titleService,
       final TitleRepository titleRepository,
       final StorylineExportService storylineExportService,
-      final WrestlerService wrestlerService) {
+      final WrestlerService wrestlerService,
+      final TutorialService tutorialService) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
@@ -140,6 +143,7 @@ public class CampaignDashboardView extends VerticalLayout {
     this.titleRepository = titleRepository;
     this.storylineExportService = storylineExportService;
     this.wrestlerService = wrestlerService;
+    this.tutorialService = tutorialService;
 
     setSpacing(true);
     setPadding(true);
@@ -449,6 +453,33 @@ public class CampaignDashboardView extends VerticalLayout {
       actionsLayout.add(nextShowButton);
     }
 
+    Button abandonButton =
+        new Button(
+            "Abandon Campaign",
+            e -> {
+              ConfirmDialog confirm = new ConfirmDialog();
+              confirm.setHeader("Abandon Campaign?");
+              confirm.setText(
+                  "This will permanently end your current campaign. You will be sent back to the"
+                      + " tutorial to choose a new mode or wrestler.");
+              confirm.setCancelable(true);
+              confirm.setConfirmText("Abandon");
+              confirm.setConfirmButtonTheme("error primary");
+              confirm.addConfirmListener(
+                  event -> {
+                    campaignService.abandonCampaign(currentCampaign);
+                    securityUtils
+                        .getAuthenticatedUser()
+                        .ifPresent(
+                            user -> tutorialService.resetCampaignTutorial(user.getAccount()));
+                    UI.getCurrent().navigate("tutorial");
+                  });
+              confirm.open();
+            });
+    abandonButton.setId("abandon-campaign-button");
+    abandonButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
+    actionsLayout.add(abandonButton);
+
     rightColumn.add(actionsLayout);
 
     // Chapter Advancement (Bottom of Page)
@@ -465,6 +496,17 @@ public class CampaignDashboardView extends VerticalLayout {
                       .ifPresent(id -> UI.getCurrent().navigate("campaign/narrative"));
                 } else if (options.size() > 1) {
                   openChapterSelectionDialog(options);
+                } else if (getFeatureBoolean(currentCampaign.getState(), "wonFinale")) {
+                  // Player won the finale and there are no further chapters — campaign complete
+                  campaignService.completeCampaign(currentCampaign);
+                  securityUtils
+                      .getAuthenticatedUser()
+                      .ifPresent(user -> tutorialService.resetCampaignTutorial(user.getAccount()));
+                  Notification.show(
+                      "🏆 Campaign Complete! Returning to the tutorial...",
+                      4000,
+                      Notification.Position.MIDDLE);
+                  UI.getCurrent().navigate("tutorial");
                 } else {
                   // No static successor — let the AI-driven storyline path handle it
                   campaignService
