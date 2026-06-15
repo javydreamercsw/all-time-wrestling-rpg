@@ -17,8 +17,10 @@
 package com.github.javydreamercsw.management.ui.view.match;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,6 +72,7 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
@@ -515,6 +518,59 @@ class MatchViewTest extends AbstractViewTest {
     verify(segmentService, times(2)).updateSegment(any(Segment.class));
     // adjudicateMatch must NOT be called — that's booker/admin only
     verify(segmentAdjudicationService, never()).adjudicateMatch(any(Long.class));
+  }
+
+  @Test
+  void ringsideActionsShownForGlobalUniverseMatch() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setType(Universe.UniverseType.GLOBAL);
+
+    Show show = new Show();
+    show.setName("Global Show");
+    show.setUniverse(universe);
+
+    Segment segment = buildMinimalMatchSegment(6L, "One on One");
+    segment.setShow(show);
+
+    when(segmentService.findByIdWithDetails(6L)).thenReturn(Optional.of(segment));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "6"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // H3 "Ringside Actions" is the DashboardCard header — must be present for GLOBAL universe
+    _get(H3.class, spec -> spec.withText("Ringside Actions"));
+  }
+
+  @Test
+  void ringsideActionsHiddenForCampaignUniverseMatch() {
+    Universe universe = new Universe();
+    universe.setId(2L);
+    universe.setType(Universe.UniverseType.CAMPAIGN);
+
+    Show show = new Show();
+    show.setName("Campaign Show");
+    show.setUniverse(universe);
+
+    Segment segment = buildMinimalMatchSegment(7L, "One on One");
+    segment.setShow(show);
+
+    when(segmentService.findByIdWithDetails(7L)).thenReturn(Optional.of(segment));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "7"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // Ringside Actions card must NOT appear for campaign universe matches
+    boolean found = !_find(H3.class, spec -> spec.withText("Ringside Actions")).isEmpty();
+    assertFalse(found, "Ringside Actions should not be visible in campaign universe matches");
   }
 
   private Segment buildMinimalMatchSegment(final long id, final String typeName) {
