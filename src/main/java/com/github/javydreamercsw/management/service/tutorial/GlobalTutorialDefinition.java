@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.tutorial;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -55,7 +56,7 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
 
   @Override
   public List<TutorialStep> getSteps() {
-    return List.of(step1(), step2(), step3(), step4());
+    return List.of(step1(), step2(), step3(), step4(), step5());
   }
 
   private TutorialStep step1() {
@@ -169,7 +170,7 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
           return;
         }
         Long showTypeId =
-            showTypeService.findAll().stream().findFirst().map(st -> st.getId()).orElse(null);
+            showTypeService.findAll().stream().findFirst().map(ShowType::getId).orElse(null);
         if (showTypeId == null) {
           return;
         }
@@ -282,10 +283,50 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
             : "No adjudicated segments found yet. Open your show, click Adjudicate, and simulate"
                 + " the results.";
       }
+    };
+  }
+
+  private TutorialStep step5() {
+    return new TutorialStep() {
+      @Override
+      public int getStepNumber() {
+        return 5;
+      }
 
       @Override
-      public void afterStep(final Account account) {
-        accountService.grantRole(account, RoleName.ADMIN);
+      public String getTitle() {
+        return "Enhance with AI";
+      }
+
+      @Override
+      public String getInstructions() {
+        return "You can configure AI providers to have AI assist on planning and narrating your"
+            + " matches.";
+      }
+
+      @Override
+      public String getValidationHint() {
+        return "N/A";
+      }
+
+      @Override
+      public String getTargetRoute() {
+        return "show-list";
+      }
+
+      @Override
+      public String getTargetViewLabel() {
+        return "Shows";
+      }
+
+      @Override
+      public String getImagePath() {
+        return "/images/tutorial/global/step5.png";
+      }
+
+      @Override
+      public String validate(final Account account) {
+        return null;
       }
     };
   }

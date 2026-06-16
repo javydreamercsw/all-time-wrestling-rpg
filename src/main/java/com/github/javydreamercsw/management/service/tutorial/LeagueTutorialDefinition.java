@@ -123,9 +123,8 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public void beforeStep(final Account account) {
-        // Elevate to ADMIN so the player can manage invites, and BOOKER to manage the league.
+        // Elevate to ADMIN so the player can manage invites, and to manage the league.
         accountService.grantRole(account, RoleName.ADMIN);
-        accountService.grantRole(account, RoleName.BOOKER);
         // Seed a tutorial league owned by the player as commissioner (idempotent).
         boolean alreadyCommissioner =
             leagueMembershipRepository.findByMember(account).stream()

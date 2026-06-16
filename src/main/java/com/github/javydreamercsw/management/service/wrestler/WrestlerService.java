@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.github.javydreamercsw.utils.DiceBag;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
@@ -79,6 +80,7 @@ public class WrestlerService {
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final UniverseContextService universeContextService;
   private final UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
+  private final UniverseSettingsService universeSettingsService;
 
   @Autowired
   public WrestlerService(
@@ -95,7 +97,8 @@ public class WrestlerService {
           universeRepository,
       final WrestlerAlignmentRepository wrestlerAlignmentRepository,
       final UniverseContextService universeContextService,
-      final UniverseWrestlerExclusionRepository wrestlerExclusionRepository) {
+      final UniverseWrestlerExclusionRepository wrestlerExclusionRepository,
+      final UniverseSettingsService universeSettingsService) {
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.tierBoundaryRepository = tierBoundaryRepository;
@@ -109,6 +112,7 @@ public class WrestlerService {
     this.wrestlerAlignmentRepository = wrestlerAlignmentRepository;
     this.universeContextService = universeContextService;
     this.wrestlerExclusionRepository = wrestlerExclusionRepository;
+    this.universeSettingsService = universeSettingsService;
   }
 
   @Transactional
@@ -316,6 +320,19 @@ public class WrestlerService {
     final Set<Long> excludedIds =
         wrestlerExclusionRepository.findExcludedWrestlerIdsByUniverseId(finalUniverseId);
 
+    // When no specific expansionCode is requested, restrict to the universe's enabled expansions.
+    final Set<String> enabledExpansionCodes;
+    if (expansionCode == null) {
+      com.github.javydreamercsw.management.domain.universe.Universe universe =
+          universeRepository.findById(finalUniverseId).orElse(null);
+      enabledExpansionCodes =
+          universe != null
+              ? universeSettingsService.getEnabledExpansionCodesForUniverse(universe)
+              : null;
+    } else {
+      enabledExpansionCodes = null;
+    }
+
     return findAllActiveWrestlers().stream()
         .filter(
             w -> {
@@ -344,7 +361,10 @@ public class WrestlerService {
 
               boolean matchesGender = gender == null || w.getGender() == gender;
               boolean matchesExpansion =
-                  expansionCode == null || expansionCode.equals(w.getExpansionCode());
+                  expansionCode != null
+                      ? expansionCode.equals(w.getExpansionCode())
+                      : (enabledExpansionCodes == null
+                          || enabledExpansionCodes.contains(w.getExpansionCode()));
               return matchesAlignment && matchesGender && matchesExpansion;
             })
         .sorted(Comparator.comparing(Wrestler::getName))

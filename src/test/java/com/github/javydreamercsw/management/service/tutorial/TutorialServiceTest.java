@@ -25,6 +25,9 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
@@ -40,7 +43,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -48,6 +53,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -69,6 +77,11 @@ class TutorialServiceTest {
 
   private TutorialService service;
   private Account account;
+
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+  }
 
   @BeforeEach
   void setUp() {
@@ -300,6 +313,32 @@ class TutorialServiceTest {
     verify(expansionService).setExpansionEnabled("BASE_GAME", true);
     verify(expansionService).setExpansionEnabled(eq("RUMBLE"), eq(true));
     verify(expansionService).setExpansionEnabled(eq("TRAILBLAZERS"), eq(false));
+  }
+
+  @Test
+  @DisplayName("runBeforeStep refreshes SecurityContextHolder after beforeStep grants roles")
+  void runBeforeStep_refreshesSecurityContextAfterBeforeStep() {
+    account.setId(1L);
+    CustomUserDetails currentUser = new CustomUserDetails(account);
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                currentUser, null, currentUser.getAuthorities()));
+
+    // Simulate that beforeStep() granted ADMIN — accountRepository returns the updated account
+    Role adminRole = new Role(RoleName.ADMIN, "ADMIN");
+    Account reloaded = new Account("player", "password", "player@example.com");
+    reloaded.setId(1L);
+    reloaded.getRoles().add(adminRole);
+    when(accountRepository.findById(1L)).thenReturn(Optional.of(reloaded));
+    when(globalDefinition.getSteps()).thenReturn(List.of(stepMock));
+
+    service.runBeforeStep(account, Universe.UniverseType.GLOBAL, 0);
+
+    assertThat(
+            SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority))
+        .contains("ROLE_ADMIN");
   }
 
   @Test

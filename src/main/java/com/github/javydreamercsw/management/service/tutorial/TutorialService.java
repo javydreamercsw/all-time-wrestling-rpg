@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.tutorial;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
@@ -36,6 +37,9 @@ import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -288,6 +292,23 @@ public class TutorialService {
       final int stepIndex) {
     TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
     GeneralSecurityUtils.runAsAdmin(() -> step.beforeStep(account));
+
+    // If beforeStep() granted new roles to the current user, refresh the SecurityContext so
+    // those roles take effect immediately without requiring a logout/login cycle.
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null
+        && currentAuth.getPrincipal() instanceof CustomUserDetails details
+        && details.getId() != null
+        && details.getId().equals(account.getId())) {
+      Account reloaded = accountRepository.findById(account.getId()).orElse(null);
+      if (reloaded != null) {
+        CustomUserDetails refreshed = new CustomUserDetails(reloaded);
+        SecurityContextHolder.getContext()
+            .setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                    refreshed, currentAuth.getCredentials(), refreshed.getAuthorities()));
+      }
+    }
   }
 
   /**

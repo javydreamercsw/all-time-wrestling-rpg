@@ -188,6 +188,20 @@ public class AccountService {
     reloaded.getRoles().add(role);
     accountRepository.save(reloaded);
     log.info("[AUDIT] Role {} granted to account {}", roleName, account.getUsername());
+
+    // Refresh the SecurityContext so the new role is visible in the current session immediately,
+    // without requiring a logout/login cycle.
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null
+        && currentAuth.getPrincipal() instanceof CustomUserDetails details
+        && details.getId() != null
+        && details.getId().equals(account.getId())) {
+      CustomUserDetails refreshed = new CustomUserDetails(reloaded);
+      Authentication newAuth =
+          new UsernamePasswordAuthenticationToken(
+              refreshed, currentAuth.getCredentials(), refreshed.getAuthorities());
+      SecurityContextHolder.getContext().setAuthentication(newAuth);
+    }
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)

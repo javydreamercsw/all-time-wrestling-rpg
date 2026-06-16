@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.ui.view.universe;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseInvite;
 import com.github.javydreamercsw.management.domain.universe.UniverseInvite.InviteType;
@@ -105,8 +104,7 @@ public class InviteManagementDialog extends Dialog {
         e -> {
           try {
             UniverseInvite invite =
-                GeneralSecurityUtils.runAsAdmin(
-                    () -> inviteService.generateInvite(universe, typeGroup.getValue(), admin));
+                inviteService.generateInvite(universe, typeGroup.getValue(), admin);
             String token = invite.getId();
             // Resolve the absolute URL client-side to handle reverse proxies correctly
             UI.getCurrent()
@@ -183,8 +181,7 @@ public class InviteManagementDialog extends Dialog {
               revoke.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
               revoke.addClickListener(
                   e -> {
-                    GeneralSecurityUtils.runAsAdmin(
-                        () -> inviteService.revokeInvite(invite.getId()));
+                    inviteService.revokeInvite(invite.getId());
                     refreshGrid();
                     Notification.show("Invite revoked.", 2000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -204,8 +201,7 @@ public class InviteManagementDialog extends Dialog {
   }
 
   private void refreshGrid() {
-    List<UniverseInvite> active =
-        GeneralSecurityUtils.runAsAdmin(() -> inviteService.listActiveInvites(universe));
+    List<UniverseInvite> active = inviteService.listActiveInvites(universe);
     activeInvitesGrid.setItems(active);
     activeInvitesGrid.setVisible(!active.isEmpty());
     if (active.isEmpty()) {
