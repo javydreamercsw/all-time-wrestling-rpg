@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -58,6 +60,7 @@ class TutorialServiceTest {
   private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
 
   @Mock private AccountRepository accountRepository;
+  @Mock private CampaignRepository campaignRepository;
   @Mock private TutorialDefinition globalDefinition;
   @Mock private TutorialStep stepMock;
   @Mock private UniverseService universeService;
@@ -70,9 +73,10 @@ class TutorialServiceTest {
   @BeforeEach
   void setUp() {
     account = new Account("player", "password", "player@example.com");
-    // Use reflection-friendly approach: set id via a helper
     when(globalDefinition.getMode()).thenReturn(Universe.UniverseType.GLOBAL);
     when(globalDefinition.getSteps()).thenReturn(List.of(stepMock, stepMock, stepMock));
+    // Default: no tutorial universe exists
+    when(universeService.findByName(any())).thenReturn(Optional.empty());
     service =
         new TutorialService(
             completionRepository,
@@ -82,7 +86,8 @@ class TutorialServiceTest {
             List.of(globalDefinition),
             universeService,
             universeMembershipService,
-            universeContextService);
+            universeContextService,
+            campaignRepository);
   }
 
   // ── shouldShowTutorial ────────────────────────────────────────────────────
@@ -209,7 +214,38 @@ class TutorialServiceTest {
 
   @Test
   void resetCampaignTutorial_deletesCompletionRecordForCampaignMode() {
+    // No tutorial universe → only completion record is deleted
     service.resetCampaignTutorial(account);
+    verify(completionRepository)
+        .deleteByAccountIdAndUniverseType(account.getId(), Universe.UniverseType.CAMPAIGN);
+    verify(universeService, never()).delete(any());
+  }
+
+  @Test
+  void resetCampaignTutorial_withExistingUniverse_cleansUpUniverseAndWrestler() {
+    Universe tutorialUniverse = new Universe();
+    org.springframework.test.util.ReflectionTestUtils.setField(tutorialUniverse, "id", 99L);
+    tutorialUniverse.setName("Tutorial – player");
+
+    Campaign abandonedCampaign = new Campaign();
+
+    when(universeService.findByName("Tutorial – player")).thenReturn(Optional.of(tutorialUniverse));
+    when(campaignRepository.findByUniverse(tutorialUniverse))
+        .thenReturn(List.of(abandonedCampaign));
+    when(campaignRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(accountRepository.findById(account.getId())).thenReturn(Optional.of(account));
+    when(accountRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.resetCampaignTutorial(account);
+
+    // Campaign universe was nulled out
+    assertThat(abandonedCampaign.getUniverse()).isNull();
+    verify(campaignRepository).save(abandonedCampaign);
+    // Universe was deleted
+    verify(universeService).delete(99L);
+    // Active wrestler was cleared
+    assertThat(account.getActiveWrestlerId()).isNull();
+    // Completion record deleted
     verify(completionRepository)
         .deleteByAccountIdAndUniverseType(account.getId(), Universe.UniverseType.CAMPAIGN);
   }

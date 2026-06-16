@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.tutorial;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -50,6 +51,7 @@ public class TutorialService {
   private final UniverseService universeService;
   private final UniverseMembershipService universeMembershipService;
   private final UniverseContextService universeContextService;
+  private final CampaignRepository campaignRepository;
 
   /**
    * Returns the tutorial universe for the given player username if one was previously created, or
@@ -232,10 +234,42 @@ public class TutorialService {
     completionRepository.deleteByAccountIdAndUniverseType(accountId, type);
   }
 
-  /** Resets the campaign tutorial so the player is shown mode/wrestler selection again. */
+  /**
+   * Resets the campaign tutorial so the player is shown mode/wrestler selection again. Also cleans
+   * up the tutorial universe (disassociating its campaigns first so the delete succeeds), clears
+   * the account's active wrestler, and clears the current universe context.
+   */
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public void resetCampaignTutorial(@NonNull final Account account) {
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          findTutorialUniverse(account.getUsername())
+              .ifPresent(
+                  universe -> {
+                    // Disassociate campaigns so the universe delete constraint is satisfied.
+                    campaignRepository
+                        .findByUniverse(universe)
+                        .forEach(
+                            c -> {
+                              c.setUniverse(null);
+                              campaignRepository.save(c);
+                            });
+                    if (universe.getId() != null) {
+                      universeService.delete(universe.getId());
+                    }
+                  });
+          return null;
+        });
+    universeContextService.clearCurrentUniverse();
+    // Clear the active wrestler — it was selected for this tutorial only.
+    accountRepository
+        .findById(account.getId())
+        .ifPresent(
+            a -> {
+              a.setActiveWrestlerId(null);
+              accountRepository.save(a);
+            });
     markIncomplete(account.getId(), Universe.UniverseType.CAMPAIGN);
   }
 

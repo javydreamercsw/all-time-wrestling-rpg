@@ -428,6 +428,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       return;
     }
 
+    // Keep the universe context pointed at the tutorial universe while the overlay is active so
+    // that beforeStep/validateStep calls (which use getCurrentUniverse) use the correct scope.
+    universeContextService.setCurrentUniverse(tutorialUniverse);
+
     com.github.javydreamercsw.management.domain.universe.Universe.UniverseType universeType =
         tutorialUniverse.getType();
     com.github.javydreamercsw.management.service.tutorial.TutorialDefinition definition =
