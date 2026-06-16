@@ -20,10 +20,13 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -52,6 +55,9 @@ public class TutorialService {
   private final UniverseMembershipService universeMembershipService;
   private final UniverseContextService universeContextService;
   private final CampaignRepository campaignRepository;
+  private final WrestlerStateRepository wrestlerStateRepository;
+  private final RivalryRepository rivalryRepository;
+  private final InjuryRepository injuryRepository;
 
   /**
    * Returns the tutorial universe for the given player username if one was previously created, or
@@ -247,7 +253,14 @@ public class TutorialService {
           findTutorialUniverse(account.getUsername())
               .ifPresent(
                   universe -> {
-                    // Disassociate campaigns so the universe delete constraint is satisfied.
+                    if (universe.getId() == null) {
+                      return;
+                    }
+                    // Delete non-nullable FK rows first, then null out nullable FKs,
+                    // so the final universe delete succeeds.
+                    wrestlerStateRepository.deleteByUniverseId(universe.getId());
+                    rivalryRepository.deleteByUniverse(universe);
+                    injuryRepository.clearUniverseByUniverse(universe);
                     campaignRepository
                         .findByUniverse(universe)
                         .forEach(
@@ -255,9 +268,7 @@ public class TutorialService {
                               c.setUniverse(null);
                               campaignRepository.save(c);
                             });
-                    if (universe.getId() != null) {
-                      universeService.delete(universe.getId());
-                    }
+                    universeService.delete(universe.getId());
                   });
           return null;
         });
