@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
+import com.github.javydreamercsw.management.service.universe.InviteService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -45,6 +46,7 @@ class LeagueListViewTest extends AbstractViewTest {
   @Mock private LeagueMembershipRepository leagueMembershipRepository;
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseRepository universeRepository;
+  @Mock private InviteService inviteService;
 
   private LeagueListView view;
 
@@ -60,7 +62,8 @@ class LeagueListViewTest extends AbstractViewTest {
             wrestlerRepository,
             leagueMembershipRepository,
             universeContextService,
-            universeRepository);
+            universeRepository,
+            inviteService);
     UI.getCurrent().add(view);
   }
 

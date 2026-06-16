@@ -147,9 +147,9 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String getInstructions() {
-        return "A league needs players! Open your league, go to the Members section, and generate"
-            + " an invite link. Share it with other players so they can join. Wait until at least"
-            + " one other player has accepted before continuing.";
+        return "A league needs players! On the Leagues page, find your league row and click the"
+            + " link icon (Invite Players). Generate an invite link and share it so others can"
+            + " join. Wait until at least one other player has accepted before continuing.";
       }
 
       @Override
