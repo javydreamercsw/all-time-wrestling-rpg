@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.league;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +29,8 @@ public interface DraftRepository extends JpaRepository<Draft, Long> {
 
   @Query("SELECT d FROM Draft d LEFT JOIN FETCH d.currentTurnUser WHERE d.league = :league")
   Optional<Draft> findByLeague(@Param("league") League league);
+
+  List<Draft> findByLeague_Commissioner(Account commissioner);
+
+  boolean existsByLeague_Commissioner(Account commissioner);
 }

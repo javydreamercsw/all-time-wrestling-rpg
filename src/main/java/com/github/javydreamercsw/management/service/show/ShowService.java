@@ -136,6 +136,11 @@ public class ShowService {
     return showRepository.count();
   }
 
+  @PreAuthorize("isAuthenticated()")
+  public boolean existsAnyShow() {
+    return showRepository.count() > 0;
+  }
+
   /** Returns true when at least one show with at least one segment exists. Avoids lazy loading. */
   @PreAuthorize("isAuthenticated()")
   @org.springframework.transaction.annotation.Transactional(readOnly = true)
