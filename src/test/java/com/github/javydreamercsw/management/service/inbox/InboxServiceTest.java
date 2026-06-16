@@ -22,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
@@ -462,5 +463,38 @@ class InboxServiceTest {
     List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, 5L);
 
     assertThat(result).hasSize(2);
+  }
+
+  @Test
+  void createTutorialReminderIfAbsent_createsItemWhenNoneExists() {
+    InboxEventType tutorialEventType = new InboxEventType("TUTORIAL_REMINDER", "Tutorial Reminder");
+    Account account = new Account("player", "pw", "p@test.com");
+    account.setId(42L);
+
+    when(inboxRepository.existsUnreadByEventTypeAndAccountId(tutorialEventType, "42"))
+        .thenReturn(false);
+    when(inboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    inboxService.createTutorialReminderIfAbsent(account, tutorialEventType);
+
+    org.mockito.ArgumentCaptor<InboxItem> captor =
+        org.mockito.ArgumentCaptor.forClass(InboxItem.class);
+    verify(inboxRepository, times(2)).save(captor.capture());
+    InboxItem saved = captor.getAllValues().get(1);
+    assertThat(saved.getActionType()).isEqualTo("OPEN_DRAWER");
+  }
+
+  @Test
+  void createTutorialReminderIfAbsent_skipsWhenUnreadExists() {
+    InboxEventType tutorialEventType = new InboxEventType("TUTORIAL_REMINDER", "Tutorial Reminder");
+    Account account = new Account("player", "pw", "p@test.com");
+    account.setId(42L);
+
+    when(inboxRepository.existsUnreadByEventTypeAndAccountId(tutorialEventType, "42"))
+        .thenReturn(true);
+
+    inboxService.createTutorialReminderIfAbsent(account, tutorialEventType);
+
+    verify(inboxRepository, org.mockito.Mockito.never()).save(any());
   }
 }

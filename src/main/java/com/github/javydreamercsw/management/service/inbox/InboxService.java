@@ -274,6 +274,36 @@ public class InboxService {
     return inboxRepository.save(inboxItem);
   }
 
+  /**
+   * Creates a tutorial-reminder inbox item for the given account if none already exists unread.
+   * Idempotent — safe to call on every page load without flooding the inbox.
+   */
+  @PreAuthorize("permitAll()")
+  @Transactional
+  public void createTutorialReminderIfAbsent(
+      @NonNull final com.github.javydreamercsw.base.domain.account.Account account,
+      @NonNull final InboxEventType tutorialReminderEventType) {
+    String accountId = account.getId() != null ? account.getId().toString() : null;
+    if (accountId == null) {
+      return;
+    }
+    if (inboxRepository.existsUnreadByEventTypeAndAccountId(tutorialReminderEventType, accountId)) {
+      return;
+    }
+    InboxItem item =
+        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+            () ->
+                createInboxItem(
+                    tutorialReminderEventType,
+                    "Unfinished tutorial",
+                    "You have an unfinished tutorial. Open your Profile drawer to continue.",
+                    InboxItem.Urgency.INFO,
+                    accountId,
+                    InboxItemTarget.TargetType.ACCOUNT));
+    item.setActionType("OPEN_DRAWER");
+    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(() -> save(item));
+  }
+
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public InboxItem addInboxItem(@NonNull final Wrestler wrestler, @NonNull final String message) {
     InboxEventType eventType = eventTypeRegistry.getEventTypes().get(0);

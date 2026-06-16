@@ -17,14 +17,14 @@
 package com.github.javydreamercsw.management.ui.view.tutorial;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.Notification.Position;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.server.VaadinServiceInitListener;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +45,9 @@ public class TutorialRedirectInitializer {
       final TutorialService tutorialService,
       final SecurityUtils securityUtils,
       final AccountService accountService,
-      final UniverseContextService universeContextService) {
+      final UniverseContextService universeContextService,
+      final InboxService inboxService,
+      @Qualifier("TUTORIAL_REMINDER") final InboxEventType tutorialReminderEventType) {
 
     return event ->
         event
@@ -93,14 +95,8 @@ public class TutorialRedirectInitializer {
                                             tutorialService.recordFirstRedirect(account, type);
                                             enterEvent.rerouteTo(TutorialView.class);
                                           } else {
-                                            Notification notification =
-                                                Notification.show(
-                                                    "You have an unfinished tutorial. Find it in"
-                                                        + " your Profile drawer.",
-                                                    5000,
-                                                    Position.BOTTOM_START);
-                                            notification.addThemeVariants(
-                                                NotificationVariant.LUMO_PRIMARY);
+                                            inboxService.createTutorialReminderIfAbsent(
+                                                account, tutorialReminderEventType);
                                           }
                                         }
                                       });
