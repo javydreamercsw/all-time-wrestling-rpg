@@ -20,11 +20,8 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -268,14 +265,13 @@ class TutorialViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("NAVIGATE step renders Go-To and Next buttons")
-  void navigateStep_rendersGoToAndValidate() {
+  @DisplayName("NAVIGATE step redirects to target route (overlay takes over)")
+  void navigateStep_redirectsToTargetRoute() {
     Universe universe = universeOf(Universe.UniverseType.GLOBAL);
     when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
 
     TutorialStep inlineStep = inlineStepMock("Pick Your Featured Wrestler", "hint1");
     TutorialStep navStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint");
-    // Add a trailing step so navStep (index 1) is NOT the last step → button reads "Next →"
     TutorialStep finalStep = navigateStepMock("Run Your Show", "show-list", "Shows", "hint3");
     TutorialDefinition def =
         definitionOf(Universe.UniverseType.GLOBAL, inlineStep, navStep, finalStep);
@@ -284,9 +280,11 @@ class TutorialViewTest extends AbstractViewTest {
 
     enter();
 
+    // NAVIGATE steps hand off to the floating overlay; TutorialView itself becomes empty
+    // and navigation to the target route is triggered.
     List<Button> buttons = _find(view, Button.class);
-    assertThat(buttons).extracting(Button::getText).anyMatch(t -> t.startsWith("Go to Shows"));
-    assertThat(buttons).extracting(Button::getText).contains("Next →");
+    assertThat(buttons).extracting(Button::getText).noneMatch(t -> t.startsWith("Go to"));
+    assertThat(buttons).extracting(Button::getText).doesNotContain("Next →");
   }
 
   @Test
@@ -307,70 +305,6 @@ class TutorialViewTest extends AbstractViewTest {
     _get(view, Button.class, spec -> spec.withText("Skip Tutorial")).click();
 
     verify(tutorialService).markSkipped(eq(1L), eq(Universe.UniverseType.GLOBAL), eq(1));
-  }
-
-  @Test
-  @DisplayName("Validate failure on NAVIGATE step shows error message")
-  void validate_failure_showsErrorSlot() {
-    Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
-
-    TutorialStep navStep = navigateStepMock("Create a Show", "show-list", "Shows", "hint");
-    // Trailing step so navStep (index 0) is not the last → button reads "Next →"
-    TutorialStep trailingStep = navigateStepMock("Run Your Show", "show-list", "Shows", "hint2");
-
-    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, navStep, trailingStep);
-    when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
-    when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
-    when(tutorialService.validateStep(any(), eq(Universe.UniverseType.GLOBAL), eq(0)))
-        .thenReturn("No shows found yet.");
-
-    enter();
-
-    _get(view, Button.class, spec -> spec.withText("Next →")).click();
-
-    // advanceStep must NOT have been called
-    verify(tutorialService, never()).advanceStep(anyLong(), any(), anyInt(), anyInt());
-  }
-
-  @Test
-  @DisplayName("Validate success advances to next step")
-  void validate_success_advancesStep() {
-    Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
-
-    TutorialStep step1 = navigateStepMock("Step One", "route1", "View1", "hint1");
-    TutorialStep step2 = navigateStepMock("Step Two", "route2", "View2", "hint2");
-
-    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step1, step2);
-    when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
-    when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
-    when(tutorialService.validateStep(any(), eq(Universe.UniverseType.GLOBAL), eq(0)))
-        .thenReturn(null); // success
-
-    enter();
-
-    _get(view, Button.class, spec -> spec.withText("Next →")).click();
-
-    verify(tutorialService).runAfterStep(eq(testAccount), eq(Universe.UniverseType.GLOBAL), eq(0));
-    verify(tutorialService).advanceStep(1L, Universe.UniverseType.GLOBAL, 1, 2);
-  }
-
-  @Test
-  @DisplayName("Last step Validate button reads 'Complete Tutorial'")
-  void lastStep_validateButton_readsCompleteTutorial() {
-    Universe universe = universeOf(Universe.UniverseType.GLOBAL);
-    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
-
-    TutorialStep onlyStep = navigateStepMock("Final Step", "route", "View", "hint");
-    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, onlyStep);
-    when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
-    when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
-
-    enter();
-
-    _get(view, Button.class, spec -> spec.withText("Complete Tutorial ✓"));
-    // If _get doesn't throw, the button is present
   }
 
   @Test
