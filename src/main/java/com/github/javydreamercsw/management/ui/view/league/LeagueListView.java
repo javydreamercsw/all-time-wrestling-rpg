@@ -159,9 +159,15 @@ public class LeagueListView extends Main {
                               .getAuthenticatedUser()
                               .ifPresent(
                                   u ->
-                                      new InviteManagementDialog(
-                                              league.getUniverse(), inviteService, u.getAccount())
-                                          .open()));
+                                      universeRepository
+                                          .findById(league.getUniverse().getId())
+                                          .ifPresent(
+                                              fullUniverse ->
+                                                  new InviteManagementDialog(
+                                                          fullUniverse,
+                                                          inviteService,
+                                                          u.getAccount())
+                                                      .open())));
                   actions.add(inviteBtn);
                 }
 

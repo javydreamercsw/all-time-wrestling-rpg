@@ -16,9 +16,11 @@
 */
 package com.github.javydreamercsw.management.ui.view.league;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +41,7 @@ import com.github.mvysny.kaributesting.v10.GridKt;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import java.util.ArrayList;
 import java.util.List;
@@ -122,6 +125,49 @@ class LeagueListViewTest extends AbstractViewTest {
     List<Button> inviteBtns =
         _find(actionsCell, Button.class, spec -> spec.withId("invite-league-1"));
     assertThat(inviteBtns).isNotEmpty();
+  }
+
+  @Test
+  @DisplayName("Clicking invite button opens dialog without LazyInitializationException")
+  void clickingInviteButtonOpensDialog() {
+    Account commissioner = new Account();
+    commissioner.setUsername("comm-user");
+    CustomUserDetails userDetails = new CustomUserDetails(commissioner);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Test Universe");
+
+    League league = new League();
+    league.setId(1L);
+    league.setCommissioner(commissioner);
+    league.setUniverse(universe);
+
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(leagueService.getLeaguesForUser(commissioner))
+        .thenReturn(new ArrayList<>(List.of(league)));
+    // Simulate the repository re-fetch that the fix performs on click
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+
+    LeagueListView commView =
+        new LeagueListView(
+            leagueService,
+            accountService,
+            securityUtils,
+            wrestlerRepository,
+            leagueMembershipRepository,
+            universeContextService,
+            universeRepository,
+            inviteService);
+    UI.getCurrent().add(commView);
+
+    @SuppressWarnings("unchecked")
+    Grid<League> grid = _get(commView, Grid.class, spec -> spec.withId("league-grid"));
+    Component actionsCell = GridKt._getCellComponent(grid, 0, "actions");
+    Button inviteBtn = _get(actionsCell, Button.class, spec -> spec.withId("invite-league-1"));
+    _click(inviteBtn);
+
+    assertNotNull(_get(Dialog.class));
   }
 
   @Test

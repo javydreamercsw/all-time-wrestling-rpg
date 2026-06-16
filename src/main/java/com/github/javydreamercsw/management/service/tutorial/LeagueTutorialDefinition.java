@@ -54,6 +54,17 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
   }
 
   @Override
+  public boolean isAdvanced() {
+    return true;
+  }
+
+  @Override
+  public String getWarning() {
+    return "This tutorial requires inviting other real players to join your league. You will be"
+        + " granted admin access to manage your tutorial universe.";
+  }
+
+  @Override
   public List<TutorialStep> getSteps() {
     return List.of(step1(), step2(), step3(), step4());
   }
@@ -112,7 +123,8 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public void beforeStep(final Account account) {
-        // Elevate to BOOKER so the player can manage a league.
+        // Elevate to ADMIN so the player can manage invites, and BOOKER to manage the league.
+        accountService.grantRole(account, RoleName.ADMIN);
         accountService.grantRole(account, RoleName.BOOKER);
         // Seed a tutorial league owned by the player as commissioner (idempotent).
         boolean alreadyCommissioner =

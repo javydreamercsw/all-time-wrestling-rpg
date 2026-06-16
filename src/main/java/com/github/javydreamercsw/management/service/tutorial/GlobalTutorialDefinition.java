@@ -43,6 +43,17 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
   }
 
   @Override
+  public boolean isAdvanced() {
+    return true;
+  }
+
+  @Override
+  public String getWarning() {
+    return "This tutorial gives you full creative control over your wrestling universe. You will be"
+        + " granted admin access to manage all settings, wrestlers, shows, and titles.";
+  }
+
+  @Override
   public List<TutorialStep> getSteps() {
     return List.of(step1(), step2(), step3(), step4());
   }
@@ -89,6 +100,12 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
       @Override
       public String getImagePath() {
         return "/images/tutorial/global/step1.png";
+      }
+
+      @Override
+      public void beforeStep(final Account account) {
+        // Grant admin so the player can manage all universe resources.
+        accountService.grantRole(account, RoleName.ADMIN);
       }
 
       @Override

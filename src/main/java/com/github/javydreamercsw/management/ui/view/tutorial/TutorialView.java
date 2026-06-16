@@ -172,21 +172,24 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
             VaadinIcon.BOOK,
             "Campaign",
             "Follow your wrestler's career through story chapters. Make backstage decisions that"
-                + " shape the narrative."));
+                + " shape the narrative.",
+            tutorialService.getDefinition(Universe.UniverseType.CAMPAIGN)));
     cards.add(
         modeCard(
             Universe.UniverseType.LEAGUE,
             VaadinIcon.TROPHY,
             "League",
             "Join a competitive fantasy wrestling league. Draft wrestlers, book shows, and"
-                + " compete against other players."));
+                + " compete against other players.",
+            tutorialService.getDefinition(Universe.UniverseType.LEAGUE)));
     cards.add(
         modeCard(
             Universe.UniverseType.GLOBAL,
             VaadinIcon.GLOBE,
             "Universe",
             "Full creative control. Build your entire wrestling world from scratch with custom"
-                + " wrestlers, titles, and shows."));
+                + " wrestlers, titles, and shows.",
+            tutorialService.getDefinition(Universe.UniverseType.GLOBAL)));
 
     add(cards);
   }
@@ -195,7 +198,8 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       final Universe.UniverseType mode,
       final VaadinIcon icon,
       final String title,
-      final String description) {
+      final String description,
+      final TutorialDefinition def) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Background.BASE,
@@ -218,8 +222,21 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     Span iconSpan = new Span(icon.create());
     iconSpan.getStyle().set("font-size", "2rem").set("color", "var(--lumo-primary-color)");
 
+    HorizontalLayout titleRow = new HorizontalLayout();
+    titleRow.setAlignItems(FlexComponent.Alignment.CENTER);
+    titleRow.setSpacing(true);
+    titleRow.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.Margin.Bottom.XSMALL);
+
     H3 cardTitle = new H3(title);
-    cardTitle.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.Margin.Bottom.XSMALL);
+    cardTitle.getStyle().set("margin", "0");
+    titleRow.add(cardTitle);
+
+    if (def.isAdvanced()) {
+      Span badge = new Span("Advanced");
+      badge.getElement().getThemeList().add("badge error");
+      badge.getStyle().set("font-size", "var(--lumo-font-size-xs)");
+      titleRow.add(badge);
+    }
 
     Paragraph desc = new Paragraph(description);
     desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
@@ -236,7 +253,23 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
           renderCurrentPhase();
         });
 
-    card.add(iconSpan, cardTitle, desc, selectBtn);
+    card.add(iconSpan, titleRow, desc);
+
+    if (def.isAdvanced() && def.getWarning() != null) {
+      Div warningBox = new Div();
+      warningBox.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.Padding.SMALL);
+      warningBox
+          .getStyle()
+          .set("background", "var(--lumo-error-color-10pct)")
+          .set("border-radius", "var(--lumo-border-radius-s)")
+          .set("border-left", "3px solid var(--lumo-error-color)");
+      Span warningText = new Span(def.getWarning());
+      warningText.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.ERROR);
+      warningBox.add(warningText);
+      card.add(warningBox);
+    }
+
+    card.add(selectBtn);
     return card;
   }
 

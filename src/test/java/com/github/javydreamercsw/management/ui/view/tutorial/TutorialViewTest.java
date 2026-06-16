@@ -82,6 +82,13 @@ class TutorialViewTest extends AbstractViewTest {
     when(expansionService.getExpansions()).thenReturn(java.util.List.of());
     when(expansionService.isExpansionEnabled(any())).thenReturn(true);
 
+    // Stub getDefinition for all three modes so modeCard() can call isAdvanced()
+    TutorialDefinition simpleDef = mock(TutorialDefinition.class);
+    when(simpleDef.isAdvanced()).thenReturn(false);
+    when(tutorialService.getDefinition(Universe.UniverseType.CAMPAIGN)).thenReturn(simpleDef);
+    when(tutorialService.getDefinition(Universe.UniverseType.LEAGUE)).thenReturn(simpleDef);
+    when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(simpleDef);
+
     view =
         new TutorialView(
             tutorialService,
