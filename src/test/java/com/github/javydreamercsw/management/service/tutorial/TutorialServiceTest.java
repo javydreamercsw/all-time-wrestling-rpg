@@ -27,12 +27,9 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.Expansion;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -64,9 +61,6 @@ class TutorialServiceTest {
 
   @Mock private AccountRepository accountRepository;
   @Mock private CampaignRepository campaignRepository;
-  @Mock private WrestlerStateRepository wrestlerStateRepository;
-  @Mock private RivalryRepository rivalryRepository;
-  @Mock private InjuryRepository injuryRepository;
   @Mock private TutorialDefinition globalDefinition;
   @Mock private TutorialStep stepMock;
   @Mock private UniverseService universeService;
@@ -93,10 +87,7 @@ class TutorialServiceTest {
             universeService,
             universeMembershipService,
             universeContextService,
-            campaignRepository,
-            wrestlerStateRepository,
-            rivalryRepository,
-            injuryRepository);
+            campaignRepository);
   }
 
   // ── shouldShowTutorial ────────────────────────────────────────────────────
@@ -247,11 +238,7 @@ class TutorialServiceTest {
 
     service.resetCampaignTutorial(account);
 
-    // Non-nullable FK rows deleted before universe delete
-    verify(wrestlerStateRepository).deleteByUniverseId(99L);
-    verify(rivalryRepository).deleteByUniverse(tutorialUniverse);
-    verify(injuryRepository).clearUniverseByUniverse(tutorialUniverse);
-    // Campaign universe was nulled out
+    // Campaign universe was nulled out (cascade on Universe handles WrestlerState etc.)
     assertThat(abandonedCampaign.getUniverse()).isNull();
     verify(campaignRepository).save(abandonedCampaign);
     // Universe was deleted
