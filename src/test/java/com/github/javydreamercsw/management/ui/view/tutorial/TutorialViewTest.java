@@ -83,6 +83,7 @@ class TutorialViewTest extends AbstractViewTest {
     when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.empty());
 
     when(expansionService.getExpansions()).thenReturn(java.util.List.of());
+    when(expansionService.isExpansionEnabled(any())).thenReturn(true);
 
     view =
         new TutorialView(
