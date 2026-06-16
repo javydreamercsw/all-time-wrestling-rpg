@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.tutorial;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Component;
 public class CampaignTutorialDefinition implements TutorialDefinition {
 
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final CampaignService campaignService;
   private final CampaignChapterService campaignChapterService;
   private final BackstageActionHistoryRepository backstageActionHistoryRepository;
@@ -165,13 +167,22 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
         if (wrestlerId == null) {
           return "You need to select a wrestler first (complete Step 1).";
         }
-        return wrestlerService
-            .findByIdWithDetails(wrestlerId)
-            .flatMap(campaignService::getCampaignForWrestler)
-            .map(campaign -> (String) null)
-            .orElse(
-                "Your wrestler doesn't have an active campaign yet. Please wait a moment and try"
-                    + " again.");
+        // Check the specific active wrestler first, then fall back to any account wrestler
+        // (mirrors how CampaignDashboardView finds campaigns to avoid false negatives).
+        boolean hasCampaign =
+            wrestlerService
+                .findByIdWithDetails(wrestlerId)
+                .map(campaignService::hasActiveCampaign)
+                .orElse(false);
+        if (!hasCampaign) {
+          hasCampaign =
+              wrestlerRepository.findByAccountId(account.getId()).stream()
+                  .anyMatch(campaignService::hasActiveCampaign);
+        }
+        return hasCampaign
+            ? null
+            : "Your wrestler doesn't have an active campaign yet. Please wait a moment and try"
+                + " again.";
       }
 
       @Override
