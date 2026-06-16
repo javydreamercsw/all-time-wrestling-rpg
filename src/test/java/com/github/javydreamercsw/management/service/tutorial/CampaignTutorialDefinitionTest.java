@@ -21,10 +21,12 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
@@ -44,10 +46,12 @@ class CampaignTutorialDefinitionTest {
   @Mock private CampaignService campaignService;
   @Mock private CampaignChapterService campaignChapterService;
   @Mock private BackstageActionHistoryRepository backstageActionHistoryRepository;
+  @Mock private UniverseContextService universeContextService;
 
   private CampaignTutorialDefinition definition;
   private Account account;
   private Wrestler wrestler;
+  private Universe tutorialUniverse;
 
   @BeforeEach
   void setUp() {
@@ -57,7 +61,8 @@ class CampaignTutorialDefinitionTest {
             wrestlerRepository,
             campaignService,
             campaignChapterService,
-            backstageActionHistoryRepository);
+            backstageActionHistoryRepository,
+            universeContextService);
 
     account = new Account();
     account.setId(1L);
@@ -65,6 +70,9 @@ class CampaignTutorialDefinitionTest {
 
     wrestler = new Wrestler();
     ReflectionTestUtils.setField(wrestler, "id", 42L);
+
+    tutorialUniverse = new Universe();
+    ReflectionTestUtils.setField(tutorialUniverse, "id", 99L);
   }
 
   private TutorialStep step2() {
@@ -79,27 +87,31 @@ class CampaignTutorialDefinitionTest {
   }
 
   @Test
-  @DisplayName("Step 2 validate passes when active wrestler has a campaign")
+  @DisplayName("Step 2 validate passes when active wrestler has a campaign in tutorial universe")
   void step2_activeWrestlerHasCampaign_passes() {
     account.setActiveWrestlerId(42L);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(tutorialUniverse));
     when(wrestlerService.findByIdWithDetails(42L)).thenReturn(Optional.of(wrestler));
-    when(campaignService.hasActiveCampaign(wrestler)).thenReturn(true);
+    when(campaignService.hasActiveCampaignInUniverse(wrestler, tutorialUniverse)).thenReturn(true);
 
     String result = step2().validate(account);
     assertThat(result).isNull();
   }
 
   @Test
-  @DisplayName("Step 2 validate falls back to account wrestlers and passes when one has campaign")
+  @DisplayName(
+      "Step 2 validate falls back to account wrestlers when active wrestler has no campaign")
   void step2_fallbackAccountWrestlerHasCampaign_passes() {
     account.setActiveWrestlerId(42L);
     Wrestler otherWrestler = new Wrestler();
-    ReflectionTestUtils.setField(otherWrestler, "id", 99L);
+    ReflectionTestUtils.setField(otherWrestler, "id", 100L);
 
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(tutorialUniverse));
     when(wrestlerService.findByIdWithDetails(42L)).thenReturn(Optional.of(wrestler));
-    when(campaignService.hasActiveCampaign(wrestler)).thenReturn(false);
+    when(campaignService.hasActiveCampaignInUniverse(wrestler, tutorialUniverse)).thenReturn(false);
     when(wrestlerRepository.findByAccountId(1L)).thenReturn(List.of(wrestler, otherWrestler));
-    when(campaignService.hasActiveCampaign(otherWrestler)).thenReturn(true);
+    when(campaignService.hasActiveCampaignInUniverse(otherWrestler, tutorialUniverse))
+        .thenReturn(true);
 
     String result = step2().validate(account);
     assertThat(result).isNull();
@@ -110,8 +122,9 @@ class CampaignTutorialDefinitionTest {
       "Step 2 validate fails when neither active wrestler nor any account wrestler has campaign")
   void step2_noCampaignAnywhere_fails() {
     account.setActiveWrestlerId(42L);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(tutorialUniverse));
     when(wrestlerService.findByIdWithDetails(42L)).thenReturn(Optional.of(wrestler));
-    when(campaignService.hasActiveCampaign(wrestler)).thenReturn(false);
+    when(campaignService.hasActiveCampaignInUniverse(wrestler, tutorialUniverse)).thenReturn(false);
     when(wrestlerRepository.findByAccountId(1L)).thenReturn(List.of(wrestler));
 
     String result = step2().validate(account);

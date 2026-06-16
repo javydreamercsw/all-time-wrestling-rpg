@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.campaign.StorylineExportServ
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -80,6 +81,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private TitleRepository titleRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private TutorialService tutorialService;
+  @Mock private UniverseContextService universeContextService;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -118,6 +120,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
         .thenReturn(Optional.of(mockCampaign));
     when(campaignService.getCampaignForWrestler(mockWrestler))
         .thenReturn(Optional.of(mockCampaign));
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     when(campaignService.isChapterComplete(mockCampaign)).thenReturn(false);
     when(campaignService.getCurrentChapter(any()))
         .thenReturn(Optional.of(new CampaignChapterDTO()));
@@ -144,7 +147,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             titleRepository,
             storylineExportService,
             wrestlerService,
-            tutorialService);
+            tutorialService,
+            universeContextService);
 
     UI.getCurrent().add(view);
 
@@ -203,7 +207,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             titleRepository,
             storylineExportService,
             wrestlerService,
-            tutorialService);
+            tutorialService,
+            universeContextService);
 
     UI.getCurrent().add(view);
 
@@ -231,7 +236,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             titleRepository,
             storylineExportService,
             wrestlerService,
-            tutorialService);
+            tutorialService,
+            universeContextService);
 
     UI.getCurrent().add(view);
 
@@ -263,7 +269,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
         titleRepository,
         storylineExportService,
         wrestlerService,
-        tutorialService);
+        tutorialService,
+        universeContextService);
   }
 
   @Test
@@ -393,7 +400,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             titleRepository,
             storylineExportService,
             wrestlerService,
-            tutorialService);
+            tutorialService,
+            universeContextService);
 
     UI.getCurrent().add(view);
 

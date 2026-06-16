@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import lombok.NonNull;
@@ -37,6 +38,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
   private final CampaignService campaignService;
   private final CampaignChapterService campaignChapterService;
   private final BackstageActionHistoryRepository backstageActionHistoryRepository;
+  private final UniverseContextService universeContextService;
 
   @Override
   public Universe.UniverseType getMode() {
@@ -172,17 +174,28 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
         if (wrestlerId == null) {
           return "You need to select a wrestler first (complete Step 1).";
         }
-        // Check the specific active wrestler first, then fall back to any account wrestler
-        // (mirrors how CampaignDashboardView finds campaigns to avoid false negatives).
-        boolean hasCampaign =
-            wrestlerService
-                .findByIdWithDetails(wrestlerId)
-                .map(campaignService::hasActiveCampaign)
-                .orElse(false);
-        if (!hasCampaign) {
+        // Prefer universe-scoped check; fall back to account-wrestler scan to handle edge cases
+        // where activeWrestlerId points to a different entity than what holds the campaign.
+        Universe tutorialUniverse = universeContextService.getCurrentUniverse().orElse(null);
+        boolean hasCampaign = false;
+        if (tutorialUniverse != null) {
           hasCampaign =
-              wrestlerRepository.findByAccountId(account.getId()).stream()
-                  .anyMatch(campaignService::hasActiveCampaign);
+              wrestlerService
+                  .findByIdWithDetails(wrestlerId)
+                  .map(w -> campaignService.hasActiveCampaignInUniverse(w, tutorialUniverse))
+                  .orElse(false);
+          if (!hasCampaign) {
+            hasCampaign =
+                wrestlerRepository.findByAccountId(account.getId()).stream()
+                    .anyMatch(
+                        w -> campaignService.hasActiveCampaignInUniverse(w, tutorialUniverse));
+          }
+        } else {
+          hasCampaign =
+              wrestlerService
+                  .findByIdWithDetails(wrestlerId)
+                  .map(campaignService::hasActiveCampaign)
+                  .orElse(false);
         }
         return hasCampaign
             ? null
