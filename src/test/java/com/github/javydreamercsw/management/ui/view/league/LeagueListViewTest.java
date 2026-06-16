@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
@@ -43,6 +44,7 @@ class LeagueListViewTest extends AbstractViewTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private LeagueMembershipRepository leagueMembershipRepository;
   @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseRepository universeRepository;
 
   private LeagueListView view;
 
@@ -57,7 +59,8 @@ class LeagueListViewTest extends AbstractViewTest {
             securityUtils,
             wrestlerRepository,
             leagueMembershipRepository,
-            universeContextService);
+            universeContextService,
+            universeRepository);
     UI.getCurrent().add(view);
   }
 

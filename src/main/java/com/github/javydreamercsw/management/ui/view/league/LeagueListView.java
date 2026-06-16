@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
@@ -54,6 +55,7 @@ public class LeagueListView extends Main {
   private final WrestlerRepository wrestlerRepository;
   private final LeagueMembershipRepository leagueMembershipRepository;
   private final UniverseContextService universeContextService;
+  private final UniverseRepository universeRepository;
   private final Grid<League> leagueGrid;
 
   public LeagueListView(
@@ -62,13 +64,15 @@ public class LeagueListView extends Main {
       @NonNull final SecurityUtils securityUtils,
       @NonNull final WrestlerRepository wrestlerRepository,
       @NonNull final LeagueMembershipRepository leagueMembershipRepository,
-      @NonNull final UniverseContextService universeContextService) {
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final UniverseRepository universeRepository) {
     this.leagueService = leagueService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     this.wrestlerRepository = wrestlerRepository;
     this.leagueMembershipRepository = leagueMembershipRepository;
     this.universeContextService = universeContextService;
+    this.universeRepository = universeRepository;
     this.leagueGrid = new Grid<>(League.class, false);
     this.leagueGrid.setId("league-grid");
 
@@ -176,6 +180,7 @@ public class LeagueListView extends Main {
                       securityUtils,
                       wrestlerRepository,
                       leagueMembershipRepository,
+                      universeRepository,
                       fullyLoaded,
                       this::reloadGrid)
                   .open();
