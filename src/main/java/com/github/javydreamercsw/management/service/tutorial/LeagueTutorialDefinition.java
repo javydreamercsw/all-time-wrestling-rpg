@@ -25,9 +25,11 @@ import com.github.javydreamercsw.management.domain.league.LeagueMembershipReposi
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.service.universe.InviteService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -37,6 +39,7 @@ import org.springframework.stereotype.Component;
 public class LeagueTutorialDefinition implements TutorialDefinition {
 
   private final AccountService accountService;
+  private final LeagueService leagueService;
   private final LeagueMembershipRepository leagueMembershipRepository;
   private final DraftRepository draftRepository;
   private final DraftPickRepository draftPickRepository;
@@ -64,14 +67,14 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String getTitle() {
-        return "Create Your League";
+        return "Your Tutorial League";
       }
 
       @Override
       public String getInstructions() {
-        return "Head to the Leagues page and create a new league. You'll be the commissioner —"
-            + " you decide the draft rules, max picks per player, and who gets to join."
-            + " Click \"Create League\" to get started.";
+        return "We've created a tutorial league for you and made you the commissioner."
+            + " Head to the Leagues page to see it. As commissioner you control the draft rules,"
+            + " who joins, and when the season starts.";
       }
 
       @Override
@@ -109,8 +112,23 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public void beforeStep(final Account account) {
-        // Elevate to BOOKER so the player can create and manage a league.
+        // Elevate to BOOKER so the player can manage a league.
         accountService.grantRole(account, RoleName.BOOKER);
+        // Seed a tutorial league owned by the player as commissioner (idempotent).
+        boolean alreadyCommissioner =
+            leagueMembershipRepository.findByMember(account).stream()
+                .anyMatch(
+                    m ->
+                        m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER
+                            || m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER_PLAYER);
+        if (!alreadyCommissioner) {
+          leagueService.createLeague(
+              "Tutorial League – " + account.getUsername(),
+              account,
+              10,
+              Collections.emptySet(),
+              false);
+        }
       }
     };
   }
