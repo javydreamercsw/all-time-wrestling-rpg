@@ -126,8 +126,8 @@ class TutorialStepOverlayTest extends AbstractViewTest {
     TutorialStep only = navStepMock("Final Step", "show-list", "Shows");
     openAtStep(0, only);
 
-    List<Button> btns = _find(overlay, Button.class);
-    assertThat(btns).extracting(Button::getText).contains("Complete ✓");
+    List<Button> buttons = _find(overlay, Button.class);
+    assertThat(buttons).extracting(Button::getText).contains("Complete ✓");
   }
 
   // ── handleNext: validation failure ───────────────────────────────────────
