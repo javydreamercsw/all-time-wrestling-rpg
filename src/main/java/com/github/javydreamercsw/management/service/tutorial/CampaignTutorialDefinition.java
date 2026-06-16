@@ -235,18 +235,18 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String getTitle() {
-        return "Make Your First Decision";
+        return "Make Your First Backstage Action";
       }
 
       @Override
       public String getInstructions() {
         return "In your active campaign, navigate to the backstage area and make your first"
-            + " decision. Your choices shape your wrestler's story — choose wisely!";
+            + " Backstage Action. Your choices shape your wrestler's story — choose wisely!";
       }
 
       @Override
       public String getValidationHint() {
-        return "We'll check that you've made at least one backstage decision in your campaign.";
+        return "We'll check that you've made at least one Backstage Action in your campaign.";
       }
 
       @Override
@@ -278,7 +278,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
                 .orElse(false);
         return hasDecision
             ? null
-            : "You haven't made a backstage decision yet. Go to Backstage Actions and make your"
+            : "You haven't made a backstage actions yet. Go to Backstage Actions and make your"
                 + " first choice.";
       }
     };
