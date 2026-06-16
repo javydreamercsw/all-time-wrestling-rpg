@@ -29,6 +29,7 @@ import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
+import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
@@ -58,6 +59,7 @@ class MainLayoutTest extends AbstractViewTest {
   @Mock private UniverseMembershipService universeMembershipService;
   @Mock private InboxService inboxService;
   @Mock private TutorialService tutorialService;
+  @Mock private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
 
   @BeforeEach
   void setup() {
@@ -85,7 +87,8 @@ class MainLayoutTest extends AbstractViewTest {
             universeRepository,
             universeMembershipService,
             inboxService,
-            tutorialService);
+            tutorialService,
+            openProfileDrawerBroadcaster);
     UI.getCurrent().add(layout);
     return layout;
   }

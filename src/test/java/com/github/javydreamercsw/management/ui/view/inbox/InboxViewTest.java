@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.inbox;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +34,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -57,6 +59,7 @@ class InboxViewTest extends AbstractViewTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private MatchFulfillmentService matchFulfillmentService;
   @Mock private SecurityUtils securityUtils;
+  @Mock private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private InboxView view;
@@ -75,7 +78,8 @@ class InboxViewTest extends AbstractViewTest {
             wrestlerRepository,
             matchFulfillmentService,
             securityUtils,
-            objectMapper);
+            objectMapper,
+            openProfileDrawerBroadcaster);
     UI.getCurrent().add(view);
   }
 
@@ -107,7 +111,8 @@ class InboxViewTest extends AbstractViewTest {
             wrestlerRepository,
             matchFulfillmentService,
             securityUtils,
-            objectMapper);
+            objectMapper,
+            openProfileDrawerBroadcaster);
     UI.getCurrent().add(playerView);
 
     MultiSelectComboBox<?> targetFilter = _get(playerView, MultiSelectComboBox.class);
@@ -136,7 +141,8 @@ class InboxViewTest extends AbstractViewTest {
             wrestlerRepository,
             matchFulfillmentService,
             securityUtils,
-            objectMapper);
+            objectMapper,
+            openProfileDrawerBroadcaster);
     UI.getCurrent().add(freshView);
 
     Button markRead = _get(freshView, Button.class, spec -> spec.withText("Mark Selected as Read"));
@@ -170,7 +176,8 @@ class InboxViewTest extends AbstractViewTest {
             wrestlerRepository,
             matchFulfillmentService,
             securityUtils,
-            objectMapper);
+            objectMapper,
+            openProfileDrawerBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -202,13 +209,50 @@ class InboxViewTest extends AbstractViewTest {
             wrestlerRepository,
             matchFulfillmentService,
             securityUtils,
-            objectMapper);
+            objectMapper,
+            openProfileDrawerBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
     GridKt._clickItem(grid, 0, 1, false, false, false, false);
 
     _get(freshView, Button.class, spec -> spec.withId("navigate-btn-20"));
+  }
+
+  @Test
+  @DisplayName("OPEN_DRAWER action type renders a Show me button and broadcasts on click")
+  void createActionComponent_openDrawer_rendersShowMeButton() {
+    InboxEventType eventType = new InboxEventType("TUTORIAL", "Tutorial");
+    InboxItem item = new InboxItem();
+    item.setId(30L);
+    item.setEventType(eventType);
+    item.setRead(false);
+    item.setDescription("Hint: find this in your Profile drawer");
+    item.setActionType("OPEN_DRAWER");
+
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(item));
+    when(inboxService.toggleReadStatus(any())).thenReturn(item);
+    when(securityUtils.canEdit(any())).thenReturn(true);
+
+    InboxView freshView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster);
+    UI.getCurrent().add(freshView);
+
+    Grid<InboxItem> grid = _get(freshView, Grid.class);
+    GridKt._clickItem(grid, 0, 1, false, false, false, false);
+
+    Button showMe = _get(freshView, Button.class, spec -> spec.withId("open-drawer-btn-30"));
+    assertThat(showMe.getText()).isEqualTo("Show me");
+
+    com.github.mvysny.kaributesting.v10.LocatorJ._click(showMe);
+    org.mockito.Mockito.verify(openProfileDrawerBroadcaster).broadcast();
   }
 
   @Test
@@ -234,7 +278,8 @@ class InboxViewTest extends AbstractViewTest {
             wrestlerRepository,
             matchFulfillmentService,
             securityUtils,
-            objectMapper);
+            objectMapper,
+            openProfileDrawerBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -269,7 +314,8 @@ class InboxViewTest extends AbstractViewTest {
             wrestlerRepository,
             matchFulfillmentService,
             securityUtils,
-            objectMapper);
+            objectMapper,
+            openProfileDrawerBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);

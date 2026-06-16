@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -71,6 +72,7 @@ public class InboxView extends VerticalLayout {
   private final WrestlerRepository wrestlerRepository;
   private final MatchFulfillmentService matchFulfillmentService;
   private final ObjectMapper objectMapper;
+  private final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
   private final Grid<InboxItem> grid = new Grid<>(InboxItem.class);
   private final MultiSelectComboBox<Wrestler> targetFilter = new MultiSelectComboBox<>("Targets");
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
@@ -90,13 +92,15 @@ public class InboxView extends VerticalLayout {
       final WrestlerRepository wrestlerRepository,
       final MatchFulfillmentService matchFulfillmentService,
       final SecurityUtils securityUtils,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
     this.matchFulfillmentService = matchFulfillmentService;
     this.securityUtils = securityUtils;
     this.objectMapper = objectMapper;
+    this.openProfileDrawerBroadcaster = openProfileDrawerBroadcaster;
 
     addClassName("inbox-view");
     setSizeFull();
@@ -311,6 +315,7 @@ public class InboxView extends VerticalLayout {
       switch (item.getActionType()) {
         case "MATCH_REPORT" -> layout.add(createMatchReportButton(item));
         case "NAVIGATE" -> createNavigateButton(item).ifPresent(layout::add);
+        case "OPEN_DRAWER" -> layout.add(createOpenDrawerButton(item));
         default -> {
           // Unknown action type — no extra button rendered
         }
@@ -378,6 +383,13 @@ public class InboxView extends VerticalLayout {
     } catch (Exception e) {
       return Optional.empty();
     }
+  }
+
+  private Button createOpenDrawerButton(@NonNull final InboxItem item) {
+    Button button = new Button("Show me", e -> openProfileDrawerBroadcaster.broadcast());
+    button.setId("open-drawer-btn-" + item.getId());
+    button.addThemeVariants(ButtonVariant.LUMO_SMALL);
+    return button;
   }
 
   private String getTargetNames(@NonNull final InboxItem item) {

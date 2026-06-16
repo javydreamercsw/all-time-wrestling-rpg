@@ -32,6 +32,7 @@ import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
+import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
@@ -57,6 +58,8 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.shared.Registration;
@@ -75,12 +78,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @NoArgsConstructor
 @PermitAll
 @AnonymousAllowed
-public class MainLayout extends AppLayout {
+public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
   private MenuService menuService;
   private BuildProperties buildProperties;
   private InboxUpdateBroadcaster inboxUpdateBroadcaster;
   private Registration inboxUpdateBroadcasterRegistration;
+  private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
+  private Registration openProfileDrawerRegistration;
   private @Nullable SecurityUtils securityUtils;
   private AccountService accountService;
   private PasswordEncoder passwordEncoder;
@@ -105,7 +110,8 @@ public class MainLayout extends AppLayout {
       final UniverseRepository universeRepository,
       final UniverseMembershipService universeMembershipService,
       final InboxService inboxService,
-      final TutorialService tutorialService) {
+      final TutorialService tutorialService,
+      final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -118,6 +124,7 @@ public class MainLayout extends AppLayout {
     this.universeMembershipService = universeMembershipService;
     this.inboxService = inboxService;
     this.tutorialService = tutorialService;
+    this.openProfileDrawerBroadcaster = openProfileDrawerBroadcaster;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -320,6 +327,25 @@ public class MainLayout extends AppLayout {
     }
   }
 
+  private void openProfileDrawer() {
+    if (securityUtils == null) {
+      return;
+    }
+    securityUtils
+        .getAuthenticatedUser()
+        .flatMap(user -> accountService.findByUsername(user.getUsername()))
+        .ifPresent(
+            account ->
+                new com.github.javydreamercsw.management.ui.view.account.ProfileDrawer(
+                        account,
+                        accountService,
+                        passwordEncoder,
+                        themeService,
+                        tutorialService,
+                        universeContextService)
+                    .open());
+  }
+
   @Override
   protected void onAttach(final AttachEvent attachEvent) {
     super.onAttach(attachEvent);
@@ -338,6 +364,15 @@ public class MainLayout extends AppLayout {
                 }
               });
     }
+    if (openProfileDrawerBroadcaster != null) {
+      openProfileDrawerRegistration =
+          openProfileDrawerBroadcaster.register(
+              ignored -> {
+                if (ui.isAttached()) {
+                  ui.access(this::openProfileDrawer);
+                }
+              });
+    }
   }
 
   @Override
@@ -346,5 +381,13 @@ public class MainLayout extends AppLayout {
     if (inboxUpdateBroadcasterRegistration != null) { // Needed for tests
       inboxUpdateBroadcasterRegistration.remove();
     }
+    if (openProfileDrawerRegistration != null) {
+      openProfileDrawerRegistration.remove();
+    }
+  }
+
+  @Override
+  public void afterNavigation(final AfterNavigationEvent event) {
+    refreshInboxBadge();
   }
 }
