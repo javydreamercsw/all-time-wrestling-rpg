@@ -217,7 +217,8 @@ public class TutorialStepOverlay extends Dialog {
       close();
       Notification.show("🏆 Tutorial complete! Great work.", 4000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-      UI.getCurrent().navigate("tutorial");
+      String completionRoute = tutorialService.getDefinition(universeType).getCompletionRoute();
+      UI.getCurrent().navigate(completionRoute);
     } else {
       // Refresh account and move to next step
       account = accountService.get(account.getId()).orElse(account);

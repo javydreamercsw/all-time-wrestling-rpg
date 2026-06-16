@@ -25,4 +25,9 @@ public interface TutorialDefinition {
   Universe.UniverseType getMode();
 
   List<TutorialStep> getSteps();
+
+  /** Route to navigate to when the tutorial is completed. Defaults to the tutorial home page. */
+  default String getCompletionRoute() {
+    return "tutorial";
+  }
 }

@@ -44,6 +44,11 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
   }
 
   @Override
+  public String getCompletionRoute() {
+    return "campaign";
+  }
+
+  @Override
   public List<TutorialStep> getSteps() {
     return List.of(step1(), step2(), step3());
   }

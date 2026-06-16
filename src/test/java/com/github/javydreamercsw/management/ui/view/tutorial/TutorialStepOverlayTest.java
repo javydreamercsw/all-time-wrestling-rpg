@@ -85,6 +85,7 @@ class TutorialStepOverlayTest extends AbstractViewTest {
   private TutorialDefinition definitionOf(final TutorialStep... steps) {
     TutorialDefinition def = mock(TutorialDefinition.class);
     when(def.getSteps()).thenReturn(List.of(steps));
+    when(def.getCompletionRoute()).thenReturn("tutorial");
     return def;
   }
 
