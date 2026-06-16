@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -55,8 +56,10 @@ public class WrestlerBumpHealedInboxListener
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             wrestlerBumpHealed,
+            "Bump Healed: " + event.getWrestlerState().getName(),
             "Wrestler %s's bumps have healed. New total: %d"
                 .formatted(event.getWrestlerState().getName(), event.getWrestlerState().getBumps()),
+            InboxItem.Urgency.INFO,
             event.getWrestlerState().getWrestler().getId().toString(),
             InboxItemTarget.TargetType.WRESTLER);
     inboxItem.setActionType("NAVIGATE");

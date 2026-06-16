@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateEvent;
@@ -62,7 +63,9 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             rivalryHeatChange,
+            "Rivalry Heat " + (event.getNewHeat() - event.getOldHeat() > 0 ? "Gained" : "Lost"),
             message,
+            InboxItem.Urgency.INFO,
             event.getRivalryId().toString(),
             InboxItemTarget.TargetType.RIVALRY);
     inboxItem.setActionType("NAVIGATE");

@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -89,7 +90,7 @@ class JoinRequestInboxListenerTest {
   private InboxItem stubInboxItem() {
     InboxItem item = new InboxItem();
     item.setEventType(eventType);
-    when(inboxService.createInboxItem(any(), any(), anyList())).thenReturn(item);
+    when(inboxService.createInboxItem(any(), any(), any(), any(), anyList())).thenReturn(item);
     when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
     return item;
   }
@@ -119,7 +120,9 @@ class JoinRequestInboxListenerTest {
     verify(inboxService)
         .createInboxItem(
             any(InboxEventType.class),
+            anyString(),
             argThat(msg -> msg.contains("New Player") && msg.contains("Test Universe")),
+            any(InboxItem.Urgency.class),
             argThat(targets -> targets.size() == 1 && targets.get(0).targetId().equals("10")));
     verify(eventPublisher).publishEvent(any());
     verify(inboxUpdateBroadcaster).broadcast(any());
@@ -161,7 +164,7 @@ class JoinRequestInboxListenerTest {
 
     listener.onApplicationEvent(new JoinRequestSubmittedEvent(this, request));
 
-    verify(inboxService, never()).createInboxItem(any(), any(), anyList());
+    verify(inboxService, never()).createInboxItem(any(), any(), any(), any(), anyList());
   }
 
   @Test
@@ -171,7 +174,7 @@ class JoinRequestInboxListenerTest {
     adminMembership.setRole(UniverseMemberRole.OWNER);
 
     when(membershipService.getMembersForUniverse(universe)).thenReturn(List.of(adminMembership));
-    when(inboxService.createInboxItem(any(), any(), anyList()))
+    when(inboxService.createInboxItem(any(), any(), any(), any(), anyList()))
         .thenThrow(new RuntimeException("DB down"));
     when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

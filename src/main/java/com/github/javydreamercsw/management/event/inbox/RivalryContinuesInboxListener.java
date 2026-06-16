@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.RivalryContinuesEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -54,7 +55,9 @@ public class RivalryContinuesInboxListener implements ApplicationListener<Rivalr
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             rivalryContinues,
+            "Rivalry Continues: " + event.getRivalry().getDisplayName(),
             "Rivalry '%s' continues.".formatted(event.getRivalry().getDisplayName()),
+            InboxItem.Urgency.INFO,
             event.getRivalry().getId().toString(),
             InboxItemTarget.TargetType.RIVALRY);
     inboxItem.setActionType("NAVIGATE");

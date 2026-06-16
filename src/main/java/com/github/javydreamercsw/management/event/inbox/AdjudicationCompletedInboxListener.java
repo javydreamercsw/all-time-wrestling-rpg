@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -54,7 +55,9 @@ public class AdjudicationCompletedInboxListener
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             adjudicationCompleted,
+            "Adjudication Complete: " + event.getShow().getName(),
             "Adjudication completed for show: %s".formatted(event.getShow().getName()),
+            InboxItem.Urgency.INFO,
             event.getShow().getId().toString(),
             InboxItemTarget.TargetType.SHOW);
     inboxItem.setActionType("NAVIGATE");

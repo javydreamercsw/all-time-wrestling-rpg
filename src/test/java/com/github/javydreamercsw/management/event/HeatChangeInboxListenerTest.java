@@ -49,7 +49,8 @@ class HeatChangeInboxListenerTest {
     rivalryHeatChange = mock(InboxEventType.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
     inboxUpdateBroadcaster = mock(InboxUpdateBroadcaster.class);
-    when(inboxService.createInboxItem(any(), any(), any(), any())).thenReturn(new InboxItem());
+    when(inboxService.createInboxItem(any(), any(), any(), any(), any(), any()))
+        .thenReturn(new InboxItem());
     when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
     listener =
         new HeatChangeInboxListener(
@@ -74,7 +75,12 @@ class HeatChangeInboxListenerTest {
 
     verify(inboxService)
         .createInboxItem(
-            eq(rivalryHeatChange), anyString(), eq("123"), eq(InboxItemTarget.TargetType.RIVALRY));
+            eq(rivalryHeatChange),
+            anyString(),
+            anyString(),
+            any(InboxItem.Urgency.class),
+            eq("123"),
+            eq(InboxItemTarget.TargetType.RIVALRY));
     verify(eventPublisher).publishEvent(any(InboxUpdateEvent.class));
     verify(inboxUpdateBroadcaster).broadcast(any(InboxUpdateEvent.class));
   }
@@ -97,6 +103,11 @@ class HeatChangeInboxListenerTest {
 
     verify(inboxService)
         .createInboxItem(
-            eq(rivalryHeatChange), anyString(), eq("123"), eq(InboxItemTarget.TargetType.RIVALRY));
+            eq(rivalryHeatChange),
+            anyString(),
+            anyString(),
+            any(InboxItem.Urgency.class),
+            eq("123"),
+            eq(InboxItemTarget.TargetType.RIVALRY));
   }
 }

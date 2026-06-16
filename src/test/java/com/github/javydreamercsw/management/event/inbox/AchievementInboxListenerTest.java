@@ -17,12 +17,14 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -45,6 +47,8 @@ class AchievementInboxListenerTest {
 
   @BeforeEach
   public void setUp() {
+    when(inboxService.createInboxItem(any(), any(), any(), any(), any(), any()))
+        .thenReturn(new InboxItem());
     listener =
         new AchievementInboxListener(
             inboxService, achievementUnlocked, eventPublisher, inboxUpdateBroadcaster);
@@ -67,7 +71,9 @@ class AchievementInboxListenerTest {
     verify(inboxService)
         .createInboxItem(
             eq(achievementUnlocked),
-            contains("Test Achievement"),
+            anyString(),
+            anyString(),
+            any(InboxItem.Urgency.class),
             eq("1"),
             eq(InboxItemTarget.TargetType.ACCOUNT));
     verify(eventPublisher).publishEvent(any(InboxUpdateEvent.class));

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
@@ -75,7 +76,9 @@ public class ChampionshipChangeInboxListener
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             championshipChange,
+            "Championship Change",
             message,
+            InboxItem.Urgency.INFO,
             event.getTitleId().toString(),
             InboxItemTarget.TargetType.TITLE);
     inboxItem.setActionType("NAVIGATE");

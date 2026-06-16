@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -72,7 +73,9 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             dramaEventCreated,
+            dramaEvent.getTitle(),
             "%s: %s".formatted(dramaEvent.getTitle(), dramaEvent.getDescription()),
+            InboxItem.Urgency.INFO,
             targets);
     inboxItem.setActionType("NAVIGATE");
     inboxItem.setActionPayload(

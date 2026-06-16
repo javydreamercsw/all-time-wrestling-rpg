@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
@@ -68,7 +69,12 @@ public class FeudHeatChangeInboxListener implements ApplicationListener<FeudHeat
 
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
-            feudHeatChange, message, event.getFeudId().toString(), InboxItemTarget.TargetType.FEUD);
+            feudHeatChange,
+            "Feud Heat Change: " + event.getFeudName(),
+            message,
+            InboxItem.Urgency.INFO,
+            event.getFeudId().toString(),
+            InboxItemTarget.TargetType.FEUD);
     inboxItem.setActionType("NAVIGATE");
     inboxItem.setActionPayload("{\"route\":\"rivalry-list\"}");
     inboxService.save(inboxItem);

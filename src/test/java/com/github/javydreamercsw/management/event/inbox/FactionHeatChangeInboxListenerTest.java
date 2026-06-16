@@ -46,7 +46,8 @@ class FactionHeatChangeInboxListenerTest {
     factionHeatChange = mock(InboxEventType.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
     inboxUpdateBroadcaster = mock(InboxUpdateBroadcaster.class);
-    when(inboxService.createInboxItem(any(), any(), any(), any())).thenReturn(new InboxItem());
+    when(inboxService.createInboxItem(any(), any(), any(), any(), any(), any()))
+        .thenReturn(new InboxItem());
     when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
     listener =
         new FactionHeatChangeInboxListener(
@@ -67,7 +68,12 @@ class FactionHeatChangeInboxListenerTest {
 
     verify(inboxService)
         .createInboxItem(
-            eq(factionHeatChange), anyString(), eq("123"), eq(InboxItemTarget.TargetType.FACTION));
+            eq(factionHeatChange),
+            anyString(),
+            anyString(),
+            any(InboxItem.Urgency.class),
+            eq("123"),
+            eq(InboxItemTarget.TargetType.FACTION));
     verify(eventPublisher).publishEvent(any(InboxUpdateEvent.class));
     verify(inboxUpdateBroadcaster).broadcast(any(InboxUpdateEvent.class));
   }
