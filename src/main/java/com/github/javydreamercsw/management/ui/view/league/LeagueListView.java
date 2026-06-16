@@ -186,6 +186,7 @@ public class LeagueListView extends Main {
               return actions;
             })
         .setHeader("Actions")
+        .setKey("actions")
         .setFlexGrow(1);
 
     leagueGrid.setSizeFull();
