@@ -17,10 +17,8 @@
 package com.github.javydreamercsw.management.service.tutorial;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -36,7 +34,6 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
   private final ShowService showService;
   private final ShowTypeService showTypeService;
   private final UniverseContextService universeContextService;
-  private final AccountService accountService;
 
   @Override
   public Universe.UniverseType getMode() {
@@ -105,10 +102,8 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
 
       @Override
       public void beforeStep(final Account account) {
-        // Grant BOOKER so the player can create and manage shows in their universe.
-        // Universe-scoped operations (expansion settings, wrestler exclusions) are gated by
-        // OWNER membership, which is already set when the tutorial universe is created.
-        accountService.grantRole(account, RoleName.BOOKER);
+        // No global role grant needed — OWNER universe membership satisfies all
+        // universe-scoped @PreAuthorize checks via UniverseAuthorizationService.
       }
 
       @Override

@@ -158,7 +158,8 @@ public class ShowService {
   }
 
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Show save(@NonNull final Show show) {
     show.setCreationDate(clock.instant());
     return showRepository.saveAndFlush(show);
@@ -265,7 +266,8 @@ public class ShowService {
   }
 
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
@@ -348,7 +350,8 @@ public class ShowService {
   }
 
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,

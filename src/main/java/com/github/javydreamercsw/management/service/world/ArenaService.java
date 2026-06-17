@@ -107,7 +107,7 @@ public class ArenaService {
             });
   }
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize("isAuthenticated()")
   public Optional<Arena> findById(final Long id) {
     return repository.findById(id);
   }
@@ -116,13 +116,13 @@ public class ArenaService {
     return repository.findByIdWithTraits(id);
   }
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.ARENAS_CACHE, key = "'all'")
   public List<Arena> findAll() {
     return repository.findAllWithLocation();
   }
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize("isAuthenticated()")
   public Page<Arena> list(final Pageable pageable) {
     return repository.findAll(pageable);
   }
@@ -137,7 +137,7 @@ public class ArenaService {
     repository.deleteById(id);
   }
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize("isAuthenticated()")
   public Optional<Arena> findByName(final String name) {
     return repository.findByName(name);
   }
