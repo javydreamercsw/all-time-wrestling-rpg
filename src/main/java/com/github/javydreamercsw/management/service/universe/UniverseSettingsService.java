@@ -74,7 +74,7 @@ public class UniverseSettingsService {
    * Sets a per-universe expansion override. Deletes the override row if the value matches the
    * global default, keeping the table lean.
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   @Transactional
   public void setExpansionEnabled(
       @NonNull final Universe universe,
@@ -97,7 +97,7 @@ public class UniverseSettingsService {
   }
 
   /** Removes the per-universe override, reverting to the global setting. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   @Transactional
   public void resetExpansionToGlobal(
       @NonNull final Universe universe, @NonNull final String expansionCode) {
@@ -113,7 +113,7 @@ public class UniverseSettingsService {
   }
 
   /** Excludes a wrestler from a universe. No-op if already excluded. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   @Transactional
   public void excludeWrestler(@NonNull final Universe universe, @NonNull final Wrestler wrestler) {
     if (!wrestlerExclusionRepository.existsByUniverseAndWrestler(universe, wrestler)) {
@@ -125,7 +125,7 @@ public class UniverseSettingsService {
   }
 
   /** Removes a wrestler exclusion, making them available again in this universe. */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   @Transactional
   public void includeWrestler(@NonNull final Universe universe, @NonNull final Wrestler wrestler) {
     wrestlerExclusionRepository.deleteByUniverseAndWrestler(universe, wrestler);

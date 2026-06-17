@@ -30,6 +30,8 @@ public interface LeagueRepository extends JpaRepository<League, Long> {
 
   boolean existsByUniverse(Universe universe);
 
-  @Query("SELECT l FROM League l LEFT JOIN FETCH l.excludedWrestlers WHERE l.id = :id")
+  @Query(
+      "SELECT l FROM League l LEFT JOIN FETCH l.excludedWrestlers LEFT JOIN FETCH l.universe"
+          + " WHERE l.id = :id")
   Optional<League> findByIdWithExcludedWrestlers(Long id);
 }

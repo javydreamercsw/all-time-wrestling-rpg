@@ -285,6 +285,28 @@ public class CampaignService {
   }
 
   /**
+   * Returns the active campaign for the given wrestler scoped to a specific universe. Use this
+   * instead of {@link #getCampaignForWrestler(Wrestler)} when the current universe context matters
+   * (e.g. campaign dashboard, to prevent tutorial campaigns from leaking into other universes).
+   */
+  public Optional<Campaign> getCampaignForWrestlerInUniverse(
+      @NonNull final Wrestler wrestler, @NonNull final Universe universe) {
+    return campaignRepository
+        .findActiveByWrestlerAndUniverse(wrestler, universe)
+        .map(
+            campaign -> {
+              CampaignState state = campaign.getState();
+              if (state != null && state.getActiveStoryline() != null) {
+                state.getActiveStoryline().getMilestones().size();
+              }
+              campaign.getWrestler().getReigns().size();
+              campaign.getWrestler().getAlignments().size();
+              campaign.getWrestler().getWrestlerStates().size();
+              return campaign;
+            });
+  }
+
+  /**
    * Checks if the wrestler has an active campaign.
    *
    * @param wrestler The wrestler.
@@ -292,6 +314,12 @@ public class CampaignService {
    */
   public boolean hasActiveCampaign(@NonNull final Wrestler wrestler) {
     return campaignRepository.findActiveByWrestler(wrestler).isPresent();
+  }
+
+  /** Universe-scoped variant of {@link #hasActiveCampaign(Wrestler)}. */
+  public boolean hasActiveCampaignInUniverse(
+      @NonNull final Wrestler wrestler, @NonNull final Universe universe) {
+    return campaignRepository.findActiveByWrestlerAndUniverse(wrestler, universe).isPresent();
   }
 
   public void processMatchResult(@NonNull final Campaign campaignParam, final boolean won) {

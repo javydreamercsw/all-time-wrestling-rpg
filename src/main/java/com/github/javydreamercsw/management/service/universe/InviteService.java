@@ -53,7 +53,7 @@ public class InviteService {
    * @param createdBy the admin creating the link
    * @return the persisted invite
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   public UniverseInvite generateInvite(
       @NonNull final Universe universe,
       @NonNull final InviteType type,
@@ -113,7 +113,7 @@ public class InviteService {
    *
    * @param inviteId the UUID of the invite to revoke
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwnerOfInvite(#inviteId)")
   public void revokeInvite(@NonNull final String inviteId) {
     UniverseInvite invite =
         inviteRepository
@@ -143,7 +143,7 @@ public class InviteService {
    *
    * @param universe the universe whose invites to list
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   @Transactional(readOnly = true)
   public List<UniverseInvite> listActiveInvites(@NonNull final Universe universe) {
     return inviteRepository.findActiveByUniverse(universe);

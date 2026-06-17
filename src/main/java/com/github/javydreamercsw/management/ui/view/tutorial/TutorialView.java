@@ -172,21 +172,24 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
             VaadinIcon.BOOK,
             "Campaign",
             "Follow your wrestler's career through story chapters. Make backstage decisions that"
-                + " shape the narrative."));
+                + " shape the narrative.",
+            tutorialService.getDefinition(Universe.UniverseType.CAMPAIGN)));
     cards.add(
         modeCard(
             Universe.UniverseType.LEAGUE,
             VaadinIcon.TROPHY,
             "League",
             "Join a competitive fantasy wrestling league. Draft wrestlers, book shows, and"
-                + " compete against other players."));
+                + " compete against other players.",
+            tutorialService.getDefinition(Universe.UniverseType.LEAGUE)));
     cards.add(
         modeCard(
             Universe.UniverseType.GLOBAL,
             VaadinIcon.GLOBE,
             "Universe",
             "Full creative control. Build your entire wrestling world from scratch with custom"
-                + " wrestlers, titles, and shows."));
+                + " wrestlers, titles, and shows.",
+            tutorialService.getDefinition(Universe.UniverseType.GLOBAL)));
 
     add(cards);
   }
@@ -195,7 +198,8 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       final Universe.UniverseType mode,
       final VaadinIcon icon,
       final String title,
-      final String description) {
+      final String description,
+      final TutorialDefinition def) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Background.BASE,
@@ -218,8 +222,21 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     Span iconSpan = new Span(icon.create());
     iconSpan.getStyle().set("font-size", "2rem").set("color", "var(--lumo-primary-color)");
 
+    HorizontalLayout titleRow = new HorizontalLayout();
+    titleRow.setAlignItems(FlexComponent.Alignment.CENTER);
+    titleRow.setSpacing(true);
+    titleRow.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.Margin.Bottom.XSMALL);
+
     H3 cardTitle = new H3(title);
-    cardTitle.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.Margin.Bottom.XSMALL);
+    cardTitle.getStyle().set("margin", "0");
+    titleRow.add(cardTitle);
+
+    if (def.isAdvanced()) {
+      Span badge = new Span("Advanced");
+      badge.getElement().getThemeList().add("badge error");
+      badge.getStyle().set("font-size", "var(--lumo-font-size-xs)");
+      titleRow.add(badge);
+    }
 
     Paragraph desc = new Paragraph(description);
     desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
@@ -236,7 +253,23 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
           renderCurrentPhase();
         });
 
-    card.add(iconSpan, cardTitle, desc, selectBtn);
+    card.add(iconSpan, titleRow, desc);
+
+    if (def.isAdvanced() && def.getWarning() != null) {
+      Div warningBox = new Div();
+      warningBox.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.Padding.SMALL);
+      warningBox
+          .getStyle()
+          .set("background", "var(--lumo-error-color-10pct)")
+          .set("border-radius", "var(--lumo-border-radius-s)")
+          .set("border-left", "3px solid var(--lumo-error-color)");
+      Span warningText = new Span(def.getWarning());
+      warningText.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.ERROR);
+      warningBox.add(warningText);
+      card.add(warningBox);
+    }
+
+    card.add(selectBtn);
     return card;
   }
 
@@ -375,21 +408,28 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     TutorialStep step = definition.getSteps().get(currentStepIndex);
     int totalSteps = definition.getSteps().size();
 
-    // Refresh account first so beforeStep hooks see the latest DB state (e.g. activeWrestlerId
-    // set in the previous step is visible when the next step's hook runs).
+    // Refresh account so beforeStep hooks see the latest DB state.
     account = accountService.get(account.getId()).orElse(account);
-
     tutorialService.runBeforeStep(account, universeType, currentStepIndex);
 
-    // ── Header ────────────────────────────────────────────────────────────
+    if (step.getInteractionMode() == TutorialStep.InteractionMode.NAVIGATE) {
+      // Hand off to the floating overlay in MainLayout and navigate to the target view.
+      // The overlay will show the step instructions and handle Next/validation.
+      getUI().ifPresent(ui -> ui.navigate(step.getTargetRoute()));
+      return;
+    }
+
+    // ── INLINE step: render wrestler picker on this page ──────────────────
+    int totalStepsVal = definition.getSteps().size();
+
     HorizontalLayout header = new HorizontalLayout();
     header.setWidthFull();
     header.setAlignItems(Alignment.CENTER);
 
-    Span stepLabel = new Span("Step " + (currentStepIndex + 1) + " of " + totalSteps);
+    Span stepLabel = new Span("Step " + (currentStepIndex + 1) + " of " + totalStepsVal);
     stepLabel.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
 
-    ProgressBar progress = new ProgressBar(0, totalSteps, currentStepIndex + 1);
+    ProgressBar progress = new ProgressBar(0, totalStepsVal, currentStepIndex + 1);
     progress.setWidth("200px");
 
     Button skipButton = new Button("Skip Tutorial");
@@ -397,22 +437,19 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     skipButton.addClassNames(LumoUtility.Margin.Left.AUTO);
     skipButton.addClickListener(
         e -> {
-          tutorialService.markSkipped(account.getId(), universeType, totalSteps);
+          tutorialService.markSkipped(account.getId(), universeType, totalStepsVal);
           navigateToDashboard();
         });
 
     header.add(stepLabel, progress, skipButton);
     add(header);
 
-    // ── Title + instructions ──────────────────────────────────────────────
     H2 title = new H2(step.getTitle());
     title.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.Margin.Bottom.XSMALL);
     add(title);
 
-    Paragraph instructions = new Paragraph(step.getInstructions());
-    add(instructions);
+    add(new Paragraph(step.getInstructions()));
 
-    // ── Screenshot ────────────────────────────────────────────────────────
     if (step.getImagePath() != null) {
       Div imgContainer = new Div();
       imgContainer.addClassNames(
@@ -433,64 +470,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       add(imgContainer);
     }
 
-    // ── Interaction area ──────────────────────────────────────────────────
-    if (step.getInteractionMode() == TutorialStep.InteractionMode.INLINE) {
-      add(buildWrestlerPicker(totalSteps, step.getAllowedWrestlerNames()));
-    } else {
-      // Hint line
-      Span hint = new Span(step.getValidationHint());
-      hint.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
-      hint.getStyle().set("font-style", "italic");
-      add(hint);
-
-      // Error feedback slot (hidden until Next is clicked and validation fails)
-      Div errorSlot = new Div();
-      errorSlot.setVisible(false);
-      errorSlot.addClassNames(
-          LumoUtility.TextColor.ERROR, LumoUtility.Margin.Top.SMALL, LumoUtility.FontSize.SMALL);
-      add(errorSlot);
-
-      HorizontalLayout buttons = new HorizontalLayout();
-      buttons.addClassNames(LumoUtility.Margin.Top.MEDIUM);
-
-      if (currentStepIndex > 0) {
-        Button prevBtn = new Button("◀ Previous");
-        prevBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        prevBtn.addClickListener(
-            e -> {
-              tutorialService.advanceStep(
-                  account.getId(), universeType, currentStepIndex - 1, totalSteps);
-              currentStepIndex--;
-              renderStep();
-            });
-        buttons.add(prevBtn);
-      }
-
-      // "Go to X" lets the player navigate to the relevant view and come back
-      Button goBtn = new Button("Go to " + step.getTargetViewLabel() + " ↗");
-      goBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-      goBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(step.getTargetRoute())));
-      buttons.add(goBtn);
-
-      // Next / Complete — validates on click, shows error inline if not ready
-      boolean isLast = currentStepIndex == totalSteps - 1;
-      Button nextBtn = new Button(isLast ? "Complete Tutorial ✓" : "Next →");
-      nextBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-      nextBtn.addClickListener(
-          e -> {
-            account = accountService.get(account.getId()).orElse(account);
-            String error = tutorialService.validateStep(account, universeType, currentStepIndex);
-            if (error != null) {
-              errorSlot.setText("⚠ " + error);
-              errorSlot.setVisible(true);
-            } else {
-              errorSlot.setVisible(false);
-              advanceAfterSuccess(totalSteps);
-            }
-          });
-      buttons.add(nextBtn);
-      add(buttons);
-    }
+    add(buildWrestlerPicker(totalSteps, step.getAllowedWrestlerNames()));
   }
 
   // ── Inline wrestler picker ────────────────────────────────────────────────

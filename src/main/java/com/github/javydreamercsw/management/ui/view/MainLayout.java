@@ -36,9 +36,11 @@ import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadca
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
+import com.github.javydreamercsw.management.ui.view.tutorial.TutorialStepOverlay;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -96,6 +98,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private InboxService inboxService;
   private Span inboxBadge;
   private TutorialService tutorialService;
+  private TutorialStepOverlay tutorialOverlay;
 
   @Autowired
   public MainLayout(
@@ -389,5 +392,74 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   @Override
   public void afterNavigation(final AfterNavigationEvent event) {
     refreshInboxBadge();
+    manageTutorialOverlay(event);
+  }
+
+  private void manageTutorialOverlay(final AfterNavigationEvent event) {
+    if (securityUtils == null || !securityUtils.isAuthenticated() || tutorialService == null) {
+      return;
+    }
+
+    // Never show the overlay while the user is on the tutorial setup/inline pages
+    String location = event.getLocation().getPath();
+    if ("tutorial".equals(location)) {
+      if (tutorialOverlay != null && tutorialOverlay.isOpened()) {
+        tutorialOverlay.close();
+      }
+      return;
+    }
+
+    Long accountId =
+        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    if (accountId == null) {
+      return;
+    }
+
+    com.github.javydreamercsw.base.domain.account.Account account =
+        accountService.get(accountId).orElse(null);
+    if (account == null) {
+      return;
+    }
+
+    com.github.javydreamercsw.management.domain.universe.Universe tutorialUniverse =
+        tutorialService.findTutorialUniverse(account.getUsername()).orElse(null);
+    if (tutorialUniverse == null) {
+      closeTutorialOverlay();
+      return;
+    }
+
+    // Keep the universe context pointed at the tutorial universe while the overlay is active so
+    // that beforeStep/validateStep calls (which use getCurrentUniverse) use the correct scope.
+    universeContextService.setCurrentUniverse(tutorialUniverse);
+
+    com.github.javydreamercsw.management.domain.universe.Universe.UniverseType universeType =
+        tutorialUniverse.getType();
+    com.github.javydreamercsw.management.service.tutorial.TutorialDefinition definition =
+        tutorialService.getDefinition(universeType);
+    int totalSteps = definition.getSteps().size();
+    int stepIndex = tutorialService.getCurrentStep(accountId, universeType);
+
+    if (stepIndex >= totalSteps) {
+      closeTutorialOverlay();
+      return;
+    }
+
+    TutorialStep step = definition.getSteps().get(stepIndex);
+    if (step.getInteractionMode() == TutorialStep.InteractionMode.INLINE) {
+      // Inline steps are handled inside TutorialView itself
+      closeTutorialOverlay();
+      return;
+    }
+
+    if (tutorialOverlay == null) {
+      tutorialOverlay = new TutorialStepOverlay(tutorialService, accountService);
+    }
+    tutorialOverlay.updateStep(account, universeType, stepIndex, totalSteps);
+  }
+
+  private void closeTutorialOverlay() {
+    if (tutorialOverlay != null && tutorialOverlay.isOpened()) {
+      tutorialOverlay.close();
+    }
   }
 }

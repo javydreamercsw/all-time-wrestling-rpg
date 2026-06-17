@@ -25,4 +25,25 @@ public interface TutorialDefinition {
   Universe.UniverseType getMode();
 
   List<TutorialStep> getSteps();
+
+  /** Route to navigate to when the tutorial is completed. Defaults to the tutorial home page. */
+  default String getCompletionRoute() {
+    return "tutorial";
+  }
+
+  /**
+   * Returns true when this tutorial requires admin-level access and is not recommended for new
+   * players. The mode-selection card will display an "Advanced" badge and the warning text.
+   */
+  default boolean isAdvanced() {
+    return false;
+  }
+
+  /**
+   * Warning text shown on the mode-selection card for advanced tutorials. Only displayed when
+   * {@link #isAdvanced()} returns true.
+   */
+  default String getWarning() {
+    return null;
+  }
 }

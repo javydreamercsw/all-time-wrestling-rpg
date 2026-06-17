@@ -18,7 +18,9 @@ package com.github.javydreamercsw.management.service.tutorial;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -35,6 +37,9 @@ import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +55,7 @@ public class TutorialService {
   private final UniverseService universeService;
   private final UniverseMembershipService universeMembershipService;
   private final UniverseContextService universeContextService;
+  private final CampaignRepository campaignRepository;
 
   /**
    * Returns the tutorial universe for the given player username if one was previously created, or
@@ -232,10 +238,45 @@ public class TutorialService {
     completionRepository.deleteByAccountIdAndUniverseType(accountId, type);
   }
 
-  /** Resets the campaign tutorial so the player is shown mode/wrestler selection again. */
+  /**
+   * Resets the campaign tutorial so the player is shown mode/wrestler selection again. Also cleans
+   * up the tutorial universe (disassociating its campaigns first so the delete succeeds), clears
+   * the account's active wrestler, and clears the current universe context.
+   */
   @Transactional
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public void resetCampaignTutorial(@NonNull final Account account) {
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          findTutorialUniverse(account.getUsername())
+              .ifPresent(
+                  universe -> {
+                    if (universe.getId() == null) {
+                      return;
+                    }
+                    // Null out campaign.universe (nullable FK not covered by cascade) so the
+                    // UniverseService.delete() existence-check does not block deletion.
+                    campaignRepository
+                        .findByUniverse(universe)
+                        .forEach(
+                            c -> {
+                              c.setUniverse(null);
+                              campaignRepository.save(c);
+                            });
+                    // Cascade on Universe handles WrestlerState, Rivalry, memberships, etc.
+                    universeService.delete(universe.getId());
+                  });
+          return null;
+        });
+    universeContextService.clearCurrentUniverse();
+    // Clear the active wrestler — it was selected for this tutorial only.
+    accountRepository
+        .findById(account.getId())
+        .ifPresent(
+            a -> {
+              a.setActiveWrestlerId(null);
+              accountRepository.save(a);
+            });
     markIncomplete(account.getId(), Universe.UniverseType.CAMPAIGN);
   }
 
@@ -251,6 +292,23 @@ public class TutorialService {
       final int stepIndex) {
     TutorialStep step = getDefinition(type).getSteps().get(stepIndex);
     GeneralSecurityUtils.runAsAdmin(() -> step.beforeStep(account));
+
+    // If beforeStep() granted new roles to the current user, refresh the SecurityContext so
+    // those roles take effect immediately without requiring a logout/login cycle.
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null
+        && currentAuth.getPrincipal() instanceof CustomUserDetails details
+        && details.getId() != null
+        && details.getId().equals(account.getId())) {
+      Account reloaded = accountRepository.findById(account.getId()).orElse(null);
+      if (reloaded != null) {
+        CustomUserDetails refreshed = new CustomUserDetails(reloaded);
+        SecurityContextHolder.getContext()
+            .setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                    refreshed, currentAuth.getCredentials(), refreshed.getAuthorities()));
+      }
+    }
   }
 
   /**

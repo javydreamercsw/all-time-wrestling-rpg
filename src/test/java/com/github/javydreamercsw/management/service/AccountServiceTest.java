@@ -27,12 +27,15 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -43,6 +46,9 @@ import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,6 +64,11 @@ class AccountServiceTest {
 
   private Account account;
   private Role adminRole;
+
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+  }
 
   @BeforeEach
   void setUp() {
@@ -317,5 +328,58 @@ class AccountServiceTest {
     assertThatThrownBy(() -> accountService.update(incoming))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Account not found");
+  }
+
+  @Test
+  @DisplayName("grantRole refreshes SecurityContextHolder when granting to the current user")
+  void grantRole_refreshesSecurityContext_forCurrentUser() {
+    Role playerRole = new Role(RoleName.PLAYER, "PLAYER");
+    account.getRoles().add(playerRole);
+    CustomUserDetails currentUser = new CustomUserDetails(account);
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                currentUser, null, currentUser.getAuthorities()));
+
+    Role adminRole = new Role(RoleName.ADMIN, "ADMIN");
+    Account reloaded = new Account("testUser", "$2a$10$encodedPassword", "test@example.com");
+    reloaded.setId(1L);
+    reloaded.getRoles().add(playerRole);
+    reloaded.getRoles().add(adminRole);
+    when(roleRepository.findByName(RoleName.ADMIN)).thenReturn(Optional.of(adminRole));
+    when(accountRepository.findById(1L)).thenReturn(Optional.of(reloaded));
+    when(accountRepository.save(any())).thenReturn(reloaded);
+
+    accountService.grantRole(account, RoleName.ADMIN);
+
+    assertThat(
+            SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority))
+        .contains("ROLE_ADMIN");
+  }
+
+  @Test
+  @DisplayName("grantRole does not change SecurityContextHolder when granting to a different user")
+  void grantRole_doesNotRefreshSecurityContext_forDifferentUser() {
+    CustomUserDetails currentUser = new CustomUserDetails(account);
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                currentUser, null, currentUser.getAuthorities()));
+
+    Account other = new Account("other", "pw", "other@example.com");
+    other.setId(2L);
+    Role adminRole = new Role(RoleName.ADMIN, "ADMIN");
+    Account reloadedOther = new Account("other", "pw", "other@example.com");
+    reloadedOther.setId(2L);
+    reloadedOther.getRoles().add(adminRole);
+    when(roleRepository.findByName(RoleName.ADMIN)).thenReturn(Optional.of(adminRole));
+    when(accountRepository.findById(2L)).thenReturn(Optional.of(reloadedOther));
+
+    accountService.grantRole(other, RoleName.ADMIN);
+
+    // Principal must still be the original user (account ID 1)
+    assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal())
+        .isEqualTo(currentUser);
   }
 }

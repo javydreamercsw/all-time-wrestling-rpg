@@ -32,6 +32,12 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
           + " c.status = 'ACTIVE'")
   Optional<Campaign> findActiveByWrestler(@Param("wrestler") Wrestler wrestler);
 
+  @Query(
+      "SELECT DISTINCT c FROM Campaign c LEFT JOIN FETCH c.state WHERE c.wrestler = :wrestler"
+          + " AND c.status = 'ACTIVE' AND c.universe = :universe")
+  Optional<Campaign> findActiveByWrestlerAndUniverse(
+      @Param("wrestler") Wrestler wrestler, @Param("universe") Universe universe);
+
   boolean existsByUniverse(Universe universe);
 
   List<Campaign> findByUniverse(Universe universe);

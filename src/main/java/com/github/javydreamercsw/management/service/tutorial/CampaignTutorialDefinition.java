@@ -19,8 +19,10 @@ package com.github.javydreamercsw.management.service.tutorial;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import lombok.NonNull;
@@ -32,13 +34,20 @@ import org.springframework.stereotype.Component;
 public class CampaignTutorialDefinition implements TutorialDefinition {
 
   private final WrestlerService wrestlerService;
+  private final WrestlerRepository wrestlerRepository;
   private final CampaignService campaignService;
   private final CampaignChapterService campaignChapterService;
   private final BackstageActionHistoryRepository backstageActionHistoryRepository;
+  private final UniverseContextService universeContextService;
 
   @Override
   public Universe.UniverseType getMode() {
     return Universe.UniverseType.CAMPAIGN;
+  }
+
+  @Override
+  public String getCompletionRoute() {
+    return "campaign";
   }
 
   @Override
@@ -165,13 +174,33 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
         if (wrestlerId == null) {
           return "You need to select a wrestler first (complete Step 1).";
         }
-        return wrestlerService
-            .findByIdWithDetails(wrestlerId)
-            .flatMap(campaignService::getCampaignForWrestler)
-            .map(campaign -> (String) null)
-            .orElse(
-                "Your wrestler doesn't have an active campaign yet. Please wait a moment and try"
-                    + " again.");
+        // Prefer universe-scoped check; fall back to account-wrestler scan to handle edge cases
+        // where activeWrestlerId points to a different entity than what holds the campaign.
+        Universe tutorialUniverse = universeContextService.getCurrentUniverse().orElse(null);
+        boolean hasCampaign = false;
+        if (tutorialUniverse != null) {
+          hasCampaign =
+              wrestlerService
+                  .findByIdWithDetails(wrestlerId)
+                  .map(w -> campaignService.hasActiveCampaignInUniverse(w, tutorialUniverse))
+                  .orElse(false);
+          if (!hasCampaign) {
+            hasCampaign =
+                wrestlerRepository.findByAccountId(account.getId()).stream()
+                    .anyMatch(
+                        w -> campaignService.hasActiveCampaignInUniverse(w, tutorialUniverse));
+          }
+        } else {
+          hasCampaign =
+              wrestlerService
+                  .findByIdWithDetails(wrestlerId)
+                  .map(campaignService::hasActiveCampaign)
+                  .orElse(false);
+        }
+        return hasCampaign
+            ? null
+            : "Your wrestler doesn't have an active campaign yet. Please wait a moment and try"
+                + " again.";
       }
 
       @Override
@@ -206,18 +235,18 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String getTitle() {
-        return "Make Your First Decision";
+        return "Make Your First Backstage Action";
       }
 
       @Override
       public String getInstructions() {
         return "In your active campaign, navigate to the backstage area and make your first"
-            + " decision. Your choices shape your wrestler's story — choose wisely!";
+            + " Backstage Action. Your choices shape your wrestler's story — choose wisely!";
       }
 
       @Override
       public String getValidationHint() {
-        return "We'll check that you've made at least one backstage decision in your campaign.";
+        return "We'll check that you've made at least one Backstage Action in your campaign.";
       }
 
       @Override
@@ -249,7 +278,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
                 .orElse(false);
         return hasDecision
             ? null
-            : "You haven't made a backstage decision yet. Go to Backstage Actions and make your"
+            : "You haven't made a backstage actions yet. Go to Backstage Actions and make your"
                 + " first choice.";
       }
     };

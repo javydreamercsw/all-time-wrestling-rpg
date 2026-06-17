@@ -25,6 +25,11 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -38,7 +43,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,6 +53,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -58,6 +68,7 @@ class TutorialServiceTest {
   private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
 
   @Mock private AccountRepository accountRepository;
+  @Mock private CampaignRepository campaignRepository;
   @Mock private TutorialDefinition globalDefinition;
   @Mock private TutorialStep stepMock;
   @Mock private UniverseService universeService;
@@ -67,12 +78,18 @@ class TutorialServiceTest {
   private TutorialService service;
   private Account account;
 
+  @AfterEach
+  void clearSecurityContext() {
+    SecurityContextHolder.clearContext();
+  }
+
   @BeforeEach
   void setUp() {
     account = new Account("player", "password", "player@example.com");
-    // Use reflection-friendly approach: set id via a helper
     when(globalDefinition.getMode()).thenReturn(Universe.UniverseType.GLOBAL);
     when(globalDefinition.getSteps()).thenReturn(List.of(stepMock, stepMock, stepMock));
+    // Default: no tutorial universe exists
+    when(universeService.findByName(any())).thenReturn(Optional.empty());
     service =
         new TutorialService(
             completionRepository,
@@ -82,7 +99,8 @@ class TutorialServiceTest {
             List.of(globalDefinition),
             universeService,
             universeMembershipService,
-            universeContextService);
+            universeContextService,
+            campaignRepository);
   }
 
   // ── shouldShowTutorial ────────────────────────────────────────────────────
@@ -209,7 +227,38 @@ class TutorialServiceTest {
 
   @Test
   void resetCampaignTutorial_deletesCompletionRecordForCampaignMode() {
+    // No tutorial universe → only completion record is deleted
     service.resetCampaignTutorial(account);
+    verify(completionRepository)
+        .deleteByAccountIdAndUniverseType(account.getId(), Universe.UniverseType.CAMPAIGN);
+    verify(universeService, never()).delete(any());
+  }
+
+  @Test
+  void resetCampaignTutorial_withExistingUniverse_cleansUpUniverseAndWrestler() {
+    Universe tutorialUniverse = new Universe();
+    org.springframework.test.util.ReflectionTestUtils.setField(tutorialUniverse, "id", 99L);
+    tutorialUniverse.setName("Tutorial – player");
+
+    Campaign abandonedCampaign = new Campaign();
+
+    when(universeService.findByName("Tutorial – player")).thenReturn(Optional.of(tutorialUniverse));
+    when(campaignRepository.findByUniverse(tutorialUniverse))
+        .thenReturn(List.of(abandonedCampaign));
+    when(campaignRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(accountRepository.findById(account.getId())).thenReturn(Optional.of(account));
+    when(accountRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.resetCampaignTutorial(account);
+
+    // Campaign universe was nulled out (cascade on Universe handles WrestlerState etc.)
+    assertThat(abandonedCampaign.getUniverse()).isNull();
+    verify(campaignRepository).save(abandonedCampaign);
+    // Universe was deleted
+    verify(universeService).delete(99L);
+    // Active wrestler was cleared
+    assertThat(account.getActiveWrestlerId()).isNull();
+    // Completion record deleted
     verify(completionRepository)
         .deleteByAccountIdAndUniverseType(account.getId(), Universe.UniverseType.CAMPAIGN);
   }
@@ -264,6 +313,32 @@ class TutorialServiceTest {
     verify(expansionService).setExpansionEnabled("BASE_GAME", true);
     verify(expansionService).setExpansionEnabled(eq("RUMBLE"), eq(true));
     verify(expansionService).setExpansionEnabled(eq("TRAILBLAZERS"), eq(false));
+  }
+
+  @Test
+  @DisplayName("runBeforeStep refreshes SecurityContextHolder after beforeStep grants roles")
+  void runBeforeStep_refreshesSecurityContextAfterBeforeStep() {
+    account.setId(1L);
+    CustomUserDetails currentUser = new CustomUserDetails(account);
+    SecurityContextHolder.getContext()
+        .setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                currentUser, null, currentUser.getAuthorities()));
+
+    // Simulate that beforeStep() granted ADMIN — accountRepository returns the updated account
+    Role adminRole = new Role(RoleName.ADMIN, "ADMIN");
+    Account reloaded = new Account("player", "password", "player@example.com");
+    reloaded.setId(1L);
+    reloaded.getRoles().add(adminRole);
+    when(accountRepository.findById(1L)).thenReturn(Optional.of(reloaded));
+    when(globalDefinition.getSteps()).thenReturn(List.of(stepMock));
+
+    service.runBeforeStep(account, Universe.UniverseType.GLOBAL, 0);
+
+    assertThat(
+            SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority))
+        .contains("ROLE_ADMIN");
   }
 
   @Test

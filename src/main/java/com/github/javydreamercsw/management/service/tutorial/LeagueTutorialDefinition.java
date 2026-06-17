@@ -17,13 +17,18 @@
 package com.github.javydreamercsw.management.service.tutorial;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
-import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.management.domain.league.DraftPickRepository;
+import com.github.javydreamercsw.management.domain.league.DraftRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueMembership;
+import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
+import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.universe.InviteService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -33,11 +38,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class LeagueTutorialDefinition implements TutorialDefinition {
 
-  private final WrestlerService wrestlerService;
+  private final AccountService accountService;
   private final LeagueService leagueService;
-  private final LeagueRepository leagueRepository;
-  private final AccountRepository accountRepository;
-  private final SegmentRepository segmentRepository;
+  private final LeagueMembershipRepository leagueMembershipRepository;
+  private final DraftRepository draftRepository;
+  private final DraftPickRepository draftPickRepository;
+  private final InviteService inviteService;
+  private final UniverseMembershipRepository universeMembershipRepository;
+  private final UniverseContextService universeContextService;
+  private final UniverseService universeService;
 
   @Override
   public Universe.UniverseType getMode() {
@@ -45,8 +54,19 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
   }
 
   @Override
+  public boolean isAdvanced() {
+    return true;
+  }
+
+  @Override
+  public String getWarning() {
+    return "This tutorial requires inviting other real players to join your league. You will be"
+        + " granted admin access to manage your tutorial universe.";
+  }
+
+  @Override
   public List<TutorialStep> getSteps() {
-    return List.of(step1(), step2(), step3());
+    return List.of(step1(), step2(), step3(), step4());
   }
 
   private TutorialStep step1() {
@@ -57,35 +77,30 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
       }
 
       @Override
-      public InteractionMode getInteractionMode() {
-        return InteractionMode.INLINE;
-      }
-
-      @Override
       public String getTitle() {
-        return "Assign Your Wrestler";
+        return "Your Tutorial League";
       }
 
       @Override
       public String getInstructions() {
-        return "Head to your Player Dashboard and select a wrestler to represent you in this"
-            + " league. Click the wrestler selector at the top of the dashboard and choose one"
-            + " from the list.";
+        return "We've created a tutorial league for you and made you the commissioner."
+            + " Head to the Leagues page to see it. As commissioner you control the draft rules,"
+            + " who joins, and when the season starts.";
       }
 
       @Override
       public String getValidationHint() {
-        return "We'll check that you have an active wrestler assigned to your account.";
+        return "We'll check that you are the commissioner of at least one league.";
       }
 
       @Override
       public String getTargetRoute() {
-        return "player";
+        return "leagues";
       }
 
       @Override
       public String getTargetViewLabel() {
-        return "Player Dashboard";
+        return "Leagues";
       }
 
       @Override
@@ -95,16 +110,36 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String validate(final Account account) {
-        return account.getActiveWrestlerId() != null
+        boolean isCommissioner =
+            leagueMembershipRepository.findByMember(account).stream()
+                .anyMatch(
+                    m ->
+                        m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER
+                            || m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER_PLAYER);
+        return isCommissioner
             ? null
-            : "You haven't selected an active wrestler yet. Go to the Player Dashboard and choose"
-                + " a wrestler to represent you.";
+            : "You haven't created a league yet. Go to the Leagues page and create one.";
       }
 
       @Override
       public void beforeStep(final Account account) {
-        if (wrestlerService.getAllWrestlers().isEmpty()) {
-          wrestlerService.createWrestler("Tutorial Wrestler", true, "A starter wrestler.");
+        // Elevate to BOOKER so the player can manage the league.
+        // Universe-scoped operations (invites, join requests) are gated by OWNER membership,
+        // which is already set when the tutorial universe is created.
+        // Seed a tutorial league owned by the player as commissioner (idempotent).
+        boolean alreadyCommissioner =
+            leagueMembershipRepository.findByMember(account).stream()
+                .anyMatch(
+                    m ->
+                        m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER
+                            || m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER_PLAYER);
+        if (!alreadyCommissioner) {
+          leagueService.createLeague(
+              "Tutorial League – " + account.getUsername(),
+              account,
+              10,
+              Collections.emptySet(),
+              false);
         }
       }
     };
@@ -119,18 +154,20 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String getTitle() {
-        return "Join a League";
+        return "Invite Players";
       }
 
       @Override
       public String getInstructions() {
-        return "Navigate to Leagues and join an existing league. If you don't see any leagues,"
-            + " ask your commissioner to create one or create your own from the Leagues page.";
+        return "A league needs players! On the Leagues page, find your league row and click the"
+            + " link icon (Invite Players). Generate an invite link and share it so others can"
+            + " join. Wait until at least one other player has accepted before continuing.";
       }
 
       @Override
       public String getValidationHint() {
-        return "We'll check that you are a member of at least one league.";
+        return "We'll check that you've sent an invite and at least one other player has joined"
+            + " your universe.";
       }
 
       @Override
@@ -150,24 +187,22 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String validate(final Account account) {
-        boolean isMember = !leagueService.getLeaguesForUser(account).isEmpty();
-        return isMember
-            ? null
-            : "You haven't joined a league yet. Go to the Leagues page and join or create one.";
-      }
-
-      @Override
-      public void beforeStep(final Account account) {
-        if (leagueRepository.count() == 0) {
-          // Seed a tutorial league using the admin account as commissioner so the player
-          // has something to join.
-          accountRepository
-              .findByUsername("admin")
-              .ifPresent(
-                  admin ->
-                      leagueService.createLeague(
-                          "Tutorial League", admin, 10, Collections.emptySet(), false));
+        Universe tutorialUniverse =
+            universeService.findByName("Tutorial – " + account.getUsername()).orElse(null);
+        if (tutorialUniverse == null) {
+          return "Tutorial universe not found. Please restart the tutorial.";
         }
+        boolean inviteSent = !inviteService.listActiveInvites(tutorialUniverse).isEmpty();
+        if (!inviteSent) {
+          return "No invite has been sent yet. Open your league, go to Members, and generate an"
+              + " invite link.";
+        }
+        long memberCount = universeMembershipRepository.findByUniverse(tutorialUniverse).size();
+        if (memberCount < 2) {
+          return "Waiting for a player to accept your invite. Share the link and check back once"
+              + " someone has joined.";
+        }
+        return null;
       }
     };
   }
@@ -181,18 +216,19 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String getTitle() {
-        return "Enter a Match";
+        return "Start the Draft";
       }
 
       @Override
       public String getInstructions() {
-        return "In your league, sign up for a scheduled match or accept a challenge from another"
-            + " player. Your wrestler needs to be listed in at least one upcoming segment.";
+        return "Now that your players are in, it's time to draft wrestlers! Open your league and"
+            + " click \"Start Draft\". The system will use a snake-draft order. You'll be up"
+            + " first as commissioner.";
       }
 
       @Override
       public String getValidationHint() {
-        return "We'll check that your wrestler is scheduled for at least one league segment.";
+        return "We'll check that a draft has been started for your league.";
       }
 
       @Override
@@ -212,24 +248,65 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public String validate(final Account account) {
-        Long wrestlerId = account.getActiveWrestlerId();
-        if (wrestlerId == null) {
-          return "You need to select a wrestler first (complete Step 1).";
-        }
-        boolean hasSegment =
-            wrestlerService
-                .findByIdWithDetails(wrestlerId)
-                .map(
-                    wrestler -> {
-                      List<Segment> segments =
-                          segmentRepository.findByWrestlerParticipationWithShow(wrestler);
-                      return !segments.isEmpty();
-                    })
-                .orElse(false);
-        return hasSegment
+        boolean draftStarted = draftRepository.existsByLeague_Commissioner(account);
+        return draftStarted
             ? null
-            : "Your wrestler isn't scheduled for any league segments yet. Go to your league and"
-                + " enter a match.";
+            : "No draft found for your league. Open your league and click \"Start Draft\".";
+      }
+    };
+  }
+
+  private TutorialStep step4() {
+    return new TutorialStep() {
+      @Override
+      public int getStepNumber() {
+        return 4;
+      }
+
+      @Override
+      public String getTitle() {
+        return "Make Your First Draft Pick";
+      }
+
+      @Override
+      public String getInstructions() {
+        return "The draft is live! Navigate to the Draft page, wait for your turn, and select a"
+            + " wrestler to add to your roster. Once all picks are done the draft closes and your"
+            + " league season begins.";
+      }
+
+      @Override
+      public String getValidationHint() {
+        return "We'll check that you've made at least one draft pick.";
+      }
+
+      @Override
+      public String getTargetRoute() {
+        return "draft";
+      }
+
+      @Override
+      public String getTargetViewLabel() {
+        return "Draft";
+      }
+
+      @Override
+      public String getImagePath() {
+        return "/images/tutorial/league/step4.png";
+      }
+
+      @Override
+      public String validate(final Account account) {
+        boolean hasPick = draftPickRepository.existsByUser(account);
+        return hasPick
+            ? null
+            : "You haven't made a pick yet. Go to the Draft page and select a wrestler.";
+      }
+
+      @Override
+      public void afterStep(final Account account) {
+        // Idempotent — ensures commissioner retains BOOKER after tutorial completes.
+        accountService.grantRole(account, RoleName.BOOKER);
       }
     };
   }

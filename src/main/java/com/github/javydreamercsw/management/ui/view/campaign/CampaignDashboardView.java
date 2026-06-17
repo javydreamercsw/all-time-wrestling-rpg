@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.service.campaign.StorylineExportServ
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
@@ -109,6 +110,7 @@ public class CampaignDashboardView extends VerticalLayout {
   private final StorylineExportService storylineExportService;
   private final WrestlerService wrestlerService;
   private final TutorialService tutorialService;
+  private final UniverseContextService universeContextService;
 
   private Campaign currentCampaign;
 
@@ -128,7 +130,8 @@ public class CampaignDashboardView extends VerticalLayout {
       final TitleRepository titleRepository,
       final StorylineExportService storylineExportService,
       final WrestlerService wrestlerService,
-      final TutorialService tutorialService) {
+      final TutorialService tutorialService,
+      final UniverseContextService universeContextService) {
     this.campaignRepository = campaignRepository;
     this.campaignService = campaignService;
     this.wrestlerRepository = wrestlerRepository;
@@ -144,6 +147,7 @@ public class CampaignDashboardView extends VerticalLayout {
     this.storylineExportService = storylineExportService;
     this.wrestlerService = wrestlerService;
     this.tutorialService = tutorialService;
+    this.universeContextService = universeContextService;
 
     setSpacing(true);
     setPadding(true);
@@ -193,8 +197,14 @@ public class CampaignDashboardView extends VerticalLayout {
 
               if (active != null) {
                 log.debug("Wrestler found: {}", active.getName());
-                campaignService
-                    .getCampaignForWrestler(active)
+                // Universe-scoped lookup prevents tutorial campaigns from bleeding into other
+                // universes. Falls back to unscoped only when no universe context is set.
+                (universeContextService.getCurrentUniverse().isPresent()
+                        ? universeContextService
+                            .getCurrentUniverse()
+                            .flatMap(
+                                u -> campaignService.getCampaignForWrestlerInUniverse(active, u))
+                        : campaignService.getCampaignForWrestler(active))
                     .ifPresentOrElse(
                         campaign -> {
                           log.debug("Active campaign found: {}", campaign.getId());

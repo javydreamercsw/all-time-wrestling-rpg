@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -174,6 +175,33 @@ public class AccountService {
     return roleRepository
         .findByName(roleName)
         .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public void grantRole(@NonNull final Account account, @NonNull final RoleName roleName) {
+    Role role = getRole(roleName);
+    Account reloaded =
+        accountRepository
+            .findById(account.getId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Account not found: " + account.getUsername()));
+    reloaded.getRoles().add(role);
+    accountRepository.save(reloaded);
+    log.info("[AUDIT] Role {} granted to account {}", roleName, account.getUsername());
+
+    // Refresh the SecurityContext so the new role is visible in the current session immediately,
+    // without requiring a logout/login cycle.
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null
+        && currentAuth.getPrincipal() instanceof CustomUserDetails details
+        && details.getId() != null
+        && details.getId().equals(account.getId())) {
+      CustomUserDetails refreshed = new CustomUserDetails(reloaded);
+      Authentication newAuth =
+          new UsernamePasswordAuthenticationToken(
+              refreshed, currentAuth.getCredentials(), refreshed.getAuthorities());
+      SecurityContextHolder.getContext().setAuthentication(newAuth);
+    }
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
