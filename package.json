@@ -92,7 +92,7 @@
     "onecolor": "4.1.0",
     "react-dom": "19.2.4",
     "react": "19.2.4",
-    "react-router": "7.13.1"
+    "react-router": "7.15.1"
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
@@ -101,14 +101,14 @@
     "@rollup/plugin-replace": "6.0.3",
     "@rollup/pluginutils": "5.3.0",
     "@types/node": "25.5.0",
-    "@vitejs/plugin-react": "5.1.4",
+    "@vitejs/plugin-react": "5.2.0",
     "magic-string": "0.30.21",
     "rollup-plugin-brotli": "3.1.0",
     "rollup-plugin-visualizer": "7.0.1",
     "strip-css-comments": "5.0.0",
     "transform-ast": "2.4.4",
     "typescript": "5.9.3",
-    "vite": "7.3.2",
+    "vite": "8.0.16",
     "vite-plugin-checker": "0.12.0",
     "@types/react-dom": "19.2.3",
     "@types/react": "19.2.14"
@@ -300,7 +300,7 @@
       "onecolor": "4.1.0",
       "react-dom": "19.2.4",
       "react": "19.2.4",
-      "react-router": "7.13.1"
+      "react-router": "7.15.1"
     },
     "devDependencies": {
       "@babel/preset-react": "7.28.5",
@@ -309,14 +309,14 @@
       "@rollup/plugin-replace": "6.0.3",
       "@rollup/pluginutils": "5.3.0",
       "@types/node": "25.5.0",
-      "@vitejs/plugin-react": "5.1.4",
+      "@vitejs/plugin-react": "5.2.0",
       "magic-string": "0.30.21",
       "rollup-plugin-brotli": "3.1.0",
       "rollup-plugin-visualizer": "7.0.1",
       "strip-css-comments": "5.0.0",
       "transform-ast": "2.4.4",
       "typescript": "5.9.3",
-      "vite": "7.3.2",
+      "vite": "8.0.16",
       "vite-plugin-checker": "0.12.0",
       "@types/react-dom": "19.2.3",
       "@types/react": "19.2.14"
