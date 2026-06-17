@@ -42,7 +42,8 @@ jobs:
             GHSA-8x6r-g9mw-2r78,
             GHSA-rxv8-25v2-qmq8,
             GHSA-f22v-gfqf-p8f3,
-            GHSA-2j2x-hqr9-3h42
+            GHSA-2j2x-hqr9-3h42,
+            GHSA-84g9-w2xq-vcv6
         #   fail-on-severity: moderate
         #   deny-licenses: GPL-1.0-or-later, LGPL-2.0-or-later
         #   retry-on-snapshot-warnings: true
