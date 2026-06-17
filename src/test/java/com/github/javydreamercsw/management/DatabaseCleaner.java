@@ -135,34 +135,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
             log.debug("🗑️ Clearing entity: {}", entityName);
 
-            // Special handling for Entities that might have both master data and test data:
-            // we want to keep the master data (with externalId) but remove test data (without
-            // externalId).
-            // ONLY apply this optimization in E2E tests to avoid state leakage in ITs.
-            if (isE2E
-                && ("wrestler".equalsIgnoreCase(entityName)
-                    || "team".equalsIgnoreCase(entityName)
-                    || "faction".equalsIgnoreCase(entityName)
-                    || "npc".equalsIgnoreCase(entityName)
-                    || "arena".equalsIgnoreCase(entityName)
-                    || "location".equalsIgnoreCase(entityName))) {
-              // Use jdbcTemplate directly (same transaction) to avoid deadlock with the
-              // PROPAGATION_REQUIRES_NEW connection that executeNativeUpdate creates, which
-              // would compete for row locks held by breakCircularDependencies() above.
-              try {
-                int deleted =
-                    jdbcTemplate.update(
-                        "DELETE FROM "
-                            + entityName.toLowerCase()
-                            + " WHERE external_id IS NULL OR external_id = ''");
-                log.debug("✅ Deleted {} test records from {}", deleted, entityName);
-                deletedCount++;
-                continue; // Skip the full repository deletion below
-              } catch (Exception e) {
-                log.warn("Surgical delete failed for {}: {}", entityName, e.getMessage());
-              }
-            }
-
             JpaRepository<?, ?> repository = cachedRepositories.get(entityName.toLowerCase());
             if (repository != null) {
               try {
