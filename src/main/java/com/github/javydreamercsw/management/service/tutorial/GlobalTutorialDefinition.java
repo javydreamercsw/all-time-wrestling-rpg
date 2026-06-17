@@ -105,8 +105,10 @@ public class GlobalTutorialDefinition implements TutorialDefinition {
 
       @Override
       public void beforeStep(final Account account) {
-        // Grant admin so the player can manage all universe resources.
-        accountService.grantRole(account, RoleName.ADMIN);
+        // Grant BOOKER so the player can create and manage shows in their universe.
+        // Universe-scoped operations (expansion settings, wrestler exclusions) are gated by
+        // OWNER membership, which is already set when the tutorial universe is created.
+        accountService.grantRole(account, RoleName.BOOKER);
       }
 
       @Override
