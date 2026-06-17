@@ -42,7 +42,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -224,24 +223,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
         });
   }
 
-  protected int executeNativeUpdate(String sql) {
-    try {
-      transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-      return transactionTemplate.execute(
-          status -> {
-            try {
-              return entityManager.createNativeQuery(sql).executeUpdate();
-            } catch (Exception e) {
-              log.warn("Native update failed: {} - {}", sql, e.getMessage());
-              return -1;
-            }
-          });
-    } catch (Exception e) {
-      log.warn("Transaction for native update failed: {} - {}", sql, e.getMessage());
-      return -1;
-    }
-  }
-
   /**
    * Manually breaks known circular dependencies by setting foreign keys to NULL. This is necessary
    * before batch deletion to avoid constraint violations.
@@ -383,7 +364,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
         JpaRepository<?, ?> repository = applicationContext.getBean(beanName, JpaRepository.class);
 
         // Extract entity name from repository
-        String entityName = extractEntityName(repository, beanName);
+        String entityName = extractEntityName(beanName);
         if (entityName != null) {
           repositories.put(entityName.toLowerCase(), repository);
           log.debug("📍 Mapped repository {} to entity {}", beanName, entityName);
@@ -400,7 +381,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
    * Extracts the entity name from a repository bean. Tries multiple strategies: bean name pattern,
    * repository interface generics.
    */
-  private String extractEntityName(final JpaRepository<?, ?> repository, final String beanName) {
+  private String extractEntityName(final String beanName) {
     // Strategy 1: Bean name pattern (e.g., "cardRepository" -> "card")
     if (beanName.endsWith("Repository")) {
       return beanName.substring(0, beanName.length() - "Repository".length());

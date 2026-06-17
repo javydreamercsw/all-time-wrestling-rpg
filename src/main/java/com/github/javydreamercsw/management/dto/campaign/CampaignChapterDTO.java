@@ -17,7 +17,10 @@
 package com.github.javydreamercsw.management.dto.campaign;
 
 import com.github.javydreamercsw.management.domain.campaign.Difficulty;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,6 +43,69 @@ public class CampaignChapterDTO {
   private List<ChapterPointDTO> exitPoints;
   private ChapterRules rules;
   private ChapterExclusions exclusions;
+
+  @Builder.Default private CampaignChapterMode mode = CampaignChapterMode.AI_ONLY;
+
+  @Builder.Default private List<StaticEncounterDTO> staticEncounters = new ArrayList<>();
+
+  /**
+   * Expansion codes that must ALL be enabled for this chapter to appear in {@code
+   * findAvailableChapters}. Empty list = no restriction (available in base game).
+   */
+  @Builder.Default private List<String> requiredExpansions = new ArrayList<>();
+
+  /**
+   * When true, the successor-availability check in the chapter simulation validator emits no
+   * warning if this chapter has no static successor. Use for intentional content boundaries (e.g.
+   * end of a campaign expansion) where the AI storyline handoff is the designed outcome.
+   */
+  @Builder.Default private boolean expansionBoundary = false;
+
+  /**
+   * Title setup applied when this chapter is entered via {@code advanceToChapter}. Each entry maps
+   * a title name (e.g. {@code "ATW World"}) to the wrestler name who should hold it at chapter
+   * start. Applied according to {@code overrideExistingChampion}:
+   *
+   * <ul>
+   *   <li>{@code false} (default) — only assign if the title is currently vacant.
+   *   <li>{@code true} — always replace the current champion.
+   * </ul>
+   *
+   * Supports {{CHAMP}} as the wrestler name to leave the current champion unchanged (no-op).
+   */
+  @Builder.Default private Map<String, String> initialChampions = new LinkedHashMap<>();
+
+  /**
+   * When {@code true}, {@code initialChampions} entries always replace the current champion even if
+   * the title is already held. Default {@code false} = only set when title is vacant.
+   */
+  @Builder.Default private boolean overrideExistingChampion = false;
+
+  /**
+   * Wrestler names permitted to play this chapter. The tutorial wrestler picker filters to these
+   * names when they are set. {@code CampaignChapterService.findAvailableChapters()} also filters
+   * out this chapter if the active wrestler is not in the list. Empty list = no restriction.
+   */
+  @Builder.Default private List<String> allowedWrestlerNames = new ArrayList<>();
+
+  /**
+   * Opponent names (or placeholders) to exclude from every match in this chapter unless a choice
+   * overrides it. Applied in addition to any per-choice {@code excludedOpponents}. Supports {@code
+   * {{CHAMP}}} so the current champion is always excluded without hardcoding a name.
+   */
+  @Builder.Default private List<String> defaultExcludedOpponents = new ArrayList<>();
+
+  /**
+   * Default opponent gender filter applied to every match in this chapter unless a choice sets its
+   * own {@code opponentGenderFilter}. Null = no restriction.
+   */
+  private com.github.javydreamercsw.base.domain.wrestler.Gender defaultOpponentGenderFilter;
+
+  public boolean hasStaticEncounters() {
+    return mode != CampaignChapterMode.AI_ONLY
+        && staticEncounters != null
+        && !staticEncounters.isEmpty();
+  }
 
   @Data
   @Builder

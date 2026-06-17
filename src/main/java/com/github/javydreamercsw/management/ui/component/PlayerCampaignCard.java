@@ -33,9 +33,11 @@ import lombok.NonNull;
 public class PlayerCampaignCard extends Composite<Div> {
 
   private final Div card;
+  private final String resolvedImageUrl;
   private boolean isFlipped = false;
 
-  public PlayerCampaignCard(@NonNull final Campaign campaign) {
+  public PlayerCampaignCard(@NonNull final Campaign campaign, final String resolvedImageUrl) {
+    this.resolvedImageUrl = resolvedImageUrl;
     getContent().addClassName("player-card-container");
 
     card = new Div();
@@ -96,8 +98,8 @@ public class PlayerCampaignCard extends Composite<Div> {
     // Image Placeholder
     Div image = new Div();
     image.addClassName("player-card-image-placeholder");
-    if (wrestler.getImageUrl() != null && !wrestler.getImageUrl().isEmpty()) {
-      image.getStyle().set("background-image", "url('" + wrestler.getImageUrl() + "')");
+    if (resolvedImageUrl != null && !resolvedImageUrl.isEmpty()) {
+      image.getStyle().set("background-image", "url('" + resolvedImageUrl + "')");
     } else {
       image.setText(wrestler.getName());
     }

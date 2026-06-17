@@ -28,6 +28,7 @@ import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
@@ -52,7 +53,6 @@ import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
-import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -60,6 +60,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
+import com.github.javydreamercsw.management.ui.component.RingsideActionComponent;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
@@ -124,7 +125,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final RingsideAiService ringsideAiService;
   private final RingsideActionDataService ringsideActionDataService;
   private final NotificationService notificationService;
-  private final TeamService teamService;
   private final TitleScriptService titleScriptService;
   @Autowired private ArenaService arenaService;
 
@@ -157,7 +157,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       final RingsideActionService ringsideActionService,
       final RingsideAiService ringsideAiService,
       final RingsideActionDataService ringsideActionDataService,
-      final TeamService teamService,
       final TitleScriptService titleScriptService,
       final NotificationService notificationService) {
     this.segmentService = segmentService;
@@ -179,7 +178,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.ringsideActionService = ringsideActionService;
     this.ringsideAiService = ringsideAiService;
     this.ringsideActionDataService = ringsideActionDataService;
-    this.teamService = teamService;
     this.titleScriptService = titleScriptService;
     this.notificationService = notificationService;
   }
@@ -567,14 +565,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
     sideCol.add(infoCard);
 
-    // Ringside Actions Section
-    if (!isPromo) {
-      final com.github.javydreamercsw.management.ui.component.RingsideActionComponent[]
-          actionComponentWrapper =
-              new com.github.javydreamercsw.management.ui.component.RingsideActionComponent[1];
+    // Ringside Actions Section — only available in GLOBAL universe matches
+    boolean isGlobalUniverse =
+        segment.getShow() != null
+            && segment.getShow().getUniverse() != null
+            && com.github.javydreamercsw.management.domain.universe.Universe.UniverseType.GLOBAL
+                == segment.getShow().getUniverse().getType();
+    if (!isPromo && isGlobalUniverse) {
+      final RingsideActionComponent[] actionComponentWrapper = new RingsideActionComponent[1];
 
       actionComponentWrapper[0] =
-          new com.github.javydreamercsw.management.ui.component.RingsideActionComponent(
+          new RingsideActionComponent(
               ringsideActionService,
               ringsideActionDataService,
               segment,
@@ -598,35 +599,30 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                             opponent
                                 .getDefaultState()
                                 .map(WrestlerState::getManager)
-                                .ifPresent(
+                                .flatMap(
                                     manager ->
-                                        ringsideAiService
-                                            .evaluateRingsideAction(segment, manager, opponent)
-                                            .ifPresent(
-                                                npcResult -> {
-                                                  Notification.show(
-                                                          "Opponent Retaliation: "
-                                                              + npcResult.message())
-                                                      .addThemeVariants(
-                                                          NotificationVariant.LUMO_CONTRAST);
-                                                  if (npcResult.success()) {
-                                                    String currentFeedback =
-                                                        feedbackArea.getValue();
-                                                    feedbackArea.setValue(
-                                                        (currentFeedback == null
-                                                                ? ""
-                                                                : currentFeedback)
-                                                            + "\n"
-                                                            + "Incorporate successful opponent"
-                                                            + " ringside action: "
-                                                            + npcResult.action().getName()
-                                                            + ".");
-                                                  }
-                                                  // Update UI to reflect new awareness level
-                                                  if (actionComponentWrapper[0] != null) {
-                                                    actionComponentWrapper[0].updateUI();
-                                                  }
-                                                })));
+                                        ringsideAiService.evaluateRingsideAction(
+                                            segment, manager, opponent))
+                                .ifPresent(
+                                    npcResult -> {
+                                      Notification.show(
+                                              "Opponent Retaliation: " + npcResult.message())
+                                          .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+                                      if (npcResult.success()) {
+                                        String currentFeedback = feedbackArea.getValue();
+                                        feedbackArea.setValue(
+                                            (currentFeedback == null ? "" : currentFeedback)
+                                                + "\n"
+                                                + "Incorporate successful opponent"
+                                                + " ringside action: "
+                                                + npcResult.action().getName()
+                                                + ".");
+                                      }
+                                      // Update UI to reflect new awareness level
+                                      if (actionComponentWrapper[0] != null) {
+                                        actionComponentWrapper[0].updateUI();
+                                      }
+                                    }));
               });
       sideCol.add(new DashboardCard("Ringside Actions", actionComponentWrapper[0]));
     }
@@ -1122,14 +1118,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   private void saveWinners() {
     List<Wrestler> winners = new ArrayList<>(winnersComboBox.getValue());
-    log.info(
+    log.debug(
         "Adjudicating match {}: winners={}",
         segment.getId(),
         winners.stream().map(Wrestler::getName).toList());
     segment.setWinners(winners);
     segment.setNotes(feedbackArea.getValue());
     try {
-      segmentService.updateSegment(segment);
+      // runAsAdmin mirrors the pattern used for referee assignment (line ~252): PLAYER-role users
+      // cannot call updateSegment directly because canUserUpdateSegment requires wrestler.account
+      // to be set, which roster wrestlers (used in campaign mode) don't have.
+      GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
 
       // Check for league match reporting first
       Optional<MatchFulfillment> fulfillmentOpt = matchFulfillmentRepository.findBySegment(segment);
@@ -1161,13 +1160,32 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         var campaignOpt = campaignRepository.findActiveByWrestler(w);
         if (campaignOpt.isPresent()) {
           var campaign = campaignOpt.get();
-          if (campaign.getState().getCurrentMatch() != null
-              && campaign.getState().getCurrentMatch().getId().equals(segment.getId())) {
-            log.info("Updating campaign {} for wrestler {}", campaign.getId(), w.getName());
+          Long currentMatchId =
+              campaign.getState().getCurrentMatch() != null
+                  ? campaign.getState().getCurrentMatch().getId()
+                  : null;
+          log.warn(
+              "Campaign check for wrestler {}: campaignId={}, currentMatchId={}, segmentId={},"
+                  + " phase={}",
+              w.getName(),
+              campaign.getId(),
+              currentMatchId,
+              segment.getId(),
+              campaign.getState().getCurrentPhase());
+          // Match by ID when currentMatch is set, or by MATCH phase when it isn't (can happen
+          // if the state was saved before the currentMatch FK was flushed in a prior session).
+          boolean isThisMatchTheCampaignMatch =
+              (currentMatchId != null && currentMatchId.equals(segment.getId()))
+                  || (currentMatchId == null
+                      && CampaignPhase.MATCH == campaign.getState().getCurrentPhase());
+          if (isThisMatchTheCampaignMatch) {
+            log.debug("Updating campaign {} for wrestler {}", campaign.getId(), w.getName());
             boolean won = winners.contains(w);
             campaignService.processMatchResult(campaign, won);
             isCampaignMatch = true;
           }
+        } else {
+          log.warn("No active campaign found for wrestler {}", w.getName());
         }
       }
 
@@ -1176,7 +1194,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         // We set status to ADJUDICATED to mark it done.
         segment.setAdjudicationStatus(
             com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
-        segmentService.updateSegment(segment);
+        GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
         Notification n = Notification.show("Match adjudicated & Campaign Progress Updated!");
         n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         UI.getCurrent().navigate("campaign");

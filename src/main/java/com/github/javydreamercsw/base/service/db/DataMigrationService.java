@@ -105,27 +105,6 @@ public class DataMigrationService {
       final String sourceUser,
       final String sourcePassword,
       final String targetDbType,
-      final String host,
-      final Integer port,
-      final String database,
-      final String user,
-      final String password)
-      throws SQLException {
-    DatabaseManager sourceManager =
-        DatabaseManagerFactory.getDatabaseManager(
-            sourceDbType, sourceUrl, sourceUser, sourcePassword);
-    DatabaseManager targetManager =
-        DatabaseManagerFactory.getDatabaseManager(
-            targetDbType, host, port, database, user, password);
-    migrateDataInternal(sourceManager, targetManager, password);
-  }
-
-  public void migrateData(
-      final String sourceDbType,
-      final String sourceUrl,
-      final String sourceUser,
-      final String sourcePassword,
-      final String targetDbType,
       final String targetUrl,
       final String targetUser,
       final String targetPassword)

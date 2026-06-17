@@ -46,7 +46,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the vaadin-grid to be visible
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     captureCaption(
         "Faction List view — factions group wrestlers into allied stables. Bookers can create,"
@@ -115,7 +115,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     // Wait for the vaadin-grid to be visible
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     // Find the "Edit" button for the faction and click it
     WebElement editButton = driver.findElement(By.id("edit-" + faction.getId()));
@@ -166,7 +166,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     long initialSize = factionService.count();
 
     // Wait for the vaadin-grid to be visible
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     // Find the "Delete" button for the faction and click it
     WebElement deleteButton = driver.findElement(By.id("delete-" + faction.getId()));
@@ -207,7 +207,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Faction Wrestler"));
 
     navigateTo("faction-list");
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
     captureCaption(
@@ -280,7 +280,7 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
 
     // Wait for the vaadin-grid to be visible
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     // Open the members dialog
     WebElement membersButton = driver.findElement(By.id("members-" + faction.getId()));

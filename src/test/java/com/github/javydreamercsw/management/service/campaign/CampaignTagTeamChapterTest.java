@@ -71,7 +71,10 @@ public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest 
       titleRepository.save(tagTitle);
     }
 
-    Wrestler player = wrestlerRepository.findAll().get(0); // Use first available wrestler
+    Wrestler player =
+        wrestlerRepository
+            .findByName("Kurt Angle")
+            .orElseGet(() -> wrestlerRepository.findAll().get(0));
 
     // Ensure at least one other team exists for title awarding
     if (wrestlerRepository.count() < 3) {

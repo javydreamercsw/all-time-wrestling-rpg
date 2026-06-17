@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
@@ -93,7 +94,16 @@ public class JoinRequestInboxListener implements ApplicationListener<JoinRequest
           }
 
           try {
-            inboxService.createInboxItem(joinRequestEventType, message, targets);
+            com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+                inboxService.createInboxItem(
+                    joinRequestEventType,
+                    "Join Request: " + request.getRequesterName(),
+                    message,
+                    InboxItem.Urgency.INFO,
+                    targets);
+            inboxItem.setActionType("NAVIGATE");
+            inboxItem.setActionPayload("{\"route\":\"universe-list\"}");
+            inboxService.save(inboxItem);
             InboxUpdateEvent updateEvent = new InboxUpdateEvent(this);
             eventPublisher.publishEvent(updateEvent);
             inboxUpdateBroadcaster.broadcast(updateEvent);

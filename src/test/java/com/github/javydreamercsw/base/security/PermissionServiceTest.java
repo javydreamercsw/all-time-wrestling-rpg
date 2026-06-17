@@ -118,6 +118,7 @@ class PermissionServiceTest {
   @Test
   void testIsOwnerInboxItem() {
     Account account = new Account("testuser", "password", "test@example.com");
+    account.setId(1L);
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
 
@@ -126,6 +127,8 @@ class PermissionServiceTest {
     com.github.javydreamercsw.management.domain.inbox.InboxItemTarget target =
         new com.github.javydreamercsw.management.domain.inbox.InboxItemTarget();
     target.setTargetId("1");
+    target.setTargetType(
+        com.github.javydreamercsw.management.domain.inbox.InboxItemTarget.TargetType.ACCOUNT);
     item.getTargets().add(target);
 
     when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));

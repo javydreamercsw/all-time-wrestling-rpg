@@ -26,10 +26,6 @@ public class DatabaseManagerFactory {
 
   private static final Map<String, DatabaseManager> overrides = new HashMap<>();
 
-  public static void overrideDatabaseManager(final String dbType, final DatabaseManager manager) {
-    overrides.put(dbType.toUpperCase(), manager);
-  }
-
   public static void reset() {
     overrides.clear();
   }

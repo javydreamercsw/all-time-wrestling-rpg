@@ -41,7 +41,12 @@ class CampaignChapterServiceTest {
     ObjectMapper objectMapper = new ObjectMapper();
     FeatureDataService featureDataService =
         new FeatureDataService(objectMapper, mock(CampaignStateRepository.class));
-    chapterService = new CampaignChapterService(objectMapper, featureDataService);
+    chapterService =
+        new CampaignChapterService(
+            objectMapper,
+            featureDataService,
+            org.mockito.Mockito.mock(
+                com.github.javydreamercsw.management.service.expansion.ExpansionService.class));
     chapterService.init();
   }
 

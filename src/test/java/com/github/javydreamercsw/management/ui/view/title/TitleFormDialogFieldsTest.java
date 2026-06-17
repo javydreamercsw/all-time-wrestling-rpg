@@ -16,20 +16,24 @@
 */
 package com.github.javydreamercsw.management.ui.view.title;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
-import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.textfield.TextArea;
 import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import org.hibernate.collection.spi.PersistentCollection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,8 +43,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 class TitleFormDialogFieldsTest extends AbstractViewTest {
 
   @Mock private TitleService titleService;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private TierRecalculationService tierRecalculationService;
   @Mock private ImageStorageService imageStorageService;
   @Mock private SecurityUtils securityUtils;
 
@@ -48,7 +50,6 @@ class TitleFormDialogFieldsTest extends AbstractViewTest {
 
   @BeforeEach
   void setup() {
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
     when(securityUtils.canEdit()).thenReturn(true);
     when(securityUtils.isAdmin()).thenReturn(true);
     when(securityUtils.isBooker()).thenReturn(true);
@@ -61,8 +62,7 @@ class TitleFormDialogFieldsTest extends AbstractViewTest {
     dialog =
         new TitleFormDialog(
             titleService,
-            wrestlerRepository,
-            tierRecalculationService,
+            Collections.emptyList(),
             imageStorageService,
             title,
             () -> {},
@@ -71,15 +71,48 @@ class TitleFormDialogFieldsTest extends AbstractViewTest {
 
   @Test
   @DisplayName(
+      "Opening edit dialog with wrestlers having uninitialized Hibernate states does not throw")
+  void openEditDialogWithUninitializedWrestlerStatesDoesNotThrow() {
+    @SuppressWarnings("unchecked")
+    Set<WrestlerState> lazyStates =
+        (Set<WrestlerState>)
+            mock(Set.class, withSettings().extraInterfaces(PersistentCollection.class));
+    when(((PersistentCollection<?>) lazyStates).wasInitialized()).thenReturn(false);
+
+    Wrestler wrestler = new Wrestler();
+    ReflectionTestUtils.setField(wrestler, "wrestlerStates", lazyStates);
+
+    Title title = new Title();
+    title.setId(2L);
+    title.setName("World Title");
+    title.setTier(WrestlerTier.ICON);
+
+    assertDoesNotThrow(
+        () ->
+            new TitleFormDialog(
+                titleService,
+                List.of(wrestler),
+                imageStorageService,
+                title,
+                () -> {},
+                securityUtils));
+  }
+
+  @Test
+  @DisplayName(
       "defenseFrequencyType ComboBox and effectScript TextArea should exist in TitleFormDialog")
   void defenseFrequencyTypeAndEffectScriptFieldsExist() {
-    @SuppressWarnings("unchecked")
-    ComboBox<DefenseFrequencyType> defenseFrequencyType =
-        (ComboBox<DefenseFrequencyType>)
-            ReflectionTestUtils.getField(dialog, "defenseFrequencyType");
+    com.vaadin.flow.component.combobox.ComboBox<
+            com.github.javydreamercsw.management.domain.title.DefenseFrequencyType>
+        defenseFrequencyType =
+            (com.vaadin.flow.component.combobox.ComboBox<
+                    com.github.javydreamercsw.management.domain.title.DefenseFrequencyType>)
+                ReflectionTestUtils.getField(dialog, "defenseFrequencyType");
     assertNotNull(defenseFrequencyType, "defenseFrequencyType field should not be null");
 
-    TextArea effectScript = (TextArea) ReflectionTestUtils.getField(dialog, "effectScript");
+    com.vaadin.flow.component.textfield.TextArea effectScript =
+        (com.vaadin.flow.component.textfield.TextArea)
+            ReflectionTestUtils.getField(dialog, "effectScript");
     assertNotNull(effectScript, "effectScript field should not be null");
   }
 }

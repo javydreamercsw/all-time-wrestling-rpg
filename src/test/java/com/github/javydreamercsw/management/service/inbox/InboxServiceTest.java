@@ -22,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
@@ -183,6 +184,30 @@ class InboxServiceTest {
   }
 
   @Test
+  void countUnread_returnsNumberOfUnreadItemsForAccount() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(1L));
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1, item2));
+
+    assertThat(inboxService.countUnread(1L)).isEqualTo(2L);
+  }
+
+  @Test
+  void countUnread_withNoUnreadItems_returnsZero() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(1L));
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of());
+
+    assertThat(inboxService.countUnread(1L)).isEqualTo(0L);
+  }
+
+  @Test
   void addInboxItem_usesFirstEventTypeFromRegistry() {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(10L);
@@ -279,5 +304,197 @@ class InboxServiceTest {
   @Test
   void getAccountRepository_returnsInjectedRepository() {
     assertThat(inboxService.getAccountRepository()).isSameAs(accountRepository);
+  }
+
+  @Test
+  void createInboxItem_withSubjectAndUrgency_singleTarget_setsAllFields() {
+    InboxItem saved =
+        inboxService.createInboxItem(
+            testEventType,
+            "Test Subject",
+            "Test message",
+            InboxItem.Urgency.ACTION_REQUIRED,
+            "123",
+            InboxItemTarget.TargetType.WRESTLER);
+
+    verify(inboxRepository).save(any(InboxItem.class));
+    assertThat(saved.getSubject()).isEqualTo("Test Subject");
+    assertThat(saved.getDescription()).isEqualTo("Test message");
+    assertThat(saved.getUrgency()).isEqualTo(InboxItem.Urgency.ACTION_REQUIRED);
+    assertThat(saved.getEventType()).isEqualTo(testEventType);
+    assertThat(saved.getTargets()).hasSize(1);
+  }
+
+  @Test
+  void createInboxItem_withSubjectAndUrgency_multipleTargets_setsAllFields() {
+    List<InboxService.TargetInfo> targets =
+        List.of(
+            new InboxService.TargetInfo("100", InboxItemTarget.TargetType.WRESTLER),
+            new InboxService.TargetInfo("200", InboxItemTarget.TargetType.ACCOUNT));
+
+    InboxItem saved =
+        inboxService.createInboxItem(
+            testEventType, "Warning Subject", "Warning body", InboxItem.Urgency.WARNING, targets);
+
+    verify(inboxRepository).save(any(InboxItem.class));
+    assertThat(saved.getSubject()).isEqualTo("Warning Subject");
+    assertThat(saved.getDescription()).isEqualTo("Warning body");
+    assertThat(saved.getUrgency()).isEqualTo(InboxItem.Urgency.WARNING);
+    assertThat(saved.getTargets()).hasSize(2);
+  }
+
+  @Test
+  void createInboxItem_legacyOverload_defaultsToInfoUrgencyAndNullSubject() {
+    InboxItem saved =
+        inboxService.createInboxItem(
+            testEventType, "Legacy message", "456", InboxItemTarget.TargetType.ACCOUNT);
+
+    assertThat(saved.getSubject()).isNull();
+    assertThat(saved.getUrgency()).isEqualTo(InboxItem.Urgency.INFO);
+    assertThat(saved.getDescription()).isEqualTo("Legacy message");
+  }
+
+  @Test
+  void save_persistsActionTypeAndActionPayload() {
+    InboxItem item = new InboxItem();
+    item.setEventType(testEventType);
+    item.setDescription("Action item");
+    item.setActionType("MATCH_REPORT");
+    item.setActionPayload("{\"fulfillmentId\":\"42\"}");
+
+    InboxItem saved = inboxService.save(item);
+
+    verify(inboxRepository).save(item);
+    assertThat(saved.getActionType()).isEqualTo("MATCH_REPORT");
+    assertThat(saved.getActionPayload()).isEqualTo("{\"fulfillmentId\":\"42\"}");
+  }
+
+  @Test
+  void inboxItem_actionTypeIsNullByDefault() {
+    InboxItem item = new InboxItem();
+    assertThat(item.getActionType()).isNull();
+    assertThat(item.getActionPayload()).isNull();
+  }
+
+  @Test
+  void search_withReadStatus_unread_appliesUnreadFilter() {
+    when(securityUtils.isAdmin()).thenReturn(true);
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item2));
+
+    List<InboxItem> result = inboxService.search(null, "Unread", null, null, null);
+
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void search_asNonAdmin_withAccountId_appliesAccountTargetFilter() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(5L));
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1));
+
+    List<InboxItem> result = inboxService.search(null, null, null, null, 5L);
+
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void search_asNonAdmin_noTargetsNoAccount_returnsEmpty() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.empty());
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of());
+
+    List<InboxItem> result = inboxService.search(null, null, null, null, null);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void search_asNonAdmin_withWrestlerTargets_filtersToOwnedWrestlers() {
+    Wrestler owned = new Wrestler();
+    owned.setId(1L);
+    Wrestler notOwned = new Wrestler();
+    notOwned.setId(2L);
+
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(10L));
+    when(securityUtils.isOwner(owned)).thenReturn(true);
+    when(securityUtils.isOwner(notOwned)).thenReturn(false);
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1));
+
+    List<InboxItem> result = inboxService.search(Set.of(owned, notOwned), null, null, null, 10L);
+
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void search_asAdmin_withWrestlerTargets_appliesTargetPredicate() {
+    Wrestler w = new Wrestler();
+    w.setId(7L);
+    when(securityUtils.isAdmin()).thenReturn(true);
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1));
+
+    List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, null);
+
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void search_asAdmin_withBothWrestlerTargetsAndAccountId_appliesCombinedPredicate() {
+    Wrestler w = new Wrestler();
+    w.setId(3L);
+    when(securityUtils.isAdmin()).thenReturn(true);
+    when(inboxRepository.findAll(
+            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+        .thenReturn(List.of(item1, item2));
+
+    List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, 5L);
+
+    assertThat(result).hasSize(2);
+  }
+
+  @Test
+  void createTutorialReminderIfAbsent_createsItemWhenNoneExists() {
+    InboxEventType tutorialEventType = new InboxEventType("TUTORIAL_REMINDER", "Tutorial Reminder");
+    Account account = new Account("player", "pw", "p@test.com");
+    account.setId(42L);
+
+    when(inboxRepository.existsUnreadByEventTypeAndAccountId(tutorialEventType, "42"))
+        .thenReturn(false);
+    when(inboxRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    inboxService.createTutorialReminderIfAbsent(account, tutorialEventType);
+
+    org.mockito.ArgumentCaptor<InboxItem> captor =
+        org.mockito.ArgumentCaptor.forClass(InboxItem.class);
+    verify(inboxRepository, times(2)).save(captor.capture());
+    InboxItem saved = captor.getAllValues().get(1);
+    assertThat(saved.getActionType()).isEqualTo("OPEN_DRAWER");
+  }
+
+  @Test
+  void createTutorialReminderIfAbsent_skipsWhenUnreadExists() {
+    InboxEventType tutorialEventType = new InboxEventType("TUTORIAL_REMINDER", "Tutorial Reminder");
+    Account account = new Account("player", "pw", "p@test.com");
+    account.setId(42L);
+
+    when(inboxRepository.existsUnreadByEventTypeAndAccountId(tutorialEventType, "42"))
+        .thenReturn(true);
+
+    inboxService.createTutorialReminderIfAbsent(account, tutorialEventType);
+
+    verify(inboxRepository, org.mockito.Mockito.never()).save(any());
   }
 }

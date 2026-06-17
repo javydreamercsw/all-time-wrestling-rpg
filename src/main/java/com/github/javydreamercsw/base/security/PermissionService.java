@@ -87,9 +87,10 @@ public class PermissionService {
               wrestlers.forEach(w -> ownedWrestlerIds.add(w.getId()));
             });
 
-    if (ownedWrestlerIds.isEmpty()) {
+    // InboxItem ownership can be established by account ID alone — don't short-circuit.
+    if (ownedWrestlerIds.isEmpty() && !(targetDomainObject instanceof InboxItem)) {
       log.debug("isOwner: No wrestlers found in DB for user: {}", userDetails.getUsername());
-      return false; // User does not have any wrestlers assigned in the database
+      return false;
     }
 
     if (targetDomainObject instanceof Wrestler targetWrestler) {
@@ -115,11 +116,22 @@ public class PermissionService {
     }
 
     if (targetDomainObject instanceof InboxItem inboxItem) {
+      Long accountId =
+          accountRepository
+              .findByUsername(userDetails.getUsername())
+              .map(a -> a.getId())
+              .orElse(null);
       return inboxItem.getTargets().stream()
           .anyMatch(
               target -> {
                 try {
-                  return ownedWrestlerIds.contains(Long.valueOf(target.getTargetId()));
+                  long targetIdLong = Long.parseLong(target.getTargetId());
+                  if (com.github.javydreamercsw.management.domain.inbox.InboxItemTarget.TargetType
+                          .ACCOUNT
+                      == target.getTargetType()) {
+                    return accountId != null && accountId.equals(targetIdLong);
+                  }
+                  return ownedWrestlerIds.contains(targetIdLong);
                 } catch (NumberFormatException e) {
                   return false;
                 }

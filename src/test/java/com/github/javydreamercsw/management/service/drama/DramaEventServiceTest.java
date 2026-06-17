@@ -72,11 +72,8 @@ class DramaEventServiceTest {
             dramaEventRepository,
             wrestlerRepository,
             universeRepository,
-            wrestlerStateRepository,
-            wrestlerService,
             rivalryService,
             injuryService,
-            securityUtils,
             clock,
             random,
             eventPublisher);

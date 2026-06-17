@@ -35,7 +35,6 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
-import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -65,7 +64,6 @@ class TitleListViewTest extends AbstractViewTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
-  @Mock private TierRecalculationService tierRecalculationService;
   @Mock private ImageStorageService imageStorageService;
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseRepository universeRepository;
@@ -109,6 +107,7 @@ class TitleListViewTest extends AbstractViewTest {
 
     List<Wrestler> allWrestlers = Arrays.asList(testWrestler, otherWrestler);
     when(wrestlerRepository.findAll()).thenReturn(allWrestlers);
+    when(wrestlerRepository.findAllByActiveTrue()).thenReturn(allWrestlers);
     when(wrestlerService.findAll()).thenReturn(allWrestlers);
     when(wrestlerService.findByName("Test Wrestler")).thenReturn(Optional.of(testWrestler));
     when(wrestlerService.findByName("Other Wrestler")).thenReturn(Optional.of(otherWrestler));
@@ -155,7 +154,6 @@ class TitleListViewTest extends AbstractViewTest {
             titleService,
             wrestlerService,
             wrestlerRepository,
-            tierRecalculationService,
             securityUtils,
             imageStorageService,
             universeContextService,

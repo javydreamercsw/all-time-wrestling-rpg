@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.FeudResolvedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -50,11 +51,17 @@ public class FeudResolvedInboxListener implements ApplicationListener<FeudResolv
   @Override
   public void onApplicationEvent(@NonNull final FeudResolvedEvent event) {
     log.debug("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
-    inboxService.createInboxItem(
-        feudResolved,
-        "Feud '%s' has been resolved.".formatted(event.getFeud().getName()),
-        event.getFeud().getId().toString(),
-        InboxItemTarget.TargetType.FEUD);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            feudResolved,
+            "Feud Resolved: " + event.getFeud().getName(),
+            "Feud '%s' has been resolved.".formatted(event.getFeud().getName()),
+            InboxItem.Urgency.INFO,
+            event.getFeud().getId().toString(),
+            InboxItemTarget.TargetType.FEUD);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload("{\"route\":\"rivalry-list\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

@@ -97,6 +97,13 @@ public interface SegmentRepository
   /** Find title segments. */
   List<Segment> findByIsTitleSegmentTrue();
 
+  /** Find segments involving a specific title. */
+  @org.springframework.data.jpa.repository.Query(
+      "SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true")
+  List<Segment> findByTitle(
+      @org.springframework.data.repository.query.Param("title")
+          com.github.javydreamercsw.management.domain.title.Title title);
+
   /** Find segments after a specific date. */
   List<Segment> findBySegmentDateAfter(Instant date);
 
@@ -263,4 +270,7 @@ public interface SegmentRepository
       WHERE s.id = :id
       """)
   Optional<Segment> findByIdWithDetails(@Param("id") Long id);
+
+  long countByAdjudicationStatus(
+      com.github.javydreamercsw.management.domain.AdjudicationStatus adjudicationStatus);
 }

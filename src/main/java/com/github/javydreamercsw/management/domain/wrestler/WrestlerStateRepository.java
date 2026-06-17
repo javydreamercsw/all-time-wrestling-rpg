@@ -24,6 +24,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Long> {
@@ -64,4 +65,9 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
   @Modifying(clearAutomatically = true)
   @Query("UPDATE WrestlerState s SET s.physicalCondition = 100 WHERE s.universe.id = :universeId")
   int resetPhysicalConditionByUniverseId(@Param("universeId") Long universeId);
+
+  @Transactional
+  @Modifying(clearAutomatically = true)
+  @Query("DELETE FROM WrestlerState s WHERE s.universe.id = :universeId")
+  void deleteByUniverseId(@Param("universeId") Long universeId);
 }

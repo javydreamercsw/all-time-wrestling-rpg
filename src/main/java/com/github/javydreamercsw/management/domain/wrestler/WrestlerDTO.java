@@ -24,7 +24,6 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -44,9 +43,6 @@ public class WrestlerDTO implements Serializable {
   private String managerName;
   private String managerExternalId;
   private boolean injured;
-  private List<String> injuryExternalIds = new ArrayList<>();
-  private List<String> teamExternalIds = new ArrayList<>();
-  private List<String> titleReignExternalIds = new ArrayList<>();
   private String alignment;
   private Integer drive;
   private Integer resilience;
@@ -92,13 +88,6 @@ public class WrestlerDTO implements Serializable {
     this.startingStamina = wrestler.getStartingStamina();
     this.lowStamina = wrestler.getLowStamina();
 
-    if (wrestler.getReigns() != null) {
-      this.titleReignExternalIds =
-          wrestler.getReigns().stream()
-              .map(com.github.javydreamercsw.management.domain.title.TitleReign::getExternalId)
-              .filter(Objects::nonNull)
-              .toList();
-    }
     if (wrestler.getAlignment() != null && wrestler.getAlignment().getAlignmentType() != null) {
       this.alignment = wrestler.getAlignment().getAlignmentType().name();
     }

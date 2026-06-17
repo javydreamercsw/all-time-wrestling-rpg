@@ -59,8 +59,9 @@ class BackstageActionServiceTest {
   @Mock private BackstageActionHistoryRepository actionHistoryRepository;
   @Mock private InjuryService injuryService;
   @Mock private CampaignService campaignService;
-  @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private WrestlerService wrestlerService;
+  // Not used but needed.
+  @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private BackstageEncounterService backstageEncounterService;
   @Mock private FeatureDataService featureDataService;
 
@@ -68,12 +69,11 @@ class BackstageActionServiceTest {
 
   private Campaign campaign;
   private CampaignState state;
-  private Wrestler wrestler;
   private WrestlerAlignment heelAlignment;
 
   @BeforeEach
   void setUp() {
-    wrestler = new Wrestler();
+    Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
 
@@ -465,6 +465,6 @@ class BackstageActionServiceTest {
     List<Integer> rolls = backstageActionService.rollDice(1);
 
     assertThat(rolls).hasSize(1);
-    assertThat(rolls.get(0)).isBetween(1, 6);
+    assertThat(rolls.getFirst()).isBetween(1, 6);
   }
 }

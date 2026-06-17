@@ -23,4 +23,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CampaignEncounterRepository extends JpaRepository<CampaignEncounter, Long> {
   List<CampaignEncounter> findByCampaignOrderByEncounterDateAsc(Campaign campaign);
+
+  long countByCampaignAndChapterId(Campaign campaign, String chapterId);
 }

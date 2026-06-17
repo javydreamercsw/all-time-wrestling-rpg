@@ -121,7 +121,6 @@ class EditSegmentDialogTest {
     EditSegmentDialog dialog =
         new EditSegmentDialog(
             segment,
-            wrestlerRepository,
             wrestlerService,
             titleService,
             segmentTypeRepository,
@@ -156,7 +155,6 @@ class EditSegmentDialogTest {
     EditSegmentDialog dialog =
         new EditSegmentDialog(
             segment,
-            wrestlerRepository,
             wrestlerService,
             titleService,
             segmentTypeRepository,

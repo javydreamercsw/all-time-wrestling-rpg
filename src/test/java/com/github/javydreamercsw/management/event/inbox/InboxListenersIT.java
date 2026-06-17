@@ -17,19 +17,23 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
-import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
@@ -54,14 +58,8 @@ public class InboxListenersIT extends ManagementIntegrationTest {
 
   @Autowired private ApplicationEventPublisher eventPublisher;
   @Autowired private WrestlerService wrestlerService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.universe.UniverseRepository
-      universeRepository;
-
-  @Autowired
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
-      wrestlerStateRepository;
+  @Autowired private UniverseRepository universeRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
   @Autowired
   @Qualifier("fanAdjudication") private InboxEventType fanAdjudication;
@@ -116,7 +114,6 @@ public class InboxListenersIT extends ManagementIntegrationTest {
   private WrestlerState state1;
   private Show show;
   private Title title;
-  private Faction faction1;
   private Injury injury;
   private Universe universe;
 
@@ -125,6 +122,11 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     clearAllRepositories();
     // Reset mock before each test
     Mockito.reset(inboxService);
+    // Listeners call the 6-arg createInboxItem then set actionType/actionPayload on the result
+    when(inboxService.createInboxItem(
+            any(), any(), any(), any(InboxItem.Urgency.class), any(), any()))
+        .thenReturn(new InboxItem());
+    when(inboxService.save(any())).thenReturn(new InboxItem());
 
     universe =
         universeRepository
@@ -154,8 +156,6 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     title.setName("World Championship");
     title.setUniverse(universe);
 
-    faction1 = Faction.builder().id(1L).name("Faction Alpha").universe(universe).build();
-
     injury = new Injury();
     injury.setId(500L);
     injury.setDescription("Broken Arm");
@@ -170,7 +170,10 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
+    ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItem.Urgency> urgencyCaptor =
+        ArgumentCaptor.forClass(InboxItem.Urgency.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
         ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
@@ -178,7 +181,9 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     verify(inboxService, times(1))
         .createInboxItem(
             eventTypeCaptor.capture(),
+            subjectCaptor.capture(),
             messageCaptor.capture(),
+            urgencyCaptor.capture(),
             referenceIdCaptor.capture(),
             typeCaptor.capture());
 
@@ -198,7 +203,10 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
+    ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItem.Urgency> urgencyCaptor =
+        ArgumentCaptor.forClass(InboxItem.Urgency.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
         ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
@@ -206,7 +214,9 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     verify(inboxService, times(1))
         .createInboxItem(
             eventTypeCaptor.capture(),
+            subjectCaptor.capture(),
             messageCaptor.capture(),
+            urgencyCaptor.capture(),
             referenceIdCaptor.capture(),
             typeCaptor.capture());
 
@@ -225,7 +235,10 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
+    ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItem.Urgency> urgencyCaptor =
+        ArgumentCaptor.forClass(InboxItem.Urgency.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
         ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
@@ -233,7 +246,9 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     verify(inboxService, times(1))
         .createInboxItem(
             eventTypeCaptor.capture(),
+            subjectCaptor.capture(),
             messageCaptor.capture(),
+            urgencyCaptor.capture(),
             referenceIdCaptor.capture(),
             typeCaptor.capture());
 
@@ -254,7 +269,10 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
+    ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItem.Urgency> urgencyCaptor =
+        ArgumentCaptor.forClass(InboxItem.Urgency.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
         ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
@@ -262,7 +280,9 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     verify(inboxService, times(1))
         .createInboxItem(
             eventTypeCaptor.capture(),
+            subjectCaptor.capture(),
             messageCaptor.capture(),
+            urgencyCaptor.capture(),
             referenceIdCaptor.capture(),
             typeCaptor.capture());
 
@@ -285,7 +305,10 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
+    ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItem.Urgency> urgencyCaptor =
+        ArgumentCaptor.forClass(InboxItem.Urgency.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
         ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
@@ -293,7 +316,9 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     verify(inboxService, times(1))
         .createInboxItem(
             eventTypeCaptor.capture(),
+            subjectCaptor.capture(),
             messageCaptor.capture(),
+            urgencyCaptor.capture(),
             referenceIdCaptor.capture(),
             typeCaptor.capture());
 
@@ -313,7 +338,10 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
+    ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItem.Urgency> urgencyCaptor =
+        ArgumentCaptor.forClass(InboxItem.Urgency.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
         ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
@@ -321,7 +349,9 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     verify(inboxService, times(1))
         .createInboxItem(
             eventTypeCaptor.capture(),
+            subjectCaptor.capture(),
             messageCaptor.capture(),
+            urgencyCaptor.capture(),
             referenceIdCaptor.capture(),
             typeCaptor.capture());
 
@@ -341,7 +371,10 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
+    ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItem.Urgency> urgencyCaptor =
+        ArgumentCaptor.forClass(InboxItem.Urgency.class);
     ArgumentCaptor<String> referenceIdCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<InboxItemTarget.TargetType> typeCaptor =
         ArgumentCaptor.forClass(InboxItemTarget.TargetType.class);
@@ -349,7 +382,9 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     verify(inboxService, times(1))
         .createInboxItem(
             eventTypeCaptor.capture(),
+            subjectCaptor.capture(),
             messageCaptor.capture(),
+            urgencyCaptor.capture(),
             referenceIdCaptor.capture(),
             typeCaptor.capture());
 

@@ -35,7 +35,9 @@ public class SegmentSummaryService {
   private final SegmentService segmentService;
   private final SegmentNarrationServiceFactory narrationServiceFactory;
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Segment summarizeSegment(@NonNull final Long segmentId) {
     Segment segment =
         segmentService

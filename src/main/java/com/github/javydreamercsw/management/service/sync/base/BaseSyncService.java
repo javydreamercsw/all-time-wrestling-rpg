@@ -18,11 +18,9 @@ package com.github.javydreamercsw.management.service.sync.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
-import com.github.javydreamercsw.base.ai.notion.NotionPage;
 import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.service.sync.SyncServiceDependencies;
 import com.github.javydreamercsw.management.service.sync.SyncValidationService;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -77,28 +75,6 @@ public abstract class BaseSyncService {
   protected <T> T executeWithRateLimit(@NonNull final java.util.function.Supplier<T> apiCall) {
     syncServiceDependencies.getRateLimitService().acquirePermit();
     return apiCall.get();
-  }
-
-  /**
-   * Creates a backup of the specified JSON file before sync operation.
-   *
-   * @param fileName The name of the JSON file to backup
-   * @throws IOException if backup creation fails
-   */
-  protected void createBackup(@NonNull final String fileName) throws IOException {
-    syncServiceDependencies.getBackupService().createBackup(fileName);
-  }
-
-  /** Extracts name from any NotionPage type using raw properties. */
-  protected String extractNameFromNotionPage(@NonNull final NotionPage page) {
-    return syncServiceDependencies.getNotionPageDataExtractor().extractNameFromNotionPage(page);
-  }
-
-  /** Extracts description from any NotionPage type using raw properties. */
-  protected String extractDescriptionFromNotionPage(@NonNull final NotionPage page) {
-    return syncServiceDependencies
-        .getNotionPageDataExtractor()
-        .extractDescriptionFromNotionPage(page);
   }
 
   /**
@@ -312,11 +288,6 @@ public abstract class BaseSyncService {
     }
 
     public static SyncResult failure(@NonNull final String entityType, final String errorMessage) {
-      return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
-    }
-
-    public static SyncResult unsupported(
-        @NonNull final String entityType, final String errorMessage) {
       return new SyncResult(false, entityType, 0, 0, 0, errorMessage);
     }
 

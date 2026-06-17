@@ -91,7 +91,8 @@ public class ShowBookingService {
    */
   @Transactional
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Optional<Show> bookShow(
       @NonNull final String showName,
       @NonNull final String showDescription,
@@ -114,7 +115,8 @@ public class ShowBookingService {
    */
   @Transactional
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Optional<Show> bookShow(
       @NonNull final String showName,
       @NonNull final String showDescription,
@@ -212,7 +214,8 @@ public class ShowBookingService {
    */
   @Transactional
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Optional<Show> bookPPV(
       @NonNull final String ppvName, @NonNull final String ppvDescription) {
     try {

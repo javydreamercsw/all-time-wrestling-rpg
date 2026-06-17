@@ -34,14 +34,4 @@ public class AccountService {
   public List<Account> findAll() {
     return accountRepository.findAll();
   }
-
-  /**
-   * Finds all accounts that are not currently assigned to any wrestler.
-   *
-   * @return A list of accounts not linked to any wrestler.
-   */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  public List<Account> findAllNonPlayerAccounts() {
-    return accountRepository.findAccountsWithNoAssignedWrestler();
-  }
 }

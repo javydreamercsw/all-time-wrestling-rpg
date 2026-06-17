@@ -42,11 +42,16 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.service.campaign.StorylineDirectorService;
 import com.github.javydreamercsw.management.service.campaign.StorylineExportService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
+import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -78,12 +83,11 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
   @Autowired private ObjectMapper objectMapper;
   @Autowired private StorylineDirectorService storylineDirectorService;
   @Autowired private StorylineExportService storylineExportService;
-
-  @Autowired
-  private com.github.javydreamercsw.management.service.campaign.CampaignChapterService
-      chapterService;
-
-  @Autowired private com.github.javydreamercsw.management.service.title.TitleService titleService;
+  @Autowired private CampaignChapterService chapterService;
+  @Autowired private TitleService titleService;
+  @Autowired private WrestlerService wrestlerService;
+  @Autowired private TutorialService tutorialService;
+  @Autowired private UniverseContextService universeContextService;
 
   private Campaign campaign;
   private Wrestler player;
@@ -147,6 +151,7 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
             campaignRepository,
             campaignService,
             wrestlerRepository,
+            accountRepository,
             cardRepository,
             upgradeService,
             securityUtils,
@@ -155,7 +160,10 @@ public class CampaignAdvancedChaptersE2ETest extends AbstractViewTest {
             chapterService,
             titleService,
             titleRepository,
-            storylineExportService);
+            storylineExportService,
+            wrestlerService,
+            tutorialService,
+            universeContextService);
     UI.getCurrent().add(dashboard);
   }
 
