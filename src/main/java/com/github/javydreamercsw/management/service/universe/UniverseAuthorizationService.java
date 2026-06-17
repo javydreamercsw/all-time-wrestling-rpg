@@ -52,6 +52,7 @@ public class UniverseAuthorizationService {
   private final UniverseMembershipRepository membershipRepository;
   private final UniverseInviteRepository inviteRepository;
   private final UniverseJoinRequestRepository joinRequestRepository;
+  private final UniverseContextService universeContextService;
 
   /**
    * Returns {@code true} when the current user's universe role is at least {@code roleName}
@@ -117,6 +118,17 @@ public class UniverseAuthorizationService {
   /** Convenience alias — {@code true} when the current user is OWNER of the request's universe. */
   public boolean isOwnerOfRequest(final long requestId) {
     return hasRoleForRequest(requestId, "OWNER");
+  }
+
+  /**
+   * Returns {@code true} when the current user has at least {@code roleName} in the user's
+   * currently active universe (resolved via {@link UniverseContextService}).
+   *
+   * <p>Use in services that have no universe parameter but operate on the active universe:
+   * {@code @universeAuthz.hasRoleInCurrentUniverse('BOOKER')}.
+   */
+  public boolean hasRoleInCurrentUniverse(@NonNull final String roleName) {
+    return universeContextService.getCurrentUniverse().map(u -> hasRole(u, roleName)).orElse(false);
   }
 
   private Optional<Long> currentAccountId() {

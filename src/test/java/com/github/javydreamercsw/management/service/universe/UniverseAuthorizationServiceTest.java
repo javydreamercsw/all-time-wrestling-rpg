@@ -46,6 +46,7 @@ class UniverseAuthorizationServiceTest {
   @Mock private UniverseMembershipRepository membershipRepository;
   @Mock private UniverseInviteRepository inviteRepository;
   @Mock private UniverseJoinRequestRepository joinRequestRepository;
+  @Mock private UniverseContextService universeContextService;
 
   @InjectMocks private UniverseAuthorizationService service;
 
@@ -276,5 +277,42 @@ class UniverseAuthorizationServiceTest {
     stubMembership(UniverseMemberRole.ADMIN);
 
     assertThat(service.isOwnerOfRequest(55L)).isFalse();
+  }
+
+  // --- hasRoleInCurrentUniverse ---
+
+  @Test
+  void hasRoleInCurrentUniverse_returnsTrueWhenUserHasRequiredRoleInActiveUniverse() {
+    authenticateAs(account);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    stubMembership(UniverseMemberRole.BOOKER);
+
+    assertThat(service.hasRoleInCurrentUniverse("BOOKER")).isTrue();
+  }
+
+  @Test
+  void hasRoleInCurrentUniverse_returnsTrueForOwnerWhenBookerRequired() {
+    authenticateAs(account);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    stubMembership(UniverseMemberRole.OWNER);
+
+    assertThat(service.hasRoleInCurrentUniverse("BOOKER")).isTrue();
+  }
+
+  @Test
+  void hasRoleInCurrentUniverse_returnsFalseWhenMemberBelowRequired() {
+    authenticateAs(account);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    stubMembership(UniverseMemberRole.MEMBER);
+
+    assertThat(service.hasRoleInCurrentUniverse("BOOKER")).isFalse();
+  }
+
+  @Test
+  void hasRoleInCurrentUniverse_returnsFalseWhenNoActiveUniverse() {
+    authenticateAs(account);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+
+    assertThat(service.hasRoleInCurrentUniverse("BOOKER")).isFalse();
   }
 }
