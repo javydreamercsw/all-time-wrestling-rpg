@@ -74,7 +74,7 @@ public class DataIntegrityChecker {
       checkTeamsIntegrity(errors, warnings, statistics);
 
       // Check referential integrity
-      checkReferentialIntegrity(errors, warnings, statistics);
+      checkReferentialIntegrity(errors, statistics);
 
       long duration = System.currentTimeMillis() - startTime;
       statistics.put("checkDurationMs", duration);
@@ -290,9 +290,7 @@ public class DataIntegrityChecker {
 
   /** Check referential integrity between entities. */
   private void checkReferentialIntegrity(
-      final List<String> errors,
-      final List<String> warnings,
-      final Map<String, Object> statistics) {
+      final List<String> errors, final Map<String, Object> statistics) {
     try {
       // Check if all show types referenced by shows exist
       long showTypeCount = showTypeService.count();
@@ -341,10 +339,6 @@ public class DataIntegrityChecker {
 
     public Map<String, Object> getStatistics() {
       return new HashMap<>(statistics);
-    }
-
-    public boolean hasErrors() {
-      return !errors.isEmpty();
     }
 
     public String getSummary() {

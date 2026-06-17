@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -545,7 +544,6 @@ public class EditSegmentDialog extends Dialog {
   /** Legacy constructor kept for test backward compatibility. Builds PreloadedData inline. */
   public EditSegmentDialog(
       final ProposedSegment segment,
-      final WrestlerRepository wrestlerRepository,
       final WrestlerService wrestlerService,
       final TitleService titleService,
       final SegmentTypeRepository segmentTypeRepository,

@@ -1,0 +1,1 @@
+ALTER TABLE inbox_item ADD COLUMN subject VARCHAR(255);

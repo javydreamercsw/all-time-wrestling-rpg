@@ -222,8 +222,8 @@ class CircuitBreakerServiceTest {
   @Test
   void shouldHandleMultipleEntityTypes() throws Exception {
     // Given
-    String result1 = circuitBreakerService.execute("entity1", () -> "success1");
-    String result2 = circuitBreakerService.execute("entity2", () -> "success2");
+    circuitBreakerService.execute("entity1", () -> "success1");
+    circuitBreakerService.execute("entity2", () -> "success2");
 
     // When - Fail one entity type
     for (int i = 0; i < 3; i++) {

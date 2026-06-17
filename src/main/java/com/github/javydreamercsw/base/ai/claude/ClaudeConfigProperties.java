@@ -42,8 +42,4 @@ public class ClaudeConfigProperties extends AiBaseProperties {
   public String getApiUrl() {
     return aiSettingsService.getClaudeApiUrl();
   }
-
-  public String getApiKey() {
-    return aiSettingsService.getClaudeApiKey();
-  }
 }

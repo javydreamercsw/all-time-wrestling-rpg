@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
@@ -114,6 +115,7 @@ class SegmentServiceLeagueTest {
               mf.setId(100L);
               return mf;
             });
+    when(inboxService.createInboxItem(any(), anyString(), anyList())).thenReturn(new InboxItem());
 
     segmentService.addParticipant(segment, wrestler);
 

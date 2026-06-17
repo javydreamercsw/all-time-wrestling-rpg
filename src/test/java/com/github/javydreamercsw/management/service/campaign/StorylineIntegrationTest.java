@@ -146,6 +146,7 @@ class StorylineIntegrationTest {
             titleRepository,
             teamRepository,
             titleService,
+            wrestlerRepository,
             storylineDirectorService,
             wrestlerStatusService,
             featureDataService);
@@ -212,7 +213,9 @@ class StorylineIntegrationTest {
     when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
 
     // Simulate no available predefined chapters
-    when(chapterService.findAvailableChapters(state)).thenReturn(List.of());
+    when(chapterService.findAvailableChapters(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(List.of());
 
     // Mock AI director initializing a new storyline
     CampaignStoryline newStoryline = new CampaignStoryline();
@@ -250,7 +253,9 @@ class StorylineIntegrationTest {
     when(chapterService.getChapter("unknown_id")).thenReturn(Optional.empty());
 
     // Simulate no available predefined chapters
-    when(chapterService.findAvailableChapters(state)).thenReturn(List.of());
+    when(chapterService.findAvailableChapters(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(List.of());
 
     // Mock AI director initializing a new storyline - should succeed even with null context
     CampaignStoryline newStoryline = new CampaignStoryline();

@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,14 +26,15 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
-import com.github.javydreamercsw.management.service.title.TitleService;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,12 +51,6 @@ class CampaignProgressionServiceTest {
   @Mock private CampaignRepository campaignRepository;
   @Mock private CampaignStateRepository campaignStateRepository;
   @Mock private CampaignChapterService chapterService;
-  @Mock private TournamentService tournamentService;
-  @Mock private TitleRepository titleRepository;
-  @Mock private TeamRepository teamRepository;
-  @Mock private TitleService titleService;
-  @Mock private StorylineDirectorService storylineDirectorService;
-  @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private FeatureDataService featureDataService;
   @Mock private CampaignService campaignService;
 
@@ -90,12 +87,110 @@ class CampaignProgressionServiceTest {
 
     CampaignChapterDTO ch2 = new CampaignChapterDTO();
     ch2.setId("ch2");
-    when(chapterService.findAvailableChapters(state)).thenReturn(List.of(ch2));
+    when(chapterService.findAvailableChapters(any(), isNull())).thenReturn(List.of(ch2));
+    when(chapterService.getChapter("ch2")).thenReturn(Optional.of(ch2));
+    when(chapterService.getChapter("ch1")).thenReturn(Optional.empty());
+    when(chapterService.getActivePoint(any(), any())).thenReturn(Optional.empty());
 
     service.advanceChapter(campaign);
 
     assertThat(state.getCurrentChapterId()).isEqualTo("ch2");
     assertThat(state.getMatchesPlayed()).isZero();
     verify(campaignStateRepository).save(state);
+  }
+
+  @Test
+  void testGetAvailableNextChapters_temporarilyMarksCurrentChapterComplete() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setReigns(new LinkedHashSet<>());
+    Campaign campaign = new Campaign();
+    campaign.setId(2L);
+    campaign.setWrestler(wrestler);
+    CampaignState state = new CampaignState();
+    state.setCurrentChapterId("ch1");
+    state.setCampaign(campaign);
+    campaign.setState(state);
+
+    when(campaignRepository.findById(2L)).thenReturn(Optional.of(campaign));
+
+    // Capture a snapshot of completedChapterIds at the moment findAvailableChapters is called
+    List<Set<String>> callTimeSnapshot = new ArrayList<>();
+    CampaignChapterDTO ch2 = new CampaignChapterDTO();
+    ch2.setId("ch2");
+    when(chapterService.findAvailableChapters(any(), isNull()))
+        .thenAnswer(
+            inv -> {
+              CampaignState s = inv.getArgument(0);
+              callTimeSnapshot.add(new HashSet<>(s.getCompletedChapterIds()));
+              return List.of(ch2);
+            });
+
+    List<CampaignChapterDTO> result = service.getAvailableNextChapters(campaign);
+
+    assertThat(callTimeSnapshot).hasSize(1);
+    assertThat(callTimeSnapshot.getFirst()).contains("ch1");
+    assertThat(result).extracting(CampaignChapterDTO::getId).containsExactly("ch2");
+    // State must not be permanently mutated after the read-only call returns
+    assertThat(state.getCompletedChapterIds()).doesNotContain("ch1");
+  }
+
+  @Test
+  void testAdvanceToChapter_transitionsStateAndResetsCounters() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setReigns(new LinkedHashSet<>());
+    Campaign campaign = new Campaign();
+    campaign.setId(3L);
+    campaign.setWrestler(wrestler);
+    CampaignState state = new CampaignState();
+    state.setCurrentChapterId("ch1");
+    state.setMatchesPlayed(3);
+    state.setWins(2);
+    state.setLosses(1);
+    state.setCurrentEncounterId("old-enc");
+    state.setCampaign(campaign);
+    campaign.setState(state);
+
+    when(campaignRepository.findById(3L)).thenReturn(Optional.of(campaign));
+
+    CampaignChapterDTO ch2 = new CampaignChapterDTO();
+    ch2.setId("ch2");
+    when(chapterService.getChapter("ch2")).thenReturn(Optional.of(ch2));
+    when(chapterService.getChapter("ch1")).thenReturn(Optional.empty());
+    when(chapterService.getActivePoint(any(), any())).thenReturn(Optional.empty());
+
+    Optional<String> result = service.advanceToChapter(campaign, "ch2");
+
+    assertThat(result).contains("ch2");
+    assertThat(state.getCurrentChapterId()).isEqualTo("ch2");
+    assertThat(state.getCurrentEncounterId()).isNull();
+    assertThat(state.getMatchesPlayed()).isZero();
+    assertThat(state.getWins()).isZero();
+    assertThat(state.getLosses()).isZero();
+    assertThat(state.getCompletedChapterIds()).contains("ch1");
+    verify(campaignStateRepository).save(state);
+  }
+
+  @Test
+  void testCompleteCampaign_setsStatusAndEndedAt() {
+    Campaign campaign = new Campaign();
+    campaign.setStatus(CampaignStatus.ACTIVE);
+
+    service.completeCampaign(campaign);
+
+    assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.COMPLETED);
+    assertThat(campaign.getEndedAt()).isNotNull();
+    verify(campaignRepository).save(campaign);
+  }
+
+  @Test
+  void testAbandonCampaign_setsStatusAndEndedAt() {
+    Campaign campaign = new Campaign();
+    campaign.setStatus(CampaignStatus.ACTIVE);
+
+    service.abandonCampaign(campaign);
+
+    assertThat(campaign.getStatus()).isEqualTo(CampaignStatus.ABANDONED);
+    assertThat(campaign.getEndedAt()).isNotNull();
+    verify(campaignRepository).save(campaign);
   }
 }

@@ -158,4 +158,7 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
       """)
   Optional<Show> findByIdWithArenaAndLocation(
       @org.springframework.data.repository.query.Param("id") Long id);
+
+  @Query("SELECT COUNT(DISTINCT s) FROM Show s JOIN s.segments seg")
+  long countShowsWithAtLeastOneSegment();
 }

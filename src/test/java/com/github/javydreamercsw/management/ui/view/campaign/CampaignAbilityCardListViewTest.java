@@ -44,7 +44,7 @@ class CampaignAbilityCardListViewTest extends AbstractViewTest {
   void setup() {
     when(cardService.list(any())).thenReturn(Page.empty());
 
-    view = new CampaignAbilityCardListView(cardService, securityUtils);
+    view = new CampaignAbilityCardListView(cardService);
     UI.getCurrent().add(view);
   }
 

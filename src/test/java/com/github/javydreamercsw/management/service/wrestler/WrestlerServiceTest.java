@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,6 +76,7 @@ class WrestlerServiceTest {
   @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
   @Mock private com.github.javydreamercsw.base.security.SecurityUtils securityUtils;
   @Mock private UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
+  @Mock private UniverseSettingsService universeSettingsService;
 
   @InjectMocks private WrestlerService wrestlerService;
 
@@ -98,6 +100,10 @@ class WrestlerServiceTest {
     Universe universe = Universe.builder().name("Default Universe").build();
     universe.setId(1L);
     lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+    // Default: all expansions enabled for the universe (test wrestlers use BASE_GAME)
+    lenient()
+        .when(universeSettingsService.getEnabledExpansionCodesForUniverse(any()))
+        .thenReturn(Set.of("BASE_GAME"));
     lenient()
         .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
         .thenReturn(new ArrayList<>());

@@ -137,7 +137,7 @@ public class JoinRequestService {
    * @param requestId the ID of the PENDING request
    * @param resolvedBy the admin approving
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwnerOfRequest(#requestId)")
   public void approveRequest(final long requestId, @NonNull final Account resolvedBy) {
     UniverseJoinRequest request = getRequestOrThrow(requestId);
     ensurePending(request);
@@ -176,7 +176,7 @@ public class JoinRequestService {
    * @param resolvedBy the admin rejecting
    * @param notes optional reason shown to the admin (not exposed to the requester)
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwnerOfRequest(#requestId)")
   public void rejectRequest(
       final long requestId, @NonNull final Account resolvedBy, final String notes) {
     UniverseJoinRequest request = getRequestOrThrow(requestId);
@@ -198,7 +198,7 @@ public class JoinRequestService {
    * @param resolvedBy the admin blocking
    * @param notes optional reason
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwnerOfRequest(#requestId)")
   public void blockRequester(
       final long requestId, @NonNull final Account resolvedBy, final String notes) {
     UniverseJoinRequest request = getRequestOrThrow(requestId);
@@ -219,7 +219,7 @@ public class JoinRequestService {
    *
    * @param universe the universe whose requests to list
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   @Transactional(readOnly = true)
   public List<UniverseJoinRequest> getPendingRequests(@NonNull final Universe universe) {
     return requestRepository.findPendingByUniverse(universe);
@@ -230,7 +230,7 @@ public class JoinRequestService {
    *
    * @param universe the universe
    */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   @Transactional(readOnly = true)
   public List<UniverseJoinRequest> getAllRequests(@NonNull final Universe universe) {
     return requestRepository.findAllByUniverse(universe);

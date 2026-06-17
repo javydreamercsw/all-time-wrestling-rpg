@@ -50,7 +50,7 @@ public class UniverseMembershipService {
     return membershipRepository.existsByAccountAndUniverse(account, universe);
   }
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   public UniverseMembership addMember(
       @NonNull final Universe universe,
       @NonNull final Account account,
@@ -66,7 +66,7 @@ public class UniverseMembershipService {
     return membershipRepository.save(membership);
   }
 
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or @universeAuthz.isOwner(#universe)")
   public void removeMember(@NonNull final Universe universe, @NonNull final Account account) {
     membershipRepository
         .findByAccountAndUniverse(account, universe)

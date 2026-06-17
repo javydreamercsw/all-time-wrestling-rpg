@@ -34,4 +34,13 @@ public interface InboxRepository
       """)
   List<InboxItem> findByWrestlerIdAndDescription(
       @Param("wrestlerId") String wrestlerId, @Param("description") String description);
+
+  @Query(
+      """
+      SELECT COUNT(i) > 0 FROM InboxItem i JOIN i.targets t
+      WHERE t.targetId = :accountId AND t.targetType = 'ACCOUNT'
+      AND i.eventType = :eventType AND i.isRead = false
+      """)
+  boolean existsUnreadByEventTypeAndAccountId(
+      @Param("eventType") InboxEventType eventType, @Param("accountId") String accountId);
 }

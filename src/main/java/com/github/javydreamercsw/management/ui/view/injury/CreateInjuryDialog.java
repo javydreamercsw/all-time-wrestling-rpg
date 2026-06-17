@@ -38,7 +38,6 @@ import lombok.NonNull;
 public class CreateInjuryDialog extends Dialog {
 
   private final Binder<Injury> binder = new Binder<>(Injury.class);
-  private final SecurityUtils securityUtils;
 
   public CreateInjuryDialog(
       @NonNull final Wrestler wrestler,
@@ -47,7 +46,6 @@ public class CreateInjuryDialog extends Dialog {
       @NonNull final InjuryTypeService injuryTypeService,
       @NonNull final Runnable onSave,
       @NonNull final SecurityUtils securityUtils) {
-    this.securityUtils = securityUtils;
     setHeaderTitle("Create Injury for " + wrestler.getName());
     setId("create-injury-dialog");
 

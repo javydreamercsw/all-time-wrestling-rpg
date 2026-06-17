@@ -36,6 +36,8 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -81,6 +83,7 @@ class ShowPlanningServiceTest {
   @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
   @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
   @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
+  @Mock private TitleReignRepository titleReignRepository;
   @Mock private Clock clock;
 
   @InjectMocks private ShowPlanningService showPlanningService;
@@ -439,6 +442,49 @@ class ShowPlanningServiceTest {
     // Should NOT throw — unbooked rivalries are advisory only
     showPlanningService.approveSegments(show, List.of(seg));
     verify(segmentRepository).saveAll(any());
+  }
+
+  /**
+   * Regression test for ATW-a831: getShowPlanningContext() must not touch Title.titleReigns or
+   * Title.segments (both LAZY) — instead it must query via TitleReignRepository and
+   * SegmentRepository. This test passes a detached-like Title (no lazy collections initialized) and
+   * verifies the repository methods are called, not the entity collections.
+   */
+  @Test
+  void getShowPlanningContext_withActiveTitle_queriesRepoNotLazyCollections() {
+    Title title = new Title();
+    title.setId(99L);
+    title.setName("ATW World"); // isActive defaults to true
+
+    Wrestler champion = new Wrestler();
+    champion.setId(5L);
+    champion.setName("Test Champion");
+    // Simulate a current champion via the EAGER getCurrentChampions path
+    title.getCurrentChampions().add(champion);
+
+    TitleReign reign = new TitleReign();
+    reign.setStartDate(Instant.now().minusSeconds(86400 * 30));
+
+    // Wire up the two repo queries that replaced the lazy collection accesses
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title)).thenReturn(List.of(reign));
+    when(segmentRepository.findByTitle(title)).thenReturn(List.of());
+
+    when(titleService.getActiveTitles()).thenReturn(List.of(title));
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    when(factionService.findAll()).thenReturn(List.of());
+    when(showService.getUpcomingShows(10)).thenReturn(List.of());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    // Must not throw LazyInitializationException
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+    assertNotNull(result);
+
+    // Verify the fix: repository queries used, not lazy collection accessors
+    verify(titleReignRepository).findByTitleAndEndDateIsNull(title);
+    verify(segmentRepository).findByTitle(title);
   }
 
   @Test

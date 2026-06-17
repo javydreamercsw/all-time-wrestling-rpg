@@ -24,7 +24,6 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
-import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -67,20 +66,19 @@ public class TitleListView extends Main {
   private final TitleService titleService;
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
-  private final TierRecalculationService tierRecalculationService;
   private final SecurityUtils securityUtils;
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
   private final UniverseRepository universeRepository;
   public final Grid<Title> grid = new Grid<>(Title.class, false);
   private List<Wrestler> allWrestlersCache = new ArrayList<>();
+  private List<Wrestler> activeWrestlersCache = new ArrayList<>();
   private Map<Long, WrestlerState> challengerStateMap = new HashMap<>();
 
   public TitleListView(
       @NonNull final TitleService titleService,
       @NonNull final WrestlerService wrestlerService,
       @NonNull final WrestlerRepository wrestlerRepository,
-      @NonNull final TierRecalculationService tierRecalculationService,
       @NonNull final SecurityUtils securityUtils,
       @NonNull final ImageStorageService imageStorageService,
       @NonNull final UniverseContextService universeContextService,
@@ -88,7 +86,6 @@ public class TitleListView extends Main {
     this.titleService = titleService;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
-    this.tierRecalculationService = tierRecalculationService;
     this.securityUtils = securityUtils;
     this.imageStorageService = imageStorageService;
     this.universeContextService = universeContextService;
@@ -220,6 +217,7 @@ public class TitleListView extends Main {
   public void refreshGrid() {
     Long universeId = universeContextService.getCurrentUniverseId();
     allWrestlersCache = wrestlerService.getAllWrestlers();
+    activeWrestlersCache = wrestlerRepository.findAllByActiveTrue();
     challengerStateMap = wrestlerService.getStateMapByUniverseId(universeId);
     universeRepository
         .findById(universeId)
@@ -235,8 +233,7 @@ public class TitleListView extends Main {
     TitleFormDialog dialog =
         new TitleFormDialog(
             titleService,
-            wrestlerRepository,
-            tierRecalculationService,
+            activeWrestlersCache,
             imageStorageService,
             newTitle,
             this::refreshGrid,
@@ -249,8 +246,7 @@ public class TitleListView extends Main {
     TitleFormDialog dialog =
         new TitleFormDialog(
             titleService,
-            wrestlerRepository,
-            tierRecalculationService,
+            activeWrestlersCache,
             imageStorageService,
             title,
             this::refreshGrid,

@@ -18,8 +18,8 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
@@ -52,7 +52,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class BackstageEncounterView extends VerticalLayout {
 
   private final BackstageEncounterService backstageEncounterService;
-  private final CampaignRepository campaignRepository;
   private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
@@ -69,13 +68,11 @@ public class BackstageEncounterView extends VerticalLayout {
   @Autowired
   public BackstageEncounterView(
       final BackstageEncounterService backstageEncounterService,
-      final CampaignRepository campaignRepository,
       final WrestlerRepository wrestlerRepository,
       final SecurityUtils securityUtils,
       final CampaignService campaignService,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final NotificationService notificationService) {
     this.backstageEncounterService = backstageEncounterService;
-    this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
     this.campaignService = campaignService;

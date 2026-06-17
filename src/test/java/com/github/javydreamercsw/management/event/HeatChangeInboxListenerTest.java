@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
@@ -48,6 +49,9 @@ class HeatChangeInboxListenerTest {
     rivalryHeatChange = mock(InboxEventType.class);
     eventPublisher = mock(ApplicationEventPublisher.class);
     inboxUpdateBroadcaster = mock(InboxUpdateBroadcaster.class);
+    when(inboxService.createInboxItem(any(), any(), any(), any(), any(), any()))
+        .thenReturn(new InboxItem());
+    when(inboxService.save(any())).thenAnswer(inv -> inv.getArgument(0));
     listener =
         new HeatChangeInboxListener(
             inboxService, rivalryHeatChange, eventPublisher, inboxUpdateBroadcaster);
@@ -71,7 +75,12 @@ class HeatChangeInboxListenerTest {
 
     verify(inboxService)
         .createInboxItem(
-            eq(rivalryHeatChange), anyString(), eq("123"), eq(InboxItemTarget.TargetType.RIVALRY));
+            eq(rivalryHeatChange),
+            anyString(),
+            anyString(),
+            any(InboxItem.Urgency.class),
+            eq("123"),
+            eq(InboxItemTarget.TargetType.RIVALRY));
     verify(eventPublisher).publishEvent(any(InboxUpdateEvent.class));
     verify(inboxUpdateBroadcaster).broadcast(any(InboxUpdateEvent.class));
   }
@@ -94,6 +103,11 @@ class HeatChangeInboxListenerTest {
 
     verify(inboxService)
         .createInboxItem(
-            eq(rivalryHeatChange), anyString(), eq("123"), eq(InboxItemTarget.TargetType.RIVALRY));
+            eq(rivalryHeatChange),
+            anyString(),
+            anyString(),
+            any(InboxItem.Urgency.class),
+            eq("123"),
+            eq(InboxItemTarget.TargetType.RIVALRY));
   }
 }

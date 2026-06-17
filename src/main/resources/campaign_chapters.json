@@ -3,7 +3,7 @@
   "title": "The Beginning",
   "shortDescription": "Your journey in All Time Wrestling starts here.",
   "introText": "You stand backstage, the roar of the crowd muting your thoughts. This is your moment. The path to the All Time Championship starts here. Will you be a hero, or a villain? Your actions today will define your legacy. So many questions in your mind: How did I got here? A time machine? Is this the future?",
-  "aiSystemPrompt": "You are the Campaign Director for Chapter: The Beginning. Your goal is to introduce the player to the world of ATW and establish their initial reputation through backstage encounters.",
+  "aiSystemPrompt": "You are the Campaign Director for Chapter: The Beginning. Your goal is to introduce the player to the world of All Time Wrestling (ATW) and establish their initial reputation through backstage encounters.",
   "difficulty": "ENTRY",
   "tagTeam": false,
   "entryPoints": [ {
@@ -13,7 +13,7 @@
     } ]
   } ],
   "exitPoints": [ {
-    "name": "Ready for Prime Time",
+    "name": "Tournament Invite",
     "criteria": [ {
       "minMatchesPlayed": 3,
       "minVictoryPoints": 5
@@ -36,7 +36,82 @@
   "exclusions": {
     "excludeChampions": true,
     "npcIds": [ ]
-  }
+  },
+  "allowedWrestlerNames": [ "Kurt Angle", "The British Bulldog", "Randy Savage" ],
+  "initialChampions": {
+    "ATW World": "Oda Tsurugi"
+  },
+  "defaultExcludedOpponents": [ "{{CHAMP}}" ],
+  "defaultOpponentGenderFilter": "MALE",
+  "mode": "STATIC_ONLY",
+  "staticEncounters": [ {
+    "id": "first_match_brief",
+    "title": "Your First Match",
+    "narrativeText": "Your debut match has been booked. The crowd doesn't know your name yet — but after tonight, they will. Win or lose, this is where your story starts.",
+    "choices": [ {
+      "id": "go_to_match",
+      "label": "Step Into the Ring",
+      "text": "There is no other way forward. It's time to prove yourself.",
+      "vpReward": 0,
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ],
+      "setRivalFromMatchOpponent": true
+    } ]
+  }, {
+    "id": "match_2",
+    "title": "Your Second Match",
+    "narrativeText": "Your debut match is in the past. Let's prove last match was not a fluke! You face {{RIVAL}} again.",
+    "choices": [ {
+      "id": "go_to_match_2",
+      "label": "Step Into the Ring",
+      "text": "There is no other way forward. It's time to prove yourself.",
+      "vpReward": 0,
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ],
+      "forcedOpponentName": "{{RIVAL}}"
+    } ]
+  }, {
+    "id": "match_3",
+    "title": "Your Third Match",
+    "narrativeText": "You are now getting back into the rhythm. The landscape is opening up — time to prove yourself against fresh competition.",
+    "choices": [ {
+      "id": "go_to_match_3",
+      "label": "Step Into the Ring",
+      "text": "There is no other way forward. It's time to prove yourself.",
+      "vpReward": 0,
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ]
+    } ]
+  }, {
+    "id": "match_4",
+    "title": "Your Fourth Match",
+    "narrativeText": "Four matches in. The crowd is starting to recognise your face. Keep the momentum going.",
+    "choices": [ {
+      "id": "go_to_match_4",
+      "label": "Step Into the Ring",
+      "text": "There is no other way forward. It's time to prove yourself.",
+      "vpReward": 0,
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ]
+    } ]
+  }, {
+    "id": "match_5",
+    "title": "Your Fifth Match",
+    "narrativeText": "Five matches. This is your proving ground. Make it count. The current champion is {{CHAMP}} — will you be next?",
+    "choices": [ {
+      "id": "go_to_match_5",
+      "label": "Step Into the Ring",
+      "text": "There is no other way forward. It's time to prove yourself.",
+      "vpReward": 0,
+      "nextPhase": "MATCH",
+      "matchType": "One on One",
+      "segmentRules": [ "Normal" ]
+    } ]
+  } ]
 }, {
   "id": "tournament",
   "title": "The Tournament",

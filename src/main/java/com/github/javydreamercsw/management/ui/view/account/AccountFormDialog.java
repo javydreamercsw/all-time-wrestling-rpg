@@ -40,14 +40,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public class AccountFormDialog extends Dialog {
 
   private static final Logger LOG = LoggerFactory.getLogger(AccountFormDialog.class);
-  private final AccountService accountService;
   private final Account account;
   private final BeanValidationBinder<Account> binder = new BeanValidationBinder<>(Account.class);
 
   public AccountFormDialog(
       @Qualifier("managementAccountService") final AccountService accountService,
       final Account account) {
-    this.accountService = accountService;
     this.account = account;
     binder.setBean(account);
 

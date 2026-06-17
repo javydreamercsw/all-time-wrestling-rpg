@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -251,6 +252,92 @@ class NewsGenerationServiceTest {
             eq(NewsCategory.RUMOR),
             eq(true),
             eq(2));
+  }
+
+  @Test
+  void testTitleSegment_defensePromptIncludesDefenseOutcomeAndChampionName() {
+    // Champion wins — should be TITLE DEFENSE in prompt
+    Wrestler champion = Wrestler.builder().name("The Champion").build();
+
+    Title title = new Title();
+    title.setName("World Title");
+    title.awardTitleTo(List.of(champion), java.time.Instant.now(), null);
+
+    Show show = new Show();
+    show.setName("Big Show");
+    SegmentType type = new SegmentType();
+    type.setName("One on One");
+
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(champion);
+    Wrestler challenger = Wrestler.builder().name("The Challenger").build();
+    segment.addParticipant(challenger);
+    segment.setWinners(List.of(champion)); // champion wins = defense
+    segment.setIsTitleSegment(true);
+    segment.getTitles().add(title);
+
+    String aiResponse =
+        """
+        {"headline": "Defense!", "content": "Retained.", "category": "BREAKING",\
+         "isRumor": false, "importance": 3}\
+        """;
+    when(aiService.generateText(anyString())).thenReturn(aiResponse);
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    verify(aiService)
+        .generateText(
+            org.mockito.ArgumentMatchers.argThat(
+                prompt ->
+                    prompt.contains("TITLE DEFENSE")
+                        && prompt.contains("World Title")
+                        && prompt.contains("The Champion")
+                        && !prompt.contains("TITLE CHANGE")));
+  }
+
+  @Test
+  void testTitleSegment_titleChangePromptIncludesChangeOutcomeAndPreviousChampion() {
+    // Challenger wins — should be TITLE CHANGE in prompt
+    Wrestler champion = Wrestler.builder().name("Old Champion").build();
+
+    Title title = new Title();
+    title.setName("World Title");
+    title.awardTitleTo(List.of(champion), java.time.Instant.now(), null);
+
+    Show show = new Show();
+    show.setName("Big Show");
+    SegmentType type = new SegmentType();
+    type.setName("One on One");
+
+    Wrestler challenger = Wrestler.builder().name("New Champion").build();
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(champion);
+    segment.addParticipant(challenger);
+    segment.setWinners(List.of(challenger)); // challenger wins = title change
+    segment.setIsTitleSegment(true);
+    segment.getTitles().add(title);
+
+    String aiResponse =
+        """
+        {"headline": "New Champ!", "content": "Won the belt.", "category": "BREAKING",\
+         "isRumor": false, "importance": 5}\
+        """;
+    when(aiService.generateText(anyString())).thenReturn(aiResponse);
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    verify(aiService)
+        .generateText(
+            org.mockito.ArgumentMatchers.argThat(
+                prompt ->
+                    prompt.contains("TITLE CHANGE")
+                        && prompt.contains("World Title")
+                        && prompt.contains("Old Champion") // pre-match champ named
+                        && !prompt.contains("TITLE DEFENSE")));
   }
 
   @Test

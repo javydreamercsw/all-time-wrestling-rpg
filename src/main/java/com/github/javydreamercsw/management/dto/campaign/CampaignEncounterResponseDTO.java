@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.dto.campaign;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -42,9 +44,27 @@ public class CampaignEncounterResponseDTO {
     private int momentumBonus; // Extra momentum for the next match
     private String outcomeText; // Immediate narrative feedback after choice
     private String forcedOpponentName;
+    private List<String> opponentPool;
+    private Gender opponentGenderFilter;
+    private List<String> excludedOpponents;
+    private boolean setRivalFromMatchOpponent;
+    private boolean assignRivalBeforeMatch;
     private String matchType; // e.g., "One on One", "Triple Threat"
     private List<String> segmentRules; // e.g., ["No DQ", "Cage Match"]
     private String nextPhase; // e.g., "MATCH", "POST_MATCH", "BACKSTAGE"
     private List<String> statusCardKeys; // Keys of Status Cards to grant/flip
+    // Static-encounter effects (null/false for AI-generated choices — no behaviour change)
+    private boolean unlockPromo;
+    private boolean unlockAttack;
+    private Map<String, Object> featureFlags;
+
+    /** For non-match choices: jump directly to this encounter card ID. */
+    private String nextEncounterId;
+
+    /** After a MATCH win: jump to this encounter card ID. */
+    private String onWinNextEncounterId;
+
+    /** After a MATCH loss: jump to this encounter card ID. */
+    private String onLossNextEncounterId;
   }
 }

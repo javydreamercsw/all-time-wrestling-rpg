@@ -17,16 +17,23 @@
 package com.github.javydreamercsw.management.domain.universe;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -58,6 +65,63 @@ public class Universe extends AbstractEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
+
+  // Universe-owned entities: cascade delete so they are removed when the universe is deleted.
+  @OneToMany(
+      mappedBy = "universe",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<UniverseMembership> members = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "universe",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<UniverseExpansionSetting> expansionSettings = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "universe",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<UniverseInvite> invites = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "universe",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<UniverseJoinRequest> joinRequests = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "universe",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<UniverseWrestlerExclusion> wrestlerExclusions = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "universe",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<WrestlerState> wrestlerStates = new ArrayList<>();
+
+  @OneToMany(
+      mappedBy = "universe",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<Rivalry> rivalries = new ArrayList<>();
 
   @PrePersist
   protected void onCreate() {

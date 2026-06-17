@@ -125,7 +125,6 @@ class MatchPromoUITest extends AbstractViewTest {
             ringsideActionService,
             ringsideAiService,
             ringsideActionDataService,
-            teamService,
             titleScriptService,
             notificationService);
   }

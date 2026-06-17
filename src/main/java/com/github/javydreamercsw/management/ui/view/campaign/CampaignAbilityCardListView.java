@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
 
-import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.campaign.AbilityTiming;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
@@ -58,9 +57,7 @@ public class CampaignAbilityCardListView extends Main {
   final Button createBtn;
   final Grid<CampaignAbilityCard> cardGrid;
 
-  public CampaignAbilityCardListView(
-      @NonNull final CampaignAbilityCardService cardService,
-      @NonNull final SecurityUtils securityUtils) {
+  public CampaignAbilityCardListView(@NonNull final CampaignAbilityCardService cardService) {
     this.cardService = cardService;
 
     name = new TextField();

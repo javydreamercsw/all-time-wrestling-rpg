@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
@@ -85,7 +86,16 @@ public class ChampionshipDefendedInboxListener
                     new InboxService.TargetInfo(
                         w.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
 
-    inboxService.createInboxItem(championshipDefended, message, targets);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            championshipDefended,
+            "Title Defended: " + event.getTitleName(),
+            message,
+            InboxItem.Urgency.INFO,
+            targets);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload("{\"route\":\"title-list\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

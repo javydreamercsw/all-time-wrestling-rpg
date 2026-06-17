@@ -125,4 +125,9 @@ public class InboxEventTypeConfig {
   @Qualifier("JOIN_REQUEST_SUBMITTED") InboxEventType joinRequestSubmitted() {
     return new InboxEventType("JOIN_REQUEST_SUBMITTED", "Universe Join Request");
   }
+
+  @Bean
+  @Qualifier("TUTORIAL_REMINDER") InboxEventType tutorialReminder() {
+    return new InboxEventType("TUTORIAL_REMINDER", "Tutorial Reminder");
+  }
 }

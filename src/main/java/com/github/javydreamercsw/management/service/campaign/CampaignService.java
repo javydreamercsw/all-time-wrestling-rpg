@@ -126,20 +126,20 @@ public class CampaignService {
       throw new IllegalStateException("Wrestler already has an active campaign.");
     }
 
-    // Ensure alignment is initialized
+    // Every new campaign starts at NEUTRAL regardless of the wrestler's previous alignment.
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
             .findByWrestler(wrestler)
             .orElseGet(
-                () -> {
-                  WrestlerAlignment newAlignment =
-                      WrestlerAlignment.builder()
-                          .wrestler(wrestler)
-                          .alignmentType(AlignmentType.NEUTRAL)
-                          .level(0)
-                          .build();
-                  return wrestlerAlignmentRepository.save(newAlignment);
-                });
+                () ->
+                    WrestlerAlignment.builder()
+                        .wrestler(wrestler)
+                        .alignmentType(AlignmentType.NEUTRAL)
+                        .level(0)
+                        .build());
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+    alignment.setLevel(0);
+    wrestlerAlignmentRepository.save(alignment);
 
     Universe universe =
         universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
@@ -170,10 +170,18 @@ public class CampaignService {
             .lastSync(LocalDateTime.now())
             .build();
 
-    // Select initial chapter
-    List<CampaignChapterDTO> available = chapterService.findAvailableChapters(state);
+    // Select initial chapter and apply any title setup it declares.
+    // First try wrestler-specific chapters; fall back to unrestricted so generic wrestlers
+    // (e.g. those whose name isn't listed in allowedWrestlerNames) still get a starting chapter.
+    List<CampaignChapterDTO> available =
+        chapterService.findAvailableChapters(state, wrestler.getName());
+    if (available.isEmpty()) {
+      available = chapterService.findAvailableChapters(state, null);
+    }
     if (!available.isEmpty()) {
-      state.setCurrentChapterId(available.get(0).getId());
+      CampaignChapterDTO initialChapter = available.get(0);
+      state.setCurrentChapterId(initialChapter.getId());
+      campaignProgressionService.applyInitialChampions(initialChapter);
     }
 
     campaignStateRepository.save(state);
@@ -277,6 +285,28 @@ public class CampaignService {
   }
 
   /**
+   * Returns the active campaign for the given wrestler scoped to a specific universe. Use this
+   * instead of {@link #getCampaignForWrestler(Wrestler)} when the current universe context matters
+   * (e.g. campaign dashboard, to prevent tutorial campaigns from leaking into other universes).
+   */
+  public Optional<Campaign> getCampaignForWrestlerInUniverse(
+      @NonNull final Wrestler wrestler, @NonNull final Universe universe) {
+    return campaignRepository
+        .findActiveByWrestlerAndUniverse(wrestler, universe)
+        .map(
+            campaign -> {
+              CampaignState state = campaign.getState();
+              if (state != null && state.getActiveStoryline() != null) {
+                state.getActiveStoryline().getMilestones().size();
+              }
+              campaign.getWrestler().getReigns().size();
+              campaign.getWrestler().getAlignments().size();
+              campaign.getWrestler().getWrestlerStates().size();
+              return campaign;
+            });
+  }
+
+  /**
    * Checks if the wrestler has an active campaign.
    *
    * @param wrestler The wrestler.
@@ -284,6 +314,12 @@ public class CampaignService {
    */
   public boolean hasActiveCampaign(@NonNull final Wrestler wrestler) {
     return campaignRepository.findActiveByWrestler(wrestler).isPresent();
+  }
+
+  /** Universe-scoped variant of {@link #hasActiveCampaign(Wrestler)}. */
+  public boolean hasActiveCampaignInUniverse(
+      @NonNull final Wrestler wrestler, @NonNull final Universe universe) {
+    return campaignRepository.findActiveByWrestlerAndUniverse(wrestler, universe).isPresent();
   }
 
   public void processMatchResult(@NonNull final Campaign campaignParam, final boolean won) {
@@ -311,12 +347,27 @@ public class CampaignService {
     matchResultProcessorService.saveSegment(segment);
   }
 
+  public void completeCampaign(@NonNull final Campaign campaign) {
+    campaignProgressionService.completeCampaign(campaign);
+  }
+
+  public void abandonCampaign(@NonNull final Campaign campaign) {
+    campaignProgressionService.abandonCampaign(campaign);
+  }
+
   public Optional<String> advanceChapter(@NonNull final Campaign campaignParam) {
     return campaignProgressionService.advanceChapter(campaignParam);
   }
 
-  public void completeCampaign(@NonNull Campaign campaign) {
-    campaignProgressionService.completeCampaign(campaign);
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  public java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+      getAvailableNextChapters(@NonNull final Campaign campaignParam) {
+    return campaignProgressionService.getAvailableNextChapters(campaignParam);
+  }
+
+  public Optional<String> advanceToChapter(
+      @NonNull final Campaign campaignParam, @NonNull final String targetChapterId) {
+    return campaignProgressionService.advanceToChapter(campaignParam, targetChapterId);
   }
 
   @Transactional(readOnly = true)

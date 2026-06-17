@@ -73,29 +73,4 @@ public class CampaignFactionService {
     return factionService.removeMemberFromFaction(
         currentFaction.getId(), player.getId(), "Betrayal in Campaign");
   }
-
-  /**
-   * Logic for player recruiting an NPC to their faction during a campaign.
-   *
-   * @param campaign The active campaign.
-   * @param recruit The wrestler to recruit.
-   * @return The updated faction.
-   */
-  public Optional<Faction> recruitToFaction(
-      @NonNull final Campaign campaign, @NonNull final Wrestler recruit) {
-    Wrestler player = campaign.getWrestler();
-    Faction currentFaction = player.getDefaultState().map(WrestlerState::getFaction).orElse(null);
-
-    if (currentFaction == null) {
-      log.warn("Player {} must be in a faction to recruit others", player.getName());
-      return Optional.empty();
-    }
-
-    log.info(
-        "Player {} recruiting {} to faction {} during campaign",
-        player.getName(),
-        recruit.getName(),
-        currentFaction.getName());
-    return factionService.addMemberToFaction(currentFaction.getId(), recruit.getId());
-  }
 }

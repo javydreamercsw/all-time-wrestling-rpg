@@ -17,8 +17,10 @@
 package com.github.javydreamercsw.management.ui.view.match;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +38,10 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -67,6 +72,7 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
@@ -138,7 +144,6 @@ class MatchViewTest extends AbstractViewTest {
             ringsideActionService,
             ringsideAiService,
             ringsideActionDataService,
-            teamService,
             titleScriptService,
             notificationService);
   }
@@ -414,6 +419,158 @@ class MatchViewTest extends AbstractViewTest {
     } finally {
       SecurityContextHolder.clearContext();
     }
+  }
+
+  /**
+   * Verifies that a PLAYER-role user can submit results for a campaign match. The two updateSegment
+   * calls (save winners, then mark ADJUDICATED) both go through runAsAdmin() so the @PreAuthorize
+   * gate is not a blocker. campaignService.processMatchResult() must be called with the correct
+   * campaign and won flag, and the player should be routed back to "campaign".
+   */
+  @Test
+  void playerCanSubmitCampaignMatchResult() {
+    Segment segment = buildMinimalMatchSegment(5L, "One on One");
+    segment.setId(5L);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    // Account must be set so the winners card is visible (isParticipatingPlayer check at
+    // MatchView line ~646 requires w.getAccount().getId() == currentAccountId).
+    // The tutorial fix (CampaignTutorialDefinition.beforeStep) sets this for new campaigns.
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    playerAccount.setUsername("player1");
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    Wrestler opponent = new Wrestler();
+    opponent.setId(11L);
+    opponent.setName("Opponent");
+    opponent
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(opponent).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    SegmentParticipant p2 = new SegmentParticipant();
+    p2.setSegment(segment);
+    p2.setWrestler(opponent);
+    segment.getParticipants().add(p2);
+
+    CampaignState state = CampaignState.builder().build();
+    state.setCurrentMatch(segment);
+
+    Campaign campaign =
+        Campaign.builder()
+            .wrestler(playerWrestler)
+            .status(CampaignStatus.ACTIVE)
+            .state(state)
+            .build();
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(5L)).thenReturn(Optional.of(segment));
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(wrestlerService.findByIdWithDetails(10L)).thenReturn(Optional.of(playerWrestler));
+    when(wrestlerService.findByIdWithDetails(11L)).thenReturn(Optional.of(opponent));
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenAnswer(
+            inv -> {
+              Long wId = inv.getArgument(0);
+              return (wId.equals(10L) ? playerWrestler : opponent).getState(1L).orElseThrow();
+            });
+    when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+    when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.of(campaign));
+    when(campaignRepository.findActiveByWrestler(opponent)).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "5"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    MultiSelectComboBox<Wrestler> winnersComboBox =
+        _get(MultiSelectComboBox.class, spec -> spec.withId("winners-combobox"));
+    winnersComboBox.setValue(new HashSet<>(List.of(playerWrestler)));
+
+    _click(_get(Button.class, spec -> spec.withId("save-winners-button")));
+
+    // processMatchResult must be called with won=true (player is in the winners set)
+    verify(campaignService).processMatchResult(campaign, true);
+    // updateSegment called twice: once to save winners, once to mark ADJUDICATED
+    verify(segmentService, times(2)).updateSegment(any(Segment.class));
+    // adjudicateMatch must NOT be called — that's booker/admin only
+    verify(segmentAdjudicationService, never()).adjudicateMatch(any(Long.class));
+  }
+
+  @Test
+  void ringsideActionsShownForGlobalUniverseMatch() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setType(Universe.UniverseType.GLOBAL);
+
+    Show show = new Show();
+    show.setName("Global Show");
+    show.setUniverse(universe);
+
+    Segment segment = buildMinimalMatchSegment(6L, "One on One");
+    segment.setShow(show);
+
+    when(segmentService.findByIdWithDetails(6L)).thenReturn(Optional.of(segment));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "6"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // H3 "Ringside Actions" is the DashboardCard header — must be present for GLOBAL universe
+    _get(H3.class, spec -> spec.withText("Ringside Actions"));
+  }
+
+  @Test
+  void ringsideActionsHiddenForCampaignUniverseMatch() {
+    Universe universe = new Universe();
+    universe.setId(2L);
+    universe.setType(Universe.UniverseType.CAMPAIGN);
+
+    Show show = new Show();
+    show.setName("Campaign Show");
+    show.setUniverse(universe);
+
+    Segment segment = buildMinimalMatchSegment(7L, "One on One");
+    segment.setShow(show);
+
+    when(segmentService.findByIdWithDetails(7L)).thenReturn(Optional.of(segment));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "7"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // Ringside Actions card must NOT appear for campaign universe matches
+    boolean found = !_find(H3.class, spec -> spec.withText("Ringside Actions")).isEmpty();
+    assertFalse(found, "Ringside Actions should not be visible in campaign universe matches");
   }
 
   private Segment buildMinimalMatchSegment(final long id, final String typeName) {

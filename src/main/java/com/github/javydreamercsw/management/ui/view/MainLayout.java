@@ -32,10 +32,15 @@ import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
+import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
+import com.github.javydreamercsw.management.ui.view.tutorial.TutorialStepOverlay;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
@@ -55,6 +60,8 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.Layout;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.flow.shared.Registration;
@@ -73,12 +80,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @NoArgsConstructor
 @PermitAll
 @AnonymousAllowed
-public class MainLayout extends AppLayout {
+public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
   private MenuService menuService;
   private BuildProperties buildProperties;
   private InboxUpdateBroadcaster inboxUpdateBroadcaster;
   private Registration inboxUpdateBroadcasterRegistration;
+  private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
+  private Registration openProfileDrawerRegistration;
   private @Nullable SecurityUtils securityUtils;
   private AccountService accountService;
   private PasswordEncoder passwordEncoder;
@@ -86,6 +95,10 @@ public class MainLayout extends AppLayout {
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
   private UniverseMembershipService universeMembershipService;
+  private InboxService inboxService;
+  private Span inboxBadge;
+  private TutorialService tutorialService;
+  private TutorialStepOverlay tutorialOverlay;
 
   @Autowired
   public MainLayout(
@@ -98,7 +111,10 @@ public class MainLayout extends AppLayout {
       final ThemeService themeService,
       final UniverseContextService universeContextService,
       final UniverseRepository universeRepository,
-      final UniverseMembershipService universeMembershipService) {
+      final UniverseMembershipService universeMembershipService,
+      final InboxService inboxService,
+      final TutorialService tutorialService,
+      final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -109,6 +125,9 @@ public class MainLayout extends AppLayout {
     this.universeContextService = universeContextService;
     this.universeRepository = universeRepository;
     this.universeMembershipService = universeMembershipService;
+    this.inboxService = inboxService;
+    this.tutorialService = tutorialService;
+    this.openProfileDrawerBroadcaster = openProfileDrawerBroadcaster;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -247,6 +266,24 @@ public class MainLayout extends AppLayout {
       Span usernameLabel = new Span(username);
       usernameLabel.addClassNames(FontWeight.SEMIBOLD, FontSize.SMALL);
 
+      // Inbox badge (pill showing unread count)
+      inboxBadge = new Span();
+      inboxBadge.setId("inbox-unread-badge");
+      inboxBadge.getElement().getThemeList().add("badge pill");
+      inboxBadge.setVisible(false);
+
+      // Inbox button with badge
+      Span inboxLabel = new Span("Inbox");
+      Div inboxContent = new Div(inboxLabel, inboxBadge);
+      inboxContent.addClassNames(Display.FLEX, AlignItems.CENTER, Gap.SMALL);
+      Button inboxButton = new Button(inboxContent);
+      inboxButton.setId("inbox-button");
+      inboxButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+      inboxButton.addClickListener(e -> UI.getCurrent().navigate("inbox"));
+
+      // Initialise the badge count
+      refreshInboxBadge();
+
       // Profile button (opens drawer)
       Button profileButton = new Button("Profile", VaadinIcon.USER.create());
       profileButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
@@ -257,7 +294,13 @@ public class MainLayout extends AppLayout {
                   .flatMap(user -> accountService.findByUsername(user.getUsername()))
                   .ifPresent(
                       account ->
-                          new ProfileDrawer(account, accountService, passwordEncoder, themeService)
+                          new ProfileDrawer(
+                                  account,
+                                  accountService,
+                                  passwordEncoder,
+                                  themeService,
+                                  tutorialService,
+                                  universeContextService)
                               .open()));
 
       // Logout button
@@ -266,10 +309,44 @@ public class MainLayout extends AppLayout {
       logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       logoutButton.addClickListener(e -> securityUtils.logout());
 
-      navbar.add(avatar, usernameLabel, profileButton, logoutButton);
+      navbar.add(avatar, usernameLabel, inboxButton, profileButton, logoutButton);
     }
 
     return navbar;
+  }
+
+  private void refreshInboxBadge() {
+    if (inboxBadge == null || securityUtils == null || !securityUtils.isAuthenticated()) {
+      return;
+    }
+    Long accountId =
+        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    long unread = inboxService != null ? inboxService.countUnread(accountId) : 0L;
+    if (unread > 0) {
+      inboxBadge.setText(String.valueOf(unread));
+      inboxBadge.setVisible(true);
+    } else {
+      inboxBadge.setVisible(false);
+    }
+  }
+
+  private void openProfileDrawer() {
+    if (securityUtils == null) {
+      return;
+    }
+    securityUtils
+        .getAuthenticatedUser()
+        .flatMap(user -> accountService.findByUsername(user.getUsername()))
+        .ifPresent(
+            account ->
+                new com.github.javydreamercsw.management.ui.view.account.ProfileDrawer(
+                        account,
+                        accountService,
+                        passwordEncoder,
+                        themeService,
+                        tutorialService,
+                        universeContextService)
+                    .open());
   }
 
   @Override
@@ -285,7 +362,17 @@ public class MainLayout extends AppLayout {
                       () -> {
                         Notification.show("New inbox item!", 3000, Notification.Position.BOTTOM_END)
                             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                        refreshInboxBadge();
                       });
+                }
+              });
+    }
+    if (openProfileDrawerBroadcaster != null) {
+      openProfileDrawerRegistration =
+          openProfileDrawerBroadcaster.register(
+              ignored -> {
+                if (ui.isAttached()) {
+                  ui.access(this::openProfileDrawer);
                 }
               });
     }
@@ -296,6 +383,83 @@ public class MainLayout extends AppLayout {
     super.onDetach(detachEvent);
     if (inboxUpdateBroadcasterRegistration != null) { // Needed for tests
       inboxUpdateBroadcasterRegistration.remove();
+    }
+    if (openProfileDrawerRegistration != null) {
+      openProfileDrawerRegistration.remove();
+    }
+  }
+
+  @Override
+  public void afterNavigation(final AfterNavigationEvent event) {
+    refreshInboxBadge();
+    manageTutorialOverlay(event);
+  }
+
+  private void manageTutorialOverlay(final AfterNavigationEvent event) {
+    if (securityUtils == null || !securityUtils.isAuthenticated() || tutorialService == null) {
+      return;
+    }
+
+    // Never show the overlay while the user is on the tutorial setup/inline pages
+    String location = event.getLocation().getPath();
+    if ("tutorial".equals(location)) {
+      if (tutorialOverlay != null && tutorialOverlay.isOpened()) {
+        tutorialOverlay.close();
+      }
+      return;
+    }
+
+    Long accountId =
+        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    if (accountId == null) {
+      return;
+    }
+
+    com.github.javydreamercsw.base.domain.account.Account account =
+        accountService.get(accountId).orElse(null);
+    if (account == null) {
+      return;
+    }
+
+    com.github.javydreamercsw.management.domain.universe.Universe tutorialUniverse =
+        tutorialService.findTutorialUniverse(account.getUsername()).orElse(null);
+    if (tutorialUniverse == null) {
+      closeTutorialOverlay();
+      return;
+    }
+
+    // Keep the universe context pointed at the tutorial universe while the overlay is active so
+    // that beforeStep/validateStep calls (which use getCurrentUniverse) use the correct scope.
+    universeContextService.setCurrentUniverse(tutorialUniverse);
+
+    com.github.javydreamercsw.management.domain.universe.Universe.UniverseType universeType =
+        tutorialUniverse.getType();
+    com.github.javydreamercsw.management.service.tutorial.TutorialDefinition definition =
+        tutorialService.getDefinition(universeType);
+    int totalSteps = definition.getSteps().size();
+    int stepIndex = tutorialService.getCurrentStep(accountId, universeType);
+
+    if (stepIndex >= totalSteps) {
+      closeTutorialOverlay();
+      return;
+    }
+
+    TutorialStep step = definition.getSteps().get(stepIndex);
+    if (step.getInteractionMode() == TutorialStep.InteractionMode.INLINE) {
+      // Inline steps are handled inside TutorialView itself
+      closeTutorialOverlay();
+      return;
+    }
+
+    if (tutorialOverlay == null) {
+      tutorialOverlay = new TutorialStepOverlay(tutorialService, accountService);
+    }
+    tutorialOverlay.updateStep(account, universeType, stepIndex, totalSteps);
+  }
+
+  private void closeTutorialOverlay() {
+    if (tutorialOverlay != null && tutorialOverlay.isOpened()) {
+      tutorialOverlay.close();
     }
   }
 }
