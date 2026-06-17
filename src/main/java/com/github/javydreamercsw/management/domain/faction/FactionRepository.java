@@ -52,10 +52,6 @@ public interface FactionRepository
   /** Find faction by name. */
   Optional<Faction> findByName(String name);
 
-  /** Find faction by external ID (e.g., Notion page ID). */
-  @Query("SELECT f FROM Faction f WHERE f.externalId = :externalId AND f.externalId IS NOT NULL")
-  Optional<Faction> findByExternalId(@Param("externalId") String externalId);
-
   /** Check if faction name exists. */
   boolean existsByName(String name);
 

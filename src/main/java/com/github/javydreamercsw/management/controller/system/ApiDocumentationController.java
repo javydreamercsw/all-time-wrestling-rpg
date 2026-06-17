@@ -104,7 +104,7 @@ public class ApiDocumentationController {
             "version",
             buildProperties != null ? buildProperties.getVersion() : "1.0.0-SNAPSHOT",
             "components",
-            Map.of("database", "UP", "ai-services", "UP", "notion-sync", "UP", "file-system", "UP"),
+            Map.of("database", "UP", "ai-services", "UP", "file-system", "UP"),
             "uptime",
             getUptimeInfo());
 
@@ -168,11 +168,7 @@ public class ApiDocumentationController {
             "Rivalry Tracking",
             "Faction Management"),
         "integrations",
-        List.of(
-            "Notion Database Sync",
-            "Multiple AI Providers",
-            "Calendar Integration",
-            "Statistics & Analytics"),
+        List.of("Multiple AI Providers", "Calendar Integration", "Statistics & Analytics"),
         "aiProviders",
         List.of("Google Gemini", "OpenAI GPT", "Anthropic Claude", "Mock AI (Development)"),
         "dataFormats",
@@ -217,14 +213,6 @@ public class ApiDocumentationController {
             List.of("POST"),
             "features",
             List.of("Multiple providers", "Custom contexts", "Rate limiting")),
-        "notionSync",
-        Map.of(
-            "baseUrl",
-            "/api/sync/notion",
-            "operations",
-            List.of("GET", "POST"),
-            "features",
-            List.of("Manual sync", "Scheduled sync", "Status monitoring")),
         "campaignSystem",
         Map.of(
             "baseUrl",

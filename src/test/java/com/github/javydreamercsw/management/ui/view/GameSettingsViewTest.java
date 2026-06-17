@@ -70,11 +70,7 @@ class GameSettingsViewTest extends AbstractViewTest {
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     view =
         new GameSettingsView(
-            gameSettingService,
-            gameSettingRepository,
-            themeService,
-            Optional.empty(),
-            universeContextService);
+            gameSettingService, gameSettingRepository, themeService, universeContextService);
     UI.getCurrent().add(view);
   }
 

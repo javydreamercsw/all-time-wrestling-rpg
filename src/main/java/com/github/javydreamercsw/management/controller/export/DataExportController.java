@@ -208,7 +208,6 @@ public class DataExportController {
     dto.setShowDate(show.getShowDate() != null ? show.getShowDate().toString() : null);
     dto.setSeasonName(show.getSeason() != null ? show.getSeason().getName() : null);
     dto.setTemplateName(show.getTemplate() != null ? show.getTemplate().getName() : null);
-    dto.setExternalId(show.getExternalId());
     return dto;
   }
 
@@ -218,8 +217,6 @@ public class DataExportController {
     dto.setName(template.getName());
     dto.setDescription(template.getDescription());
     dto.setShowTypeName(template.getShowType() != null ? template.getShowType().getName() : null);
-    dto.setNotionUrl(template.getNotionUrl());
-    dto.setExternalId(template.getExternalId());
     return dto;
   }
 

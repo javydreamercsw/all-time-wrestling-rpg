@@ -76,27 +76,6 @@ class SegmentTypeServiceTest {
     assertTrue(result.isEmpty());
   }
 
-  // ==================== findByExternalId ====================
-
-  @Test
-  void findByExternalId_found_returnsSegmentType() {
-    when(segmentTypeRepository.findByExternalId("ext-123")).thenReturn(Optional.of(segmentType));
-
-    Optional<SegmentType> result = segmentTypeService.findByExternalId("ext-123");
-
-    assertTrue(result.isPresent());
-    assertSame(segmentType, result.get());
-  }
-
-  @Test
-  void findByExternalId_notFound_returnsEmpty() {
-    when(segmentTypeRepository.findByExternalId("ext-999")).thenReturn(Optional.empty());
-
-    Optional<SegmentType> result = segmentTypeService.findByExternalId("ext-999");
-
-    assertTrue(result.isEmpty());
-  }
-
   // ==================== findAll ====================
 
   @Test

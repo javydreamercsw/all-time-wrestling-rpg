@@ -31,5 +31,5 @@ public class ShowDTO {
   private String seasonName; // Reference to season by name
   private String templateName; // Reference to show template by name
   private String commentaryTeamName; // Reference to commentary team by name
-  private String externalId; // External system ID (e.g., Notion page ID)
+  private String externalId;
 }

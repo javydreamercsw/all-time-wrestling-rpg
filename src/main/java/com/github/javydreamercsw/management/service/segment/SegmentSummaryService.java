@@ -23,7 +23,6 @@ import java.util.List;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import notion.api.v1.exception.NotionAPIError;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -57,21 +56,10 @@ public class SegmentSummaryService {
             return segmentService.updateSegment(segment);
           }
         } catch (RuntimeException e) {
-          if (e.getCause() instanceof NotionAPIError apiError) {
-            log.error(
-                """
-                AI summary failed for segment {}: Notion API Error - {} (Status: {}). Trying next\
-                 provider...\
-                """,
-                segmentId,
-                apiError.getError().getMessage(),
-                apiError.getError().getStatus());
-          } else {
-            log.error(
-                "AI summary failed for segment {}: Unexpected error. Trying next provider...",
-                segmentId,
-                e);
-          }
+          log.error(
+              "AI summary failed for segment {}: Unexpected error. Trying next provider...",
+              segmentId,
+              e);
         }
       }
       log.warn(

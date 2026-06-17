@@ -33,8 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 public interface RivalryRepository
     extends JpaRepository<Rivalry, Long>, JpaSpecificationExecutor<Rivalry> {
 
-  Optional<Rivalry> findByExternalId(String externalId);
-
   List<Rivalry> findByUniverse(Universe universe);
 
   @Query(

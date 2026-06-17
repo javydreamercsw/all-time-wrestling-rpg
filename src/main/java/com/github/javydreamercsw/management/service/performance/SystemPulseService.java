@@ -17,11 +17,9 @@
 package com.github.javydreamercsw.management.service.performance;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,7 +30,6 @@ import org.springframework.stereotype.Service;
 public class SystemPulseService {
 
   private final List<SegmentNarrationService> aiServices;
-  private final Optional<SyncHealthMonitor> syncHealthMonitor;
 
   public Map<String, ServiceStatus> getPulse() {
     Map<String, ServiceStatus> pulse = new HashMap<>();
@@ -46,16 +43,6 @@ public class SystemPulseService {
                   ? "Service configured and available."
                   : "Not configured or disabled."));
     }
-
-    syncHealthMonitor.ifPresent(
-        monitor -> {
-          var health = monitor.health();
-          pulse.put(
-              "Notion Sync",
-              new ServiceStatus(
-                  health.getStatus().getCode(),
-                  (String) health.getDetails().getOrDefault("message", "Sync status unknown.")));
-        });
 
     return pulse;
   }

@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
@@ -49,7 +49,7 @@ import org.jspecify.annotations.Nullable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Wrestler extends AbstractSyncableEntity<Long> {
+public class Wrestler extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Getter(onMethod_ = {@Nullable})

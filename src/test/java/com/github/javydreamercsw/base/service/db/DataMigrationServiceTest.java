@@ -110,17 +110,16 @@ class DataMigrationServiceTest {
           """);
       stmt.execute(
           """
-          MERGE INTO npc (id, name, npc_type, external_id) KEY(id) VALUES (10,\
-           'Migration Manager', 'MANAGER', 'ext-npc-migration-1')\
+          MERGE INTO npc (id, name, npc_type) KEY(id) VALUES (10,\
+           'Migration Manager', 'MANAGER')\
           """);
 
       stmt.execute(
           """
           MERGE INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,\
-           LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, IS_PLAYER, GENDER, ACTIVE,\
-           UPDATED_AT) KEY(wrestler_id) VALUES (10, 'Migration Test Wrestler', 15, 2, 15, 4,\
-           15, CURRENT_TIMESTAMP(), 'ext-migration-1', false, 'MALE', true,\
-           CURRENT_TIMESTAMP())\
+           LOW_HEALTH, DECK_SIZE, CREATION_DATE, IS_PLAYER, GENDER, ACTIVE) KEY(wrestler_id)\
+           VALUES (10, 'Migration Test Wrestler', 15, 2, 15, 4, 15, CURRENT_TIMESTAMP(),\
+           false, 'MALE', true)\
           """);
 
       stmt.execute(
@@ -135,9 +134,9 @@ class DataMigrationServiceTest {
           """
           MERGE INTO injury (injury_id, wrestler_id, universe_id, injury_type_id, name,\
            description, severity, health_penalty, healing_cost, is_active, injury_date,\
-           creation_date, updated_at) KEY(injury_id) VALUES (10, 10, 10, 10,\
+           creation_date) KEY(injury_id) VALUES (10, 10, 10, 10,\
            'Migration Torn ACL', 'Migration Torn ACL', 'SEVERE', 2, 100, true,\
-           CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())\
+           CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())\
           """);
     }
   }

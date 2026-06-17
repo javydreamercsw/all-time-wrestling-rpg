@@ -167,7 +167,6 @@ public class CampaignService {
             .handSizePenalty(0)
             .staminaPenalty(0)
             .pendingL1Picks(0) // No picks for neutral start
-            .lastSync(LocalDateTime.now())
             .build();
 
     // Select initial chapter and apply any title setup it declares.

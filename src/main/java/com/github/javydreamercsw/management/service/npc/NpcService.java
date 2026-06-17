@@ -93,10 +93,6 @@ public class NpcService {
     return npcRepository.saveAll(npcs);
   }
 
-  public java.util.Optional<Npc> findByExternalId(final String externalId) {
-    return npcRepository.findByExternalId(externalId);
-  }
-
   public Npc findById(final Long id) {
     return npcRepository.findById(id).orElse(null);
   }

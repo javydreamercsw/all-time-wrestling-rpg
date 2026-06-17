@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.domain.card;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -30,7 +30,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "card", uniqueConstraints = @UniqueConstraint(columnNames = {"set_id", "number"}))
 @Setter
 @Getter
-public class Card extends AbstractSyncableEntity<Long> {
+public class Card extends AbstractEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -125,15 +125,12 @@ class DataExportControllerIT extends AbstractControllerTest {
     when(testShow.getType()).thenReturn(testShowType);
     when(testShow.getShowDate()).thenReturn(LocalDate.of(2024, 6, 15));
     when(testShow.getSeason()).thenReturn(testSeason);
-    when(testShow.getExternalId()).thenReturn("integration-test-123");
 
     testShowTemplate = mock(ShowTemplate.class);
     when(testShowTemplate.getId()).thenReturn(1L);
     when(testShowTemplate.getName()).thenReturn("Integration Test Template");
     when(testShowTemplate.getDescription()).thenReturn("Integration test template description");
     when(testShowTemplate.getShowType()).thenReturn(testShowType);
-    when(testShowTemplate.getNotionUrl()).thenReturn("https://notion.so/integration-test");
-    when(testShowTemplate.getExternalId()).thenReturn("template-integration-456");
 
     // --- Mock repository and service behavior ---
     // Mock save methods to return the entity (important for services that return saved entities)
@@ -186,7 +183,6 @@ class DataExportControllerIT extends AbstractControllerTest {
     assertEquals("Integration Test Show Type", exportedShow.getShowType());
     assertEquals("2024-06-15", exportedShow.getShowDate());
     assertEquals("Integration Test Season", exportedShow.getSeasonName());
-    assertEquals("integration-test-123", exportedShow.getExternalId());
     assertNull(exportedShow.getTemplateName()); // No template assigned to show
   }
 
@@ -218,8 +214,6 @@ class DataExportControllerIT extends AbstractControllerTest {
     assertEquals("Integration Test Template", exportedTemplate.getName());
     assertEquals("Integration test template description", exportedTemplate.getDescription());
     assertEquals("Integration Test Show Type", exportedTemplate.getShowTypeName());
-    assertEquals("https://notion.so/integration-test", exportedTemplate.getNotionUrl());
-    assertEquals("template-integration-456", exportedTemplate.getExternalId());
   }
 
   @Test

@@ -35,9 +35,6 @@ public interface TeamRepository extends JpaRepository<Team, Long>, JpaSpecificat
   /** Find team by name. */
   Optional<Team> findByName(String name);
 
-  /** Find team by external ID (for Notion sync). */
-  Optional<Team> findByExternalId(String externalId);
-
   /** Check if team name exists. */
   boolean existsByName(String name);
 

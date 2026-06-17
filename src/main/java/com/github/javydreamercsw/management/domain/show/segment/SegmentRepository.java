@@ -183,19 +183,6 @@ public interface SegmentRepository
       """)
   long countMatchSegmentsByWrestler(@Param("wrestler") Wrestler wrestler);
 
-  /** Check if a segment result exists by external ID. */
-  boolean existsByExternalId(String externalId);
-
-  /** Find a segment result by external ID. */
-  Optional<Segment> findByExternalId(String externalId);
-
-  /** Find all external IDs. */
-  @Query("SELECT s.externalId FROM Segment s WHERE s.externalId IS NOT NULL")
-  List<String> findAllExternalIds();
-
-  @Query("SELECT MAX(s.lastSync) FROM Segment s WHERE s.lastSync IS NOT NULL")
-  Optional<java.time.Instant> findMaxLastSync();
-
   List<Segment> findByShowOrderBySegmentOrderAsc(Show show);
 
   @Query(

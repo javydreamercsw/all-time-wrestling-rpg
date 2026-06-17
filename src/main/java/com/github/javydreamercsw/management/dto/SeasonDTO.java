@@ -30,5 +30,4 @@ public class SeasonDTO {
   private String endDate; // ISO date format (YYYY-MM-DD)
   private Boolean isActive;
   private Integer showsPerPpv;
-  private String notionId; // External system ID (e.g., Notion page ID)
 }

@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.base.domain.account;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -31,7 +31,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Achievement extends AbstractSyncableEntity<Long> {
+public class Achievement extends AbstractEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

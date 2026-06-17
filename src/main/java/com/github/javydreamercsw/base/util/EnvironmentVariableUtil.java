@@ -82,16 +82,6 @@ public final class EnvironmentVariableUtil {
   }
 
   /**
-   * Retrieves the Notion token from system property or environment variable. This is a convenience
-   * method for the most common use case.
-   *
-   * @return the Notion token, or null if not found
-   */
-  public static String getNotionToken() {
-    return getValue("NOTION_TOKEN");
-  }
-
-  /**
    * Checks if a configuration value is available (not null and not empty).
    *
    * @param key the configuration key
@@ -100,14 +90,5 @@ public final class EnvironmentVariableUtil {
   public static boolean isAvailable(final String key) {
     String value = getValue(key);
     return value != null && !value.trim().isEmpty();
-  }
-
-  /**
-   * Checks if the Notion token is available.
-   *
-   * @return true if the Notion token is available, false otherwise
-   */
-  public static boolean isNotionTokenAvailable() {
-    return isAvailable("NOTION_TOKEN");
   }
 }

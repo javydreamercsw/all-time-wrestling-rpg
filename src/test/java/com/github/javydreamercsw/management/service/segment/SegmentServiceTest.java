@@ -81,7 +81,6 @@ class SegmentServiceTest {
     testSegment.setNarration("Great segment!");
     testSegment.setIsTitleSegment(false);
     testSegment.setIsNpcGenerated(false);
-    testSegment.setExternalId("notion-123");
   }
 
   @Test
@@ -311,35 +310,6 @@ class SegmentServiceTest {
     // Then
     assertThat(result).isEqualTo(10L);
     verify(matchRepository).countSegmentsByWrestler(testWinner);
-  }
-
-  @Test
-  @DisplayName("Should check if segment exists by external ID")
-  void shouldCheckIfSegmentExistsByExternalId() {
-    // Given
-    when(matchRepository.existsByExternalId("notion-123")).thenReturn(true);
-
-    // When
-    boolean result = segmentService.existsByExternalId("notion-123");
-
-    // Then
-    assertThat(result).isTrue();
-    verify(matchRepository).existsByExternalId("notion-123");
-  }
-
-  @Test
-  @DisplayName("Should find segment by external ID")
-  void shouldFindSegmentByExternalId() {
-    // Given
-    when(matchRepository.findByExternalId("notion-123")).thenReturn(Optional.of(testSegment));
-
-    // When
-    Optional<Segment> result = segmentService.findByExternalId("notion-123");
-
-    // Then
-    assertThat(result).isPresent();
-    assertThat(result.get()).isEqualTo(testSegment);
-    verify(matchRepository).findByExternalId("notion-123");
   }
 
   @Test

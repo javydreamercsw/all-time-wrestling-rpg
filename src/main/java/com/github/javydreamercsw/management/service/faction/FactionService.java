@@ -191,13 +191,6 @@ public class FactionService {
     return factionRepository.findByName(name);
   }
 
-  /** Get faction by external ID. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Faction> findByExternalId(final String externalId) {
-    return factionRepository.findByExternalId(externalId);
-  }
-
   /** Get all active factions. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")

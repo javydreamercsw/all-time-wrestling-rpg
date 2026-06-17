@@ -141,13 +141,6 @@ public class TeamService {
     return teamRepository.findByName(name);
   }
 
-  /** Get team by external ID (for Notion sync). */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Team> getTeamByExternalId(final String externalId) {
-    return teamRepository.findByExternalId(externalId);
-  }
-
   /** Create a new team. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")

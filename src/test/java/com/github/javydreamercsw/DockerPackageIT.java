@@ -61,8 +61,6 @@ class DockerPackageIT {
     try (GenericContainer<?> container =
         new GenericContainer<>(DockerImageName.parse(imageTag))
             .withExposedPorts(port)
-            .withEnv("notion.sync.enabled", "false")
-            .withEnv("notion.sync.scheduler.enabled", "false")
             .withEnv("DATA_INITIALIZER_ENABLED", "false")
             .withEnv("VAADIN_SERVLET_PARAMETER_PRODUCTION_MODE", "true")
             .withEnv("vaadin.devmode.enable", "false")

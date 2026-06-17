@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show.template;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -49,7 +49,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "show_template", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class ShowTemplate extends AbstractSyncableEntity<Long> {
+public class ShowTemplate extends AbstractEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -66,9 +66,6 @@ public class ShowTemplate extends AbstractSyncableEntity<Long> {
   @ManyToOne(optional = false)
   @JoinColumn(name = "show_type_id", nullable = false)
   private ShowType showType;
-
-  @Column(name = "notion_url")
-  @Size(max = 500) private String notionUrl;
 
   @Column(name = "image_url")
   @Size(max = 512) private String imageUrl;

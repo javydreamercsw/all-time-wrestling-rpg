@@ -493,7 +493,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
       showTypeService.createOrUpdateShowType("Weekly", "Weekly Show", 5, 2);
     }
     if (showTemplateService.findByName("Continuum").isEmpty()) {
-      showTemplateService.createOrUpdateTemplate("Continuum", "Default Template", "Weekly", null);
+      showTemplateService.createOrUpdateTemplate("Continuum", "Default Template", "Weekly");
     }
   }
 

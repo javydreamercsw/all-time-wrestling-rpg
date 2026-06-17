@@ -34,8 +34,6 @@ public interface TitleReignRepository extends JpaRepository<TitleReign, Long> {
 
   Optional<TitleReign> findByTitleAndReignNumber(Title title, Integer reignNumber);
 
-  Optional<TitleReign> findByExternalId(String externalId);
-
   List<TitleReign> findByChampionsContaining(Wrestler wrestler);
 
   List<TitleReign> findByStartDateBetween(Instant startDate, Instant endDate);

@@ -32,7 +32,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -42,7 +41,6 @@ import org.springframework.web.context.WebApplicationContext;
  * services using the mock provider.
  */
 @DisplayName("Segment Narration Controller Integration Tests")
-@TestPropertySource(properties = "notion.sync.enabled=true")
 class SegmentNarrationControllerIT extends AbstractIntegrationTest {
 
   protected MockMvc mockMvc;

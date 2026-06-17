@@ -32,7 +32,6 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -104,9 +103,6 @@ public class CampaignState {
 
   @Column(name = "current_game_date")
   private java.time.LocalDate currentGameDate;
-
-  @Column(name = "last_sync")
-  private LocalDateTime lastSync;
 
   // ==================== NEW FIELDS ====================
 

@@ -179,38 +179,6 @@ public class PerformanceMonitoringAspect {
     }
   }
 
-  /** Monitors Notion sync operations specifically. */
-  @Around("execution(* com.github.javydreamercsw.management.service.sync..*(..))")
-  public Object monitorSyncMethods(final ProceedingJoinPoint joinPoint) throws Throwable {
-    String className = joinPoint.getTarget().getClass().getSimpleName();
-    String methodName = joinPoint.getSignature().getName();
-    String operationName = "sync." + className + "." + methodName;
-
-    long startTime = System.currentTimeMillis();
-
-    try {
-      Object result = joinPoint.proceed();
-
-      long duration = System.currentTimeMillis() - startTime;
-      performanceMonitoringService.recordTimer("sync.operations." + operationName, duration);
-      performanceMonitoringService.incrementCounter("sync.success." + operationName);
-
-      // Log sync operations (they can be long-running)
-      if (duration > 10000) { // More than 10 seconds
-        log.info("📊 Long sync operation: {} took {}ms", operationName, duration);
-      }
-
-      return result;
-    } catch (Exception e) {
-      long duration = System.currentTimeMillis() - startTime;
-      performanceMonitoringService.recordTimer(
-          "sync.operations." + operationName + ".failed", duration);
-      performanceMonitoringService.incrementCounter("sync.errors." + operationName);
-      log.error("❌ Sync operation failed: {} after {}ms", operationName, duration);
-      throw e;
-    }
-  }
-
   /** Gets the operation name from the join point and annotation. */
   private String getOperationName(
       final ProceedingJoinPoint joinPoint, final MonitorPerformance monitorPerformance) {

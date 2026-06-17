@@ -9,8 +9,6 @@ CREATE INDEX IF NOT EXISTS idx_wrestler_name ON wrestler(name);
 -- Index for wrestler creation date (used in reporting and analytics)
 CREATE INDEX IF NOT EXISTS idx_wrestler_creation_date ON wrestler(creation_date);
 
--- Index for wrestler external ID (used in Notion sync operations)
-CREATE INDEX IF NOT EXISTS idx_wrestler_external_id ON wrestler(external_id);
 
 -- ==================== WRESTLER STATE TABLE INDEXES ====================
 
@@ -43,8 +41,6 @@ CREATE INDEX IF NOT EXISTS idx_show_season ON wrestling_show(season_id);
 -- Index for show template relationships
 CREATE INDEX IF NOT EXISTS idx_show_template ON wrestling_show(template_id);
 
--- Index for show external ID (Notion sync)
-CREATE INDEX IF NOT EXISTS idx_show_external_id ON wrestling_show(external_id);
 
 -- Composite index for date range queries (most common show query pattern)
 CREATE INDEX IF NOT EXISTS idx_show_date_type ON wrestling_show(show_date, show_type_id);
@@ -172,8 +168,6 @@ CREATE INDEX IF NOT EXISTS idx_show_template_name ON show_template(name);
 -- Index for template by show type
 CREATE INDEX IF NOT EXISTS idx_show_template_type ON show_template(show_type_id);
 
--- Index for template external ID (Notion sync)
-CREATE INDEX IF NOT EXISTS idx_show_template_external_id ON show_template(external_id);
 
 -- ==================== SEGMENT RULE TABLE INDEXES ====================
 

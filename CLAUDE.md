@@ -116,6 +116,8 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 
 **Security:** Spring Security with four roles — ADMIN, BOOKER, PLAYER, VIEWER. Account lockout after 5 failed logins (15-minute lockout).
 
+**Event system:** Game outcomes propagate via Spring `ApplicationEvent`. Services publish typed events; `management/event/inbox/` contains one `ApplicationListener` per event type that writes inbox notifications. `management/event/listener/LegacyEventListener` is a *second* subscriber on `ChampionshipChangeEvent`/`ChampionshipDefendedEvent` — it updates legacy scores independently of the inbox. To add a new outcome notification: create an event class in `management/event/`, publish it from the service, and add a listener in `management/event/inbox/`.
+
 ## Conventions & Patterns
 
 - **Code style:** Google Java Format via Spotless. Run `mvn spotless:apply` before committing; `mvn spotless:check` runs automatically at compile phase.

@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.domain.show;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -52,7 +52,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "wrestling_show")
 @Getter
 @Setter
-public class Show extends AbstractSyncableEntity<Long> {
+public class Show extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Getter(onMethod_ = {@Nullable})

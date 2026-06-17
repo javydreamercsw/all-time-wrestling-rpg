@@ -20,14 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.base.util.EnvironmentVariableUtil;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
@@ -55,7 +52,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -153,259 +149,221 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
   @Test
   @DisplayName("Should resolve singles segment between two rookies")
   void shouldResolveSinglesMatchBetweenRookies() {
-    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
-        mockStatic(EnvironmentVariableUtil.class)) {
-      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
-      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
-      // When
-      SegmentTeam team1 = new SegmentTeam(rookie1);
-      SegmentTeam team2 = new SegmentTeam(rookie2);
-      Segment result =
-          npcSegmentResolutionService.resolveTeamSegment(
-              team1, team2, singlesSegmentType, testShow, "Standard Match");
+    // When
+    SegmentTeam team1 = new SegmentTeam(rookie1);
+    SegmentTeam team2 = new SegmentTeam(rookie2);
+    Segment result =
+        npcSegmentResolutionService.resolveTeamSegment(
+            team1, team2, singlesSegmentType, testShow, "Standard Match");
 
-      // Then
-      assertThat(result).isNotNull();
-      assertThat(result.getId()).isNotNull();
-      assertThat(result.getShow()).isEqualTo(testShow);
-      assertThat(result.getSegmentType()).isEqualTo(singlesSegmentType);
-      assertThat(result.getWinners()).hasSize(1);
-      assertThat(result.getWinners().getFirst()).isIn(rookie1, rookie2);
-      assertThat(result.getIsNpcGenerated()).isTrue();
-      assertThat(result.getParticipants()).hasSize(2);
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getId()).isNotNull();
+    assertThat(result.getShow()).isEqualTo(testShow);
+    assertThat(result.getSegmentType()).isEqualTo(singlesSegmentType);
+    assertThat(result.getWinners()).hasSize(1);
+    assertThat(result.getWinners().getFirst()).isIn(rookie1, rookie2);
+    assertThat(result.getIsNpcGenerated()).isTrue();
+    assertThat(result.getParticipants()).hasSize(2);
 
-      // Verify participants
-      List<Wrestler> participants = result.getWrestlers();
-      assertThat(participants).containsExactlyInAnyOrder(rookie1, rookie2);
-    }
+    // Verify participants
+    List<Wrestler> participants = result.getWrestlers();
+    assertThat(participants).containsExactlyInAnyOrder(rookie1, rookie2);
   }
 
   @Test
   @Transactional
   @DisplayName("Should favor higher tier wrestler in singles segment")
   void shouldFavorHigherTierWrestlerInSinglesMatch() {
-    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
-        mockStatic(EnvironmentVariableUtil.class)) {
-      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
-      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
-      // Given - Run multiple matches to test probability
-      int contenderWins = 0;
-      int totalMatches = 100;
+    // Given - Run multiple matches to test probability
+    int contenderWins = 0;
+    int totalMatches = 100;
 
-      // When - Simulate many matches
-      for (int i = 0; i < totalMatches; i++) {
-        SegmentTeam team1 = new SegmentTeam(rookie1);
-        SegmentTeam team2 = new SegmentTeam(contender);
-        Segment result =
-            npcSegmentResolutionService.resolveTeamSegment(
-                team1, team2, singlesSegmentType, testShow, "Test Match " + i);
+    // When - Simulate many matches
+    for (int i = 0; i < totalMatches; i++) {
+      SegmentTeam team1 = new SegmentTeam(rookie1);
+      SegmentTeam team2 = new SegmentTeam(contender);
+      Segment result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              team1, team2, singlesSegmentType, testShow, "Test Match " + i);
 
-        if (result.getWinners().contains(contender)) {
-          contenderWins++;
-        }
+      if (result.getWinners().contains(contender)) {
+        contenderWins++;
       }
-
-      // Then - Contender should win significantly more often than rookie
-      double contenderWinRate = (double) contenderWins / totalMatches;
-      assertThat(contenderWinRate)
-          .isGreaterThan(0.9) // Should win at least 90% due to massive tier advantage
-          .describedAs("Contender with 45,000 fans should dominate rookie with 0 fans");
     }
+
+    // Then - Contender should win significantly more often than rookie
+    double contenderWinRate = (double) contenderWins / totalMatches;
+    assertThat(contenderWinRate)
+        .isGreaterThan(0.9) // Should win at least 90% due to massive tier advantage
+        .describedAs("Contender with 45,000 fans should dominate rookie with 0 fans");
   }
 
   @Test
   @Transactional
   @DisplayName("Should resolve triple threat segment")
   void shouldResolveTripleThreatMatch() {
-    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
-        mockStatic(EnvironmentVariableUtil.class)) {
-      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
-      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
-      // When
-      List<SegmentTeam> teams =
-          Arrays.asList(
-              new SegmentTeam(rookie1), new SegmentTeam(rookie2), new SegmentTeam(contender));
-      Segment result =
-          npcSegmentResolutionService.resolveMultiTeamSegment(
-              teams, tagTeamType, testShow, "Triple Threat Match");
+    // When
+    List<SegmentTeam> teams =
+        Arrays.asList(
+            new SegmentTeam(rookie1), new SegmentTeam(rookie2), new SegmentTeam(contender));
+    Segment result =
+        npcSegmentResolutionService.resolveMultiTeamSegment(
+            teams, tagTeamType, testShow, "Triple Threat Match");
 
-      // Then
-      assertThat(result).isNotNull();
-      assertThat(result.getId()).isNotNull();
-      assertThat(result.getShow()).isEqualTo(testShow);
-      assertThat(result.getSegmentType()).isEqualTo(tagTeamType);
-      assertThat(result.getWinners()).hasSize(1);
-      assertThat(result.getWinners().getFirst()).isIn(rookie1, rookie2, contender);
-      assertThat(result.getIsNpcGenerated()).isTrue();
-      assertThat(result.getParticipants()).hasSize(3);
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getId()).isNotNull();
+    assertThat(result.getShow()).isEqualTo(testShow);
+    assertThat(result.getSegmentType()).isEqualTo(tagTeamType);
+    assertThat(result.getWinners()).hasSize(1);
+    assertThat(result.getWinners().getFirst()).isIn(rookie1, rookie2, contender);
+    assertThat(result.getIsNpcGenerated()).isTrue();
+    assertThat(result.getParticipants()).hasSize(3);
 
-      // Verify all participants
-      List<Wrestler> participants = result.getWrestlers();
-      assertThat(participants).containsExactlyInAnyOrder(rookie1, rookie2, contender);
-    }
+    // Verify all participants
+    List<Wrestler> participants = result.getWrestlers();
+    assertThat(participants).containsExactlyInAnyOrder(rookie1, rookie2, contender);
   }
 
   @Test
   @DisplayName("Should throw exception for multi-person segment with less than 3 wrestlers")
   void shouldThrowExceptionForInvalidMultiPersonMatch() {
-    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
-        mockStatic(EnvironmentVariableUtil.class)) {
-      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
-      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
-      // When/Then
-      List<SegmentTeam> twoTeams =
-          Arrays.asList(new SegmentTeam(rookie1), new SegmentTeam(rookie2));
-      assertThatThrownBy(
-              () ->
-                  npcSegmentResolutionService.resolveMultiTeamSegment(
-                      twoTeams, tagTeamType, testShow, "Invalid Match"))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Multi-team segment requires at least 3 teams");
-    }
+    // When/Then
+    List<SegmentTeam> twoTeams = Arrays.asList(new SegmentTeam(rookie1), new SegmentTeam(rookie2));
+    assertThatThrownBy(
+            () ->
+                npcSegmentResolutionService.resolveMultiTeamSegment(
+                    twoTeams, tagTeamType, testShow, "Invalid Match"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Multi-team segment requires at least 3 teams");
   }
 
   @Test
   @Transactional
   @DisplayName("Should handle wrestler with injuries and bumps")
   void shouldHandleWrestlerWithInjuriesAndBumps() {
-    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
-        mockStatic(EnvironmentVariableUtil.class)) {
-      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
-      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
-      // Given - Add bumps to rookie1
-      Injury injury = mock(Injury.class);
-      InjurySeverity severity = mock(InjurySeverity.class);
-      when(injury.getSeverity()).thenReturn(severity);
-      when(severity.getDisplayName()).thenReturn("Minor");
-      when(injuryService.createInjuryFromBumps(anyLong(), anyLong()))
-          .thenReturn(Optional.of(injury));
-      assertNotNull(rookie1.getId());
-      assertNotNull(defaultUniverse.getId());
-      wrestlerService.addBump(rookie1.getId(), defaultUniverse.getId());
-      wrestlerService.addBump(rookie1.getId(), defaultUniverse.getId());
-      wrestlerService.addBump(
-          rookie1.getId(), defaultUniverse.getId()); // This should create an injury
+    // Given - Add bumps to rookie1
+    Injury injury = mock(Injury.class);
+    InjurySeverity severity = mock(InjurySeverity.class);
+    when(injury.getSeverity()).thenReturn(severity);
+    when(severity.getDisplayName()).thenReturn("Minor");
+    when(injuryService.createInjuryFromBumps(anyLong(), anyLong())).thenReturn(Optional.of(injury));
+    assertNotNull(rookie1.getId());
+    assertNotNull(defaultUniverse.getId());
+    wrestlerService.addBump(rookie1.getId(), defaultUniverse.getId());
+    wrestlerService.addBump(rookie1.getId(), defaultUniverse.getId());
+    wrestlerService.addBump(
+        rookie1.getId(), defaultUniverse.getId()); // This should create an injury
 
-      // Refresh wrestler from database
-      rookie1 = wrestlerRepository.findById(rookie1.getId()).orElseThrow();
+    // Refresh wrestler from database
+    rookie1 = wrestlerRepository.findById(rookie1.getId()).orElseThrow();
 
-      // When - Run multiple matches to test impact
-      int rookie2Wins = 0;
-      int totalMatches = 100;
+    // When - Run multiple matches to test impact
+    int rookie2Wins = 0;
+    int totalMatches = 100;
 
-      for (int i = 0; i < totalMatches; i++) {
-        SegmentTeam team1 = new SegmentTeam(rookie1);
-        SegmentTeam team2 = new SegmentTeam(rookie2);
-        Segment result =
-            npcSegmentResolutionService.resolveTeamSegment(
-                team1, team2, singlesSegmentType, testShow, "Injury Test " + i);
+    for (int i = 0; i < totalMatches; i++) {
+      SegmentTeam team1 = new SegmentTeam(rookie1);
+      SegmentTeam team2 = new SegmentTeam(rookie2);
+      Segment result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              team1, team2, singlesSegmentType, testShow, "Injury Test " + i);
 
-        if (result.getWinners().contains(rookie2)) {
-          rookie2Wins++;
-        }
+      if (result.getWinners().contains(rookie2)) {
+        rookie2Wins++;
       }
-
-      // Then - Injured wrestler should win less often
-      double rookie2WinRate = (double) rookie2Wins / totalMatches;
-      assertThat(rookie2WinRate)
-          .isGreaterThanOrEqualTo(0.30) // Should have some advantage due to opponent's injuries
-          .describedAs("Healthy wrestler should have some advantage over injured opponent");
     }
+
+    // Then - Injured wrestler should win less often
+    double rookie2WinRate = (double) rookie2Wins / totalMatches;
+    assertThat(rookie2WinRate)
+        .isGreaterThanOrEqualTo(0.30) // Should have some advantage due to opponent's injuries
+        .describedAs("Healthy wrestler should have some advantage over injured opponent");
   }
 
   @Test
   @Transactional
   @DisplayName("Should favor faction with high affinity in tag matches")
   void shouldFavorFactionWithHighAffinity() {
-    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
-        mockStatic(EnvironmentVariableUtil.class)) {
-      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
-      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
+    // Given - Create a high affinity faction
+    com.github.javydreamercsw.management.domain.faction.Faction highAffinityFaction =
+        com.github.javydreamercsw.management.domain.faction.Faction.builder()
+            .name("High Affinity")
+            .affinity(100)
+            .isActive(true)
+            .universe(defaultUniverse)
+            .build();
+    highAffinityFaction = factionRepository.save(highAffinityFaction);
 
-      // Given - Create a high affinity faction
-      com.github.javydreamercsw.management.domain.faction.Faction highAffinityFaction =
-          com.github.javydreamercsw.management.domain.faction.Faction.builder()
-              .name("High Affinity")
-              .affinity(100)
-              .isActive(true)
-              .universe(defaultUniverse)
-              .build();
-      highAffinityFaction = factionRepository.save(highAffinityFaction);
+    Wrestler f1 =
+        wrestlerService.createWrestler(
+            "Faction Member 1", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
+    Wrestler f2 =
+        wrestlerService.createWrestler(
+            "Faction Member 2", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
+    assertNotNull(f1.getId());
+    assertNotNull(f2.getId());
+    assertNotNull(defaultUniverse.getId());
+    WrestlerState s1 = wrestlerService.getOrCreateState(f1.getId(), defaultUniverse.getId());
+    WrestlerState s2 = wrestlerService.getOrCreateState(f2.getId(), defaultUniverse.getId());
+    s1.setFaction(highAffinityFaction);
+    s2.setFaction(highAffinityFaction);
+    wrestlerStateRepository.saveAll(List.of(s1, s2));
 
-      Wrestler f1 =
-          wrestlerService.createWrestler(
-              "Faction Member 1", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
-      Wrestler f2 =
-          wrestlerService.createWrestler(
-              "Faction Member 2", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
-      assertNotNull(f1.getId());
-      assertNotNull(f2.getId());
-      assertNotNull(defaultUniverse.getId());
-      WrestlerState s1 = wrestlerService.getOrCreateState(f1.getId(), defaultUniverse.getId());
-      WrestlerState s2 = wrestlerService.getOrCreateState(f2.getId(), defaultUniverse.getId());
-      s1.setFaction(highAffinityFaction);
-      s2.setFaction(highAffinityFaction);
-      wrestlerStateRepository.saveAll(List.of(s1, s2));
+    // Create a low affinity faction (or just independent midcarders)
+    Wrestler i1 =
+        wrestlerService.createWrestler(
+            "Independent 1", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
+    Wrestler i2 =
+        wrestlerService.createWrestler(
+            "Independent 2", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
 
-      // Create a low affinity faction (or just independent midcarders)
-      Wrestler i1 =
-          wrestlerService.createWrestler(
-              "Independent 1", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
-      Wrestler i2 =
-          wrestlerService.createWrestler(
-              "Independent 2", true, null, WrestlerTier.MIDCARDER, defaultUniverse);
+    SegmentTeam highAffinityTeam = new SegmentTeam(List.of(f1, f2), "Team Alpha");
+    SegmentTeam independentTeam = new SegmentTeam(List.of(i1, i2), "Team Beta");
 
-      SegmentTeam highAffinityTeam = new SegmentTeam(List.of(f1, f2), "Team Alpha");
-      SegmentTeam independentTeam = new SegmentTeam(List.of(i1, i2), "Team Beta");
+    // When - Simulate matches (increased sample size for more reliable statistics)
+    int factionWins = 0;
+    int totalMatches = 500;
 
-      // When - Simulate matches (increased sample size for more reliable statistics)
-      int factionWins = 0;
-      int totalMatches = 500;
-
-      for (int i = 0; i < totalMatches; i++) {
-        Segment result =
-            npcSegmentResolutionService.resolveTeamSegment(
-                highAffinityTeam, independentTeam, tagTeamType, testShow, "Synergy Test " + i);
-        if (result.getWinners().contains(f1)) {
-          factionWins++;
-        }
+    for (int i = 0; i < totalMatches; i++) {
+      Segment result =
+          npcSegmentResolutionService.resolveTeamSegment(
+              highAffinityTeam, independentTeam, tagTeamType, testShow, "Synergy Test " + i);
+      if (result.getWinners().contains(f1)) {
+        factionWins++;
       }
-
-      // Then - Faction should win more than 50% (base is equal, bonus is +10 weight)
-      double winRate = (double) factionWins / totalMatches;
-      assertThat(winRate)
-          .isGreaterThanOrEqualTo(0.51)
-          .describedAs(
-              "Faction with 100 affinity should have clear advantage over independents (found "
-                  + winRate
-                  + ")");
     }
+
+    // Then - Faction should win more than 50% (base is equal, bonus is +10 weight)
+    double winRate = (double) factionWins / totalMatches;
+    assertThat(winRate)
+        .isGreaterThanOrEqualTo(0.51)
+        .describedAs(
+            "Faction with 100 affinity should have clear advantage over independents (found "
+                + winRate
+                + ")");
   }
 
   @Test
   @DisplayName("Should save segment with rule")
   void shouldSaveMatchWithStipulation() {
-    try (MockedStatic<EnvironmentVariableUtil> staticUtilMock =
-        mockStatic(EnvironmentVariableUtil.class)) {
-      staticUtilMock.when(EnvironmentVariableUtil::getNotionToken).thenReturn("dummy");
-      staticUtilMock.when(() -> openAIService.generateText(anyString())).thenReturn("dummy");
-      // Given
-      String stipulation = "Steel Cage Match";
+    // Given
+    String stipulation = "Steel Cage Match";
 
-      // When
-      SegmentTeam team1 = new SegmentTeam(rookie1);
-      SegmentTeam team2 = new SegmentTeam(rookie2);
-      Segment result =
-          npcSegmentResolutionService.resolveTeamSegment(
-              team1, team2, singlesSegmentType, testShow, stipulation);
+    // When
+    SegmentTeam team1 = new SegmentTeam(rookie1);
+    SegmentTeam team2 = new SegmentTeam(rookie2);
+    Segment result =
+        npcSegmentResolutionService.resolveTeamSegment(
+            team1, team2, singlesSegmentType, testShow, stipulation);
 
-      // Then
-      assertThat(result.getSegmentRulesAsString()).contains("Steel Cage");
+    // Then
+    assertThat(result.getSegmentRulesAsString()).contains("Steel Cage");
 
-      // Verify persistence
-      Assertions.assertNotNull(result.getId());
-      Segment savedResult = matchRepository.findById(result.getId()).orElseThrow();
-      assertThat(savedResult.getSegmentRulesAsString()).contains("Steel Cage");
-    }
+    // Verify persistence
+    Assertions.assertNotNull(result.getId());
+    Segment savedResult = matchRepository.findById(result.getId()).orElseThrow();
+    assertThat(savedResult.getSegmentRulesAsString()).contains("Steel Cage");
   }
 }
