@@ -413,13 +413,6 @@ public class InjuryService {
             });
   }
 
-  /** Find injury by external ID. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Injury> findByExternalId(@NonNull final String externalId) {
-    return injuryRepository.findByExternalId(externalId);
-  }
-
   /** Get injury statistics for a wrestler in a specific universe. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")

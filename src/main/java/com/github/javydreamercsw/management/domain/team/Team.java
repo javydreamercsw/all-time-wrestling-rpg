@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.team;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -54,7 +54,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Team extends AbstractSyncableEntity<Long> {
+public class Team extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "team_id")
@@ -112,9 +112,6 @@ public class Team extends AbstractSyncableEntity<Long> {
 
   @Column(name = "disbanded_date")
   private Instant disbandedDate;
-
-  @Column(name = "external_id")
-  private String externalId;
 
   /** Ensure default values before persisting. */
   @PrePersist

@@ -51,7 +51,7 @@ class ShowTemplateServiceIT extends ManagementIntegrationTest {
 
     // Create a new show template, should evict the cache
     showTemplateService.createOrUpdateTemplate(
-        "Test Show Template", "Test Description", showType.getName(), "");
+        "Test Show Template", "Test Description", showType.getName());
 
     // Second call, should hit the repository again
     showTemplateService.findAll();

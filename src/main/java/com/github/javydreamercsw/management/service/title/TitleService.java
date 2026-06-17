@@ -133,11 +133,6 @@ public class TitleService {
     return titleRepository.findByName(name);
   }
 
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Title> findByExternalId(@NonNull final String externalId) {
-    return titleRepository.findByExternalId(externalId);
-  }
-
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(

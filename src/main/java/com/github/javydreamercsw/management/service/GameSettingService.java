@@ -44,8 +44,6 @@ public class GameSettingService {
   public static final String NEWS_STRATEGY_KEY = "news_strategy"; // "SEGMENT" or "SHOW"
   public static final String WEAR_AND_TEAR_ENABLED_KEY = "wear_and_tear_enabled";
   public static final String STATUS_CARDS_ENABLED_KEY = "status_cards_enabled";
-  public static final String NOTION_TOKEN_KEY = "notion_token";
-
   // Tutorial enable/disable settings (gameplay keys, default true)
   public static final String TUTORIAL_ENABLED_CAMPAIGN_KEY = "tutorial.enabled.CAMPAIGN";
   public static final String TUTORIAL_ENABLED_LEAGUE_KEY = "tutorial.enabled.LEAGUE";
@@ -72,11 +70,7 @@ public class GameSettingService {
    */
   private static final Set<String> CREDENTIAL_KEYS =
       Set.of(
-          NOTION_TOKEN_KEY,
-          "AI_OPENAI_API_KEY",
-          "AI_CLAUDE_API_KEY",
-          "AI_GEMINI_API_KEY",
-          "AI_POLLINATIONS_API_KEY");
+          "AI_OPENAI_API_KEY", "AI_CLAUDE_API_KEY", "AI_GEMINI_API_KEY", "AI_POLLINATIONS_API_KEY");
 
   /**
    * Keys that are always global (system-level). They are never scoped per-universe regardless of
@@ -154,19 +148,6 @@ public class GameSettingService {
     setting.setValue(value);
     setting.setUniverseId(finalUniverseId);
     repository.save(setting);
-  }
-
-  // ── Credentials ──────────────────────────────────────────────────────────
-
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
-  public String getNotionToken() {
-    return resolveValue(NOTION_TOKEN_KEY).orElse(null);
-  }
-
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
-  @Transactional
-  public void setNotionToken(final String token) {
-    saveInternal(NOTION_TOKEN_KEY, token);
   }
 
   // ── Gameplay settings ────────────────────────────────────────────────────

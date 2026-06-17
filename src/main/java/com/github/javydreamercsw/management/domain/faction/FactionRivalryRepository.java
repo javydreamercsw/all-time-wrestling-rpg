@@ -28,8 +28,6 @@ import org.springframework.data.repository.query.Param;
 public interface FactionRivalryRepository
     extends JpaRepository<FactionRivalry, Long>, JpaSpecificationExecutor<FactionRivalry> {
 
-  Optional<FactionRivalry> findByExternalId(String externalId);
-
   // If you don't need a total row count, Slice is better than Page.
   Page<FactionRivalry> findAllBy(Pageable pageable);
 

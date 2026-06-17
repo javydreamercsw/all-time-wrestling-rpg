@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.domain.injury;
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
@@ -34,7 +34,7 @@ import org.jspecify.annotations.Nullable;
 @Table(name = "injury")
 @Getter
 @Setter
-public class Injury extends AbstractSyncableEntity<Long> {
+public class Injury extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Getter(onMethod_ = {@Nullable})

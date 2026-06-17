@@ -45,11 +45,6 @@ public class SegmentTypeService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Optional<SegmentType> findByExternalId(@NonNull final String externalId) {
-    return segmentTypeRepository.findByExternalId(externalId);
-  }
-
-  @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.SEGMENT_TYPES_CACHE, key = "'all'")
   public List<SegmentType> findAll() {
     return segmentTypeRepository.findAll();

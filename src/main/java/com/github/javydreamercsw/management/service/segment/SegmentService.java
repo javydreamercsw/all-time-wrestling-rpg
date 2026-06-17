@@ -115,7 +115,6 @@ public class SegmentService {
    */
   public Segment toEntity(@NonNull final SegmentDTO dto) {
     Segment segment = new Segment();
-    segment.setExternalId(dto.getExternalId());
     segment.setNarration(dto.getNarration());
     // Assuming show, segmentType, participants, and winners are handled elsewhere or are not
     // directly mapped from DTO
@@ -139,10 +138,8 @@ public class SegmentService {
    */
   public SegmentDTO toDto(@NonNull final Segment segment) {
     SegmentDTO dto = new SegmentDTO();
-    dto.setExternalId(segment.getExternalId());
     dto.setName(segment.getNarration()); // Assuming narration is used as name for DTO
     dto.setShowName(segment.getShow().getName());
-    dto.setShowExternalId(segment.getShow().getExternalId());
     dto.setParticipantNames(
         segment.getParticipants().stream()
             .map(p -> p.getWrestler().getName())
@@ -546,41 +543,6 @@ public class SegmentService {
   public void deleteSegment(@NonNull final Long id) {
     segmentRepository.deleteById(id);
     log.info("Deleted match with ID: {}", id);
-  }
-
-  /**
-   * Checks if a match exists by external ID.
-   *
-   * @param externalId The external ID to check
-   * @return true if a match with the external ID exists
-   */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public boolean existsByExternalId(@NonNull final String externalId) {
-    return segmentRepository.existsByExternalId(externalId);
-  }
-
-  /**
-   * Finds a match by external ID.
-   *
-   * @param externalId The external ID to search for
-   * @return Optional containing the Segment if found
-   */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Segment> findByExternalId(@NonNull final String externalId) {
-    return segmentRepository.findByExternalId(externalId);
-  }
-
-  /**
-   * Gets all external IDs of all matches.
-   *
-   * @return List of all external IDs.
-   */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<String> getAllExternalIds() {
-    return segmentRepository.findAllExternalIds();
   }
 
   /**

@@ -82,7 +82,6 @@ public class OpenApiConfig {
             - **Faction Management**: Organize wrestlers into teams and stables
 
             ### Integration Features
-            - **Notion Sync**: Synchronize data with Notion databases
             - **Calendar Integration**: View shows and events in calendar format
             - **Statistics**: Comprehensive stats tracking and reporting
 
@@ -149,9 +148,6 @@ public class OpenApiConfig {
             .name("Rivalry System")
             .description("Wrestler relationship and heat level management"),
         new Tag().name("Factions").description("Faction management operations"),
-        new Tag()
-            .name("Notion Sync")
-            .description("Notion database synchronization and integration"),
         new Tag()
             .name("AI Services")
             .description("AI-powered features including segment narration and story generation"),

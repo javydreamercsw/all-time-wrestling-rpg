@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.domain.faction;
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -56,7 +56,7 @@ import org.jspecify.annotations.Nullable;
 @Setter
 @ToString
 @Table(name = "faction")
-public class Faction extends AbstractSyncableEntity<Long> {
+public class Faction extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Getter(onMethod_ = {@Nullable})

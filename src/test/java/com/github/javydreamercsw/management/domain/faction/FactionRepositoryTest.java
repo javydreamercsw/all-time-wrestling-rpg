@@ -54,49 +54,6 @@ class FactionRepositoryTest extends AbstractJpaTest {
     testFaction.setDescription("A test faction for unit tests");
     testFaction.setActive(true);
     testFaction.setCreationDate(Instant.now());
-    testFaction.setExternalId("notion-test-faction-123");
-  }
-
-  @Test
-  @DisplayName("Should save and find faction by external ID")
-  void shouldSaveAndFindFactionByExternalId() {
-    // Given
-    entityManager.persist(testFaction);
-    entityManager.flush();
-    Faction savedFaction = testFaction;
-
-    // When
-    Optional<Faction> foundFaction = factionRepository.findByExternalId("notion-test-faction-123");
-
-    // Then
-    assertTrue(foundFaction.isPresent());
-    assertEquals(savedFaction.getId(), foundFaction.get().getId());
-    assertEquals("Test Faction", foundFaction.get().getName());
-    assertEquals("notion-test-faction-123", foundFaction.get().getExternalId());
-  }
-
-  @Test
-  @DisplayName("Should return empty when external ID not found")
-  void shouldReturnEmptyWhenExternalIdNotFound() {
-    // Given
-    entityManager.persist(testFaction);
-    entityManager.flush();
-
-    // When
-    Optional<Faction> foundFaction = factionRepository.findByExternalId("non-existent-id");
-
-    // Then
-    assertFalse(foundFaction.isPresent());
-  }
-
-  @Test
-  @DisplayName("Should handle null external ID")
-  void shouldHandleNullExternalId() {
-    // When
-    Optional<Faction> foundFaction = factionRepository.findByExternalId(null);
-
-    // Then
-    assertFalse(foundFaction.isPresent());
   }
 
   @Test
@@ -112,7 +69,6 @@ class FactionRepositoryTest extends AbstractJpaTest {
     // Then
     assertTrue(foundFaction.isPresent());
     assertEquals("Test Faction", foundFaction.get().getName());
-    assertEquals("notion-test-faction-123", foundFaction.get().getExternalId());
   }
 
   @Test
@@ -125,48 +81,5 @@ class FactionRepositoryTest extends AbstractJpaTest {
     // When & Then
     assertTrue(factionRepository.existsByName("Test Faction"));
     assertFalse(factionRepository.existsByName("Non-existent Faction"));
-  }
-
-  @Test
-  @DisplayName("Should handle faction with external ID but no name conflicts")
-  void shouldHandleFactionWithExternalIdButNoNameConflicts() {
-    // Given
-    Faction faction1 = Faction.builder().build();
-    faction1.setName("Faction One");
-    faction1.setActive(true);
-    faction1.setCreationDate(Instant.now());
-    faction1.setExternalId("external-id-1");
-
-    Faction faction2 = Faction.builder().build();
-    faction2.setName("Faction Two");
-    faction2.setActive(true);
-    faction2.setCreationDate(Instant.now());
-    faction2.setExternalId("external-id-2");
-
-    entityManager.persist(faction1);
-    entityManager.flush();
-    entityManager.persist(faction2);
-    entityManager.flush();
-
-    // When
-    Optional<Faction> found1 = factionRepository.findByExternalId("external-id-1");
-    Optional<Faction> found2 = factionRepository.findByExternalId("external-id-2");
-
-    // Then
-    assertTrue(found1.isPresent());
-    assertTrue(found2.isPresent());
-    assertEquals("Faction One", found1.get().getName());
-    assertEquals("Faction Two", found2.get().getName());
-    assertNotEquals(found1.get().getId(), found2.get().getId());
-  }
-
-  @Test
-  @DisplayName("Should handle empty external ID string")
-  void shouldHandleEmptyExternalIdString() {
-    // When
-    Optional<Faction> foundFaction = factionRepository.findByExternalId("");
-
-    // Then
-    assertFalse(foundFaction.isPresent());
   }
 }

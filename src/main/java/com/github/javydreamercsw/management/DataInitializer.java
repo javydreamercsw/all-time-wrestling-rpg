@@ -754,7 +754,6 @@ public class DataInitializer implements Initializable {
                   dto.getName(),
                   dto.getDescription(),
                   dto.getShowTypeName(),
-                  dto.getNotionUrl(),
                   null,
                   dto.getCommentaryTeamName(),
                   dto.getExpectedMatches(),
@@ -908,10 +907,6 @@ public class DataInitializer implements Initializable {
       Map<String, Wrestler> wrestlersByName =
           wrestlerRepository.findAllWithAlignments().stream()
               .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
-      Map<String, Wrestler> wrestlersByExternalId =
-          wrestlersByName.values().stream()
-              .filter(wr -> wr.getExternalId() != null && !wr.getExternalId().isBlank())
-              .collect(Collectors.toMap(Wrestler::getExternalId, wr -> wr, (a, b) -> a));
       // Lazy NPC cache for manager lookups — populated on first use per manager name
       Map<String, Npc> npcByName = new HashMap<>();
 
@@ -932,11 +927,6 @@ public class DataInitializer implements Initializable {
 
             for (WrestlerImportDTO w : wrestlersFromFile) {
               Wrestler existingWrestler = wrestlersByName.get(w.getName());
-              if (existingWrestler == null
-                  && w.getExternalId() != null
-                  && !w.getExternalId().trim().isEmpty()) {
-                existingWrestler = wrestlersByExternalId.get(w.getExternalId().trim());
-              }
 
               Wrestler wrestlerToSave;
               if (existingWrestler != null) {
@@ -984,11 +974,6 @@ public class DataInitializer implements Initializable {
                 if (w.getSet() != null
                     && !Objects.equals(existingWrestler.getExpansionCode(), w.getSet())) {
                   existingWrestler.setExpansionCode(w.getSet());
-                  changed = true;
-                }
-                if (w.getExternalId() != null
-                    && !Objects.equals(existingWrestler.getExternalId(), w.getExternalId())) {
-                  existingWrestler.setExternalId(w.getExternalId());
                   changed = true;
                 }
                 if (w.getDrive() != null
@@ -1075,10 +1060,6 @@ public class DataInitializer implements Initializable {
                 if (w.getSet() != null) {
                   newWrestler.setExpansionCode(w.getSet());
                 }
-                // Tier recalculated after state is created in the post-save loop below
-                if (w.getExternalId() != null) {
-                  newWrestler.setExternalId(w.getExternalId());
-                }
                 // Manager is set on WrestlerState in the post-save loop below
                 if (w.getDrive() != null) {
                   newWrestler.setDrive(w.getDrive());
@@ -1130,13 +1111,7 @@ public class DataInitializer implements Initializable {
             }
 
             // Keep caches current for any subsequent wrestler files
-            toSaveBulk.forEach(
-                saved -> {
-                  wrestlersByName.put(saved.getName(), saved);
-                  if (saved.getExternalId() != null && !saved.getExternalId().isBlank()) {
-                    wrestlersByExternalId.put(saved.getExternalId(), saved);
-                  }
-                });
+            toSaveBulk.forEach(saved -> wrestlersByName.put(saved.getName(), saved));
 
             // Process states for ALL wrestlers, but only save if something actually changed.
             for (Wrestler wrestler : allWrestlers) {

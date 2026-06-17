@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.controller;
 
-import com.github.javydreamercsw.base.ai.notion.NotionApiExecutor;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationScheduler;
@@ -44,7 +43,6 @@ public abstract class AbstractControllerTest extends AbstractIntegrationTest {
   }
 
   // Infrastructure mocks still needed (e.g. for external services or scheduled tasks)
-  @MockitoBean protected NotionApiExecutor notionApiExecutor;
   @MockitoBean protected TierRecalculationScheduler tierRecalculationScheduler;
   @MockitoBean protected RankingService rankingService;
   @MockitoBean protected TierRecalculationService tierRecalculationService;

@@ -187,20 +187,6 @@ public class InjuryTypeService {
     return injuryTypeRepository.findByInjuryName(injuryName);
   }
 
-  /** Finds injury type by external ID. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<InjuryType> findByExternalId(@NonNull final String externalId) {
-    return injuryTypeRepository.findByExternalId(externalId);
-  }
-
-  /** Checks if injury type exists by external ID. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public boolean existsByExternalId(@NonNull final String externalId) {
-    return injuryTypeRepository.existsByExternalId(externalId);
-  }
-
   /** Finds all injury types ordered by severity (most severe first). */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")

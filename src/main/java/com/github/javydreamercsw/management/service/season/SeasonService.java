@@ -150,13 +150,6 @@ public class SeasonService {
     return seasonRepository.findByName(name).orElse(null);
   }
 
-  /** Find season by external ID. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Season> findByExternalId(@NonNull final String externalId) {
-    return seasonRepository.findByExternalId(externalId);
-  }
-
   /** Save a season. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(

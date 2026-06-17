@@ -57,7 +57,6 @@ class ShowTemplateControllerTest extends AbstractControllerTest {
     testTemplate.setName("Test Template");
     testTemplate.setDescription("Test Description");
     testTemplate.setShowType(testShowType);
-    testTemplate.setNotionUrl("https://notion.so/test");
     testTemplate.setCreationDate(Instant.now());
   }
 
@@ -146,10 +145,9 @@ class ShowTemplateControllerTest extends AbstractControllerTest {
     // Given
     ShowTemplateController.CreateShowTemplateRequest request =
         new ShowTemplateController.CreateShowTemplateRequest(
-            "New Template", "New Description", "PLE", "https://notion.so/new");
+            "New Template", "New Description", "PLE");
 
-    when(showTemplateService.createOrUpdateTemplate(
-            anyString(), anyString(), anyString(), anyString()))
+    when(showTemplateService.createOrUpdateTemplate(anyString(), anyString(), anyString()))
         .thenReturn(testTemplate);
 
     // When & Then
@@ -168,10 +166,9 @@ class ShowTemplateControllerTest extends AbstractControllerTest {
     // Given
     ShowTemplateController.CreateShowTemplateRequest request =
         new ShowTemplateController.CreateShowTemplateRequest(
-            "New Template", "New Description", "InvalidType", "https://notion.so/new");
+            "New Template", "New Description", "InvalidType");
 
-    when(showTemplateService.createOrUpdateTemplate(
-            anyString(), anyString(), anyString(), anyString()))
+    when(showTemplateService.createOrUpdateTemplate(anyString(), anyString(), anyString()))
         .thenReturn(null);
 
     // When & Then
@@ -189,10 +186,9 @@ class ShowTemplateControllerTest extends AbstractControllerTest {
     // Given
     ShowTemplateController.UpdateShowTemplateRequest request =
         new ShowTemplateController.UpdateShowTemplateRequest(
-            "Updated Template", "Updated Description", "PLE", "https://notion.so/updated");
+            "Updated Template", "Updated Description", "PLE");
 
-    when(showTemplateService.updateTemplate(
-            anyLong(), anyString(), anyString(), anyString(), anyString()))
+    when(showTemplateService.updateTemplate(anyLong(), anyString(), anyString(), anyString()))
         .thenReturn(Optional.of(testTemplate));
 
     // When & Then
@@ -211,10 +207,9 @@ class ShowTemplateControllerTest extends AbstractControllerTest {
     // Given
     ShowTemplateController.UpdateShowTemplateRequest request =
         new ShowTemplateController.UpdateShowTemplateRequest(
-            "Updated Template", "Updated Description", "PLE", "https://notion.so/updated");
+            "Updated Template", "Updated Description", "PLE");
 
-    when(showTemplateService.updateTemplate(
-            anyLong(), anyString(), anyString(), anyString(), anyString()))
+    when(showTemplateService.updateTemplate(anyLong(), anyString(), anyString(), anyString()))
         .thenReturn(Optional.empty());
 
     // When & Then

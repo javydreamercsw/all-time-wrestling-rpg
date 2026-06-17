@@ -57,7 +57,7 @@ class ShowTemplateControllerIT extends AbstractRestControllerIT {
 
   private ShowTemplate createTemplate(final String name) {
     ShowTemplate template =
-        showTemplateService.createOrUpdateTemplate(name, "Test description", SHOW_TYPE_NAME, null);
+        showTemplateService.createOrUpdateTemplate(name, "Test description", SHOW_TYPE_NAME);
     showTemplateRepository.flush();
     return template;
   }
@@ -116,7 +116,7 @@ class ShowTemplateControllerIT extends AbstractRestControllerIT {
   void shouldCreateShowTemplate() throws Exception {
     ShowTemplateController.CreateShowTemplateRequest request =
         new ShowTemplateController.CreateShowTemplateRequest(
-            "New Event", "New Description", SHOW_TYPE_NAME, null);
+            "New Event", "New Description", SHOW_TYPE_NAME);
 
     mockMvc
         .perform(
@@ -134,7 +134,7 @@ class ShowTemplateControllerIT extends AbstractRestControllerIT {
 
     ShowTemplateController.UpdateShowTemplateRequest request =
         new ShowTemplateController.UpdateShowTemplateRequest(
-            "Updated Raw", "Updated description", SHOW_TYPE_NAME, null);
+            "Updated Raw", "Updated description", SHOW_TYPE_NAME);
 
     mockMvc
         .perform(

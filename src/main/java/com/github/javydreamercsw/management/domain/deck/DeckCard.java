@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.deck;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import jakarta.persistence.CascadeType;
@@ -41,7 +41,7 @@ import lombok.Setter;
     uniqueConstraints = @UniqueConstraint(columnNames = {"deck_id", "card_id", "set_id"}))
 @Getter
 @Setter
-public class DeckCard extends AbstractSyncableEntity<Long> { // Removed implements Ownable
+public class DeckCard extends AbstractEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.domain.season;
 
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -40,7 +40,7 @@ import lombok.Setter;
 @Table(name = "season", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
 @Getter
 @Setter
-public class Season extends AbstractSyncableEntity<Long> {
+public class Season extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "season_id")

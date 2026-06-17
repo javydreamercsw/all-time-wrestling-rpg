@@ -63,7 +63,6 @@ class TeamDTOTest {
     team.setFaction(faction);
     team.setStatus(TeamStatus.ACTIVE);
     team.setFormedDate(formedDate);
-    team.setExternalId("notion-123");
   }
 
   @Test
@@ -85,7 +84,6 @@ class TeamDTOTest {
     assertThat(dto.getStatus()).isEqualTo(TeamStatus.ACTIVE);
     assertThat(dto.getFormedDate()).isEqualTo(formedDate.toString());
     assertThat(dto.getDisbandedDate()).isNull();
-    assertThat(dto.getExternalId()).isEqualTo("notion-123");
     assertThat(dto.getMemberNames()).containsExactly("John Cena", "The Rock");
     assertThat(dto.getDisplayName()).isEqualTo("The Cenation");
     assertThat(dto.isActive()).isTrue();
@@ -247,6 +245,5 @@ class TeamDTOTest {
     assertThat(dto.getStatus()).isEqualTo(team.getStatus());
     assertThat(dto.getFormedDate()).isEqualTo(team.getFormedDate().toString());
     assertThat(dto.getDisbandedDate()).isEqualTo(team.getDisbandedDate().toString());
-    assertThat(dto.getExternalId()).isEqualTo(team.getExternalId());
   }
 }

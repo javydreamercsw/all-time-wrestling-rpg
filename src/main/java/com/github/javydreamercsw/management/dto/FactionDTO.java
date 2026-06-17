@@ -44,6 +44,6 @@ public class FactionDTO {
   private Boolean isActive;
   private String formedDate; // ISO date format (YYYY-MM-DD)
   private String disbandedDate; // ISO date format (YYYY-MM-DD)
-  private String externalId; // External system ID (e.g., Notion page ID)
+  private String externalId;
   private int affinity;
 }

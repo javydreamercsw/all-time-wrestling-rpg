@@ -62,7 +62,6 @@ class CampaignE2ETest extends AbstractE2ETest {
       wrestlerRepository.findByName("Admin Wrestler").ifPresent(w -> wrestlerRepository.delete(w));
 
       player = Wrestler.builder().name("Admin Wrestler").account(admin).build();
-      player.setExternalId("ADMIN_WRESTLER");
       player = wrestlerRepository.saveAndFlush(player);
     } else {
       player = wrestlers.getFirst();

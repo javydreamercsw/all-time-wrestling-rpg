@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.deck;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -39,7 +39,7 @@ import lombok.Setter;
 @Table(name = "deck")
 @Getter
 @Setter
-public class Deck extends AbstractSyncableEntity<Long> { // Removed implements Ownable
+public class Deck extends AbstractEntity<Long> { // Removed implements Ownable
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "deck_id")

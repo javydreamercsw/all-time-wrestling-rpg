@@ -199,12 +199,6 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Wrestler> findByExternalId(@NonNull final String externalId) {
-    return wrestlerRepository.findByExternalId(externalId);
-  }
-
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
   @org.springframework.cache.annotation.Cacheable(
       value = CacheConfig.WRESTLERS_CACHE,
       key = "'all'")

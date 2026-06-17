@@ -75,9 +75,6 @@ public interface TitleRepository
   /** Check if any titles exist in a specific universe. */
   boolean existsByUniverse(Universe universe);
 
-  /** Find a title by its external ID (Notion page ID). */
-  Optional<Title> findByExternalId(String externalId);
-
   /** Find titles that a wrestler is eligible to challenge for. */
   @Query(
       """

@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
-import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.PersistenceContext;
@@ -28,7 +27,6 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Member;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -55,7 +53,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   private final ApplicationContext applicationContext;
   private final AccountInitializer accountInitializer;
-  private final EntityDependencyAnalyzer dependencyAnalyzer;
   private final JdbcTemplate jdbcTemplate;
   private final TransactionTemplate transactionTemplate;
   private final Environment environment;
@@ -64,7 +61,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   private Map<String, JpaRepository<?, ?>> cachedRepositories;
   private List<String> cachedSyncOrder;
-  private Set<Class<?>> cachedEntityClasses;
 
   @Override
   public void clearRepositories() {
@@ -89,15 +85,12 @@ public class DatabaseCleaner implements DatabaseCleanup {
             log.debug("✅ Discovered {} repositories", cachedRepositories.size());
           }
 
-          // 4. Get the correct synchronization/deletion order (with caching)
+          // 4. Get the correct synchronization/deletion order (with caching).
+          // Since circular dependencies are broken manually in breakCircularDependencies(),
+          // we can use any order — just derive from the discovered repositories.
           if (cachedSyncOrder == null) {
             log.debug("🔄 Calculating deletion order...");
-            cachedEntityClasses = getEntityClasses();
-            cachedSyncOrder = dependencyAnalyzer.determineSyncOrder(cachedEntityClasses);
-            // Reverse the order for deletion (delete children before parents)
-            List<String> reverseOrder = new ArrayList<>(cachedSyncOrder);
-            Collections.reverse(reverseOrder);
-            cachedSyncOrder = reverseOrder;
+            cachedSyncOrder = new ArrayList<>(cachedRepositories.keySet());
             log.debug("✅ Deletion order calculated ({} entities)", cachedSyncOrder.size());
           }
 
@@ -333,18 +326,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
     } catch (Exception e) {
       log.trace("Could not reset sequence for table {}: {}", tableName, e.getMessage());
     }
-  }
-
-  private Set<Class<?>> getEntityClasses() {
-    Set<Class<?>> entityClasses = new HashSet<>();
-    Set<jakarta.persistence.metamodel.EntityType<?>> entities =
-        entityManager.getMetamodel().getEntities();
-
-    for (jakarta.persistence.metamodel.EntityType<?> entity : entities) {
-      entityClasses.add(entity.getJavaType());
-    }
-
-    return entityClasses;
   }
 
   /**

@@ -124,23 +124,15 @@ public class TestCustomUserDetailsService implements UserDetailsService {
   private Wrestler findOrCreateWrestlerForAccount(@NonNull final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
-      return wrestlers.get(0);
+      return wrestlers.getFirst();
     }
 
-    // Check if a wrestler with the external ID already exists
-    String externalId = "wrestler-" + account.getUsername();
-    return wrestlerRepository
-        .findByExternalId(externalId)
-        .orElseGet(
-            () -> {
-              Wrestler wrestler = new Wrestler();
-              wrestler.setName(account.getUsername() + " Wrestler");
-              wrestler.setIsPlayer(true);
-              wrestler.setAccount(account);
-              wrestler.setCreationDate(clock.instant());
-              wrestler.setExternalId(externalId);
-              return wrestlerRepository.save(wrestler);
-            });
+    Wrestler wrestler = new Wrestler();
+    wrestler.setName(account.getUsername() + " Wrestler");
+    wrestler.setIsPlayer(true);
+    wrestler.setAccount(account);
+    wrestler.setCreationDate(clock.instant());
+    return wrestlerRepository.save(wrestler);
   }
 
   private static class TestCustomUserDetails extends CustomUserDetails {

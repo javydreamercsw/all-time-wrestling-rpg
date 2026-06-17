@@ -112,16 +112,6 @@ class NpcServiceTest {
   }
 
   @Test
-  void testFindByExternalId() {
-    npc.setExternalId("test-id");
-    when(npcRepository.findByExternalId("test-id")).thenReturn(Optional.of(npc));
-
-    Npc result = npcService.findByExternalId("test-id").orElse(null);
-
-    assertEquals(npc, result);
-  }
-
-  @Test
   void testFindAll_FiltersByExpansion() {
     Npc baseNpc = Npc.builder().name("Base").expansionCode("BASE_GAME").build();
     Npc rumbleNpc = Npc.builder().name("Rumble").expansionCode("RUMBLE").build();

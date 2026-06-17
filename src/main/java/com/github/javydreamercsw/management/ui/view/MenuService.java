@@ -134,8 +134,6 @@ public class MenuService {
     // Configuration: Only ADMIN
     MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
     configuration.addChild(
-        new MenuItem("Sync Dashboard", VaadinIcon.REFRESH, "notion-sync", RoleName.ADMIN));
-    configuration.addChild(
         new MenuItem("Data Transfer", VaadinIcon.EXCHANGE, "data-transfer", RoleName.ADMIN));
     configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
 

@@ -151,7 +151,7 @@ public class ShowTemplateController {
       @Valid @RequestBody final CreateShowTemplateRequest request) {
     ShowTemplate template =
         showTemplateService.createOrUpdateTemplate(
-            request.name(), request.description(), request.showTypeName(), request.notionUrl());
+            request.name(), request.description(), request.showTypeName());
 
     if (template == null) {
       return ResponseEntity.badRequest().build();
@@ -176,7 +176,7 @@ public class ShowTemplateController {
 
     Optional<ShowTemplate> updatedTemplate =
         showTemplateService.updateTemplate(
-            id, request.name(), request.description(), request.showTypeName(), request.notionUrl());
+            id, request.name(), request.description(), request.showTypeName());
 
     return updatedTemplate.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
@@ -199,12 +199,10 @@ public class ShowTemplateController {
   public record CreateShowTemplateRequest(
       @NotBlank @Size(max = 255) String name,
       @Size(max = 1000) String description,
-      @NotBlank String showTypeName,
-      @Size(max = 500) String notionUrl) {}
+      @NotBlank String showTypeName) {}
 
   public record UpdateShowTemplateRequest(
       @NotBlank @Size(max = 255) String name,
       @Size(max = 1000) String description,
-      @NotBlank String showTypeName,
-      @Size(max = 500) String notionUrl) {}
+      @NotBlank String showTypeName) {}
 }

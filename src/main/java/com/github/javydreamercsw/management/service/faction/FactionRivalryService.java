@@ -365,12 +365,6 @@ public class FactionRivalryService {
     return factionRivalryRepository.findRivalriesWithMostWrestlers(Pageable.ofSize(limit));
   }
 
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<FactionRivalry> findByExternalId(@NonNull final String externalId) {
-    return factionRivalryRepository.findByExternalId(externalId);
-  }
-
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public FactionRivalry save(@NonNull final FactionRivalry rivalry) {
     return factionRivalryRepository.saveAndFlush(rivalry);
