@@ -17,14 +17,12 @@
 package com.github.javydreamercsw.management.service.tutorial;
 
 import com.github.javydreamercsw.base.domain.account.Account;
-import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.domain.league.DraftPickRepository;
 import com.github.javydreamercsw.management.domain.league.DraftRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
-import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.service.universe.InviteService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -38,7 +36,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class LeagueTutorialDefinition implements TutorialDefinition {
 
-  private final AccountService accountService;
   private final LeagueService leagueService;
   private final LeagueMembershipRepository leagueMembershipRepository;
   private final DraftRepository draftRepository;
@@ -123,10 +120,8 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
 
       @Override
       public void beforeStep(final Account account) {
-        // Elevate to BOOKER so the player can manage the league.
-        // Universe-scoped operations (invites, join requests) are gated by OWNER membership,
-        // which is already set when the tutorial universe is created.
         // Seed a tutorial league owned by the player as commissioner (idempotent).
+        // OWNER universe membership satisfies all universe-scoped service checks.
         boolean alreadyCommissioner =
             leagueMembershipRepository.findByMember(account).stream()
                 .anyMatch(
@@ -301,12 +296,6 @@ public class LeagueTutorialDefinition implements TutorialDefinition {
         return hasPick
             ? null
             : "You haven't made a pick yet. Go to the Draft page and select a wrestler.";
-      }
-
-      @Override
-      public void afterStep(final Account account) {
-        // Idempotent — ensures commissioner retains BOOKER after tutorial completes.
-        accountService.grantRole(account, RoleName.BOOKER);
       }
     };
   }

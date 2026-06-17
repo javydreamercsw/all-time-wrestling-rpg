@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseInvite;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
-import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.service.universe.InviteService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -45,7 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class LeagueTutorialDefinitionTest {
 
-  @Mock private AccountService accountService;
   @Mock private LeagueService leagueService;
   @Mock private LeagueMembershipRepository leagueMembershipRepository;
   @Mock private DraftRepository draftRepository;
@@ -62,7 +60,6 @@ class LeagueTutorialDefinitionTest {
   void setUp() {
     definition =
         new LeagueTutorialDefinition(
-            accountService,
             leagueService,
             leagueMembershipRepository,
             draftRepository,
