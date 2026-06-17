@@ -1,0 +1,13 @@
+coverage:
+  status:
+    project:
+      default:
+        # Allow up to 15% drop for backend-only PRs where docs-e2e tests are
+        # skipped (ui_changed == false). The merged coverage report omits the
+        # jacoco-docs-e2e-exec artifact in those cases, which legitimately
+        # reduces total coverage without reflecting code quality changes.
+        threshold: 15%
+    patch:
+      default:
+        # New code must maintain the project baseline coverage.
+        target: auto
