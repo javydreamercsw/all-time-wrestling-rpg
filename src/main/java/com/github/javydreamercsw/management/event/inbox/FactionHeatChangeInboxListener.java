@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -61,11 +62,17 @@ public class FactionHeatChangeInboxListener implements ApplicationListener<Facti
                 event.getNewHeat(),
                 event.getReason());
 
-    inboxService.createInboxItem(
-        factionHeatChange,
-        message,
-        event.getFactionRivalryId().toString(),
-        InboxItemTarget.TargetType.FACTION);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            factionHeatChange,
+            "Faction Rivalry Heat Change",
+            message,
+            InboxItem.Urgency.INFO,
+            event.getFactionRivalryId().toString(),
+            InboxItemTarget.TargetType.FACTION);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload("{\"route\":\"faction-list\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

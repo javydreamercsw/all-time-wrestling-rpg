@@ -22,7 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.github.javydreamercsw.management.controller.AbstractRestControllerIT;
-import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +42,6 @@ class CampaignControllerIT extends AbstractRestControllerIT {
   @Autowired private CampaignUpgradeService upgradeService;
 
   private Wrestler testWrestler;
-  private Campaign testCampaign;
 
   @BeforeEach
   public void setUp() {
@@ -54,7 +52,7 @@ class CampaignControllerIT extends AbstractRestControllerIT {
             .build();
 
     testWrestler = createTestWrestler("Campaign IT Wrestler");
-    testCampaign = campaignService.startCampaign(testWrestler);
+    campaignService.startCampaign(testWrestler);
   }
 
   // -------------------------------------------------------------------------

@@ -87,7 +87,6 @@ class FactionErrorHandlingTest {
               factionService,
               wrestlerService,
               npcService,
-              wrestlerRepository,
               securityUtils,
               universeContextService,
               imageStorageService);
@@ -114,7 +113,6 @@ class FactionErrorHandlingTest {
                   factionService,
                   wrestlerService,
                   npcService,
-                  wrestlerRepository,
                   securityUtils,
                   universeContextService,
                   imageStorageService);
@@ -133,7 +131,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);
@@ -164,7 +161,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);
@@ -197,7 +193,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);
@@ -228,7 +223,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);
@@ -288,7 +282,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);
@@ -315,7 +308,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);
@@ -369,7 +361,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);
@@ -393,7 +384,6 @@ class FactionErrorHandlingTest {
               factionService,
               wrestlerService,
               npcService,
-              wrestlerRepository,
               securityUtils,
               universeContextService,
               imageStorageService);
@@ -416,7 +406,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);
@@ -448,7 +437,6 @@ class FactionErrorHandlingTest {
             factionService,
             wrestlerService,
             npcService,
-            wrestlerRepository,
             securityUtils,
             universeContextService,
             imageStorageService);

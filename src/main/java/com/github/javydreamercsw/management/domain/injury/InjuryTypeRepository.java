@@ -33,12 +33,6 @@ public interface InjuryTypeRepository extends JpaRepository<InjuryType, Long> {
   /** Find injury type by name. */
   Optional<InjuryType> findByInjuryName(String injuryName);
 
-  /** Find injury type by external ID (e.g., Notion page ID). */
-  Optional<InjuryType> findByExternalId(String externalId);
-
-  /** Check if injury type exists by external ID. */
-  boolean existsByExternalId(String externalId);
-
   /** Check if injury type exists by name. */
   boolean existsByInjuryName(String injuryName);
 

@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 
@@ -59,52 +58,6 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
       log.info("No security context found, logging in as default admin...");
       accountRepository.findByUsername("admin").ifPresent(this::login);
-    }
-  }
-
-  /** Refreshes the current security context by re-loading the authenticated user from the DB. */
-  protected void refreshSecurityContext() {
-    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-    if (currentAuth == null) {
-      return;
-    }
-
-    final String username;
-    if (currentAuth.getPrincipal() instanceof Account accountPrincipal) {
-      username = accountPrincipal.getUsername();
-    } else if (currentAuth.getPrincipal() instanceof CustomUserDetails userDetails) {
-      username = userDetails.getUsername();
-    } else if (currentAuth.getPrincipal()
-        instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-      username = userDetails.getUsername();
-    } else {
-      username = null;
-    }
-
-    if (username != null) {
-      accountRepository
-          .findByUsername(username)
-          .ifPresentOrElse(
-              refreshedAccount -> {
-                log.info(
-                    "Refreshing security context for user: {}", refreshedAccount.getUsername());
-
-                // Force reload of wrestler if available
-                Wrestler wrestler = null;
-                if (refreshedAccount.getActiveWrestlerId() != null) {
-                  wrestler =
-                      wrestlerRepository
-                          .findById(refreshedAccount.getActiveWrestlerId())
-                          .orElse(null);
-                }
-
-                // Re-login to refresh the principal and authorities with persistent entities
-                login(refreshedAccount);
-              },
-              () -> {
-                log.warn("Account not found during refresh: {}, clearing context", username);
-                clearSecurityContext();
-              });
     }
   }
 

@@ -237,7 +237,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
 
     // 1. Navigate to Player Dashboard
     navigateTo("player");
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     assertDoesNotThrow(
         () -> {
@@ -324,7 +324,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
 
     login("player", "player123");
     navigateTo("player");
-    waitForVaadinToLoad(driver);
+    waitForVaadinToLoad();
 
     assertDoesNotThrow(
         () -> {

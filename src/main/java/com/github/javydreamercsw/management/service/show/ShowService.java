@@ -136,8 +136,30 @@ public class ShowService {
     return showRepository.count();
   }
 
+  @PreAuthorize("isAuthenticated()")
+  public boolean existsAnyShow() {
+    return showRepository.count() > 0;
+  }
+
+  /** Returns true when at least one show with at least one segment exists. Avoids lazy loading. */
+  @PreAuthorize("isAuthenticated()")
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  public boolean existsShowWithSegments() {
+    return showRepository.countShowsWithAtLeastOneSegment() > 0;
+  }
+
+  /** Returns true when at least one segment has been adjudicated. Avoids lazy loading. */
+  @PreAuthorize("isAuthenticated()")
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  public boolean existsAdjudicatedSegment() {
+    return segmentRepository.countByAdjudicationStatus(
+            com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED)
+        > 0;
+  }
+
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Show save(@NonNull final Show show) {
     show.setCreationDate(clock.instant());
     return showRepository.saveAndFlush(show);
@@ -167,21 +189,6 @@ public class ShowService {
   @PreAuthorize("isAuthenticated()")
   public boolean existsByNameAndShowDate(final String name, final LocalDate showDate) {
     return showRepository.findByNameAndShowDate(name, showDate).isPresent();
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Show> findByExternalId(final String externalId) {
-    return showRepository.findByExternalId(externalId);
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public List<String> getAllExternalIds() {
-    return showRepository.findAllExternalIds();
-  }
-
-  @PreAuthorize("isAuthenticated()")
-  public List<Show> findAllByExternalId(final List<String> externalIds) {
-    return showRepository.findAllByExternalIdIn(externalIds);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -244,7 +251,8 @@ public class ShowService {
   }
 
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
@@ -327,7 +335,8 @@ public class ShowService {
   }
 
   @PreAuthorize(
-      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
       value = {
         com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,

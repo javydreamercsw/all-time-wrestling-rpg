@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.npc;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import jakarta.persistence.Column;
@@ -42,7 +42,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class Npc extends AbstractSyncableEntity<Long> {
+public class Npc extends AbstractEntity<Long> {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

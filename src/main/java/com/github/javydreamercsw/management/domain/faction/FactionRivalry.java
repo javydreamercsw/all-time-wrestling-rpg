@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.domain.faction;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -38,7 +38,7 @@ import org.jspecify.annotations.Nullable;
     uniqueConstraints = @UniqueConstraint(columnNames = {"faction1_id", "faction2_id"}))
 @Getter
 @Setter
-public class FactionRivalry extends AbstractSyncableEntity<Long> {
+public class FactionRivalry extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Getter(onMethod_ = {@Nullable})
@@ -105,19 +105,9 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
     heatEvents.add(event);
   }
 
-  /** Check if factions must have segments at next show (10+ heat). */
-  public boolean mustHaveSegmentsNextShow() {
-    return isActive && heat >= 10;
-  }
-
   /** Check if rivalry can be resolved with a roll (20+ heat). */
   public boolean canAttemptResolution() {
     return isActive && heat >= 20;
-  }
-
-  /** Check if rivalry requires rule segment (30+ heat). */
-  public boolean requiresStipulationSegment() {
-    return isActive && heat >= 30;
   }
 
   /**
@@ -169,21 +159,6 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
     heatEvents.add(event);
   }
 
-  /** Get the opposing faction in the rivalry. */
-  public Faction getOpponent(final Faction faction) {
-    if (faction.equals(faction1)) {
-      return faction2;
-    } else if (faction.equals(faction2)) {
-      return faction1;
-    }
-    throw new IllegalArgumentException("Faction is not part of this rivalry");
-  }
-
-  /** Check if a faction is involved in this rivalry. */
-  public boolean involvesFaction(final Faction faction) {
-    return faction.equals(faction1) || faction.equals(faction2);
-  }
-
   /** Get rivalry intensity level based on heat. */
   public RivalryIntensity getIntensity() {
     if (heat < 10) {
@@ -207,16 +182,6 @@ public class FactionRivalry extends AbstractSyncableEntity<Long> {
   /** Get display name for this rivalry. */
   public String getDisplayName() {
     return faction1.getName() + " vs " + faction2.getName();
-  }
-
-  /** Get rivalry summary with heat and intensity. */
-  public String getRivalrySummary() {
-    return "%s (%d heat - %s)".formatted(getDisplayName(), heat, getIntensity().getDisplayName());
-  }
-
-  /** Check if both factions are still active. */
-  public boolean areBothFactionsActive() {
-    return faction1.isActive() && faction2.isActive();
   }
 
   /** Get total number of wrestlers involved in this rivalry. */

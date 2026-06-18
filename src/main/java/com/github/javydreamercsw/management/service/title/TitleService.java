@@ -44,6 +44,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -132,11 +133,6 @@ public class TitleService {
     return titleRepository.findByName(name);
   }
 
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Title> findByExternalId(@NonNull final String externalId) {
-    return titleRepository.findByExternalId(externalId);
-  }
-
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(
@@ -222,8 +218,13 @@ public class TitleService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
+  @Transactional
   public void awardTitleTo(@NonNull final Title title, @NonNull final List<Wrestler> newChampions) {
-    awardTitleTo(title, newChampions, null);
+    // Reload from DB so titleReigns lazy collection is accessible within the transaction.
+    Title managed =
+        title.getId() != null ? titleRepository.findById(title.getId()).orElse(title) : title;
+    managed.awardTitleTo(newChampions, Instant.now(clock), null);
+    titleRepository.save(managed);
   }
 
   @PreAuthorize(
@@ -231,12 +232,16 @@ public class TitleService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
+  @Transactional
   public void awardTitleTo(
       @NonNull final Title title,
       @NonNull final List<Wrestler> newChampions,
       final com.github.javydreamercsw.management.domain.show.segment.Segment wonAtSegment) {
-    title.awardTitleTo(newChampions, Instant.now(clock), wonAtSegment);
-    titleRepository.save(title);
+    // Reload from DB so titleReigns lazy collection is accessible within the transaction.
+    Title managed =
+        title.getId() != null ? titleRepository.findById(title.getId()).orElse(title) : title;
+    managed.awardTitleTo(newChampions, Instant.now(clock), wonAtSegment);
+    titleRepository.save(managed);
   }
 
   @PreAuthorize(
@@ -244,6 +249,7 @@ public class TitleService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       allEntries = true)
+  @Transactional
   public Optional<Title> vacateTitle(@NonNull final Long titleId) {
     return titleRepository
         .findById(titleId)

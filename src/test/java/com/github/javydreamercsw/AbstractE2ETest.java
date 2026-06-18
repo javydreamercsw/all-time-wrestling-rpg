@@ -55,7 +55,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
-import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -211,38 +210,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (Objects.requireNonNull(driver.getCurrentUrl()).endsWith("/login")) {
       driver.get("http://localhost:" + serverPort + getContextPath());
     }
-  }
-
-  /** Waits for the server to respond with 200 OK on the root URL. */
-  protected void waitForServerToBeReady() {
-    int maxAttempts = 300;
-    int attempt = 0;
-    while (attempt < maxAttempts) {
-      try {
-        java.net.URL url =
-            new java.net.URL("http://localhost:" + serverPort + getContextPath() + "/health");
-        java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-        connection.setConnectTimeout(1000);
-        connection.setReadTimeout(1000);
-        int responseCode = connection.getResponseCode();
-        log.info("Server readiness check (attempt {}): HTTP {}", attempt + 1, responseCode);
-        if (responseCode == 200) {
-          return;
-        }
-      } catch (Exception e) {
-        log.info("Server readiness check (attempt {}): {}", attempt + 1, e.getMessage());
-      }
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException ignored) {
-      }
-      attempt++;
-    }
-    throw new RuntimeException(
-        "Server did not start within timeout. "
-            + "Please check if the server is running on port "
-            + serverPort);
   }
 
   protected String getContextPath() {
@@ -506,12 +473,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
             + serverPort);
   }
 
-  /**
-   * Waits for the Vaadin components to load and become idle.
-   *
-   * @param driver the WebDriver instance
-   */
-  protected void waitForVaadinToLoad(@NonNull WebDriver driver) {
+  /** Waits for the Vaadin components to load and become idle. */
+  protected void waitForVaadinToLoad() {
     waitForVaadinClientToLoad();
   }
 
@@ -590,15 +553,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     } catch (Exception ignored) {
       // Non-critical; proceed even if rAF is unavailable
     }
-  }
-
-  protected void waitForVaadin(@NonNull final Duration timeout) {
-    new WebDriverWait(driver, timeout)
-        .until(
-            d ->
-                (Boolean)
-                    ((JavascriptExecutor) d)
-                        .executeScript("return window.Vaadin.Flow.clients.isActive() === false;"));
   }
 
   protected String getUsername() {
@@ -952,14 +906,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return grid.findElements(By.cssSelector("vaadin-grid-cell-content"));
   }
 
-  protected String getColumnData(@NonNull final WebElement row, final int colIndex) {
-    List<WebElement> cells = row.findElements(By.tagName("vaadin-grid-cell-content"));
-    if (colIndex < cells.size()) {
-      return cells.get(colIndex).getText();
-    }
-    return "";
-  }
-
   @SuppressWarnings("unchecked")
   protected List<String> getGridColumnData(@NonNull final WebElement grid, final int colIndex) {
     return (List<String>)
@@ -1118,26 +1064,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
-  protected void takeElementScreenshot(
-      @NonNull final WebElement element, @NonNull final String filePath) {
-    File scrFile = element.getScreenshotAs(OutputType.FILE);
-    try {
-      FileUtils.copyFile(scrFile, new File(filePath));
-      log.info("Screenshot saved to: {}", filePath);
-    } catch (IOException e) {
-      log.error("Failed to save screenshot to: {}", filePath, e);
-    }
-  }
-
-  protected void savePageSource(@NonNull final String filePath) {
-    try {
-      FileUtils.writeStringToFile(new File(filePath), driver.getPageSource(), "UTF-8");
-      log.info("Page source saved to: {}", filePath);
-    } catch (IOException e) {
-      log.error("Failed to save page source to: {}", filePath, e);
-    }
-  }
-
   protected void navigateTo(@NonNull final String route) {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
     waitForVaadinClientToLoad();
@@ -1170,33 +1096,6 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     field.sendKeys(selectAll);
     field.sendKeys(Keys.BACK_SPACE);
     takeSequencedScreenshot("after-clear");
-  }
-
-  protected String getVaadinTextFieldErrorMessage(@NonNull final String textFieldId) {
-    WebElement textFieldElement = driver.findElement(By.id(textFieldId));
-
-    // Check if the field is invalid
-    Boolean isInvalid =
-        (Boolean)
-            ((JavascriptExecutor) driver)
-                .executeScript("return arguments[0].hasAttribute('invalid');", textFieldElement);
-
-    if (Boolean.TRUE.equals(isInvalid)) {
-      // Access the shadow root of the vaadin-text-field
-      SearchContext shadowRoot = textFieldElement.getShadowRoot();
-
-      // Find the error message element within the shadow root
-      List<WebElement> errorMessageElements =
-          shadowRoot.findElements(By.cssSelector("[part='error-message']"));
-
-      if (!errorMessageElements.isEmpty()) {
-        WebElement errorMessageElement = errorMessageElements.getFirst();
-        if (errorMessageElement.isDisplayed()) {
-          return errorMessageElement.getText();
-        }
-      }
-    }
-    return null; // Or throw an exception if the field is not invalid
   }
 
   protected void waitForPageSourceToContain(@NonNull final String text) {

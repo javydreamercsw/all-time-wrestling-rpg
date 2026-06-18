@@ -128,38 +128,6 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
   }
 
   @Test
-  void testFindByExternalId() {
-    Wrestler wrestler = Wrestler.builder().build();
-    wrestler.setName("External Wrestler");
-    wrestler.setExternalId("ext-123");
-    wrestler.setDeckSize(15);
-    wrestler.setLowHealth(0);
-    wrestler.setLowStamina(0);
-    wrestler.setStartingHealth(15);
-    wrestler.setStartingStamina(0);
-    wrestler.setCreationDate(java.time.Instant.now());
-    wrestler.setIsPlayer(true);
-    wrestler.setGender(Gender.MALE);
-    wrestler = wrestlerRepository.save(wrestler);
-
-    WrestlerState state =
-        WrestlerState.builder()
-            .wrestler(wrestler)
-            .universe(defaultUniverse)
-            .fans(100L)
-            .tier(WrestlerTier.ROOKIE)
-            .bumps(0)
-            .currentHealth(15)
-            .build();
-    state = wrestlerStateRepository.save(state);
-    wrestler.getWrestlerStates().add(state);
-
-    Optional<Wrestler> found = wrestlerRepository.findByExternalId("ext-123");
-    assertThat(found).isPresent();
-    assertThat(found.get().getName()).isEqualTo("External Wrestler");
-  }
-
-  @Test
   void testFindByNameWithFaction() {
     Faction faction = Faction.builder().name("Test Faction").affinity(50).isActive(true).build();
     faction = factionRepository.save(faction);

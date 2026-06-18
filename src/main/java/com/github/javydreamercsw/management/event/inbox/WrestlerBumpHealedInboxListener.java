@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -52,12 +53,19 @@ public class WrestlerBumpHealedInboxListener
   public void onApplicationEvent(@NonNull final WrestlerBumpHealedEvent event) {
     log.debug(
         "Received WrestlerBumpHealedEvent for wrestler: {}", event.getWrestlerState().getName());
-    inboxService.createInboxItem(
-        wrestlerBumpHealed,
-        "Wrestler %s's bumps have healed. New total: %d"
-            .formatted(event.getWrestlerState().getName(), event.getWrestlerState().getBumps()),
-        event.getWrestlerState().getWrestler().getId().toString(),
-        InboxItemTarget.TargetType.WRESTLER);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            wrestlerBumpHealed,
+            "Bump Healed: " + event.getWrestlerState().getName(),
+            "Wrestler %s's bumps have healed. New total: %d"
+                .formatted(event.getWrestlerState().getName(), event.getWrestlerState().getBumps()),
+            InboxItem.Urgency.INFO,
+            event.getWrestlerState().getWrestler().getId().toString(),
+            InboxItemTarget.TargetType.WRESTLER);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload(
+        "{\"route\":\"wrestler-profile/" + event.getWrestlerState().getWrestler().getId() + "\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

@@ -35,8 +35,6 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
 
   List<Show> findByName(String name);
 
-  Optional<Show> findByExternalId(String externalId);
-
   Optional<Show> findByNameAndShowDate(String name, LocalDate showDate);
 
   boolean existsByUniverse(Universe universe);
@@ -113,15 +111,6 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
       """)
   List<Show> findAllWithRelationships();
 
-  /** Find all external IDs. */
-  @Query("SELECT s.externalId FROM Show s WHERE s.externalId IS NOT NULL")
-  List<String> findAllExternalIds();
-
-  List<Show> findAllByExternalIdIn(List<String> externalIds);
-
-  @Query("SELECT MAX(s.lastSync) FROM Show s WHERE s.lastSync IS NOT NULL")
-  Optional<java.time.Instant> findMaxLastSync();
-
   @Query(
       value =
           """
@@ -158,4 +147,7 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
       """)
   Optional<Show> findByIdWithArenaAndLocation(
       @org.springframework.data.repository.query.Param("id") Long id);
+
+  @Query("SELECT COUNT(DISTINCT s) FROM Show s JOIN s.segments seg")
+  long countShowsWithAtLeastOneSegment();
 }

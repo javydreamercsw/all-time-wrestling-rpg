@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -176,6 +177,33 @@ public class AccountService {
         .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
   }
 
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+  public void grantRole(@NonNull final Account account, @NonNull final RoleName roleName) {
+    Role role = getRole(roleName);
+    Account reloaded =
+        accountRepository
+            .findById(account.getId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Account not found: " + account.getUsername()));
+    reloaded.getRoles().add(role);
+    accountRepository.save(reloaded);
+    log.info("[AUDIT] Role {} granted to account {}", roleName, account.getUsername());
+
+    // Refresh the SecurityContext so the new role is visible in the current session immediately,
+    // without requiring a logout/login cycle.
+    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+    if (currentAuth != null
+        && currentAuth.getPrincipal() instanceof CustomUserDetails details
+        && details.getId() != null
+        && details.getId().equals(account.getId())) {
+      CustomUserDetails refreshed = new CustomUserDetails(reloaded);
+      Authentication newAuth =
+          new UsernamePasswordAuthenticationToken(
+              refreshed, currentAuth.getCredentials(), refreshed.getAuthorities());
+      SecurityContextHolder.getContext().setAuthentication(newAuth);
+    }
+  }
+
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public Account setLockExpiredAndSave(final Account account) {
     Account reloadedAccount =
@@ -227,6 +255,19 @@ public class AccountService {
             .orElseThrow(() -> new IllegalArgumentException("Account not found."));
     account.setActiveWrestlerId(wrestlerId);
     Account saved = accountRepository.save(account);
+
+    // Ensure the wrestler is linked back to this account so findByAccountId queries work.
+    // This matters for wrestlers created without an account (e.g. tutorial-seeded wrestlers).
+    if (wrestlerId != null) {
+      wrestlerRepository
+          .findById(wrestlerId)
+          .filter(w -> !saved.equals(w.getAccount()))
+          .ifPresent(
+              w -> {
+                w.setAccount(saved);
+                wrestlerRepository.save(w);
+              });
+    }
 
     // Refresh SecurityContext so the in-memory CustomUserDetails reflects the new active wrestler
     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();

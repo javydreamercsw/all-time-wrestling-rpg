@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -60,7 +61,9 @@ public class AchievementInboxListener implements ApplicationListener<Achievement
 
     inboxService.createInboxItem(
         achievementUnlocked,
+        "Achievement Unlocked: " + event.getAchievementName(),
         message,
+        InboxItem.Urgency.INFO,
         event.getAccountId().toString(),
         InboxItemTarget.TargetType.ACCOUNT);
 

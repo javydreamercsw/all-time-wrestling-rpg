@@ -25,13 +25,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface RivalryRepository
     extends JpaRepository<Rivalry, Long>, JpaSpecificationExecutor<Rivalry> {
-
-  Optional<Rivalry> findByExternalId(String externalId);
 
   List<Rivalry> findByUniverse(Universe universe);
 
@@ -142,4 +142,9 @@ public interface RivalryRepository
        WHERE r.wrestler1 = :wrestler OR r.wrestler2 = :wrestler\
       """)
   List<Rivalry> findAllForWrestler(@Param("wrestler") Wrestler wrestler);
+
+  @Transactional
+  @Modifying(clearAutomatically = true)
+  @Query("DELETE FROM Rivalry r WHERE r.universe = :universe")
+  void deleteByUniverse(@Param("universe") Universe universe);
 }

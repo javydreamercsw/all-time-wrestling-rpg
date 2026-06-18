@@ -51,7 +51,6 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
                       "Weekly",
                       null,
                       null,
-                      null,
                       5,
                       3,
                       1,

@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.Application;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.config.TestSecurityContextConfig;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
@@ -31,7 +30,6 @@ import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.DatabaseCleanup;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
-import com.github.javydreamercsw.management.config.TestNotionConfiguration;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
@@ -105,7 +103,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -132,7 +129,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @SpringBootTest(classes = Application.class)
 @Slf4j
 @ActiveProfiles("test")
-@Import({TestAIConfiguration.class, TestNotionConfiguration.class, TestSecurityContextConfig.class})
+@Import({TestAIConfiguration.class, TestSecurityContextConfig.class})
 @WithMockUser(
     username = "admin",
     roles = {"ADMIN", "SYSTEM", "BOOKER", "PLAYER", "VIEWER"})
@@ -145,15 +142,6 @@ public abstract class AbstractIntegrationTest {
 
   @MockitoBean protected VaadinDefaultRequestCache vaadinDefaultRequestCache;
   @MockitoBean protected RequestUtil requestUtil;
-
-  /**
-   * The shared NotionHandler mock provided by TestNotionConfiguration. Injected here so it can be
-   * reset before each test, preventing stub state from leaking across test classes that share the
-   * same Spring context. When a test class uses @MockitoBean NotionHandler, that bean replaces this
-   * one and is already reset automatically by Spring Boot's MockitoResetTestExecutionListener.
-   */
-  @Autowired(required = false)
-  protected NotionHandler sharedNotionHandlerMock;
 
   @Autowired protected AuthenticationContext authenticationContext;
   @Autowired protected ApplicationContext applicationContext;
@@ -264,14 +252,6 @@ public abstract class AbstractIntegrationTest {
   @BeforeEach
   public void baseSetUp() {
     log.debug("AbstractIntegrationTest.baseSetUp() called for {}", this.getClass().getSimpleName());
-
-    // Reset the shared NotionHandler mock so stub state does not leak across test classes that
-    // share the same Spring context. @MockitoBean tests manage their own mock lifecycle and are
-    // unaffected — Mockito.reset() on an already-fresh mock is a no-op.
-    if (sharedNotionHandlerMock != null
-        && Mockito.mockingDetails(sharedNotionHandlerMock).isMock()) {
-      Mockito.reset(sharedNotionHandlerMock);
-    }
 
     // 1. Capture original authentication
     Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
@@ -546,17 +526,17 @@ public abstract class AbstractIntegrationTest {
       }
 
       if (principalName != null) {
-        // Re-create the account if missing (e.g. after wipe)
         final String finalName = principalName;
+        final Collection<? extends GrantedAuthority> authorities = currentAuth.getAuthorities();
         accountRepository
             .findByUsername(finalName)
-            .orElseGet(
+            .ifPresentOrElse(
+                savedAccount -> login(savedAccount, authorities),
                 () -> {
-                  log.info("Re-creating missing account '{}' after database wipe...", finalName);
-                  Account a = new Account(finalName, "password", finalName + "@test.com");
-                  // Give it some default roles based on authorities if possible, or just ROLE_USER
-                  return accountRepository.saveAndFlush(a);
+                  log.info("Account '{}' not found - clearing security context", finalName);
+                  clearSecurityContext();
                 });
+        return;
       }
 
       login(currentAuth.getPrincipal(), currentAuth.getAuthorities());

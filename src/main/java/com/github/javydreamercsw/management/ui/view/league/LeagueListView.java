@@ -20,11 +20,14 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.league.LeagueService;
+import com.github.javydreamercsw.management.service.universe.InviteService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.universe.InviteManagementDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -54,6 +57,8 @@ public class LeagueListView extends Main {
   private final WrestlerRepository wrestlerRepository;
   private final LeagueMembershipRepository leagueMembershipRepository;
   private final UniverseContextService universeContextService;
+  private final UniverseRepository universeRepository;
+  private final InviteService inviteService;
   private final Grid<League> leagueGrid;
 
   public LeagueListView(
@@ -62,13 +67,17 @@ public class LeagueListView extends Main {
       @NonNull final SecurityUtils securityUtils,
       @NonNull final WrestlerRepository wrestlerRepository,
       @NonNull final LeagueMembershipRepository leagueMembershipRepository,
-      @NonNull final UniverseContextService universeContextService) {
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final UniverseRepository universeRepository,
+      @NonNull final InviteService inviteService) {
     this.leagueService = leagueService;
     this.accountService = accountService;
     this.securityUtils = securityUtils;
     this.wrestlerRepository = wrestlerRepository;
     this.leagueMembershipRepository = leagueMembershipRepository;
     this.universeContextService = universeContextService;
+    this.universeRepository = universeRepository;
+    this.inviteService = inviteService;
     this.leagueGrid = new Grid<>(League.class, false);
     this.leagueGrid.setId("league-grid");
 
@@ -139,6 +148,29 @@ public class LeagueListView extends Main {
                       .orElse(false);
 
               if (isComm || securityUtils.isAdmin()) {
+                if (league.getUniverse() != null) {
+                  Button inviteBtn = new Button(new Icon(VaadinIcon.LINK));
+                  inviteBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+                  inviteBtn.setTooltipText("Invite Players");
+                  inviteBtn.setId("invite-league-" + league.getId());
+                  inviteBtn.addClickListener(
+                      e ->
+                          securityUtils
+                              .getAuthenticatedUser()
+                              .ifPresent(
+                                  u ->
+                                      universeRepository
+                                          .findById(league.getUniverse().getId())
+                                          .ifPresent(
+                                              fullUniverse ->
+                                                  new InviteManagementDialog(
+                                                          fullUniverse,
+                                                          inviteService,
+                                                          u.getAccount())
+                                                      .open())));
+                  actions.add(inviteBtn);
+                }
+
                 Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
                 editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
                 editBtn.setTooltipText("Edit League");
@@ -160,6 +192,7 @@ public class LeagueListView extends Main {
               return actions;
             })
         .setHeader("Actions")
+        .setKey("actions")
         .setFlexGrow(1);
 
     leagueGrid.setSizeFull();
@@ -176,6 +209,7 @@ public class LeagueListView extends Main {
                       securityUtils,
                       wrestlerRepository,
                       leagueMembershipRepository,
+                      universeRepository,
                       fullyLoaded,
                       this::reloadGrid)
                   .open();

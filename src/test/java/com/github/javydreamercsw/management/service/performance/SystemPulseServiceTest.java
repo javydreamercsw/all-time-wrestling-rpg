@@ -20,28 +20,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
-import com.github.javydreamercsw.management.service.sync.SyncHealthMonitor;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.boot.health.contributor.Health;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SystemPulseServiceTest {
 
   @Mock private SegmentNarrationService narrationService;
-  @Mock private SyncHealthMonitor syncHealthMonitor;
 
   @Test
-  void getPulse_noServices_noSyncMonitor_returnsEmptyMap() {
-    SystemPulseService service = new SystemPulseService(List.of(), Optional.empty());
+  void getPulse_noServices_returnsEmptyMap() {
+    SystemPulseService service = new SystemPulseService(List.of());
 
     Map<String, SystemPulseService.ServiceStatus> pulse = service.getPulse();
 
@@ -53,8 +49,7 @@ class SystemPulseServiceTest {
     when(narrationService.getProviderName()).thenReturn("OpenAI");
     when(narrationService.isAvailable()).thenReturn(true);
 
-    SystemPulseService service =
-        new SystemPulseService(List.of(narrationService), Optional.empty());
+    SystemPulseService service = new SystemPulseService(List.of(narrationService));
 
     Map<String, SystemPulseService.ServiceStatus> pulse = service.getPulse();
 
@@ -67,8 +62,7 @@ class SystemPulseServiceTest {
     when(narrationService.getProviderName()).thenReturn("Claude");
     when(narrationService.isAvailable()).thenReturn(false);
 
-    SystemPulseService service =
-        new SystemPulseService(List.of(narrationService), Optional.empty());
+    SystemPulseService service = new SystemPulseService(List.of(narrationService));
 
     Map<String, SystemPulseService.ServiceStatus> pulse = service.getPulse();
 
@@ -86,39 +80,12 @@ class SystemPulseServiceTest {
     when(claudeService.getProviderName()).thenReturn("Claude");
     when(claudeService.isAvailable()).thenReturn(false);
 
-    SystemPulseService service =
-        new SystemPulseService(List.of(openAiService, claudeService), Optional.empty());
+    SystemPulseService service = new SystemPulseService(List.of(openAiService, claudeService));
 
     Map<String, SystemPulseService.ServiceStatus> pulse = service.getPulse();
 
     assertThat(pulse).hasSize(2);
     assertThat(pulse.get("OpenAI").status()).isEqualTo("UP");
     assertThat(pulse.get("Claude").status()).isEqualTo("DOWN");
-  }
-
-  @Test
-  void getPulse_withSyncMonitor_includesNotionSyncStatus() {
-    Health upHealth = Health.up().withDetail("message", "Sync is healthy").build();
-    when(syncHealthMonitor.health()).thenReturn(upHealth);
-
-    SystemPulseService service = new SystemPulseService(List.of(), Optional.of(syncHealthMonitor));
-
-    Map<String, SystemPulseService.ServiceStatus> pulse = service.getPulse();
-
-    assertThat(pulse).containsKey("Notion Sync");
-    assertThat(pulse.get("Notion Sync").status()).isEqualTo("UP");
-  }
-
-  @Test
-  void getPulse_withSyncMonitor_syncUnavailable_includesDownStatus() {
-    Health downHealth = Health.down().withDetail("message", "Sync is unavailable").build();
-    when(syncHealthMonitor.health()).thenReturn(downHealth);
-
-    SystemPulseService service = new SystemPulseService(List.of(), Optional.of(syncHealthMonitor));
-
-    Map<String, SystemPulseService.ServiceStatus> pulse = service.getPulse();
-
-    assertThat(pulse).containsKey("Notion Sync");
-    assertThat(pulse.get("Notion Sync").status()).isEqualTo("DOWN");
   }
 }

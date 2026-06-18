@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.world;
 
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -44,7 +44,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Location extends AbstractSyncableEntity<Long> {
+public class Location extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "location_id")

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.league;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
@@ -23,4 +24,6 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 @RepositoryRestResource
 public interface DraftPickRepository extends JpaRepository<DraftPick, Long> {
   List<DraftPick> findByDraftOrderByPickNumberAsc(Draft draft);
+
+  boolean existsByUser(Account user);
 }

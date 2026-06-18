@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -56,7 +57,13 @@ public class MenuService {
 
     // General Manager: Only BOOKER and ADMIN
     MenuItem gmMenu =
-        new MenuItem("General Manager", VaadinIcon.OFFICE, null, RoleName.ADMIN, RoleName.BOOKER);
+        new MenuItem(
+            "General Manager",
+            VaadinIcon.OFFICE,
+            null,
+            RoleName.ADMIN,
+            RoleName.BOOKER,
+            RoleName.PLAYER);
     gmMenu.addChild(new MenuItem("GM Dashboard", VaadinIcon.DASHBOARD, "gm-dashboard"));
     gmMenu.addChild(new MenuItem("Contract Management", VaadinIcon.CLIPBOARD_CHECK, "contracts"));
 
@@ -70,13 +77,21 @@ public class MenuService {
             RoleName.BOOKER,
             RoleName.PLAYER);
 
-    // Campaign: Only ADMIN
-    // RouteRoleResolver will also enforce @RolesAllowed(ADMIN_ROLE) on each view.
-    MenuItem campaignMenu = new MenuItem("Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN);
+    // Campaign: Dashboard open to ADMIN/BOOKER/PLAYER; admin-only sub-views restricted at route
+    // level
+    MenuItem campaignMenu =
+        new MenuItem(
+            "Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN, RoleName.BOOKER, RoleName.PLAYER);
     campaignMenu.addChild(
         new MenuItem("Campaigns", VaadinIcon.FILM, "campaign-list", RoleName.ADMIN));
     campaignMenu.addChild(
-        new MenuItem("Dashboard", VaadinIcon.DASHBOARD, "campaign", RoleName.ADMIN));
+        new MenuItem(
+            "Dashboard",
+            VaadinIcon.DASHBOARD,
+            "campaign",
+            RoleName.ADMIN,
+            RoleName.BOOKER,
+            RoleName.PLAYER));
 
     // Entities menu: Only ADMIN can access
     // BOOKER, PLAYER, and VIEWER have their own dedicated views
@@ -119,8 +134,6 @@ public class MenuService {
     // Configuration: Only ADMIN
     MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
     configuration.addChild(
-        new MenuItem("Sync Dashboard", VaadinIcon.REFRESH, "notion-sync", RoleName.ADMIN));
-    configuration.addChild(
         new MenuItem("Data Transfer", VaadinIcon.EXCHANGE, "data-transfer", RoleName.ADMIN));
     configuration.addChild(new MenuItem("Admin", VaadinIcon.TOOLS, "admin", RoleName.ADMIN));
 
@@ -132,6 +145,14 @@ public class MenuService {
             VaadinIcon.BOOK,
             "https://javydreamercsw.github.io/all-time-wrestling-rpg/",
             true));
+    help.addChild(
+        new MenuItem(
+            "Tutorial",
+            VaadinIcon.ACADEMY_CAP,
+            "tutorial",
+            RoleName.ADMIN,
+            RoleName.BOOKER,
+            RoleName.PLAYER));
 
     // Multiplayer menu: Only PLAYER, BOOKER, and ADMIN
     MenuItem multiplayer =
@@ -207,7 +228,7 @@ public class MenuService {
    *
    * @return a filtered copy of the item, or {@code null} if the user has no access
    */
-  private MenuItem filterMenuItem(final MenuItem menuItem) {
+  private MenuItem filterMenuItem(@NonNull final MenuItem menuItem) {
     boolean hasAccess;
 
     if (menuItem.getPath() != null && !menuItem.isExternal()) {

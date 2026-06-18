@@ -76,7 +76,7 @@ public class PlayerCampaignCardTest extends AbstractViewTest {
 
   @Test
   public void testCardFrontDisplay() {
-    PlayerCampaignCard card = new PlayerCampaignCard(campaign);
+    PlayerCampaignCard card = new PlayerCampaignCard(campaign, null);
 
     // Verify wrestler name is displayed
     _get(card, Span.class, spec -> spec.withText("Test Wrestler"));
@@ -93,7 +93,7 @@ public class PlayerCampaignCardTest extends AbstractViewTest {
 
   @Test
   public void testCardBackDisplay() {
-    PlayerCampaignCard card = new PlayerCampaignCard(campaign);
+    PlayerCampaignCard card = new PlayerCampaignCard(campaign, null);
 
     // Verify detailed stats on back
     _get(card, Span.class, spec -> spec.withText("Stats & Skills"));
@@ -108,7 +108,7 @@ public class PlayerCampaignCardTest extends AbstractViewTest {
   @Test
   public void testBumpsDisplay() {
     wrestlerState.setBumps(2);
-    PlayerCampaignCard card = new PlayerCampaignCard(campaign);
+    PlayerCampaignCard card = new PlayerCampaignCard(campaign, null);
 
     // Verify "Bumps" label exists
     _get(card, Span.class, spec -> spec.withText("Bumps"));
@@ -132,7 +132,7 @@ public class PlayerCampaignCardTest extends AbstractViewTest {
   public void testInjuriesDisplay() {
     // This test might need more refactoring if PlayerCampaignCard now uses InjuryService
     // For now, keeping it as is to see if it compiles
-    PlayerCampaignCard card = new PlayerCampaignCard(campaign);
+    PlayerCampaignCard card = new PlayerCampaignCard(campaign, null);
     assertNotNull(card);
   }
 }

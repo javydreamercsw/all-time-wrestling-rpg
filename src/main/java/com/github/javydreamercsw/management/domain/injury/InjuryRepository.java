@@ -23,8 +23,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface InjuryRepository
     extends JpaRepository<Injury, Long>, JpaSpecificationExecutor<Injury> {
@@ -57,12 +59,6 @@ public interface InjuryRepository
 
   /** Find injuries by severity. */
   List<Injury> findBySeverity(InjurySeverity severity);
-
-  /** Find injury by external ID (e.g., Notion page ID). */
-  java.util.Optional<Injury> findByExternalId(String externalId);
-
-  /** Check if injury exists by external ID. */
-  boolean existsByExternalId(String externalId);
 
   /** Find all active injuries. */
   @Query("SELECT i FROM Injury i WHERE i.isActive = true")
@@ -145,4 +141,9 @@ public interface InjuryRepository
 
   /** Count injuries referencing a given InjuryType (used to guard deletion). */
   long countByInjuryType(InjuryType injuryType);
+
+  @Transactional
+  @Modifying(clearAutomatically = true)
+  @Query("UPDATE Injury i SET i.universe = null WHERE i.universe = :universe")
+  void clearUniverseByUniverse(@Param("universe") Universe universe);
 }

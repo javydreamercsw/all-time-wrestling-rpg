@@ -41,6 +41,9 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "event_type", nullable = false)
   private InboxEventType eventType;
 
+  @Column(name = "subject", length = 255)
+  private String subject;
+
   @Column(name = "description", nullable = false)
   @Size(max = 1024) private String description;
 
@@ -49,6 +52,26 @@ public class InboxItem extends AbstractEntity<Long> {
 
   @Column(name = "is_read", nullable = false)
   private boolean isRead = false;
+
+  public enum Urgency {
+    INFO,
+    WARNING,
+    ACTION_REQUIRED
+  }
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "urgency", nullable = false, length = 30)
+  private Urgency urgency = Urgency.INFO;
+
+  /**
+   * Discriminator for what CTA button to render (e.g. "MATCH_REPORT", "NAVIGATE", "OPEN_DRAWER").
+   */
+  @Column(name = "action_type", length = 50)
+  private String actionType;
+
+  /** JSON payload for the action handler (e.g. {"fulfillmentId":"42"} or {"route":"inbox"}). */
+  @Column(name = "action_payload", length = 512)
+  private String actionPayload;
 
   @OneToMany(
       mappedBy = "inboxItem",

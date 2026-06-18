@@ -19,7 +19,7 @@ package com.github.javydreamercsw.management.domain.faction;
 import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.javydreamercsw.base.domain.AbstractSyncableEntity;
+import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -56,7 +56,7 @@ import org.jspecify.annotations.Nullable;
 @Setter
 @ToString
 @Table(name = "faction")
-public class Faction extends AbstractSyncableEntity<Long> {
+public class Faction extends AbstractEntity<Long> {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Getter(onMethod_ = {@Nullable})
@@ -157,8 +157,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   // ==================== ATW RPG METHODS ====================
 
   /** Add a member to the faction. */
-  public void addMember(
-      final com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+  public void addMember(final WrestlerState state) {
     if (state != null && !members.contains(state)) {
       members.add(state);
       state.setFaction(this);
@@ -166,8 +165,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
   }
 
   /** Remove a member from the faction. */
-  public void removeMember(
-      final com.github.javydreamercsw.management.domain.wrestler.WrestlerState state) {
+  public void removeMember(final WrestlerState state) {
     if (state != null) {
       members.remove(state);
       if (state.getFaction() != null && state.getFaction().equals(this)) {
@@ -213,8 +211,7 @@ public class Faction extends AbstractSyncableEntity<Long> {
     this.disbandedDate = Instant.now();
 
     // Remove all members from faction
-    for (com.github.javydreamercsw.management.domain.wrestler.WrestlerState member :
-        new ArrayList<>(members)) {
+    for (WrestlerState member : new ArrayList<>(members)) {
       removeMember(member);
     }
   }

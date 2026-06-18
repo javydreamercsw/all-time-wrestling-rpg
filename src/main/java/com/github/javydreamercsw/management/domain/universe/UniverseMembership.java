@@ -65,7 +65,15 @@ public class UniverseMembership {
   private Instant joinedDate;
 
   public enum UniverseMemberRole {
+    /** Full universe ownership — can delete the universe and manage all members. */
     OWNER,
+    /** Universe administrator — can manage members, invites, and all content. */
+    ADMIN,
+    /** Can create and manage shows, segments, and rosters within the universe. */
+    BOOKER,
+    /** Participating player — can draft and submit match results. */
+    PLAYER,
+    /** Read-only member — can view universe content. */
     MEMBER
   }
 }

@@ -117,4 +117,9 @@ public class UniverseContextService implements Serializable {
   public void setCurrentUniverseId(@NonNull final Long universeId) {
     setInternalUniverseId(universeId);
   }
+
+  /** Clears the current universe context (e.g. after a tutorial universe is deleted). */
+  public void clearCurrentUniverse() {
+    setInternalUniverseId(null);
+  }
 }

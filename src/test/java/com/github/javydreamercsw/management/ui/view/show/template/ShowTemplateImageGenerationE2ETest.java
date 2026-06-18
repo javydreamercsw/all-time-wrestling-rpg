@@ -51,7 +51,7 @@ public class ShowTemplateImageGenerationE2ETest extends AbstractE2ETest {
             .orElseGet(
                 () -> {
                   return showTemplateService.createOrUpdateTemplate(
-                      "E2E Test Template", "A test template for E2E.", "Weekly", null);
+                      "E2E Test Template", "A test template for E2E.", "Weekly");
                 });
   }
 

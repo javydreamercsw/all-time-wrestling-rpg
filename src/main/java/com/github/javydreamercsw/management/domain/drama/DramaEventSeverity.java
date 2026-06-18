@@ -63,16 +63,6 @@ public enum DramaEventSeverity {
     throw new IllegalArgumentException("Unknown DramaEventSeverity: " + value);
   }
 
-  /** Get the typical fan impact range for this severity level. */
-  public FanImpactRange getFanImpactRange() {
-    return switch (this) {
-      case POSITIVE -> new FanImpactRange(1000L, 5000L);
-      case NEUTRAL -> new FanImpactRange(-500L, 500L);
-      case NEGATIVE -> new FanImpactRange(-3000L, -500L);
-      case MAJOR -> new FanImpactRange(-10000L, 10000L); // Can be very positive or very negative
-    };
-  }
-
   /** Get the typical heat impact range for this severity level. */
   public HeatImpactRange getHeatImpactRange() {
     return switch (this) {
@@ -81,21 +71,6 @@ public enum DramaEventSeverity {
       case NEGATIVE -> new HeatImpactRange(1, 5); // Creates heat
       case MAJOR -> new HeatImpactRange(3, 10); // Major heat generation
     };
-  }
-
-  /** Check if this severity level can cause injuries. */
-  public boolean canCauseInjury() {
-    return this == NEGATIVE || this == MAJOR;
-  }
-
-  /** Check if this severity level can create new rivalries. */
-  public boolean canCreateRivalry() {
-    return this == NEGATIVE || this == MAJOR;
-  }
-
-  /** Check if this severity level can end rivalries. */
-  public boolean canEndRivalry() {
-    return this == POSITIVE || this == MAJOR;
   }
 
   /** Get display string with emoji. */
@@ -109,14 +84,7 @@ public enum DramaEventSeverity {
   }
 
   /** Represents a range of fan impact values. */
-  public record FanImpactRange(Long min, Long max) {
-    public Long getRandomValue(final java.util.Random random) {
-      if (min.equals(max)) {
-        return min;
-      }
-      return min + (long) (random.nextDouble() * (max - min));
-    }
-  }
+  public record FanImpactRange(Long min, Long max) {}
 
   /** Represents a range of heat impact values. */
   public record HeatImpactRange(Integer min, Integer max) {

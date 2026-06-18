@@ -379,7 +379,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
         lastException = e;
 
         if (attempt < policy.getMaxRetries() && policy.getShouldRetry().test(e)) {
-          Duration delay = calculateRetryDelay(e, currentDelay);
+          Duration delay = calculateRetryDelay(currentDelay);
           log.warn(
               "Attempt {} failed for {} ({}), retrying in {}ms: {}",
               attempt + 1,
@@ -419,8 +419,7 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
    * Calculates retry delay, potentially extracting it from API error response. Can be overridden by
    * implementations to parse provider-specific retry hints.
    */
-  protected final Duration calculateRetryDelay(
-      @NonNull final Exception exception, @NonNull final Duration defaultDelay) {
+  protected final Duration calculateRetryDelay(@NonNull final Duration defaultDelay) {
     return defaultDelay;
   }
 

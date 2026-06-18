@@ -115,7 +115,6 @@ public class SegmentService {
    */
   public Segment toEntity(@NonNull final SegmentDTO dto) {
     Segment segment = new Segment();
-    segment.setExternalId(dto.getExternalId());
     segment.setNarration(dto.getNarration());
     // Assuming show, segmentType, participants, and winners are handled elsewhere or are not
     // directly mapped from DTO
@@ -139,10 +138,8 @@ public class SegmentService {
    */
   public SegmentDTO toDto(@NonNull final Segment segment) {
     SegmentDTO dto = new SegmentDTO();
-    dto.setExternalId(segment.getExternalId());
     dto.setName(segment.getNarration()); // Assuming narration is used as name for DTO
     dto.setShowName(segment.getShow().getName());
-    dto.setShowExternalId(segment.getShow().getExternalId());
     dto.setParticipantNames(
         segment.getParticipants().stream()
             .map(p -> p.getWrestler().getName())
@@ -280,7 +277,31 @@ public class SegmentService {
                   .findById(segmentId)
                   .map(
                       segment -> {
-                        // Check if user owns any participant
+                        // Campaign match check: evaluated independently of account ownership
+                        // because campaign wrestlers are shared roster entities and may not have
+                        // wrestler.account set (they're identified via campaign.wrestler, not
+                        // wrestler.account). Any authenticated participant in an active campaign
+                        // whose currentMatch is this segment is allowed to report the result.
+                        boolean isCampaignMatch =
+                            segment.getParticipants().stream()
+                                .map(p -> p.getWrestler())
+                                .anyMatch(
+                                    w ->
+                                        campaignRepository
+                                            .findActiveByWrestler(w)
+                                            .map(
+                                                c ->
+                                                    c.getState().getCurrentMatch() != null
+                                                        && segmentId.equals(
+                                                            c.getState().getCurrentMatch().getId()))
+                                            .orElse(false));
+
+                        if (isCampaignMatch) {
+                          return true;
+                        }
+
+                        // Universe / promo match check: requires the user to own a participant
+                        // wrestler (wrestler.account links to the user's account).
                         boolean isOwner =
                             segment.getParticipants().stream()
                                 .map(p -> p.getWrestler())
@@ -297,35 +318,10 @@ public class SegmentService {
                           return false;
                         }
 
-                        Wrestler ownerWrestler =
-                            segment.getParticipants().stream()
-                                .map(p -> p.getWrestler())
-                                .filter(
-                                    w ->
-                                        w.getAccount() != null
-                                            && w.getAccount().getId().equals(user.getId()))
-                                .findFirst()
-                                .orElse(null);
-
-                        boolean isCampaignMatch = false;
-                        if (ownerWrestler != null) {
-                          isCampaignMatch =
-                              campaignRepository
-                                  .findActiveByWrestler(ownerWrestler)
-                                  .map(
-                                      campaign ->
-                                          segment.equals(campaign.getState().getCurrentMatch()))
-                                  .orElse(false);
-                        }
-
-                        // Check if it's a universe match
-                        boolean isUniverseMatch =
-                            segment.getShow().getUniverse() != null
-                                || (segment.getSegmentType() != null
-                                    && SegmentTypeNames.PROMO.equalsIgnoreCase(
-                                        segment.getSegmentType().getName()));
-
-                        return isCampaignMatch || isUniverseMatch;
+                        return segment.getShow().getUniverse() != null
+                            || (segment.getSegmentType() != null
+                                && SegmentTypeNames.PROMO.equalsIgnoreCase(
+                                    segment.getSegmentType().getName()));
                       })
                   .orElse(false);
             })
@@ -550,41 +546,6 @@ public class SegmentService {
   }
 
   /**
-   * Checks if a match exists by external ID.
-   *
-   * @param externalId The external ID to check
-   * @return true if a match with the external ID exists
-   */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public boolean existsByExternalId(@NonNull final String externalId) {
-    return segmentRepository.existsByExternalId(externalId);
-  }
-
-  /**
-   * Finds a match by external ID.
-   *
-   * @param externalId The external ID to search for
-   * @return Optional containing the Segment if found
-   */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Segment> findByExternalId(@NonNull final String externalId) {
-    return segmentRepository.findByExternalId(externalId);
-  }
-
-  /**
-   * Gets all external IDs of all matches.
-   *
-   * @return List of all external IDs.
-   */
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public List<String> getAllExternalIds() {
-    return segmentRepository.findAllExternalIds();
-  }
-
-  /**
    * Gets all matches where a wrestler participated with the show eagerly fetched.
    *
    * @param wrestler The wrestler to search for
@@ -667,24 +628,29 @@ public class SegmentService {
                   fulfillment.setSegment(segment);
                   fulfillment.setLeague(league);
                   fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.PENDING_RESULTS);
-                  matchFulfillmentRepository.save(fulfillment);
+                  fulfillment = matchFulfillmentRepository.save(fulfillment);
 
                   // Send Notification to the owner
-                  inboxService.createInboxItem(
-                      matchRequestEventType,
-                      "Pending match on show: "
-                          + show.getName()
-                          + " for wrestler: "
-                          + wrestler.getName(),
-                      List.of(
-                          new InboxService.TargetInfo(
-                              roster.getOwner().getId().toString(),
-                              InboxItemTarget.TargetType.ACCOUNT),
-                          new InboxService.TargetInfo(
-                              fulfillment.getId().toString(),
-                              InboxItemTarget.TargetType.MATCH_FULFILLMENT),
-                          new InboxService.TargetInfo(
-                              wrestler.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
+                  com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+                      inboxService.createInboxItem(
+                          matchRequestEventType,
+                          "Pending match on show: "
+                              + show.getName()
+                              + " for wrestler: "
+                              + wrestler.getName(),
+                          List.of(
+                              new InboxService.TargetInfo(
+                                  roster.getOwner().getId().toString(),
+                                  InboxItemTarget.TargetType.ACCOUNT),
+                              new InboxService.TargetInfo(
+                                  fulfillment.getId().toString(),
+                                  InboxItemTarget.TargetType.MATCH_FULFILLMENT),
+                              new InboxService.TargetInfo(
+                                  wrestler.getId().toString(),
+                                  InboxItemTarget.TargetType.WRESTLER)));
+                  inboxItem.setActionType("MATCH_REPORT");
+                  inboxItem.setActionPayload("{\"fulfillmentId\":\"" + fulfillment.getId() + "\"}");
+                  inboxService.save(inboxItem);
                 }
               }
             });

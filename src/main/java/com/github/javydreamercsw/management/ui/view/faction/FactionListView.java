@@ -23,7 +23,6 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -72,8 +71,6 @@ public class FactionListView extends VerticalLayout {
 
   private final FactionService factionService;
   private final WrestlerService wrestlerService;
-  private final NpcService npcService;
-  private final WrestlerRepository wrestlerRepository;
   private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
   private final ImageStorageService imageStorageService;
@@ -98,14 +95,11 @@ public class FactionListView extends VerticalLayout {
       @NonNull final FactionService factionService,
       @NonNull final WrestlerService wrestlerService,
       @NonNull final NpcService npcService,
-      @NonNull final WrestlerRepository wrestlerRepository,
       @NonNull final SecurityUtils securityUtils,
       @NonNull final UniverseContextService universeContextService,
       @NonNull final ImageStorageService imageStorageService) {
     this.factionService = factionService;
     this.wrestlerService = wrestlerService;
-    this.npcService = npcService;
-    this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
     this.universeContextService = universeContextService;
     this.imageStorageService = imageStorageService;

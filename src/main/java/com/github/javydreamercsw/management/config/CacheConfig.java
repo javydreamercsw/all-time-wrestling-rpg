@@ -53,9 +53,6 @@ public class CacheConfig {
   public static final String SHOW_TEMPLATES_CACHE = "showTemplates";
   public static final String WRESTLER_STATS_CACHE = "wrestlerStats";
   public static final String CALENDAR_CACHE = "calendar";
-  public static final String NOTION_SYNC_CACHE = "notionSync";
-  public static final String NOTION_PAGES_CACHE = "notionPages";
-  public static final String NOTION_QUERIES_CACHE = "notionQueries";
   public static final String NPCS_CACHE = "npcs";
   public static final String ARENAS_CACHE = "arenas";
   public static final String LOCATIONS_CACHE = "locations";
@@ -85,9 +82,6 @@ public class CacheConfig {
             SHOW_TEMPLATES_CACHE,
             WRESTLER_STATS_CACHE,
             CALENDAR_CACHE,
-            NOTION_SYNC_CACHE,
-            NOTION_PAGES_CACHE,
-            NOTION_QUERIES_CACHE,
             NPCS_CACHE,
             ARENAS_CACHE,
             LOCATIONS_CACHE,

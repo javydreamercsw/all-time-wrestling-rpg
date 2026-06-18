@@ -97,6 +97,13 @@ public interface SegmentRepository
   /** Find title segments. */
   List<Segment> findByIsTitleSegmentTrue();
 
+  /** Find segments involving a specific title. */
+  @org.springframework.data.jpa.repository.Query(
+      "SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true")
+  List<Segment> findByTitle(
+      @org.springframework.data.repository.query.Param("title")
+          com.github.javydreamercsw.management.domain.title.Title title);
+
   /** Find segments after a specific date. */
   List<Segment> findBySegmentDateAfter(Instant date);
 
@@ -176,19 +183,6 @@ public interface SegmentRepository
       """)
   long countMatchSegmentsByWrestler(@Param("wrestler") Wrestler wrestler);
 
-  /** Check if a segment result exists by external ID. */
-  boolean existsByExternalId(String externalId);
-
-  /** Find a segment result by external ID. */
-  Optional<Segment> findByExternalId(String externalId);
-
-  /** Find all external IDs. */
-  @Query("SELECT s.externalId FROM Segment s WHERE s.externalId IS NOT NULL")
-  List<String> findAllExternalIds();
-
-  @Query("SELECT MAX(s.lastSync) FROM Segment s WHERE s.lastSync IS NOT NULL")
-  Optional<java.time.Instant> findMaxLastSync();
-
   List<Segment> findByShowOrderBySegmentOrderAsc(Show show);
 
   @Query(
@@ -263,4 +257,7 @@ public interface SegmentRepository
       WHERE s.id = :id
       """)
   Optional<Segment> findByIdWithDetails(@Param("id") Long id);
+
+  long countByAdjudicationStatus(
+      com.github.javydreamercsw.management.domain.AdjudicationStatus adjudicationStatus);
 }

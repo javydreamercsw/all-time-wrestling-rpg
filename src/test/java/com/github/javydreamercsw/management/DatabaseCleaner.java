@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
-import com.github.javydreamercsw.management.service.sync.EntityDependencyAnalyzer;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.PersistenceContext;
@@ -28,7 +27,6 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Member;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +40,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -56,7 +53,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   private final ApplicationContext applicationContext;
   private final AccountInitializer accountInitializer;
-  private final EntityDependencyAnalyzer dependencyAnalyzer;
   private final JdbcTemplate jdbcTemplate;
   private final TransactionTemplate transactionTemplate;
   private final Environment environment;
@@ -65,7 +61,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
 
   private Map<String, JpaRepository<?, ?>> cachedRepositories;
   private List<String> cachedSyncOrder;
-  private Set<Class<?>> cachedEntityClasses;
 
   @Override
   public void clearRepositories() {
@@ -90,15 +85,12 @@ public class DatabaseCleaner implements DatabaseCleanup {
             log.debug("✅ Discovered {} repositories", cachedRepositories.size());
           }
 
-          // 4. Get the correct synchronization/deletion order (with caching)
+          // 4. Get the correct synchronization/deletion order (with caching).
+          // Since circular dependencies are broken manually in breakCircularDependencies(),
+          // we can use any order — just derive from the discovered repositories.
           if (cachedSyncOrder == null) {
             log.debug("🔄 Calculating deletion order...");
-            cachedEntityClasses = getEntityClasses();
-            cachedSyncOrder = dependencyAnalyzer.determineSyncOrder(cachedEntityClasses);
-            // Reverse the order for deletion (delete children before parents)
-            List<String> reverseOrder = new ArrayList<>(cachedSyncOrder);
-            Collections.reverse(reverseOrder);
-            cachedSyncOrder = reverseOrder;
+            cachedSyncOrder = new ArrayList<>(cachedRepositories.keySet());
             log.debug("✅ Deletion order calculated ({} entities)", cachedSyncOrder.size());
           }
 
@@ -142,34 +134,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
             }
 
             log.debug("🗑️ Clearing entity: {}", entityName);
-
-            // Special handling for Entities that might have both master data and test data:
-            // we want to keep the master data (with externalId) but remove test data (without
-            // externalId).
-            // ONLY apply this optimization in E2E tests to avoid state leakage in ITs.
-            if (isE2E
-                && ("wrestler".equalsIgnoreCase(entityName)
-                    || "team".equalsIgnoreCase(entityName)
-                    || "faction".equalsIgnoreCase(entityName)
-                    || "npc".equalsIgnoreCase(entityName)
-                    || "arena".equalsIgnoreCase(entityName)
-                    || "location".equalsIgnoreCase(entityName))) {
-              // Use jdbcTemplate directly (same transaction) to avoid deadlock with the
-              // PROPAGATION_REQUIRES_NEW connection that executeNativeUpdate creates, which
-              // would compete for row locks held by breakCircularDependencies() above.
-              try {
-                int deleted =
-                    jdbcTemplate.update(
-                        "DELETE FROM "
-                            + entityName.toLowerCase()
-                            + " WHERE external_id IS NULL OR external_id = ''");
-                log.debug("✅ Deleted {} test records from {}", deleted, entityName);
-                deletedCount++;
-                continue; // Skip the full repository deletion below
-              } catch (Exception e) {
-                log.warn("Surgical delete failed for {}: {}", entityName, e.getMessage());
-              }
-            }
 
             JpaRepository<?, ?> repository = cachedRepositories.get(entityName.toLowerCase());
             if (repository != null) {
@@ -224,24 +188,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
         });
   }
 
-  protected int executeNativeUpdate(String sql) {
-    try {
-      transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-      return transactionTemplate.execute(
-          status -> {
-            try {
-              return entityManager.createNativeQuery(sql).executeUpdate();
-            } catch (Exception e) {
-              log.warn("Native update failed: {} - {}", sql, e.getMessage());
-              return -1;
-            }
-          });
-    } catch (Exception e) {
-      log.warn("Transaction for native update failed: {} - {}", sql, e.getMessage());
-      return -1;
-    }
-  }
-
   /**
    * Manually breaks known circular dependencies by setting foreign keys to NULL. This is necessary
    * before batch deletion to avoid constraint violations.
@@ -249,6 +195,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
   private void breakCircularDependencies() {
     // Order matters here to handle foreign key constraints correctly
     String[] manualTables = {
+      "draft_pick",
+      "match_fulfillment",
       "campaign_state",
       "storyline_milestone",
       "campaign_storyline",
@@ -257,6 +205,8 @@ public class DatabaseCleaner implements DatabaseCleanup {
       "wrestler_state",
       "league_roster",
       "league_membership",
+      "draft",
+      "league",
       "team_members",
       "team",
       "faction_members",
@@ -354,18 +304,6 @@ public class DatabaseCleaner implements DatabaseCleanup {
     }
   }
 
-  private Set<Class<?>> getEntityClasses() {
-    Set<Class<?>> entityClasses = new HashSet<>();
-    Set<jakarta.persistence.metamodel.EntityType<?>> entities =
-        entityManager.getMetamodel().getEntities();
-
-    for (jakarta.persistence.metamodel.EntityType<?> entity : entities) {
-      entityClasses.add(entity.getJavaType());
-    }
-
-    return entityClasses;
-  }
-
   /**
    * Discovers all JpaRepository beans in the application context. Returns a map of entity name
    * (lowercase) to repository instance.
@@ -383,7 +321,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
         JpaRepository<?, ?> repository = applicationContext.getBean(beanName, JpaRepository.class);
 
         // Extract entity name from repository
-        String entityName = extractEntityName(repository, beanName);
+        String entityName = extractEntityName(beanName);
         if (entityName != null) {
           repositories.put(entityName.toLowerCase(), repository);
           log.debug("📍 Mapped repository {} to entity {}", beanName, entityName);
@@ -400,7 +338,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
    * Extracts the entity name from a repository bean. Tries multiple strategies: bean name pattern,
    * repository interface generics.
    */
-  private String extractEntityName(final JpaRepository<?, ?> repository, final String beanName) {
+  private String extractEntityName(final String beanName) {
     // Strategy 1: Bean name pattern (e.g., "cardRepository" -> "card")
     if (beanName.endsWith("Repository")) {
       return beanName.substring(0, beanName.length() - "Repository".length());

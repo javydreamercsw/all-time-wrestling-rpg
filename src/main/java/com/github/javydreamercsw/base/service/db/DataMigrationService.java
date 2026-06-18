@@ -105,27 +105,6 @@ public class DataMigrationService {
       final String sourceUser,
       final String sourcePassword,
       final String targetDbType,
-      final String host,
-      final Integer port,
-      final String database,
-      final String user,
-      final String password)
-      throws SQLException {
-    DatabaseManager sourceManager =
-        DatabaseManagerFactory.getDatabaseManager(
-            sourceDbType, sourceUrl, sourceUser, sourcePassword);
-    DatabaseManager targetManager =
-        DatabaseManagerFactory.getDatabaseManager(
-            targetDbType, host, port, database, user, password);
-    migrateDataInternal(sourceManager, targetManager, password);
-  }
-
-  public void migrateData(
-      final String sourceDbType,
-      final String sourceUrl,
-      final String sourceUser,
-      final String sourcePassword,
-      final String targetDbType,
       final String targetUrl,
       final String targetUser,
       final String targetPassword)
@@ -502,15 +481,15 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO holiday (id, description, theme, decorations, day_of_month, \
-        holiday_month, day_of_week, week_of_month, type, creation_date, external_id) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        holiday_month, day_of_week, week_of_month, type, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT id, description, theme, decorations, day_of_month, holiday_month,\
-                 day_of_week, week_of_month, type, creation_date, external_id FROM holiday\
+                 day_of_week, week_of_month, type, creation_date FROM holiday\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -534,7 +513,6 @@ public class DataMigrationService {
         }
         targetStatement.setString(9, resultSet.getString("type"));
         targetStatement.setTimestamp(10, resultSet.getTimestamp("creation_date"));
-        targetStatement.setString(11, resultSet.getString("external_id"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -613,14 +591,14 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO inbox_item_target (inbox_item_target_id, inbox_item_id, \
-        target_id, external_id) VALUES (?, ?, ?, ?)\
+        target_id) VALUES (?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
-                SELECT inbox_item_target_id, inbox_item_id, target_id, \
-                external_id FROM inbox_item_target\
+                SELECT inbox_item_target_id, inbox_item_id, target_id \
+                FROM inbox_item_target\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -633,7 +611,6 @@ public class DataMigrationService {
           targetStatement.setObject(2, null);
         }
         targetStatement.setString(3, resultSet.getString("target_id"));
-        targetStatement.setString(4, resultSet.getString("external_id"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -692,14 +669,14 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO inbox_item (inbox_item_id, event_type, description, \
-        event_timestamp, is_read, external_id) VALUES (?, ?, ?, ?, ?, ?)\
+        event_timestamp, is_read) VALUES (?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT inbox_item_id, event_type, description, event_timestamp, \
-                is_read, external_id FROM inbox_item\
+                is_read FROM inbox_item\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -710,7 +687,6 @@ public class DataMigrationService {
         targetStatement.setString(3, resultSet.getString("description"));
         targetStatement.setTimestamp(4, resultSet.getTimestamp("event_timestamp"));
         targetStatement.setBoolean(5, resultSet.getBoolean("is_read"));
-        targetStatement.setString(6, resultSet.getString("external_id"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -921,14 +897,14 @@ public class DataMigrationService {
       throws SQLException {
     String sql =
         """
-        INSERT INTO title_reign (title_reign_id, external_id, title_id, start_date, \
-        end_date, reign_number, notes, creation_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)\
+        INSERT INTO title_reign (title_reign_id, title_id, start_date, \
+        end_date, reign_number, notes, creation_date) VALUES (?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
-                SELECT title_reign_id, external_id, title_id, start_date, \
+                SELECT title_reign_id, title_id, start_date, \
                 end_date, reign_number, notes, creation_date FROM title_reign\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
@@ -936,13 +912,12 @@ public class DataMigrationService {
       int count = 0;
       while (resultSet.next()) {
         targetStatement.setLong(1, resultSet.getLong("title_reign_id"));
-        targetStatement.setString(2, resultSet.getString("external_id"));
-        targetStatement.setLong(3, resultSet.getLong("title_id"));
-        targetStatement.setTimestamp(4, resultSet.getTimestamp("start_date"));
-        targetStatement.setTimestamp(5, resultSet.getTimestamp("end_date"));
-        targetStatement.setInt(6, resultSet.getInt("reign_number"));
-        targetStatement.setString(7, resultSet.getString("notes"));
-        targetStatement.setTimestamp(8, resultSet.getTimestamp("creation_date"));
+        targetStatement.setLong(2, resultSet.getLong("title_id"));
+        targetStatement.setTimestamp(3, resultSet.getTimestamp("start_date"));
+        targetStatement.setTimestamp(4, resultSet.getTimestamp("end_date"));
+        targetStatement.setInt(5, resultSet.getInt("reign_number"));
+        targetStatement.setString(6, resultSet.getString("notes"));
+        targetStatement.setTimestamp(7, resultSet.getTimestamp("creation_date"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1014,14 +989,14 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO title (title_id, name, description, tier, gender, is_active, \
-        creation_date, external_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)\
+        creation_date) VALUES (?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT title_id, name, description, tier, gender, is_active, \
-                creation_date, external_id FROM title\
+                creation_date FROM title\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1034,7 +1009,6 @@ public class DataMigrationService {
         targetStatement.setString(5, resultSet.getString("gender"));
         targetStatement.setBoolean(6, resultSet.getBoolean("is_active"));
         targetStatement.setTimestamp(7, resultSet.getTimestamp("creation_date"));
-        targetStatement.setString(8, resultSet.getString("external_id"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1118,8 +1092,8 @@ public class DataMigrationService {
         """
         INSERT INTO segment (segment_id, show_id, segment_type_id, winner_id, \
         segment_date, duration_minutes, segment_rating, status, narration, \
-        summary, is_title_segment, is_npc_generated, external_id, LAST_SYNC) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        summary, is_title_segment, is_npc_generated) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
@@ -1127,7 +1101,7 @@ public class DataMigrationService {
                 """
                 SELECT segment_id, show_id, segment_type_id, winner_id, segment_date,\
                  duration_minutes, segment_rating, status, narration, summary,\
-                 is_title_segment, is_npc_generated, external_id, LAST_SYNC FROM segment\
+                 is_title_segment, is_npc_generated FROM segment\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1157,8 +1131,6 @@ public class DataMigrationService {
         targetStatement.setString(10, resultSet.getString("summary"));
         targetStatement.setBoolean(11, resultSet.getBoolean("is_title_segment"));
         targetStatement.setBoolean(12, resultSet.getBoolean("is_npc_generated"));
-        targetStatement.setString(13, resultSet.getString("external_id"));
-        targetStatement.setTimestamp(14, resultSet.getTimestamp("LAST_SYNC"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1248,15 +1220,15 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO wrestling_show (show_id, name, description, show_date, show_type_id, \
-        season_id, template_id, external_id, creation_date) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        season_id, template_id, creation_date) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT show_id, name, description, show_date, show_type_id, \
-                season_id, template_id, external_id, creation_date FROM wrestling_show\
+                season_id, template_id, creation_date FROM wrestling_show\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1277,8 +1249,7 @@ public class DataMigrationService {
         } else {
           targetStatement.setObject(7, null);
         }
-        targetStatement.setString(8, resultSet.getString("external_id"));
-        targetStatement.setTimestamp(9, resultSet.getTimestamp("creation_date"));
+        targetStatement.setTimestamp(8, resultSet.getTimestamp("creation_date"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1298,14 +1269,14 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO show_template (template_id, name, description, show_type_id, \
-        notion_url, external_id, creation_date, LAST_SYNC) VALUES (?, ?, ?, ?, ?, ?, ?, ?)\
+        creation_date) VALUES (?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT template_id, name, description, show_type_id, \
-                notion_url, external_id, creation_date, LAST_SYNC FROM show_template\
+                creation_date FROM show_template\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1315,10 +1286,7 @@ public class DataMigrationService {
         targetStatement.setString(2, resultSet.getString("name"));
         targetStatement.setString(3, resultSet.getString("description"));
         targetStatement.setLong(4, resultSet.getLong("show_type_id"));
-        targetStatement.setString(5, resultSet.getString("notion_url"));
-        targetStatement.setString(6, resultSet.getString("external_id"));
-        targetStatement.setTimestamp(7, resultSet.getTimestamp("creation_date"));
-        targetStatement.setTimestamp(8, resultSet.getTimestamp("LAST_SYNC"));
+        targetStatement.setTimestamp(5, resultSet.getTimestamp("creation_date"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1372,15 +1340,15 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO season (season_id, name, description, start_date, end_date, is_active, \
-        creation_date, notion_id, shows_per_ppv) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        creation_date, shows_per_ppv) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT season_id, name, description, start_date, end_date, is_active, \
-                creation_date, notion_id, shows_per_ppv FROM season\
+                creation_date, shows_per_ppv FROM season\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1393,8 +1361,7 @@ public class DataMigrationService {
         targetStatement.setDate(5, resultSet.getDate("end_date"));
         targetStatement.setBoolean(6, resultSet.getBoolean("is_active"));
         targetStatement.setTimestamp(7, resultSet.getTimestamp("creation_date"));
-        targetStatement.setString(8, resultSet.getString("notion_id"));
-        targetStatement.setInt(9, resultSet.getInt("shows_per_ppv"));
+        targetStatement.setInt(8, resultSet.getInt("shows_per_ppv"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1533,13 +1500,12 @@ public class DataMigrationService {
       throws SQLException {
     String sql =
         """
-        INSERT INTO npc (ID, NAME, NPC_TYPE, EXTERNAL_ID, DESCRIPTION, LAST_SYNC) \
-        VALUES (?, ?, ?, ?, ?, ?)\
+        INSERT INTO npc (ID, NAME, NPC_TYPE, DESCRIPTION) \
+        VALUES (?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
-            sourceStatement.executeQuery(
-                "SELECT ID, NAME, NPC_TYPE, EXTERNAL_ID, DESCRIPTION, LAST_SYNC FROM npc");
+            sourceStatement.executeQuery("SELECT ID, NAME, NPC_TYPE, DESCRIPTION FROM npc");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1547,9 +1513,7 @@ public class DataMigrationService {
         targetStatement.setLong(1, resultSet.getLong("ID"));
         targetStatement.setString(2, resultSet.getString("NAME"));
         targetStatement.setString(3, resultSet.getString("NPC_TYPE"));
-        targetStatement.setString(4, resultSet.getString("EXTERNAL_ID"));
-        targetStatement.setString(5, resultSet.getString("DESCRIPTION"));
-        targetStatement.setTimestamp(6, resultSet.getTimestamp("LAST_SYNC"));
+        targetStatement.setString(4, resultSet.getString("DESCRIPTION"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1569,16 +1533,16 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO faction (FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, \
-        FORMED_DATE, DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, \
+        FORMED_DATE, DISBANDED_DATE, CREATION_DATE, MANAGER_ID, \
         AFFINITY, UNIVERSE_ID) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT FACTION_ID, NAME, DESCRIPTION, IS_ACTIVE, LEADER_ID, FORMED_DATE,\
-                 DISBANDED_DATE, CREATION_DATE, EXTERNAL_ID, MANAGER_ID, AFFINITY, \
+                 DISBANDED_DATE, CREATION_DATE, MANAGER_ID, AFFINITY, \
                  UNIVERSE_ID FROM faction\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
@@ -1597,17 +1561,16 @@ public class DataMigrationService {
         targetStatement.setTimestamp(6, resultSet.getTimestamp("FORMED_DATE"));
         targetStatement.setTimestamp(7, resultSet.getTimestamp("DISBANDED_DATE"));
         targetStatement.setTimestamp(8, resultSet.getTimestamp("CREATION_DATE"));
-        targetStatement.setString(9, resultSet.getString("EXTERNAL_ID"));
         if (resultSet.getObject("MANAGER_ID") != null) {
-          targetStatement.setLong(10, resultSet.getLong("MANAGER_ID"));
+          targetStatement.setLong(9, resultSet.getLong("MANAGER_ID"));
         } else {
-          targetStatement.setObject(10, null);
+          targetStatement.setObject(9, null);
         }
-        targetStatement.setInt(11, resultSet.getInt("AFFINITY"));
+        targetStatement.setInt(10, resultSet.getInt("AFFINITY"));
         if (resultSet.getObject("UNIVERSE_ID") != null) {
-          targetStatement.setLong(12, resultSet.getLong("UNIVERSE_ID"));
+          targetStatement.setLong(11, resultSet.getLong("UNIVERSE_ID"));
         } else {
-          targetStatement.setObject(12, null);
+          targetStatement.setObject(11, null);
         }
         targetStatement.addBatch();
         count++;
@@ -1662,19 +1625,19 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO wrestler (wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, \
-        STARTING_HEALTH, LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, \
+        STARTING_HEALTH, LOW_HEALTH, DECK_SIZE, CREATION_DATE, \
         IS_PLAYER, GENDER, DESCRIPTION, \
-        IMAGE_URL, ACTIVE, ACCOUNT_ID, LAST_SYNC, UPDATED_AT) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        IMAGE_URL, ACTIVE, ACCOUNT_ID) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT wrestler_id, NAME, STARTING_STAMINA, LOW_STAMINA, STARTING_HEALTH,\
-                 LOW_HEALTH, DECK_SIZE, CREATION_DATE, EXTERNAL_ID, \
+                 LOW_HEALTH, DECK_SIZE, CREATION_DATE, \
                  IS_PLAYER, GENDER, DESCRIPTION, IMAGE_URL,\
-                 ACTIVE, ACCOUNT_ID, LAST_SYNC, UPDATED_AT FROM wrestler\
+                 ACTIVE, ACCOUNT_ID FROM wrestler\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1688,19 +1651,16 @@ public class DataMigrationService {
         targetStatement.setInt(6, resultSet.getInt("LOW_HEALTH"));
         targetStatement.setInt(7, resultSet.getInt("DECK_SIZE"));
         targetStatement.setTimestamp(8, resultSet.getTimestamp("CREATION_DATE"));
-        targetStatement.setString(9, resultSet.getString("EXTERNAL_ID"));
-        targetStatement.setBoolean(10, resultSet.getBoolean("IS_PLAYER"));
-        targetStatement.setString(11, resultSet.getString("GENDER"));
-        targetStatement.setString(12, resultSet.getString("DESCRIPTION"));
-        targetStatement.setString(13, resultSet.getString("IMAGE_URL"));
-        targetStatement.setBoolean(14, resultSet.getBoolean("ACTIVE"));
+        targetStatement.setBoolean(9, resultSet.getBoolean("IS_PLAYER"));
+        targetStatement.setString(10, resultSet.getString("GENDER"));
+        targetStatement.setString(11, resultSet.getString("DESCRIPTION"));
+        targetStatement.setString(12, resultSet.getString("IMAGE_URL"));
+        targetStatement.setBoolean(13, resultSet.getBoolean("ACTIVE"));
         if (resultSet.getObject("ACCOUNT_ID") != null) {
-          targetStatement.setLong(15, resultSet.getLong("ACCOUNT_ID"));
+          targetStatement.setLong(14, resultSet.getLong("ACCOUNT_ID"));
         } else {
-          targetStatement.setObject(15, null);
+          targetStatement.setObject(14, null);
         }
-        targetStatement.setTimestamp(16, resultSet.getTimestamp("LAST_SYNC"));
-        targetStatement.setTimestamp(17, resultSet.getTimestamp("UPDATED_AT"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1789,15 +1749,15 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO injury_type (INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, \
-        STAMINA_EFFECT, CARD_EFFECT, SPECIAL_EFFECTS, EXTERNAL_ID) \
-        VALUES (?, ?, ?, ?, ?, ?, ?)\
+        STAMINA_EFFECT, CARD_EFFECT, SPECIAL_EFFECTS) \
+        VALUES (?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT INJURY_TYPE_ID, INJURY_NAME, HEALTH_EFFECT, STAMINA_EFFECT, CARD_EFFECT,\
-                 SPECIAL_EFFECTS, EXTERNAL_ID FROM injury_type\
+                 SPECIAL_EFFECTS FROM injury_type\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1821,7 +1781,6 @@ public class DataMigrationService {
           targetStatement.setObject(5, null);
         }
         targetStatement.setString(6, resultSet.getString("SPECIAL_EFFECTS"));
-        targetStatement.setString(7, resultSet.getString("EXTERNAL_ID"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {
@@ -1844,8 +1803,8 @@ public class DataMigrationService {
         """
         INSERT INTO injury (INJURY_ID, WRESTLER_ID, INJURY_TYPE_ID, NAME, DESCRIPTION, SEVERITY,\
          HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, \
-        INJURY_NOTES, CREATION_DATE, EXTERNAL_ID, UNIVERSE_ID) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        INJURY_NOTES, CREATION_DATE, UNIVERSE_ID) \
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
@@ -1853,7 +1812,7 @@ public class DataMigrationService {
                 """
                 SELECT INJURY_ID, WRESTLER_ID, INJURY_TYPE_ID, NAME, DESCRIPTION, SEVERITY,\
                  HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, INJURY_NOTES,\
-                 CREATION_DATE, EXTERNAL_ID, UNIVERSE_ID FROM injury\
+                 CREATION_DATE, UNIVERSE_ID FROM injury\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1873,11 +1832,10 @@ public class DataMigrationService {
         targetStatement.setLong(11, resultSet.getLong("HEALING_COST"));
         targetStatement.setString(12, resultSet.getString("INJURY_NOTES"));
         targetStatement.setTimestamp(13, resultSet.getTimestamp("CREATION_DATE"));
-        targetStatement.setString(14, resultSet.getString("EXTERNAL_ID"));
         if (resultSet.getObject("UNIVERSE_ID") != null) {
-          targetStatement.setLong(15, resultSet.getLong("UNIVERSE_ID"));
+          targetStatement.setLong(14, resultSet.getLong("UNIVERSE_ID"));
         } else {
-          targetStatement.setObject(15, null);
+          targetStatement.setObject(14, null);
         }
         targetStatement.addBatch();
         count++;
@@ -1912,15 +1870,15 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID,\
-         STATUS, FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID, MANAGER_ID, LAST_SYNC) VALUES (?,\
-         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+         STATUS, FORMED_DATE, DISBANDED_DATE, MANAGER_ID) VALUES (?,\
+         ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID, STATUS,\
-                 FORMED_DATE, DISBANDED_DATE, EXTERNAL_ID, MANAGER_ID, LAST_SYNC FROM team\
+                 FORMED_DATE, DISBANDED_DATE, MANAGER_ID FROM team\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
@@ -1939,13 +1897,11 @@ public class DataMigrationService {
         targetStatement.setString(7, resultSet.getString("STATUS"));
         targetStatement.setTimestamp(8, resultSet.getTimestamp("FORMED_DATE"));
         targetStatement.setTimestamp(9, resultSet.getTimestamp("DISBANDED_DATE"));
-        targetStatement.setString(10, resultSet.getString("EXTERNAL_ID"));
         if (resultSet.getObject("MANAGER_ID") != null) {
-          targetStatement.setLong(11, resultSet.getLong("MANAGER_ID"));
+          targetStatement.setLong(10, resultSet.getLong("MANAGER_ID"));
         } else {
-          targetStatement.setObject(11, null);
+          targetStatement.setObject(10, null);
         }
-        targetStatement.setTimestamp(12, resultSet.getTimestamp("LAST_SYNC"));
         targetStatement.addBatch();
         count++;
         if (count % 1000 == 0) {

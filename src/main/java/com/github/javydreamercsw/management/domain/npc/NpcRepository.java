@@ -27,6 +27,4 @@ public interface NpcRepository extends JpaRepository<Npc, Long> {
   List<Npc> findAllByNpcType(String npcType);
 
   Optional<Npc> findByName(String name);
-
-  Optional<Npc> findByExternalId(String externalId);
 }

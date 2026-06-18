@@ -432,12 +432,6 @@ public class RivalryService {
         .orElse(null);
   }
 
-  @Transactional(readOnly = true)
-  @PreAuthorize("isAuthenticated()")
-  public Optional<Rivalry> findByExternalId(@NonNull final String externalId) {
-    return rivalryRepository.findByExternalId(externalId);
-  }
-
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(

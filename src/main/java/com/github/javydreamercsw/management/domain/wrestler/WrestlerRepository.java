@@ -63,8 +63,6 @@ public interface WrestlerRepository
   @Query("SELECT w FROM Wrestler w LEFT JOIN FETCH w.statuses WHERE w.id = :id")
   Optional<Wrestler> findByIdWithStatuses(@Param("id") Long id);
 
-  Optional<Wrestler> findByExternalId(String externalId);
-
   @Query(
       """
       SELECT DISTINCT w FROM Wrestler w JOIN w.wrestlerStates ws WHERE ws.fans BETWEEN :minFans\
@@ -95,9 +93,6 @@ public interface WrestlerRepository
   @Query("SELECT w FROM Wrestler w WHERE w.id <> :excludeId ORDER BY RAND()")
   List<Wrestler> findRandomExcluding(@Param("excludeId") Long excludeId, Pageable pageable);
 
-  @Query("SELECT MAX(w.lastSync) FROM Wrestler w WHERE w.lastSync IS NOT NULL")
-  Optional<java.time.Instant> findMaxLastSync();
-
   /**
    * Fetch all wrestlers with their alignments eagerly loaded (avoids LazyInitializationException
    * when getAlignment() is called on detached entities).
@@ -107,11 +102,6 @@ public interface WrestlerRepository
 
   @Query("SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws WHERE w.id = :id")
   Optional<Wrestler> findByIdWithStates(@Param("id") Long id);
-
-  @Query(
-      "SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.wrestlerStates ws WHERE"
-          + " w.externalId = :externalId")
-  Optional<Wrestler> findByExternalIdWithStates(@Param("externalId") String externalId);
 
   @Query(
       """

@@ -16,16 +16,20 @@
 */
 package com.github.javydreamercsw.management.ui.view.inbox;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.league.MatchReportDialog;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -33,7 +37,9 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridMultiSelectionModel;
-import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -43,6 +49,9 @@ import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.PermitAll;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -62,11 +71,13 @@ public class InboxView extends VerticalLayout {
   private final InboxEventTypeRegistry eventTypeRegistry;
   private final WrestlerRepository wrestlerRepository;
   private final MatchFulfillmentService matchFulfillmentService;
+  private final ObjectMapper objectMapper;
+  private final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
   private final Grid<InboxItem> grid = new Grid<>(InboxItem.class);
   private final MultiSelectComboBox<Wrestler> targetFilter = new MultiSelectComboBox<>("Targets");
   private final ComboBox<String> readStatusFilter = new ComboBox<>("Read Status");
   private final ComboBox<String> eventTypeFilter = new ComboBox<>("Event Type");
-  private final Div detailsView = new Div();
+  private final VerticalLayout detailsView = new VerticalLayout();
   private final Checkbox selectAllCheckbox = new Checkbox("Select All");
   private final Button markSelectedReadButton = new Button("Mark Selected as Read");
   private final Button markSelectedUnreadButton = new Button("Mark Selected as Unread");
@@ -80,16 +91,23 @@ public class InboxView extends VerticalLayout {
       final InboxEventTypeRegistry eventTypeRegistry,
       final WrestlerRepository wrestlerRepository,
       final MatchFulfillmentService matchFulfillmentService,
-      final SecurityUtils securityUtils) {
+      final SecurityUtils securityUtils,
+      final ObjectMapper objectMapper,
+      final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
     this.matchFulfillmentService = matchFulfillmentService;
     this.securityUtils = securityUtils;
+    this.objectMapper = objectMapper;
+    this.openProfileDrawerBroadcaster = openProfileDrawerBroadcaster;
 
     addClassName("inbox-view");
     setSizeFull();
     configureGrid();
+
+    detailsView.setMinWidth("300px");
+    showEmptyDetail();
 
     SplitLayout splitLayout = new SplitLayout();
     splitLayout.setSizeFull();
@@ -230,13 +248,43 @@ public class InboxView extends VerticalLayout {
             && grid.getDataProvider().size(new Query<>()) > 0);
   }
 
+  private Component createUrgencyBadge(@NonNull final InboxItem item) {
+    InboxItem.Urgency urgency = item.getUrgency();
+    if (urgency == null || urgency == InboxItem.Urgency.INFO) {
+      return new Span();
+    }
+    Span badge =
+        new Span(urgency == InboxItem.Urgency.ACTION_REQUIRED ? "Action Required" : "Warning");
+    badge.getElement().getThemeList().add("badge");
+    if (urgency == InboxItem.Urgency.ACTION_REQUIRED) {
+      badge.getElement().getThemeList().add("error");
+    } else {
+      badge.getElement().getThemeList().add("contrast");
+    }
+    return badge;
+  }
+
+  private String getSubjectDisplay(@NonNull final InboxItem item) {
+    if (item.getSubject() != null && !item.getSubject().isBlank()) {
+      return item.getSubject();
+    }
+    String desc = item.getDescription();
+    if (desc == null) {
+      return "";
+    }
+    return desc.length() > 80 ? desc.substring(0, 80) : desc;
+  }
+
   private void configureGrid() {
     grid.removeAllColumns();
     grid.setId("inbox-grid");
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
     grid.addColumn(InboxItem::getEventType).setHeader("Event Type").setId("event-type-column");
-    grid.addColumn(InboxItem::getDescription).setHeader("Description").setId("description-column");
+    grid.addComponentColumn(this::createUrgencyBadge)
+        .setHeader("Priority")
+        .setId("priority-column");
+    grid.addColumn(this::getSubjectDisplay).setHeader("Subject").setId("subject-column");
     grid.addColumn(InboxItem::getEventTimestamp)
         .setHeader("Event Timestamp")
         .setId("timestamp-column");
@@ -263,44 +311,85 @@ public class InboxView extends VerticalLayout {
     layout.setPadding(false);
     layout.setSpacing(true);
 
-    if ("MATCH_REQUEST".equals(item.getEventType().getName())) {
-      Button reportButton =
-          new Button(
-              "Report Result",
-              e -> {
-                // Find fulfillment ID from targets
-                item.getTargets().stream()
-                    .filter(
-                        t ->
-                            t.getTargetType()
-                                == com.github.javydreamercsw.management.domain.inbox.InboxItemTarget
-                                    .TargetType.MATCH_FULFILLMENT)
-                    .findFirst()
-                    .ifPresent(
-                        target -> {
-                          try {
-                            matchFulfillmentService
-                                .getFulfillmentWithDetails(Long.parseLong(target.getTargetId()))
-                                .ifPresent(
-                                    f ->
-                                        new MatchReportDialog(
-                                                matchFulfillmentService,
-                                                f,
-                                                securityUtils,
-                                                this::updateList)
-                                            .open());
-                          } catch (NumberFormatException ex) {
-                            // Ignore
-                          }
-                        });
-              });
-      reportButton.setId("report-result-btn-" + item.getId());
-      reportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
-      layout.add(reportButton);
+    if (item.getActionType() != null) {
+      switch (item.getActionType()) {
+        case "MATCH_REPORT" -> layout.add(createMatchReportButton(item));
+        case "NAVIGATE" -> createNavigateButton(item).ifPresent(layout::add);
+        case "OPEN_DRAWER" -> layout.add(createOpenDrawerButton(item));
+        default -> {
+          // Unknown action type — no extra button rendered
+        }
+      }
+    } else if ("MATCH_REQUEST".equals(item.getEventType().getName())) {
+      // Backward-compat: old items without actionType but with MATCH_REQUEST event type
+      layout.add(createMatchReportButton(item));
     }
 
     layout.add(createReadToggleButton(item));
     return layout;
+  }
+
+  private Button createMatchReportButton(@NonNull final InboxItem item) {
+    Button reportButton =
+        new Button(
+            "Report Result",
+            e -> {
+              // Find fulfillment ID from targets
+              item.getTargets().stream()
+                  .filter(
+                      t ->
+                          t.getTargetType()
+                              == com.github.javydreamercsw.management.domain.inbox.InboxItemTarget
+                                  .TargetType.MATCH_FULFILLMENT)
+                  .findFirst()
+                  .ifPresent(
+                      target -> {
+                        try {
+                          matchFulfillmentService
+                              .getFulfillmentWithDetails(Long.parseLong(target.getTargetId()))
+                              .ifPresent(
+                                  f ->
+                                      new MatchReportDialog(
+                                              matchFulfillmentService,
+                                              f,
+                                              securityUtils,
+                                              this::updateList)
+                                          .open());
+                        } catch (NumberFormatException ex) {
+                          // Ignore
+                        }
+                      });
+            });
+    reportButton.setId("report-result-btn-" + item.getId());
+    reportButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+    return reportButton;
+  }
+
+  private Optional<Button> createNavigateButton(@NonNull final InboxItem item) {
+    if (item.getActionPayload() == null) {
+      return Optional.empty();
+    }
+    try {
+      java.util.Map<String, String> payload =
+          objectMapper.readValue(item.getActionPayload(), new TypeReference<>() {});
+      String route = payload.get("route");
+      if (route == null || route.isBlank()) {
+        return Optional.empty();
+      }
+      Button button = new Button("View", e -> UI.getCurrent().navigate(route));
+      button.setId("navigate-btn-" + item.getId());
+      button.addThemeVariants(ButtonVariant.LUMO_SMALL);
+      return Optional.of(button);
+    } catch (Exception e) {
+      return Optional.empty();
+    }
+  }
+
+  private Button createOpenDrawerButton(@NonNull final InboxItem item) {
+    Button button = new Button("Show me", e -> openProfileDrawerBroadcaster.broadcast());
+    button.setId("open-drawer-btn-" + item.getId());
+    button.addThemeVariants(ButtonVariant.LUMO_SMALL);
+    return button;
   }
 
   private String getTargetNames(@NonNull final InboxItem item) {
@@ -351,11 +440,132 @@ public class InboxView extends VerticalLayout {
         .collect(Collectors.joining(", "));
   }
 
+  private void showEmptyDetail() {
+    detailsView.removeAll();
+    Paragraph empty = new Paragraph("Select a message to read it.");
+    empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+    detailsView.setAlignItems(Alignment.CENTER);
+    detailsView.setJustifyContentMode(JustifyContentMode.CENTER);
+    detailsView.setSizeFull();
+    detailsView.add(empty);
+  }
+
   private void showDetails(final InboxItem item) {
     if (item == null) {
-      detailsView.setText("");
+      showEmptyDetail();
+      return;
+    }
+
+    // Auto-mark as read when the detail pane opens
+    if (!item.isRead()) {
+      inboxService.toggleReadStatus(item);
+      updateList();
+    }
+
+    detailsView.removeAll();
+    detailsView.setAlignItems(Alignment.START);
+    detailsView.setJustifyContentMode(JustifyContentMode.START);
+    detailsView.setSizeFull();
+    detailsView.setPadding(true);
+    detailsView.setSpacing(true);
+
+    // Header row: event type badge + timestamp
+    Span eventTypeBadge = new Span(item.getEventType().getFriendlyName());
+    eventTypeBadge.getElement().getThemeList().add("badge");
+
+    String formattedTimestamp = "";
+    if (item.getEventTimestamp() != null) {
+      DateTimeFormatter formatter =
+          DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+              .withZone(ZoneId.systemDefault());
+      formattedTimestamp = formatter.format(item.getEventTimestamp());
+    }
+    Span timestampSpan = new Span(formattedTimestamp);
+    timestampSpan.getStyle().set("color", "var(--lumo-secondary-text-color)");
+    timestampSpan.getStyle().set("font-size", "var(--lumo-font-size-s)");
+
+    HorizontalLayout headerRow = new HorizontalLayout(eventTypeBadge, timestampSpan);
+    headerRow.setAlignItems(Alignment.BASELINE);
+    headerRow.setSpacing(true);
+    detailsView.add(headerRow);
+
+    // Subject / title: first line of description (or full description if single-line)
+    String subject = item.getDescription();
+    if (subject != null && subject.contains("\n")) {
+      subject = subject.lines().findFirst().orElse(subject);
+    }
+    H3 subjectHeading = new H3(subject != null ? subject : "(no subject)");
+    subjectHeading.getStyle().set("margin-top", "0");
+    detailsView.add(subjectHeading);
+
+    // Body: full description with word-wrap
+    if (item.getDescription() != null) {
+      Paragraph body = new Paragraph(item.getDescription());
+      body.getStyle().set("white-space", "pre-wrap");
+      body.getStyle().set("word-break", "break-word");
+      detailsView.add(body);
+    }
+
+    // Targets section rendered as badge chips
+    if (item.getTargets() != null && !item.getTargets().isEmpty()) {
+      HorizontalLayout targetsRow = new HorizontalLayout();
+      targetsRow.setSpacing(true);
+      targetsRow.setAlignItems(Alignment.CENTER);
+      Span targetsLabel = new Span("Targets:");
+      targetsLabel.getStyle().set("font-weight", "bold");
+      targetsRow.add(targetsLabel);
+      for (var target : item.getTargets()) {
+        String targetName = resolveTargetName(target);
+        Span chip = new Span(targetName);
+        chip.getElement().getThemeList().add("badge contrast");
+        targetsRow.add(chip);
+      }
+      detailsView.add(targetsRow);
     } else {
-      detailsView.setText("Details for: " + item.getDescription());
+      // Backward-compat: try to resolve from description
+      String legacyName = getTargetNames(item);
+      if (!"N/A".equals(legacyName)) {
+        HorizontalLayout targetsRow = new HorizontalLayout();
+        targetsRow.setSpacing(true);
+        targetsRow.setAlignItems(Alignment.CENTER);
+        Span targetsLabel = new Span("Targets:");
+        targetsLabel.getStyle().set("font-weight", "bold");
+        targetsRow.add(targetsLabel);
+        Span chip = new Span(legacyName);
+        chip.getElement().getThemeList().add("badge contrast");
+        targetsRow.add(chip);
+        detailsView.add(targetsRow);
+      }
+    }
+
+    // Actions area
+    Component actions = createActionComponent(item);
+    detailsView.add(actions);
+  }
+
+  private String resolveTargetName(
+      @NonNull final com.github.javydreamercsw.management.domain.inbox.InboxItemTarget target) {
+    try {
+      Long id = Long.parseLong(target.getTargetId());
+      switch (target.getTargetType()) {
+        case ACCOUNT:
+          return inboxService
+              .getAccountRepository()
+              .findById(id)
+              .map(com.github.javydreamercsw.base.domain.account.Account::getUsername)
+              .orElse("Unknown Account (" + id + ")");
+        case WRESTLER:
+          return wrestlerRepository
+              .findById(id)
+              .map(Wrestler::getName)
+              .orElse("Unknown Wrestler (" + id + ")");
+        case MATCH_FULFILLMENT:
+          return "Match Fulfillment (" + id + ")";
+        default:
+          return target.getTargetType().name() + " (" + id + ")";
+      }
+    } catch (NumberFormatException e) {
+      return target.getTargetId();
     }
   }
 

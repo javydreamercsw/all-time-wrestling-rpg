@@ -152,11 +152,15 @@ public class DraftService {
     // Send notifications to all participants (even viewers?)
     List<LeagueMembership> allMembers = leagueMembershipRepository.findByLeague(league);
     for (LeagueMembership member : allMembers) {
-      inboxService.createInboxItem(
-          draftStartedEventType,
-          "The draft for league '" + league.getName() + "' has started!",
-          member.getMember().getId().toString(),
-          InboxItemTarget.TargetType.ACCOUNT);
+      com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+          inboxService.createInboxItem(
+              draftStartedEventType,
+              "The draft for league '" + league.getName() + "' has started!",
+              member.getMember().getId().toString(),
+              InboxItemTarget.TargetType.ACCOUNT);
+      inboxItem.setActionType("NAVIGATE");
+      inboxItem.setActionPayload("{\"route\":\"draft\"}");
+      inboxService.save(inboxItem);
     }
 
     draftBroadcaster.broadcast(new DraftUpdateEvent(saved.getId()));

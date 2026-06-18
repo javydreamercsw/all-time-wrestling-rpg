@@ -645,5 +645,26 @@
     "description": "Users with the VIEWER role see the Show Detail page in read-only mode. Segment results, participants, and narration are all visible, but mutation controls (Adjudicate, Add Segment, Edit, Delete) are hidden.",
     "imagePath": "screenshots/entities-show-detail-viewer-readonly.png",
     "order": 0
+  }, {
+    "id": "players-players-tutorial-step1",
+    "category": "Players",
+    "title": "Tutorial — Step 1",
+    "description": "The tutorial guides new players through the key actions for their mode. Step 1 asks the player to assign a wrestler on their Player Dashboard.",
+    "imagePath": "screenshots/players-tutorial-step1.png",
+    "order": 0
+  }, {
+    "id": "players-players-tutorial-step3",
+    "category": "Players",
+    "title": "Tutorial — Step 3",
+    "description": "Step 3 asks the player to run their first show by adjudicating its segments.",
+    "imagePath": "screenshots/players-tutorial-step3.png",
+    "order": 0
+  }, {
+    "id": "players-players-tutorial-step2",
+    "category": "Players",
+    "title": "Tutorial — Step 2",
+    "description": "Step 2 guides the player to create their first show in the universe.",
+    "imagePath": "screenshots/players-tutorial-step2.png",
+    "order": 0
   } ]
 }

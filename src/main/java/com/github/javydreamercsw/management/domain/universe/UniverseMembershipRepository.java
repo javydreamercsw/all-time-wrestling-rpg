@@ -32,4 +32,9 @@ public interface UniverseMembershipRepository extends JpaRepository<UniverseMemb
   Optional<UniverseMembership> findByAccountAndUniverse(Account account, Universe universe);
 
   boolean existsByAccountAndUniverse(Account account, Universe universe);
+
+  Optional<UniverseMembership> findByAccount_IdAndUniverse(Long accountId, Universe universe);
+
+  boolean existsByAccount_IdAndUniverseAndRole(
+      Long accountId, Universe universe, UniverseMembership.UniverseMemberRole role);
 }

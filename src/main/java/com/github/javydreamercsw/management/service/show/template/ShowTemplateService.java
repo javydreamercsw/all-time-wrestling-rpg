@@ -116,11 +116,6 @@ public class ShowTemplateService {
     return showTemplateRepository.findByName(name);
   }
 
-  @PreAuthorize("isAuthenticated()")
-  public Optional<ShowTemplate> findByExternalId(@NonNull final String externalId) {
-    return showTemplateRepository.findByExternalId(externalId);
-  }
-
   /**
    * Check if a show template exists by name.
    *
@@ -202,7 +197,6 @@ public class ShowTemplateService {
    * @param name Name of the show template
    * @param description Description of the show template
    * @param showTypeName Name of the show type
-   * @param notionUrl URL to the Notion page for this template
    * @return The created or updated show template
    */
   @Transactional
@@ -217,7 +211,6 @@ public class ShowTemplateService {
       @NonNull final String name,
       final String description,
       @NonNull final String showTypeName,
-      final String notionUrl,
       final String imageUrl,
       final String commentaryTeamName,
       final Integer expectedMatches,
@@ -253,7 +246,6 @@ public class ShowTemplateService {
     template.setName(name);
     template.setDescription(description);
     template.setShowType(showType);
-    template.setNotionUrl(notionUrl);
     template.setImageUrl(imageUrl);
     template.setExpectedMatches(expectedMatches);
     template.setExpectedPromos(expectedPromos);
@@ -287,15 +279,11 @@ public class ShowTemplateService {
       },
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
-      @NonNull final String name,
-      final String description,
-      @NonNull final String showTypeName,
-      final String notionUrl) {
+      @NonNull final String name, final String description, @NonNull final String showTypeName) {
     return createOrUpdateTemplate(
         name,
         description,
         showTypeName,
-        notionUrl,
         null,
         null,
         null,
@@ -349,7 +337,6 @@ public class ShowTemplateService {
    * @param name New name for the show template
    * @param description New description for the show template
    * @param showTypeName New show type name
-   * @param notionUrl New Notion URL
    * @return Optional containing the updated show template if found
    */
   @Transactional
@@ -365,7 +352,6 @@ public class ShowTemplateService {
       @NonNull final String name,
       final String description,
       @NonNull final String showTypeName,
-      final String notionUrl,
       final String imageUrl,
       final String commentaryTeamName,
       final Integer expectedMatches,
@@ -395,7 +381,6 @@ public class ShowTemplateService {
     template.setName(name);
     template.setDescription(description);
     template.setShowType(showTypeOpt.get());
-    template.setNotionUrl(notionUrl);
     template.setImageUrl(imageUrl);
     template.setExpectedMatches(expectedMatches);
     template.setExpectedPromos(expectedPromos);
@@ -431,7 +416,6 @@ public class ShowTemplateService {
    * @param name New name for the show template
    * @param description New description for the show template
    * @param showTypeName New show type name
-   * @param notionUrl New Notion URL
    * @return Optional containing the updated show template if found
    */
   @Transactional
@@ -446,15 +430,13 @@ public class ShowTemplateService {
       @NonNull final Long id,
       @NonNull final String name,
       final String description,
-      @NonNull final String showTypeName,
-      final String notionUrl) {
+      @NonNull final String showTypeName) {
     ShowTemplate st = showTemplateRepository.findById(id).orElseThrow();
     return updateTemplate(
         id,
         name,
         description,
         showTypeName,
-        notionUrl,
         st.getImageUrl(),
         st.getCommentaryTeam() != null ? st.getCommentaryTeam().getName() : null,
         st.getExpectedMatches(),

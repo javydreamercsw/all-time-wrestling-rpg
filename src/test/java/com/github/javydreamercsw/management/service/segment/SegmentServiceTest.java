@@ -27,7 +27,6 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -82,7 +81,6 @@ class SegmentServiceTest {
     testSegment.setNarration("Great segment!");
     testSegment.setIsTitleSegment(false);
     testSegment.setIsNpcGenerated(false);
-    testSegment.setExternalId("notion-123");
   }
 
   @Test
@@ -168,7 +166,7 @@ class SegmentServiceTest {
   void shouldGetAllSegmentsWithPagination() {
     // Given
     Pageable pageable = PageRequest.of(0, 10);
-    Page<Segment> page = new PageImpl<>(Arrays.asList(testSegment));
+    Page<Segment> page = new PageImpl<>(Collections.singletonList(testSegment));
     when(matchRepository.findAllBy(pageable)).thenReturn(page);
 
     // When
@@ -177,7 +175,7 @@ class SegmentServiceTest {
     // Then
     assertThat(result).isNotNull();
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0)).isEqualTo(testSegment);
+    assertThat(result.getContent().getFirst()).isEqualTo(testSegment);
     verify(matchRepository).findAllBy(pageable);
   }
 
@@ -185,7 +183,7 @@ class SegmentServiceTest {
   @DisplayName("Should get matches by show")
   void shouldGetSegmentsByShow() {
     // Given
-    List<Segment> matches = Arrays.asList(testSegment);
+    List<Segment> matches = Collections.singletonList(testSegment);
     when(matchRepository.findByShow(testShow)).thenReturn(matches);
 
     // When
@@ -193,16 +191,16 @@ class SegmentServiceTest {
 
     // Then
     assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(testSegment);
+    assertThat(result.getFirst()).isEqualTo(testSegment);
     verify(matchRepository).findByShow(testShow);
   }
 
   @Test
   @DisplayName("Should get matches by wrestler participation")
-  void shouldGetSegmentesByWrestlerParticipation() {
+  void shouldGetSegmentsByWrestlerParticipation() {
     // Given
     Pageable pageable = Pageable.unpaged();
-    Page<Segment> page = new PageImpl<>(Arrays.asList(testSegment));
+    Page<Segment> page = new PageImpl<>(Collections.singletonList(testSegment));
     when(matchRepository.findByWrestlerParticipation(testWinner, pageable)).thenReturn(page);
 
     // When
@@ -211,7 +209,7 @@ class SegmentServiceTest {
     // Then
     assertThat(result).isNotNull();
     assertThat(result.getContent()).hasSize(1);
-    assertThat(result.getContent().get(0)).isEqualTo(testSegment);
+    assertThat(result.getContent().getFirst()).isEqualTo(testSegment);
     verify(matchRepository).findByWrestlerParticipation(testWinner, pageable);
   }
 
@@ -231,16 +229,16 @@ class SegmentServiceTest {
 
     // Then
     assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(testSegment);
+    assertThat(result.getFirst()).isEqualTo(testSegment);
     verify(matchRepository).findSegmentsBetween(testWinner, wrestler2);
   }
 
   @Test
   @DisplayName("Should get NPC generated matches")
-  void shouldGetNpcGeneratedSegmentes() {
+  void shouldGetNpcGeneratedSegments() {
     // Given
     testSegment.setIsNpcGenerated(true);
-    List<Segment> matches = Arrays.asList(testSegment);
+    List<Segment> matches = List.of(testSegment);
     when(matchRepository.findByIsNpcGeneratedTrue()).thenReturn(matches);
 
     // When
@@ -248,16 +246,16 @@ class SegmentServiceTest {
 
     // Then
     assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(testSegment);
+    assertThat(result.getFirst()).isEqualTo(testSegment);
     verify(matchRepository).findByIsNpcGeneratedTrue();
   }
 
   @Test
   @DisplayName("Should get title matches")
-  void shouldGetTitleSegmentes() {
+  void shouldGetTitleSegments() {
     // Given
     testSegment.setIsTitleSegment(true);
-    List<Segment> matches = Arrays.asList(testSegment);
+    List<Segment> matches = List.of(testSegment);
     when(matchRepository.findByIsTitleSegmentTrue()).thenReturn(matches);
 
     // When
@@ -265,16 +263,16 @@ class SegmentServiceTest {
 
     // Then
     assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(testSegment);
+    assertThat(result.getFirst()).isEqualTo(testSegment);
     verify(matchRepository).findByIsTitleSegmentTrue();
   }
 
   @Test
   @DisplayName("Should get matches after specific date")
-  void shouldGetSegmentesAfterSpecificDate() {
+  void shouldGetSegmentsAfterSpecificDate() {
     // Given
     Instant afterDate = testDate.minusSeconds(3600);
-    List<Segment> matches = Arrays.asList(testSegment);
+    List<Segment> matches = Collections.singletonList(testSegment);
     when(matchRepository.findBySegmentDateAfter(afterDate)).thenReturn(matches);
 
     // When
@@ -282,7 +280,7 @@ class SegmentServiceTest {
 
     // Then
     assertThat(result).hasSize(1);
-    assertThat(result.get(0)).isEqualTo(testSegment);
+    assertThat(result.getFirst()).isEqualTo(testSegment);
     verify(matchRepository).findBySegmentDateAfter(afterDate);
   }
 
@@ -312,35 +310,6 @@ class SegmentServiceTest {
     // Then
     assertThat(result).isEqualTo(10L);
     verify(matchRepository).countSegmentsByWrestler(testWinner);
-  }
-
-  @Test
-  @DisplayName("Should check if segment exists by external ID")
-  void shouldCheckIfSegmentExistsByExternalId() {
-    // Given
-    when(matchRepository.existsByExternalId("notion-123")).thenReturn(true);
-
-    // When
-    boolean result = segmentService.existsByExternalId("notion-123");
-
-    // Then
-    assertThat(result).isTrue();
-    verify(matchRepository).existsByExternalId("notion-123");
-  }
-
-  @Test
-  @DisplayName("Should find segment by external ID")
-  void shouldFindSegmentByExternalId() {
-    // Given
-    when(matchRepository.findByExternalId("notion-123")).thenReturn(Optional.of(testSegment));
-
-    // When
-    Optional<Segment> result = segmentService.findByExternalId("notion-123");
-
-    // Then
-    assertThat(result).isPresent();
-    assertThat(result.get()).isEqualTo(testSegment);
-    verify(matchRepository).findByExternalId("notion-123");
   }
 
   @Test

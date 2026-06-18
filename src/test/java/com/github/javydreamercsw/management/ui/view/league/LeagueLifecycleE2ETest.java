@@ -416,7 +416,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     }
 
     if (showTemplateService.findByName("Continuum").isEmpty()) {
-      showTemplateService.createOrUpdateTemplate("Continuum", "Default Template", "Weekly", null);
+      showTemplateService.createOrUpdateTemplate("Continuum", "Default Template", "Weekly");
     }
   }
 

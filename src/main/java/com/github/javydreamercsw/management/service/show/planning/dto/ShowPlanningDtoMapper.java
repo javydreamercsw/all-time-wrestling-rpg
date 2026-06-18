@@ -188,7 +188,6 @@ public class ShowPlanningDtoMapper {
     if (faction.getDisbandedDate() != null) {
       dto.setDisbandedDate(faction.getDisbandedDate().toString());
     }
-    dto.setExternalId(faction.getExternalId());
     return dto;
   }
 

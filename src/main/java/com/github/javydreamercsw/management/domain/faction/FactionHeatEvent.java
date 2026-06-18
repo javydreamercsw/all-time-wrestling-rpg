@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.management.domain.faction;
 
-import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
-
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -72,21 +70,6 @@ public class FactionHeatEvent extends AbstractEntity<Long> {
 
   // ==================== ATW RPG METHODS ====================
 
-  /** Check if this event increased heat. */
-  public boolean isHeatIncrease() {
-    return heatChange > 0;
-  }
-
-  /** Check if this event decreased heat. */
-  public boolean isHeatDecrease() {
-    return heatChange < 0;
-  }
-
-  /** Check if this was a neutral event (no heat change). */
-  public boolean isNeutralEvent() {
-    return heatChange == 0;
-  }
-
   /** Get display string for this heat event. */
   public String getDisplayString() {
     String changeStr;
@@ -99,24 +82,5 @@ public class FactionHeatEvent extends AbstractEntity<Long> {
     }
 
     return "%s (%s heat → %d total)".formatted(reason, changeStr, heatAfterEvent);
-  }
-
-  /** Get the heat change with appropriate emoji. */
-  public String getHeatChangeWithEmoji() {
-    if (heatChange > 0) {
-      return "🔥 +" + heatChange;
-    } else if (heatChange < 0) {
-      return "❄️ " + heatChange;
-    } else {
-      return "⚖️ ±0";
-    }
-  }
-
-  /** Get faction names involved in this event. */
-  public String getFactionNames() {
-    if (factionRivalry != null) {
-      return factionRivalry.getDisplayName();
-    }
-    return "Unknown Factions";
   }
 }

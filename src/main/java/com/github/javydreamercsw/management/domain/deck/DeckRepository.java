@@ -24,7 +24,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.transaction.annotation.Transactional;
 
 public interface DeckRepository extends JpaRepository<Deck, Long>, JpaSpecificationExecutor<Deck> {
 
@@ -35,7 +34,4 @@ public interface DeckRepository extends JpaRepository<Deck, Long>, JpaSpecificat
 
   @Query("SELECT d FROM Deck d LEFT JOIN FETCH d.cards WHERE d.wrestler = :wrestler")
   List<Deck> findByWrestlerWithCards(@Param("wrestler") Wrestler wrestler);
-
-  @Transactional
-  void deleteByWrestler(Wrestler wrestler);
 }

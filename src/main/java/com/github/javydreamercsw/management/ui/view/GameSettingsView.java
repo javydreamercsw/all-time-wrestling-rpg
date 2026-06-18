@@ -16,9 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
-import com.github.javydreamercsw.base.ai.notion.NotionHandler;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -31,12 +31,10 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -53,23 +51,19 @@ public class GameSettingsView extends VerticalLayout {
   private final GameSettingService gameSettingService;
   private final GameSettingRepository gameSettingRepository;
   private final ThemeService themeService;
-  private final NotionHandler notionHandler;
   private final UniverseContextService universeContextService;
   private DatePicker gameDatePicker;
   private ComboBox<String> defaultThemeSelection;
-  private PasswordField notionTokenField;
 
   @Autowired
   public GameSettingsView(
       final GameSettingService gameSettingService,
       final GameSettingRepository gameSettingRepository,
       final ThemeService themeService,
-      final Optional<NotionHandler> notionHandler,
       final UniverseContextService universeContextService) {
     this.gameSettingService = gameSettingService;
     this.gameSettingRepository = gameSettingRepository;
     this.themeService = themeService;
-    this.notionHandler = notionHandler.orElse(null);
     this.universeContextService = universeContextService;
     init();
   }
@@ -109,41 +103,6 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
     add(defaultThemeSelection);
-
-    // ── Credentials (per-universe only) ─────────────────────────────────────
-    add(new H3("Credentials"));
-
-    if (!hasUniverse) {
-      Span credNote =
-          new Span(
-              "Select a universe to manage its credentials. Credentials are never shared between"
-                  + " universes.");
-      credNote.getStyle().set("color", "var(--lumo-error-text-color)");
-      add(credNote);
-    } else {
-      notionTokenField = new PasswordField("Notion Integration Token");
-      notionTokenField.setHelperText(
-          universeInheritanceLabel(GameSettingService.NOTION_TOKEN_KEY, universeId));
-      try {
-        notionTokenField.setValue(
-            gameSettingService.getNotionToken() != null ? gameSettingService.getNotionToken() : "");
-      } catch (Exception e) {
-        log.warn("Could not retrieve Notion token: {}", e.getMessage());
-        notionTokenField.setValue("");
-      }
-      notionTokenField.setPlaceholder("Enter your Notion API token for this universe");
-      notionTokenField.setWidthFull();
-      notionTokenField.addValueChangeListener(
-          event -> {
-            gameSettingService.setNotionToken(event.getValue());
-            if (notionHandler != null) {
-              notionHandler.reinitialize();
-            }
-            Notification.show("Notion token updated")
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-          });
-      add(notionTokenField);
-    }
 
     // ── Gameplay settings (global default + per-universe override) ───────────
     add(new H3("Gameplay Settings"));
@@ -343,6 +302,46 @@ public class GameSettingsView extends VerticalLayout {
             decayInterval);
     rivalrySection.setPadding(false);
 
+    // ── Tutorial Configuration ────────────────────────────────────────────────
+    H4 tutorialHeader = new H4("Tutorial Settings");
+
+    Checkbox campaignTutorial = new Checkbox("Enable Campaign Tutorial");
+    campaignTutorial.setHelperText(
+        universeInheritanceLabel(GameSettingService.TUTORIAL_ENABLED_CAMPAIGN_KEY, universeId));
+    campaignTutorial.setValue(gameSettingService.isTutorialEnabled(Universe.UniverseType.CAMPAIGN));
+    campaignTutorial.addValueChangeListener(
+        event -> {
+          gameSettingService.setTutorialEnabled(Universe.UniverseType.CAMPAIGN, event.getValue());
+          Notification.show("Campaign tutorial " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    Checkbox leagueTutorial = new Checkbox("Enable League Tutorial");
+    leagueTutorial.setHelperText(
+        universeInheritanceLabel(GameSettingService.TUTORIAL_ENABLED_LEAGUE_KEY, universeId));
+    leagueTutorial.setValue(gameSettingService.isTutorialEnabled(Universe.UniverseType.LEAGUE));
+    leagueTutorial.addValueChangeListener(
+        event -> {
+          gameSettingService.setTutorialEnabled(Universe.UniverseType.LEAGUE, event.getValue());
+          Notification.show("League tutorial " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    Checkbox globalTutorial = new Checkbox("Enable Universe (Global) Tutorial");
+    globalTutorial.setHelperText(
+        universeInheritanceLabel(GameSettingService.TUTORIAL_ENABLED_GLOBAL_KEY, universeId));
+    globalTutorial.setValue(gameSettingService.isTutorialEnabled(Universe.UniverseType.GLOBAL));
+    globalTutorial.addValueChangeListener(
+        event -> {
+          gameSettingService.setTutorialEnabled(Universe.UniverseType.GLOBAL, event.getValue());
+          Notification.show("Universe tutorial " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    VerticalLayout tutorialSection =
+        new VerticalLayout(tutorialHeader, campaignTutorial, leagueTutorial, globalTutorial);
+    tutorialSection.setPadding(false);
+
     add(
         gameDatePicker,
         aiNewsEnabled,
@@ -350,7 +349,8 @@ public class GameSettingsView extends VerticalLayout {
         statusCardsEnabled,
         rumorChance,
         newsStrategy,
-        rivalrySection);
+        rivalrySection,
+        tutorialSection);
   }
 
   /**

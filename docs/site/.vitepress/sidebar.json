@@ -140,6 +140,16 @@
     ]
   },
   {
+    "text": "Players",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/guide/players"
+      }
+    ]
+  },
+  {
     "text": "Roster Management",
     "collapsed": false,
     "items": [

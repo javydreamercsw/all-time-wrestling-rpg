@@ -17,14 +17,10 @@
 package com.github.javydreamercsw.management.domain.campaign;
 
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CampaignStorylineRepository extends JpaRepository<CampaignStoryline, Long> {
   List<CampaignStoryline> findByCampaignOrderByStartedAtDesc(Campaign campaign);
-
-  Optional<CampaignStoryline> findByCampaignAndStatus(
-      Campaign campaign, CampaignStoryline.StorylineStatus status);
 }

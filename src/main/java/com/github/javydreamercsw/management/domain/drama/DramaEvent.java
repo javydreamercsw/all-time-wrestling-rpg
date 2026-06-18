@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.management.domain.drama;
 
-import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_MAX_LENGTH;
-
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -121,106 +119,6 @@ public class DramaEvent extends AbstractEntity<Long> {
   @Lob
   @Column(name = "processing_notes")
   private String processingNotes;
-
-  /** Check if this event involves multiple wrestlers. */
-  public boolean isMultiWrestlerEvent() {
-    return secondaryWrestler != null;
-  }
-
-  /** Check if this event has positive impact (gains fans, creates excitement). */
-  public boolean hasPositiveImpact() {
-    return (fanImpact != null && fanImpact > 0) || severity == DramaEventSeverity.POSITIVE;
-  }
-
-  /** Check if this event has negative impact (loses fans, creates problems). */
-  public boolean hasNegativeImpact() {
-    return (fanImpact != null && fanImpact < 0)
-        || severity == DramaEventSeverity.NEGATIVE
-        || injuryCaused;
-  }
-
-  /** Check if this event affects rivalries. */
-  public boolean affectsRivalries() {
-    return heatImpact != null || rivalryCreated || rivalryEnded;
-  }
-
-  /** Get display string for the event impact. */
-  public String getImpactSummary() {
-    StringBuilder summary = new StringBuilder();
-
-    if (fanImpact != null && fanImpact != 0) {
-      summary.append(fanImpact > 0 ? "+" : "").append(fanImpact).append(" fans");
-    }
-
-    if (heatImpact != null && heatImpact != 0) {
-      if (!summary.isEmpty()) {
-        summary.append(", ");
-      }
-      summary.append(heatImpact > 0 ? "+" : "").append(heatImpact).append(" heat");
-    }
-
-    if (injuryCaused) {
-      if (!summary.isEmpty()) {
-        summary.append(", ");
-      }
-      summary.append("injury caused");
-    }
-
-    if (rivalryCreated) {
-      if (!summary.isEmpty()) {
-        summary.append(", ");
-      }
-      summary.append("rivalry created");
-    }
-
-    if (rivalryEnded) {
-      if (!summary.isEmpty()) {
-        summary.append(", ");
-      }
-      summary.append("rivalry ended");
-    }
-
-    return summary.isEmpty() ? "no impact" : summary.toString();
-  }
-
-  /** Get emoji representation of the event severity. */
-  public String getSeverityEmoji() {
-    return switch (severity) {
-      case POSITIVE -> "✨";
-      case NEUTRAL -> "📰";
-      case NEGATIVE -> "⚠️";
-      case MAJOR -> "🚨";
-    };
-  }
-
-  /** Get emoji representation of the event type. */
-  public String getEventTypeEmoji() {
-    return switch (eventType) {
-      case BACKSTAGE_INCIDENT -> "🎭";
-      case SOCIAL_MEDIA_DRAMA -> "📱";
-      case INJURY_INCIDENT -> "🏥";
-      case FAN_INTERACTION -> "👥";
-      case CONTRACT_DISPUTE -> "📋";
-      case BETRAYAL -> "🗡️";
-      case ALLIANCE_FORMED -> "🤝";
-      case SURPRISE_RETURN -> "🎉";
-      case RETIREMENT_TEASE -> "👋";
-      case CHAMPIONSHIP_CHALLENGE -> "🏆";
-      case PERSONAL_ISSUE -> "💔";
-      case MEDIA_CONTROVERSY -> "📺";
-      case CAMPAIGN_RIVAL -> "🤼";
-      case CAMPAIGN_OUTSIDER -> "👤";
-      case RELATIONSHIP_MILESTONE -> "💍";
-      case OUTCOME_MATRIX_RESULT -> "🎲";
-    };
-  }
-
-  /** Mark the event as processed. */
-  public void markAsProcessed(final String notes) {
-    this.isProcessed = true;
-    this.processedDate = Instant.now();
-    this.processingNotes = notes;
-  }
 
   @PrePersist
   protected void onCreate() {

@@ -91,7 +91,6 @@ public class ShowTemplateListView extends Main {
   private TextArea editDescription;
   private ComboBox<ShowType> editShowType;
   private ComboBox<CommentaryTeam> editCommentaryTeam;
-  private TextField editNotionUrl;
   private TextField editImageUrl;
   private IntegerField editExpectedMatches;
   private IntegerField editExpectedPromos;
@@ -289,12 +288,6 @@ public class ShowTemplateListView extends Main {
         .setFlexGrow(0)
         .setWidth("80px");
 
-    // Notion URL column (show if exists)
-    templateGrid
-        .addColumn(template -> template.getNotionUrl() != null ? "Yes" : "No")
-        .setHeader("Has Notion URL")
-        .setFlexGrow(1);
-
     // Creation date column
     templateGrid
         .addColumn(
@@ -408,10 +401,6 @@ public class ShowTemplateListView extends Main {
     editCommentaryTeam.setItemLabelGenerator(CommentaryTeam::getName);
     editCommentaryTeam.setWidthFull();
     editCommentaryTeam.setClearButtonVisible(true);
-
-    editNotionUrl = new TextField("Notion URL");
-    editNotionUrl.setWidthFull();
-    editNotionUrl.setPlaceholder("https://notion.so/...");
 
     editImageUrl = new TextField("Image URL");
     editImageUrl.setWidthFull();
@@ -536,7 +525,6 @@ public class ShowTemplateListView extends Main {
         editDescription,
         editShowType,
         editCommentaryTeam,
-        editNotionUrl,
         imageEditLayout,
         editExpectedMatches,
         editExpectedPromos,
@@ -581,7 +569,6 @@ public class ShowTemplateListView extends Main {
     binder
         .forField(editCommentaryTeam)
         .bind(ShowTemplate::getCommentaryTeam, ShowTemplate::setCommentaryTeam);
-    binder.forField(editNotionUrl).bind(ShowTemplate::getNotionUrl, ShowTemplate::setNotionUrl);
     binder.forField(editImageUrl).bind(ShowTemplate::getImageUrl, ShowTemplate::setImageUrl);
     binder
         .forField(editExpectedMatches)
@@ -666,7 +653,6 @@ public class ShowTemplateListView extends Main {
                 editingTemplate.getName(),
                 editingTemplate.getDescription(),
                 editingTemplate.getShowType().getName(),
-                editingTemplate.getNotionUrl(),
                 editingTemplate.getImageUrl(),
                 editingTemplate.getCommentaryTeam() != null
                     ? editingTemplate.getCommentaryTeam().getName()
@@ -696,7 +682,6 @@ public class ShowTemplateListView extends Main {
             editingTemplate.getName(),
             editingTemplate.getDescription(),
             editingTemplate.getShowType().getName(),
-            editingTemplate.getNotionUrl(),
             editingTemplate.getImageUrl(),
             editingTemplate.getCommentaryTeam() != null
                 ? editingTemplate.getCommentaryTeam().getName()

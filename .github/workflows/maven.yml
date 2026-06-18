@@ -46,7 +46,6 @@ jobs:
       startsWith(github.ref, 'refs/tags/')
     outputs:
       code_changed: ${{ steps.filter.outputs.code_changed }}
-      notion_changed: ${{ steps.filter.outputs.notion_changed }}
       mysql_migration_changed: ${{ steps.filter.outputs.mysql_migration_changed }}
       ui_changed: ${{ steps.filter.outputs.ui_changed }}
       service_changed: ${{ steps.filter.outputs.service_changed }}
@@ -68,8 +67,6 @@ jobs:
               - 'scripts/sync-vaadin-overrides.cjs'
               - '.github/workflows/**'
               - '!docs/**'
-            notion_changed:
-              - 'src/main/java/com/github/javydreamercsw/management/service/sync/**'
             mysql_migration_changed:
               - 'src/main/resources/db/migration/mysql/**'
             # UI/frontend changes — gates E2E jobs (Chrome + Spring Boot startup are expensive)
@@ -173,31 +170,6 @@ jobs:
         name: jacoco-it-exec
         path: target/jacoco-it.exec
 
-  notion-integration-tests:
-    runs-on: ubuntu-latest
-    needs: [build-and-unit-test, check-paths]
-    if: needs.check-paths.outputs.notion_changed == 'true'
-    env:
-      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-    steps:
-    - uses: actions/checkout@v6
-    - name: Set up JDK 25
-      uses: actions/setup-java@v5
-      with:
-        java-version: '25'
-        distribution: 'temurin'
-        cache: maven
-
-    - name: Run Notion Integration Tests
-      run: mvn -B verify -Pnotion-it,coverage -Dsurefire.skip=true -Dnotion.live.tests.enabled=true
-
-    - name: Upload notion integration test coverage data
-      uses: actions/upload-artifact@v7
-      with:
-        name: jacoco-notion-it-exec
-        path: target/jacoco-notion-it.exec
-        if-no-files-found: ignore
-
   e2e-tests:
     runs-on: ubuntu-latest
     needs: [check-paths, build-and-unit-test]
@@ -294,44 +266,9 @@ jobs:
         name: validate-video-test-failures
         path: target/test-failures
 
-  notion-e2e-tests:
-    runs-on: ubuntu-latest
-    needs: [build-and-unit-test, check-paths]
-    if: needs.check-paths.outputs.notion_changed == 'true' && github.event_name == 'pull_request'
-    env:
-      HEADLESS: 'true'
-      GITHUB_ACTIONS: 'true'
-      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-    steps:
-    - uses: actions/checkout@v6
-    - name: Set up JDK 25
-      uses: actions/setup-java@v5
-      with:
-        java-version: '25'
-        distribution: 'temurin'
-        cache: maven
-    - name: Set up Chrome
-      uses: browser-actions/setup-chrome@v2
-    - name: Build frontend bundle
-      run: mvn -B package -Pproduction -DskipTests
-    - name: Run Notion E2E Tests
-      run: mvn -B verify -Pnotion-e2e,coverage,production -Dsurefire.skip=true
-    - name: Upload Notion E2E test failure artifacts
-      if: failure()
-      uses: actions/upload-artifact@v7
-      with:
-        name: notion-e2e-test-failures
-        path: target/test-failures
-    - name: Upload Notion E2E test coverage data
-      uses: actions/upload-artifact@v7
-      with:
-        name: jacoco-notion-e2e-exec
-        path: target/jacoco-notion-e2e.exec
-        if-no-files-found: ignore
-
   coverage-and-analysis:
     runs-on: ubuntu-latest
-    needs: [check-paths, build-and-unit-test, integration-tests, e2e-tests, docs-e2e-tests, validate-video-tests, notion-integration-tests, notion-e2e-tests]
+    needs: [check-paths, build-and-unit-test, integration-tests, e2e-tests, docs-e2e-tests, validate-video-tests]
     if: >-
       always() &&
       needs.check-paths.outputs.code_changed == 'true' &&
@@ -339,8 +276,7 @@ jobs:
       (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
       (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') &&
       (needs.docs-e2e-tests.result == 'success' || needs.docs-e2e-tests.result == 'skipped') &&
-      (needs.validate-video-tests.result == 'success' || needs.validate-video-tests.result == 'skipped') &&
-      (needs.notion-e2e-tests.result == 'success' || needs.notion-e2e-tests.result == 'skipped')
+      (needs.validate-video-tests.result == 'success' || needs.validate-video-tests.result == 'skipped')
     steps:
     - uses: actions/checkout@v6
     - name: Set up JDK 25
@@ -375,22 +311,6 @@ jobs:
       uses: actions/download-artifact@v8
       with:
         name: jacoco-docs-e2e-exec
-        path: target/
-
-    - name: Download Notion integration test coverage data
-      if: needs.check-paths.outputs.notion_changed == 'true'
-      continue-on-error: true
-      uses: actions/download-artifact@v8
-      with:
-        name: jacoco-notion-it-exec
-        path: target/
-
-    - name: Download Notion E2E test coverage data
-      if: needs.check-paths.outputs.notion_changed == 'true'
-      continue-on-error: true
-      uses: actions/download-artifact@v8
-      with:
-        name: jacoco-notion-e2e-exec
         path: target/
 
     - name: Ensure classes are compiled

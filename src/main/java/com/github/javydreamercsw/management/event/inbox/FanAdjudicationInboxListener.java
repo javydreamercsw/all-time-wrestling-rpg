@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -59,11 +60,18 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
 
     log.debug(message);
 
-    inboxService.createInboxItem(
-        fanAdjudication,
-        message,
-        event.getWrestlerState().getWrestler().getId().toString(),
-        InboxItemTarget.TargetType.WRESTLER);
+    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+        inboxService.createInboxItem(
+            fanAdjudication,
+            "Fan Reaction: " + event.getWrestlerState().getName(),
+            message,
+            InboxItem.Urgency.INFO,
+            event.getWrestlerState().getWrestler().getId().toString(),
+            InboxItemTarget.TargetType.WRESTLER);
+    inboxItem.setActionType("NAVIGATE");
+    inboxItem.setActionPayload(
+        "{\"route\":\"wrestler-profile/" + event.getWrestlerState().getWrestler().getId() + "\"}");
+    inboxService.save(inboxItem);
     eventPublisher.publishEvent(new InboxUpdateEvent(this));
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
   }

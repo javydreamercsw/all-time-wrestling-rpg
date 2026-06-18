@@ -241,7 +241,6 @@ class InjuryTypeControllerTest extends AbstractControllerTest {
     injuryType.setStaminaEffect(0);
     injuryType.setCardEffect(-2);
     injuryType.setSpecialEffects("Reduced concentration");
-    injuryType.setExternalId("test-external-id");
     return injuryType;
   }
 }
