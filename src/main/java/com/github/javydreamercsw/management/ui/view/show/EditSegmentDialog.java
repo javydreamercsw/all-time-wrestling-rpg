@@ -572,20 +572,7 @@ public class EditSegmentDialog extends Dialog {
   private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
     AlignmentType alignment = alignmentFilter.getValue();
     Gender gender = genderFilter.getValue();
-
-    if (alignment != null) {
-      return wrestlerService.findAllFiltered(alignment, gender, universeId, forceInclude);
-    }
-
-    Set<Long> includeIds =
-        forceInclude == null
-            ? Set.of()
-            : forceInclude.stream().map(Wrestler::getId).collect(Collectors.toSet());
-
-    return data.activeWrestlers().stream()
-        .filter(w -> includeIds.contains(w.getId()) || (gender == null || w.getGender() == gender))
-        .sorted(Comparator.comparing(Wrestler::getName))
-        .collect(Collectors.toList());
+    return wrestlerService.findAllFiltered(alignment, gender, universeId, forceInclude);
   }
 
   private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {
