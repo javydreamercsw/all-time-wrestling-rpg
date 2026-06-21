@@ -62,7 +62,7 @@ class RivalryHeatSimulationTest {
   @BeforeEach
   void setUp() {
     roster = new ArrayList<>();
-    for (int i = 1; i <= ROSTER_SIZE; i++) {
+    for (int i = 1; i < ROSTER_SIZE + 1; i++) {
       roster.add("W" + i);
     }
   }
@@ -131,8 +131,8 @@ class RivalryHeatSimulationTest {
     int totalCreated = 0;
     int totalDecayed = 0;
 
-    for (int week = 1; week <= WEEKS; week++) {
-      boolean isPle = (week % PLE_EVERY_N_WEEKS == 0);
+    for (int week = 1; week < WEEKS + 1; week++) {
+      boolean isPle = week % PLE_EVERY_N_WEEKS == 0;
       int showDay = week * 7;
 
       // --- 1. Run show segments ---
