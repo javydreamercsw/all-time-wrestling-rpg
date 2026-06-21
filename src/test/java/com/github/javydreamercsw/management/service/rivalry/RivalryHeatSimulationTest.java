@@ -151,7 +151,7 @@ class RivalryHeatSimulationTest {
             if (!exists) {
               // Current rules: always create. Fixed rule: only create for promos or targeted.
               boolean shouldCreate =
-                  !requireExistingRivalryForHeat || (isPromo && promoCreatesRivalry);
+                  !requireExistingRivalryForHeat || isPromo && promoCreatesRivalry;
               if (shouldCreate) {
                 rivalries.put(key, 0);
                 startDay.put(key, showDay);
