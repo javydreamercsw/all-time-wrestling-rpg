@@ -17,14 +17,20 @@
 package com.github.javydreamercsw.management.service.segment;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -48,7 +54,6 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
@@ -156,18 +161,31 @@ class SegmentAdjudicationServiceUnitTest {
   }
 
   @Test
-  void testAdjudicateMatch_HeatUpdate() {
-    // Given a match segment
-    // When
+  void testAdjudicateMatch_WithNoExistingRivalry_SkipsHeat() {
+    // Plain matches do not create new rivalries; with no existing rivalry no heat is added.
+    when(rivalryService.getRivalryBetweenWrestlers(wrestler1.getId(), wrestler2.getId()))
+        .thenReturn(Optional.empty());
+
     adjudicationService.adjudicateMatch(matchSegment);
 
-    // Then
-    verify(rivalryService, times(1))
-        .addHeatBetweenWrestlers(
-            Objects.requireNonNull(eq(wrestler1.getId())),
-            Objects.requireNonNull(eq(wrestler2.getId())),
-            eq(1),
-            eq("From segment: Match"),
-            eq(1L));
+    verify(rivalryService).getRivalryBetweenWrestlers(wrestler1.getId(), wrestler2.getId());
+    verify(rivalryService, never())
+        .addHeatBetweenWrestlers(anyLong(), anyLong(), anyInt(), anyString(), anyLong());
+    verify(rivalryService, never()).addHeat(anyLong(), anyInt(), anyString());
+  }
+
+  @Test
+  void testAdjudicateMatch_WithExistingRivalry_AddsHeat() {
+    // Plain matches add heat to an already-established rivalry without creating new ones.
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(99L);
+    when(rivalryService.getRivalryBetweenWrestlers(wrestler1.getId(), wrestler2.getId()))
+        .thenReturn(Optional.of(rivalry));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(rivalryService, times(1)).addHeat(eq(99L), eq(1), eq("From segment: Match"));
+    verify(rivalryService, never())
+        .addHeatBetweenWrestlers(anyLong(), anyLong(), anyInt(), anyString(), anyLong());
   }
 }
