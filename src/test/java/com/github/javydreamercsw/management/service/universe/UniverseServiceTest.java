@@ -47,6 +47,7 @@ import org.mockito.quality.Strictness;
 class UniverseServiceTest {
 
   @Mock private UniverseRepository universeRepository;
+  @Mock private UniverseContextService universeContextService;
   @Mock private ShowRepository showRepository;
   @Mock private FactionRepository factionRepository;
   @Mock private LeagueRepository leagueRepository;
@@ -198,10 +199,27 @@ class UniverseServiceTest {
     when(leagueRepository.existsByUniverse(universe)).thenReturn(false);
     when(titleRepository.existsByUniverse(universe)).thenReturn(false);
     when(campaignRepository.existsByUniverse(universe)).thenReturn(false);
+    when(universeContextService.getCurrentUniverseId()).thenReturn(99L);
 
     universeService.delete(1L);
 
     verify(universeRepository).delete(universe);
+  }
+
+  @Test
+  void delete_activeUniverse_clearsContext() {
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+    when(showRepository.existsByUniverse(universe)).thenReturn(false);
+    when(factionRepository.existsByUniverse(universe)).thenReturn(false);
+    when(leagueRepository.existsByUniverse(universe)).thenReturn(false);
+    when(titleRepository.existsByUniverse(universe)).thenReturn(false);
+    when(campaignRepository.existsByUniverse(universe)).thenReturn(false);
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+
+    universeService.delete(1L);
+
+    verify(universeRepository).delete(universe);
+    verify(universeContextService).clearCurrentUniverse();
   }
 
   @Test
