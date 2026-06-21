@@ -443,7 +443,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
 
     ProposedSegment seg = new ProposedSegment();
-    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     seg.setRules(List.of()); // booked but no stipulation
 
     CardValidationResult result = showPlanningService.validateCard(List.of(seg));
@@ -491,7 +491,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
-    seg.setParticipants(List.of("Charlie", "Delta"));
+    seg.setTeams(List.of(List.of("Charlie"), List.of("Delta")));
     seg.setWinners(List.of("Charlie"));
 
     // Should not throw

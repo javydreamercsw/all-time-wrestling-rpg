@@ -60,11 +60,11 @@ class TutorialDocsE2ETest extends AbstractDocsE2ETest {
     waitForVaadinClientToLoad();
 
     documentFeature(
-        "Players",
-        "Tutorial — Step 1",
+        "Tutorial",
+        "Global Tutorial — Step 1",
         "The tutorial guides new players through the key actions for their mode. Step 1 asks the"
-            + " player to assign a wrestler on their Player Dashboard.",
-        "players-tutorial-step1");
+            + " player to pick their featured wrestler.",
+        "tutorial-global-step1");
   }
 
   @Test
@@ -72,19 +72,18 @@ class TutorialDocsE2ETest extends AbstractDocsE2ETest {
     accountRepository
         .findByUsername("player")
         .ifPresent(
-            account -> {
-              tutorialService.advanceStep(account.getId(), Universe.UniverseType.GLOBAL, 1, 3);
-            });
+            account ->
+                tutorialService.advanceStep(account.getId(), Universe.UniverseType.GLOBAL, 1, 5));
 
     login("player", "player123");
     navigateTo("tutorial");
     waitForVaadinClientToLoad();
 
     documentFeature(
-        "Players",
-        "Tutorial — Step 2",
+        "Tutorial",
+        "Global Tutorial — Step 2",
         "Step 2 guides the player to create their first show in the universe.",
-        "players-tutorial-step2");
+        "tutorial-global-step2");
   }
 
   @Test
@@ -92,19 +91,57 @@ class TutorialDocsE2ETest extends AbstractDocsE2ETest {
     accountRepository
         .findByUsername("player")
         .ifPresent(
-            account -> {
-              tutorialService.advanceStep(account.getId(), Universe.UniverseType.GLOBAL, 2, 3);
-            });
+            account ->
+                tutorialService.advanceStep(account.getId(), Universe.UniverseType.GLOBAL, 2, 5));
 
     login("player", "player123");
     navigateTo("tutorial");
     waitForVaadinClientToLoad();
 
     documentFeature(
-        "Players",
-        "Tutorial — Step 3",
-        "Step 3 asks the player to run their first show by adjudicating its segments.",
-        "players-tutorial-step3");
+        "Tutorial",
+        "Global Tutorial — Step 3",
+        "Step 3 asks the player to plan their card by adding at least one segment to their show.",
+        "tutorial-global-step3");
+  }
+
+  @Test
+  void playerTutorialStep4Navigation() {
+    accountRepository
+        .findByUsername("player")
+        .ifPresent(
+            account ->
+                tutorialService.advanceStep(account.getId(), Universe.UniverseType.GLOBAL, 3, 5));
+
+    login("player", "player123");
+    navigateTo("tutorial");
+    waitForVaadinClientToLoad();
+
+    documentFeature(
+        "Tutorial",
+        "Global Tutorial — Step 4",
+        "Step 4 asks the player to run their show by adjudicating its segments.",
+        "tutorial-global-step4");
+  }
+
+  @Test
+  void playerTutorialStep5Navigation() {
+    accountRepository
+        .findByUsername("player")
+        .ifPresent(
+            account ->
+                tutorialService.advanceStep(account.getId(), Universe.UniverseType.GLOBAL, 4, 5));
+
+    login("player", "player123");
+    navigateTo("tutorial");
+    waitForVaadinClientToLoad();
+
+    documentFeature(
+        "Tutorial",
+        "Global Tutorial — Step 5",
+        "Step 5 introduces AI narration — players can configure an AI provider to generate"
+            + " match commentary.",
+        "tutorial-global-step5");
   }
 
   @Test

@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service;
 public class UniverseService {
 
   private final UniverseRepository universeRepository;
+  private final UniverseContextService universeContextService;
   private final ShowRepository showRepository;
   private final FactionRepository factionRepository;
   private final LeagueRepository leagueRepository;
@@ -110,6 +111,12 @@ public class UniverseService {
     }
 
     universeRepository.delete(universe);
+    // If the deleted universe was the active session context, clear it so subsequent
+    // requests don't try to scope settings/saves to a non-existent universe ID.
+    if (universe.getId() != null
+        && universe.getId().equals(universeContextService.getCurrentUniverseId())) {
+      universeContextService.clearCurrentUniverse();
+    }
   }
 
   /**

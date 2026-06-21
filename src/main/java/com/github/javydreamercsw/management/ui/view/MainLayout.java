@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.tutorial.TutorialDefinition;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -95,6 +96,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
   private UniverseMembershipService universeMembershipService;
+  private com.vaadin.flow.component.combobox.ComboBox<
+          com.github.javydreamercsw.management.domain.universe.Universe>
+      universeSelector;
   private InboxService inboxService;
   private Span inboxBadge;
   private TutorialService tutorialService;
@@ -147,7 +151,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private Div createUniverseSelector() {
     List<Universe> accessible = resolveAccessibleUniverses();
 
-    ComboBox<Universe> universeSelector = new ComboBox<>("Active Universe");
+    universeSelector = new ComboBox<>("Active Universe");
     universeSelector.setItemLabelGenerator(Universe::getName);
     universeSelector.setWidthFull();
     universeSelector.addClassNames(Padding.Horizontal.MEDIUM, Padding.Bottom.SMALL);
@@ -393,6 +397,19 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   public void afterNavigation(final AfterNavigationEvent event) {
     refreshInboxBadge();
     manageTutorialOverlay(event);
+    syncUniverseContext();
+  }
+
+  private void syncUniverseContext() {
+    if (universeSelector == null || universeSelector.getValue() == null) {
+      return;
+    }
+    com.github.javydreamercsw.management.domain.universe.Universe selected =
+        universeSelector.getValue();
+    Long currentId = universeContextService.getCurrentUniverseId();
+    if (!selected.getId().equals(currentId)) {
+      universeContextService.setCurrentUniverse(selected);
+    }
   }
 
   private void manageTutorialOverlay(final AfterNavigationEvent event) {
@@ -421,21 +438,15 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       return;
     }
 
-    com.github.javydreamercsw.management.domain.universe.Universe tutorialUniverse =
+    Universe tutorialUniverse =
         tutorialService.findTutorialUniverse(account.getUsername()).orElse(null);
     if (tutorialUniverse == null) {
       closeTutorialOverlay();
       return;
     }
 
-    // Keep the universe context pointed at the tutorial universe while the overlay is active so
-    // that beforeStep/validateStep calls (which use getCurrentUniverse) use the correct scope.
-    universeContextService.setCurrentUniverse(tutorialUniverse);
-
-    com.github.javydreamercsw.management.domain.universe.Universe.UniverseType universeType =
-        tutorialUniverse.getType();
-    com.github.javydreamercsw.management.service.tutorial.TutorialDefinition definition =
-        tutorialService.getDefinition(universeType);
+    Universe.UniverseType universeType = tutorialUniverse.getType();
+    TutorialDefinition definition = tutorialService.getDefinition(universeType);
     int totalSteps = definition.getSteps().size();
     int stepIndex = tutorialService.getCurrentStep(accountId, universeType);
 
@@ -450,6 +461,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       closeTutorialOverlay();
       return;
     }
+
+    // Only switch the universe context to the tutorial universe when the overlay is actually
+    // going to be shown — not on every navigation while a tutorial universe merely exists.
+    universeContextService.setCurrentUniverse(tutorialUniverse);
 
     if (tutorialOverlay == null) {
       tutorialOverlay = new TutorialStepOverlay(tutorialService, accountService);

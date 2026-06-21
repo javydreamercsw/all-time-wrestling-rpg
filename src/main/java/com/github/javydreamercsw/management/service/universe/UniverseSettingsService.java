@@ -41,6 +41,7 @@ public class UniverseSettingsService {
   private final UniverseExpansionSettingRepository expansionSettingRepository;
   private final UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
   private final ExpansionService expansionService;
+  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
   private final ApplicationEventPublisher eventPublisher;
 
   /** Returns the set of expansion codes enabled for a universe (falling back to global). */
@@ -67,7 +68,17 @@ public class UniverseSettingsService {
     return expansionSettingRepository
         .findByUniverseAndExpansionCode(universe, expansionCode)
         .map(UniverseExpansionSetting::isEnabled)
-        .orElseGet(() -> expansionService.isExpansionEnabled(expansionCode));
+        .orElseGet(
+            () -> {
+              String key =
+                  com.github.javydreamercsw.management.service.expansion.ExpansionService
+                          .SET_ENABLED_PREFIX
+                      + expansionCode;
+              return gameSettingService
+                  .findByKeyForUniverse(key, universe.getId())
+                  .map(s -> Boolean.parseBoolean(s.getValue()))
+                  .orElse(true);
+            });
   }
 
   /**
