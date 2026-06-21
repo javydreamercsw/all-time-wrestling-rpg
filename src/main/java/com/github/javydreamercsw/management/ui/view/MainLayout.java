@@ -95,6 +95,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
   private UniverseMembershipService universeMembershipService;
+  private com.vaadin.flow.component.combobox.ComboBox<
+          com.github.javydreamercsw.management.domain.universe.Universe>
+      universeSelector;
   private InboxService inboxService;
   private Span inboxBadge;
   private TutorialService tutorialService;
@@ -147,7 +150,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private Div createUniverseSelector() {
     List<Universe> accessible = resolveAccessibleUniverses();
 
-    ComboBox<Universe> universeSelector = new ComboBox<>("Active Universe");
+    universeSelector = new ComboBox<>("Active Universe");
     universeSelector.setItemLabelGenerator(Universe::getName);
     universeSelector.setWidthFull();
     universeSelector.addClassNames(Padding.Horizontal.MEDIUM, Padding.Bottom.SMALL);
@@ -393,6 +396,19 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   public void afterNavigation(final AfterNavigationEvent event) {
     refreshInboxBadge();
     manageTutorialOverlay(event);
+    syncUniverseContext();
+  }
+
+  private void syncUniverseContext() {
+    if (universeSelector == null || universeSelector.getValue() == null) {
+      return;
+    }
+    com.github.javydreamercsw.management.domain.universe.Universe selected =
+        universeSelector.getValue();
+    Long currentId = universeContextService.getCurrentUniverseId();
+    if (!selected.getId().equals(currentId)) {
+      universeContextService.setCurrentUniverse(selected);
+    }
   }
 
   private void manageTutorialOverlay(final AfterNavigationEvent event) {
