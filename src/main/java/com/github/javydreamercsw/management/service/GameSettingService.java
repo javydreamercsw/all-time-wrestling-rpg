@@ -284,7 +284,7 @@ public class GameSettingService {
 
   @PreAuthorize("permitAll()")
   public int getRivalryMaxDurationDays() {
-    return resolveValue(RIVALRY_MAX_DURATION_DAYS_KEY).map(Integer::parseInt).orElse(0);
+    return resolveValue(RIVALRY_MAX_DURATION_DAYS_KEY).map(Integer::parseInt).orElse(90);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
@@ -295,7 +295,7 @@ public class GameSettingService {
 
   @PreAuthorize("permitAll()")
   public boolean isRivalryHeatDecayEnabled() {
-    return resolveValue(RIVALRY_HEAT_DECAY_ENABLED_KEY).map(Boolean::parseBoolean).orElse(false);
+    return resolveValue(RIVALRY_HEAT_DECAY_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")

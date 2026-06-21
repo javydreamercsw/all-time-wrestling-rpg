@@ -477,16 +477,15 @@ public class SegmentAdjudicationService {
     }
 
     // Add heat to rivalries
-    int heat = 1;
     String segmentTypeName = segment.getSegmentType().getName();
-    if (SegmentTypeNames.PROMO.equals(segmentTypeName)) {
-      heat = 4;
-    }
+    boolean isPromo = SegmentTypeNames.PROMO.equals(segmentTypeName);
+    boolean isAiTargeted = segment.getRivalryId() != null;
+    final int heat = isPromo ? 4 : 1;
 
     // Skip all-pairs heat addition for Rumbles to avoid performance issues,
     // excessive rivalry creation, and because determining eliminations from
     // narration is complex. Bookers can manage these rivalries manually.
-    if (!SegmentTypeNames.ABU_DHABI_RUMBLE.equals(segment.getSegmentType().getName())) {
+    if (!SegmentTypeNames.ABU_DHABI_RUMBLE.equals(segmentTypeName)) {
       for (int i = 0; i < participants.size(); i++) {
         for (int j = i + 1; j < participants.size(); j++) {
           Wrestler wi = participants.get(i);
@@ -501,12 +500,20 @@ public class SegmentAdjudicationService {
                 fi.getName());
             continue;
           }
-          rivalryService.addHeatBetweenWrestlers(
-              wi.getId(),
-              wj.getId(),
-              heat,
-              "From segment: " + segment.getSegmentType().getName(),
-              universeId);
+          if (isPromo || isAiTargeted) {
+            // Promos and AI-targeted segments may create a new rivalry if none exists.
+            rivalryService.addHeatBetweenWrestlers(
+                wi.getId(), wj.getId(), heat, "From segment: " + segmentTypeName, universeId);
+          } else {
+            // Plain matches only add heat to an already-established rivalry; they do not
+            // spawn new ones for every random pairing.
+            rivalryService
+                .getRivalryBetweenWrestlers(wi.getId(), wj.getId())
+                .ifPresent(
+                    r ->
+                        rivalryService.addHeat(
+                            r.getId(), heat, "From segment: " + segmentTypeName));
+          }
         }
       }
     } else {
