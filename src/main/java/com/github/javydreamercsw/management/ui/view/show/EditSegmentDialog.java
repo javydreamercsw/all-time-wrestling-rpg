@@ -240,6 +240,8 @@ public class EditSegmentDialog extends Dialog {
   @Getter private final MultiSelectComboBox<Title> titleMultiSelectComboBox;
   @Getter private final Button saveButton;
   @Getter private final ComboBox<SegmentType> segmentTypeCombo;
+  @Getter private final List<MultiSelectComboBox<Wrestler>> teamCombos = new ArrayList<>();
+  @Getter private Button addTeamButton;
 
   private final ComboBox<Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
@@ -249,7 +251,6 @@ public class EditSegmentDialog extends Dialog {
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
-  private final List<MultiSelectComboBox<Wrestler>> teamCombos = new ArrayList<>();
   private final VerticalLayout teamsLayout = new VerticalLayout();
 
   // ==================== MAIN CONSTRUCTOR ====================
@@ -399,7 +400,7 @@ public class EditSegmentDialog extends Dialog {
           }
         });
 
-    Button addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
+    addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
     addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     addTeamButton.setId("edit-add-team-button");
     addTeamButton.addClickListener(e -> addTeamRow.accept(new HashSet<>()));
