@@ -234,6 +234,9 @@ public class EditSegmentDialog extends Dialog {
   @Getter private final List<MultiSelectComboBox<Wrestler>> teamCombos = new ArrayList<>();
   @Getter private Button addTeamButton;
 
+  /** All wrestlers currently assigned to any team; kept in sync so every combo sees them. */
+  private final Set<Wrestler> allAssignedWrestlers = new HashSet<>();
+
   private final ComboBox<Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
   private final ComboBox<AlignmentType> alignmentFilter;
@@ -347,7 +350,12 @@ public class EditSegmentDialog extends Dialog {
           if (!initialWrestlers.isEmpty()) {
             teamCombo.setValue(initialWrestlers);
           }
-          teamCombo.addValueChangeListener(e -> refreshWinners.run());
+          teamCombo.addValueChangeListener(
+              e -> {
+                allAssignedWrestlers.clear();
+                teamCombos.forEach(c -> allAssignedWrestlers.addAll(c.getValue()));
+                refreshWinners.run();
+              });
           teamCombos.add(teamCombo);
 
           Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
@@ -365,11 +373,17 @@ public class EditSegmentDialog extends Dialog {
                 for (int i = 0; i < teamCombos.size(); i++) {
                   teamCombos.get(i).setLabel("Team " + (i + 1));
                 }
+                allAssignedWrestlers.clear();
+                teamCombos.forEach(c -> allAssignedWrestlers.addAll(c.getValue()));
                 refreshWinners.run();
               });
           teamsLayout.add(teamRow);
           refreshWinners.run();
         };
+
+    // Seed allAssignedWrestlers with every wrestler from every initial team so that
+    // team-1's dropdown already sees team-2's wrestlers when it is built first.
+    initial.teams().values().forEach(allAssignedWrestlers::addAll);
 
     // Populate teams from initial data
     initial.teams().forEach((teamNum, wrestlers) -> addTeamRow.accept(new HashSet<>(wrestlers)));
@@ -559,12 +573,7 @@ public class EditSegmentDialog extends Dialog {
   private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
     AlignmentType alignment = alignmentFilter.getValue();
     Gender gender = genderFilter.getValue();
-    // Always include every wrestler currently assigned to any team so they remain selectable
-    // in all combos (including new ones) regardless of expansion/filter state.
-    Set<Wrestler> effective =
-        teamCombos.stream()
-            .flatMap(c -> c.getValue().stream())
-            .collect(Collectors.toCollection(HashSet::new));
+    Set<Wrestler> effective = new HashSet<>(allAssignedWrestlers);
     if (forceInclude != null) {
       effective.addAll(forceInclude);
     }
