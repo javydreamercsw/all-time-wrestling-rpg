@@ -38,6 +38,7 @@
     <jacoco.version>0.8.15</jacoco.version>
     <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
+    <jpackage.appVersion/>
     <lombok.version>1.18.46</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
@@ -1242,7 +1243,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>1.1.1</version>
+            <version>1.1.0</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>
@@ -1272,7 +1273,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.8.0</version>
+            <version>3.7.1</version>
             <executions>
               <execution>
                 <id>make-portable</id>
