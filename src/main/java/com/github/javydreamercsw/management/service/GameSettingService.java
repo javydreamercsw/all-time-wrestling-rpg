@@ -329,6 +329,22 @@ public class GameSettingService {
   // ── Generic access (used by AiSettingsService and other consumers) ────────
 
   /**
+   * Finds a setting by key for an explicit universe ID, bypassing the session context. Use this
+   * when the caller already knows which universe to query (e.g. from a background thread or when
+   * the session universe may differ from the target universe).
+   */
+  @PreAuthorize("permitAll()")
+  public Optional<GameSetting> findByKeyForUniverse(final String key, final Long universeId) {
+    if (universeId != null) {
+      Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
+      if (scoped.isPresent()) {
+        return scoped;
+      }
+    }
+    return repository.findGlobal(key);
+  }
+
+  /**
    * Finds a setting by key using the standard resolution hierarchy. Callers that need raw access
    * (e.g. AiSettingsService) should use this instead of the old repository.findById(key).
    */
