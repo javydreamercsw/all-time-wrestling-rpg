@@ -51,8 +51,6 @@ class RivalryHeatSimulationTest {
   // Current production heat values (from SegmentAdjudicationService)
   private static final int MATCH_HEAT = 1;
   private static final int PROMO_HEAT = 4;
-  private static final int PLE_AI_TARGETED_HEAT = 3;
-  private static final int REGULAR_AI_TARGETED_HEAT = 2;
 
   // Resolution thresholds (from GameSettingService defaults / DB)
   private static final int RESOLUTION_THRESHOLD_PLE = 30;
@@ -446,7 +444,9 @@ class RivalryHeatSimulationTest {
               s.heatFloor(),
               s.pleT(),
               s.regT());
-      if (baseline == null) baseline = r;
+      if (baseline == null) {
+        baseline = r;
+      }
       System.out.printf(
           "%-38s %8d %8d %8d %8d %8.1f %8d%n",
           s.label(),
