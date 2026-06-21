@@ -38,7 +38,6 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -70,7 +69,7 @@ class EditSegmentDialogTest {
     segment.setSummary("Original Summary");
     segment.setNarration("Original Narration");
     segment.setIsTitleSegment(false);
-    segment.setParticipants(new ArrayList<>(Arrays.asList("Wrestler 1", "Wrestler 2")));
+    segment.setTeams(List.of(List.of("Wrestler 1"), List.of("Wrestler 2")));
 
     wrestlerRepository = mock(WrestlerRepository.class);
     wrestlerService = mock(WrestlerService.class);
@@ -85,7 +84,7 @@ class EditSegmentDialogTest {
     Wrestler wrestler2 = new Wrestler();
     wrestler2.setId(2L);
     wrestler2.setName("Wrestler 2");
-    List<Wrestler> allWrestlers = Arrays.asList(wrestler1, wrestler2);
+    List<Wrestler> allWrestlers = List.of(wrestler1, wrestler2);
 
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), any(), any()))
         .thenReturn(allWrestlers);

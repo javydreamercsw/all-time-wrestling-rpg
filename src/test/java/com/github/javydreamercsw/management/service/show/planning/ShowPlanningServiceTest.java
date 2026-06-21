@@ -131,7 +131,7 @@ class ShowPlanningServiceTest {
     proposedSegment.setNarration("A great match");
     proposedSegment.setSummary("A summary of the match");
     proposedSegment.setNotes("AI should focus on technical wrestling");
-    proposedSegment.setParticipants(List.of("Wrestler A", "Wrestler B"));
+    proposedSegment.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
     proposedSegment.setWinners(List.of("Wrestler A"));
     proposedSegment.setIsTitleSegment(true);
     Title title = new Title();
@@ -221,7 +221,7 @@ class ShowPlanningServiceTest {
     proposedSegment.setType("Match");
     proposedSegment.setSummary("A great match");
     proposedSegment.setNarration("Dynamic narration");
-    proposedSegment.setParticipants(List.of("Active NPC", "Another Wrestler"));
+    proposedSegment.setTeams(List.of(List.of("Active NPC"), List.of("Another Wrestler")));
     proposedSegment.setWinners(List.of("Active NPC"));
 
     SegmentType matchType = new SegmentType();
@@ -375,7 +375,7 @@ class ShowPlanningServiceTest {
   void validateCard_mustBookRivalry_bookedByParticipantNames_noWarning() {
     Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
     ProposedSegment seg = new ProposedSegment();
-    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(hot));
     assertTrue(result.isValid());
     assertFalse(result.hasWarnings());
@@ -385,7 +385,7 @@ class ShowPlanningServiceTest {
   void validateCard_mustBookRivalry_bookedByRivalryId_noWarning() {
     Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
     ProposedSegment seg = new ProposedSegment();
-    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     seg.setRivalryId(1L);
     CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(hot));
     assertTrue(result.isValid());
@@ -405,7 +405,7 @@ class ShowPlanningServiceTest {
   void validateCard_stipulationRequired_bookedWithoutStipulation_isError() {
     Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
     ProposedSegment seg = new ProposedSegment();
-    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     seg.setRules(List.of());
     CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(max));
     assertFalse(result.isValid(), "Booked rivalry without stipulation should be a hard error");
@@ -417,7 +417,7 @@ class ShowPlanningServiceTest {
   void validateCard_stipulationRequired_bookedWithStipulation_noError() {
     Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
     ProposedSegment seg = new ProposedSegment();
-    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     seg.setRules(List.of("Steel Cage"));
     CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(max));
     assertTrue(result.isValid());
@@ -433,7 +433,7 @@ class ShowPlanningServiceTest {
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
-    seg.setParticipants(List.of("Charlie", "Delta"));
+    seg.setTeams(List.of(List.of("Charlie"), List.of("Delta")));
     SegmentType matchType = new SegmentType();
     matchType.setName("Match");
     when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(matchType));
@@ -495,7 +495,7 @@ class ShowPlanningServiceTest {
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
-    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     seg.setRules(List.of()); // booked but no stipulation
 
     assertThrows(

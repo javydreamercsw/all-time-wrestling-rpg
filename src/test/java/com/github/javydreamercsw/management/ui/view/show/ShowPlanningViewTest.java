@@ -164,11 +164,11 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ProposedSegment segment1 = new ProposedSegment();
     segment1.setType("Match");
     segment1.setNarration("A vs B");
-    segment1.setParticipants(List.of("A", "B"));
+    segment1.setTeams(List.of(List.of("A"), List.of("B")));
     ProposedSegment segment2 = new ProposedSegment();
     segment2.setType("Promo");
     segment2.setNarration("C speaks");
-    segment2.setParticipants(List.of("C"));
+    segment2.setTeams(List.of(List.of("C")));
     proposedShow.setSegments(List.of(segment1, segment2));
     when(showPlanningAiService.planShow(any())).thenReturn(proposedShow);
 
@@ -231,7 +231,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ProposedSegment segment1 = new ProposedSegment();
     segment1.setType("Match");
     segment1.setNarration("A vs B");
-    segment1.setParticipants(List.of("A", "B"));
+    segment1.setTeams(List.of(List.of("A"), List.of("B")));
     proposedShow.setSegments(List.of(segment1));
     when(showPlanningAiService.planShow(any())).thenReturn(proposedShow);
 
@@ -292,7 +292,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
-    seg.setParticipants(List.of("A", "B"));
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
     ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
 
     // No errors, no warnings
@@ -318,7 +318,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
-    seg.setParticipants(List.of("A", "B"));
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
     ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
 
     // Hard error — stipulation required
@@ -347,7 +347,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
-    seg.setParticipants(List.of("A", "B"));
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
     ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
 
     // No errors, but warnings — booker must confirm

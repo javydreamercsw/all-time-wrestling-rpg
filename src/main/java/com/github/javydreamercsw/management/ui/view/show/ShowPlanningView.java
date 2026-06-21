@@ -200,7 +200,13 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             .setHeader("Description")
             .setFlexGrow(3);
     proposedSegmentsGrid
-        .addColumn(s -> String.join(", ", s.getParticipants()))
+        .addColumn(
+            s ->
+                s.getTeams() == null
+                    ? ""
+                    : s.getTeams().stream()
+                        .flatMap(java.util.List::stream)
+                        .collect(java.util.stream.Collectors.joining(", ")))
         .setHeader("Participants");
 
     Binder<ProposedSegment> binder = new Binder<>(ProposedSegment.class);
