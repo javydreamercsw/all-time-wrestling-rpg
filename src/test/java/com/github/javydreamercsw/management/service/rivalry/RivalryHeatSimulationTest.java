@@ -82,6 +82,9 @@ class RivalryHeatSimulationTest {
    *     auto-create on every pair)
    * @param promoCreatesRivalry whether promos auto-create new rivalries
    * @param regularShowResolution whether regular (non-PLE) shows also attempt resolution
+   * @param heatNeededToTry minimum heat before resolution is attempted
+   * @param pleTreshold d20+d20 sum needed to resolve at PLE
+   * @param regularThreshold d20+d20 sum needed to resolve on regular shows
    */
   private SimResult simulate(
       boolean heatDecayEnabled,
@@ -91,6 +94,30 @@ class RivalryHeatSimulationTest {
       boolean requireExistingRivalryForHeat,
       boolean promoCreatesRivalry,
       boolean regularShowResolution) {
+    return simulate(
+        heatDecayEnabled,
+        decayAmount,
+        decayIntervalDays,
+        maxRivalryDurationDays,
+        requireExistingRivalryForHeat,
+        promoCreatesRivalry,
+        regularShowResolution,
+        HEAT_NEEDED_TO_TRY,
+        RESOLUTION_THRESHOLD_PLE,
+        RESOLUTION_THRESHOLD_REGULAR);
+  }
+
+  private SimResult simulate(
+      boolean heatDecayEnabled,
+      int decayAmount,
+      int decayIntervalDays,
+      int maxRivalryDurationDays,
+      boolean requireExistingRivalryForHeat,
+      boolean promoCreatesRivalry,
+      boolean regularShowResolution,
+      int heatNeededToTry,
+      int pleThreshold,
+      int regularThreshold) {
 
     // Each simulate() call uses a fresh fixed-seed RNG for reproducible, independent results.
     Random rng = new Random(42);
@@ -145,13 +172,13 @@ class RivalryHeatSimulationTest {
       }
 
       // --- 2. Attempt resolutions (PLEs always try; regular shows only if configured) ---
-      int threshold = isPle ? RESOLUTION_THRESHOLD_PLE : RESOLUTION_THRESHOLD_REGULAR;
+      int threshold = isPle ? pleThreshold : regularThreshold;
       boolean tryResolution = isPle || regularShowResolution;
 
       if (tryResolution) {
         List<String> toResolve =
             rivalries.entrySet().stream()
-                .filter(e -> e.getValue() >= HEAT_NEEDED_TO_TRY)
+                .filter(e -> e.getValue() >= heatNeededToTry)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
 
@@ -310,6 +337,65 @@ class RivalryHeatSimulationTest {
   }
 
   @Test
+  @DisplayName("Fix 6: Lower heat-needed-to-try (20→10) — more rivalries qualify for resolution")
+  void fix6_lowerHeatThreshold() {
+    // With current defaults only rivalries reaching 20 heat get a resolution roll.
+    // Dropping to 10 lets younger rivalries resolve earlier.
+    SimResult current = simulate(true, 2, 7, 90, true, true, false);
+    SimResult lowered =
+        simulate(
+            true,
+            2,
+            7,
+            90,
+            true,
+            true,
+            false,
+            10,
+            RESOLUTION_THRESHOLD_PLE,
+            RESOLUTION_THRESHOLD_REGULAR);
+
+    printResult("FIX 6: heat-needed-to-try = 10 (was 20)", lowered);
+
+    assertThat(lowered.totalResolved())
+        .as("Lowering heat threshold should produce more formal resolutions")
+        .isGreaterThan(current.totalResolved());
+    assertThat(lowered.activeCount()).as("Active pool should be manageable").isLessThan(50);
+  }
+
+  @Test
+  @DisplayName("Fix 7: Regular-show resolution with a reachable threshold (25, not 35)")
+  void fix7_regularResolutionLowerThreshold() {
+    // Regular threshold 35 on 2d20 (max 40) resolves only ~6% of the time.
+    // Dropping to 25 gives ~45% per attempt — much more useful on weekly shows.
+    SimResult pleOnly =
+        simulate(
+            true,
+            2,
+            7,
+            90,
+            true,
+            true,
+            false,
+            10,
+            RESOLUTION_THRESHOLD_PLE,
+            RESOLUTION_THRESHOLD_REGULAR);
+    SimResult regularLow =
+        simulate(true, 2, 7, 90, true, true, true, 10, RESOLUTION_THRESHOLD_PLE, 25);
+
+    printResult("FIX 7: regular-show res. threshold = 25 + heat-floor = 10", regularLow);
+
+    // With a reachable regular threshold, weekly resolution attempts whittle the active pool
+    // faster — the active count should beat PLE-only even if some resolutions shift to decay.
+    assertThat(regularLow.activeCount())
+        .as("Lower regular-show threshold should further reduce the active rivalry pool")
+        .isLessThan(pleOnly.activeCount());
+    assertThat(regularLow.activeCount())
+        .as("Active rivalry pool should stay very low")
+        .isLessThan(20);
+  }
+
+  @Test
   @DisplayName("Summary: print full comparison table (52-week season)")
   void summary_comparisonTable() {
     record Scenario(
@@ -320,20 +406,25 @@ class RivalryHeatSimulationTest {
         int maxDays,
         boolean requireExisting,
         boolean promoCreates,
-        boolean regularRes) {}
+        boolean regularRes,
+        int heatFloor,
+        int pleT,
+        int regT) {}
 
     List<Scenario> scenarios =
         List.of(
-            new Scenario("Baseline (current)", false, 1, 7, 0, false, true, false),
-            new Scenario("Decay only (2/7d)", true, 2, 7, 0, false, true, false),
-            new Scenario("Decay only (5/7d)", true, 5, 7, 0, false, true, false),
-            new Scenario("Promo-only creation", false, 1, 7, 0, true, true, false),
-            new Scenario("Max duration 90d", false, 1, 7, 90, false, true, false),
-            new Scenario("Max duration 60d", false, 1, 7, 60, false, true, false),
-            new Scenario("Decay + 90d expiry", true, 2, 7, 90, false, true, false),
-            new Scenario("Promo + 90d expiry", false, 1, 7, 90, true, true, false),
-            new Scenario("COMBINED (PLE-only res.)", true, 2, 7, 90, true, true, false),
-            new Scenario("COMBINED + regular res.", true, 2, 7, 90, true, true, true));
+            new Scenario("Baseline (current)", false, 1, 7, 0, false, true, false, 20, 30, 35),
+            new Scenario("Decay only (2/7d)", true, 2, 7, 0, false, true, false, 20, 30, 35),
+            new Scenario("Decay only (5/7d)", true, 5, 7, 0, false, true, false, 20, 30, 35),
+            new Scenario("Promo-only creation", false, 1, 7, 0, true, true, false, 20, 30, 35),
+            new Scenario("Max duration 90d", false, 1, 7, 90, false, true, false, 20, 30, 35),
+            new Scenario("Max duration 60d", false, 1, 7, 60, false, true, false, 20, 30, 35),
+            new Scenario("Decay + 90d expiry", true, 2, 7, 90, false, true, false, 20, 30, 35),
+            new Scenario("Promo + 90d expiry", false, 1, 7, 90, true, true, false, 20, 30, 35),
+            new Scenario("COMBINED (PLE-only)", true, 2, 7, 90, true, true, false, 20, 30, 35),
+            new Scenario("COMBINED + reg.res.", true, 2, 7, 90, true, true, true, 20, 30, 35),
+            new Scenario("Fix6: heat-floor=10", true, 2, 7, 90, true, true, false, 10, 30, 35),
+            new Scenario("Fix7: floor=10+reg.th=25", true, 2, 7, 90, true, true, true, 10, 30, 25));
 
     System.out.println("\n" + "=".repeat(115));
     System.out.printf(
@@ -351,7 +442,10 @@ class RivalryHeatSimulationTest {
               s.maxDays(),
               s.requireExisting(),
               s.promoCreates(),
-              s.regularRes());
+              s.regularRes(),
+              s.heatFloor(),
+              s.pleT(),
+              s.regT());
       if (baseline == null) baseline = r;
       System.out.printf(
           "%-38s %8d %8d %8d %8d %8.1f %8d%n",
