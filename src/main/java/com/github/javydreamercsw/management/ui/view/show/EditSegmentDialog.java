@@ -573,7 +573,16 @@ public class EditSegmentDialog extends Dialog {
   private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
     AlignmentType alignment = alignmentFilter.getValue();
     Gender gender = genderFilter.getValue();
-    return wrestlerService.findAllFiltered(alignment, gender, universeId, forceInclude);
+    // Always include every wrestler currently assigned to any team so they remain selectable
+    // in all combos (including new ones) regardless of expansion/filter state.
+    Set<Wrestler> effective =
+        teamCombos.stream()
+            .flatMap(c -> c.getValue().stream())
+            .collect(Collectors.toCollection(HashSet::new));
+    if (forceInclude != null) {
+      effective.addAll(forceInclude);
+    }
+    return wrestlerService.findAllFiltered(alignment, gender, universeId, effective);
   }
 
   private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {
