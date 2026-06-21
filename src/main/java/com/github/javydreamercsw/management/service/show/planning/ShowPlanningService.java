@@ -335,9 +335,9 @@ public class ShowPlanningService {
         .filter(
             s ->
                 (rivalry.getId() != null && rivalry.getId().equals(s.getRivalryId()))
-                    || (s.getParticipants() != null
-                        && s.getParticipants().contains(w1)
-                        && s.getParticipants().contains(w2)))
+                    || (s.getTeams() != null
+                        && s.getTeams().stream().flatMap(List::stream).anyMatch(w1::equals)
+                        && s.getTeams().stream().flatMap(List::stream).anyMatch(w2::equals)))
         .findFirst();
   }
 
@@ -433,27 +433,6 @@ public class ShowPlanningService {
                       actualParticipants.add(wrestler);
                     });
           }
-        }
-      } else if (proposedSegment.getParticipantIds() != null
-          && !proposedSegment.getParticipantIds().isEmpty()) {
-        for (Long wrestlerId : proposedSegment.getParticipantIds()) {
-          wrestlerRepository
-              .findById(wrestlerId)
-              .ifPresent(
-                  wrestler -> {
-                    segment.addParticipant(wrestler);
-                    actualParticipants.add(wrestler);
-                  });
-        }
-      } else if (proposedSegment.getParticipants() != null) {
-        for (String participantName : proposedSegment.getParticipants()) {
-          wrestlerRepository
-              .findByName(participantName)
-              .ifPresent(
-                  wrestler -> {
-                    segment.addParticipant(wrestler);
-                    actualParticipants.add(wrestler);
-                  });
         }
       }
 

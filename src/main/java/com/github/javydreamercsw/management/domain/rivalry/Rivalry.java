@@ -121,9 +121,14 @@ public class Rivalry extends AbstractEntity<Long> {
     return isActive && heat >= 10;
   }
 
-  /** Check if rivalry can be resolved with a roll (20+ heat). */
+  /** Check if rivalry can be resolved with a roll (default 20-heat floor). */
   public boolean canAttemptResolution() {
-    return isActive && heat >= 20;
+    return canAttemptResolution(20);
+  }
+
+  /** Check if rivalry can be resolved with a configurable heat floor. */
+  public boolean canAttemptResolution(final int minHeat) {
+    return isActive && heat >= minHeat;
   }
 
   /** Check if rivalry requires rule segment (30+ heat). */
@@ -137,7 +142,13 @@ public class Rivalry extends AbstractEntity<Long> {
    */
   public boolean attemptResolution(
       final int wrestler1Roll, final int wrestler2Roll, final int threshold) {
-    if (!canAttemptResolution()) {
+    return attemptResolution(wrestler1Roll, wrestler2Roll, threshold, 20);
+  }
+
+  /** Attempt resolution with a configurable minimum-heat floor. */
+  public boolean attemptResolution(
+      final int wrestler1Roll, final int wrestler2Roll, final int threshold, final int minHeat) {
+    if (!canAttemptResolution(minHeat)) {
       return false;
     }
 

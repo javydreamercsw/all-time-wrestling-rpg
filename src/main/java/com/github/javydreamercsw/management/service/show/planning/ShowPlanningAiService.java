@@ -107,21 +107,20 @@ public class ShowPlanningAiService {
                     segment.setRivalryId(dto.getRivalryId());
                     if (dto.getTeams() != null && !dto.getTeams().isEmpty()) {
                       segment.setTeams(dto.getTeams());
-                      segment.setParticipants(
-                          dto.getTeams().stream()
-                              .flatMap(java.util.List::stream)
+                    } else if (dto.getParticipants() != null && !dto.getParticipants().isEmpty()) {
+                      segment.setTeams(
+                          dto.getParticipants().stream()
+                              .map(java.util.List::of)
                               .collect(java.util.stream.Collectors.toList()));
-                    } else {
-                      segment.setParticipants(dto.getParticipants());
                     }
                     if (dto.getTeamIds() != null && !dto.getTeamIds().isEmpty()) {
                       segment.setTeamIds(dto.getTeamIds());
-                      segment.setParticipantIds(
-                          dto.getTeamIds().stream()
-                              .flatMap(java.util.List::stream)
+                    } else if (dto.getParticipantIds() != null
+                        && !dto.getParticipantIds().isEmpty()) {
+                      segment.setTeamIds(
+                          dto.getParticipantIds().stream()
+                              .map(java.util.List::of)
                               .collect(java.util.stream.Collectors.toList()));
-                    } else if (dto.getParticipantIds() != null) {
-                      segment.setParticipantIds(dto.getParticipantIds());
                     }
                     return segment;
                   })

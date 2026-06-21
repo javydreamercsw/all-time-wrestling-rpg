@@ -122,15 +122,6 @@ public class EditSegmentDialog extends Dialog {
                   .collect(Collectors.toList());
           teams.put(i + 1, team);
         }
-      } else if (proposed.getParticipants() != null) {
-        List<Wrestler> all =
-            proposed.getParticipants().stream()
-                .map(name -> data.wrestlerByName().get(name))
-                .filter(java.util.Objects::nonNull)
-                .collect(Collectors.toList());
-        for (int i = 0; i < all.size(); i++) {
-          teams.put(i + 1, new ArrayList<>(List.of(all.get(i))));
-        }
       }
       if (teams.isEmpty()) {
         teams.put(1, new ArrayList<>());
@@ -240,6 +231,11 @@ public class EditSegmentDialog extends Dialog {
   @Getter private final MultiSelectComboBox<Title> titleMultiSelectComboBox;
   @Getter private final Button saveButton;
   @Getter private final ComboBox<SegmentType> segmentTypeCombo;
+  @Getter private final List<MultiSelectComboBox<Wrestler>> teamCombos = new ArrayList<>();
+  @Getter private Button addTeamButton;
+
+  /** All wrestlers currently assigned to any team; kept in sync so every combo sees them. */
+  private final Set<Wrestler> allAssignedWrestlers = new HashSet<>();
 
   private final ComboBox<Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
@@ -249,7 +245,6 @@ public class EditSegmentDialog extends Dialog {
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
-  private final List<MultiSelectComboBox<Wrestler>> teamCombos = new ArrayList<>();
   private final VerticalLayout teamsLayout = new VerticalLayout();
 
   // ==================== MAIN CONSTRUCTOR ====================
@@ -355,7 +350,12 @@ public class EditSegmentDialog extends Dialog {
           if (!initialWrestlers.isEmpty()) {
             teamCombo.setValue(initialWrestlers);
           }
-          teamCombo.addValueChangeListener(e -> refreshWinners.run());
+          teamCombo.addValueChangeListener(
+              e -> {
+                allAssignedWrestlers.clear();
+                teamCombos.forEach(c -> allAssignedWrestlers.addAll(c.getValue()));
+                refreshWinners.run();
+              });
           teamCombos.add(teamCombo);
 
           Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
@@ -373,11 +373,17 @@ public class EditSegmentDialog extends Dialog {
                 for (int i = 0; i < teamCombos.size(); i++) {
                   teamCombos.get(i).setLabel("Team " + (i + 1));
                 }
+                allAssignedWrestlers.clear();
+                teamCombos.forEach(c -> allAssignedWrestlers.addAll(c.getValue()));
                 refreshWinners.run();
               });
           teamsLayout.add(teamRow);
           refreshWinners.run();
         };
+
+    // Seed allAssignedWrestlers with every wrestler from every initial team so that
+    // team-1's dropdown already sees team-2's wrestlers when it is built first.
+    initial.teams().values().forEach(allAssignedWrestlers::addAll);
 
     // Populate teams from initial data
     initial.teams().forEach((teamNum, wrestlers) -> addTeamRow.accept(new HashSet<>(wrestlers)));
@@ -399,7 +405,7 @@ public class EditSegmentDialog extends Dialog {
           }
         });
 
-    Button addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
+    addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
     addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     addTeamButton.setId("edit-add-team-button");
     addTeamButton.addClickListener(e -> addTeamRow.accept(new HashSet<>()));
@@ -524,11 +530,6 @@ public class EditSegmentDialog extends Dialog {
                           wrestlers.stream().map(Wrestler::getName).collect(Collectors.toList()))
                   .collect(Collectors.toList());
           segment.setTeams(teams);
-          segment.setParticipants(
-              saveData.teams().values().stream()
-                  .flatMap(List::stream)
-                  .map(Wrestler::getName)
-                  .collect(Collectors.toList()));
           segment.setWinners(
               saveData.winners().stream().map(Wrestler::getName).collect(Collectors.toList()));
           segment.setRules(
@@ -572,20 +573,11 @@ public class EditSegmentDialog extends Dialog {
   private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
     AlignmentType alignment = alignmentFilter.getValue();
     Gender gender = genderFilter.getValue();
-
-    if (alignment != null) {
-      return wrestlerService.findAllFiltered(alignment, gender, universeId, forceInclude);
+    Set<Wrestler> effective = new HashSet<>(allAssignedWrestlers);
+    if (forceInclude != null) {
+      effective.addAll(forceInclude);
     }
-
-    Set<Long> includeIds =
-        forceInclude == null
-            ? Set.of()
-            : forceInclude.stream().map(Wrestler::getId).collect(Collectors.toSet());
-
-    return data.activeWrestlers().stream()
-        .filter(w -> includeIds.contains(w.getId()) || (gender == null || w.getGender() == gender))
-        .sorted(Comparator.comparing(Wrestler::getName))
-        .collect(Collectors.toList());
+    return wrestlerService.findAllFiltered(alignment, gender, universeId, effective);
   }
 
   private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {

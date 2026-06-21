@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -243,8 +244,19 @@ class SegmentAdjudicationServiceTest {
 
   @Test
   void testRivalryHeat() {
+    // Plain matches look up an existing rivalry and add heat; they do NOT auto-create new ones.
+    Rivalry rivalry = mock(Rivalry.class);
+    when(rivalry.getId()).thenReturn(99L);
+    when(rivalryService.getRivalryBetweenWrestlers(eq(1L), eq(2L)))
+        .thenReturn(Optional.of(rivalry));
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
     segmentAdjudicationService.adjudicateMatch(segment);
-    verify(rivalryService).addHeatBetweenWrestlers(eq(1L), eq(2L), eq(1), anyString(), anyLong());
+
+    verify(rivalryService).getRivalryBetweenWrestlers(eq(1L), eq(2L));
+    verify(rivalryService).addHeat(eq(99L), eq(1), anyString());
+    verify(rivalryService, never())
+        .addHeatBetweenWrestlers(eq(1L), eq(2L), anyInt(), anyString(), anyLong());
   }
 
   @Test
@@ -303,10 +315,17 @@ class SegmentAdjudicationServiceTest {
     when(segment.getWrestlers()).thenReturn(List.of(w1, w2));
     when(segment.getWinners()).thenReturn(List.of(w1));
 
+    Rivalry rivalry = mock(Rivalry.class);
+    when(rivalry.getId()).thenReturn(99L);
+    when(rivalryService.getRivalryBetweenWrestlers(eq(10L), eq(11L)))
+        .thenReturn(Optional.of(rivalry));
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(rivalryService)
-        .addHeatBetweenWrestlers(eq(10L), eq(11L), anyInt(), anyString(), anyLong());
+    // Plain match: heat is added to the existing rivalry, not via auto-create.
+    verify(rivalryService).getRivalryBetweenWrestlers(eq(10L), eq(11L));
+    verify(rivalryService).addHeat(eq(99L), anyInt(), anyString());
   }
 
   @Test
@@ -339,15 +358,20 @@ class SegmentAdjudicationServiceTest {
 
     when(rivalryService.getRivalryBetweenWrestlers(anyLong(), anyLong()))
         .thenReturn(Optional.of(rivalry));
+    // Plain match heat path calls addHeat on the found rivalry
+    lenient()
+        .when(rivalryService.addHeat(anyLong(), anyInt(), anyString()))
+        .thenReturn(Optional.of(rivalry));
     when(rivalryService.attemptResolution(anyLong(), anyInt(), anyInt()))
         .thenReturn(new ResolutionResult<>(true, "resolved", rivalry, 15, 18, 33));
     when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    // Winner (w1) should have resolution attempted against both opponents
-    verify(rivalryService).getRivalryBetweenWrestlers(eq(10L), eq(11L));
-    verify(rivalryService).getRivalryBetweenWrestlers(eq(10L), eq(12L));
+    // getRivalryBetweenWrestlers is called for both the heat path AND the resolution path for
+    // each pair — verify at least once per cross-pair from the PLE winner scan.
+    verify(rivalryService, atLeastOnce()).getRivalryBetweenWrestlers(eq(10L), eq(11L));
+    verify(rivalryService, atLeastOnce()).getRivalryBetweenWrestlers(eq(10L), eq(12L));
   }
 
   @Test
@@ -413,8 +437,9 @@ class SegmentAdjudicationServiceTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    // Generic pair-scan must run for winner vs loser
-    verify(rivalryService).getRivalryBetweenWrestlers(eq(1L), eq(2L));
+    // Generic pair-scan must run for winner vs loser (called from both heat path and resolution
+    // path)
+    verify(rivalryService, atLeastOnce()).getRivalryBetweenWrestlers(eq(1L), eq(2L));
     // Direct resolution must NOT be called with a specific id
     verify(rivalryService, never()).attemptResolution(anyLong(), anyInt(), anyInt(), anyInt());
   }

@@ -296,6 +296,50 @@ class RivalryTest extends AbstractJpaTest {
   }
 
   @Test
+  @DisplayName("canAttemptResolution(minHeat) respects configurable heat floor")
+  void canAttemptResolution_configurableFloor_gatesCorrectly() {
+    rivalry.setHeat(10);
+    assertThat(rivalry.canAttemptResolution(10)).isTrue();
+    assertThat(rivalry.canAttemptResolution(11)).isFalse();
+    assertThat(rivalry.canAttemptResolution(5)).isTrue();
+
+    rivalry.setIsActive(false);
+    assertThat(rivalry.canAttemptResolution(5)).isFalse();
+  }
+
+  @Test
+  @DisplayName("attemptResolution(roll1, roll2, threshold) uses custom threshold")
+  void attemptResolution_customThreshold_resolvesAboveThreshold() {
+    rivalry.setHeat(25);
+
+    // Threshold 20 — total 21 resolves
+    assertThat(rivalry.attemptResolution(11, 10, 20)).isTrue();
+    assertThat(rivalry.getIsActive()).isFalse();
+  }
+
+  @Test
+  @DisplayName("attemptResolution(roll1, roll2, threshold, minHeat) uses both config values")
+  void attemptResolution_customThresholdAndMinHeat_blocksAndResolves() {
+    rivalry.setHeat(10);
+
+    // minHeat=10 allows the attempt; threshold=20, total 21 resolves
+    assertThat(rivalry.attemptResolution(11, 10, 20, 10)).isTrue();
+    assertThat(rivalry.getIsActive()).isFalse();
+  }
+
+  @Test
+  @DisplayName("attemptResolution with minHeat blocks when heat is below floor")
+  void attemptResolution_blockedByMinHeat_returnsNoEventAndFalse() {
+    rivalry.setHeat(8);
+
+    // minHeat=10 blocks the attempt — no event, returns false
+    boolean resolved = rivalry.attemptResolution(20, 20, 30, 10);
+    assertThat(resolved).isFalse();
+    assertThat(rivalry.getIsActive()).isTrue();
+    assertThat(rivalry.getHeatEvents()).isEmpty();
+  }
+
+  @Test
   @DisplayName("Should handle negative heat changes")
   void shouldHandleNegativeHeatChanges() {
     rivalry.setHeat(10);

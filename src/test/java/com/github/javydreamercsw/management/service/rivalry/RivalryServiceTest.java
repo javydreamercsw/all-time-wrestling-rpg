@@ -70,6 +70,7 @@ class RivalryServiceTest {
   public void setUp() {
     lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
     lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
+    lenient().when(gameSettingService.getRivalryResolutionMinHeat()).thenReturn(10);
     com.github.javydreamercsw.management.domain.universe.Universe defaultUniverse =
         org.mockito.Mockito.mock(
             com.github.javydreamercsw.management.domain.universe.Universe.class);
@@ -218,12 +219,12 @@ class RivalryServiceTest {
   }
 
   @Test
-  @DisplayName("Should not allow resolution below 20 heat")
-  void shouldNotAllowResolutionBelow20Heat() {
+  @DisplayName("Should not allow resolution below configured min heat")
+  void shouldNotAllowResolutionBelowConfiguredMinHeat() {
     // Given
     Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
     Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
-    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 15); // Not eligible for resolution
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 5); // Below the configured min of 10
 
     when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
 
@@ -232,7 +233,26 @@ class RivalryServiceTest {
 
     // Then
     assertThat(result.resolved()).isFalse();
-    assertThat(result.message()).contains("needs at least 20 heat");
+    assertThat(result.message()).contains("needs at least 10 heat");
+  }
+
+  @Test
+  @DisplayName("Should allow resolution when heat meets configured min heat floor")
+  void shouldAllowResolutionAtConfiguredMinHeat() {
+    // Given — heat = 10 = configured min; resolution should proceed (rolls determine outcome)
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 10);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    // When — total 31 > threshold 30
+    ResolutionResult<Rivalry> result = rivalryService.attemptResolution(1L, 16, 15);
+
+    // Then
+    assertThat(result.resolved()).isTrue();
+    assertThat(rivalry.getIsActive()).isFalse();
   }
 
   @Test

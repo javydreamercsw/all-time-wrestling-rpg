@@ -38,9 +38,9 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,7 +69,7 @@ class EditSegmentDialogTest {
     segment.setSummary("Original Summary");
     segment.setNarration("Original Narration");
     segment.setIsTitleSegment(false);
-    segment.setParticipants(new ArrayList<>(Arrays.asList("Wrestler 1", "Wrestler 2")));
+    segment.setTeams(List.of(List.of("Wrestler 1"), List.of("Wrestler 2")));
 
     wrestlerRepository = mock(WrestlerRepository.class);
     wrestlerService = mock(WrestlerService.class);
@@ -84,9 +84,11 @@ class EditSegmentDialogTest {
     Wrestler wrestler2 = new Wrestler();
     wrestler2.setId(2L);
     wrestler2.setName("Wrestler 2");
-    List<Wrestler> allWrestlers = Arrays.asList(wrestler1, wrestler2);
+    List<Wrestler> allWrestlers = List.of(wrestler1, wrestler2);
 
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), any(), any()))
+        .thenReturn(allWrestlers);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), any(Set.class)))
         .thenReturn(allWrestlers);
     when(wrestlerService.findAllFiltered(any(), any(), anyLong())).thenReturn(allWrestlers);
     when(wrestlerService.findByName("Wrestler 1")).thenReturn(Optional.of(wrestler1));
@@ -144,6 +146,34 @@ class EditSegmentDialogTest {
     // Assert
     assertEquals("New Description", segment.getNarration());
     verify(onSave).run();
+  }
+
+  @Test
+  void testAddTeamButtonPopulatesDropdown() {
+    UI.setCurrent(ui);
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeRepository,
+            segmentRuleRepository,
+            npcService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+
+    int initialTeamCount = dialog.getTeamCombos().size();
+
+    // Simulate clicking Add Team — this was the bug: the new combo had empty items
+    dialog.getAddTeamButton().click();
+
+    assertEquals(initialTeamCount + 1, dialog.getTeamCombos().size());
+    var newCombo = dialog.getTeamCombos().get(dialog.getTeamCombos().size() - 1);
+    assertTrue(
+        newCombo.getListDataView().getItemCount() > 0,
+        "New team combo must have wrestlers available (regression: empty dropdown bug)");
   }
 
   @Test
