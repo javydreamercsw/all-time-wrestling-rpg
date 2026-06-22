@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AiSettingsView;
 import com.github.javydreamercsw.management.ui.view.GameSettingsView;
-import com.github.javydreamercsw.management.ui.view.account.AccountListView;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignAbilityCardListView;
 import com.github.javydreamercsw.management.ui.view.campaign.StatusCardListView;
 import com.github.javydreamercsw.management.ui.view.holiday.HolidayListView;
@@ -252,10 +251,7 @@ public class AdminView extends VerticalLayout {
         event -> UI.getCurrent().navigate(SystemObservabilityView.class));
 
     content.add(
-        recalculateTiersButton,
-        cleanupImagesButton,
-        resetConditionButton,
-        observabilityButton);
+        recalculateTiersButton, cleanupImagesButton, resetConditionButton, observabilityButton);
     return content;
   }
 }
