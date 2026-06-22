@@ -111,8 +111,7 @@ public class AdminView extends VerticalLayout {
         new Tab("Campaign Cards"),
         new Tab("Status Cards"),
         new Tab("Expansion Management"),
-        new Tab("Wrestler Relationships"),
-        new Tab("Manage Accounts"));
+        new Tab("Wrestler Relationships"));
   }
 
   private Div createPages(final Tabs tabs) {
@@ -220,9 +219,6 @@ public class AdminView extends VerticalLayout {
           }
         });
 
-    Button manageAccountsButton = new Button("Manage Accounts and Roles");
-    manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate(AccountListView.class));
-
     Button cleanupImagesButton = new Button("Cleanup AI Generated Images");
     cleanupImagesButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
     cleanupImagesButton.addClickListener(
@@ -257,7 +253,6 @@ public class AdminView extends VerticalLayout {
 
     content.add(
         recalculateTiersButton,
-        manageAccountsButton,
         cleanupImagesButton,
         resetConditionButton,
         observabilityButton);
