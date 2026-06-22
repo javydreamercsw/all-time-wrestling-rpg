@@ -60,6 +60,27 @@ public class CommentaryService {
       final String style,
       final String catchphrase,
       final String personaDescription) {
+    return createOrUpdateCommentator(
+        npcName,
+        gender,
+        alignment,
+        description,
+        style,
+        catchphrase,
+        personaDescription,
+        "BASE_GAME");
+  }
+
+  @Transactional
+  public Commentator createOrUpdateCommentator(
+      @NonNull final String npcName,
+      @NonNull final Gender gender,
+      @NonNull final AlignmentType alignment,
+      final String description,
+      final String style,
+      final String catchphrase,
+      final String personaDescription,
+      final String expansionCode) {
     Npc npc = npcRepository.findByName(npcName).orElse(null);
     if (npc == null) {
       log.debug("Creating new NPC for commentator: {}", npcName);
@@ -70,6 +91,7 @@ public class CommentaryService {
     npc.setGender(gender);
     npc.setAlignment(alignment);
     npc.setDescription(description);
+    npc.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
     npc = npcRepository.save(npc);
 
     Optional<Commentator> existing =

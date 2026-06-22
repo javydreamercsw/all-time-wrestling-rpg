@@ -41,7 +41,10 @@ public class WrestlerImportDTO {
   private String externalId;
   private String imageUrl;
   private String heritageTag;
-  private String set;
+
+  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  private String expansionCode;
+
   private Integer drive;
   private Integer resilience;
   private Integer charisma;

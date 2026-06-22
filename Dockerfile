@@ -36,7 +36,7 @@ ENV AI_CLAUDE_API_URL=https://api.anthropic.com/v1/messages/
 ENV AI_CLAUDE_MODEL_NAME=claude-3-haiku-20240307
 ENV AI_GEMINI_ENABLED=false
 ENV AI_GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/
-ENV AI_GEMINI_MODEL_NAME=gemini-2.5-flash
+ENV AI_GEMINI_MODEL_NAME=gemini-3.1-flash-lite-preview
 
 # Note: AI_OPENAI_API_KEY, AI_CLAUDE_API_KEY, AI_GEMINI_API_KEY, and NOTION_TOKEN
 # must be provided at runtime for AI/Notion features to work.

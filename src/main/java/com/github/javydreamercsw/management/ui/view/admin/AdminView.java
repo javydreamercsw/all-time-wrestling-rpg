@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AiSettingsView;
 import com.github.javydreamercsw.management.ui.view.GameSettingsView;
-import com.github.javydreamercsw.management.ui.view.account.AccountListView;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignAbilityCardListView;
 import com.github.javydreamercsw.management.ui.view.campaign.StatusCardListView;
 import com.github.javydreamercsw.management.ui.view.holiday.HolidayListView;
@@ -111,8 +110,7 @@ public class AdminView extends VerticalLayout {
         new Tab("Campaign Cards"),
         new Tab("Status Cards"),
         new Tab("Expansion Management"),
-        new Tab("Wrestler Relationships"),
-        new Tab("Manage Accounts"));
+        new Tab("Wrestler Relationships"));
   }
 
   private Div createPages(final Tabs tabs) {
@@ -131,7 +129,6 @@ public class AdminView extends VerticalLayout {
         instantiator.getOrCreate(ExpansionManagementView.class);
     WrestlerRelationshipManagementView relationshipManagementView =
         instantiator.getOrCreate(WrestlerRelationshipManagementView.class);
-    Div manageAccountsPage = new Div();
 
     Div pages =
         new Div(
@@ -143,8 +140,7 @@ public class AdminView extends VerticalLayout {
             campaignAbilityCardListView,
             statusCardListView,
             expansionManagementView,
-            relationshipManagementView,
-            manageAccountsPage);
+            relationshipManagementView);
     pages.setSizeFull();
 
     Map<Tab, Component> tabsToPages =
@@ -159,36 +155,27 @@ public class AdminView extends VerticalLayout {
             tabs.getTabAt(7), expansionManagementView,
             tabs.getTabAt(8), relationshipManagementView);
 
-    // Handle the 10th tab (index 9) separately due to Map.of limit of 10
-    Tab manageAccountsTab = tabs.getTabAt(9);
-
     tabsToPages.values().forEach(p -> p.setVisible(false));
-    manageAccountsPage.setVisible(false);
     adminToolsPage.setVisible(true);
 
     tabs.addSelectedChangeListener(
         event -> {
           tabsToPages.values().forEach(page -> page.setVisible(false));
-          manageAccountsPage.setVisible(false);
           Tab selectedTab = tabs.getSelectedTab();
-          if (selectedTab.equals(manageAccountsTab)) {
-            manageAccountsPage.setVisible(true);
-          } else {
-            Component selectedPage = tabsToPages.get(selectedTab);
-            if (selectedPage != null) {
-              selectedPage.setVisible(true);
-              if (selectedPage instanceof ExpansionManagementView emv) {
-                emv.refresh();
-              }
-              if (selectedPage instanceof WrestlerRelationshipManagementView rmv) {
-                rmv.refresh();
-              }
-              if (selectedPage instanceof StatusCardListView sclv) {
-                sclv.refresh();
-              }
-              if (selectedPage instanceof CampaignAbilityCardListView caclv) {
-                caclv.refresh();
-              }
+          Component selectedPage = tabsToPages.get(selectedTab);
+          if (selectedPage != null) {
+            selectedPage.setVisible(true);
+            if (selectedPage instanceof ExpansionManagementView emv) {
+              emv.refresh();
+            }
+            if (selectedPage instanceof WrestlerRelationshipManagementView rmv) {
+              rmv.refresh();
+            }
+            if (selectedPage instanceof StatusCardListView sclv) {
+              sclv.refresh();
+            }
+            if (selectedPage instanceof CampaignAbilityCardListView caclv) {
+              caclv.refresh();
             }
           }
         });
@@ -219,9 +206,6 @@ public class AdminView extends VerticalLayout {
             log.error("Error during tier recalculation", e);
           }
         });
-
-    Button manageAccountsButton = new Button("Manage Accounts and Roles");
-    manageAccountsButton.addClickListener(event -> UI.getCurrent().navigate(AccountListView.class));
 
     Button cleanupImagesButton = new Button("Cleanup AI Generated Images");
     cleanupImagesButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
@@ -256,11 +240,7 @@ public class AdminView extends VerticalLayout {
         event -> UI.getCurrent().navigate(SystemObservabilityView.class));
 
     content.add(
-        recalculateTiersButton,
-        manageAccountsButton,
-        cleanupImagesButton,
-        resetConditionButton,
-        observabilityButton);
+        recalculateTiersButton, cleanupImagesButton, resetConditionButton, observabilityButton);
     return content;
   }
 }

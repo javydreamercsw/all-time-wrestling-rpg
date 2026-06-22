@@ -61,6 +61,9 @@ public class RingsideAction extends AbstractEntity<Long> {
   @Column(name = "alignment", nullable = false)
   private AlignmentType alignment = AlignmentType.NEUTRAL;
 
+  @Column(name = "expansion_code", nullable = false)
+  private String expansionCode = "BASE_GAME";
+
   @ManyToOne(fetch = FetchType.EAGER, optional = false)
   @JoinColumn(name = "ringside_action_type_id", nullable = false)
   private RingsideActionType type;

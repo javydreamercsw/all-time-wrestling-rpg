@@ -54,6 +54,9 @@ public class Achievement extends AbstractEntity<Long> {
   @Column(nullable = false)
   @NotNull private AchievementCategory category;
 
+  @Column(name = "expansion_code", nullable = false)
+  private String expansionCode = "BASE_GAME";
+
   @Column(name = "icon_url")
   @Size(max = 512) private String iconUrl;
 }

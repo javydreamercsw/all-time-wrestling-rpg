@@ -25,6 +25,9 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -42,6 +46,9 @@ import org.mockito.quality.Strictness;
 class SegmentRuleServiceTest {
 
   @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private ExpansionService expansionService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseSettingsService universeSettingsService;
 
   @InjectMocks private SegmentRuleService segmentRuleService;
 
@@ -56,6 +63,7 @@ class SegmentRuleServiceTest {
     rule1.setRequiresHighHeat(true);
     rule1.setNoDq(true);
     rule1.setBumpAddition(BumpAddition.NONE);
+    rule1.setExpansionCode("BASE_GAME");
 
     rule2 = new SegmentRule();
     rule2.setName("Standard");
@@ -63,6 +71,12 @@ class SegmentRuleServiceTest {
     rule2.setRequiresHighHeat(false);
     rule2.setNoDq(false);
     rule2.setBumpAddition(BumpAddition.NONE);
+    rule2.setExpansionCode("BASE_GAME");
+
+    // Default: no active universe, all expansions enabled
+    Mockito.when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    Mockito.when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(List.of("BASE_GAME", "CUS"));
   }
 
   @Test
@@ -234,6 +248,7 @@ class SegmentRuleServiceTest {
     rule2.setRequiresHighHeat(false);
     rule2.setNoDq(false);
     rule2.setBumpAddition(BumpAddition.NONE);
+    rule2.setExpansionCode("BASE_GAME");
     when(segmentRuleRepository.findByName("Standard")).thenReturn(Optional.of(rule2));
 
     SegmentRule result =

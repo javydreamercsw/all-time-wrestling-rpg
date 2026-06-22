@@ -19,8 +19,14 @@ package com.github.javydreamercsw.management.service.segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +46,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class SegmentRuleService {
 
   @Autowired private SegmentRuleRepository segmentRuleRepository;
+  @Autowired private ExpansionService expansionService;
+  @Autowired private UniverseContextService universeContextService;
+  @Autowired private UniverseSettingsService universeSettingsService;
+
+  private Set<String> enabledExpansionCodes() {
+    return universeContextService
+        .getCurrentUniverse()
+        .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+        .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
+  }
 
   /**
    * Find a segment rule by name.
@@ -65,7 +81,10 @@ public class SegmentRuleService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       key = "'highHeat'")
   public List<SegmentRule> getHighHeatRules() {
-    return segmentRuleRepository.findSuitableForHighHeat();
+    Set<String> enabled = enabledExpansionCodes();
+    return segmentRuleRepository.findSuitableForHighHeat().stream()
+        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
   /**
@@ -78,7 +97,10 @@ public class SegmentRuleService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       key = "'standard'")
   public List<SegmentRule> getStandardRules() {
-    return segmentRuleRepository.findStandardRules();
+    Set<String> enabled = enabledExpansionCodes();
+    return segmentRuleRepository.findStandardRules().stream()
+        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
   /**
@@ -200,6 +222,22 @@ public class SegmentRuleService {
       final boolean requiresHighHeat,
       final boolean noDq,
       final BumpAddition bumpAddition) {
+    return createOrUpdateRule(name, description, requiresHighHeat, noDq, bumpAddition, "BASE_GAME");
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      allEntries = true)
+  public SegmentRule createOrUpdateRule(
+      @NonNull final String name,
+      final String description,
+      final boolean requiresHighHeat,
+      final boolean noDq,
+      final BumpAddition bumpAddition,
+      final String expansionCode) {
     Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
 
     if (existingOpt.isPresent()) {
@@ -207,25 +245,27 @@ public class SegmentRuleService {
       if (java.util.Objects.equals(sr.getDescription(), description)
           && sr.getRequiresHighHeat() == requiresHighHeat
           && sr.getNoDq() == noDq
-          && sr.getBumpAddition() == bumpAddition) {
+          && sr.getBumpAddition() == bumpAddition
+          && java.util.Objects.equals(sr.getExpansionCode(), expansionCode)) {
         return sr;
       }
       sr.setDescription(description);
       sr.setRequiresHighHeat(requiresHighHeat);
       sr.setNoDq(noDq);
       sr.setBumpAddition(bumpAddition);
+      sr.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
       log.debug("Updating existing segment rule: {}", name);
       return segmentRuleRepository.save(sr);
     }
 
     SegmentRule segmentRule = new SegmentRule();
     log.debug("Creating new segment rule: {}", name);
-
     segmentRule.setName(name);
     segmentRule.setDescription(description);
     segmentRule.setRequiresHighHeat(requiresHighHeat);
     segmentRule.setNoDq(noDq);
     segmentRule.setBumpAddition(bumpAddition);
+    segmentRule.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
 
     return segmentRuleRepository.save(segmentRule);
   }
@@ -235,7 +275,10 @@ public class SegmentRuleService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       key = "'all'")
   public List<SegmentRule> findAll() {
-    return segmentRuleRepository.findAll();
+    Set<String> enabled = enabledExpansionCodes();
+    return segmentRuleRepository.findAll().stream()
+        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
   public long count() {

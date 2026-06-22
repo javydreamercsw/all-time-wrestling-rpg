@@ -28,6 +28,9 @@ import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionType;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionTypeRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +47,10 @@ import org.mockito.quality.Strictness;
 class RingsideActionDataServiceTest {
 
   @Mock private RingsideActionRepository ringsideActionRepository;
-
   @Mock private RingsideActionTypeRepository ringsideActionTypeRepository;
+  @Mock private ExpansionService expansionService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseSettingsService universeSettingsService;
 
   @InjectMocks private RingsideActionDataService service;
 
@@ -67,7 +72,10 @@ class RingsideActionDataServiceTest {
     action.setImpact(5);
     action.setRisk(3);
     action.setAlignment(AlignmentType.HEEL);
+    action.setExpansionCode("BASE_GAME");
 
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME"));
     when(ringsideActionTypeRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
     when(ringsideActionRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
   }

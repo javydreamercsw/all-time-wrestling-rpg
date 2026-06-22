@@ -48,6 +48,9 @@ public class SegmentType extends AbstractEntity<Long> {
   @Column(name = "description")
   @Size(max = DESCRIPTION_MAX_LENGTH) private String description;
 
+  @Column(name = "expansion_code", nullable = false)
+  private String expansionCode = "BASE_GAME";
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 

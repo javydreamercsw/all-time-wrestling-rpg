@@ -70,6 +70,9 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "bump_addition", nullable = false)
   private BumpAddition bumpAddition = BumpAddition.NONE;
 
+  @Column(name = "expansion_code", nullable = false)
+  private String expansionCode = "BASE_GAME";
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 

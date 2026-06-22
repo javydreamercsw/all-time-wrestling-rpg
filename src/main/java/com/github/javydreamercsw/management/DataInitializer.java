@@ -321,7 +321,8 @@ public class DataInitializer implements Initializable {
               dto.getDescription(),
               dto.getImpact(),
               dto.getRisk(),
-              dto.getAlignment());
+              dto.getAlignment(),
+              dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME");
           log.debug("Loaded ringside action: {}", dto.getName());
         }
         log.debug("Ringside action loading completed - {} actions loaded", dtos.size());
@@ -385,7 +386,8 @@ public class DataInitializer implements Initializable {
               cDto.getDescription(),
               cDto.getStyle(),
               cDto.getCatchphrase(),
-              cDto.getPersonaDescription());
+              cDto.getPersonaDescription(),
+              cDto.getExpansionCode() != null ? cDto.getExpansionCode() : "BASE_GAME");
           log.debug("Loaded commentator: {}", cDto.getNpcName());
         }
         log.debug("Commentator loading completed - {} commentators loaded", dtos.size());
@@ -484,7 +486,11 @@ public class DataInitializer implements Initializable {
         toSave);
     syncSetting("AI_GEMINI_API_KEY", null, existingSettings, forceOverride, toSave);
     syncSetting(
-        "AI_GEMINI_MODEL_NAME", "gemini-2.5-flash", existingSettings, forceOverride, toSave);
+        "AI_GEMINI_MODEL_NAME",
+        "gemini-3.1-flash-lite-preview",
+        existingSettings,
+        forceOverride,
+        toSave);
 
     if (!toSave.isEmpty()) {
       gameSettingRepository.saveAll(toSave);
@@ -650,7 +656,8 @@ public class DataInitializer implements Initializable {
               dto.getDescription(),
               dto.isRequiresHighHeat(),
               dto.isNoDq(),
-              dto.getBumpAddition());
+              dto.getBumpAddition(),
+              dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME");
           log.debug(
               "Loaded segment rule: {} (High Heat: {}, No DQ: {}, Bump Addition: {})",
               dto.getName(),
@@ -711,7 +718,10 @@ public class DataInitializer implements Initializable {
           Optional<SegmentType> existingType = segmentTypeService.findByName(dto.getName());
           if (existingType.isEmpty()) {
             SegmentType segmentType =
-                segmentTypeService.createOrUpdateSegmentType(dto.getName(), dto.getDescription());
+                segmentTypeService.createOrUpdateSegmentType(
+                    dto.getName(),
+                    dto.getDescription(),
+                    dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME");
             log.debug(
                 "Loaded segment type: {} (Players: {})",
                 segmentType.getName(),
@@ -971,9 +981,9 @@ public class DataInitializer implements Initializable {
                   existingWrestler.setHeritageTag(w.getHeritageTag());
                   changed = true;
                 }
-                if (w.getSet() != null
-                    && !Objects.equals(existingWrestler.getExpansionCode(), w.getSet())) {
-                  existingWrestler.setExpansionCode(w.getSet());
+                if (w.getExpansionCode() != null
+                    && !Objects.equals(existingWrestler.getExpansionCode(), w.getExpansionCode())) {
+                  existingWrestler.setExpansionCode(w.getExpansionCode());
                   changed = true;
                 }
                 if (w.getDrive() != null
@@ -1057,8 +1067,8 @@ public class DataInitializer implements Initializable {
                 newWrestler.setIsPlayer(false);
                 newWrestler.setImageUrl(w.getImageUrl());
                 newWrestler.setHeritageTag(w.getHeritageTag());
-                if (w.getSet() != null) {
-                  newWrestler.setExpansionCode(w.getSet());
+                if (w.getExpansionCode() != null) {
+                  newWrestler.setExpansionCode(w.getExpansionCode());
                 }
                 // Manager is set on WrestlerState in the post-save loop below
                 if (w.getDrive() != null) {
@@ -1194,6 +1204,8 @@ public class DataInitializer implements Initializable {
           title.setEffectScript(dto.getEffectScript());
           title.setGender(dto.getGender());
           title.setImageUrl(dto.getImageUrl());
+          title.setExpansionCode(
+              dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME");
           if (dto.getIncludeInRankings() != null) {
             title.setIncludeInRankings(dto.getIncludeInRankings());
           }
@@ -1388,7 +1400,7 @@ public class DataInitializer implements Initializable {
         List<NpcDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         // Pre-load existing NPCs once to avoid per-NPC DB queries
         Map<String, Npc> existingNpcs =
-            npcService.findAll().stream()
+            npcService.findAllUnfiltered().stream()
                 .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         List<Npc> toSave = new ArrayList<>();
         for (NpcDTO dto : dtos) {
@@ -1399,8 +1411,8 @@ public class DataInitializer implements Initializable {
             npc.setName(dto.getName());
             npc.setDescription(dto.getDescription());
             npc.setNpcType(dto.getType());
-            if (dto.getSet() != null) {
-              npc.setExpansionCode(dto.getSet());
+            if (dto.getExpansionCode() != null) {
+              npc.setExpansionCode(dto.getExpansionCode());
             }
             if (dto.getAwareness() != null) {
               npcService.setAwareness(npc, dto.getAwareness());
@@ -1425,8 +1437,9 @@ public class DataInitializer implements Initializable {
               npc.setNpcType(dto.getType());
               changed = true;
             }
-            if (dto.getSet() != null && !Objects.equals(npc.getExpansionCode(), dto.getSet())) {
-              npc.setExpansionCode(dto.getSet());
+            if (dto.getExpansionCode() != null
+                && !Objects.equals(npc.getExpansionCode(), dto.getExpansionCode())) {
+              npc.setExpansionCode(dto.getExpansionCode());
               changed = true;
             }
             if (dto.getAlignment() != null) {
@@ -1478,7 +1491,7 @@ public class DataInitializer implements Initializable {
             wrestlerRepository.findAll().stream()
                 .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
         Map<String, Npc> npcByName =
-            npcService.findAll().stream()
+            npcService.findAllUnfiltered().stream()
                 .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         for (FactionImportDTO dto : dtos) {
           Optional<Wrestler> leaderOpt = Optional.ofNullable(wrestlersByName.get(dto.getLeader()));
@@ -1532,7 +1545,7 @@ public class DataInitializer implements Initializable {
             wrestlerRepository.findAll().stream()
                 .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
         Map<String, Npc> npcByName =
-            npcService.findAll().stream()
+            npcService.findAllUnfiltered().stream()
                 .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         for (TeamImportDTO dto : dtos) {
           Optional<Wrestler> wrestler1Opt =
