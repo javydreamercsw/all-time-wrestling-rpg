@@ -118,9 +118,7 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  public void evictWrestlerCache() {
-    log.warn("[WrestlerService] wrestler cache evicted by DataInitializer");
-  }
+  public void evictWrestlerCache() {}
 
   @Transactional
   @CacheEvict(
@@ -184,9 +182,7 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.WRESTLERS_CACHE, key = "'active'")
   public List<Wrestler> findAllActiveWrestlers() {
-    List<Wrestler> result = wrestlerRepository.findAllByActiveTrue();
-    log.warn("[WrestlerService] findAllActiveWrestlers DB hit: {} wrestlers", result.size());
-    return result;
+    return wrestlerRepository.findAllByActiveTrue();
   }
 
   @Transactional(readOnly = true)
@@ -336,13 +332,7 @@ public class WrestlerService {
       enabledExpansionCodes = null;
     }
 
-    List<Wrestler> active = findAllActiveWrestlers();
-    log.warn(
-        "[WrestlerService] findAllFiltered: active={}, universeId={}, expansions={}",
-        active.size(),
-        finalUniverseId,
-        enabledExpansionCodes);
-    return active.stream()
+    return findAllActiveWrestlers().stream()
         .filter(
             w -> {
               if (includedWrestlers != null && includedWrestlers.contains(w)) {
@@ -373,6 +363,7 @@ public class WrestlerService {
                   expansionCode != null
                       ? expansionCode.equals(w.getExpansionCode())
                       : (enabledExpansionCodes == null
+                          || enabledExpansionCodes.isEmpty()
                           || enabledExpansionCodes.contains(w.getExpansionCode()));
               return matchesAlignment && matchesGender && matchesExpansion;
             })

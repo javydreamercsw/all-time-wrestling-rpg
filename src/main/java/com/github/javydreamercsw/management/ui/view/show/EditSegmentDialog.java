@@ -53,12 +53,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class EditSegmentDialog extends Dialog {
-
-  private static final Logger LOG = LoggerFactory.getLogger(EditSegmentDialog.class);
 
   // ==================== NESTED TYPES ====================
 
@@ -351,30 +347,16 @@ public class EditSegmentDialog extends Dialog {
           teamCombo.setItemLabelGenerator(Wrestler::getName);
           teamCombo.setWidthFull();
           List<Wrestler> items = getFilteredWrestlers(initialWrestlers);
-          LOG.warn(
-              "[EditSegmentDialog] team {} setItems: {} items, initialWrestlers={}",
-              teamNum,
-              items.size(),
-              initialWrestlers.stream()
-                  .map(w -> w.getId() + ":" + w.getName())
-                  .collect(Collectors.joining(", ")));
           teamCombo.setItems(items);
           if (!initialWrestlers.isEmpty()) {
-            // Remap to the canonical instances that setItems registered in Vaadin's IdentityHashMap
-            // key mapper; using the original segment-participant instances would miss the lookup.
+            // Remap to the canonical instances that setItems registered in Vaadin's KeyMapper;
+            // using the original segment-participant instances would miss the lookup.
             Map<Long, Wrestler> itemsById =
                 items.stream().collect(Collectors.toMap(w -> w.getId(), w -> w, (a, b) -> a));
             Set<Wrestler> canonical =
                 initialWrestlers.stream()
                     .map(w -> itemsById.getOrDefault(w.getId(), w))
                     .collect(Collectors.toSet());
-            LOG.warn(
-                "[EditSegmentDialog] team {} setValue: {} wrestlers: {}",
-                teamNum,
-                canonical.size(),
-                canonical.stream()
-                    .map(w -> w.getId() + ":" + w.getName())
-                    .collect(Collectors.joining(", ")));
             teamCombo.setValue(canonical);
           }
           teamCombo.addValueChangeListener(
@@ -600,14 +582,6 @@ public class EditSegmentDialog extends Dialog {
   private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
     AlignmentType alignment = alignmentFilter.getValue();
     Gender gender = genderFilter.getValue();
-    LOG.warn(
-        "[EditSegmentDialog] getFilteredWrestlers: activeWrestlers={}, allAssigned={},"
-            + " forceInclude={}, alignment={}, gender={}",
-        data.activeWrestlers().size(),
-        allAssignedWrestlers.size(),
-        forceInclude == null ? 0 : forceInclude.size(),
-        alignment,
-        gender);
 
     List<Wrestler> filtered;
     if (alignment != null) {
@@ -648,7 +622,6 @@ public class EditSegmentDialog extends Dialog {
       }
     }
 
-    LOG.warn("[EditSegmentDialog] getFilteredWrestlers: returning {} items", filtered.size());
     return filtered;
   }
 
