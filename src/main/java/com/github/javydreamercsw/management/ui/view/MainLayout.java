@@ -417,9 +417,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       return;
     }
 
-    // Never show the overlay while the user is on the tutorial setup/inline pages
+    // Never show the overlay while the user is on the tutorial setup/inline pages or the login page
     String location = event.getLocation().getPath();
-    if ("tutorial".equals(location)) {
+    if ("tutorial".equals(location) || "login".equals(location)) {
       if (tutorialOverlay != null && tutorialOverlay.isOpened()) {
         tutorialOverlay.close();
       }

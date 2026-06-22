@@ -75,6 +75,10 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     ensureWrestlers();
     ensureSeasonExists();
     ensureShowTemplateExists();
+    // Navigate to a known page after DB reset so Vaadin rebuilds views with fresh data.
+    // Without this, a view cached in the previous test's session may render stale state.
+    navigateTo("leagues");
+    waitForVaadinClientToLoad();
   }
 
   @Test

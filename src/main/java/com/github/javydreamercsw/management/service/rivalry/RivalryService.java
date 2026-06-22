@@ -222,11 +222,12 @@ public class RivalryService {
 
     Rivalry rivalry = rivalryOpt.get();
 
-    if (!rivalry.canAttemptResolution()) {
+    int minHeat = gameSettingService.getRivalryResolutionMinHeat();
+    if (!rivalry.canAttemptResolution(minHeat)) {
       return new ResolutionResult<>(
           false,
-          "Rivalry needs at least 20 heat to attempt resolution (current: %d)"
-              .formatted(rivalry.getHeat()),
+          "Rivalry needs at least %d heat to attempt resolution (current: %d)"
+              .formatted(minHeat, rivalry.getHeat()),
           rivalry,
           0,
           0,
@@ -237,7 +238,7 @@ public class RivalryService {
     int roll2 = wrestler2Roll;
     int total = roll1 + roll2;
 
-    boolean resolved = rivalry.attemptResolution(roll1, roll2, threshold);
+    boolean resolved = rivalry.attemptResolution(roll1, roll2, threshold, minHeat);
 
     if (resolved) {
       rivalry.endRivalry("Rivalry resolved successfully");

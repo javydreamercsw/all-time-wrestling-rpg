@@ -62,6 +62,7 @@ public class GameSettingService {
       "rivalry_heat_decay_per_interval";
   public static final String RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY =
       "rivalry_heat_decay_interval_days";
+  public static final String RIVALRY_RESOLUTION_MIN_HEAT_KEY = "rivalry_resolution_min_heat";
 
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
@@ -260,7 +261,7 @@ public class GameSettingService {
 
   @PreAuthorize("permitAll()")
   public int getRivalryResolutionThresholdRegular() {
-    return resolveValue(RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY).map(Integer::parseInt).orElse(35);
+    return resolveValue(RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY).map(Integer::parseInt).orElse(25);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
@@ -273,7 +274,7 @@ public class GameSettingService {
   public boolean isRivalryResolutionOnRegularShowsEnabled() {
     return resolveValue(RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY)
         .map(Boolean::parseBoolean)
-        .orElse(false);
+        .orElse(true);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
@@ -284,7 +285,7 @@ public class GameSettingService {
 
   @PreAuthorize("permitAll()")
   public int getRivalryMaxDurationDays() {
-    return resolveValue(RIVALRY_MAX_DURATION_DAYS_KEY).map(Integer::parseInt).orElse(0);
+    return resolveValue(RIVALRY_MAX_DURATION_DAYS_KEY).map(Integer::parseInt).orElse(90);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
@@ -295,7 +296,7 @@ public class GameSettingService {
 
   @PreAuthorize("permitAll()")
   public boolean isRivalryHeatDecayEnabled() {
-    return resolveValue(RIVALRY_HEAT_DECAY_ENABLED_KEY).map(Boolean::parseBoolean).orElse(false);
+    return resolveValue(RIVALRY_HEAT_DECAY_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
@@ -324,6 +325,17 @@ public class GameSettingService {
   @Transactional
   public void setRivalryHeatDecayIntervalDays(final int days) {
     saveInternal(RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY, String.valueOf(days));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryResolutionMinHeat() {
+    return resolveValue(RIVALRY_RESOLUTION_MIN_HEAT_KEY).map(Integer::parseInt).orElse(10);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryResolutionMinHeat(final int minHeat) {
+    saveInternal(RIVALRY_RESOLUTION_MIN_HEAT_KEY, String.valueOf(minHeat));
   }
 
   // ── Generic access (used by AiSettingsService and other consumers) ────────

@@ -225,6 +225,128 @@ class GameSettingServiceTest {
     assertThat(result).isSameAs(gs);
   }
 
+  // ── Rivalry lifecycle settings ────────────────────────────────────────────
+
+  @Test
+  void getRivalryResolutionThresholdPle_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY))
+        .thenReturn(
+            Optional.of(setting(GameSettingService.RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY, "35")));
+    assertThat(service.getRivalryResolutionThresholdPle()).isEqualTo(35);
+  }
+
+  @Test
+  void getRivalryResolutionThresholdPle_settingMissing_returnsDefault30() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_RESOLUTION_THRESHOLD_PLE_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.getRivalryResolutionThresholdPle()).isEqualTo(30);
+  }
+
+  @Test
+  void getRivalryResolutionThresholdRegular_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY))
+        .thenReturn(
+            Optional.of(
+                setting(GameSettingService.RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY, "30")));
+    assertThat(service.getRivalryResolutionThresholdRegular()).isEqualTo(30);
+  }
+
+  @Test
+  void getRivalryResolutionThresholdRegular_settingMissing_returnsDefault25() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_RESOLUTION_THRESHOLD_REGULAR_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.getRivalryResolutionThresholdRegular()).isEqualTo(25);
+  }
+
+  @Test
+  void isRivalryResolutionOnRegularShowsEnabled_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY))
+        .thenReturn(
+            Optional.of(
+                setting(GameSettingService.RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY, "false")));
+    assertThat(service.isRivalryResolutionOnRegularShowsEnabled()).isFalse();
+  }
+
+  @Test
+  void isRivalryResolutionOnRegularShowsEnabled_settingMissing_returnsDefaultTrue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_RESOLUTION_ON_REGULAR_SHOWS_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.isRivalryResolutionOnRegularShowsEnabled()).isTrue();
+  }
+
+  @Test
+  void getRivalryMaxDurationDays_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_MAX_DURATION_DAYS_KEY))
+        .thenReturn(Optional.of(setting(GameSettingService.RIVALRY_MAX_DURATION_DAYS_KEY, "60")));
+    assertThat(service.getRivalryMaxDurationDays()).isEqualTo(60);
+  }
+
+  @Test
+  void getRivalryMaxDurationDays_settingMissing_returnsDefault90() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_MAX_DURATION_DAYS_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.getRivalryMaxDurationDays()).isEqualTo(90);
+  }
+
+  @Test
+  void isRivalryHeatDecayEnabled_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_HEAT_DECAY_ENABLED_KEY))
+        .thenReturn(
+            Optional.of(setting(GameSettingService.RIVALRY_HEAT_DECAY_ENABLED_KEY, "false")));
+    assertThat(service.isRivalryHeatDecayEnabled()).isFalse();
+  }
+
+  @Test
+  void isRivalryHeatDecayEnabled_settingMissing_returnsDefaultTrue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_HEAT_DECAY_ENABLED_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.isRivalryHeatDecayEnabled()).isTrue();
+  }
+
+  @Test
+  void getRivalryHeatDecayPerInterval_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY))
+        .thenReturn(
+            Optional.of(setting(GameSettingService.RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY, "3")));
+    assertThat(service.getRivalryHeatDecayPerInterval()).isEqualTo(3);
+  }
+
+  @Test
+  void getRivalryHeatDecayPerInterval_settingMissing_returnsDefault1() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_HEAT_DECAY_PER_INTERVAL_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.getRivalryHeatDecayPerInterval()).isEqualTo(1);
+  }
+
+  @Test
+  void getRivalryHeatDecayIntervalDays_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY))
+        .thenReturn(
+            Optional.of(setting(GameSettingService.RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY, "14")));
+    assertThat(service.getRivalryHeatDecayIntervalDays()).isEqualTo(14);
+  }
+
+  @Test
+  void getRivalryHeatDecayIntervalDays_settingMissing_returnsDefault7() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.getRivalryHeatDecayIntervalDays()).isEqualTo(7);
+  }
+
+  @Test
+  void getRivalryResolutionMinHeat_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_RESOLUTION_MIN_HEAT_KEY))
+        .thenReturn(Optional.of(setting(GameSettingService.RIVALRY_RESOLUTION_MIN_HEAT_KEY, "15")));
+    assertThat(service.getRivalryResolutionMinHeat()).isEqualTo(15);
+  }
+
+  @Test
+  void getRivalryResolutionMinHeat_settingMissing_returnsDefault10() {
+    when(repository.findGlobal(GameSettingService.RIVALRY_RESOLUTION_MIN_HEAT_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.getRivalryResolutionMinHeat()).isEqualTo(10);
+  }
+
   // ── Tutorial settings ─────────────────────────────────────────────────────
 
   @Test
