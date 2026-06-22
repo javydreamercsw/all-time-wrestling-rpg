@@ -1690,7 +1690,8 @@ public class ShowDetailView extends Main
                 GeneralSecurityUtils.runWithContext(
                     securityContext,
                     () -> {
-                      Segment seg = segmentRepository.findById(segment.getId()).orElse(segment);
+                      Segment seg =
+                          segmentRepository.findByIdWithDetails(segment.getId()).orElse(segment);
                       EditSegmentDialog.PreloadedData preloaded =
                           EditSegmentDialog.PreloadedData.load(
                               segmentTypeRepository,

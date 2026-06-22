@@ -257,6 +257,7 @@ public class DataInitializer implements Initializable {
     syncLocationsFromFile();
     syncArenasFromFile();
     syncWrestlersFromFile();
+    wrestlerService.evictWrestlerCache();
     syncRelationshipsFromFile();
     syncChampionshipsFromFile();
     syncDecksFromFile();

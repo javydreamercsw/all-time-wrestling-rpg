@@ -115,6 +115,11 @@ public class WrestlerService {
     this.universeSettingsService = universeSettingsService;
   }
 
+  @CacheEvict(
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
+      allEntries = true)
+  public void evictWrestlerCache() {}
+
   @Transactional
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
