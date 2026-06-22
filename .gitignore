@@ -91,3 +91,4 @@ node/
 # repowise API keys (local)
 .repowise/.env
 .repowise/.augment-session.json
+.repowise/.augment-warned
