@@ -24,4 +24,5 @@ public class SegmentTypeDTO {
   private String description;
   private int playerAmount;
   private boolean unlimited;
+  private String set;
 }

@@ -27,4 +27,5 @@ public class RingsideActionDTO {
   private int impact;
   private int risk;
   private AlignmentType alignment;
+  private String set;
 }

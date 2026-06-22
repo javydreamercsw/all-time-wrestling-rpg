@@ -29,4 +29,5 @@ public class CommentatorImportDTO {
   private String style;
   private String catchphrase;
   private String personaDescription;
+  private String set;
 }

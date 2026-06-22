@@ -25,4 +25,8 @@
 }, {
   "name": "Hurt Business Expansion",
   "expansion_code": "HURT_BUSINESS"
-} ]
+},{
+  "name": "Custom Content",
+  "expansion_code": "CUSTOM"
+}
+]

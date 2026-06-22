@@ -27,6 +27,9 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -43,6 +47,9 @@ import org.mockito.quality.Strictness;
 class SegmentTypeServiceTest {
 
   @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private ExpansionService expansionService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseSettingsService universeSettingsService;
 
   @InjectMocks private SegmentTypeService segmentTypeService;
 
@@ -53,6 +60,12 @@ class SegmentTypeServiceTest {
     segmentType = new SegmentType();
     segmentType.setName("Match");
     segmentType.setDescription("A standard wrestling match");
+    segmentType.setExpansionCode("BASE_GAME");
+
+    // Default: no active universe, all expansions enabled
+    Mockito.when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    Mockito.when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(List.of("BASE_GAME", "CUS"));
   }
 
   // ==================== findByName ====================
@@ -82,6 +95,7 @@ class SegmentTypeServiceTest {
   void findAll_returnsList() {
     SegmentType st2 = new SegmentType();
     st2.setName("Promo");
+    st2.setExpansionCode("BASE_GAME");
     when(segmentTypeRepository.findAll()).thenReturn(List.of(segmentType, st2));
 
     List<SegmentType> result = segmentTypeService.findAll();

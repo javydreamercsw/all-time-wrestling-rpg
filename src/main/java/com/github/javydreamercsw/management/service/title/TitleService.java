@@ -30,13 +30,18 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +63,16 @@ public class TitleService {
   private final UniverseRepository universeRepository;
   private final Clock clock;
   private final DefaultImageService imageService;
+  private final ExpansionService expansionService;
+  private final UniverseContextService universeContextService;
+  private final UniverseSettingsService universeSettingsService;
+
+  private Set<String> enabledExpansionCodes() {
+    return universeContextService
+        .getCurrentUniverse()
+        .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+        .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
+  }
 
   public boolean isWrestlerEligible(@NonNull final Wrestler wrestler, @NonNull final Title title) {
     if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
@@ -156,7 +171,11 @@ public class TitleService {
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       key = "'all'")
   public List<Title> findAll() {
-    return (List<Title>) titleRepository.findAll();
+    Set<String> enabled = enabledExpansionCodes();
+    return ((List<Title>) titleRepository.findAll())
+        .stream()
+            .filter(t -> t.getExpansionCode() == null || enabled.contains(t.getExpansionCode()))
+            .collect(Collectors.toList());
   }
 
   @PreAuthorize("isAuthenticated()")
