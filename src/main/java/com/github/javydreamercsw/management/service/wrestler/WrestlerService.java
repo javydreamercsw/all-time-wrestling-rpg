@@ -118,7 +118,9 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
-  public void evictWrestlerCache() {}
+  public void evictWrestlerCache() {
+    log.warn("[WrestlerService] wrestler cache evicted by DataInitializer");
+  }
 
   @Transactional
   @CacheEvict(
@@ -182,7 +184,9 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.WRESTLERS_CACHE, key = "'active'")
   public List<Wrestler> findAllActiveWrestlers() {
-    return wrestlerRepository.findAllByActiveTrue();
+    List<Wrestler> result = wrestlerRepository.findAllByActiveTrue();
+    log.warn("[WrestlerService] findAllActiveWrestlers DB hit: {} wrestlers", result.size());
+    return result;
   }
 
   @Transactional(readOnly = true)
@@ -332,7 +336,13 @@ public class WrestlerService {
       enabledExpansionCodes = null;
     }
 
-    return findAllActiveWrestlers().stream()
+    List<Wrestler> active = findAllActiveWrestlers();
+    log.warn(
+        "[WrestlerService] findAllFiltered: active={}, universeId={}, expansions={}",
+        active.size(),
+        finalUniverseId,
+        enabledExpansionCodes);
+    return active.stream()
         .filter(
             w -> {
               if (includedWrestlers != null && includedWrestlers.contains(w)) {
