@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,22 +14,13 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto;
+package com.github.javydreamercsw.management.domain.show.segment.rule;
 
-import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-@Data
-public class SegmentRuleDTO {
-  private String name;
-  private String description;
-  private boolean requiresHighHeat;
-  private boolean noDq;
-  private BumpAddition bumpAddition;
-
-  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
-  private String expansionCode;
-
-  private SegmentRulePlayGuide rules;
-}
+/** In-game play guide for a match type, with separate solo and multiplayer rule sets. */
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record SegmentRulePlayGuide(
+    SegmentRuleVariantGuide solo, SegmentRuleVariantGuide multiplayer) {}

@@ -16,13 +16,20 @@
 */
 package com.github.javydreamercsw.management.service.segment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -49,6 +56,7 @@ public class SegmentRuleService {
   @Autowired private ExpansionService expansionService;
   @Autowired private UniverseContextService universeContextService;
   @Autowired private UniverseSettingsService universeSettingsService;
+  @Autowired private ObjectMapper objectMapper;
 
   private Set<String> enabledExpansionCodes() {
     return universeContextService
@@ -222,7 +230,8 @@ public class SegmentRuleService {
       final boolean requiresHighHeat,
       final boolean noDq,
       final BumpAddition bumpAddition) {
-    return createOrUpdateRule(name, description, requiresHighHeat, noDq, bumpAddition, "BASE_GAME");
+    return createOrUpdateRule(
+        name, description, requiresHighHeat, noDq, bumpAddition, "BASE_GAME", null);
   }
 
   @Transactional
@@ -238,36 +247,8 @@ public class SegmentRuleService {
       final boolean noDq,
       final BumpAddition bumpAddition,
       final String expansionCode) {
-    Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
-
-    if (existingOpt.isPresent()) {
-      SegmentRule sr = existingOpt.get();
-      if (java.util.Objects.equals(sr.getDescription(), description)
-          && sr.getRequiresHighHeat() == requiresHighHeat
-          && sr.getNoDq() == noDq
-          && sr.getBumpAddition() == bumpAddition
-          && java.util.Objects.equals(sr.getExpansionCode(), expansionCode)) {
-        return sr;
-      }
-      sr.setDescription(description);
-      sr.setRequiresHighHeat(requiresHighHeat);
-      sr.setNoDq(noDq);
-      sr.setBumpAddition(bumpAddition);
-      sr.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
-      log.debug("Updating existing segment rule: {}", name);
-      return segmentRuleRepository.save(sr);
-    }
-
-    SegmentRule segmentRule = new SegmentRule();
-    log.debug("Creating new segment rule: {}", name);
-    segmentRule.setName(name);
-    segmentRule.setDescription(description);
-    segmentRule.setRequiresHighHeat(requiresHighHeat);
-    segmentRule.setNoDq(noDq);
-    segmentRule.setBumpAddition(bumpAddition);
-    segmentRule.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
-
-    return segmentRuleRepository.save(segmentRule);
+    return createOrUpdateRule(
+        name, description, requiresHighHeat, noDq, bumpAddition, expansionCode, null);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -283,5 +264,74 @@ public class SegmentRuleService {
 
   public long count() {
     return segmentRuleRepository.count();
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      allEntries = true)
+  public SegmentRule createOrUpdateRule(
+      @NonNull final String name,
+      final String description,
+      final boolean requiresHighHeat,
+      final boolean noDq,
+      final BumpAddition bumpAddition,
+      final String expansionCode,
+      final SegmentRulePlayGuide rules) {
+    Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
+    String incomingHash = computeRulesHash(rules);
+
+    if (existingOpt.isPresent()) {
+      SegmentRule sr = existingOpt.get();
+      boolean rulesChanged = !java.util.Objects.equals(sr.getRulesHash(), incomingHash);
+      if (java.util.Objects.equals(sr.getDescription(), description)
+          && sr.getRequiresHighHeat() == requiresHighHeat
+          && sr.getNoDq() == noDq
+          && sr.getBumpAddition() == bumpAddition
+          && java.util.Objects.equals(sr.getExpansionCode(), expansionCode)
+          && !rulesChanged) {
+        return sr;
+      }
+      sr.setDescription(description);
+      sr.setRequiresHighHeat(requiresHighHeat);
+      sr.setNoDq(noDq);
+      sr.setBumpAddition(bumpAddition);
+      sr.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
+      if (rulesChanged) {
+        sr.setRules(rules);
+        sr.setRulesHash(incomingHash);
+      }
+      log.debug("Updating existing segment rule: {}", name);
+      return segmentRuleRepository.save(sr);
+    }
+
+    SegmentRule segmentRule = new SegmentRule();
+    log.debug("Creating new segment rule: {}", name);
+    segmentRule.setName(name);
+    segmentRule.setDescription(description);
+    segmentRule.setRequiresHighHeat(requiresHighHeat);
+    segmentRule.setNoDq(noDq);
+    segmentRule.setBumpAddition(bumpAddition);
+    segmentRule.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
+    segmentRule.setRules(rules);
+    segmentRule.setRulesHash(incomingHash);
+    return segmentRuleRepository.save(segmentRule);
+  }
+
+  private String computeRulesHash(final SegmentRulePlayGuide rules) {
+    if (rules == null) {
+      return null;
+    }
+    try {
+      String json = objectMapper.writeValueAsString(rules);
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(json.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(hash);
+    } catch (JsonProcessingException | NoSuchAlgorithmException e) {
+      log.warn("Failed to compute rules hash for segment rule", e);
+      return null;
+    }
   }
 }
