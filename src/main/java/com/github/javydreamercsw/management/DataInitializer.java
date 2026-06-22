@@ -321,7 +321,8 @@ public class DataInitializer implements Initializable {
               dto.getDescription(),
               dto.getImpact(),
               dto.getRisk(),
-              dto.getAlignment());
+              dto.getAlignment(),
+              dto.getSet() != null ? dto.getSet() : "BASE_GAME");
           log.debug("Loaded ringside action: {}", dto.getName());
         }
         log.debug("Ringside action loading completed - {} actions loaded", dtos.size());
@@ -385,7 +386,8 @@ public class DataInitializer implements Initializable {
               cDto.getDescription(),
               cDto.getStyle(),
               cDto.getCatchphrase(),
-              cDto.getPersonaDescription());
+              cDto.getPersonaDescription(),
+              cDto.getSet() != null ? cDto.getSet() : "BASE_GAME");
           log.debug("Loaded commentator: {}", cDto.getNpcName());
         }
         log.debug("Commentator loading completed - {} commentators loaded", dtos.size());
@@ -484,7 +486,11 @@ public class DataInitializer implements Initializable {
         toSave);
     syncSetting("AI_GEMINI_API_KEY", null, existingSettings, forceOverride, toSave);
     syncSetting(
-        "AI_GEMINI_MODEL_NAME", "gemini-2.5-flash", existingSettings, forceOverride, toSave);
+        "AI_GEMINI_MODEL_NAME",
+        "gemini-3.1-flash-lite-preview",
+        existingSettings,
+        forceOverride,
+        toSave);
 
     if (!toSave.isEmpty()) {
       gameSettingRepository.saveAll(toSave);
@@ -650,7 +656,8 @@ public class DataInitializer implements Initializable {
               dto.getDescription(),
               dto.isRequiresHighHeat(),
               dto.isNoDq(),
-              dto.getBumpAddition());
+              dto.getBumpAddition(),
+              dto.getSet() != null ? dto.getSet() : "BASE_GAME");
           log.debug(
               "Loaded segment rule: {} (High Heat: {}, No DQ: {}, Bump Addition: {})",
               dto.getName(),
@@ -711,7 +718,10 @@ public class DataInitializer implements Initializable {
           Optional<SegmentType> existingType = segmentTypeService.findByName(dto.getName());
           if (existingType.isEmpty()) {
             SegmentType segmentType =
-                segmentTypeService.createOrUpdateSegmentType(dto.getName(), dto.getDescription());
+                segmentTypeService.createOrUpdateSegmentType(
+                    dto.getName(),
+                    dto.getDescription(),
+                    dto.getSet() != null ? dto.getSet() : "BASE_GAME");
             log.debug(
                 "Loaded segment type: {} (Players: {})",
                 segmentType.getName(),
@@ -1194,6 +1204,7 @@ public class DataInitializer implements Initializable {
           title.setEffectScript(dto.getEffectScript());
           title.setGender(dto.getGender());
           title.setImageUrl(dto.getImageUrl());
+          title.setExpansionCode(dto.getSet() != null ? dto.getSet() : "BASE_GAME");
           if (dto.getIncludeInRankings() != null) {
             title.setIncludeInRankings(dto.getIncludeInRankings());
           }

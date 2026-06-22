@@ -145,7 +145,7 @@ public class AiSettingsService {
     return gameSettingService
         .findById("AI_GEMINI_MODEL_NAME")
         .map(GameSetting::getValue)
-        .orElse("gemini-2.5-flash");
+        .orElse("gemini-3.1-flash-lite-preview");
   }
 
   // Pollinations settings

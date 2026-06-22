@@ -47,7 +47,7 @@ class AIProviderConfigTest {
   @Test
   void testGeminiConfig() {
     assertNotNull(geminiConfigProperties);
-    assertEquals("gemini-2.5-flash", geminiConfigProperties.getModelName());
+    assertEquals("gemini-3.1-flash-lite-preview", geminiConfigProperties.getModelName());
     assertEquals(
         "https://generativelanguage.googleapis.com/v1beta/models/",
         geminiConfigProperties.getApiUrl());

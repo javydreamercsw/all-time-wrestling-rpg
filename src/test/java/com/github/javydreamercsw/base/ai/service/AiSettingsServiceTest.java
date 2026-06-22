@@ -100,7 +100,7 @@ class AiSettingsServiceTest {
   void getGeminiModelName_noSetting_returnsGeminiFlash() {
     when(gameSettingService.findById("AI_GEMINI_MODEL_NAME")).thenReturn(Optional.empty());
 
-    assertThat(aiSettingsService.getGeminiModelName()).isEqualTo("gemini-2.5-flash");
+    assertThat(aiSettingsService.getGeminiModelName()).isEqualTo("gemini-3.1-flash-lite-preview");
   }
 
   // ----------------------------------------------------------------
