@@ -129,7 +129,6 @@ public class AdminView extends VerticalLayout {
         instantiator.getOrCreate(ExpansionManagementView.class);
     WrestlerRelationshipManagementView relationshipManagementView =
         instantiator.getOrCreate(WrestlerRelationshipManagementView.class);
-    Div manageAccountsPage = new Div();
 
     Div pages =
         new Div(
@@ -141,8 +140,7 @@ public class AdminView extends VerticalLayout {
             campaignAbilityCardListView,
             statusCardListView,
             expansionManagementView,
-            relationshipManagementView,
-            manageAccountsPage);
+            relationshipManagementView);
     pages.setSizeFull();
 
     Map<Tab, Component> tabsToPages =
@@ -157,36 +155,27 @@ public class AdminView extends VerticalLayout {
             tabs.getTabAt(7), expansionManagementView,
             tabs.getTabAt(8), relationshipManagementView);
 
-    // Handle the 10th tab (index 9) separately due to Map.of limit of 10
-    Tab manageAccountsTab = tabs.getTabAt(9);
-
     tabsToPages.values().forEach(p -> p.setVisible(false));
-    manageAccountsPage.setVisible(false);
     adminToolsPage.setVisible(true);
 
     tabs.addSelectedChangeListener(
         event -> {
           tabsToPages.values().forEach(page -> page.setVisible(false));
-          manageAccountsPage.setVisible(false);
           Tab selectedTab = tabs.getSelectedTab();
-          if (selectedTab.equals(manageAccountsTab)) {
-            manageAccountsPage.setVisible(true);
-          } else {
-            Component selectedPage = tabsToPages.get(selectedTab);
-            if (selectedPage != null) {
-              selectedPage.setVisible(true);
-              if (selectedPage instanceof ExpansionManagementView emv) {
-                emv.refresh();
-              }
-              if (selectedPage instanceof WrestlerRelationshipManagementView rmv) {
-                rmv.refresh();
-              }
-              if (selectedPage instanceof StatusCardListView sclv) {
-                sclv.refresh();
-              }
-              if (selectedPage instanceof CampaignAbilityCardListView caclv) {
-                caclv.refresh();
-              }
+          Component selectedPage = tabsToPages.get(selectedTab);
+          if (selectedPage != null) {
+            selectedPage.setVisible(true);
+            if (selectedPage instanceof ExpansionManagementView emv) {
+              emv.refresh();
+            }
+            if (selectedPage instanceof WrestlerRelationshipManagementView rmv) {
+              rmv.refresh();
+            }
+            if (selectedPage instanceof StatusCardListView sclv) {
+              sclv.refresh();
+            }
+            if (selectedPage instanceof CampaignAbilityCardListView caclv) {
+              caclv.refresh();
             }
           }
         });
