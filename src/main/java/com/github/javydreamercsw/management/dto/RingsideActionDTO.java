@@ -27,5 +27,7 @@ public class RingsideActionDTO {
   private int impact;
   private int risk;
   private AlignmentType alignment;
-  private String set;
+
+  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  private String expansionCode;
 }

@@ -23,7 +23,10 @@ public class NpcDTO {
   private String name;
   private String description;
   private String type;
-  private String set;
+
+  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  private String expansionCode;
+
   private String alignment;
   private Integer awareness;
 }

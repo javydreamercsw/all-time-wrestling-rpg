@@ -35,5 +35,6 @@ public class TitleDTO {
   @com.fasterxml.jackson.annotation.JsonProperty("effect_script")
   private String effectScript;
 
-  private String set;
+  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  private String expansionCode;
 }

@@ -113,11 +113,13 @@ Wrestlers are defined in `src/main/resources/wrestlers.json` (and optionally `wr
     "heritageTag": "Colorado, USA",
     "description": "...",
     "gender": "MALE",
-    "set": "HURT_BUSINESS",
+    "expansion_code": "HURT_BUSINESS",
     "manager": "MVP"
   }
 ]
 ```
+
+The `expansion_code` field controls which expansion must be enabled for this wrestler to appear. Omit it (or use `"BASE_GAME"`) for wrestlers that are always available. Valid codes match the entries in `src/main/resources/expansions.json`.
 
 ### Heritage Tags
 
