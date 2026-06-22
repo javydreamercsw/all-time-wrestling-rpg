@@ -1400,7 +1400,7 @@ public class DataInitializer implements Initializable {
         List<NpcDTO> dtos = mapper.readValue(is, new TypeReference<>() {});
         // Pre-load existing NPCs once to avoid per-NPC DB queries
         Map<String, Npc> existingNpcs =
-            npcService.findAll().stream()
+            npcService.findAllUnfiltered().stream()
                 .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         List<Npc> toSave = new ArrayList<>();
         for (NpcDTO dto : dtos) {
@@ -1491,7 +1491,7 @@ public class DataInitializer implements Initializable {
             wrestlerRepository.findAll().stream()
                 .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
         Map<String, Npc> npcByName =
-            npcService.findAll().stream()
+            npcService.findAllUnfiltered().stream()
                 .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         for (FactionImportDTO dto : dtos) {
           Optional<Wrestler> leaderOpt = Optional.ofNullable(wrestlersByName.get(dto.getLeader()));
@@ -1545,7 +1545,7 @@ public class DataInitializer implements Initializable {
             wrestlerRepository.findAll().stream()
                 .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
         Map<String, Npc> npcByName =
-            npcService.findAll().stream()
+            npcService.findAllUnfiltered().stream()
                 .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         for (TeamImportDTO dto : dtos) {
           Optional<Wrestler> wrestler1Opt =
