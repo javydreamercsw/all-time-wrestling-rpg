@@ -87,3 +87,6 @@ node/
 /videos/
 /manifest.json
 /video-manifest.json
+
+# repowise API keys (local)
+.repowise/.env
