@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.image;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
@@ -23,6 +24,7 @@ import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Duration;
+import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -57,6 +59,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("wrestler-image")));
 
     String src = image.getAttribute("src");
+    assertNotNull(src);
     assertTrue(
         src.contains("images/wrestlers/Princess%20Aussie.png"),
         "Should show specific image for Princess Aussie. Found: " + src);
@@ -79,6 +82,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("wrestler-image")));
 
     String src = image.getAttribute("src");
+    assertNotNull(src);
     assertTrue(
         src.contains("images/generic-wrestler.png"),
         "Should show generic wrestler image. Found: " + src);
@@ -97,6 +101,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
     WebElement image = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("npc-image")));
 
     String src = image.getAttribute("src");
+    assertNotNull(src);
     assertTrue(
         src.contains("images/generic-npc.png"),
         "Should show generic npc image when AI is disabled. Found: " + src);
@@ -104,7 +109,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
 
   @Test
   void testChampionshipImage() {
-    // ATW Tag Team is selected by default (alphabetically first in championships.json)
+    // ATW Women is selected by default (alphabetically first in championships.json)
     navigateTo("championship-rankings");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -112,11 +117,15 @@ class EntityImageE2ETest extends AbstractE2ETest {
     // Check image resolution
     WebElement image =
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("championship-image")));
-    wait.until(d -> image.getAttribute("src") != null && !image.getAttribute("src").isEmpty());
+    wait.until(
+        d ->
+            image.getAttribute("src") != null
+                && !Objects.requireNonNull(image.getAttribute("src")).isEmpty());
 
     String src = image.getAttribute("src");
+    assertNotNull(src);
     assertTrue(
-        src.contains("images/championships/atw-tag-team.png"),
-        "Should show specific image for ATW Tag Team championship by default. Found: " + src);
+        src.contains("images/championships/atw-women.png"),
+        "Should show specific image for ATW Women championship by default. Found: " + src);
   }
 }
