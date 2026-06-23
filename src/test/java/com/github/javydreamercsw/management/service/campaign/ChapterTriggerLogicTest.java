@@ -49,7 +49,8 @@ class ChapterTriggerLogicTest {
             objectMapper,
             featureDataService,
             org.mockito.Mockito.mock(
-                com.github.javydreamercsw.management.service.expansion.ExpansionService.class));
+                com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
+            new org.springframework.core.io.support.PathMatchingResourcePatternResolver());
     chapterService.init();
   }
 

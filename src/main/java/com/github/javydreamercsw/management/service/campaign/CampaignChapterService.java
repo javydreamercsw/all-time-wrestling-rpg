@@ -25,19 +25,25 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -47,16 +53,19 @@ public class CampaignChapterService {
   private final ObjectMapper objectMapper;
   private final FeatureDataService featureDataService;
   private final ExpansionService expansionService;
+  private final ResourcePatternResolver resourcePatternResolver;
   private List<CampaignChapterDTO> chapters = Collections.emptyList();
 
   @Autowired
   public CampaignChapterService(
       @NonNull final ObjectMapper objectMapper,
       final FeatureDataService featureDataService,
-      final ExpansionService expansionService) {
+      final ExpansionService expansionService,
+      @NonNull final ResourcePatternResolver resourcePatternResolver) {
     this.objectMapper = objectMapper;
     this.featureDataService = featureDataService;
     this.expansionService = expansionService;
+    this.resourcePatternResolver = resourcePatternResolver;
   }
 
   @PostConstruct
@@ -65,16 +74,59 @@ public class CampaignChapterService {
   }
 
   public void loadChapters() {
-    try (InputStream is = getClass().getResourceAsStream("/campaign_chapters.json")) {
-      if (is == null) {
-        log.error("campaign_chapters.json not found in resources.");
-        return;
+    List<CampaignChapterDTO> merged = new ArrayList<>();
+
+    // 1. Load flat array files: campaigns/*.json
+    try {
+      Resource[] flatFiles = resourcePatternResolver.getResources("classpath*:campaigns/*.json");
+      for (Resource r : flatFiles) {
+        log.debug("Loading campaign chapters from file: {}", r.getFilename());
+        try (InputStream is = r.getInputStream()) {
+          merged.addAll(objectMapper.readValue(is, new TypeReference<>() {}));
+        } catch (IOException e) {
+          log.error("Error loading campaign chapters from {}", r.getFilename(), e);
+        }
       }
-      chapters = objectMapper.readValue(is, new TypeReference<>() {});
-      log.debug("Loaded {} campaign chapters.", chapters.size());
     } catch (IOException e) {
-      log.error("Error loading campaign chapters from JSON", e);
+      log.error("Error scanning campaigns/ for flat chapter files", e);
     }
+
+    // 2. Load folder-based campaigns: campaigns/*/_chapter.json with encounters/ subfolder
+    try {
+      Resource[] chapterFiles =
+          resourcePatternResolver.getResources("classpath*:campaigns/*/_chapter.json");
+      for (Resource chapterResource : chapterFiles) {
+        log.debug("Loading folder-based campaign chapter: {}", chapterResource.getURL());
+        try (InputStream is = chapterResource.getInputStream()) {
+          CampaignChapterDTO chapter = objectMapper.readValue(is, CampaignChapterDTO.class);
+          String encounterPattern =
+              chapterResource.getURL().toString().replace("_chapter.json", "encounters/*.json");
+          Resource[] encounterFiles = resourcePatternResolver.getResources(encounterPattern);
+          Arrays.sort(encounterFiles, Comparator.comparing(Resource::getFilename));
+          for (Resource enc : encounterFiles) {
+            log.debug("  Loading encounters from: {}", enc.getFilename());
+            try (InputStream eis = enc.getInputStream()) {
+              List<StaticEncounterDTO> encounters =
+                  objectMapper.readValue(eis, new TypeReference<>() {});
+              chapter.getStaticEncounters().addAll(encounters);
+            } catch (IOException e) {
+              log.error("Error loading encounters from {}", enc.getFilename(), e);
+            }
+          }
+          merged.add(chapter);
+        } catch (IOException e) {
+          log.error("Error loading folder-based chapter from {}", chapterResource.getURL(), e);
+        }
+      }
+    } catch (IOException e) {
+      log.error("Error scanning campaigns/ for folder-based chapters", e);
+    }
+
+    if (merged.isEmpty()) {
+      log.warn("No campaign chapters loaded from campaigns/");
+    }
+    chapters = Collections.unmodifiableList(merged);
+    log.debug("Loaded {} campaign chapters total.", chapters.size());
   }
 
   public List<CampaignChapterDTO> getAllChapters() {

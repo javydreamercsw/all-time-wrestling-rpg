@@ -87,7 +87,12 @@ class CampaignChapterSimulationTest {
     org.mockito.Mockito.when(
             expansionService.isExpansionEnabled(org.mockito.ArgumentMatchers.anyString()))
         .thenReturn(true);
-    chapterService = new CampaignChapterService(objectMapper, featureDataService, expansionService);
+    chapterService =
+        new CampaignChapterService(
+            objectMapper,
+            featureDataService,
+            expansionService,
+            new org.springframework.core.io.support.PathMatchingResourcePatternResolver());
     chapterService.init();
   }
 
