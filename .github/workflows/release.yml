@@ -564,7 +564,8 @@ jobs:
         run: |
           git checkout main
           git fetch origin release/${{ github.event.inputs.version }}
-          git merge origin/release/${{ github.event.inputs.version }} --no-ff -m "chore: Merge release ${{ github.event.inputs.version }} back to main"
+          git merge --squash origin/release/${{ github.event.inputs.version }}
+          git commit -m "chore: Merge release ${{ github.event.inputs.version }} back to main"
           git push origin main
 
       - name: Sync back to source branch
@@ -578,5 +579,6 @@ jobs:
           # is behind origin and the subsequent push is rejected non-fast-forward.
           git fetch origin ${{ github.ref_name }}
           git checkout -B ${{ github.ref_name }} origin/${{ github.ref_name }}
-          git merge origin/main --no-ff -m "chore: Sync main back to ${{ github.ref_name }} after release ${{ github.event.inputs.version }}"
+          git merge --squash origin/main
+          git commit -m "chore: Sync main back to ${{ github.ref_name }} after release ${{ github.event.inputs.version }}"
           git push origin ${{ github.ref_name }}
