@@ -280,12 +280,12 @@ public class CampaignDashboardView extends VerticalLayout {
     Wrestler wrestler = currentCampaign.getWrestler();
     WrestlerAlignment alignment = wrestler.getAlignment();
 
-    add(new H2("Campaign: All or Nothing (Season 1)"));
-    add(new H3("Wrestler: " + wrestler.getName()));
-
     Optional<CampaignChapterDTO> chapterOpt = campaignService.getCurrentChapter(currentCampaign);
     String chapterTitle = chapterOpt.map(CampaignChapterDTO::getTitle).orElse("Dynamic Story");
     boolean isTournament = chapterOpt.map(CampaignChapterDTO::isTournament).orElse(false);
+
+    add(new H2("Campaign: " + chapterTitle));
+    add(new H3("Wrestler: " + wrestler.getName()));
 
     Span chapterLabel = new Span("Chapter: " + chapterTitle);
     chapterLabel.addClassNames(
