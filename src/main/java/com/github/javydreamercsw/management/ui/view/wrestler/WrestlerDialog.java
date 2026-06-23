@@ -44,6 +44,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import java.util.List;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -132,15 +133,19 @@ public class WrestlerDialog extends Dialog {
     genderField.setId("wrestler-dialog-gender-field");
     genderField.setReadOnly(!securityUtils.canEdit(this.wrestler));
 
+    List<Npc> managers = npcService.findAllByType("Manager");
     ComboBox<Npc> managerField = new ComboBox<>("Manager");
-    managerField.setItems(npcService.findAllByType("Manager"));
+    managerField.setItems(managers);
     managerField.setItemLabelGenerator(Npc::getName);
     managerField.setId("wrestler-dialog-manager-field");
     managerField.setReadOnly(!securityUtils.canEdit(this.wrestler));
-    // Initialize manager from the wrestler's default WrestlerState (per-universe field)
+    // Resolve the lazy Npc proxy by ID to avoid LazyInitializationException when
+    // Vaadin's ComboBox calls equals() outside a Hibernate session.
     this.wrestler
         .getDefaultState()
         .map(WrestlerState::getManager)
+        .map(Npc::getId)
+        .flatMap(id -> managers.stream().filter(n -> id.equals(n.getId())).findFirst())
         .ifPresent(managerField::setValue);
 
     IntegerField deckSizeField = new IntegerField("Deck Size");
