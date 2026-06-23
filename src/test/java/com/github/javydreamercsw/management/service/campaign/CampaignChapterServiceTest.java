@@ -62,7 +62,7 @@ class CampaignChapterServiceTest {
   void testGetSpecificChapter() {
     Optional<CampaignChapterDTO> ch1 = chapterService.getChapter("beginning");
     assertThat(ch1).isPresent();
-    assertThat(ch1.get().getTitle()).isEqualTo("The Beginning");
+    assertThat(ch1.get().getTitle()).isEqualTo("All Or Nothing Campaign");
 
     Optional<CampaignChapterDTO> ch2 = chapterService.getChapter("tournament");
     assertThat(ch2).isPresent();

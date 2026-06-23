@@ -70,6 +70,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -220,6 +221,41 @@ public class CampaignDashboardView extends VerticalLayout {
             () -> log.warn("No authenticated user found during loadCampaign"));
   }
 
+  private void showCampaignStartPicker(@NonNull final Wrestler wrestler) {
+    List<CampaignChapterDTO> available = campaignService.findStartingChapters(wrestler);
+    if (available.size() <= 1) {
+      campaignService.startCampaign(
+          wrestler, available.isEmpty() ? null : available.get(0).getId());
+      refreshUI();
+      return;
+    }
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Choose Your Campaign");
+    RadioButtonGroup<CampaignChapterDTO> group = new RadioButtonGroup<>();
+    group.setItems(available);
+    group.setItemLabelGenerator(
+        c ->
+            c.getTitle()
+                + (c.getShortDescription() != null ? " — " + c.getShortDescription() : ""));
+    group.setValue(available.get(0));
+    Button confirmBtn =
+        new Button(
+            "Start",
+            e -> {
+              CampaignChapterDTO selected = group.getValue();
+              if (selected != null) {
+                campaignService.startCampaign(wrestler, selected.getId());
+                dialog.close();
+                refreshUI();
+              }
+            });
+    confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    Button cancelBtn = new Button("Cancel", e -> dialog.close());
+    dialog.add(new VerticalLayout(new Paragraph("Select a campaign to begin:"), group));
+    dialog.getFooter().add(cancelBtn, confirmBtn);
+    dialog.open();
+  }
+
   private void initUI() {
     if (currentCampaign == null) {
       add(new H2("Campaign Mode"));
@@ -250,8 +286,7 @@ public class CampaignDashboardView extends VerticalLayout {
                                     .orElse(wrestlers.isEmpty() ? null : wrestlers.getFirst());
 
                             if (active != null) {
-                              campaignService.startCampaign(active);
-                              refreshUI();
+                              showCampaignStartPicker(active);
                             } else {
                               List<Wrestler> all = wrestlerRepository.findAllByActiveTrue();
                               if (!all.isEmpty()) {
@@ -259,8 +294,7 @@ public class CampaignDashboardView extends VerticalLayout {
                                 first.setAccount(user.getAccount());
                                 first.setIsPlayer(true);
                                 wrestlerRepository.save(first);
-                                campaignService.startCampaign(first);
-                                refreshUI();
+                                showCampaignStartPicker(first);
                               }
                             }
                           },
