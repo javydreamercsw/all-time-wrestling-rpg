@@ -24,4 +24,7 @@ public class SegmentTypeDTO {
   private String description;
   private int playerAmount;
   private boolean unlimited;
+
+  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  private String expansionCode;
 }

@@ -83,6 +83,9 @@ public class Title extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   private DefenseFrequencyType defenseFrequencyType;
 
+  @Column(name = "expansion_code", nullable = false)
+  private String expansionCode = "BASE_GAME";
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 

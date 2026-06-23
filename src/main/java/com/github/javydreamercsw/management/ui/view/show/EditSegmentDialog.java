@@ -346,9 +346,18 @@ public class EditSegmentDialog extends Dialog {
           MultiSelectComboBox<Wrestler> teamCombo = new MultiSelectComboBox<>("Team " + teamNum);
           teamCombo.setItemLabelGenerator(Wrestler::getName);
           teamCombo.setWidthFull();
-          teamCombo.setItems(getFilteredWrestlers(initialWrestlers));
+          List<Wrestler> items = getFilteredWrestlers(initialWrestlers);
+          teamCombo.setItems(items);
           if (!initialWrestlers.isEmpty()) {
-            teamCombo.setValue(initialWrestlers);
+            // Remap to the canonical instances that setItems registered in Vaadin's KeyMapper;
+            // using the original segment-participant instances would miss the lookup.
+            Map<Long, Wrestler> itemsById =
+                items.stream().collect(Collectors.toMap(w -> w.getId(), w -> w, (a, b) -> a));
+            Set<Wrestler> canonical =
+                initialWrestlers.stream()
+                    .map(w -> itemsById.getOrDefault(w.getId(), w))
+                    .collect(Collectors.toSet());
+            teamCombo.setValue(canonical);
           }
           teamCombo.addValueChangeListener(
               e -> {
@@ -573,11 +582,47 @@ public class EditSegmentDialog extends Dialog {
   private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
     AlignmentType alignment = alignmentFilter.getValue();
     Gender gender = genderFilter.getValue();
-    Set<Wrestler> effective = new HashSet<>(allAssignedWrestlers);
-    if (forceInclude != null) {
-      effective.addAll(forceInclude);
+
+    List<Wrestler> filtered;
+    if (alignment != null) {
+      // Alignment requires a per-wrestler DB lookup for universe-specific alignment; use service.
+      Set<Wrestler> effective = new HashSet<>(allAssignedWrestlers);
+      if (forceInclude != null) {
+        effective.addAll(forceInclude);
+      }
+      filtered =
+          new ArrayList<>(
+              wrestlerService.findAllFiltered(alignment, gender, universeId, effective));
+    } else {
+      // Fast path: filter the already-preloaded list in-memory — no DB round-trip needed.
+      filtered =
+          data.activeWrestlers().stream()
+              .filter(w -> gender == null || w.getGender() == gender)
+              .sorted(Comparator.comparing(Wrestler::getName))
+              .collect(Collectors.toCollection(ArrayList::new));
     }
-    return wrestlerService.findAllFiltered(alignment, gender, universeId, effective);
+
+    // Force-include all currently assigned wrestlers that didn't make it through the filter
+    // (e.g., from a now-disabled expansion or excluded from this universe since the segment was
+    // saved). Uses ID-based deduplication to avoid adding duplicates.
+    Set<Wrestler> mustInclude = new HashSet<>(allAssignedWrestlers);
+    if (forceInclude != null) {
+      mustInclude.addAll(forceInclude);
+    }
+    if (!mustInclude.isEmpty()) {
+      Set<Long> presentIds = filtered.stream().map(w -> w.getId()).collect(Collectors.toSet());
+      List<Wrestler> extra =
+          mustInclude.stream()
+              .filter(w -> w.getId() != null && !presentIds.contains(w.getId()))
+              .sorted(Comparator.comparing(Wrestler::getName))
+              .collect(Collectors.toList());
+      if (!extra.isEmpty()) {
+        filtered.addAll(extra);
+        filtered.sort(Comparator.comparing(Wrestler::getName));
+      }
+    }
+
+    return filtered;
   }
 
   private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {

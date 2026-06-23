@@ -35,9 +35,12 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.title.TitleService.ChallengeResult;
 import com.github.javydreamercsw.management.service.title.TitleService.TitleStats;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
@@ -67,6 +70,9 @@ class TitleServiceTest {
   @Mock private UniverseRepository universeRepository;
   @Mock private DefaultImageService imageService;
   @Mock private Clock clock;
+  @Mock private ExpansionService expansionService;
+  @Mock private UniverseContextService universeContextService;
+  @Mock private UniverseSettingsService universeSettingsService;
 
   @InjectMocks private TitleService titleService;
 
@@ -100,6 +106,8 @@ class TitleServiceTest {
 
     wrestlerState = WrestlerState.builder().tier(WrestlerTier.MAIN_EVENTER).fans(200_000L).build();
 
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME"));
     when(titleRepository.save(any(Title.class))).thenAnswer(inv -> inv.getArgument(0));
     when(wrestlerService.getOrCreateState(anyLong(), anyLong())).thenReturn(wrestlerState);
   }

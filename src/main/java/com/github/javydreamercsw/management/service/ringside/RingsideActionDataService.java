@@ -21,8 +21,14 @@ import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionType;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionTypeRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +43,16 @@ public class RingsideActionDataService {
 
   private final RingsideActionRepository ringsideActionRepository;
   private final RingsideActionTypeRepository ringsideActionTypeRepository;
+  private final ExpansionService expansionService;
+  private final UniverseContextService universeContextService;
+  private final UniverseSettingsService universeSettingsService;
+
+  private Set<String> enabledExpansionCodes() {
+    return universeContextService
+        .getCurrentUniverse()
+        .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+        .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
+  }
 
   public List<RingsideActionType> findAllTypes() {
     return ringsideActionTypeRepository.findAll();
@@ -47,6 +63,13 @@ public class RingsideActionDataService {
   }
 
   public List<RingsideAction> findAllActions() {
+    Set<String> enabled = enabledExpansionCodes();
+    return ringsideActionRepository.findAll().stream()
+        .filter(a -> a.getExpansionCode() == null || enabled.contains(a.getExpansionCode()))
+        .collect(Collectors.toList());
+  }
+
+  public List<RingsideAction> findAllActionsUnfiltered() {
     return ringsideActionRepository.findAll();
   }
 
@@ -87,6 +110,18 @@ public class RingsideActionDataService {
       final int impact,
       final int risk,
       final AlignmentType alignment) {
+    return createOrUpdateAction(name, typeName, description, impact, risk, alignment, "BASE_GAME");
+  }
+
+  @Transactional
+  public RingsideAction createOrUpdateAction(
+      @NonNull final String name,
+      @NonNull final String typeName,
+      final String description,
+      final int impact,
+      final int risk,
+      final AlignmentType alignment,
+      final String expansionCode) {
 
     RingsideActionType type =
         ringsideActionTypeRepository
@@ -111,6 +146,7 @@ public class RingsideActionDataService {
     action.setImpact(impact);
     action.setRisk(risk);
     action.setAlignment(alignment != null ? alignment : AlignmentType.NEUTRAL);
+    action.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
 
     return ringsideActionRepository.save(action);
   }

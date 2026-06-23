@@ -87,3 +87,8 @@ node/
 /videos/
 /manifest.json
 /video-manifest.json
+
+# repowise API keys (local)
+.repowise/.env
+.repowise/.augment-session.json
+.repowise/.augment-warned

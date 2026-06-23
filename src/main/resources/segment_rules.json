@@ -21,7 +21,8 @@
   "description": "Elimination Match: Participants are eliminated individually by pinfall or submission until only one wrestler or team remains.",
   "requiresHighHeat": false,
   "noDq": false,
-  "bumpAddition": "NONE"
+  "bumpAddition": "NONE",
+  "expansion_code": "CUSTOM"
 }, {
   "name": "Over the Top Rope Elimination",
   "description": "Battle Royal: Participants are eliminated when they are thrown over the top rope and both feet touch the floor. The last person in the ring wins.",
@@ -33,7 +34,8 @@
   "description": "Submission Match: The only way to win is by forcing an opponent to submit. There are no pinfalls, count-outs, or disqualifications.",
   "requiresHighHeat": false,
   "noDq": true,
-  "bumpAddition": "LOSERS"
+  "bumpAddition": "LOSERS",
+  "expansion_code": "CUSTOM"
 }, {
   "name": "Promo",
   "description": "A non-wrestling segment where participants speak to the audience, each other, or an interviewer to advance a storyline. No physical combat occurs.",
@@ -57,37 +59,43 @@
   "description": "Every wrestler for themselves. The first person to achieve a pinfall or submission wins. No teams or alliances are officially recognized.",
   "requiresHighHeat": false,
   "noDq": true,
-  "bumpAddition": "NONE"
+  "bumpAddition": "NONE",
+  "expansion_code": "RUMBLE"
 }, {
   "name": "I Quit Match",
   "description": "I Quit Match: The only way to win is to force your opponent to say the words 'I Quit' into a microphone. There are no other ways to win.",
   "requiresHighHeat": true,
   "noDq": true,
-  "bumpAddition": "NONE"
+  "bumpAddition": "NONE",
+  "expansion_code": "CUSTOM"
 }, {
   "name": "Ladder Match",
   "description": "Ladder Match: A championship or other prize is suspended above the ring. The winner is the first person to climb a ladder and retrieve the prize.",
   "requiresHighHeat": true,
   "noDq": true,
-  "bumpAddition": "ALL"
+  "bumpAddition": "ALL",
+  "expansion_code": "CUSTOM"
 }, {
   "name": "Casket Match",
   "description": "Casket Match: The only way to win is to force your opponent into a casket and close the lid.",
   "requiresHighHeat": true,
   "noDq": true,
-  "bumpAddition": "LOSERS"
+  "bumpAddition": "LOSERS",
+  "expansion_code": "CUSTOM"
 }, {
   "name": "Tables, Ladders and Chairs (TLC)",
   "description": "TLC Match: A variation of a Ladder Match where tables and chairs are also legal and expected to be used. Victory is achieved by retrieving the suspended prize.",
   "requiresHighHeat": true,
   "noDq": true,
-  "bumpAddition": "ALL"
+  "bumpAddition": "ALL",
+  "expansion_code": "CUSTOM"
 }, {
   "name": "🪖 War Games",
   "description": "War Games: Two teams are locked inside a massive cage covering two rings. Participants enter at timed intervals. Once all participants are in, 'The Match Beyond' begins, and victory can only be achieved by pinfall or submission.",
   "requiresHighHeat": true,
   "noDq": true,
-  "bumpAddition": "ALL"
+  "bumpAddition": "ALL",
+  "expansion_code": "CUSTOM"
 }, {
   "name": "Barbwire Exploding Deathmatch",
   "description": "An extreme and violent match where the ring ropes are replaced with barbed wire, and various objects in and around the ring are rigged to explode on impact.",
@@ -99,11 +107,13 @@
   "description": "A series of one-on-one matches. The winner of each match stays in the ring to face the next opponent in line until all opponents have been defeated.",
   "requiresHighHeat": false,
   "noDq": false,
-  "bumpAddition": "NONE"
+  "bumpAddition": "NONE",
+  "expansion_code": "CUSTOM"
 }, {
   "name": "Survivor War Match",
   "description": "A team vs. Team match. No tags allowed. The first team to eliminate all members of the opposing team wins.",
   "requiresHighHeat": true,
   "noDq": false,
-  "bumpAddition": "ALL"
+  "bumpAddition": "ALL",
+  "expansion_code": "ATW_VS_WOW"
 } ]

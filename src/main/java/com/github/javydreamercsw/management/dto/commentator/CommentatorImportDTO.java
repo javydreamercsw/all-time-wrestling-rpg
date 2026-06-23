@@ -29,4 +29,7 @@ public class CommentatorImportDTO {
   private String style;
   private String catchphrase;
   private String personaDescription;
+
+  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  private String expansionCode;
 }

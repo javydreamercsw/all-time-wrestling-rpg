@@ -19,8 +19,14 @@ package com.github.javydreamercsw.management.service.segment.type;
 import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -34,9 +40,26 @@ import org.springframework.transaction.annotation.Transactional;
 public class SegmentTypeService {
 
   private final SegmentTypeRepository segmentTypeRepository;
+  private final ExpansionService expansionService;
+  private final UniverseContextService universeContextService;
+  private final UniverseSettingsService universeSettingsService;
 
-  public SegmentTypeService(@NonNull final SegmentTypeRepository segmentTypeRepository) {
+  public SegmentTypeService(
+      @NonNull final SegmentTypeRepository segmentTypeRepository,
+      @NonNull final ExpansionService expansionService,
+      @NonNull final UniverseContextService universeContextService,
+      @NonNull final UniverseSettingsService universeSettingsService) {
     this.segmentTypeRepository = segmentTypeRepository;
+    this.expansionService = expansionService;
+    this.universeContextService = universeContextService;
+    this.universeSettingsService = universeSettingsService;
+  }
+
+  private Set<String> enabledExpansionCodes() {
+    return universeContextService
+        .getCurrentUniverse()
+        .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
+        .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -47,7 +70,10 @@ public class SegmentTypeService {
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.SEGMENT_TYPES_CACHE, key = "'all'")
   public List<SegmentType> findAll() {
-    return segmentTypeRepository.findAll();
+    Set<String> enabled = enabledExpansionCodes();
+    return segmentTypeRepository.findAll().stream()
+        .filter(st -> st.getExpansionCode() == null || enabled.contains(st.getExpansionCode()))
+        .collect(Collectors.toList());
   }
 
   public long count() {
@@ -69,13 +95,25 @@ public class SegmentTypeService {
   @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
   public SegmentType createOrUpdateSegmentType(
       @NonNull final String name, @NonNull final String description) {
+    return createOrUpdateSegmentType(name, description, "BASE_GAME");
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
+  public SegmentType createOrUpdateSegmentType(
+      @NonNull final String name, @NonNull final String description, final String expansionCode) {
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
     if (existingOpt.isPresent()) {
       SegmentType st = existingOpt.get();
-      if (st.getDescription() != null && st.getDescription().equals(description)) {
+      if (st.getDescription() != null
+          && st.getDescription().equals(description)
+          && st.getExpansionCode().equals(expansionCode)) {
         return st;
       }
       st.setDescription(description);
+      st.setExpansionCode(expansionCode);
       log.debug("Updating existing segment type: {}", name);
       return segmentTypeRepository.save(st);
     }
@@ -84,6 +122,7 @@ public class SegmentTypeService {
     log.debug("Creating new segment type: {}", name);
     segmentType.setName(name);
     segmentType.setDescription(description);
+    segmentType.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
     return segmentTypeRepository.save(segmentType);
   }
 

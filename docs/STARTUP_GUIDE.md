@@ -185,5 +185,5 @@ The application can be configured using environment variables. These variables w
 | `AI_CLAUDE_MODEL_NAME`    | Claude Model Name                                 | claude-3-haiku-20240307                    |
 | `AI_GEMINI_ENABLED`       | Enable Gemini                                     | false                                      |
 | `AI_GEMINI_API_KEY`       | Gemini API Key                                    |                                            |
-| `AI_GEMINI_MODEL_NAME`    | Gemini Model Name                                 | gemini-2.5-flash                           |
+| `AI_GEMINI_MODEL_NAME`    | Gemini Model Name                                 | gemini-3.1-flash-lite-preview              |
 

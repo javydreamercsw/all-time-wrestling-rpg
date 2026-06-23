@@ -181,35 +181,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       driver.manage().timeouts().pageLoadTimeout(Duration.ofMinutes(2));
     }
 
-    // Only login if needed
-    String currentUser = getUsername();
-    boolean needsLogin = !Objects.equals(lastLoggedInUser, currentUser);
-
-    if (!needsLogin) {
-      // Even if the user matches, verify we are actually still logged in
-      try {
-        driver.findElement(By.id("logout-button"));
-        log.debug("User {} is already logged in, skipping login flow.", currentUser);
-      } catch (Exception e) {
-        log.debug("Logout button not found for user {}, forcing re-login.", currentUser);
-        needsLogin = true;
-      }
+    // Always force a full login on every test to ensure a fresh SecurityContext with properly
+    // loaded authorities. Skipping login for the same user leaves a stale session where
+    // account.getRoles() may not be eagerly loaded, causing isAdmin()/isBooker() to return
+    // false and making role-gated UI elements disappear from the DOM.
+    try {
+      driver.manage().deleteAllCookies();
+    } catch (Exception e) {
+      log.warn("Failed to clear cookies: {}", e.getMessage());
     }
-
-    if (needsLogin) {
-      // Clear cookies to ensure a fresh session if re-logging in
-      if (driver != null) {
-        try {
-          driver.manage().deleteAllCookies();
-        } catch (Exception e) {
-          log.warn("Failed to clear cookies: {}", e.getMessage());
-        }
-      }
-      login();
-    } else // Ensure we are not on the login page
-    if (Objects.requireNonNull(driver.getCurrentUrl()).endsWith("/login")) {
-      driver.get("http://localhost:" + serverPort + getContextPath());
-    }
+    login();
   }
 
   protected String getContextPath() {

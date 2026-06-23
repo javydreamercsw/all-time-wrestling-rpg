@@ -115,6 +115,11 @@ public class WrestlerService {
     this.universeSettingsService = universeSettingsService;
   }
 
+  @CacheEvict(
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
+      allEntries = true)
+  public void evictWrestlerCache() {}
+
   @Transactional
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
@@ -147,7 +152,13 @@ public class WrestlerService {
     wrestler.ifPresent(
         w -> {
           w.getStatuses().size();
-          w.getWrestlerStates().size();
+          w.getWrestlerStates()
+              .forEach(
+                  state -> {
+                    if (state.getManager() != null) {
+                      state.getManager().getId();
+                    }
+                  });
           w.getAlignments().size();
         });
     return wrestler;
@@ -358,6 +369,7 @@ public class WrestlerService {
                   expansionCode != null
                       ? expansionCode.equals(w.getExpansionCode())
                       : (enabledExpansionCodes == null
+                          || enabledExpansionCodes.isEmpty()
                           || enabledExpansionCodes.contains(w.getExpansionCode()));
               return matchesAlignment && matchesGender && matchesExpansion;
             })

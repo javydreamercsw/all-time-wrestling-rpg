@@ -27,6 +27,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -41,7 +43,17 @@ public class ExpansionService {
 
   public List<Expansion> getExpansions() {
     List<Expansion> expansions = new ArrayList<>();
-    ClassPathResource resource = new ClassPathResource("expansions.json");
+    // Use PathMatchingResourcePatternResolver so this works in both IDE and WAR/Tomcat contexts
+    // where ClassPathResource alone may not resolve inside WEB-INF/classes.
+    Resource resource;
+    try {
+      Resource[] resources =
+          new PathMatchingResourcePatternResolver().getResources("classpath*:expansions.json");
+      resource = resources.length > 0 ? resources[0] : new ClassPathResource("expansions.json");
+    } catch (IOException e) {
+      log.error("Error locating expansions.json", e);
+      return expansions;
+    }
     if (resource.exists()) {
       try (java.io.InputStream is = resource.getInputStream()) {
         expansions = objectMapper.readValue(is, new TypeReference<List<Expansion>>() {});
@@ -51,6 +63,8 @@ public class ExpansionService {
       } catch (IOException e) {
         log.error("Error loading expansions from file", e);
       }
+    } else {
+      log.warn("[ExpansionService] expansions.json not found on classpath");
     }
     return expansions;
   }
