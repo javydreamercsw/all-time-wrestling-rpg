@@ -152,7 +152,13 @@ public class WrestlerService {
     wrestler.ifPresent(
         w -> {
           w.getStatuses().size();
-          w.getWrestlerStates().size();
+          w.getWrestlerStates()
+              .forEach(
+                  state -> {
+                    if (state.getManager() != null) {
+                      state.getManager().getId();
+                    }
+                  });
           w.getAlignments().size();
         });
     return wrestler;

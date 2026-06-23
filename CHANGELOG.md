@@ -1,15 +1,32 @@
 # Changelog
 
-## [v2.4.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.4.0) (2026-06-18)
+## [v2.4.2](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.4.2) (2026-06-23)
 
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.3.0...v2.4.0)
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.4.1...v2.4.2)
+
+**Implemented enhancements:**
+
+- Feat/custom set [\#385](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/385) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Merged pull requests:**
+
+- Build\(deps\): Bump the npm\_and\_yarn group across 1 directory with 2 updates [\#383](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/383) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v2.4.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.4.1) (2026-06-21)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.4.0...v2.4.1)
 
 **Implemented enhancements:**
 
 - feat: Remove Notion integration [\#382](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/382) ([javydreamercsw](https://github.com/javydreamercsw))
 - Redesign League and Universe tutorial flows with role elevation  [\#377](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/377) ([javydreamercsw](https://github.com/javydreamercsw))
+- Release 2.4.0 [\#376](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/376) ([javydreamercsw](https://github.com/javydreamercsw))
 - Enhances Inbox UI and Functionality [\#369](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/369) ([javydreamercsw](https://github.com/javydreamercsw))
 - feat: Tutorial system; game rule book routing, expansion gating, and chapter selection for static campaigns [\#366](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/366) ([javydreamercsw](https://github.com/javydreamercsw))
+
+**Fixed bugs:**
+
+- Release: Version 2.4.1 [\#384](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/384) ([javydreamercsw](https://github.com/javydreamercsw))
 
 **Merged pull requests:**
 
@@ -24,6 +41,10 @@
 - chore: remove unused code [\#370](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/370) ([javydreamercsw](https://github.com/javydreamercsw))
 - Build\(deps\): Bump the npm\_and\_yarn group across 1 directory with 2 updates [\#368](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/368) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump the npm\_and\_yarn group across 1 directory with 2 updates [\#365](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/365) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v2.4.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.4.0) (2026-06-11)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.3.0...v2.4.0)
 
 ## [v2.3.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.3.0) (2026-06-11)
 
