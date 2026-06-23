@@ -215,7 +215,7 @@ public class CampaignService {
     }
     if (!available.isEmpty()) {
       CampaignChapterDTO initialChapter =
-          (startingChapterId != null)
+          startingChapterId != null
               ? available.stream()
                   .filter(c -> c.getId().equals(startingChapterId))
                   .findFirst()
