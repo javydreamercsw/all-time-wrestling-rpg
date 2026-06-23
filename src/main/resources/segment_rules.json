@@ -1,26 +1,26 @@
 [ {
-  "name": "No DQ",
+  "name": "Extreme",
   "description": "No Disqualification: All weapons are legal. Interference from outside parties is allowed. The match can only end by pinfall or submission inside the ring.",
   "requiresHighHeat": false,
   "noDq": true,
   "bumpAddition": "ALL",
-    "rules": {
-      "solo": {
-        "overview": "A No-DQ match is a contest where wrestlers cannot be disqualified; these rules are automatically in effect whenever weapons are included as part of the match setup.",
-        "setup": "Place six weapon cards face-up in a display next to the board. For specific modes like Last Man Standing, all Health Pack and Nano-bot cards are removed from the deck before play.",
-        "attacking": "During your Offensive Ability Window, you may trigger one weapon card from the display instead of using a standard ability. To use a regular weapon, roll one Automa die; the attack succeeds on any result except a 1–2.",
-        "defending": "Standard defensive windows allow for blocking or reversing. You may also attempt a Weapon Counter by rolling a special defense die; a success allows you to stop the attack and use the weapon against the NPC.",
-        "winCondition": "Winning conditions vary by match type; in a Last Man Standing No-DQ match, pinfalls are ignored and victory is secured by executing a Devastating Attack that the opponent fails to kick-out of after 10 attempts.",
-        "npcRecovery": "NPCs do not track stamina and will automatically trigger the leftmost weapon in the display to attack you if their move deals 2 or more damage (or 3+ damage in Deathmatches)."
-      },
-      "multiplayer": {
-        "concepts": "No-DQ rules apply to every participant, allowing legal use of weapons. Extreme Edition wrestlers may use specialized alternate abilities and extra cards specifically designed for these matches.",
-        "setup": "Establish a display of six face-up weapon cards near the board. Replenish the display immediately whenever it has fewer than six cards, shuffling the discard pile if the draw pile is depleted.",
-        "gameplayChanges": "Players may trigger weapons during their Offensive Ability Window after a successful attack. Defenders can respond by blocking, reversing, or rolling for a Weapon Counter to turn the weapon against the attacker.",
-        "modeSpecificAbilities": "Extreme wrestlers can customize their loadouts for No-DQ matches, such as RVD adding the 'Van Terminator' to his deck or Sabu replacing an ability with 'Genocidal'.",
-        "gameEndConditions": "Matches end based on the specific No-DQ mode; for example, Last Man Standing ends when a wrestler fails a 10-attempt kick-out count, while Barbwire Exploding Deathmatches end by knockout."
-      }
+  "rules": {
+    "solo": {
+      "overview": "An Extreme match is a contest where wrestlers cannot be disqualified; these rules are automatically in effect whenever weapons are included as part of the match setup.",
+      "setup": "Place six weapon cards face-up in a display next to the board. For specific modes like Last Man Standing, all Health Pack and Nano-bot cards are removed from the deck before play.",
+      "attacking": "During your Offensive Ability Window, you may trigger one weapon card from the display instead of using a standard ability. To use a regular weapon, roll one Automa die; the attack succeeds on any result except a 1–2.",
+      "defending": "Standard defensive windows allow for blocking or reversing. You may also attempt a Weapon Counter by rolling a special defense die; a success allows you to stop the attack and use the weapon against the NPC.",
+      "winCondition": "Winning conditions vary by match type; in a Last Man Standing No-DQ match, pinfalls are ignored and victory is secured by executing a Devastating Attack that the opponent fails to kick-out of after 10 attempts.",
+      "npcRecovery": "NPCs do not track stamina and will automatically trigger the leftmost weapon in the display to attack you if their move deals 2 or more damage (or 3+ damage in Deathmatches)."
+    },
+    "multiplayer": {
+      "concepts": "No-DQ rules apply to every participant, allowing legal use of weapons. Extreme Edition wrestlers may use specialized alternate abilities and extra cards specifically designed for these matches.",
+      "setup": "Establish a display of six face-up weapon cards near the board. Replenish the display immediately whenever it has fewer than six cards, shuffling the discard pile if the draw pile is depleted.",
+      "gameplayChanges": "Players may trigger weapons during their Offensive Ability Window after a successful attack. Defenders can respond by blocking, reversing, or rolling for a Weapon Counter to turn the weapon against the attacker.",
+      "modeSpecificAbilities": "Extreme wrestlers can customize their loadouts for No-DQ matches, such as RVD adding the 'Van Terminator' to his deck or Sabu replacing an ability with 'Genocidal'.",
+      "gameEndConditions": "Matches end based on the specific No-DQ mode; for example, Last Man Standing ends when a wrestler fails a 10-attempt kick-out count, while Barbwire Exploding Deathmatches end by knockout."
     }
+  }
 }, {
   "name": "Normal",
   "description": "Standard Match: Victory is achieved by pinfall, submission, count-out, or disqualification. Standard rules apply, including rope breaks and a 10-count for being outside the ring.",
