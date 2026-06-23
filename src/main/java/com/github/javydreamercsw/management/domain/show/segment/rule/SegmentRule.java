@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.show.segment.rule;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -75,6 +76,14 @@ public class SegmentRule extends AbstractEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
+
+  @Lob
+  @Column(name = "rules_json", columnDefinition = "LONGTEXT")
+  @Convert(converter = SegmentRulePlayGuideConverter.class)
+  @Nullable private SegmentRulePlayGuide rules;
+
+  @Column(name = "rules_hash", length = 64)
+  @Nullable private String rulesHash;
 
   /** Ensure default values before persisting. */
   @PrePersist

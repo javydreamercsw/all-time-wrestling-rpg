@@ -1265,7 +1265,32 @@ public class ShowDetailView extends Main
     qrButton.setVisible(isMatch);
     qrButton.addClickListener(e -> new QrCodeDialog(segment.getId()).open());
 
-    return new VerticalLayout(summaryButton, narrateButton, editButton, deleteButton, qrButton);
+    Button infoButton = new Button(new Icon(VaadinIcon.INFO_CIRCLE_O));
+    infoButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    infoButton.setTooltipText("How to Play");
+    infoButton.setId("match-info-button-" + segment.getId());
+    boolean hasRules = !segment.getSegmentRules().isEmpty();
+    infoButton.setVisible(hasRules);
+    infoButton.addClickListener(
+        e ->
+            segment.getSegmentRules().stream()
+                .findFirst()
+                .flatMap(
+                    r ->
+                        r.getId() != null
+                            ? java.util.Optional.of(r.getId())
+                            : java.util.Optional.empty())
+                .ifPresent(
+                    ruleId ->
+                        com.vaadin
+                            .flow
+                            .component
+                            .UI
+                            .getCurrent()
+                            .navigate("match-info/" + ruleId)));
+
+    return new VerticalLayout(
+        summaryButton, narrateButton, editButton, deleteButton, qrButton, infoButton);
   }
 
   private void generateSummary(@NonNull Segment segment) {

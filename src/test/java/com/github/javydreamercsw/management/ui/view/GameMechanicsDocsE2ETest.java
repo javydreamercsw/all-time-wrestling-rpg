@@ -66,7 +66,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     }
 
     if (segmentRepository.count() == 0) {
-      Show show = showRepository.findAll().get(0);
+      Show show = showRepository.findAll().getFirst();
       SegmentType matchType = segmentTypeRepository.findByName("One on One").get();
       List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
