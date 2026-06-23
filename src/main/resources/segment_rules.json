@@ -4,46 +4,23 @@
   "requiresHighHeat": false,
   "noDq": true,
   "bumpAddition": "ALL",
-  "rules": {
-    "solo": {
-      "overview": "A No Disqualification match removes all referee restrictions. Weapons, interference, and brawling outside the ring are all legal. The match ends only by pinfall or submission.",
-      "setup": "Place all available weapon cards face-down outside the ring area. Both wrestlers start at full health and stamina. No count-out applies.",
-      "attacking": "Once per turn you may play one weapon card from the ringside pile before rolling your attack dice. Weapon cards add their bonus directly to your attack total. You may also move the action outside the ring — brawling in the crowd costs 1 extra stamina per round but has no count-out penalty.",
-      "defending": "Rope breaks do not force a break in a No DQ match. You may attempt to escape a submission hold by spending 2 stamina instead of the normal rope-break rule.",
-      "winCondition": "Pin your opponent for a three-count (opponent at 0 health) or force a submission (opponent chooses to tap after a successful submission roll).",
-      "npcRecovery": "NPC opponents draw one weapon card from the ringside pile at the start of each of their turns if any remain. NPCs never voluntarily leave the ring."
-    },
-    "multiplayer": {
-      "concepts": "All No DQ rules apply to every participant. Alliances can form and dissolve freely — any player may attack any other, including their own designated partner.",
-      "setup": "Divide weapon cards equally between ringside piles on each side. Each player independently tracks health and stamina.",
-      "gameplayChanges": "Players may choose any legal target each turn. Interference cards from one player can be used to assist another player's attack roll. Count-out rules are still suspended.",
-      "modeSpecificAbilities": "Any player who reaches 0 health is pinned or submitted by whoever triggered the finishing blow — not necessarily the last attacker.",
-      "gameEndConditions": "The match ends when only one participant remains unpinned and unsubmitted. In a tag-team format, only the legal participant may be pinned."
+    "rules": {
+      "solo": {
+        "overview": "A No-DQ match is a contest where wrestlers cannot be disqualified; these rules are automatically in effect whenever weapons are included as part of the match setup.",
+        "setup": "Place six weapon cards face-up in a display next to the board. For specific modes like Last Man Standing, all Health Pack and Nano-bot cards are removed from the deck before play.",
+        "attacking": "During your Offensive Ability Window, you may trigger one weapon card from the display instead of using a standard ability. To use a regular weapon, roll one Automa die; the attack succeeds on any result except a 1–2.",
+        "defending": "Standard defensive windows allow for blocking or reversing. You may also attempt a Weapon Counter by rolling a special defense die; a success allows you to stop the attack and use the weapon against the NPC.",
+        "winCondition": "Winning conditions vary by match type; in a Last Man Standing No-DQ match, pinfalls are ignored and victory is secured by executing a Devastating Attack that the opponent fails to kick-out of after 10 attempts.",
+        "npcRecovery": "NPCs do not track stamina and will automatically trigger the leftmost weapon in the display to attack you if their move deals 2 or more damage (or 3+ damage in Deathmatches)."
+      },
+      "multiplayer": {
+        "concepts": "No-DQ rules apply to every participant, allowing legal use of weapons. Extreme Edition wrestlers may use specialized alternate abilities and extra cards specifically designed for these matches.",
+        "setup": "Establish a display of six face-up weapon cards near the board. Replenish the display immediately whenever it has fewer than six cards, shuffling the discard pile if the draw pile is depleted.",
+        "gameplayChanges": "Players may trigger weapons during their Offensive Ability Window after a successful attack. Defenders can respond by blocking, reversing, or rolling for a Weapon Counter to turn the weapon against the attacker.",
+        "modeSpecificAbilities": "Extreme wrestlers can customize their loadouts for No-DQ matches, such as RVD adding the 'Van Terminator' to his deck or Sabu replacing an ability with 'Genocidal'.",
+        "gameEndConditions": "Matches end based on the specific No-DQ mode; for example, Last Man Standing ends when a wrestler fails a 10-attempt kick-out count, while Barbwire Exploding Deathmatches end by knockout."
+      }
     }
-  }
-}, {
-  "name": "Extreme",
-  "description": "Extreme Rules: Similar to No DQ, but with an emphasis on hardcore wrestling and the use of unconventional weapons. Falls count anywhere in the arena.",
-  "requiresHighHeat": true,
-  "noDq": true,
-  "bumpAddition": "ALL",
-  "rules": {
-    "solo": {
-      "overview": "An Extreme Rules match escalates the violence of a No DQ contest. Falls count anywhere in the arena — at ringside, in the crowd, or on the entrance ramp. Specialty weapons from the Extreme deck are available.",
-      "setup": "Shuffle the Extreme Weapon deck (tables, chairs, ladders, barbed wire, trash cans) and place five cards face-down at ringside. Falls count anywhere: the ring, ramp, crowd, and backstage zones are all valid pin locations.",
-      "attacking": "You may move the action to any arena zone as a free action. Each zone may provide a zone bonus: ramp (+1 attack), crowd (+2 attack, –1 defense), backstage (draw one Extreme weapon). Extreme weapon cards deal double the bonus of standard weapon cards.",
-      "defending": "Defense rolls take a –1 penalty in zones outside the ring due to unstable footing. Rope breaks do not apply outside the ring.",
-      "winCondition": "Pin or submission anywhere in the arena counts. The referee will follow the action to any zone.",
-      "npcRecovery": "NPC opponents prefer brawling at ringside. On their turn, if an Extreme weapon card is available at ringside, they will use it before any other action."
-    },
-    "multiplayer": {
-      "concepts": "All Extreme Rules apply everywhere in the arena. Players may chase opponents through different zones, each with its own risk and reward.",
-      "setup": "Place Extreme weapon cards in each arena zone (3 at ringside, 2 on ramp, 2 in crowd area). Track each participant's zone on the arena map.",
-      "gameplayChanges": "Players in different zones cannot directly attack each other unless they spend 1 stamina to move into the same zone first. Pinfalls occur wherever the cover is made.",
-      "modeSpecificAbilities": "Players may use the Table card to put an opponent through a table — this deals 3 automatic damage and removes the opponent from their zone for one turn.",
-      "gameEndConditions": "Last participant standing (unpinned, unsubmitted) wins. Zone tracking ends when only one player remains active."
-    }
-  }
 }, {
   "name": "Normal",
   "description": "Standard Match: Victory is achieved by pinfall, submission, count-out, or disqualification. Standard rules apply, including rope breaks and a 10-count for being outside the ring.",
@@ -52,19 +29,19 @@
   "bumpAddition": "NONE",
   "rules": {
     "solo": {
-      "overview": "A standard singles match with all traditional rules in force. The referee will count to 10 for wrestlers outside the ring, enforce rope breaks, and issue disqualifications for illegal moves.",
-      "setup": "Both wrestlers start at full health and stamina in the ring. The count-out clock begins whenever either wrestler leaves the ring.",
-      "attacking": "Roll your attack dice and add your current offense modifier. On a natural 20, you may attempt a finishing move immediately. Illegal moves (low blows, eye rakes without a weapon card) trigger a referee warning — two warnings result in disqualification.",
-      "defending": "If caught in a submission or pin, you may declare a rope break to stop the count, but rope breaks are limited to 5 per match. Kicks-out on a pinfall cost 1 stamina.",
-      "winCondition": "Achieve a three-count pin, a submission tap-out, a 10-count count-out victory, or force a disqualification by surviving two illegal-move attacks.",
-      "npcRecovery": "NPCs reset their attack pattern to a default grapple sequence after any failed finishing move attempt. NPCs will use a rope break if one is available when pinned."
+      "overview": "A solo match is a single-player contest where you face an NPC (Automa) opponent governed by deck-driven decision-making and advanced 1v1 rules [1, 2].",
+      "setup": "Position health and stamina cubes on your board and select 5 starting cards (max 9 damage) [3]. Prepare the NPC with replacement ability cards and reversal cubes based on the chosen difficulty level [4-6].",
+      "attacking": "When you have initiative, play an attack card by spending stamina and rolling your dice alongside the Automa die [7, 8]. Success deals damage and momentum; failure or certain Automa die results pass initiative to the NPC [9-11].",
+      "defending": "When the NPC attacks, you may block, reverse, or use abilities during your Defensive Ability Window [2, 12]. If the attack resolves, draw an Automa card to determine the NPC's roll total [12, 13].",
+      "winCondition": "You must trigger an attack move with a PIN icon during your Offensive Ability Window [14, 15]. Victory is achieved if the NPC fails to 'kick out' after drawing three Automa cards where the K-value exceeds their current health [15, 16].",
+      "npcRecovery": "NPCs do not track or spend stamina and only regain 1 health if you choose to taunt or recover during your turn [10, 17, 18]."
     },
     "multiplayer": {
-      "concepts": "Standard rules apply but only the legal participant (the one tagged in) may be pinned or make a pin attempt in tag-team play.",
-      "setup": "Each team designates a starting legal participant. Non-legal partners wait on the apron and may be tagged in as a free action once per turn.",
-      "gameplayChanges": "Illegal interference from the apron triggers a referee warning per instance. Standard count-out and disqualification rules remain active for all participants.",
-      "modeSpecificAbilities": "Hot tag: when your partner is at 50% health or below, you may request a hot tag — if your partner rolls a 15+ on their next defense roll, the tag succeeds and you enter with +2 to your first attack.",
-      "gameEndConditions": "The first team to pin or submit the opposing legal participant wins. Count-outs eliminate the counted-out wrestler from the legal position — their partner automatically becomes the legal participant."
+      "concepts": "1v1 matches use an initiative system where the attacker continues playing cards until they miss a roll or the defender successfully blocks or reverses the action [19, 20].",
+      "setup": "Both players start with maximum health and stamina, a hand of 5 cards (max 9 damage), and 3 one-time use tokens (1 reversal, 2 abilities) [21-24].",
+      "gameplayChanges": "Attackers spend stamina to play cards and roll dice against a target number, which is modified by momentum status and opponent stamina levels [25-27]. Successful attacks grant the defender 'defender compensation' (1 card or 1 stamina) [26, 28].",
+      "modeSpecificAbilities": "Wrestlers can use Taunt or Recover icons on cards to gain resources, but doing so allows the defender to recover health or stamina as well [29-32].",
+      "gameEndConditions": "The match ends via pinfall/submission (PIN icon), referee stoppage (deck depletion), or a time-limit draw if both players exhaust their deck's 'blind attacks' [33-38]."
     }
   }
 }, {
@@ -76,11 +53,11 @@
   "expansion_code": "CUSTOM",
   "rules": {
     "solo": {
-      "overview": "An Elimination match is a multi-participant bout where wrestlers are removed one by one via pinfall or submission. The last wrestler standing wins.",
-      "setup": "All participants start at full health and stamina. Keep an elimination tracker card for each wrestler. Standard rules apply until all but one competitor are eliminated.",
+      "overview": "An Elimination match is a multi-participant bout where wrestlers are removed one by one via pinfall or submission. The last team standing wins.",
+      "setup": "All participants start at full health and stamina. Keep an elimination tracker card for each wrestler. Standard rules apply until all but one team are eliminated.",
       "attacking": "Standard attack rules apply. Choose any non-eliminated opponent as your target each turn.",
       "defending": "Eliminated wrestlers leave the ring immediately. Their cards are turned face-down in the elimination pile.",
-      "winCondition": "Be the last active (non-eliminated) participant.",
+      "winCondition": "Be the last active (non-eliminated) team.",
       "npcRecovery": "NPC wrestlers target the participant with the lowest health. After being on defense for two consecutive rounds, NPCs attempt a comeback sequence (+2 to next attack roll)."
     },
     "multiplayer": {
@@ -99,19 +76,19 @@
   "bumpAddition": "NONE",
   "rules": {
     "solo": {
-      "overview": "A Battle Royal where you control one participant among NPCs. You must survive elimination while building momentum to eliminate opponents over the top rope.",
-      "setup": "Fill the ring with NPC participants (up to 6 suggested). Track each participant's ring position (center, ropes, apron). Elimination requires a successful Over-the-Top-Rope (OTTR) action.",
-      "attacking": "Standard attack dice apply, but to attempt an OTTR elimination your opponent must be in the 'ropes' position AND have 40% health or less. Roll a contested strength check — beat their result by 3 or more to eliminate them.",
-      "defending": "If you are moved to the 'ropes' position, spend 1 stamina to grip the ropes and move back to center. If you have 0 stamina you cannot prevent being thrown.",
-      "winCondition": "Be the last participant with both feet inside the ring.",
-      "npcRecovery": "NPCs target the player if the player is at the ropes position. Otherwise NPCs target the NPC with the lowest health."
+      "overview": "A solo elimination contest where you lead a Faction against an NPC (Automa) Faction, aiming to throw opponents over the top rope until their entire team is eliminated [1, 2].",
+      "setup": "Stack Rumble Bio cards for both sides in your chosen entry order. Set initial health and stamina on your board; the NPC utilizes Automa cards to simulate decision-making and 'Hanging On' attempts [3, 4].",
+      "attacking": "Trigger an elimination attempt by dealing 3+ damage or using an 'Eliminate' special. The NPC fails to 'Hang On' if a drawn Automa card’s K-value exceeds its current health [5, 6].",
+      "defending": "When targeted by an elimination, you must 'Hang On' by rolling 2 dice; success requires a total sum equal to or less than your health across three attempts (modified by low health or finishers) [7-9].",
+      "winCondition": "Eliminate all wrestlers in the NPC's Faction. All pinfall icons are ignored, as victory is secured solely by throwing opponents over the top rope [2, 7].",
+      "npcRecovery": "If the NPC eliminates one of your wrestlers, it gains 7 health, recovers all Signature and Finisher cards from its discard pile, and removes its lowest-value Automa cards from play [10]."
     },
     "multiplayer": {
-      "concepts": "Every player is trying to be the sole survivor. Alliances form naturally when players share a common threat.",
-      "setup": "Each player starts at center ring. NPC participants fill remaining slots (minimum 2 NPCs recommended for a 4-player game).",
-      "gameplayChanges": "Players may 'help' another player's OTTR attempt by spending 1 stamina as a free action — this grants +2 to that attempt's roll.",
-      "modeSpecificAbilities": "Iron Will: Once per match, when an OTTR attempt targets you, you may declare Iron Will — you automatically grip the ropes and return to center, but lose 2 stamina.",
-      "gameEndConditions": "Last participant with both feet in the ring wins. In case of simultaneous final elimination, the player who touched the floor last is declared the winner."
+      "concepts": "Players lead Factions of 2–3 wrestlers in a round-based elimination match. Pinfalls are disabled, and turns typically end after a single attack unless a combo is successfully chained [1, 7, 11].",
+      "setup": "Recruit a Faction (max 16 combined health) and select a specialized Faction Attack Deck. Stack Bio cards in entry order and deal 2 Rumble Special cards to each player [12-14].",
+      "gameplayChanges": "Rounds consist of Plan, Reveal, and Attack phases. Players targeted by multiple opponents receive Resilience cards, and momentum is a zero-sum resource used to activate powerful Rumble Specials [15-18].",
+      "modeSpecificAbilities": "Utilize 'Attack Amplifiers' and Legendary Skills on Bio cards. Eliminating an opponent triggers a 'Boast,' allowing the attacker to gain 3 momentum, 1 stamina, and 2 cards [19-21].",
+      "gameEndConditions": "A player is eliminated when all wrestlers in their Faction have been thrown over the top rope. The match ends when only one Faction remains [2, 22]."
     }
   }
 }, {
@@ -169,21 +146,19 @@
   "bumpAddition": "ALL",
   "rules": {
     "solo": {
-      "overview": "The ring is enclosed in a steel cage. Interference is impossible. Victory comes by escaping over the top, through the door, or by pinfall/submission inside the cage.",
-      "setup": "Place the Steel Cage overlay on the ring map. Mark escape zones: Top of Cage (requires climb check) and Door (requires a successful door rush roll). No weapon cards are added — the cage itself serves as the weapon.",
-      "attacking": "You may use the cage as a weapon: Cage Slam (move opponent to ropes position, deal 2 bonus damage), Cage Smash (if opponent is at ropes position, deal 3 bonus damage). Each cage attack costs 1 stamina.",
-      "defending": "You cannot be counted out. Rope breaks are still valid. Cage wall proximity adds +1 to your opponent's attack roll when you are in the ropes position.",
-      "winCondition": "Three options: (1) Pin opponent at 0 health; (2) Force submission; (3) Escape — climb roll 15+ over the top, or door rush roll 12+ while opponent health is above 50%.",
-      "npcRecovery": "NPCs will attempt to escape via the door if their health drops below 30%. Player may interrupt an NPC escape attempt with a free grab action (costs 1 stamina).",
-      "topOfCageStruggle": "If both participants attempt to climb at the same time, resolve a contested Strength roll. The loser is slammed off the cage wall, taking 3 damage and returning to the ring.",
-      "npcWinConditions": "NPC opponents will prefer the pinfall/submission win condition if the player is near defeat. NPCs attempt a door escape only when at critical health."
+      "overview": "A solo cage match combines standard Automa mechanics with a race to climb the cage; victory is achieved solely by reaching the 'Victory!' space on the escape track.",
+      "setup": "Place the Cage Match Board next to the Momentum Meter. Position your token and the NPC’s on 'Ring,' then place your second token on space '1' of the Recovery Meter.",
+      "attacking": "During your Offensive Ability Window, you can trigger 'Smash into Cage' (roll 3 special dice), 'Throw into Cage' (+2 damage), or 'Jump off Cage' (+3 damage).",
+      "defending": "Standard defense applies, but if the NPC attack succeeds and you draw a D6 Automa card, you sustain 2 additional damage from being smashed into the cage.",
+      "winCondition": "Escape by dealing 3+ damage and advancing your token through the track; hitting a finisher skips one space, while a finisher while Unstoppable results in an automatic win.",
+      "npcRecovery": "The NPC gains 1 health every time you advance a space and gets one chance to kick-out (drawing an Automa card) to attempt to drag you down or stun you."
     },
     "multiplayer": {
-      "concepts": "The cage prevents outside interference — every participant must settle the outcome inside. All participants can attempt escapes, but only one may escape at a time.",
-      "setup": "Same cage overlay as solo. Multiple participants track their position independently. Tag team rules still apply — only legal participant may be pinned.",
-      "gameplayChanges": "Cage escape attempts can be interrupted by any other participant within melee range. Multiple players near the door create a contested door-rush situation (all roll simultaneously — highest result escapes first).",
-      "modeSpecificAbilities": "Cage Dive: From the top of the cage, a player may launch a Cage Dive attack at any participant in the ring — deals 5 damage but costs 3 stamina and leaves the attacker prone for one round.",
-      "gameEndConditions": "The match ends when the first participant escapes OR when all participants except one are pinned/submitted. Escape wins over pinfall — if someone escapes while a pin is in progress, the escape is the win condition."
+      "concepts": "Participants act as either the 'Escaping Wrestler' or 'In-Ring Wrestler.' Pinfalls are disabled, and all pin icons on cards are ignored in favor of escaping the cage.",
+      "setup": "Place the Cage Match Board between players. Each player puts one token on 'Ring' and another on space '1' of the Recovery Meter, with 5 special dice ready.",
+      "gameplayChanges": "Escapes are initiated after dealing 3+ damage. Opponents can spend 3 stamina or 2 cards to race up the cage and attempt to 'Drag Down' or 'Stun' an escaping player.",
+      "modeSpecificAbilities": "Players can execute 'Cage Attacks' for bonus damage. Additionally, the cost to recover health increases (from 3 to 5 stamina) as the match progresses.",
+      "gameEndConditions": "The match ends immediately when a player successfully moves their wrestler token to the 'Victory!' space on the escape track."
     }
   }
 }, {
@@ -194,19 +169,19 @@
   "bumpAddition": "ALL",
   "rules": {
     "solo": {
-      "overview": "There are no pinfalls or submissions. The only way to win is to leave your opponent unable to answer the referee's 10-count. Heavy punishment is the only path to victory.",
-      "setup": "Both wrestlers start at full health and stamina. Remove pin and submission actions. Add the 10-Count token to the board — it is set when a wrestler reaches 0 health.",
-      "attacking": "Standard attack dice apply. When your opponent reaches 0 health, start the 10-count. Your opponent rolls a recovery die each count — on a 15+ they stand up. On counts 6+ the difficulty drops to 10+. On count 10 they fail to rise and you win.",
-      "defending": "When the 10-count starts on you, spend stamina to improve your recovery roll: +2 per stamina spent (max 4 stamina per count). Rope grabs grant +3 to the recovery roll once per match.",
-      "winCondition": "Your opponent fails to answer the 10-count after reaching 0 health.",
-      "npcRecovery": "NPCs make their recovery roll at a base of 10+. NPCs will always spend up to 2 stamina to boost their recovery roll if available."
+      "overview": "A solo last man standing match is a grueling no-disqualification contest where standard pinfalls are disabled; victory is only achieved by keeping the NPC down for a 10-count [1-3].",
+      "setup": "Remove all Health Packs and Nano-bots from the weapons deck, then flip 6 weapon cards face-up into a display near the NPC and player boards [1].",
+      "attacking": "During your Offensive Ability Window, you may trigger one weapon from the display instead of a standard ability. Devastating attacks in this mode are limited to rolling only 1 attack die regardless of the set difficulty [1, 4].",
+      "defending": "You can counter NPC weapon strikes by rolling one defensive special ability die. If the NPC attempts a devastating attack, you may block it by discarding 3 cards or using specific ability icons to retain initiative [2].",
+      "winCondition": "Win by executing a Devastating Attack (matching a Signature or Finisher to a setup weapon); the NPC fails if it cannot 'kick out' across 10 Automa card draws where the K-value exceeds its health [2, 3].",
+      "npcRecovery": "The NPC automatically triggers the leftmost display weapon if its attack deals 2+ damage. If a weapon is already set up, the NPC will attempt a devastating attack whenever it draws a Signature or Finisher card [4, 5]."
     },
     "multiplayer": {
-      "concepts": "Every participant must eventually fail a 10-count. Being the last one still answering counts wins.",
-      "setup": "All participants track their 10-count attempts. Multiple wrestlers can be in 10-count simultaneously — the referee finishes each in the order the counts started.",
-      "gameplayChanges": "A standing participant may interrupt an opponent's 10-count attempt once per match by attacking them — this resets the count to 1 and deals 2 damage.",
-      "modeSpecificAbilities": "Last Resort: A player at their third 10-count attempt may declare Last Resort — their recovery roll cannot be interrupted and gains +5 for this count only.",
-      "gameEndConditions": "Last participant to successfully answer a 10-count wins. If multiple participants fail counts on the same round, all are eliminated and the match is a draw (or the participant who failed latest in the turn order wins)."
+      "concepts": "This is a 1v1 match where all disqualifications are removed and pinfall icons are ignored. Wrestlers use weapons to inflict enough damage to secure a 10-count knockout [3, 6].",
+      "setup": "Each player receives a one-time use Health Pack. Shuffle the weapons deck and establish a face-up display of 6 cards while readying the special defensive dice [7].",
+      "gameplayChanges": "The weapon display is replenished immediately when it drops below 6 cards. If both draw piles deplete, the ring is reset with high-tier weapons like Ladders and Thumbtacks to ensure a definitive finish [8, 9].",
+      "modeSpecificAbilities": "Players can 'Setup' devastating weapons to facilitate massive attacks. Defenders can utilize Health Packs for +4 health or perform a Weapon Counter with special dice to turn a weapon strike against the attacker [10-12].",
+      "gameEndConditions": "The match ends when a wrestler fails to 'get to their feet' (rolling a sum total over their current health) across 10 attempts following a successful Devastating Attack [3, 13]."
     }
   }
 }, {
@@ -215,7 +190,24 @@
   "requiresHighHeat": false,
   "noDq": true,
   "bumpAddition": "NONE",
-  "expansion_code": "RUMBLE"
+  "expansion_code": "RUMBLE",
+  "rules": {
+    "solo": {
+      "overview": "While Free-for-all is primarily a multiplayer mode, solo multi-man contests are typically played using the Abu Dhabi Rumble variant, where you lead a Faction against an NPC Faction in an elimination battle [1, 2].",
+      "setup": "Stack Rumble Bio cards for both sides in entry order and prepare a specialized Rumble Attack Deck. The NPC utilizes Automa cards to simulate its targeting and defense decisions [3-5].",
+      "attacking": "Trigger an elimination attempt by dealing 3+ damage or using an 'Over the Top!' special. The NPC fails to 'Hang On' if a drawn Automa card’s K-value exceeds its current health [5-7].",
+      "defending": "When targeted for elimination, you must 'Hang On' by rolling 2 dice on three attempts to get a sum equal to or less than your health. Targeted wrestlers draw Resilience cards for defense [5, 6, 8].",
+      "winCondition": "Eliminate all wrestlers in the NPC's Faction. Unlike a standard match, all pinfall icons are ignored as victory is secured solely by throwing opponents over the top rope [2, 9].",
+      "npcRecovery": "Eliminating one of your wrestlers allows the NPC to 'Boast,' gaining 3 momentum and 1 stamina. It also recovers Signature cards and removes its lowest Automa cards from play [10, 11]."
+    },
+    "multiplayer": {
+      "concepts": "A multi-man match for 3–4 players played over rounds where initiative does not automatically stay with the attacker. Any wrestler who pins or submits any other wrestler wins immediately [1, 12, 13].",
+      "setup": "Each player receives Target Cards for all opponents and a Withdrawal Card. Use the Multiplayer Momentum Meter and place Resilience cards within reach [14-16].",
+      "gameplayChanges": "Rounds consist of Plan, Reveal, and Attack phases. Players secretly target one opponent; those targeted by two or more wrestlers receive Resilience cards to help them survive the round [8, 16, 17].",
+      "modeSpecificAbilities": "Players may secretly play a 'Withdrawal' card to gain resources but forfeit pinning abilities that round. Active wrestlers can also attempt to 'break up' pinfalls targeting other players [18, 19].",
+      "gameEndConditions": "The match ends as soon as one wrestler successfully executes an attack or ability with a PIN icon and the defender (and other active wrestlers) fail their kick-out attempts [1, 19, 20]."
+    }
+  }
 }, {
   "name": "I Quit Match",
   "description": "I Quit Match: The only way to win is to force your opponent to say the words 'I Quit' into a microphone. There are no other ways to win.",
@@ -225,19 +217,19 @@
   "expansion_code": "CUSTOM",
   "rules": {
     "solo": {
-      "overview": "The only win condition is forcing your opponent to say 'I Quit' into a microphone. Traditional pins and submissions do not count.",
-      "setup": "Place the Microphone token at ringside. Remove pin actions. Submission attempts work differently: instead of a tap-out, a submission hold is maintained across multiple turns until the opponent quits or escapes.",
-      "attacking": "Standard attacks apply to reduce health and stamina. To initiate an I Quit hold, your opponent must be at 40% stamina or less — roll Submission check vs their Resistance. On success, the hold is applied.",
-      "defending": "While in an I Quit hold, you roll a Resistance check each round. Failure costs 1 stamina and increases the I Quit counter by 1. At counter 5, you must declare 'I Quit' or take 5 automatic damage. You may power out with a roll of 18+ at any time.",
-      "winCondition": "Your opponent's I Quit counter reaches 5 and they declare 'I Quit', OR their stamina reaches 0 in a hold (automatic quit).",
-      "npcRecovery": "NPCs declare 'I Quit' when their stamina reaches 10% or less. NPCs will spend all remaining stamina to power out of a hold before quitting."
+      "overview": "The only win condition is forcing your opponent to say 'I Quit' into a microphone. Replace pin for attempts as asking your opponent if he quits. Follow Last Man Standing rules, just narrate as I Quit match for flavor purposes.",
+      "setup": "Remove all Health Packs and Nano-bots from the weapons deck, then flip 6 weapon cards face-up into a display near the NPC and player boards [1].",
+      "attacking": "During your Offensive Ability Window, you may trigger one weapon from the display instead of a standard ability. Devastating attacks in this mode are limited to rolling only 1 attack die regardless of the set difficulty.",
+      "defending": "You can counter NPC weapon strikes by rolling one defensive special ability die. If the NPC attempts a devastating attack, you may block it by discarding 3 cards or using specific ability icons to retain initiative.",
+      "winCondition": "Win by executing a Devastating Attack (matching a Signature or Finisher to a setup weapon); the NPC fails if it cannot 'kick out' across 10 Automa card draws where the K-value exceeds its health.",
+      "npcRecovery": "The NPC automatically triggers the leftmost display weapon if its attack deals 2+ damage. If a weapon is already set up, the NPC will attempt a devastating attack whenever it draws a Signature or Finisher card."
     },
     "multiplayer": {
-      "concepts": "Each participant must be forced to quit. The last participant who has not quit wins.",
-      "setup": "Each player tracks an I Quit counter. All other rules apply as in solo.",
-      "gameplayChanges": "A participant who has quit is eliminated and their turn ends immediately. Their remaining actions in that round are forfeited.",
-      "modeSpecificAbilities": "Crowd Momentum: If three or more spectators (tracked by Crowd Heat tokens) are cheering for a player when that player is in a hold, they gain +2 to all Resistance checks this turn.",
-      "gameEndConditions": "Last participant who has not said 'I Quit' wins. If multiple participants reach automatic quit on the same round, the one with the highest remaining health is declared the winner."
+      "concepts": "This is a 1v1 match where all disqualifications are removed and pinfall icons are ignored. Wrestlers use weapons to inflict enough damage to secure a 10-count knockout [3, 6].",
+      "setup": "Each player receives a one-time use Health Pack. Shuffle the weapons deck and establish a face-up display of 6 cards while readying the special defensive dice [7].",
+      "gameplayChanges": "The weapon display is replenished immediately when it drops below 6 cards. If both draw piles deplete, the ring is reset with high-tier weapons like Ladders and Thumbtacks to ensure a definitive finish [8, 9].",
+      "modeSpecificAbilities": "Players can 'Setup' devastating weapons to facilitate massive attacks. Defenders can utilize Health Packs for +4 health or perform a Weapon Counter with special dice to turn a weapon strike against the attacker [10-12].",
+      "gameEndConditions": "The match ends when a wrestler fails to 'get to their feet' (rolling a sum total over their current health) across 10 attempts following a successful Devastating Attack [3, 13]."
     }
   }
 }, {
@@ -249,19 +241,19 @@
   "expansion_code": "CUSTOM",
   "rules": {
     "solo": {
-      "overview": "A championship or briefcase hangs above the ring. The only way to win is to climb the ladder and retrieve it. Pinfalls and submissions do not end the match.",
-      "setup": "Place the Ladder token at ringside. Place the Prize token above the ring on the map. The ladder must be retrieved from ringside and set up under the prize before climbing.",
-      "attacking": "Standard attacks apply. You may attack with the ladder: Ladder Shot (deal 3 damage, move opponent to ropes), Ladder Prop (lean ladder in corner as a prop for a running attack, +2 to next attack roll).",
-      "defending": "Standard defense applies. If you are climbing the ladder and attacked, roll a Climb Balance check (12+) or fall off the ladder taking 2 damage and losing your climb progress.",
-      "winCondition": "Set up the ladder under the prize, climb to the top (3 consecutive climb actions, each contested if opponent is within reach), and retrieve the prize.",
-      "npcRecovery": "NPCs will knock over the ladder whenever the player is climbing. NPCs attempt to climb only when the player is at 30% health or below."
+      "overview": "A solo ladder match is a race to climb and retrieve the title suspended above the ring; **pinfalls and submissions are ignored** in favor of reaching the top space [1].",
+      "setup": "Place the **Ladder Board** next to the momentum meter with both tokens at 'Start' and set the ladder card to its **'Laid Down'** side [1]. Ready the 3 attacking and 2 defensive dice [1].",
+      "attacking": "To climb, the ladder must be 'Standing'; land a **2+ damage attack** to trigger a climb [2]. You may skip sections like 'Middle' (5+ momentum) or 'Upper' (7+ momentum) to reach the top faster [3].",
+      "defending": "If the NPC executes a successful attack and draws a **D6 Automa card** while your health is not low, they perform an additional ladder attack for 2 damage [4]. You must block or discard cards to stop their climb [4].",
+      "winCondition": "Victory is secured by reaching the **Top of the Ladder** and having the NPC fail their kick-out attempt, or by winning a **Battle** while positioned on the top space [2, 5].",
+      "npcRecovery": "The NPC automatically attempts to climb if your health is **Low** or if its momentum is **7+** [5]. It ignores stamina costs to initiate Battles and flips the ladder automatically when needed [5, 6]."
     },
     "multiplayer": {
-      "concepts": "Multiple participants race to retrieve the prize. The ladder is a shared resource — only one can climb at a time.",
-      "setup": "One ladder token starts at ringside. Additional ladder tokens may be added for matches with 4+ participants.",
-      "gameplayChanges": "Any participant within 1 range of the ladder may attempt to push it over — automatic knockdown unless the climber rolls 15+ on Balance. Climbers may punch down at attackers for a free –1 to the attacker's roll.",
-      "modeSpecificAbilities": "Double Teaming the Climb: Two players can cooperate to keep a third player off the ladder — one holds the opponent while the other climbs. Both must spend 1 stamina per round to maintain.",
-      "gameEndConditions": "First participant to complete three consecutive climb actions at the top (unchallenged) wins. If the prize is knocked loose and falls, it is re-hung and the match continues."
+      "concepts": "Players compete as either the climber or the 'In-Ring' defender. The goal is to advance through ladder sections (Lower, Middle, Upper, Top) to grab the title [1, 7].",
+      "setup": "Place the Ladder Board between players with 5 special dice ready [1]. The ladder card begins in the 'Laid Down' orientation, which must be flipped to 'Standing' to allow climbing [1, 8].",
+      "gameplayChanges": "Climbing is triggered after a 2+ damage attack [2]. Defenders attempt to stop climbs via **kick-out rolls**; if the climber reaches Upper or Top sections, the defender can spend stamina to climb up and initiate a **Battle** [6, 9].",
+      "modeSpecificAbilities": "Utilize **'Ladder Attacks'** for 2 damage or **'Devastating Ladder Attacks'** (e.g., doubling Aerial damage/momentum) by matching move types to the ladder's orientation [8, 10].",
+      "gameEndConditions": "The match ends immediately when a wrestler at the **Top of the Ladder** survives the defender's kick-out attempts or wins a Battle to retrieve the title [2, 5]."
     }
   }
 }, {
@@ -273,19 +265,19 @@
   "expansion_code": "CUSTOM",
   "rules": {
     "solo": {
-      "overview": "A casket sits at ringside. You must weaken your opponent enough to force them into the casket and close the lid — pinfalls and submissions do not count.",
-      "setup": "Place the Casket token at ringside. Your opponent must be at 25% health or less AND in the casket position before you can close the lid.",
-      "attacking": "Standard attacks apply. Once the opponent is at 25% health or less, use the Casket Roll action to move them to the casket position (contested Strength roll, opponent must roll below your result). Once in the casket, use the Close Lid action — the opponent has one chance to resist (Roll 12+ to climb out).",
-      "defending": "If rolled into the casket, immediately roll resistance (12+) to climb out before the lid is closed. You may spend 2 stamina for +4 to this roll.",
-      "winCondition": "Your opponent is in the casket and you successfully close the lid (Close Lid action succeeds without a successful resistance roll).",
-      "npcRecovery": "NPCs resist the casket roll even at low health — they always roll their resistance die. NPCs will attempt to reverse the casket roll if they have any stamina remaining."
+      "overview": "A solo casket match requires you to accumulate 6 Urn Points through high-impact play to attempt a match-ending maneuver; standard pinfalls are ignored in favor of locking the NPC inside the casket [1].",
+      "setup": "Use standard player boards and decks, adding a D6 nearby to track Urn Points, which start at zero [1, 2].",
+      "attacking": "Earn +1 Urn Point when hitting a Finisher, dealing 3+ damage, or winning a reversal. Once you reach 6 points, you may declare a Casket Attempt if you dealt 3+ damage this turn or the NPC is at 2 health or lower [1, 2].",
+      "defending": "You may interrupt NPC casket attempts by spending 2 stamina to force a reroll or playing 'Escape the Casket' cards (any card with a taunt or recover icon) [3].",
+      "winCondition": "Declare an attempt and roll 1D6; a 4–6 result begins shutting the lid. Victory is secured if the NPC fails to 'kick out' (determined by drawing Automa cards where the K-value exceeds its health) [2, 3].",
+      "npcRecovery": "Under the 'Bearer's Curse,' if the NPC successfully stops your casket attempt or kicks out, it gains 1 Urn Point and you lose 1 Urn Point [3]."
     },
     "multiplayer": {
-      "concepts": "Any participant may be forced into the casket. Opening the casket to free a teammate is a legal free action costing 2 stamina.",
-      "setup": "Single casket at ringside. Tag team rules apply for legal participants.",
-      "gameplayChanges": "A participant in the casket is eliminated unless freed before the lid is fully closed. Another participant may interrupt the Close Lid action by moving adjacent to the casket as a free action.",
-      "modeSpecificAbilities": "Desperate Escape: Once per match, a participant in the casket may spend all remaining stamina for a guaranteed escape, regardless of the dice result.",
-      "gameEndConditions": "The match ends when one team's final participant has been shut inside the casket. No time limit."
+      "concepts": "Wrestlers race to reach 6 Urn Points to trigger a Casket Attempt. The 'Bearer's Curse' creates a high-stakes momentum shift, transferring points from the attacker to the defender if an attempt is stopped [1, 3].",
+      "setup": "Both players use standard ATW setups and place a D6 within reach to track their individual Urn Points from 0 to 6 [1-3].",
+      "gameplayChanges": "Casket Attempts are declared as free actions when at max Urn Points and conditions are met. The attempt is resolved by the attacker rolling a 4+ on 1D6, followed by a defender’s 2D6 kick-out roll [2, 3].",
+      "modeSpecificAbilities": "Players gain points through specific cards like 'Dark Ritual' or 'Burial Rite.' Defenders can use special abilities (like 'Paul Bearer Power') or spend stamina to force rerolls during an attempt [1, 3].",
+      "gameEndConditions": "The match ends immediately when a wrestler is successfully locked inside the casket after failing a 2D6 kick-out roll (sum must be equal to or lower than current health to escape) [1, 3]."
     }
   }
 }, {
@@ -297,19 +289,19 @@
   "expansion_code": "CUSTOM",
   "rules": {
     "solo": {
-      "overview": "A TLC match combines the ladder retrieval objective with the added chaos of tables and chairs scattered at ringside. Retrieve the prize to win.",
-      "setup": "Place one Ladder, two Chair, and one Table token at ringside. Place the Prize above the ring. All TLC weapon cards are available from the start.",
-      "attacking": "Chair Shot: +3 damage, move opponent to ropes. Table Setup: place a table in any ring zone — any opponent slammed into that zone takes +4 damage and the table is destroyed. Ladder use follows Ladder Match rules.",
-      "defending": "Standard defense applies. Announce the zone you are in each turn — being in a table zone increases incoming slam damage by 4.",
-      "winCondition": "Retrieve the suspended prize by completing three consecutive climb actions (same as Ladder Match).",
-      "npcRecovery": "NPCs prioritize placing tables near the ladder. NPCs use a chair shot if the player is at 50% health or above and the player begins climbing."
+      "overview": "A solo TLC match is a tornado-style brawl against a Tag Automa where the objective is to climb a ladder and retrieve a briefcase or title; pinfalls and submissions are completely ignored [1-3].",
+      "setup": "Use a D6 to track Ladder Points (starting at 0) and prepare the TLC Weapon Deck. Each team begins with one Save Token and follows Tornado Tag rules, meaning all wrestlers are active in the ring simultaneously [2].",
+      "attacking": "Earn Ladder Points (LP) by landing Finishers (+1), combos of 3+ damage (+1), or successful Double/Triple Team actions (+1). Executing a +2 damage attack allows you to collect a weapon card from the TLC deck [4, 5].",
+      "defending": "If you are hit for 3+ damage while holding 5+ LP, you must resolve a 'Fall Risk' roll: a result of 1 causes you to lose 2 LP and 2 health. NPCs can also force re-rolls of your climb attempts by playing Taunt or Recover cards [3, 6].",
+      "winCondition": "Once your team reaches 6 LP and has a Ladder in play, you may roll 1D6 to retrieve the prize. You win immediately if the roll is successful and not negated by an NPC Save Token [3, 6, 7].",
+      "npcRecovery": "The NPC team gains 1 LP whenever they land a Finisher, use a Taunt card, or gain the initiative. Upon reaching 6 LP, the NPC team will attempt to climb and retrieve the prize every turn until they succeed [3]."
     },
     "multiplayer": {
-      "concepts": "All TLC rules apply to all participants. The environment is as dangerous as the opponents.",
-      "setup": "Scale props to number of participants: +1 Chair and +1 Ladder for each participant above 2.",
-      "gameplayChanges": "Tables, once set up, remain in play until triggered. A participant may voluntarily crash through a table to deal damage to a nearby opponent — this is a sacrifice play dealing 2 self-damage and 4 to the opponent.",
-      "modeSpecificAbilities": "TLC Combination: Using all three prop types (table, ladder, chair) in a single turn grants a Momentum token worth +3 to your next ladder climb roll.",
-      "gameEndConditions": "Same as Ladder Match — first to retrieve the prize. No substitutions or restarts once the climb sequence is in progress."
+      "concepts": "This is a team-based Tornado Tag match for 4+ players where partners must coordinate to accumulate 6 Ladder Points to trigger a climb attempt. Only one team weapon can be in play at any given time [1, 2, 7].",
+      "setup": "Assign each player a D6 to track their individual Ladder Points and shuffle the TLC Weapon Deck. Each team starts with one Save Token to negate an opponent's successful climb [2, 4].",
+      "gameplayChanges": "Climb attempts require 6 LP and an active Ladder card. Defenders can spend 2 stamina to Taunt the climber and force a re-roll, or utilize their team's Save Token to stop the climb entirely [6, 7].",
+      "modeSpecificAbilities": "Wrestlers utilize specialized weapons: Hammer Chairs (+1 damage, breaks after 2 uses), Tables (+2 damage, deals splash damage to the attacker), and Ladders (+2 damage or used for climbing) [5, 7].",
+      "gameEndConditions": "The match ends the moment a wrestler successfully completes a climb roll and retrieves the briefcase or title from the top of the ladder [1, 7]."
     }
   }
 }, {
@@ -321,19 +313,19 @@
   "expansion_code": "CUSTOM",
   "rules": {
     "solo": {
-      "overview": "War Games is a team match where participants enter in timed intervals inside a double-ring cage. The solo player controls one team member entering the match. The Match Beyond begins when all participants are present, and only pinfall or submission ends it.",
-      "setup": "Set up the War Games cage overlay (two rings, one connected cage). Team A enters first with one member. Team B sends one member 2 minutes later. Alternate entries every 2 minutes until all members are in.",
-      "attacking": "Standard attack dice apply. Cage surfaces are weapons: Cage Ram (+3 damage, move to ropes). The cage between rings is a neutral weapon zone — fighting there costs 1 extra stamina per turn.",
-      "defending": "No escape attempts — the cage door is locked until The Match Beyond begins. Standard defense rolls apply.",
-      "winCondition": "After all participants have entered, The Match Beyond begins. Win by pinfall or submission of any opposing team member.",
-      "npcRecovery": "NPC teammates will naturally spread out across both rings to create a two-front battle. NPCs with high health will assist lower-health teammates who are at risk."
+      "overview": "A solo War Games match is a 5v5 team battle held inside a steel cage where victory is only possible after all 10 participants have entered; pinfalls and submissions are disabled until the full roster is present [1, 2].",
+      "setup": "Use a Time Board or D6 to track 5-round entry intervals. Roll for Priority to see which team enters first; wrestlers enter one-by-one, alternating teams until the ring is full [3, 4].",
+      "attacking": "New entrants (3–10) trigger a 'Game Changer' sequence, attacking every opponent in the cage individually. Success deals damage and momentum, but the first failed roll ends the entire entry attack [5, 6].",
+      "defending": "Standard blocking and reversing apply. The cage wall allows for climbing and grants +1 damage to all Whip and Aerial moves performed inside [7, 8].",
+      "winCondition": "The match is won by the first team to score a pinfall or submission against an opponent, legal only after all 10 wrestlers have entered the cage [1, 2].",
+      "npcRecovery": "NPC entrants can choose to 'Stop and Search' for a weapon instead of entering immediately, allowing them to bring a specialized item into the cage for their first entry attack [4]."
     },
     "multiplayer": {
-      "concepts": "Team-based combat inside the War Games structure. Coordinate with teammates to manage two rings and multiple opponents simultaneously.",
-      "setup": "Divide players into two teams. Determine entry order randomly (coin flip or dice). Track entry interval with a turn count (every 3 turns = 1 interval).",
-      "gameplayChanges": "During entry intervals, the outnumbered team may only spend 1 action per turn. The team with more members present may use 2 actions per turn while they hold the advantage. Once all members are in, normal action rules resume.",
-      "modeSpecificAbilities": "War Games Advantage: The team that wins the pre-match coin flip decides which team enters first AND last — entering last means your team has a numbers advantage for the longest period before The Match Beyond.",
-      "gameEndConditions": "First team to score a pinfall or submission after The Match Beyond begins wins. There are no disqualifications, no time limits, and no escape options. The match must end by force."
+      "concepts": "This is a team-based 'Match Beyond' where all wrestlers are active once they enter. There are no tags or eliminations until the very end; the goal is to survive the phased escalation [1, 7, 9].",
+      "setup": "Teams select 3 Double Team and 2 Triple Team cards to place face-up for universal use. Use a timer to manage entry phases for the 10 participants [3, 8].",
+      "gameplayChanges": "Phased entry occurs every 5 rounds. Players may opt to delay entry for one round to search for a weapon, which is then automatically used during their entry 'Game Changer' sequence [3, 4].",
+      "modeSpecificAbilities": "'Game Changer' attacks target every active opponent simultaneously. Aerial moves are boosted by the environment, and cooperative attacks require every participating team member to meet the target roll [5, 8, 10].",
+      "gameEndConditions": "The first successful pinfall or submission ends the match immediately, provided the entry period has concluded and all 10 wrestlers are in the cage [2]."
     }
   }
 }, {
@@ -344,19 +336,19 @@
   "bumpAddition": "ALL",
   "rules": {
     "solo": {
-      "overview": "The most extreme stipulation available. The ropes are replaced with electrified barbed wire and the ring is rigged with explosive devices. Contact with the ropes deals automatic damage. Explosions deal massive damage to anyone nearby.",
-      "setup": "Replace all rope zone cards with Barbed Wire Zone cards (contact = 3 automatic damage per turn in zone). Place 4 Explosive Device tokens at random ring positions. Standard pin and submission win conditions apply.",
-      "attacking": "Standard attacks apply. Barbed Wire Throw: Slam opponent into a Barbed Wire Zone for the automatic 3 damage in addition to your attack. Explosive Trigger: Move opponent into an Explosive Device token to trigger the explosion — both wrestlers take 5 damage if within 1 zone.",
-      "defending": "If you are in a Barbed Wire Zone, you must spend 1 stamina per turn to avoid taking wire damage, or move out of the zone as a free action. You cannot voluntarily move into an Explosive Device zone.",
-      "winCondition": "Standard pinfall or submission.",
-      "npcRecovery": "NPCs avoid Explosive Device tokens unless triggered incidentally during a slam action. NPCs will use Barbed Wire Throws aggressively when the player is near the ropes."
+      "overview": "A Solo Barbwire Exploding Deathmatch is a brutal No-DQ contest where you face an NPC opponent in a ring surrounded by explosives set to detonate at the 25-minute mark [1-3].",
+      "setup": "Place the Barbwire Exploding Deathmatch Board with a cube on the '25' timer space and display six weapons face-up: Cord, Ropes, Chair, Bat, and two Tables [1, 4]. Both you and the NPC receive one Elixir card to use for immediate healing [4].",
+      "attacking": "During your Offensive Ability Window, you may trigger a standard weapon attack by rolling one die; it succeeds on a result of 3 or higher [5]. Devastating attacks using the Barbwire Table require playing a Signature or Finisher card and incur a +2 target number penalty [5, 6].",
+      "defending": "The NPC triggers a standard weapon attack if its move deals 3 or more damage, or attempts a devastating table attack if it plays a Signature/Finisher with a target roll of 3+ or less [6, 7]. You can block by discarding two cards, or attempt a Weapon Counter (5+ on a die) to use the weapon against the NPC [7, 8].",
+      "winCondition": "Victory is achieved by knocking out the NPC, which occurs if its health reaches 1 after it has already used its Elixir [9, 10]. The match also ends if the bomb explosion knocks out the NPC while you remain standing [10].",
+      "npcRecovery": "The NPC automatically triggers its Elixir card the first time its health reaches 1, instantly gaining 12 health (minus any excess damage sustained) [10, 11]."
     },
     "multiplayer": {
-      "concepts": "All the deathmatch rules apply to all participants equally. Survival while managing hazards is the key challenge.",
-      "setup": "Scale Explosive Device tokens to match size: +2 tokens per additional participant beyond 2.",
-      "gameplayChanges": "Explosions triggered in multiplayer affect all participants within 1 zone — not just the two immediately involved. Zone tracking is critical.",
-      "modeSpecificAbilities": "Deathmatch Veteran: A participant who has survived 3 Explosive Device triggers in a single match gains +2 to all defense rolls for the remainder of the match.",
-      "gameEndConditions": "Standard pinfall or submission. If multiple participants are incapacitated simultaneously by an explosion, the result is a draw unless a third party makes a cover attempt."
+      "concepts": "This is a No-DQ 1v1 match featuring unique ring hazards and a bomb timer that progresses as cards are discarded or weapons are used [1, 2, 12]. Players ignore all pinfall icons until the bomb detonates [9].",
+      "setup": "Set the bomb timer to 25:00 and establish a display of six specialized barbwire weapons near the board [1, 13]. Each player starts with an Elixir card for a one-time emergency health boost [2].",
+      "gameplayChanges": "The timer advances downward whenever a card is discarded for attacks, blocks, or rerolls, or when a barbwire weapon is utilized [12, 14]. If the timer reaches zero, the ring explodes, dealing 8 damage to both wrestlers [15].",
+      "modeSpecificAbilities": "Standard weapons deal listed damage and advance the timer, while Barbwire Tables allow for Devastating Attacks that combine move and weapon damage but increase the attacker's target number by 2 [16-18]. The Elixir card restores 12 health once a wrestler hits 1 health [11].",
+      "gameEndConditions": "A wrestler is 'knocked out' and loses if their health reaches 1 after using their Elixir [9]. If the bomb explodes and no one is knocked out, the match enters sudden death where pinfalls become legal again [19]."
     }
   }
 }, {
@@ -392,19 +384,19 @@
   "expansion_code": "ATW_VS_WOW",
   "rules": {
     "solo": {
-      "overview": "A team elimination match with no tag-out option. Every member of both teams is in the ring simultaneously. No DQ, no tags — eliminate all opponents to win.",
-      "setup": "Both teams start with all members active in the ring simultaneously. Standard no-DQ rules apply. Use the Survivor Elimination tracker.",
-      "attacking": "Any participant may target any opposing team member. Focus-fire on a single target is a valid and encouraged strategy.",
-      "defending": "Without tagging, defensive rest periods are not available. Use stamina management wisely — you cannot recover without being eliminated.",
-      "winCondition": "Eliminate all members of the opposing team by pinfall or submission.",
-      "npcRecovery": "NPC team members will target the player exclusively if the player is the last surviving member of their team. NPC teammates will protect the player if a two-on-one situation arises."
+      "overview": "A Survivor War is a team-based elimination match where you lead a squad of wrestlers against an NPC team; unlike Tag Team matches, there are no tags, and wrestlers are only replaced once they are defeated [1, 2].",
+      "setup": "Select your starting wrestler and place two (or more) additional wrestlers face-down in a 'Team Deck' to determine their entry order [2]. NPC teams are typically composed of WOW wrestlers unless specified otherwise in the campaign [3].",
+      "attacking": "Standard attacking rules apply. If you eliminate an NPC wrestler, your active wrestler recovers a total of 7 health and stamina (split as you choose) and returns one random attack card from your discard pile to your hand [4].",
+      "defending": "Standard defense applies. If your active wrestler is eliminated via pinfall or referee stoppage, discard their Profile Card and perform a standard setup for the next wrestler in your Team Deck [4, 5].",
+      "winCondition": "You must eliminate every wrestler on the NPC's team to win the match [5].",
+      "npcRecovery": "If the NPC eliminates one of your wrestlers, it gains 7 health, recovers all attack cards with a PIN icon from its discard pile, and discards its lowest-value Automa card (D1 or D2) from its deck [6]."
     },
     "multiplayer": {
-      "concepts": "Full team-vs-team simultaneous combat with no substitutions. Communication between teammates is critical.",
-      "setup": "Divide players onto two teams. All participants are active from the start. Track eliminations with the Survivor score card.",
-      "gameplayChanges": "Without tag rules, all participants are always legal targets and legal attackers. Simultaneous actions from teammates are allowed — both may attack the same target in a turn, combining their rolls against a single defense roll.",
-      "modeSpecificAbilities": "Survivor Bonus: The last remaining member of a team earns +2 to all attack and defense rolls when their team is outnumbered (Last Stand bonus).",
-      "gameEndConditions": "The team that eliminates all opposing members first wins. If both teams simultaneously eliminate the last opposing member on the same action, the team with the most total eliminations wins."
+      "concepts": "This mode features team vs. team elimination where only two wrestlers are in the ring at a time [1, 2]. Replacement occurs only after a wrestler is defeated, and there are no tagging mechanics [2].",
+      "setup": "Players select a team (standard is 3 wrestlers) and set their entry order by stacking Campaign Profile Cards face-down [1, 2]. Handicap versions, such as 1v3 or 2v3, can be used for balanced play between different skill levels [1].",
+      "gameplayChanges": "When a wrestler is eliminated, the match pauses for the winning wrestler to recover 7 total health/stamina and one random attack card [4]. The match then resumes with the next teammate entering and a standard initiative roll [4].",
+      "modeSpecificAbilities": "Wrestlers can be from any expansion or gender division [2]. In campaign play, permanent upgrades like status cards and injuries only apply to your specific wrestler, not their teammates [6].",
+      "gameEndConditions": "The match ends immediately when a player has no more wrestlers remaining in their Team Deck to replace an eliminated participant [5]."
     }
   }
 } ]
