@@ -176,7 +176,9 @@ class CampaignServiceTest {
         .thenAnswer(
             i -> {
               Campaign c = i.getArgument(0);
-              if (c.getState() != null) c.getState().setFeatureData("{}");
+              if (c.getState() != null) {
+                c.getState().setFeatureData("{}");
+              }
               return c;
             });
     lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
@@ -215,7 +217,9 @@ class CampaignServiceTest {
         .thenAnswer(
             i -> {
               Campaign c = i.getArgument(0);
-              if (c.getState() != null) c.getState().setFeatureData("{}");
+              if (c.getState() != null) {
+                c.getState().setFeatureData("{}");
+              }
               return c;
             });
     lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
