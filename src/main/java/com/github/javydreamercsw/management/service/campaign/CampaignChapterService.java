@@ -76,22 +76,9 @@ public class CampaignChapterService {
   public void loadChapters() {
     List<CampaignChapterDTO> merged = new ArrayList<>();
 
-    // 1. Load flat array files: campaigns/*.json
-    try {
-      Resource[] flatFiles = resourcePatternResolver.getResources("classpath*:campaigns/*.json");
-      for (Resource r : flatFiles) {
-        log.debug("Loading campaign chapters from file: {}", r.getFilename());
-        try (InputStream is = r.getInputStream()) {
-          merged.addAll(objectMapper.readValue(is, new TypeReference<>() {}));
-        } catch (IOException e) {
-          log.error("Error loading campaign chapters from {}", r.getFilename(), e);
-        }
-      }
-    } catch (IOException e) {
-      log.error("Error scanning campaigns/ for flat chapter files", e);
-    }
-
-    // 2. Load folder-based campaigns: campaigns/*/_chapter.json with encounters/ subfolder
+    // 1. Load folder-based campaigns first: campaigns/*/_chapter.json with encounters/ subfolder
+    // (folder-based chapters like "beginning" must appear before flat-file chapters so that
+    // startCampaign picks them first when multiple chapters are available at VP=0)
     try {
       Resource[] chapterFiles =
           resourcePatternResolver.getResources("classpath*:campaigns/*/_chapter.json");
@@ -120,6 +107,21 @@ public class CampaignChapterService {
       }
     } catch (IOException e) {
       log.error("Error scanning campaigns/ for folder-based chapters", e);
+    }
+
+    // 2. Load flat array files: campaigns/*.json
+    try {
+      Resource[] flatFiles = resourcePatternResolver.getResources("classpath*:campaigns/*.json");
+      for (Resource r : flatFiles) {
+        log.debug("Loading campaign chapters from file: {}", r.getFilename());
+        try (InputStream is = r.getInputStream()) {
+          merged.addAll(objectMapper.readValue(is, new TypeReference<>() {}));
+        } catch (IOException e) {
+          log.error("Error loading campaign chapters from {}", r.getFilename(), e);
+        }
+      }
+    } catch (IOException e) {
+      log.error("Error scanning campaigns/ for flat chapter files", e);
     }
 
     if (merged.isEmpty()) {

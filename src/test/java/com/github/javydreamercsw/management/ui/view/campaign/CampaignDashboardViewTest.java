@@ -123,7 +123,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     when(campaignService.isChapterComplete(mockCampaign)).thenReturn(false);
     when(campaignService.getCurrentChapter(any()))
-        .thenReturn(Optional.of(new CampaignChapterDTO()));
+        .thenReturn(
+            Optional.of(CampaignChapterDTO.builder().title("All or Nothing (Season 1)").build()));
     when(titleRepository.findByName(any())).thenReturn(Optional.empty());
     when(wrestlerService.resolveWrestlerImage(any()))
         .thenReturn(new com.github.javydreamercsw.base.image.ImageResolution(null, true));
