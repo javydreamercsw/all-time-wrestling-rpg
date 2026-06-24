@@ -1,6 +1,6 @@
 {
   "id": "beginning",
-  "title": "All Or Nothing Campaign",
+  "title": "All or Nothing Campaign",
   "shortDescription": "Your journey in All Time Wrestling starts here.",
   "introText": "You stand backstage, the roar of the crowd muting your thoughts. This is your moment. The path to the All Time Championship starts here. Will you be a hero, or a villain? Your actions today will define your legacy. So many questions in your mind: How did I got here? A time machine? Is this the future?",
   "aiSystemPrompt": "You are the Campaign Director for the All Or Nothing Campaign. Your goal is to introduce the player to the world of All Time Wrestling (ATW) and establish their initial reputation through backstage encounters.",
