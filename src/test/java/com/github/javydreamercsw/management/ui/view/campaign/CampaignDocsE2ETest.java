@@ -87,7 +87,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     navigateTo("campaign");
 
     // 3. Verify & Capture
-    waitForText("Chapter: The Beginning");
+    waitForText("Chapter: All or Nothing Campaign");
     documentFeature(
         "Campaign",
         "The Beginning",
