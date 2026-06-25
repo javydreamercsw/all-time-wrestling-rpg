@@ -90,7 +90,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Route(value = "player", layout = MainLayout.class)
 @PageTitle("Player Dashboard | ATW RPG")
 @RolesAllowed({ADMIN_ROLE, BOOKER_ROLE, PLAYER_ROLE})
-public class PlayerView extends VerticalLayout {
+public class PlayerDashboardView extends VerticalLayout {
 
   private final WrestlerService wrestlerService;
   private final WrestlerStatsService wrestlerStatsService;
@@ -111,7 +111,7 @@ public class PlayerView extends VerticalLayout {
   private SeasonSummaryComponent seasonSummary;
 
   @Autowired
-  public PlayerView(
+  public PlayerDashboardView(
       final WrestlerService wrestlerService,
       final WrestlerStatsService wrestlerStatsService,
       final RivalryService rivalryService,
@@ -167,8 +167,11 @@ public class PlayerView extends VerticalLayout {
               accountService.setActiveWrestlerId(account.getId(), active.getId());
             }
 
+            final Wrestler activeWrestler = active;
             removeAll();
-            add(new ViewToolbar("Player Dashboard", createWrestlerSwitcher(account, owned)));
+            add(
+                new ViewToolbar(
+                    "Player Dashboard", createWrestlerSwitcher(account, owned, activeWrestler)));
 
             if (active != null) {
               playerWrestler = wrestlerService.findByIdWithDetails(active.getId()).orElse(active);
@@ -187,12 +190,12 @@ public class PlayerView extends VerticalLayout {
   }
 
   private Component createWrestlerSwitcher(
-      @NonNull Account account, @NonNull java.util.List<Wrestler> owned) {
+      @NonNull Account account, @NonNull java.util.List<Wrestler> owned, final Wrestler active) {
     ComboBox<Wrestler> switcher = new ComboBox<>("Active Wrestler");
     switcher.setItems(owned);
     switcher.setItemLabelGenerator(Wrestler::getName);
-    if (playerWrestler != null) {
-      switcher.setValue(playerWrestler);
+    if (active != null) {
+      switcher.setValue(active);
     }
     switcher.addValueChangeListener(
         event -> {

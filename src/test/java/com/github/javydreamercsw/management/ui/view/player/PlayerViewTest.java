@@ -65,7 +65,7 @@ class PlayerViewTest extends AbstractViewTest {
   @Mock private SeasonRepository seasonRepository;
   @Mock private UniverseContextService universeContextService;
 
-  private PlayerView view;
+  private PlayerDashboardView view;
 
   @BeforeEach
   @SuppressWarnings("unchecked")
@@ -87,7 +87,7 @@ class PlayerViewTest extends AbstractViewTest {
     when(newsService.getLatestNews()).thenReturn(Collections.emptyList());
 
     view =
-        new PlayerView(
+        new PlayerDashboardView(
             wrestlerService,
             wrestlerStatsService,
             rivalryService,
