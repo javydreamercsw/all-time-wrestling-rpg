@@ -319,6 +319,23 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     shareQrButton.addClickListener(e -> new QrCodeDialog(segment.getId()).open());
     header.add(shareQrButton);
 
+    if (!segment.getSegmentRules().isEmpty()) {
+      segment.getSegmentRules().stream()
+          .findFirst()
+          .ifPresent(
+              rule -> {
+                if (rule.getId() != null) {
+                  Button howToPlayButton =
+                      new Button("How to Play", new Icon(VaadinIcon.INFO_CIRCLE_O));
+                  howToPlayButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+                  howToPlayButton.setId("how-to-play-button");
+                  howToPlayButton.addClickListener(
+                      e -> UI.getCurrent().navigate("match-info/" + rule.getId()));
+                  header.add(howToPlayButton);
+                }
+              });
+    }
+
     add(header);
 
     // Navigation / Campaign context

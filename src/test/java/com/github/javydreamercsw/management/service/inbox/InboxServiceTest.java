@@ -292,9 +292,8 @@ class InboxServiceTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(5L);
 
-    when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
-        .thenReturn(List.of(item1));
+    when(inboxRepository.findAll(any(Specification.class), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of(item1)));
 
     List<InboxItem> result = inboxService.getInboxItemsForWrestler(wrestler, 10);
 

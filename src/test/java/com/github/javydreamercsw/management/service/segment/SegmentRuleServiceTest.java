@@ -22,9 +22,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleVariantGuide;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -49,6 +52,7 @@ class SegmentRuleServiceTest {
   @Mock private ExpansionService expansionService;
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseSettingsService universeSettingsService;
+  @Mock private ObjectMapper objectMapper;
 
   @InjectMocks private SegmentRuleService segmentRuleService;
 
@@ -302,5 +306,92 @@ class SegmentRuleServiceTest {
     long result = segmentRuleService.count();
 
     assertThat(result).isZero();
+  }
+
+  @Test
+  void createOrUpdateRule_withRules_persistsRulesOnNewRule() throws Exception {
+    SegmentRuleVariantGuide solo =
+        new SegmentRuleVariantGuide(
+            "overview", "setup", null, null, "win", null, null, null, null, null, null, null);
+    SegmentRulePlayGuide guide = new SegmentRulePlayGuide(solo, null);
+
+    when(segmentRuleRepository.findByName("Cage")).thenReturn(java.util.Optional.empty());
+    when(objectMapper.writeValueAsString(guide))
+        .thenReturn("{\"solo\":{\"overview\":\"overview\"}}");
+    when(segmentRuleRepository.save(any(SegmentRule.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    SegmentRule result =
+        segmentRuleService.createOrUpdateRule(
+            "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);
+
+    assertThat(result.getRules()).isEqualTo(guide);
+    assertThat(result.getRulesHash()).isNotBlank();
+  }
+
+  @Test
+  void createOrUpdateRule_withRules_hashChangeTriggersUpdate() throws Exception {
+    SegmentRuleVariantGuide solo =
+        new SegmentRuleVariantGuide(
+            "old overview", null, null, null, null, null, null, null, null, null, null, null);
+    SegmentRulePlayGuide oldGuide = new SegmentRulePlayGuide(solo, null);
+    SegmentRuleVariantGuide soloNew =
+        new SegmentRuleVariantGuide(
+            "new overview", null, null, null, null, null, null, null, null, null, null, null);
+    SegmentRulePlayGuide newGuide = new SegmentRulePlayGuide(soloNew, null);
+
+    SegmentRule existing = new SegmentRule();
+    existing.setName("Cage");
+    existing.setDescription("Cage match");
+    existing.setRequiresHighHeat(true);
+    existing.setNoDq(true);
+    existing.setBumpAddition(BumpAddition.ALL);
+    existing.setExpansionCode("BASE_GAME");
+    existing.setRules(oldGuide);
+    existing.setRulesHash("oldhash");
+
+    when(segmentRuleRepository.findByName("Cage")).thenReturn(java.util.Optional.of(existing));
+    when(objectMapper.writeValueAsString(newGuide))
+        .thenReturn("{\"solo\":{\"overview\":\"new overview\"}}");
+    when(segmentRuleRepository.save(any(SegmentRule.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    SegmentRule result =
+        segmentRuleService.createOrUpdateRule(
+            "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", newGuide);
+
+    assertThat(result.getRules()).isEqualTo(newGuide);
+    assertThat(result.getRulesHash()).isNotEqualTo("oldhash");
+    verify(segmentRuleRepository).save(existing);
+  }
+
+  @Test
+  void createOrUpdateRule_identicalHash_skipsWrite() throws Exception {
+    SegmentRuleVariantGuide solo =
+        new SegmentRuleVariantGuide(
+            "overview", null, null, null, null, null, null, null, null, null, null, null);
+    SegmentRulePlayGuide guide = new SegmentRulePlayGuide(solo, null);
+    String serialized = "{\"solo\":{\"overview\":\"overview\"}}";
+
+    when(objectMapper.writeValueAsString(guide)).thenReturn(serialized);
+
+    java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+    byte[] hashBytes = digest.digest(serialized.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    String expectedHash = java.util.HexFormat.of().formatHex(hashBytes);
+
+    SegmentRule existing = new SegmentRule();
+    existing.setName("Cage");
+    existing.setDescription("Cage match");
+    existing.setRequiresHighHeat(true);
+    existing.setNoDq(true);
+    existing.setBumpAddition(BumpAddition.ALL);
+    existing.setExpansionCode("BASE_GAME");
+    existing.setRules(guide);
+    existing.setRulesHash(expectedHash);
+
+    when(segmentRuleRepository.findByName("Cage")).thenReturn(java.util.Optional.of(existing));
+
+    segmentRuleService.createOrUpdateRule(
+        "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);
+
+    verify(segmentRuleRepository, Mockito.never()).save(any());
   }
 }

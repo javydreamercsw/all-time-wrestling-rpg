@@ -20,6 +20,8 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -40,6 +42,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private SegmentRuleRepository segmentRuleRepository;
 
   @BeforeEach
   void setup() {
@@ -63,7 +66,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     }
 
     if (segmentRepository.count() == 0) {
-      Show show = showRepository.findAll().get(0);
+      Show show = showRepository.findAll().getFirst();
       SegmentType matchType = segmentTypeRepository.findByName("One on One").get();
       List<Wrestler> wrestlers = wrestlerRepository.findAll();
 
@@ -237,6 +240,30 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
          customized gameplay experiences.\
         """,
         "mechanic-expansion-packs");
+  }
+
+  @Test
+  void testCaptureMatchInfoView() {
+    SegmentRule normalRule =
+        segmentRuleRepository
+            .findByName("Normal")
+            .orElseGet(() -> segmentRuleRepository.findAll().stream().findFirst().orElse(null));
+    if (normalRule == null) {
+      return;
+    }
+
+    navigateTo("match-info/" + normalRule.getId());
+    waitForText("Solo Play");
+
+    documentFeature(
+        "Game Mechanics",
+        "Match Rules Viewer",
+        """
+        Every match type has a built-in rules reference. Tap the info button on any segment\
+         or the How to Play button during a match to view solo and multiplayer rule summaries\
+         without leaving the app.\
+        """,
+        "mechanic-match-info");
   }
 
   private void waitForText(final String text) {

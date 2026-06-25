@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
@@ -81,6 +82,7 @@ public class WrestlerService {
   private final UniverseContextService universeContextService;
   private final UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
   private final UniverseSettingsService universeSettingsService;
+  private final AccountRepository accountRepository;
 
   @Autowired
   public WrestlerService(
@@ -98,7 +100,8 @@ public class WrestlerService {
       final WrestlerAlignmentRepository wrestlerAlignmentRepository,
       final UniverseContextService universeContextService,
       final UniverseWrestlerExclusionRepository wrestlerExclusionRepository,
-      final UniverseSettingsService universeSettingsService) {
+      final UniverseSettingsService universeSettingsService,
+      final AccountRepository accountRepository) {
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.tierBoundaryRepository = tierBoundaryRepository;
@@ -113,6 +116,7 @@ public class WrestlerService {
     this.universeContextService = universeContextService;
     this.wrestlerExclusionRepository = wrestlerExclusionRepository;
     this.universeSettingsService = universeSettingsService;
+    this.accountRepository = accountRepository;
   }
 
   @CacheEvict(
@@ -425,9 +429,13 @@ public class WrestlerService {
         .ifPresent(
             w -> {
               if (accountId != null) {
-                // Assuming we have an AccountRepository or Service to find by ID.
-                // For now, this is a placeholder to satisfy UI needs.
-                log.info("Setting account {} for wrestler {}", accountId, wrestlerId);
+                accountRepository
+                    .findById(accountId)
+                    .ifPresent(
+                        account -> {
+                          w.setAccount(account);
+                          log.info("Setting account {} for wrestler {}", accountId, wrestlerId);
+                        });
               } else {
                 w.setAccount(null);
               }
