@@ -214,9 +214,9 @@ public class PlayerView extends VerticalLayout {
     seasonSummary =
         new SeasonSummaryComponent(
             wrestlerSeasons,
-            season -> {
-              seasonSummary.updateStats(seasonStatsService.calculateStats(playerWrestler, season));
-            });
+            season ->
+                seasonSummary.updateStats(
+                    seasonStatsService.calculateStats(playerWrestler, season)));
 
     // Default to active season if available
     seasonRepository
