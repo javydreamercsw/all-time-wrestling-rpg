@@ -42,7 +42,6 @@ import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonStatsService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
-import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
@@ -77,9 +76,11 @@ import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,7 +94,6 @@ public class PlayerView extends VerticalLayout {
 
   private final WrestlerService wrestlerService;
   private final WrestlerStatsService wrestlerStatsService;
-  private final ShowService showService;
   private final RivalryService rivalryService;
   private final InboxService inboxService;
   private final SecurityUtils securityUtils;
@@ -114,7 +114,6 @@ public class PlayerView extends VerticalLayout {
   public PlayerView(
       final WrestlerService wrestlerService,
       final WrestlerStatsService wrestlerStatsService,
-      final ShowService showService,
       final RivalryService rivalryService,
       final InboxService inboxService,
       final SecurityUtils securityUtils,
@@ -128,7 +127,6 @@ public class PlayerView extends VerticalLayout {
       final UniverseContextService universeContextService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
-    this.showService = showService;
     this.rivalryService = rivalryService;
     this.inboxService = inboxService;
     this.securityUtils = securityUtils;
@@ -158,21 +156,19 @@ public class PlayerView extends VerticalLayout {
             account = accountService.get(account.getId()).get();
             org.hibernate.Hibernate.initialize(account.getAchievements());
 
+            java.util.List<Wrestler> owned = wrestlerService.findAllByAccount(account);
             Wrestler active = null;
             if (account.getActiveWrestlerId() != null) {
               active = wrestlerService.findById(account.getActiveWrestlerId()).orElse(null);
             }
 
-            if (active == null) {
-              java.util.List<Wrestler> owned = wrestlerService.findAllByAccount(account);
-              if (!owned.isEmpty()) {
-                active = owned.get(0);
-                accountService.setActiveWrestlerId(account.getId(), active.getId());
-              }
+            if (active == null && !owned.isEmpty()) {
+              active = owned.get(0);
+              accountService.setActiveWrestlerId(account.getId(), active.getId());
             }
 
             removeAll();
-            add(new ViewToolbar("Player Dashboard", createWrestlerSwitcher(account)));
+            add(new ViewToolbar("Player Dashboard", createWrestlerSwitcher(account, owned)));
 
             if (active != null) {
               playerWrestler = wrestlerService.findByIdWithDetails(active.getId()).orElse(active);
@@ -190,9 +186,9 @@ public class PlayerView extends VerticalLayout {
         });
   }
 
-  private Component createWrestlerSwitcher(Account account) {
+  private Component createWrestlerSwitcher(
+      @NonNull Account account, @NonNull java.util.List<Wrestler> owned) {
     ComboBox<Wrestler> switcher = new ComboBox<>("Active Wrestler");
-    java.util.List<Wrestler> owned = wrestlerService.findAllByAccount(account);
     switcher.setItems(owned);
     switcher.setItemLabelGenerator(Wrestler::getName);
     if (playerWrestler != null) {
@@ -410,12 +406,39 @@ public class PlayerView extends VerticalLayout {
             inboxTab, inboxGrid,
             achievementsTab, achievementsGrid);
 
+    Set<Tab> loadedTabs = new HashSet<>();
+    loadedTabs.add(matchesTab);
+
+    Map<Tab, Runnable> tabLoaders =
+        Map.of(
+            rivalriesTab,
+            () -> {
+              if (playerWrestler != null) {
+                rivalriesGrid.setItems(
+                    rivalryService.getRivalriesForWrestler(playerWrestler.getId()));
+              }
+            },
+            inboxTab,
+            () -> {
+              if (playerWrestler != null) {
+                inboxGrid.setItems(inboxService.getInboxItemsForWrestler(playerWrestler, 10));
+              }
+            },
+            achievementsTab,
+            () -> achievementsGrid.setItems(achievementRepository.findAll()));
+
     Tabs tabs = new Tabs(matchesTab, rivalriesTab, achievementsTab, inboxTab);
     tabs.addSelectedChangeListener(
         event -> {
           tabsToPages.values().forEach(page -> page.setVisible(false));
-          Component selectedPage = tabsToPages.get(tabs.getSelectedTab());
-          selectedPage.setVisible(true);
+          Tab selected = tabs.getSelectedTab();
+          if (loadedTabs.add(selected)) {
+            Runnable loader = tabLoaders.get(selected);
+            if (loader != null) {
+              loader.run();
+            }
+          }
+          tabsToPages.get(selected).setVisible(true);
         });
     tabs.setOrientation(Tabs.Orientation.HORIZONTAL);
     tabs.setWidthFull();
@@ -424,8 +447,8 @@ public class PlayerView extends VerticalLayout {
     layout.setPadding(false);
     layout.setSpacing(false);
     layout.setAlignItems(FlexComponent.Alignment.STRETCH);
-    layout.setSizeFull(); // Add this
-    layout.setFlexGrow(1, pages); // Make pages div grow inside this layout
+    layout.setSizeFull();
+    layout.setFlexGrow(1, pages);
     return layout;
   }
 
@@ -477,10 +500,6 @@ public class PlayerView extends VerticalLayout {
         .setHeader("Opponent")
         .setSortable(true);
     grid.addColumn(Rivalry::getHeat).setHeader("Heat").setSortable(true);
-
-    if (playerWrestler != null) {
-      grid.setItems(rivalryService.getRivalriesForWrestler(playerWrestler.getId()));
-    }
     grid.setSizeFull();
     return grid;
   }
@@ -490,12 +509,6 @@ public class PlayerView extends VerticalLayout {
     grid.setId("inbox-grid");
     grid.addColumn(InboxItem::getDescription).setHeader("Message");
     grid.addColumn(InboxItem::getEventTimestamp).setHeader("Date");
-
-    if (playerWrestler != null) {
-      grid.setItems(inboxService.getInboxItemsForWrestler(playerWrestler, 10));
-    } else {
-      grid.setItems(Collections.emptyList());
-    }
     grid.setSizeFull();
     return grid;
   }
@@ -527,8 +540,6 @@ public class PlayerView extends VerticalLayout {
     grid.addColumn(Achievement::getName).setHeader("Achievement").setSortable(true);
     grid.addColumn(Achievement::getDescription).setHeader("Requirement");
     grid.addColumn(a -> a.getXpValue() + " XP").setHeader("Reward").setSortable(true);
-
-    grid.setItems(achievementRepository.findAll());
     grid.setSizeFull();
     return grid;
   }

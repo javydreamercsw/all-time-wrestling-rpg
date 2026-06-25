@@ -90,7 +90,6 @@ class PlayerViewTest extends AbstractViewTest {
         new PlayerView(
             wrestlerService,
             wrestlerStatsService,
-            showService,
             rivalryService,
             inboxService,
             securityUtils,
