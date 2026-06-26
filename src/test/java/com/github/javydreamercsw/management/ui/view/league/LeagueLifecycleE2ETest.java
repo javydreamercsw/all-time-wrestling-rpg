@@ -116,7 +116,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     toggleVaadinCheckbox(By.id("league-commissioner-plays-checkbox"));
 
     // Select player1
-    WebElement participantsCombo = waitForVaadinElement(driver, By.id("participants-combo"));
+    WebElement participantsCombo = waitForVaadinElement(driver, By.id("players-combo"));
     selectFromVaadinMultiSelectComboBox(participantsCombo, "player1");
 
     // Save
