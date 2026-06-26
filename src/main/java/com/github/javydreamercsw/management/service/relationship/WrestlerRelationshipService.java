@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.relationship;
 import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
 import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
 import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationshipRepository;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Instant;
@@ -37,6 +38,7 @@ public class WrestlerRelationshipService {
 
   private final WrestlerRelationshipRepository relationshipRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final TeamRepository teamRepository;
 
   /** Get all relationships for a wrestler. */
   public List<WrestlerRelationship> getRelationshipsForWrestler(final Long wrestlerId) {
@@ -112,8 +114,9 @@ public class WrestlerRelationshipService {
   }
 
   /**
-   * Improves relationships based on gameplay (e.g., tagging together). If no relationship exists,
-   * it might create a BEST_FRIEND one if they work together enough.
+   * Improves relationships for registered tag team partners who share a segment. A BEST_FRIEND bond
+   * is only created once accumulated positive points reach {@link #BEST_FRIEND_THRESHOLD}, and only
+   * for wrestlers who are registered as a team in the team table.
    */
   @Transactional
   public void improveGameplayRelationships(final List<Wrestler> wrestlers, final int points) {
@@ -126,31 +129,51 @@ public class WrestlerRelationshipService {
         Wrestler w1 = wrestlers.get(i);
         Wrestler w2 = wrestlers.get(j);
 
+        // Only accumulate bonds for wrestlers registered as a tag team — not random opponents.
+        if (teamRepository.findActiveTeamByBothWrestlers(w1, w2).isEmpty()) {
+          continue;
+        }
+
         List<WrestlerRelationship> existing = relationshipRepository.findBetweenWrestlers(w1, w2);
 
         if (existing.isEmpty()) {
-          // Create a new friendship bond starting at the earned points level, so bonds grow
-          // organically through repeated matches rather than jumping to an arbitrary high level.
-          createOrUpdateRelationship(
-              w1.getId(),
-              w2.getId(),
-              RelationshipType.BEST_FRIEND,
-              points,
-              true,
-              "Formed through tagging together");
-        } else {
-          // Improve all existing positive relationships
-          for (WrestlerRelationship rel : existing) {
-            if (isPositiveType(rel.getType())) {
-              int newLevel = Math.min(100, rel.getLevel() + points);
-              rel.setLevel(newLevel);
-              relationshipRepository.save(rel);
-            }
+          // No prior relationship history — skip. A bond only forms after repeated appearances.
+          continue;
+        }
+
+        // Accumulate on existing positive relationships
+        for (WrestlerRelationship rel : existing) {
+          if (isPositiveType(rel.getType())) {
+            int newLevel = Math.min(100, rel.getLevel() + points);
+            rel.setLevel(newLevel);
+            relationshipRepository.save(rel);
+          }
+        }
+
+        // Escalate to BEST_FRIEND once accumulated level crosses the threshold
+        boolean alreadyBestFriends =
+            existing.stream().anyMatch(r -> r.getType() == RelationshipType.BEST_FRIEND);
+        if (!alreadyBestFriends) {
+          int totalPositiveLevel =
+              existing.stream()
+                  .filter(r -> isPositiveType(r.getType()))
+                  .mapToInt(WrestlerRelationship::getLevel)
+                  .sum();
+          if (totalPositiveLevel >= BEST_FRIEND_THRESHOLD) {
+            createOrUpdateRelationship(
+                w1.getId(),
+                w2.getId(),
+                RelationshipType.BEST_FRIEND,
+                totalPositiveLevel,
+                true,
+                "Formed through sustained tag team partnership");
           }
         }
       }
     }
   }
+
+  static final int BEST_FRIEND_THRESHOLD = 50;
 
   private boolean isPositiveType(final RelationshipType type) {
     return switch (type) {
