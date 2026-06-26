@@ -108,12 +108,20 @@ public class StorylineExportService {
 
   private String buildSearchCorpus(final CampaignStoryline storyline) {
     StringBuilder sb = new StringBuilder();
-    if (storyline.getTitle() != null) sb.append(storyline.getTitle()).append(' ');
-    if (storyline.getDescription() != null) sb.append(storyline.getDescription()).append(' ');
+    if (storyline.getTitle() != null) {
+      sb.append(storyline.getTitle()).append(' ');
+    }
+    if (storyline.getDescription() != null) {
+      sb.append(storyline.getDescription()).append(' ');
+    }
     if (storyline.getMilestones() != null) {
       for (var m : storyline.getMilestones()) {
-        if (m.getNarrativeGoal() != null) sb.append(m.getNarrativeGoal()).append(' ');
-        if (m.getTitle() != null) sb.append(m.getTitle()).append(' ');
+        if (m.getNarrativeGoal() != null) {
+          sb.append(m.getNarrativeGoal()).append(' ');
+        }
+        if (m.getTitle() != null) {
+          sb.append(m.getTitle()).append(' ');
+        }
       }
     }
     return sb.toString().toLowerCase();
