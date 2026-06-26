@@ -176,7 +176,13 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestlerService).addBump(eq(1L), anyLong());
+    verify(wrestlerService)
+        .addBump(
+            eq(1L),
+            anyLong(),
+            eq(
+                com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource
+                    .WEAR_AND_TEAR));
   }
 
   @Test
@@ -189,7 +195,7 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestlerService, never()).addBump(anyLong(), anyLong());
+    verify(wrestlerService, never()).addBump(anyLong(), anyLong(), any());
   }
 
   @Test
@@ -201,6 +207,6 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestlerService, never()).addBump(anyLong(), anyLong());
+    verify(wrestlerService, never()).addBump(anyLong(), anyLong(), any());
   }
 }

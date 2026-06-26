@@ -93,7 +93,7 @@ public final class UrlUtil {
   static String getLanIpAddress() {
     try {
       for (NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-        if (!iface.isUp() || iface.isLoopback() || iface.isVirtual()) {
+        if (!iface.isUp() || iface.isLoopback() || iface.isVirtual() || iface.isPointToPoint()) {
           continue;
         }
         for (InetAddress addr : Collections.list(iface.getInetAddresses())) {

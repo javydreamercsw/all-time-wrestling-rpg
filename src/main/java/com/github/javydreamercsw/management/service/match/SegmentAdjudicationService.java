@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -247,12 +248,14 @@ public class SegmentAdjudicationService {
     processRewards(segment, multiplier);
     applyOutcomeMatrix(segment, winners, losers);
     applyRatingAndNoise(segment);
-    applyWearAndTear(segment);
+    Set<Long> wearAndTearBumpedIds = applyWearAndTear(segment);
     applyRingsideActions(segment);
     applyTitleChange(segment, winners, losers);
 
     Long universeId =
         segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
+
+    assignBumps(segment, universeId, wearAndTearBumpedIds);
 
     applyFactionAffinity(segment, winners, universeId);
     applyHeatToRivaltiesAndFeuds(segment, segment.getWrestlers(), universeId);
@@ -738,8 +741,6 @@ public class SegmentAdjudicationService {
       }
     }
 
-    assignBumps(segment, universeId);
-
     // Improve relationships between participants based on match quality
     if (roll >= 15) {
       relationshipService.improveGameplayRelationships(segment.getWrestlers(), roll >= 18 ? 2 : 1);
@@ -913,7 +914,10 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private void assignBumps(@NonNull final Segment segment, final Long universeId) {
+  private void assignBumps(
+      @NonNull final Segment segment,
+      final Long universeId,
+      @NonNull final Set<Long> alreadyBumpedIds) {
     for (SegmentRule rule : segment.getSegmentRules()) {
       if (rule.getBumpAddition() == null) {
         continue;
@@ -921,28 +925,41 @@ public class SegmentAdjudicationService {
       switch (rule.getBumpAddition()) {
         case WINNERS:
           for (Wrestler winner : segment.getWinners()) {
-            if (winner.getId() != null) {
+            if (winner.getId() != null && !alreadyBumpedIds.contains(winner.getId())) {
               GeneralSecurityUtils.runAsAdmin(
-                      () -> wrestlerService.addBump(winner.getId(), universeId))
-                  .ifPresent(w -> log.debug("Added bump to winner {}", w.getName()));
+                      () -> wrestlerService.addBump(winner.getId(), universeId, BumpSource.RULE))
+                  .ifPresent(w -> log.debug("Added rule bump to winner {}", w.getName()));
+            } else if (winner.getId() != null) {
+              log.debug(
+                  "Skipping rule bump for winner {} — already bumped by wear and tear",
+                  winner.getName());
             }
           }
           break;
         case LOSERS:
           for (Wrestler loser : segment.getLosers()) {
-            if (loser.getId() != null) {
+            if (loser.getId() != null && !alreadyBumpedIds.contains(loser.getId())) {
               GeneralSecurityUtils.runAsAdmin(
-                      () -> wrestlerService.addBump(loser.getId(), universeId))
-                  .ifPresent(w -> log.debug("Added bump to loser {}", w.getName()));
+                      () -> wrestlerService.addBump(loser.getId(), universeId, BumpSource.RULE))
+                  .ifPresent(w -> log.debug("Added rule bump to loser {}", w.getName()));
+            } else if (loser.getId() != null) {
+              log.debug(
+                  "Skipping rule bump for loser {} — already bumped by wear and tear",
+                  loser.getName());
             }
           }
           break;
         case ALL:
           for (Wrestler participant : segment.getWrestlers()) {
-            if (participant.getId() != null) {
+            if (participant.getId() != null && !alreadyBumpedIds.contains(participant.getId())) {
               GeneralSecurityUtils.runAsAdmin(
-                      () -> wrestlerService.addBump(participant.getId(), universeId))
-                  .ifPresent(w -> log.debug("Added bump to participant {}", w.getName()));
+                      () ->
+                          wrestlerService.addBump(participant.getId(), universeId, BumpSource.RULE))
+                  .ifPresent(w -> log.debug("Added rule bump to participant {}", w.getName()));
+            } else if (participant.getId() != null) {
+              log.debug(
+                  "Skipping rule bump for participant {} — already bumped by wear and tear",
+                  participant.getName());
             }
           }
           break;
@@ -964,10 +981,12 @@ public class SegmentAdjudicationService {
                 rivalry.getId(), diceBag.roll(), diceBag.roll(), threshold));
   }
 
-  private void applyWearAndTear(@NonNull final Segment segment) {
+  private Set<Long> applyWearAndTear(@NonNull final Segment segment) {
+    Set<Long> bumpedIds = new HashSet<>();
+
     if (SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())
         || !gameSettingService.isWearAndTearEnabled()) {
-      return;
+      return bumpedIds;
     }
 
     int baseLoss = 1 + random.nextInt(3); // 1-3% base loss
@@ -1004,12 +1023,15 @@ public class SegmentAdjudicationService {
         log.info(
             "Wear-and-tear bump triggered for {} (condition: {}%, chance: {}%)",
             wrestler.getName(), newCondition, bumpChance);
-        wrestlerService.addBump(wrestler.getId(), universeId);
+        wrestlerService.addBump(wrestler.getId(), universeId, BumpSource.WEAR_AND_TEAR);
+        bumpedIds.add(wrestler.getId());
       }
 
       // Check for retirement
       retirementService.checkRetirement(wrestler, universeId);
     }
+
+    return bumpedIds;
   }
 
   private int calculateBaseRating() {
