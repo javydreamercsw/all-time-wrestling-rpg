@@ -21,6 +21,8 @@ import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import java.time.LocalDate;
@@ -43,12 +45,18 @@ class DramaEventSchedulerTest {
 
   @Mock private DramaEventService dramaEventService;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private UniverseRepository universeRepository;
 
   private DramaEventScheduler scheduler;
 
+  private Universe universe1;
+
   @BeforeEach
   void setUp() {
-    scheduler = new DramaEventScheduler(dramaEventService, wrestlerRepository);
+    scheduler = new DramaEventScheduler(dramaEventService, wrestlerRepository, universeRepository);
+    universe1 = new Universe();
+    universe1.setId(1L);
+    when(universeRepository.findAll()).thenReturn(List.of(universe1));
   }
 
   // ==================== onGameDateChanged tests ====================

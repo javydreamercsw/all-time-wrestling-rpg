@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -41,6 +42,14 @@ public class HolidayService {
 
   public List<Holiday> findAll() {
     return repository.findAll();
+  }
+
+  public List<Holiday> findAll(final Sort sort) {
+    return repository.findAll(sort);
+  }
+
+  public int count() {
+    return (int) repository.count();
   }
 
   public Holiday save(final Holiday holiday) {

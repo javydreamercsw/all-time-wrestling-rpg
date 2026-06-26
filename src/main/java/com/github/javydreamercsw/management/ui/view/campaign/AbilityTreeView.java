@@ -47,6 +47,7 @@ public class AbilityTreeView extends VerticalLayout {
 
   private Campaign currentCampaign;
   private Span tokenDisplay;
+  private HorizontalLayout abilitiesLayout;
 
   @Autowired
   public AbilityTreeView(
@@ -84,17 +85,20 @@ public class AbilityTreeView extends VerticalLayout {
 
     add(new Paragraph("Spend tokens to unlock abilities."));
 
-    HorizontalLayout abilitiesLayout = new HorizontalLayout();
-
-    abilitiesLayout.add(
-        createAbilityCard("Iron Man", "Reduces stamina cost of all moves by 1.", 8));
-    abilitiesLayout.add(createAbilityCard("High Flyer", "Increases agility rolls by +1.", 8));
-    abilitiesLayout.add(createAbilityCard("Hardcore Legend", "Weapon attacks deal +2 damage.", 8));
-
+    abilitiesLayout = new HorizontalLayout();
+    renderAbilityCards();
     add(abilitiesLayout);
     add(
         new Button(
             "Back to Dashboard", e -> UI.getCurrent().navigate(CampaignDashboardView.class)));
+  }
+
+  private void renderAbilityCards() {
+    abilitiesLayout.removeAll();
+    abilitiesLayout.add(
+        createAbilityCard("Iron Man", "Reduces stamina cost of all moves by 1.", 8));
+    abilitiesLayout.add(createAbilityCard("High Flyer", "Increases agility rolls by +1.", 8));
+    abilitiesLayout.add(createAbilityCard("Hardcore Legend", "Weapon attacks deal +2 damage.", 8));
   }
 
   private VerticalLayout createAbilityCard(
@@ -125,9 +129,8 @@ public class AbilityTreeView extends VerticalLayout {
 
       Notification.show("Unlocked " + abilityName + "!");
 
-      // Refresh UI
       tokenDisplay.setText("Available Skill Tokens: " + state.getSkillTokens());
-      // Ideally re-render buttons to update enabled state
+      renderAbilityCards();
     } else {
       Notification.show("Not enough tokens!");
     }

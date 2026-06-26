@@ -129,5 +129,12 @@ public class StaticEncounterDTO {
      * by pairing an expansion-gated choice with an ungated fallback. Null = always shown.
      */
     private String requiredExpansion;
+
+    /**
+     * Whether this choice is the intended/success path for storyline milestone evaluation. Defaults
+     * to true. Set to false on failure/wrong-choice branches so the milestone transitions via
+     * nextMilestoneOnFailure instead of nextMilestoneOnSuccess.
+     */
+    @Builder.Default private boolean intendedPath = true;
   }
 }
