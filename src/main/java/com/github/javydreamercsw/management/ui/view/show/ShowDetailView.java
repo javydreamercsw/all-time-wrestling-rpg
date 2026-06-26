@@ -1275,19 +1275,7 @@ public class ShowDetailView extends Main
         e ->
             segment.getSegmentRules().stream()
                 .findFirst()
-                .flatMap(
-                    r ->
-                        r.getId() != null
-                            ? java.util.Optional.of(r.getId())
-                            : java.util.Optional.empty())
-                .ifPresent(
-                    ruleId ->
-                        com.vaadin
-                            .flow
-                            .component
-                            .UI
-                            .getCurrent()
-                            .navigate("match-info/" + ruleId)));
+                .ifPresent(rule -> new MatchInfoDialog(rule).open()));
 
     return new VerticalLayout(
         summaryButton, narrateButton, editButton, deleteButton, qrButton, infoButton);
