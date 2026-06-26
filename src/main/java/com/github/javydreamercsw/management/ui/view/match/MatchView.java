@@ -688,12 +688,18 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     winnersCard.add(winnersComboBox);
 
-    if (!isPromo && canSubmitResult) {
+    boolean hasPlayerWrestler =
+        wrestlers.stream().filter(java.util.Objects::nonNull).anyMatch(w -> w.getAccount() != null);
+    if (!isPromo && canSubmitResult && hasPlayerWrestler) {
       VerticalLayout momentumLayout = new VerticalLayout();
       momentumLayout.setPadding(false);
       momentumLayout.setSpacing(false);
       momentumLayout.add(new Span("Final Momentum per Wrestler"));
-      for (Wrestler w : wrestlers.stream().filter(java.util.Objects::nonNull).toList()) {
+      for (Wrestler w :
+          wrestlers.stream()
+              .filter(java.util.Objects::nonNull)
+              .filter(w -> w.getAccount() != null)
+              .toList()) {
         IntegerField field = new IntegerField(w.getName());
         field.setId("final-momentum-" + w.getId());
         field.setPlaceholder("e.g. 3");
