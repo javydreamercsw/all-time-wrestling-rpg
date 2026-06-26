@@ -52,6 +52,38 @@ To ensure a fast feedback loop and efficient context usage, always follow this h
 - **Verification:** After a major refactor or replacement, verify the file content (using `read_file` if needed) to ensure that the surrounding logic remains intact and that no unintended deletions occurred.
 - **Context Awareness:** Always check for similar method names or patterns to avoid replacing the wrong occurrence when `allow_multiple` is false.
 
+## Repowise — Codebase Intelligence (mandatory usage rules)
+
+This repo is indexed by Repowise. Use its MCP tools **before** falling back to raw `Read`/`grep` for any file you haven't already opened this session.
+
+### Decision rule — prefer Repowise over file tools when:
+
+| You want to… | Use instead of Read/grep |
+|---|---|
+| Understand what a file/module does | `get_context(["path"])` — returns full skeleton (~37% of a Read) |
+| Read a specific method body | `get_symbol("path::MethodName")` — live-verified source bytes |
+| Read a line range you already know | `get_symbol("path:start-end")` — cheaper than a full Read |
+| Find where something is defined | `get_answer("where is X")` — semantic search with citations |
+| Understand why code is shaped a way | `get_why(query, targets)` — before any refactor or pattern change |
+| Assess risk before editing a hotspot | `get_risk(targets, changed_files)` — churn + blast radius |
+
+### Fallback to raw Read/grep only when:
+- The response contains `bounds: "approximate"` or `_meta.stale_warning`
+- `confidence` is `"low"` or `search_method` is `"bm25"`
+- The file is flagged `mostly_full` in the index
+- The symbol cannot be found (use `fallback_lines` from the result first)
+
+### Trust rules (never re-read after these):
+- `verified: true` on any response — content was checked against the live tree
+- `get_answer` with `confidence: "high"` or `grounding: "extracted"` — cite directly
+- `get_symbol` with live-verified bounds — quote without re-reading
+
+### Workflow pattern for editing a file:
+1. `get_context(["path"])` — orient with skeleton
+2. `get_symbol("path::TargetMethod")` — read the body you'll change
+3. Edit with `Edit` tool
+4. Run targeted tests (see Testing section above)
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
 
 ## Beads Issue Tracker
