@@ -1009,14 +1009,38 @@ public class SegmentAdjudicationService {
 
     Long universeId = universeContextService.getCurrentUniverseId();
 
+    // Build a map of wrestler ID -> reported final health for player-controlled wrestlers
+    Map<Long, Integer> reportedHealth =
+        segment.getParticipants().stream()
+            .filter(p -> p.getFinalHealth() != null && p.getWrestler().getAccount() != null)
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    p -> p.getWrestler().getId(),
+                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
+                        ::getFinalHealth,
+                    (a, b) -> a));
+
     for (Wrestler wrestler : segment.getWrestlers()) {
       WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
       int current = state.getPhysicalCondition();
-      int newCondition = Math.max(0, current - baseLoss);
+      int effectiveLoss;
+      if (wrestler.getAccount() != null && reportedHealth.containsKey(wrestler.getId())) {
+        // Player reported their actual end-health — derive loss from starting health
+        int startingHealth = wrestler.getStartingHealth();
+        int endHealth = reportedHealth.get(wrestler.getId());
+        int rawLoss = startingHealth > 0 ? (startingHealth - endHealth) * 100 / startingHealth : 0;
+        effectiveLoss = Math.max(0, rawLoss);
+        log.info(
+            "Using reported health for {}: starting={}, end={}, loss={}%",
+            wrestler.getName(), startingHealth, endHealth, effectiveLoss);
+      } else {
+        effectiveLoss = baseLoss;
+      }
+      int newCondition = Math.max(0, current - effectiveLoss);
       state.setPhysicalCondition(newCondition);
       log.info(
           "Applied {}% wear and tear to {} in league {}. New condition: {}%",
-          baseLoss, wrestler.getName(), universeId, newCondition);
+          effectiveLoss, wrestler.getName(), universeId, newCondition);
 
       int bumpChance = Math.max(0, 75 - newCondition);
       if (bumpChance > 0 && random.nextInt(100) < bumpChance) {
