@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
@@ -646,17 +647,23 @@ public class SegmentAdjudicationService {
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> winners,
       @NonNull final List<Wrestler> participants) {
-    // Evaluate Status Card triggers
     if (wrestlerStatusService.isStatusMechanicEnabled()) {
+      Map<Long, Integer> recordedMomentum =
+          segment.getParticipants().stream()
+              .filter(p -> p.getFinalMomentum() != null)
+              .collect(
+                  Collectors.toMap(
+                      p -> p.getWrestler().getId(), SegmentParticipant::getFinalMomentum));
       for (Wrestler participant : participants) {
         boolean lost = !winners.contains(participant);
-        // Use effective starting momentum as a proxy for final momentum for now.
-        // In the future, we could parse the narration or track it in the match engine.
-        int momentum = participant.getEffectiveStartingMomentum();
+        int finalMomentum =
+            recordedMomentum.getOrDefault(
+                participant.getId(), participant.getEffectiveStartingMomentum());
         participant
             .getStatuses()
             .forEach(
-                status -> wrestlerStatusService.evaluateTriggerConditions(status, momentum, lost));
+                status ->
+                    wrestlerStatusService.evaluateTriggerConditions(status, finalMomentum, lost));
       }
     }
   }

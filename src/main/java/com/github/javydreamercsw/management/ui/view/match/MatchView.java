@@ -79,6 +79,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
@@ -93,8 +94,10 @@ import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,6 +135,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private TextArea narrationArea;
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
+  private Map<Long, IntegerField> momentumFields = new HashMap<>();
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
   private Button aiGenerateButton;
@@ -682,7 +686,35 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     saveWinnersButton.setWidthFull();
     saveWinnersButton.setId("save-winners-button");
 
-    winnersCard.add(winnersComboBox, saveWinnersButton);
+    winnersCard.add(winnersComboBox);
+
+    if (!isPromo && canSubmitResult) {
+      VerticalLayout momentumLayout = new VerticalLayout();
+      momentumLayout.setPadding(false);
+      momentumLayout.setSpacing(false);
+      momentumLayout.add(new Span("Final Momentum per Wrestler"));
+      for (Wrestler w : wrestlers.stream().filter(java.util.Objects::nonNull).toList()) {
+        IntegerField field = new IntegerField(w.getName());
+        field.setId("final-momentum-" + w.getId());
+        field.setPlaceholder("e.g. 3");
+        field.setWidthFull();
+        Integer existing =
+            segment.getParticipants().stream()
+                .filter(p -> w.getId().equals(p.getWrestler().getId()))
+                .map(
+                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
+                        ::getFinalMomentum)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+        field.setValue(existing);
+        momentumFields.put(w.getId(), field);
+        momentumLayout.add(field);
+      }
+      winnersCard.add(momentumLayout);
+    }
+
+    winnersCard.add(saveWinnersButton);
     winnersCard.setVisible(canSubmitResult);
     sideCol.add(winnersCard);
 
@@ -1141,6 +1173,18 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         winners.stream().map(Wrestler::getName).toList());
     segment.setWinners(winners);
     segment.setNotes(feedbackArea.getValue());
+
+    // Persist final momentum values entered by the player/booker
+    if (!momentumFields.isEmpty()) {
+      for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
+          segment.getParticipants()) {
+        IntegerField field = momentumFields.get(p.getWrestler().getId());
+        if (field != null) {
+          p.setFinalMomentum(field.getValue());
+        }
+      }
+    }
+
     try {
       // runAsAdmin mirrors the pattern used for referee assignment (line ~252): PLAYER-role users
       // cannot call updateSegment directly because canUserUpdateSegment requires wrestler.account
