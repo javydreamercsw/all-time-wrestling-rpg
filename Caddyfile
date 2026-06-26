@@ -19,7 +19,7 @@ https://localhost:443 {
     }
 }
 
-https://192.168.4.47:443 {
+https://{$LAN_IP}:443 {
     reverse_proxy localhost:8080 {
         header_up X-Forwarded-Proto https
         header_up X-Forwarded-For {remote_host}

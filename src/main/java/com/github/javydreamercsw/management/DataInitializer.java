@@ -641,9 +641,6 @@ public class DataInitializer implements Initializable {
   }
 
   private void loadSegmentRulesFromFile() {
-    if (skipIfNotEmpty && segmentRuleService.count() > 0) {
-      return;
-    }
     ClassPathResource resource = new ClassPathResource("segment_rules.json");
     if (resource.exists()) {
       log.debug("Loading segment rules from file: {}", resource.getPath());
