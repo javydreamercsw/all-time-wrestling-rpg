@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.event.dto;
 
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import lombok.Getter;
 import lombok.NonNull;
@@ -25,10 +26,14 @@ import org.springframework.context.ApplicationEvent;
 public class WrestlerBumpEvent extends ApplicationEvent {
 
   private final WrestlerState wrestlerState;
+  private final BumpSource bumpSource;
 
   public WrestlerBumpEvent(
-      @NonNull final Object source, @NonNull final WrestlerState wrestlerState) {
+      @NonNull final Object source,
+      @NonNull final WrestlerState wrestlerState,
+      @NonNull final BumpSource bumpSource) {
     super(source);
     this.wrestlerState = wrestlerState;
+    this.bumpSource = bumpSource;
   }
 }
