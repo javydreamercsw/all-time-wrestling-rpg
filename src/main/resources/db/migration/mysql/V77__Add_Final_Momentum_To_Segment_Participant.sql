@@ -1,1 +1,1 @@
-ALTER TABLE segment_participant ADD COLUMN IF NOT EXISTS final_momentum INT;
+ALTER TABLE segment_participant ADD COLUMN final_momentum INT;
