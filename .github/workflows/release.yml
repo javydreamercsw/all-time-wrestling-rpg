@@ -24,12 +24,55 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
+  # 0. PREFLIGHT — verify the source branch tip has all checks passing before
+  #    we invest any CI time in the release pipeline.
+  # ---------------------------------------------------------------------------
+  preflight_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all checks pass on source branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA=$(gh api "repos/${{ github.repository }}/commits/${{ github.ref_name }}" \
+                --jq '.sha')
+          echo "Checking CI status for SHA $SHA on branch ${{ github.ref_name }}"
+
+          # Collect all check runs for the SHA
+          RESULTS=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs" \
+                    --paginate --jq '
+                      .check_runs[]
+                      | select(.name != "${{ github.workflow }}")
+                      | {name: .name, status: .status, conclusion: .conclusion}')
+
+          echo "$RESULTS"
+
+          # Fail if any check is still in progress
+          IN_PROGRESS=$(echo "$RESULTS" | jq -r 'select(.status != "completed") | .name')
+          if [ -n "$IN_PROGRESS" ]; then
+            echo "::error::The following checks are not yet complete:"
+            echo "$IN_PROGRESS"
+            exit 1
+          fi
+
+          # Fail if any completed check did not succeed
+          FAILED=$(echo "$RESULTS" | jq -r 'select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "\(.name): \(.conclusion)"')
+          if [ -n "$FAILED" ]; then
+            echo "::error::The following checks did not pass:"
+            echo "$FAILED"
+            exit 1
+          fi
+
+          echo "All checks passed — proceeding with release."
+
+  # ---------------------------------------------------------------------------
   # 1. SETUP — version bump, migration metadata, snapshots, changelog.
   #    Ends with a git push so downstream jobs check out a branch that already
   #    has the versioned source.  No screenshots or videos here — those run in
   #    parallel in the next stage.
   # ---------------------------------------------------------------------------
   setup_release:
+    needs: preflight_checks
     runs-on: ubuntu-latest
     outputs:
       is_patch: ${{ steps.release_type.outputs.is_patch }}

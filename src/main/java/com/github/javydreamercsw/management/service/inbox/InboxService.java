@@ -33,6 +33,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -263,10 +264,9 @@ public class InboxService {
           return predicate;
         };
 
-    Sort sort = Sort.by(Sort.Direction.DESC, "eventTimestamp");
-    Pageable pageable = Pageable.ofSize(limit).withPage(0);
+    Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "eventTimestamp"));
 
-    return inboxRepository.findAll(spec, sort);
+    return inboxRepository.findAll(spec, pageable).getContent();
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -306,7 +306,7 @@ public class InboxService {
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public InboxItem addInboxItem(@NonNull final Wrestler wrestler, @NonNull final String message) {
-    InboxEventType eventType = eventTypeRegistry.getEventTypes().get(0);
+    InboxEventType eventType = eventTypeRegistry.getEventTypes().getFirst();
     return createInboxItem(
         eventType, message, wrestler.getId().toString(), InboxItemTarget.TargetType.WRESTLER);
   }
