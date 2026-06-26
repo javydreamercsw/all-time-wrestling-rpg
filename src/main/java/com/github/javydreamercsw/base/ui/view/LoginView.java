@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.ui.view;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.ui.view.account.ForgotPasswordView;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
@@ -103,14 +104,33 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
     // Create header with logo placeholder
     Div header = createHeader();
 
-    // Add remember me note
-    Paragraph rememberMeNote = new Paragraph("Use 'Remember me' to stay signed in for 7 days");
-    rememberMeNote.addClassNames(
-        LumoUtility.TextColor.SECONDARY,
-        LumoUtility.FontSize.SMALL,
-        LumoUtility.TextAlignment.CENTER);
+    // Remember-me checkbox: when checked, injects a hidden remember-me field before form submission
+    Checkbox rememberMeCheckbox = new Checkbox("Remember me for 7 days");
+    rememberMeCheckbox.setId("remember-me-checkbox");
+    rememberMeCheckbox.addClassNames(LumoUtility.Margin.Top.SMALL);
+    loginForm.addLoginListener(
+        e -> {
+          boolean checked = rememberMeCheckbox.getValue();
+          loginForm
+              .getElement()
+              .executeJs(
+                  """
+                  var f = this.shadowRoot ? this.shadowRoot.querySelector('form') : this.querySelector('form');
+                  if (!f) return;
+                  var existing = f.querySelector('input[name=\\'remember-me\\']');
+                  if (existing) existing.remove();
+                  if ($0) {
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = 'remember-me';
+                    inp.value = 'on';
+                    f.appendChild(inp);
+                  }
+                  """,
+                  checked);
+        });
 
-    add(header, loginForm, rememberMeNote);
+    add(header, loginForm, rememberMeCheckbox);
   }
 
   private Div createHeader() {
