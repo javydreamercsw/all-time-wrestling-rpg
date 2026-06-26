@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.drama;
 
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import java.time.temporal.ChronoUnit;
@@ -48,6 +50,7 @@ public class DramaEventScheduler {
 
   private final DramaEventService dramaEventService;
   private final WrestlerRepository wrestlerRepository;
+  private final UniverseRepository universeRepository;
   private final Random random = new Random();
 
   /**
@@ -105,14 +108,22 @@ public class DramaEventScheduler {
 
             log.info("Generating {} random drama events", eventsToGenerate);
 
+            List<Universe> universes = universeRepository.findAll();
+
             for (int i = 0; i < eventsToGenerate; i++) {
               Long randomWrestlerId = wrestlerIds.get(random.nextInt(wrestlerIds.size()));
 
               // Safety check: skip if this wrestler already has too many active injuries (max 3)
-              // This helps prevent injury accumulation if the scheduler runs too frequently.
-              // Default to universe 1 for now.
-              if (dramaEventService.getActiveInjuryCount(randomWrestlerId, 1L) < 3) {
-                generateSingleRandomEvent(randomWrestlerId);
+              // in any universe. This helps prevent injury accumulation if the scheduler runs too
+              // frequently.
+              boolean tooManyInjuries =
+                  universes.stream()
+                      .anyMatch(
+                          u ->
+                              dramaEventService.getActiveInjuryCount(randomWrestlerId, u.getId())
+                                  >= 3);
+              if (!tooManyInjuries) {
+                generateSingleRandomEvent(randomWrestlerId, universes);
               } else {
                 log.debug(
                     "Skipping drama event for wrestler {} - too many active injuries",
@@ -233,21 +244,26 @@ public class DramaEventScheduler {
     return 3;
   }
 
-  /** Generate a single random drama event. */
-  private void generateSingleRandomEvent(@NonNull final Long wrestlerId) {
-    try {
-      // Generate the event - default to universe 1 for now.
-      var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId, 1L);
+  /** Generate a single random drama event for all universes. */
+  private void generateSingleRandomEvent(
+      @NonNull final Long wrestlerId, @NonNull final List<Universe> universes) {
+    for (Universe universe : universes) {
+      try {
+        var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId, universe.getId());
 
-      if (eventOpt.isPresent()) {
-        var event = eventOpt.get();
-        log.info("Generated drama event: {} ({})", event.getTitle(), event.getSeverity());
-      } else {
-        log.warn("Failed to generate drama event for wrestler ID: {}", wrestlerId);
+        if (eventOpt.isPresent()) {
+          var event = eventOpt.get();
+          log.info("Generated drama event: {} ({})", event.getTitle(), event.getSeverity());
+        } else {
+          log.warn(
+              "Failed to generate drama event for wrestler ID: {} in universe ID: {}",
+              wrestlerId,
+              universe.getId());
+        }
+
+      } catch (Exception e) {
+        log.error("Error generating single drama event", e);
       }
-
-    } catch (Exception e) {
-      log.error("Error generating single drama event", e);
     }
   }
 }

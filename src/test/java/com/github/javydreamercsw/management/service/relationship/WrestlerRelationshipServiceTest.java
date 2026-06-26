@@ -107,12 +107,38 @@ class WrestlerRelationshipServiceTest {
 
     relationshipService.improveGameplayRelationships(List.of(w1, w2), 5);
 
-    // Should have created a BEST_FRIEND relationship
+    // New relationship level must equal the points argument, not a hardcoded value
     verify(relationshipRepository)
-        .save(
-            argThat(
-                r ->
-                    r.getType() == RelationshipType.BEST_FRIEND
-                        && r.getLevel() == 10)); // Initial level for new gameplay relationship
+        .save(argThat(r -> r.getType() == RelationshipType.BEST_FRIEND && r.getLevel() == 5));
+  }
+
+  @Test
+  void testImproveGameplayRelationships_newRelationship_usesPointsAsInitialLevel() {
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
+    when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of());
+    when(relationshipRepository.save(any(WrestlerRelationship.class)))
+        .thenAnswer(i -> i.getArguments()[0]);
+
+    // points = 1 (low-quality roll) — new bond must start at level 1, not 10
+    relationshipService.improveGameplayRelationships(List.of(w1, w2), 1);
+
+    verify(relationshipRepository)
+        .save(argThat(r -> r.getType() == RelationshipType.BEST_FRIEND && r.getLevel() == 1));
+  }
+
+  @Test
+  void testImproveGameplayRelationships_newRelationship_pointsTwoStartsAtTwo() {
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
+    when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of());
+    when(relationshipRepository.save(any(WrestlerRelationship.class)))
+        .thenAnswer(i -> i.getArguments()[0]);
+
+    // points = 2 (high-quality roll) — new bond must start at level 2, not 10
+    relationshipService.improveGameplayRelationships(List.of(w1, w2), 2);
+
+    verify(relationshipRepository)
+        .save(argThat(r -> r.getType() == RelationshipType.BEST_FRIEND && r.getLevel() == 2));
   }
 }

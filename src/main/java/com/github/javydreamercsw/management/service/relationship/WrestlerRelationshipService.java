@@ -129,13 +129,13 @@ public class WrestlerRelationshipService {
         List<WrestlerRelationship> existing = relationshipRepository.findBetweenWrestlers(w1, w2);
 
         if (existing.isEmpty()) {
-          // Potentially create a new friendship if they are on the same side and performed well
-          // For now, let's just create a level 10 BEST_FRIEND bond if they didn't have one
+          // Create a new friendship bond starting at the earned points level, so bonds grow
+          // organically through repeated matches rather than jumping to an arbitrary high level.
           createOrUpdateRelationship(
               w1.getId(),
               w2.getId(),
               RelationshipType.BEST_FRIEND,
-              10,
+              points,
               true,
               "Formed through tagging together");
         } else {

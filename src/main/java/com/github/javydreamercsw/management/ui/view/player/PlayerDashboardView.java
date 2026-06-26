@@ -192,6 +192,7 @@ public class PlayerDashboardView extends VerticalLayout {
   private Component createWrestlerSwitcher(
       @NonNull Account account, @NonNull java.util.List<Wrestler> owned, final Wrestler active) {
     ComboBox<Wrestler> switcher = new ComboBox<>("Active Wrestler");
+    switcher.setId("active-wrestler-switcher");
     switcher.setItems(owned);
     switcher.setItemLabelGenerator(Wrestler::getName);
     if (active != null) {
