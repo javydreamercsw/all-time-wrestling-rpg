@@ -63,6 +63,7 @@ import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.RingsideActionComponent;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.show.MatchInfoDialog;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -328,15 +329,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           .findFirst()
           .ifPresent(
               rule -> {
-                if (rule.getId() != null) {
-                  Button howToPlayButton =
-                      new Button("How to Play", new Icon(VaadinIcon.INFO_CIRCLE_O));
-                  howToPlayButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-                  howToPlayButton.setId("how-to-play-button");
-                  howToPlayButton.addClickListener(
-                      e -> UI.getCurrent().navigate("match-info/" + rule.getId()));
-                  header.add(howToPlayButton);
-                }
+                Button howToPlayButton =
+                    new Button("How to Play", new Icon(VaadinIcon.INFO_CIRCLE_O));
+                howToPlayButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+                howToPlayButton.setId("how-to-play-button");
+                howToPlayButton.addClickListener(e -> new MatchInfoDialog(rule).open());
+                header.add(howToPlayButton);
               });
     }
 
