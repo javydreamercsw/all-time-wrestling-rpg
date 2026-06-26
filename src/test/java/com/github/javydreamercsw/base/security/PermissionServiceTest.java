@@ -22,8 +22,12 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collections;
@@ -42,6 +46,7 @@ class PermissionServiceTest {
   private WrestlerRepository wrestlerRepository;
   private AccountRepository accountRepository;
   private DeckRepository deckRepository;
+  private UniverseMembershipRepository universeMembershipRepository;
   private PermissionService permissionService;
 
   @BeforeEach
@@ -49,8 +54,10 @@ class PermissionServiceTest {
     wrestlerRepository = mock(WrestlerRepository.class);
     accountRepository = mock(AccountRepository.class);
     deckRepository = mock(DeckRepository.class);
+    universeMembershipRepository = mock(UniverseMembershipRepository.class);
     permissionService =
-        new PermissionService(wrestlerRepository, accountRepository, deckRepository);
+        new PermissionService(
+            wrestlerRepository, accountRepository, deckRepository, universeMembershipRepository);
 
     UserDetails userDetails = new User("testuser", "password", Collections.emptyList());
     var auth = new UsernamePasswordAuthenticationToken(userDetails, null, Collections.emptyList());
@@ -173,5 +180,76 @@ class PermissionServiceTest {
     assertThat(permissionService.isOwner(10L, "Deck")).isTrue();
 
     assertThat(permissionService.isOwner(1L, "Unknown")).isFalse();
+  }
+
+  @Test
+  void testIsOwnerCampaign() {
+    Account account = new Account("testuser", "password", "test@example.com");
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    Campaign campaign = new Campaign();
+    campaign.setWrestler(wrestler);
+
+    when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(wrestler));
+
+    assertThat(permissionService.isOwner(campaign)).isTrue();
+
+    Wrestler otherWrestler = new Wrestler();
+    otherWrestler.setId(2L);
+    Campaign otherCampaign = new Campaign();
+    otherCampaign.setWrestler(otherWrestler);
+    assertThat(permissionService.isOwner(otherCampaign)).isFalse();
+  }
+
+  @Test
+  void testIsOwnerUniverseAsOwnerRole() {
+    Account account = new Account("testuser", "password", "test@example.com");
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    Universe universe = Universe.builder().name("Test Universe").build();
+
+    UniverseMembership ownerMembership = new UniverseMembership();
+    ownerMembership.setRole(UniverseMembership.UniverseMemberRole.OWNER);
+
+    when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(wrestler));
+    when(universeMembershipRepository.findByAccountAndUniverse(account, universe))
+        .thenReturn(Optional.of(ownerMembership));
+
+    assertThat(permissionService.isOwner(universe)).isTrue();
+  }
+
+  @Test
+  void testIsOwnerUniverseAsMemberRole() {
+    Account account = new Account("testuser", "password", "test@example.com");
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    Universe universe = Universe.builder().name("Test Universe").build();
+
+    UniverseMembership memberMembership = new UniverseMembership();
+    memberMembership.setRole(UniverseMembership.UniverseMemberRole.MEMBER);
+
+    when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(wrestler));
+    when(universeMembershipRepository.findByAccountAndUniverse(account, universe))
+        .thenReturn(Optional.of(memberMembership));
+
+    assertThat(permissionService.isOwner(universe)).isFalse();
+  }
+
+  @Test
+  void testIsOwnerUniverseNotMember() {
+    Account account = new Account("testuser", "password", "test@example.com");
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    Universe universe = Universe.builder().name("Test Universe").build();
+
+    when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(wrestler));
+    when(universeMembershipRepository.findByAccountAndUniverse(account, universe))
+        .thenReturn(Optional.empty());
+
+    assertThat(permissionService.isOwner(universe)).isFalse();
   }
 }

@@ -175,9 +175,9 @@ public class SecurityUtils {
     if (isAdmin() || isBooker()) {
       return true;
     }
-    // Players usually can't delete, but if they can, it would be their own content.
-    // For now, let's assume players can't delete unless specified otherwise.
-    // If we want to allow players to delete their own decks, we can add that check here.
+    if (isPlayer()) {
+      return permissionService.isOwner(target);
+    }
     return false;
   }
 
