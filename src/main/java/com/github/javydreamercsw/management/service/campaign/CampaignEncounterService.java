@@ -477,16 +477,11 @@ public class CampaignEncounterService {
           .forEach(key -> wrestlerStatusService.assignStatus(campaign.getWrestler().getId(), key));
     }
 
-    // Evaluate storyline progress
-    // If it's a POST_MATCH encounter, we already evaluated the match.
-    // For other encounters, we can consider the choice as a "success" unless we add failure logic
-    // to choices.
-    // For now, any choice made advances the current milestone if it's the intended path.
-    if (campaign.getState().getActiveStoryline() != null) {
-      // In this simple implementation, we assume choosing ANY option in a narrative encounter
-      // counts as a 'success' for that beat of the story, as failure is usually reserved for
-      // matches.
-      storylineDirectorService.evaluateProgress(campaign, true);
+    // Evaluate storyline progress for non-match encounters.
+    // Match outcomes are evaluated separately via POST_MATCH processing.
+    if (campaign.getState().getActiveStoryline() != null
+        && !"MATCH".equals(choice.getNextPhase())) {
+      storylineDirectorService.evaluateProgress(campaign, choice.isIntendedPath());
     }
 
     CampaignState state = campaign.getState();
@@ -628,6 +623,7 @@ public class CampaignEncounterService {
                         .nextEncounterId(sc.getNextEncounterId())
                         .onWinNextEncounterId(sc.getOnWinNextEncounterId())
                         .onLossNextEncounterId(sc.getOnLossNextEncounterId())
+                        .intendedPath(sc.isIntendedPath())
                         .build())
             .toList();
 

@@ -42,6 +42,7 @@ import jakarta.annotation.security.PermitAll;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 /**
@@ -159,49 +160,30 @@ public class HolidayListView extends Main {
         .setHeader("Actions")
         .setFlexGrow(1);
 
-    // Configure data provider
+    // Configure data provider — sorting is pushed down to the database via JPA Sort.
     grid.setDataProvider(
         DataProvider.fromCallbacks(
             query -> {
               int offset = query.getOffset();
               int limit = query.getLimit();
 
-              // Apply sorting
-              String sortProperty = "description"; // default
-              boolean ascending = true;
+              Sort.Direction direction = Sort.Direction.ASC;
+              String sortProperty = "description";
 
               if (!query.getSortOrders().isEmpty()) {
                 var sortOrder = query.getSortOrders().get(0);
                 sortProperty = sortOrder.getSorted();
-                ascending = sortOrder.getDirection() == SortDirection.ASCENDING;
+                direction =
+                    sortOrder.getDirection() == SortDirection.ASCENDING
+                        ? Sort.Direction.ASC
+                        : Sort.Direction.DESC;
               }
 
-              final String finalSortProperty = sortProperty;
-              final boolean finalAscending = ascending;
-
-              // This part needs adjustment based on HolidayService.findAll() capabilities
-              // For simplicity, let's assume findAll() returns a sortable list for now
-              // In a real app, you'd integrate with Spring Data JPA Pageable and Sort
-              return holidayService.findAll().stream()
-                  .sorted(
-                      (h1, h2) -> {
-                        int compare =
-                            switch (finalSortProperty) {
-                              case "description" ->
-                                  h1.getDescription().compareTo(h2.getDescription());
-                              case "theme" -> h1.getTheme().compareTo(h2.getTheme());
-                              case "type" -> h1.getType().compareTo(h2.getType());
-                              default -> 0;
-                            };
-                        return finalAscending ? compare : -compare;
-                      })
+              return holidayService.findAll(Sort.by(direction, sortProperty)).stream()
                   .skip(offset)
                   .limit(limit);
             },
-            query ->
-                holidayService
-                    .findAll()
-                    .size())); // This count also needs adjustment for filtering/sorting
+            query -> holidayService.count()));
   }
 
   private void configureToolbar() {

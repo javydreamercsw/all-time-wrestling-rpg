@@ -66,5 +66,12 @@ public class CampaignEncounterResponseDTO {
 
     /** After a MATCH loss: jump to this encounter card ID. */
     private String onLossNextEncounterId;
+
+    /**
+     * Whether this choice represents the intended/success path for storyline milestone evaluation.
+     * Defaults to true for backwards compatibility. Set to false for failure/wrong-choice branches
+     * so the storyline advances to nextMilestoneOnFailure instead of nextMilestoneOnSuccess.
+     */
+    @Builder.Default private boolean intendedPath = true;
   }
 }

@@ -17,13 +17,17 @@
 package com.github.javydreamercsw.management.ui.view.league;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.league.LeagueService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -31,11 +35,14 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.tabs.Tabs;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 class LeagueDashboardViewTest extends AbstractViewTest {
 
@@ -73,5 +80,63 @@ class LeagueDashboardViewTest extends AbstractViewTest {
   void shouldRenderStandingsGrid() {
     Grid<?> grid = _get(view, Grid.class);
     assertTrue(grid.isVisible());
+  }
+
+  @Nested
+  @DisplayName("Standings sorting")
+  class StandingsSorting {
+
+    private League league;
+
+    @BeforeEach
+    void setup() {
+      MockitoAnnotations.openMocks(LeagueDashboardViewTest.this);
+      league = new League();
+      league.setName("Sort League");
+      when(leagueService.getLeagueById(2L)).thenReturn(Optional.of(league));
+      when(showService.getShowsByLeague(any())).thenReturn(Collections.emptyList());
+    }
+
+    private LeagueRoster rosterEntry(String name, int wins, int losses, int draws) {
+      Wrestler w = new Wrestler();
+      w.setName(name);
+      Account owner = new Account();
+      owner.setUsername(name);
+      LeagueRoster r = new LeagueRoster();
+      r.setWrestler(w);
+      r.setOwner(owner);
+      r.setWins(wins);
+      r.setLosses(losses);
+      r.setDraws(draws);
+      return r;
+    }
+
+    @Test
+    @DisplayName("Standings grid shows highest-wins roster entry first")
+    void standingsGridSortsWinsDescending() {
+      LeagueRoster loser = rosterEntry("Loser", 0, 5, 0);
+      LeagueRoster winner = rosterEntry("Winner", 5, 0, 0);
+      LeagueRoster midCard = rosterEntry("MidCard", 2, 3, 0);
+
+      when(leagueRosterRepository.findByLeagueWithWrestlerStates(any()))
+          .thenReturn(List.of(loser, midCard, winner));
+
+      LeagueDashboardView sortView =
+          new LeagueDashboardView(
+              leagueService, showService, leagueRosterRepository, leagueMembershipRepository);
+      sortView.setParameter(null, 2L);
+      UI.getCurrent().add(sortView);
+
+      @SuppressWarnings("unchecked")
+      Grid<LeagueRoster> grid = (Grid<LeagueRoster>) _get(sortView, Grid.class);
+      List<LeagueRoster> items = grid.getListDataView().getItems().toList();
+
+      assertEquals(
+          "Winner", items.get(0).getWrestler().getName(), "Highest-wins entry should be first");
+      assertEquals(
+          "Loser",
+          items.get(items.size() - 1).getWrestler().getName(),
+          "Lowest-wins entry should be last");
+    }
   }
 }
