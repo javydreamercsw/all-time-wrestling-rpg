@@ -76,11 +76,9 @@ public class StorylineExportService {
         .shortDescription(storyline.getDescription())
         .introText(storyline.getDescription())
         .aiSystemPrompt(aiSystemPrompt)
-        .difficulty(
-            com.github.javydreamercsw.management.domain.campaign.Difficulty
-                .MEDIUM) // Default to MEDIUM
-        .tagTeam(false) // Needs to be inferred from storyline content
-        .tournament(false) // Needs to be inferred from storyline content
+        .difficulty(com.github.javydreamercsw.management.domain.campaign.Difficulty.MEDIUM)
+        .tagTeam(isTagTeam(storyline))
+        .tournament(isTournament(storyline))
         .entryPoints(entryPoints)
         .exitPoints(exitPoints)
         .rules(
@@ -90,6 +88,43 @@ public class StorylineExportService {
                 .build())
         .exclusions(CampaignChapterDTO.ChapterExclusions.builder().build())
         .build();
+  }
+
+  private boolean isTagTeam(final CampaignStoryline storyline) {
+    String corpus = buildSearchCorpus(storyline);
+    return corpus.contains("tag team")
+        || corpus.contains("tag-team")
+        || corpus.contains("tag partner")
+        || corpus.contains("trios");
+  }
+
+  private boolean isTournament(final CampaignStoryline storyline) {
+    String corpus = buildSearchCorpus(storyline);
+    return corpus.contains("tournament")
+        || corpus.contains(" cup ")
+        || corpus.contains("grand prix")
+        || corpus.contains("round robin");
+  }
+
+  private String buildSearchCorpus(final CampaignStoryline storyline) {
+    StringBuilder sb = new StringBuilder();
+    if (storyline.getTitle() != null) {
+      sb.append(storyline.getTitle()).append(' ');
+    }
+    if (storyline.getDescription() != null) {
+      sb.append(storyline.getDescription()).append(' ');
+    }
+    if (storyline.getMilestones() != null) {
+      for (var m : storyline.getMilestones()) {
+        if (m.getNarrativeGoal() != null) {
+          sb.append(m.getNarrativeGoal()).append(' ');
+        }
+        if (m.getTitle() != null) {
+          sb.append(m.getTitle()).append(' ');
+        }
+      }
+    }
+    return sb.toString().toLowerCase();
   }
 
   private String formatId(@NonNull final String title) {

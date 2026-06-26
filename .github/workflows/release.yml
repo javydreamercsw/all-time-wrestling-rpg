@@ -42,7 +42,7 @@ jobs:
           RESULTS=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs" \
                     --paginate --jq '
                       .check_runs[]
-                      | select(.name != "${{ github.workflow }}")
+                      | select(.name != "${{ github.workflow }}" and .name != "preflight_checks")
                       | {name: .name, status: .status, conclusion: .conclusion}')
 
           echo "$RESULTS"

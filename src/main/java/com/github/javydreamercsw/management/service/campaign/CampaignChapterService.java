@@ -167,7 +167,7 @@ public class CampaignChapterService {
                 !"beginning".equals(c.getId())
                     || !state.getCompletedChapterIds().stream()
                         .anyMatch(id -> !"beginning".equals(id)))
-        .filter(c -> isAnyPointActive(c.getEntryPoints(), state))
+        .filter(c -> isAnyPointActive(c.getEntryPoints(), state, true))
         .filter(c -> allExpansionsEnabled(c.getRequiredExpansions()))
         .filter(
             c ->
@@ -189,7 +189,7 @@ public class CampaignChapterService {
     }
 
     return getChapter(state.getCurrentChapterId())
-        .map(c -> isAnyPointActive(c.getExitPoints(), state))
+        .map(c -> isAnyPointActive(c.getExitPoints(), state, false))
         .orElse(false);
   }
 
@@ -205,13 +205,12 @@ public class CampaignChapterService {
     return required.stream().allMatch(expansionService::isExpansionEnabled);
   }
 
-  private boolean isAnyPointActive(
-      @NonNull final List<ChapterPointDTO> points, @NonNull final CampaignState state) {
+  boolean isAnyPointActive(
+      @NonNull final List<ChapterPointDTO> points,
+      @NonNull final CampaignState state,
+      final boolean defaultWhenEmpty) {
     if (points.isEmpty()) {
-      // If no points are defined, we might want a default behavior.
-      // For entry: maybe only the first chapter?
-      // For now, assume if no points are defined, it's not active unless it's an intro.
-      return false;
+      return defaultWhenEmpty;
     }
     return points.stream().anyMatch(p -> areAllCriteriaMet(p.getCriteria(), state));
   }

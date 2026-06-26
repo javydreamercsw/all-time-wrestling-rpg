@@ -79,6 +79,15 @@ public class StorylineDirectorService {
       forge or test bonds, such as 'Recruit a tag team partner who could become a Best Friend'
       or 'Address family tension during a backstage promo.'
 
+      TERMINOLOGY RULES (required for downstream processing):
+      - If the storyline involves two wrestlers competing or teaming as a unit, you MUST use the
+        exact phrase "tag team" (not "duo", "tandem", "partners", or "pair") in the title or
+        description.
+      - If the storyline involves a bracket, multi-competitor progression, or elimination format,
+        you MUST use the exact word "tournament" (not "competition", "contest", or "gauntlet") in
+        the title or description.
+      - For trios (three-person teams), use "trios" in the title or description.
+
       Milestones can branch: 'nextOnSuccessIndex' and 'nextOnFailureIndex' should point to the
       0-based index of the next milestone in the list. Use null if the storyline ends.
 

@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
+import com.github.javydreamercsw.management.domain.campaign.StorylineMilestone;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,6 +52,70 @@ class StorylineExportServiceTest {
     assertThat(result.getId()).isEqualTo("the_forbidden_gate");
     assertThat(result.getShortDescription()).isEqualTo("A mysterious portal has opened.");
     assertThat(result.getAiSystemPrompt()).contains("The Forbidden Gate");
+  }
+
+  @Test
+  void tagTeamFlagSetFromTitle() {
+    CampaignStoryline storyline =
+        CampaignStoryline.builder()
+            .title("Tag Team Glory: Road to the Championships")
+            .description("A journey to become the greatest tag team.")
+            .build();
+
+    CampaignChapterDTO result = exportService.toChapterDTO(storyline);
+
+    assertThat(result.isTagTeam()).isTrue();
+    assertThat(result.isTournament()).isFalse();
+  }
+
+  @Test
+  void tournamentFlagSetFromDescription() {
+    CampaignStoryline storyline =
+        CampaignStoryline.builder()
+            .title("Battle for Supremacy")
+            .description("Enter the tournament and prove you are the best.")
+            .build();
+
+    CampaignChapterDTO result = exportService.toChapterDTO(storyline);
+
+    assertThat(result.isTournament()).isTrue();
+    assertThat(result.isTagTeam()).isFalse();
+  }
+
+  @Test
+  void tagTeamFlagSetFromMilestoneNarrativeGoal() {
+    StorylineMilestone milestone =
+        StorylineMilestone.builder()
+            .title("Find a Partner")
+            .narrativeGoal("Recruit a tag team partner to challenge for the titles.")
+            .order(0)
+            .status(StorylineMilestone.MilestoneStatus.PENDING)
+            .build();
+
+    CampaignStoryline storyline =
+        CampaignStoryline.builder()
+            .title("Unlikely Alliance")
+            .description("Two rivals must work together.")
+            .milestones(List.of(milestone))
+            .build();
+
+    CampaignChapterDTO result = exportService.toChapterDTO(storyline);
+
+    assertThat(result.isTagTeam()).isTrue();
+  }
+
+  @Test
+  void noFlagsForStandardSinglesStoryline() {
+    CampaignStoryline storyline =
+        CampaignStoryline.builder()
+            .title("Rise to Power")
+            .description("Climb the ladder and become champion.")
+            .build();
+
+    CampaignChapterDTO result = exportService.toChapterDTO(storyline);
+
+    assertThat(result.isTagTeam()).isFalse();
+    assertThat(result.isTournament()).isFalse();
   }
 
   @Test

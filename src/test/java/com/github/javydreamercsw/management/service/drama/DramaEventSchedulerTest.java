@@ -54,6 +54,8 @@ class DramaEventSchedulerTest {
   @BeforeEach
   void setUp() {
     scheduler = new DramaEventScheduler(dramaEventService, wrestlerRepository, universeRepository);
+    // thresholdDays is @Value-injected; Spring isn't present in unit tests so set it explicitly
+    ReflectionTestUtils.setField(scheduler, "thresholdDays", 7);
     universe1 = new Universe();
     universe1.setId(1L);
     when(universeRepository.findAll()).thenReturn(List.of(universe1));
@@ -134,6 +136,20 @@ class DramaEventSchedulerTest {
     scheduler.onGameDateChanged(event);
 
     // The probabilistic branch was taken; findAllIds() proves generateRandomDramaEvents ran
+    verify(wrestlerRepository).findAllIds();
+  }
+
+  @Test
+  void onGameDateChanged_customThreshold_triggersAtConfiguredDays() {
+    // With threshold=3, advancing 3+ days should always trigger
+    ReflectionTestUtils.setField(scheduler, "thresholdDays", 3);
+    when(wrestlerRepository.findAllIds()).thenReturn(Collections.emptyList());
+
+    LocalDate oldDate = LocalDate.of(2025, 1, 1);
+    GameDateChangedEvent event = new GameDateChangedEvent(this, oldDate, oldDate.plusDays(3));
+
+    scheduler.onGameDateChanged(event);
+
     verify(wrestlerRepository).findAllIds();
   }
 

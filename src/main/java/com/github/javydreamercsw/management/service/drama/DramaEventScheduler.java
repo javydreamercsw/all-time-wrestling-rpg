@@ -25,8 +25,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,7 +40,6 @@ import org.springframework.stereotype.Service;
  * <p>Can be enabled/disabled via application properties: drama.events.scheduler.enabled=true/false
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @ConditionalOnProperty(
     name = "drama.events.scheduler.enabled",
@@ -52,6 +51,18 @@ public class DramaEventScheduler {
   private final WrestlerRepository wrestlerRepository;
   private final UniverseRepository universeRepository;
   private final Random random = new Random();
+
+  @Value("${drama.events.scheduler.threshold.days:7}")
+  private int thresholdDays;
+
+  public DramaEventScheduler(
+      final DramaEventService dramaEventService,
+      final WrestlerRepository wrestlerRepository,
+      final UniverseRepository universeRepository) {
+    this.dramaEventService = dramaEventService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.universeRepository = universeRepository;
+  }
 
   /**
    * Listen for game date changes and trigger drama events if enough game time has passed.
@@ -68,14 +79,9 @@ public class DramaEventScheduler {
 
     log.info("Game date advanced by {} days. Checking for drama events...", daysPassed);
 
-    // If game date advanced by a week or more, trigger drama events
-    // We could also make this more granular, but for now let's stick to the "weekly" logic
-    // but in game time.
-    if (daysPassed >= 7) {
+    if (daysPassed >= thresholdDays) {
       generateRandomDramaEvents();
-    } else // If less than a week passed, we still have a chance proportional to the time passed
-    // e.g. 1 day = 1/7 chance
-    if (random.nextDouble() < (double) daysPassed / 7.0) {
+    } else if (random.nextDouble() < (double) daysPassed / thresholdDays) {
       log.debug("Small time jump triggered random drama event check");
       generateRandomDramaEvents();
     }

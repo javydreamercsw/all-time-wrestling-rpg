@@ -65,4 +65,7 @@ public class SegmentParticipant extends AbstractEntity<Long> {
 
   @Column(name = "team_number", nullable = false)
   private int teamNumber = 1;
+
+  @Column(name = "final_momentum")
+  private Integer finalMomentum;
 }
