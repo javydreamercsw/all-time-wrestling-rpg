@@ -137,6 +137,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
   private Map<Long, IntegerField> momentumFields = new HashMap<>();
+  private Map<Long, IntegerField> healthFields = new HashMap<>();
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
   private Button aiGenerateButton;
@@ -716,6 +717,36 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         momentumLayout.add(field);
       }
       winnersCard.add(momentumLayout);
+
+      VerticalLayout healthLayout = new VerticalLayout();
+      healthLayout.setPadding(false);
+      healthLayout.setSpacing(false);
+      healthLayout.add(new Span("Final Health per Wrestler"));
+      for (Wrestler w :
+          wrestlers.stream()
+              .filter(java.util.Objects::nonNull)
+              .filter(w -> w.getAccount() != null)
+              .toList()) {
+        IntegerField field = new IntegerField(w.getName());
+        field.setId("final-health-" + w.getId());
+        field.setPlaceholder("Starting: " + w.getStartingHealth());
+        field.setMin(0);
+        field.setMax(w.getStartingHealth());
+        field.setWidthFull();
+        Integer existing =
+            segment.getParticipants().stream()
+                .filter(p -> w.getId().equals(p.getWrestler().getId()))
+                .map(
+                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
+                        ::getFinalHealth)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+        field.setValue(existing);
+        healthFields.put(w.getId(), field);
+        healthLayout.add(field);
+      }
+      winnersCard.add(healthLayout);
     }
 
     winnersCard.add(saveWinnersButton);
@@ -1185,6 +1216,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         IntegerField field = momentumFields.get(p.getWrestler().getId());
         if (field != null) {
           p.setFinalMomentum(field.getValue());
+        }
+      }
+    }
+
+    // Persist final health values for player-controlled wrestlers (non-promo only)
+    if (!healthFields.isEmpty()) {
+      for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
+          segment.getParticipants()) {
+        IntegerField field = healthFields.get(p.getWrestler().getId());
+        if (field != null) {
+          p.setFinalHealth(field.getValue());
         }
       }
     }

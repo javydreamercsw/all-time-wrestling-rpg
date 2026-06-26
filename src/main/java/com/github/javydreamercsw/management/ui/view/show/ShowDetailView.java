@@ -1776,6 +1776,16 @@ public class ShowDetailView extends Main
                                 }
                                 // In-memory sync (no DB)
                                 seg.syncParticipants(saveData.teams());
+                                if (saveData.finalHealthValues() != null
+                                    && !saveData.finalHealthValues().isEmpty()) {
+                                  for (var p : seg.getParticipants()) {
+                                    Integer health =
+                                        saveData.finalHealthValues().get(p.getWrestler().getId());
+                                    if (health != null) {
+                                      p.setFinalHealth(health);
+                                    }
+                                  }
+                                }
                                 seg.syncSegmentRules(new ArrayList<>(saveData.rules()));
                                 seg.setAdjudicationStatus(AdjudicationStatus.PENDING);
                                 seg.setSegmentType(saveData.segmentType());
