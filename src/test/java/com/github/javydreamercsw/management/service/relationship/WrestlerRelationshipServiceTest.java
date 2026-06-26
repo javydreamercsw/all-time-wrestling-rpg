@@ -20,12 +20,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
 import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
 import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationshipRepository;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.List;
@@ -42,6 +45,7 @@ class WrestlerRelationshipServiceTest {
 
   @Mock private WrestlerRelationshipRepository relationshipRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private TeamRepository teamRepository;
 
   @InjectMocks private WrestlerRelationshipService relationshipService;
 
@@ -96,49 +100,95 @@ class WrestlerRelationshipServiceTest {
   }
 
   @Test
-  void testImproveGameplayRelationships() {
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
+  void noBondForNonTeamPair() {
+    // Wrestlers not in the same team row — no bond should ever form
+    when(teamRepository.findActiveTeamByBothWrestlers(w1, w2)).thenReturn(Optional.empty());
 
-    // Initial state: no relationship
+    relationshipService.improveGameplayRelationships(List.of(w1, w2), 5);
+
+    verify(relationshipRepository, never()).save(any());
+    verify(relationshipRepository, never()).findBetweenWrestlers(any(), any());
+  }
+
+  @Test
+  void noBondOnFirstContact() {
+    // Registered tag team but no prior relationship history — skip first contact
+    Team team = new Team();
+    when(teamRepository.findActiveTeamByBothWrestlers(w1, w2)).thenReturn(Optional.of(team));
     when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of());
+
+    relationshipService.improveGameplayRelationships(List.of(w1, w2), 5);
+
+    verify(relationshipRepository, never()).save(any());
+  }
+
+  @Test
+  void accumulatesPointsOnExistingRelationship() {
+    Team team = new Team();
+    when(teamRepository.findActiveTeamByBothWrestlers(w1, w2)).thenReturn(Optional.of(team));
+
+    WrestlerRelationship existing = new WrestlerRelationship();
+    existing.setWrestler1(w1);
+    existing.setWrestler2(w2);
+    existing.setType(RelationshipType.MENTOR);
+    existing.setLevel(20);
+
+    when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of(existing));
     when(relationshipRepository.save(any(WrestlerRelationship.class)))
         .thenAnswer(i -> i.getArguments()[0]);
 
     relationshipService.improveGameplayRelationships(List.of(w1, w2), 5);
 
-    // New relationship level must equal the points argument, not a hardcoded value
-    verify(relationshipRepository)
-        .save(argThat(r -> r.getType() == RelationshipType.BEST_FRIEND && r.getLevel() == 5));
+    verify(relationshipRepository).save(argThat(r -> r.getLevel() == 25));
   }
 
   @Test
-  void testImproveGameplayRelationships_newRelationship_usesPointsAsInitialLevel() {
+  void escalatesToBestFriendAfterThreshold() {
+    // Registered tag team with existing relationship at level 48; adding 5 crosses threshold
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
     when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
-    when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of());
+
+    Team team = new Team();
+    when(teamRepository.findActiveTeamByBothWrestlers(w1, w2)).thenReturn(Optional.of(team));
+
+    WrestlerRelationship existing = new WrestlerRelationship();
+    existing.setWrestler1(w1);
+    existing.setWrestler2(w2);
+    existing.setType(RelationshipType.MENTOR);
+    existing.setLevel(48);
+
+    when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of(existing));
     when(relationshipRepository.save(any(WrestlerRelationship.class)))
         .thenAnswer(i -> i.getArguments()[0]);
 
-    // points = 1 (low-quality roll) — new bond must start at level 1, not 10
-    relationshipService.improveGameplayRelationships(List.of(w1, w2), 1);
+    relationshipService.improveGameplayRelationships(List.of(w1, w2), 5);
 
+    // Existing relationship is saved with level 53
     verify(relationshipRepository)
-        .save(argThat(r -> r.getType() == RelationshipType.BEST_FRIEND && r.getLevel() == 1));
+        .save(argThat(r -> r.getType() == RelationshipType.MENTOR && r.getLevel() == 53));
+    // BEST_FRIEND escalation triggered because totalPositiveLevel (53) >= 50
+    verify(relationshipRepository).save(argThat(r -> r.getType() == RelationshipType.BEST_FRIEND));
   }
 
   @Test
-  void testImproveGameplayRelationships_newRelationship_pointsTwoStartsAtTwo() {
-    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(w1));
-    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(w2));
-    when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of());
+  void doesNotEscalateBelowThreshold() {
+    Team team = new Team();
+    when(teamRepository.findActiveTeamByBothWrestlers(w1, w2)).thenReturn(Optional.of(team));
+
+    WrestlerRelationship existing = new WrestlerRelationship();
+    existing.setWrestler1(w1);
+    existing.setWrestler2(w2);
+    existing.setType(RelationshipType.MENTOR);
+    existing.setLevel(20);
+
+    when(relationshipRepository.findBetweenWrestlers(w1, w2)).thenReturn(List.of(existing));
     when(relationshipRepository.save(any(WrestlerRelationship.class)))
         .thenAnswer(i -> i.getArguments()[0]);
 
-    // points = 2 (high-quality roll) — new bond must start at level 2, not 10
-    relationshipService.improveGameplayRelationships(List.of(w1, w2), 2);
+    relationshipService.improveGameplayRelationships(List.of(w1, w2), 5);
 
-    verify(relationshipRepository)
-        .save(argThat(r -> r.getType() == RelationshipType.BEST_FRIEND && r.getLevel() == 2));
+    // No BEST_FRIEND created — totalPositiveLevel (25) < 50
+    verify(relationshipRepository, never())
+        .save(argThat(r -> r.getType() == RelationshipType.BEST_FRIEND));
   }
 }
