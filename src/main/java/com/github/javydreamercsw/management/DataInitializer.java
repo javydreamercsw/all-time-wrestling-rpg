@@ -656,7 +656,7 @@ public class DataInitializer implements Initializable {
               dto.isNoDq(),
               dto.getBumpAddition(),
               dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
-              dto.getRules());
+              dto.getGuide());
           log.debug(
               "Loaded segment rule: {} (High Heat: {}, No DQ: {}, Bump Addition: {})",
               dto.getName(),

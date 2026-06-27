@@ -70,7 +70,7 @@ public class MatchInfoView extends VerticalLayout implements BeforeEnterObserver
       add(new Paragraph(rule.getDescription()));
     }
 
-    SegmentRulePlayGuide guide = rule.getRules();
+    SegmentRulePlayGuide guide = rule.getGuide();
     if (guide == null) {
       add(new Span("No gameplay rules documented for this match type yet."));
       return;

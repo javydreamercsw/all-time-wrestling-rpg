@@ -324,8 +324,8 @@ class SegmentRuleServiceTest {
         segmentRuleService.createOrUpdateRule(
             "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);
 
-    assertThat(result.getRules()).isEqualTo(guide);
-    assertThat(result.getRulesHash()).isNotBlank();
+    assertThat(result.getGuide()).isEqualTo(guide);
+    assertThat(result.getGuideHash()).isNotBlank();
   }
 
   @Test
@@ -346,8 +346,8 @@ class SegmentRuleServiceTest {
     existing.setNoDq(true);
     existing.setBumpAddition(BumpAddition.ALL);
     existing.setExpansionCode("BASE_GAME");
-    existing.setRules(oldGuide);
-    existing.setRulesHash("oldhash");
+    existing.setGuide(oldGuide);
+    existing.setGuideHash("oldhash");
 
     when(segmentRuleRepository.findByName("Cage")).thenReturn(java.util.Optional.of(existing));
     when(objectMapper.writeValueAsString(newGuide))
@@ -358,8 +358,8 @@ class SegmentRuleServiceTest {
         segmentRuleService.createOrUpdateRule(
             "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", newGuide);
 
-    assertThat(result.getRules()).isEqualTo(newGuide);
-    assertThat(result.getRulesHash()).isNotEqualTo("oldhash");
+    assertThat(result.getGuide()).isEqualTo(newGuide);
+    assertThat(result.getGuideHash()).isNotEqualTo("oldhash");
     verify(segmentRuleRepository).save(existing);
   }
 
@@ -384,8 +384,8 @@ class SegmentRuleServiceTest {
     existing.setNoDq(true);
     existing.setBumpAddition(BumpAddition.ALL);
     existing.setExpansionCode("BASE_GAME");
-    existing.setRules(guide);
-    existing.setRulesHash(expectedHash);
+    existing.setGuide(guide);
+    existing.setGuideHash(expectedHash);
 
     when(segmentRuleRepository.findByName("Cage")).thenReturn(java.util.Optional.of(existing));
 

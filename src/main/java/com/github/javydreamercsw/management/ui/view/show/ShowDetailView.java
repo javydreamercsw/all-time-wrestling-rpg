@@ -1272,7 +1272,7 @@ public class ShowDetailView extends Main
     infoButton.setId("match-info-button-" + segment.getId());
     boolean hasTypeGuide =
         segment.getSegmentType() != null && segment.getSegmentType().getGuide() != null;
-    boolean hasRuleGuide = segment.getSegmentRules().stream().anyMatch(r -> r.getRules() != null);
+    boolean hasRuleGuide = segment.getSegmentRules().stream().anyMatch(r -> r.getGuide() != null);
     infoButton.setVisible(hasTypeGuide || hasRuleGuide);
     infoButton.addClickListener(
         e ->

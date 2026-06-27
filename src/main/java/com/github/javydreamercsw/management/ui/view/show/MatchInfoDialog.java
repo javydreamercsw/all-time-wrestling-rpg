@@ -55,13 +55,13 @@ public class MatchInfoDialog extends Dialog {
     }
 
     List<SegmentRule> rulesWithGuide =
-        rules == null ? List.of() : rules.stream().filter(r -> r.getRules() != null).toList();
+        rules == null ? List.of() : rules.stream().filter(r -> r.getGuide() != null).toList();
 
     VerticalLayout soloContent =
         buildMergedVariant(
             type != null && type.getGuide() != null ? type.getGuide().solo() : null,
             rulesWithGuide,
-            r -> r.getRules().solo(),
+            r -> r.getGuide().solo(),
             type);
     if (soloContent.getComponentCount() != 0) {
       Details soloSection = new Details("Solo Play", soloContent);
@@ -73,7 +73,7 @@ public class MatchInfoDialog extends Dialog {
         buildMergedVariant(
             type != null && type.getGuide() != null ? type.getGuide().multiplayer() : null,
             rulesWithGuide,
-            r -> r.getRules().multiplayer(),
+            r -> r.getGuide().multiplayer(),
             type);
     if (multiContent.getComponentCount() != 0) {
       Details multiSection = new Details("Multiplayer", multiContent);

@@ -4,7 +4,7 @@
   "requiresHighHeat": false,
   "noDq": true,
   "bumpAddition": "ALL",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "An No DQ match is a contest where wrestlers cannot be disqualified; these rules are automatically in effect whenever weapons are included as part of the match setup.",
       "setup": "Place six weapon cards face-up in a display next to the board. For specific modes like Last Man Standing, all Health Pack and Nano-bot cards are removed from the deck before play.",
@@ -27,7 +27,7 @@
   "requiresHighHeat": false,
   "noDq": false,
   "bumpAddition": "NONE",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A solo match is a single-player contest where you face an NPC (Automa) opponent governed by deck-driven decision-making and advanced 1v1 rules.",
       "setup": "Position health and stamina cubes on your board and select 5 starting cards (max 9 damage). Prepare the NPC with replacement ability cards and reversal cubes based on the chosen difficulty level.",
@@ -51,7 +51,7 @@
   "noDq": false,
   "bumpAddition": "NONE",
   "expansion_code": "CUSTOM",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "An Elimination match is a multi-participant bout where wrestlers are removed one by one via pinfall or submission. The last team standing wins.",
       "setup": "All participants start at full health and stamina. Keep an elimination tracker card for each wrestler. Standard rules apply until all but one team are eliminated.",
@@ -74,7 +74,7 @@
   "requiresHighHeat": false,
   "noDq": false,
   "bumpAddition": "NONE",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A solo elimination contest where you lead a Faction against an NPC (Automa) Faction, aiming to throw opponents over the top rope until their entire team is eliminated.",
       "setup": "Stack Rumble Bio cards for both sides in your chosen entry order. Set initial health and stamina on your board; the NPC utilizes Automa cards to simulate decision-making and 'Hanging On' attempts.",
@@ -98,7 +98,7 @@
   "noDq": true,
   "bumpAddition": "LOSERS",
   "expansion_code": "CUSTOM",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A pure Submission match — the only path to victory is forcing a tap-out. Pinfalls, count-outs, and DQs are all ignored.",
       "setup": "Both wrestlers start at full health and stamina. Remove the pin attempt action from your action menu — only submission attempts are valid finish actions.",
@@ -121,7 +121,7 @@
   "requiresHighHeat": false,
   "noDq": true,
   "bumpAddition": "NONE",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A promo segment builds fan heat and advances storylines without physical combat. Your goal is to maximize crowd reaction and momentum.",
       "setup": "Draw 3 Promo cards from the Promo deck. Each card represents a promo style: Boast, Challenge, Insult, or Heartfelt. You will play one card per promo exchange.",
@@ -144,7 +144,7 @@
   "requiresHighHeat": true,
   "noDq": true,
   "bumpAddition": "ALL",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A solo cage match combines standard Automa mechanics with a race to climb the cage; victory is achieved solely by reaching the 'Victory!' space on the escape track.",
       "setup": "Place the Cage Match Board next to the Momentum Meter. Position your token and the NPC’s on 'Ring,' then place your second token on space '1' of the Recovery Meter.",
@@ -167,7 +167,7 @@
   "requiresHighHeat": true,
   "noDq": true,
   "bumpAddition": "ALL",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A solo last man standing match is a grueling no-disqualification contest where standard pinfalls are disabled; victory is only achieved by keeping the NPC down for a 10-count.",
       "setup": "Remove all Health Packs and Nano-bots from the weapons deck, then flip 6 weapon cards face-up into a display near the NPC and player boards.",
@@ -191,7 +191,7 @@
   "noDq": true,
   "bumpAddition": "NONE",
   "expansion_code": "RUMBLE",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "While Free-for-all is primarily a multiplayer mode, solo multi-man contests are typically played using the Abu Dhabi Rumble variant, where you lead a Faction against an NPC Faction in an elimination battle.",
       "setup": "Stack Rumble Bio cards for both sides in entry order and prepare a specialized Rumble Attack Deck. The NPC utilizes Automa cards to simulate its targeting and defense decisions.",
@@ -215,7 +215,7 @@
   "noDq": true,
   "bumpAddition": "NONE",
   "expansion_code": "CUSTOM",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "The only win condition is forcing your opponent to say 'I Quit' into a microphone. Replace pin for attempts as asking your opponent if he quits. Follow Last Man Standing rules, just narrate as I Quit match for flavor purposes.",
       "setup": "Remove all Health Packs and Nano-bots from the weapons deck, then flip 6 weapon cards face-up into a display near the NPC and player boards.",
@@ -239,7 +239,7 @@
   "noDq": true,
   "bumpAddition": "ALL",
   "expansion_code": "CUSTOM",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A solo ladder match is a race to climb and retrieve the title suspended above the ring; **pinfalls and submissions are ignored** in favor of reaching the top space.",
       "setup": "Place the **Ladder Board** next to the momentum meter with both tokens at 'Start' and set the ladder card to its **'Laid Down'** side. Ready the 3 attacking and 2 defensive dice.",
@@ -263,7 +263,7 @@
   "noDq": true,
   "bumpAddition": "LOSERS",
   "expansion_code": "CUSTOM",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A solo casket match requires you to accumulate 6 Urn Points through high-impact play to attempt a match-ending maneuver; standard pinfalls are ignored in favor of locking the NPC inside the casket.",
       "setup": "Use standard player boards and decks, adding a D6 nearby to track Urn Points, which start at zero.",
@@ -287,7 +287,7 @@
   "noDq": true,
   "bumpAddition": "ALL",
   "expansion_code": "CUSTOM",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A solo TLC match is a tornado-style brawl against a Tag Automa where the objective is to climb a ladder and retrieve a briefcase or title; pinfalls and submissions are completely ignored.",
       "setup": "Use a D6 to track Ladder Points (starting at 0) and prepare the TLC Weapon Deck. Each team begins with one Save Token and follows Tornado Tag rules, meaning all wrestlers are active in the ring simultaneously.",
@@ -311,7 +311,7 @@
   "noDq": true,
   "bumpAddition": "ALL",
   "expansion_code": "CUSTOM",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A solo War Games match is a 5v5 team battle held inside a steel cage where victory is only possible after all 10 participants have entered; pinfalls and submissions are disabled until the full roster is present.",
       "setup": "Use a Time Board or D6 to track 5-round entry intervals. Roll for Priority to see which team enters first; wrestlers enter one-by-one, alternating teams until the ring is full.",
@@ -334,7 +334,7 @@
   "requiresHighHeat": true,
   "noDq": true,
   "bumpAddition": "ALL",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A Solo Barbwire Exploding Deathmatch is a brutal No-DQ contest where you face an NPC opponent in a ring surrounded by explosives set to detonate at the 25-minute mark.",
       "setup": "Place the Barbwire Exploding Deathmatch Board with a cube on the '25' timer space and display six weapons face-up: Cord, Ropes, Chair, Bat, and two Tables. Both you and the NPC receive one Elixir card to use for immediate healing.",
@@ -358,7 +358,7 @@
   "noDq": false,
   "bumpAddition": "NONE",
   "expansion_code": "CUSTOM",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "You must defeat a series of opponents one by one. Each victory carries your remaining health and stamina into the next bout — recovery is limited between opponents.",
       "setup": "Prepare an opponent queue (3 to 5 NPCs recommended). Shuffle their order. After each victory, take a 30-second recovery phase: restore 10% health and 15% stamina.",
@@ -382,7 +382,7 @@
   "noDq": false,
   "bumpAddition": "ALL",
   "expansion_code": "ATW_VS_WOW",
-  "rules": {
+  "guide": {
     "solo": {
       "overview": "A Survivor War is a team-based elimination match where you lead a squad of wrestlers against an NPC team; unlike Tag Team matches, there are no tags, and wrestlers are only replaced once they are defeated.",
       "setup": "Select your starting wrestler and place two (or more) additional wrestlers face-down in a 'Team Deck' to determine their entry order. NPC teams are typically composed of WOW wrestlers unless specified otherwise in the campaign.",

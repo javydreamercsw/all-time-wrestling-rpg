@@ -82,7 +82,7 @@ class MatchInfoViewKaribuTest extends AbstractViewTest {
     ruleWithGuide = new SegmentRule();
     ruleWithGuide.setName("Cage");
     ruleWithGuide.setDescription("Steel cage match description.");
-    ruleWithGuide.setRules(guide);
+    ruleWithGuide.setGuide(guide);
 
     ruleWithoutGuide = new SegmentRule();
     ruleWithoutGuide.setName("Normal");
