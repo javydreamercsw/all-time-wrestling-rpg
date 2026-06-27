@@ -149,6 +149,111 @@ Wrestler decks are defined in `src/main/resources/decks.json`.
 
 Each wrestler entry links cards by their `number` and `set_code`.
 
+## Segment Types
+
+Segment types define the kind of action in a show (One on One, Tag Team, Promo, etc.) and are loaded from `src/main/resources/segment_types.json`.
+
+**Structure:**
+
+```json
+[
+  {
+    "name": "One on One",
+    "description": "Traditional singles wrestling match between two competitors",
+    "playerAmount": 2,
+    "expansion_code": "BASE_GAME",
+    "guide": { ... }
+  }
+]
+```
+
+The optional `guide` field holds in-game play instructions rendered in the "How to Play" dialog during a match. See [Play Guide Format](#play-guide-format) below.
+
+## Segment Rules
+
+Segment rules define stipulations or special conditions applied to a segment (No DQ, Cage Match, etc.) and are loaded from `src/main/resources/segment_rules.json`.
+
+**Structure:**
+
+```json
+[
+  {
+    "name": "No DQ",
+    "description": "No Disqualification: ...",
+    "requiresHighHeat": false,
+    "noDq": true,
+    "bumpAddition": "ALL",
+    "expansion_code": "BASE_GAME",
+    "rules": { ... }
+  }
+]
+```
+
+- `requiresHighHeat`: if `true`, the rule only appears as an option when the rivalry has high heat.
+- `noDq`: marks the match as no-disqualification.
+- `bumpAddition`: one of `NONE`, `PHYSICAL`, `ALL` — controls which bump cards are added to the draw pile.
+
+The optional `rules` field holds in-game play instructions. See [Play Guide Format](#play-guide-format) below.
+
+## Play Guide Format
+
+Both segment types (`guide`) and segment rules (`rules`) share the same play guide structure. It is rendered in the **How to Play** dialog during a match — type sections appear first as "Base Rules", followed by any applied rule's sections.
+
+The guide has two top-level variant keys:
+
+| Key | When shown |
+|-----|-----------|
+| `solo` | Solo (player vs NPC) play |
+| `multiplayer` | Head-to-head multiplayer play |
+
+Each variant is an object with any combination of the following optional text fields. Blank or absent fields are silently skipped in the rendered output:
+
+| Field | Purpose |
+|-------|---------|
+| `overview` | One-paragraph summary of this match type/stipulation |
+| `setup` | Board/card setup instructions before the match begins |
+| `attacking` | How to play cards and resolve attacks |
+| `defending` | How to respond to the opponent's attacks |
+| `winCondition` | How to win (pinfall, KO, etc.) |
+| `npcRecovery` | How the NPC/Automa recovers health or stamina |
+| `topOfCageStruggle` | Cage-specific rule for the top-of-cage struggle phase |
+| `npcWinConditions` | Conditions under which the NPC wins |
+| `concepts` | Multiplayer-specific core concepts |
+| `gameplayChanges` | How multiplayer differs from the base rules |
+| `modeSpecificAbilities` | Special abilities or card substitutions for this mode |
+| `gameEndConditions` | Conditions that end the match in multiplayer |
+
+**Minimal example (solo only):**
+
+```json
+"guide": {
+  "solo": {
+    "overview": "A standard singles match where you face one NPC opponent.",
+    "setup": "Set health and stamina cubes on your board and draw 5 starting cards.",
+    "winCondition": "Pin the opponent by playing a card with a PIN icon and winning the kick-out roll."
+  }
+}
+```
+
+**Full example (solo + multiplayer):**
+
+```json
+"rules": {
+  "solo": {
+    "overview": "No DQ: weapons are legal and cannot cause disqualification.",
+    "setup": "Place six weapon cards face-up beside the board.",
+    "attacking": "During your Offensive Ability Window you may trigger a weapon card instead of a standard ability.",
+    "defending": "Standard blocking applies. Roll a defense die to attempt a Weapon Counter.",
+    "winCondition": "Standard pinfall or submission."
+  },
+  "multiplayer": {
+    "concepts": "No-DQ rules apply to all participants; weapon cards are always in play.",
+    "gameplayChanges": "Players may trigger weapons after a successful attack roll.",
+    "gameEndConditions": "Standard pinfall or submission; Last Man Standing variant ends on a failed 10-count."
+  }
+}
+```
+
 ## Best Practices
 
 1. **Validation**: Always run `DataInitializerTest` and `DataInitializerIntegrationTest` after modifying JSON files to ensure they are valid and all references (sets, card numbers) are correct.
