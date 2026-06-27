@@ -1,19 +1,87 @@
 [ {
   "name": "One on One",
   "description": "Traditional singles wrestling match between two competitors",
-  "playerAmount": 2
+  "playerAmount": 2,
+  "guide": {
+    "solo": {
+      "overview": "A solo match is a single-player contest where you face an NPC (Automa) opponent governed by deck-driven decision-making and specialized rules for automated play.",
+      "setup": "Place health and stamina cubes on your board and select 5 starting attack cards totaling no more than 9 damage. Configure the NPC with reversal cubes and specific Automa/Adapt cards based on your chosen difficulty level (Easy, Medium, or Hard).",
+      "attacking": "When you have initiative, play an attack card by spending stamina and rolling your player dice alongside a single Automa die. Your success depends on meeting the target number, but the Automa die can trigger NPC reversals or force you to resolve 'Adapt' card effects.",
+      "defending": "To resolve an NPC attack, reveal the top card of its deck. You may use your Defensive Ability Window to block or reverse; otherwise, draw an Automa card to determine the NPC's final attack total based on the listed 'D' value.",
+      "winCondition": "Victory is secured by successfully executing an attack that features a PIN icon. The NPC fails to kick out if the K-values on three consecutive Automa card draws exceed its current health.",
+      "npcRecovery": "NPCs do not track or spend stamina and only regain 1 health if you choose to use a taunt or recover action during your turn. If the NPC deck is depleted, it is reshuffled after removing its lowest-damage cards."
+    },
+    "multiplayer": {
+      "concepts": "Multiplayer 1v1 matches utilize an initiative system where the attacker continues to play cards from their hand until they miss an attack roll or the defender successfully blocks or reverses a move.",
+      "setup": "Both players start with maximum health and stamina, a hand of 5 cards (max 9 damage), and 3 tokens (1 reversal and 2 one-time abilities). A high-die roll determines the first attacker, who must then spend 1 stamina and shuffle 1 random card from their hand back into their deck.",
+      "gameplayChanges": "Attackers spend stamina to play cards against a target number modified by match momentum and opponent fatigue. For every successful attack suffered, the defender receives 'compensation' in the form of 1 card or 1 stamina to help them regain initiative.",
+      "modeSpecificAbilities": "Wrestlers can use Taunt or Recover icons to gain resources, though doing so allows the defender to recover health or stamina as well. Players can also chain moves with matching icons to form powerful Combo chains.",
+      "gameEndConditions": "The match ends via pinfall or submission if a defender fails three 2D6 kick-out rolls after a PIN icon move. Matches can also end in referee stoppage due to deck depletion or a time-limit draw after 7 'Blind Attacks'."
+    }
+  }
 }, {
   "name": "Tag Team",
   "description": "Team-based wrestling match with tag-in/tag-out mechanics",
-  "playerAmount": -1
+  "playerAmount": -1,
+  "guide": {
+    "solo": {
+      "overview": "A solo tag team match is a **2v2 contest** where you and an AI partner face off against a **Tag Automa** team; victory is achieved by pinning the legal NPC opponent.",
+      "setup": "Configure boards for yourself and your partner, and prepare the NPC with their Automa decks. Place the **Tag Team cards** (Hot Tag, Tag Attacks, Save, and Partner Abilities) within reach for both sides.",
+      "attacking": "Standard initiative rules apply. To tag in your partner, you must first **deal 2 or more damage** to the legal NPC. You can then perform a **Normal Tag**, an unblockable **Tag Attack** (where both teammates roll for success), or a powerful one-time **Hot Tag**.",
+      "defending": "When your active wrestler suffers an attack, your inactive partner receives **defender compensation** (1 card or 1 stamina). Inactive partners can also attempt to break up NPC pinfall attempts using a **Save card** or a **kick-out roll**.",
+      "winCondition": "Execute a move with a **PIN icon** against the legal NPC. You win if the NPC fails to kick out after drawing **three Automa cards** where the K-values exceed their current health.",
+      "npcRecovery": "NPC wrestlers will automatically attempt to **tag out after their 4th move** to bring in their fresh partner. If an NPC eliminates one of your wrestlers, they **gain 7 health** and recover all PIN attack cards from their discard pile."
+    },
+    "multiplayer": {
+      "concepts": "Tag matches feature one **Legal Man** per team in the ring, while **Inactive** partners support from the apron. Only the legal wrestler can score a pinfall or be pinned.",
+      "setup": "Players form two teams and alternate selecting wrestlers. Each team readies their player boards and a set of **Tag Team cards**, including the Hot Tag, Tag Attacks, and Save maneuvers.",
+      "gameplayChanges": "Successful attacks grant **compensation** (1 card or 1 stamina) to all participants except the current attacker. To tag out, the legal man must have **dealt at least 2 damage** earlier in their turn.",
+      "modeSpecificAbilities": "Teams can execute coordinated **Tag Attacks** where both players roll for success, or trigger a **Hot Tag** once per match if health is 7 or less. Inactive partners can use **Partner Saves** to interrupt pinfalls or **Cut Off** to prevent opponent tags.",
+      "gameEndConditions": "The match ends via **pinfall or submission** of the legal man. If one member of a team is defeated by **referee stoppage** (deck depletion), their entire team loses the match."
+    }
+  }
 }, {
   "name": "Free-for-All",
   "description": "Multi-person match where everyone fights at once",
-  "playerAmount": -1
+  "playerAmount": -1,
+  "guide": {
+    "solo": {
+      "overview": "Solo multi-man matches typically utilize the Abu Dhabi Rumble rules, where you lead a Faction of wrestlers against an NPC (Automa) Faction in an elimination battle.",
+      "setup": "Stack Rumble Bio cards for both sides in entry order and prepare a specialized Rumble Attack Deck. The NPC utilizes Automa cards to simulate decision-making and 'Hanging On' attempts instead of standard 1v1 mechanics.",
+      "attacking": "Trigger an elimination attempt by dealing 3+ damage or using an 'Over the Top!' special. The NPC fails to 'Hang On' if a drawn Automa card’s K-value exceeds its current health.",
+      "defending": "When targeted for elimination, you must 'Hang On' by rolling 2 dice on three attempts to get a sum equal to or less than your health. Targeted wrestlers draw Resilience cards to assist their defense.",
+      "winCondition": "Eliminate all wrestlers in the NPC's Faction. Unlike a standard match, all pinfall icons are ignored as victory is secured solely by throwing opponents over the top rope.",
+      "npcRecovery": "Eliminating one of your wrestlers allows the NPC to 'Boast,' gaining 3 momentum and 1 stamina. It also recovers Signature cards and removes its lowest-value Automa cards from play."
+    },
+    "multiplayer": {
+      "concepts": "A multi-man match for 3–4 players played over rounds where initiative does not automatically stay with the attacker. Any wrestler who pins or submits any other wrestler wins the match immediately.",
+      "setup": "Each player receives Target Cards for all opponents and a Withdrawal Card. Use the Multiplayer Momentum Meter and place Resilience cards (levels 1 and 2) within reach of all players.",
+      "gameplayChanges": "Rounds consist of Plan, Reveal, and Attack phases. Players secretly target one opponent; those targeted by two or more wrestlers receive Resilience cards to help them survive the round.",
+      "modeSpecificAbilities": "Players may secretly play a 'Withdrawal' card to gain resources but forfeit pinning abilities that round. Active wrestlers can also attempt to 'break up' pinfalls targeting other players.",
+      "gameEndConditions": "The match ends as soon as one wrestler successfully executes an attack or ability with a PIN icon and the defender (along with other active wrestlers) fails their kick-out attempts."
+    }
+  }
 }, {
   "name": "Abu Dhabi Rumble",
   "description": "Large-scale elimination match with timed entries",
-  "playerAmount": -1
+  "playerAmount": -1,
+  "guide": {
+    "solo": {
+      "overview": "A solo elimination contest where you lead a Faction of wrestlers against an NPC (Automa) Faction, aiming to throw opponents over the top rope until their entire team is eliminated.",
+      "setup": "Stack Rumble Bio cards for both sides in your chosen entry order. Set initial health and stamina on your board; the NPC uses Automa and Adapt cards to simulate decision-making and 'Hanging On' attempts.",
+      "attacking": "Deal 3 or more damage or use an 'Eliminate' special to trigger an elimination attempt. The NPC fails to 'Hang On' if a drawn Automa card’s K-value exceeds its current health.",
+      "defending": "When targeted for elimination, you must 'Hang On' by rolling two dice; success requires a total sum equal to or less than your health across three attempts, which are modified by low health or finishers.",
+      "winCondition": "The match is won by eliminating every wrestler in the NPC's Faction. All pinfall icons are ignored, as victory is secured solely by throwing opponents over the top rope.",
+      "npcRecovery": "If the NPC eliminates one of your wrestlers, it gains 7 health, recovers all Signature and Finisher cards from its discard pile, and removes its lowest-value Automa cards from play to increase difficulty."
+    },
+    "multiplayer": {
+      "concepts": "A faction-based elimination battle for 3–4 players. Wrestlers are replaced from a 'Faction Deck' immediately upon elimination until a team has no members left.",
+      "setup": "Recruit a Faction (typically 3 wrestlers with max 16 combined health) and select a specialized Rumble Attack Deck. Deal 2 Rumble Special cards to each player and use the Multiplayer Momentum Meter.",
+      "gameplayChanges": "Rounds consist of Draw, Plan, Reveal, and Attack phases. Turn order is determined by the Target Number of the played attack cards (highest goes first), and players receive Resilience cards if targeted by multiple opponents.",
+      "modeSpecificAbilities": "Utilize 'Attack Amplifiers' and Legendary Skills on Rumble Bio cards. Eliminating an opponent triggers a 'Boast,' allowing the attacker to gain 3 momentum, 1 stamina, and 2 cards.",
+      "gameEndConditions": "A player is eliminated when all wrestlers in their Faction have been thrown over the top rope. The match ends when only one Faction remains in the ring."
+    }
+  }
 }, {
   "name": "Promo",
   "description": "Non-wrestling segment for storyline development and character work",
@@ -21,7 +89,24 @@
 }, {
   "name": "Handicap Match",
   "description": "A match with uneven teams, where one side has a numerical disadvantage",
-  "playerAmount": -1
+  "playerAmount": -1,
+  "guide": {
+    "solo": {
+      "overview": "A solo Handicap Match is played using the Survivor War rules, where your wrestler (and potentially a partner) faces an NPC team that outnumbers you.",
+      "setup": "Place your starting wrestler's profile card by your board and stack any additional team members face-down to form a Team Deck. The NPC team is prepared with a larger stack of Campaign Profile Cards based on the specific campaign instruction.",
+      "attacking": "Standard initiative and attacking rules apply. Upon eliminating an NPC opponent, your active wrestler recovers a total of 7 health and stamina (split as you choose) and returns one random card from your discard pile to your hand.",
+      "defending": "If your active wrestler is eliminated, draw the next wrestler from your Team Deck and perform a standard setup; the match then resumes with a new roll for initiative.",
+      "winCondition": "Victory is achieved by eliminating every member of the outnumbering NPC team via pinfall or referee stoppage.",
+      "npcRecovery": "If an NPC eliminates one of your wrestlers, it gains 7 health, recovers all cards with a PIN icon, and discards its lowest-value Automa card to increase its late-match efficiency."
+    },
+    "multiplayer": {
+      "concepts": "The Handicap format is used to balance games between players of different skill levels by giving the less experienced side more wrestlers. Only two wrestlers are in the ring at a time, and there are no tagging mechanics.",
+      "setup": "Players recruit teams of unequal size and set their entry order by stacking Campaign Profile Cards face-down to create a Team Deck.",
+      "gameplayChanges": "When a wrestler is eliminated, the winner recovers 7 total health/stamina and one random attack card before the next opponent enters and initiative is rolled .",
+      "modeSpecificAbilities": "Matches can feature any wrestlers from your collection. In campaign play, permanent upgrades like status cards and injuries only affect your specific wrestler, not their teammates.",
+      "gameEndConditions": "The match ends immediately when a player has no wrestlers remaining in their Team Deck to replace an eliminated participant."
+    }
+  }
 }, {
   "name": "Faction Beatdown",
   "description": "A non-match segment where one or more wrestlers are attacked by a group",
