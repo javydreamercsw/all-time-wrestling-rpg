@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -66,6 +67,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @lombok.extern.slf4j.Slf4j
 public class ShowService {
+  private final CampaignRepository campaignRepository;
   private final ShowRepository showRepository;
   private final ShowTypeRepository showTypeRepository;
   private final SeasonRepository seasonRepository;
@@ -87,6 +89,7 @@ public class ShowService {
   private final GmModeService gmModeService;
 
   ShowService(
+      final CampaignRepository campaignRepository,
       final ShowRepository showRepository,
       final ShowTypeRepository showTypeRepository,
       final SeasonRepository seasonRepository,
@@ -106,6 +109,7 @@ public class ShowService {
       final SecurityUtils securityUtils,
       final ArenaRepository arenaRepository,
       final GmModeService gmModeService) {
+    this.campaignRepository = campaignRepository;
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
     this.seasonRepository = seasonRepository;
@@ -541,13 +545,18 @@ public class ShowService {
               segmentRepository.save(segment);
             });
 
-    wrestlerRepository.findAll().stream()
-        .filter(w -> !participatingWrestlerIds.contains(w.getId()))
-        .forEach(
-            resting -> {
-              Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : 1L;
-              wrestlerService.healChance(resting.getId(), universeId);
-            });
+    // Campaign universes handle healing exclusively through BackstageActionService (RECOVERY).
+    boolean isCampaignUniverse =
+        show.getUniverse() != null && campaignRepository.existsByUniverse(show.getUniverse());
+    if (!isCampaignUniverse) {
+      wrestlerRepository.findAll().stream()
+          .filter(w -> !participatingWrestlerIds.contains(w.getId()))
+          .forEach(
+              resting -> {
+                Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : 1L;
+                wrestlerService.healChance(resting.getId(), universeId);
+              });
+    }
 
     if (show.getShowDate() != null) {
       gameSettingService.saveCurrentGameDate(show.getShowDate().plusDays(1));
