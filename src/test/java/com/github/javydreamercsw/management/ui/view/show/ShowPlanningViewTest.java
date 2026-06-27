@@ -84,6 +84,9 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
   @Mock private UniverseContextService universeContextService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+
   @BeforeEach
   public void setUp() {
     showPlanningView =
@@ -102,7 +105,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
             aiFactory,
             arenaService,
             notificationService,
-            universeContextService);
+            universeContextService,
+            expansionService);
   }
 
   @Test

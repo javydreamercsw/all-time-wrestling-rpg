@@ -27,4 +27,7 @@ public class Expansion {
   private String code;
 
   private boolean enabled;
+
+  /** Release-time precedence for same-named type/rule conflicts. Higher wins. */
+  private int priority = 0;
 }

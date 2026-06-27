@@ -1,31 +1,41 @@
 [ {
   "name": "Base Game",
-  "expansion_code": "BASE_GAME"
+  "expansion_code": "BASE_GAME",
+  "priority": 10
 }, {
   "name": "Eddie Guerrero Expansion",
-  "expansion_code": "EDDIE"
+  "expansion_code": "EDDIE",
+  "priority": 10
 }, {
   "name": "ATW Extreme Expansion",
-  "expansion_code": "EXTREME"
+  "expansion_code": "EXTREME",
+  "priority": 10
 }, {
   "name": "Matt Cardona Expansion",
-  "expansion_code": "MATT_CARDONA"
+  "expansion_code": "MATT_CARDONA",
+  "priority": 10
 }, {
   "name": "Abu Dhabi Rumble Expansion",
-  "expansion_code": "RUMBLE"
+  "expansion_code": "RUMBLE",
+  "priority": 10
 }, {
   "name": "Trailblazers Expansion",
-  "expansion_code": "TRAILBLAZERS"
+  "expansion_code": "TRAILBLAZERS",
+  "priority": 10
 }, {
   "name": "ATW vs. WOW Expansion",
-  "expansion_code": "ATW_VS_WOW"
+  "expansion_code": "ATW_VS_WOW",
+  "priority": 10
 }, {
   "name": "Gail Kim Expansion",
-  "expansion_code": "GAIL_KIM"
+  "expansion_code": "GAIL_KIM",
+  "priority": 10
 }, {
   "name": "Hurt Business Expansion",
-  "expansion_code": "HURT_BUSINESS"
+  "expansion_code": "HURT_BUSINESS",
+  "priority": 10
 }, {
   "name": "Custom Content",
-  "expansion_code": "CUSTOM"
+  "expansion_code": "CUSTOM",
+  "priority": 0
 } ]

@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
@@ -146,6 +147,7 @@ public class ShowDetailView extends Main
   private final RingsideActionService ringsideActionService;
   private final ArenaService arenaService;
   private final WrestlerRelationshipService relationshipService;
+  private final ExpansionService expansionService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -202,7 +204,8 @@ public class ShowDetailView extends Main
       final ShowExportService exportService,
       final LeagueRepository leagueRepository,
       final SecurityUtils securityUtils,
-      final NarrationParserService narrationParserService) {
+      final NarrationParserService narrationParserService,
+      final ExpansionService expansionService) {
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
@@ -232,6 +235,7 @@ public class ShowDetailView extends Main
     this.leagueRepository = leagueRepository;
     this.securityUtils = securityUtils;
     this.narrationParserService = narrationParserService;
+    this.expansionService = expansionService;
     initializeComponents();
   }
 
@@ -1715,6 +1719,7 @@ public class ShowDetailView extends Main
                               npcService,
                               titleService,
                               wrestlerService,
+                              expansionService,
                               universeId);
                       return new Object[] {seg, preloaded};
                     }))

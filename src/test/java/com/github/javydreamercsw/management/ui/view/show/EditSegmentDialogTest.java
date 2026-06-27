@@ -55,6 +55,7 @@ class EditSegmentDialogTest {
   private SegmentTypeService segmentTypeService;
   private SegmentRuleService segmentRuleService;
   private NpcService npcService;
+  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
   private Runnable onSave;
   private SegmentType matchType;
   private UI ui;
@@ -79,6 +80,8 @@ class EditSegmentDialogTest {
     segmentTypeService = mock(SegmentTypeService.class);
     segmentRuleService = mock(SegmentRuleService.class);
     npcService = mock(NpcService.class);
+    expansionService =
+        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class);
 
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setId(1L);
@@ -130,6 +133,7 @@ class EditSegmentDialogTest {
             segmentTypeService,
             segmentRuleService,
             npcService,
+            expansionService,
             null,
             1L,
             onSave);
@@ -161,6 +165,7 @@ class EditSegmentDialogTest {
             segmentTypeService,
             segmentRuleService,
             npcService,
+            expansionService,
             null,
             1L,
             onSave);
@@ -192,6 +197,7 @@ class EditSegmentDialogTest {
             segmentTypeService,
             segmentRuleService,
             npcService,
+            expansionService,
             null,
             1L,
             onSave);
@@ -250,6 +256,7 @@ class EditSegmentDialogTest {
             segmentTypeService,
             segmentRuleService,
             npcService,
+            expansionService,
             null,
             1L,
             onSave);
@@ -318,6 +325,7 @@ class EditSegmentDialogTest {
             segmentTypeService,
             segmentRuleService,
             npcService,
+            expansionService,
             null,
             1L,
             onSave);

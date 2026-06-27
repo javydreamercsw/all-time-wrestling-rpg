@@ -115,6 +115,9 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private NarrationParserService narrationParserService;
 
+  @Mock
+  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+
   @BeforeEach
   public void setUp() {
     // mocks initialized by AbstractViewTest.setupKaribu()
@@ -190,7 +193,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               exportService,
               leagueRepository,
               mock(SecurityUtils.class),
-              mock(NarrationParserService.class));
+              mock(NarrationParserService.class),
+              mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class));
       java.util.Map<Integer, java.util.List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
       teamMap.put(1, List.of(wrestler1));
       teamMap.put(2, List.of(wrestler2));
@@ -284,7 +288,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               exportService,
               leagueRepository,
               mock(SecurityUtils.class),
-              mock(NarrationParserService.class));
+              mock(NarrationParserService.class),
+              mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class));
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());
@@ -406,6 +411,7 @@ class ShowDetailViewTest extends AbstractViewTest {
         exportService,
         leagueRepository,
         su,
-        narrationParserService);
+        narrationParserService,
+        expansionService);
   }
 }

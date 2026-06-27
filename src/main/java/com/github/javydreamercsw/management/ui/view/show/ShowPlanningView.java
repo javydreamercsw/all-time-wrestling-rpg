@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -100,6 +101,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final TitleService titleService;
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
+  private final ExpansionService expansionService;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
@@ -128,7 +130,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       final SegmentNarrationServiceFactory aiFactory,
       final ArenaService arenaService,
       final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
-      final UniverseContextService universeContextService) {
+      final UniverseContextService universeContextService,
+      final ExpansionService expansionService) {
 
     this.showService = showService;
     this.showPlanningService = showPlanningService;
@@ -145,6 +148,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.titleService = titleService;
     this.segmentTypeService = segmentTypeService;
     this.segmentRuleService = segmentRuleService;
+    this.expansionService = expansionService;
 
     setSizeFull();
     addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
@@ -261,6 +265,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                                         npcService,
                                         titleService,
                                         wrestlerService,
+                                        expansionService,
                                         universeId)))
                     .thenAccept(
                         preloaded ->

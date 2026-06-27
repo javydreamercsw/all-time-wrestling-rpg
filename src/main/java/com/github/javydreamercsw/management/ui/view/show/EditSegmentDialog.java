@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
@@ -70,7 +71,8 @@ public class EditSegmentDialog extends Dialog {
       List<Npc> referees,
       List<Title> titles,
       List<Wrestler> activeWrestlers,
-      Map<String, Wrestler> wrestlerByName) {
+      Map<String, Wrestler> wrestlerByName,
+      Map<String, String> expansionNames) {
 
     public static PreloadedData load(
         final SegmentTypeService segmentTypeService,
@@ -78,11 +80,19 @@ public class EditSegmentDialog extends Dialog {
         final com.github.javydreamercsw.management.service.npc.NpcService npcService,
         final TitleService titleService,
         final WrestlerService wrestlerService,
+        final ExpansionService expansionService,
         final Long universeId) {
       List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
       Map<String, Wrestler> byName =
           wrestlerService.getAllWrestlers().stream()
               .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
+      Map<String, String> expNames =
+          expansionService.getExpansions().stream()
+              .collect(
+                  Collectors.toMap(
+                      com.github.javydreamercsw.management.service.expansion.Expansion::getCode,
+                      com.github.javydreamercsw.management.service.expansion.Expansion::getName,
+                      (a, b) -> a));
       return new PreloadedData(
           segmentTypeService.findAll().stream()
               .sorted(Comparator.comparing(SegmentType::getName))
@@ -95,7 +105,8 @@ public class EditSegmentDialog extends Dialog {
               .collect(Collectors.toList()),
           titleService.findAll(),
           active,
-          byName);
+          byName,
+          expNames);
     }
   }
 
@@ -279,7 +290,8 @@ public class EditSegmentDialog extends Dialog {
 
     segmentTypeCombo = new ComboBox<>("Segment Type");
     segmentTypeCombo.setItems(data.segmentTypes());
-    segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
+    segmentTypeCombo.setItemLabelGenerator(
+        st -> expansionLabel(st.getName(), st.getExpansionCode(), data.expansionNames()));
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
     if (initial.typeName() != null) {
@@ -299,7 +311,8 @@ public class EditSegmentDialog extends Dialog {
 
     rulesCombo = new MultiSelectComboBox<>("Segment Rules");
     rulesCombo.setItems(data.segmentRules());
-    rulesCombo.setItemLabelGenerator(SegmentRule::getName);
+    rulesCombo.setItemLabelGenerator(
+        r -> expansionLabel(r.getName(), r.getExpansionCode(), data.expansionNames()));
     rulesCombo.setWidthFull();
     rulesCombo.setValue(initial.segmentRules());
     rulesCombo.setId("edit-segment-rules-combo-box");
@@ -618,6 +631,7 @@ public class EditSegmentDialog extends Dialog {
       final SegmentTypeService segmentTypeService,
       final SegmentRuleService segmentRuleService,
       final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+      final ExpansionService expansionService,
       final Gender defaultGenderConstraint,
       final Long universeId,
       final Runnable onSave) {
@@ -629,6 +643,7 @@ public class EditSegmentDialog extends Dialog {
             npcService,
             titleService,
             wrestlerService,
+            expansionService,
             universeId),
         wrestlerService,
         defaultGenderConstraint,
@@ -717,5 +732,14 @@ public class EditSegmentDialog extends Dialog {
 
   public void save() {
     saveButton.click();
+  }
+
+  private static String expansionLabel(
+      final String name, final String code, final Map<String, String> expansionNames) {
+    if (code == null || "BASE_GAME".equals(code)) {
+      return name;
+    }
+    String expName = expansionNames.getOrDefault(code, code);
+    return name + "  [" + expName + "]";
   }
 }

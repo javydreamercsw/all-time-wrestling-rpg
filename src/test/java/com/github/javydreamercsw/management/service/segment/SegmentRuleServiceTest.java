@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +81,9 @@ class SegmentRuleServiceTest {
     // Default: no active universe, all expansions enabled
     Mockito.when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     Mockito.when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(List.of("BASE_GAME", "CUS"));
+        .thenReturn(List.of("BASE_GAME", "CUSTOM"));
+    Mockito.when(expansionService.buildPriorityMap())
+        .thenReturn(Map.of("BASE_GAME", 10, "CUSTOM", 0));
   }
 
   @Test
@@ -393,5 +396,64 @@ class SegmentRuleServiceTest {
         "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);
 
     verify(segmentRuleRepository, Mockito.never()).save(any());
+  }
+
+  // ==================== priority deduplication ====================
+
+  @Test
+  void findAll_sameNameDifferentExpansions_returnsHigherPriorityVersion() {
+    SegmentRule baseRule = new SegmentRule();
+    baseRule.setName("Ladder Match");
+    baseRule.setExpansionCode("BASE_GAME");
+    baseRule.setDescription("Base version");
+    baseRule.setNoDq(false);
+    baseRule.setRequiresHighHeat(false);
+    baseRule.setBumpAddition(BumpAddition.NONE);
+
+    SegmentRule v2Rule = new SegmentRule();
+    v2Rule.setName("Ladder Match");
+    v2Rule.setExpansionCode("LADDER_V2");
+    v2Rule.setDescription("Enhanced version");
+    v2Rule.setNoDq(false);
+    v2Rule.setRequiresHighHeat(false);
+    v2Rule.setBumpAddition(BumpAddition.NONE);
+
+    Mockito.when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(List.of("BASE_GAME", "LADDER_V2"));
+    Mockito.when(expansionService.buildPriorityMap())
+        .thenReturn(Map.of("BASE_GAME", 10, "LADDER_V2", 20));
+    when(segmentRuleRepository.findAll()).thenReturn(List.of(baseRule, v2Rule));
+
+    List<SegmentRule> result = segmentRuleService.findAll();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getDescription()).isEqualTo("Enhanced version");
+    assertThat(result.get(0).getExpansionCode()).isEqualTo("LADDER_V2");
+  }
+
+  @Test
+  void findAll_customAndOfficialSameName_officialWins() {
+    SegmentRule customRule = new SegmentRule();
+    customRule.setName("Ladder Match");
+    customRule.setExpansionCode("CUSTOM");
+    customRule.setDescription("Custom variant");
+    customRule.setNoDq(false);
+    customRule.setRequiresHighHeat(false);
+    customRule.setBumpAddition(BumpAddition.NONE);
+
+    SegmentRule officialRule = new SegmentRule();
+    officialRule.setName("Ladder Match");
+    officialRule.setExpansionCode("BASE_GAME");
+    officialRule.setDescription("Official");
+    officialRule.setNoDq(false);
+    officialRule.setRequiresHighHeat(false);
+    officialRule.setBumpAddition(BumpAddition.NONE);
+
+    when(segmentRuleRepository.findAll()).thenReturn(List.of(customRule, officialRule));
+
+    List<SegmentRule> result = segmentRuleService.findAll();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getDescription()).isEqualTo("Official");
   }
 }

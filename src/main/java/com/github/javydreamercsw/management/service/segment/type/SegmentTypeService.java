@@ -28,9 +28,11 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -80,8 +82,21 @@ public class SegmentTypeService {
   @Cacheable(value = CacheConfig.SEGMENT_TYPES_CACHE, key = "'all'")
   public List<SegmentType> findAll() {
     Set<String> enabled = enabledExpansionCodes();
+    Map<String, Integer> priorities = expansionService.buildPriorityMap();
     return segmentTypeRepository.findAll().stream()
         .filter(st -> st.getExpansionCode() == null || enabled.contains(st.getExpansionCode()))
+        .collect(
+            Collectors.toMap(
+                SegmentType::getName,
+                st -> st,
+                (a, b) ->
+                    priorities.getOrDefault(a.getExpansionCode(), 0)
+                            >= priorities.getOrDefault(b.getExpansionCode(), 0)
+                        ? a
+                        : b))
+        .values()
+        .stream()
+        .sorted(Comparator.comparing(SegmentType::getName))
         .collect(Collectors.toList());
   }
 
