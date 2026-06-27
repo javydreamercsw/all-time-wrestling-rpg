@@ -249,7 +249,7 @@ public class EditSegmentDialog extends Dialog {
   private final Checkbox isTitleSegmentCheckbox;
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
   private final VerticalLayout teamsLayout = new VerticalLayout();
-  private final Map<Long, IntegerField> healthFields = new HashMap<>();
+  @Getter private final Map<Long, IntegerField> healthFields = new HashMap<>();
 
   // ==================== MAIN CONSTRUCTOR ====================
 
