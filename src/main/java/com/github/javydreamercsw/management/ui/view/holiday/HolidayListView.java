@@ -203,6 +203,7 @@ public class HolidayListView extends Main {
     toolbar.addClassNames(LumoUtility.Gap.MEDIUM, LumoUtility.Padding.MEDIUM);
     toolbar.setWidthFull();
     toolbar.setJustifyContentMode(HorizontalLayout.JustifyContentMode.BETWEEN);
+    toolbar.getStyle().set("flex-wrap", "wrap");
 
     // Left side - title and search
     VerticalLayout leftSide = new VerticalLayout();
