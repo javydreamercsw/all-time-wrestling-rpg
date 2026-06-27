@@ -211,6 +211,7 @@ public class CardListView extends Main {
             })
         .setHeader("Actions");
     cardGrid.setSizeFull();
+    cardGrid.setMinWidth("1100px");
 
     // Bind editor fields
     binder.forField(nameField).bind("name");
@@ -253,12 +254,16 @@ public class CardListView extends Main {
     actions.setVisible(securityUtils.canEdit());
     cardGrid.getElement().appendChild(actions.getElement());
 
+    com.vaadin.flow.component.html.Div gridWrapper =
+        new com.vaadin.flow.component.html.Div(cardGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+
     if (securityUtils.canCreate()) {
       add(new ViewToolbar("Card List", ViewToolbar.group(name, createBtn)));
     } else {
       add(new ViewToolbar("Card List"));
     }
-    add(cardGrid, actions);
+    add(gridWrapper, actions);
   }
 
   private void createTask() {

@@ -295,6 +295,17 @@
     --lumo-contrast-20pct: rgba(0, 0, 0, 0.4);
 }
 
+/* Horizontally-scrollable grid wrapper — used on wide grids so mobile users can
+   scroll rather than seeing compressed columns. Apply the class to a Div parent
+   of the Grid; set min-width on the Grid itself so it does not compress. */
+.grid-scroll-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-grow: 1;
+    min-height: 0;
+}
+
 /* Profile Drawer */
 .profile-drawer::part(overlay) {
     position: absolute;

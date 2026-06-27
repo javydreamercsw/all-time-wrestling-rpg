@@ -629,6 +629,7 @@ public class ShowDetailView extends Main
 
     segmentsGrid = createSegmentsGrid(segments);
     segmentsGrid.setSizeFull();
+    segmentsGrid.setMinWidth("1100px");
     segmentsGrid.setId("segments-grid");
 
     segmentsProgressBar = new com.vaadin.flow.component.progressbar.ProgressBar();
