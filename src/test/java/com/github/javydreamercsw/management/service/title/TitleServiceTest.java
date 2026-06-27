@@ -323,6 +323,37 @@ class TitleServiceTest {
   }
 
   @Test
+  void findAll_includesTitleWithMatchingExpansionCode() {
+    title.setExpansionCode("BASE_GAME");
+    when(titleRepository.findAll()).thenReturn(List.of(title));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME"));
+
+    assertThat(titleService.findAll()).containsExactly(title);
+  }
+
+  @Test
+  void findAll_excludesTitleWhoseExpansionCodeIsDisabled() {
+    title.setExpansionCode("PREMIUM_PACK");
+    when(titleRepository.findAll()).thenReturn(List.of(title));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME"));
+
+    assertThat(titleService.findAll()).isEmpty();
+  }
+
+  @Test
+  void findAll_includesTitleWhenEnabledCodesEmptyDefensiveFallback() {
+    // Regression: when expansions.json is unreadable the enabled-codes set is empty.
+    // All titles must still appear rather than being silently hidden (ATW-ncn6).
+    title.setExpansionCode("BASE_GAME");
+    when(titleRepository.findAll()).thenReturn(List.of(title));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of());
+
+    assertThat(titleService.findAll())
+        .as("titles must not be hidden when expansion registry is empty")
+        .containsExactly(title);
+  }
+
+  @Test
   void getAllTitles_returnsPage() {
     Page<Title> page = new PageImpl<>(List.of(title));
     when(titleRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
