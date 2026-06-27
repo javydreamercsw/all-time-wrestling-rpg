@@ -399,4 +399,25 @@
       "gameEndConditions": "The match ends immediately when a player has no more wrestlers remaining in their Team Deck to replace an eliminated participant."
     }
   }
+}, {
+  "name": "Faction Beatdown",
+  "description": "A non-match segment where one or more wrestlers are attacked by a group",
+  "requiresHighHeat": false,
+  "noDq": false,
+  "bumpAddition": "NONE",
+  "expansion_code": "CUSTOM"
+}, {
+  "name": "GM Office Confrontation",
+  "description": "A backstage segment where the player confronts management",
+  "requiresHighHeat": false,
+  "noDq": false,
+  "bumpAddition": "NONE",
+  "expansion_code": "CUSTOM"
+}, {
+  "name": "Performance Review",
+  "description": "A segment where management evaluates the player's status and results",
+  "requiresHighHeat": false,
+  "noDq": false,
+  "bumpAddition": "NONE",
+  "expansion_code": "CUSTOM"
 } ]
