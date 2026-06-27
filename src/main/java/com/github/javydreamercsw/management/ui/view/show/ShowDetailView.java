@@ -1270,13 +1270,15 @@ public class ShowDetailView extends Main
     infoButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     infoButton.setTooltipText("How to Play");
     infoButton.setId("match-info-button-" + segment.getId());
-    boolean hasRules = !segment.getSegmentRules().isEmpty();
-    infoButton.setVisible(hasRules);
+    boolean hasTypeGuide =
+        segment.getSegmentType() != null && segment.getSegmentType().getGuide() != null;
+    boolean hasRuleGuide = segment.getSegmentRules().stream().anyMatch(r -> r.getRules() != null);
+    infoButton.setVisible(hasTypeGuide || hasRuleGuide);
     infoButton.addClickListener(
         e ->
-            segment.getSegmentRules().stream()
-                .findFirst()
-                .ifPresent(rule -> new MatchInfoDialog(rule).open()));
+            new MatchInfoDialog(
+                    segment.getSegmentType(), segment.getSegmentRules().stream().toList())
+                .open());
 
     return new VerticalLayout(
         summaryButton, narrateButton, editButton, deleteButton, qrButton, infoButton);

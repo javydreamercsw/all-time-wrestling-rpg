@@ -16,13 +16,20 @@
 */
 package com.github.javydreamercsw.management.service.segment.type;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.config.CacheConfig;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -38,6 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 public class SegmentTypeService {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final SegmentTypeRepository segmentTypeRepository;
   private final ExpansionService expansionService;
@@ -95,7 +104,7 @@ public class SegmentTypeService {
   @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
   public SegmentType createOrUpdateSegmentType(
       @NonNull final String name, @NonNull final String description) {
-    return createOrUpdateSegmentType(name, description, "BASE_GAME");
+    return createOrUpdateSegmentType(name, description, "BASE_GAME", null);
   }
 
   @Transactional
@@ -104,16 +113,34 @@ public class SegmentTypeService {
   @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
   public SegmentType createOrUpdateSegmentType(
       @NonNull final String name, @NonNull final String description, final String expansionCode) {
+    return createOrUpdateSegmentType(name, description, expansionCode, null);
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
+  public SegmentType createOrUpdateSegmentType(
+      @NonNull final String name,
+      @NonNull final String description,
+      final String expansionCode,
+      final SegmentRulePlayGuide guide) {
+    String incomingHash = computeGuideHash(guide);
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
     if (existingOpt.isPresent()) {
       SegmentType st = existingOpt.get();
-      if (st.getDescription() != null
-          && st.getDescription().equals(description)
-          && st.getExpansionCode().equals(expansionCode)) {
+      boolean guideChanged = !java.util.Objects.equals(st.getGuideHash(), incomingHash);
+      if (java.util.Objects.equals(st.getDescription(), description)
+          && java.util.Objects.equals(st.getExpansionCode(), expansionCode)
+          && !guideChanged) {
         return st;
       }
       st.setDescription(description);
-      st.setExpansionCode(expansionCode);
+      st.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
+      if (guideChanged) {
+        st.setGuide(guide);
+        st.setGuideHash(incomingHash);
+      }
       log.debug("Updating existing segment type: {}", name);
       return segmentTypeRepository.save(st);
     }
@@ -123,7 +150,24 @@ public class SegmentTypeService {
     segmentType.setName(name);
     segmentType.setDescription(description);
     segmentType.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
+    segmentType.setGuide(guide);
+    segmentType.setGuideHash(incomingHash);
     return segmentTypeRepository.save(segmentType);
+  }
+
+  private String computeGuideHash(final SegmentRulePlayGuide guide) {
+    if (guide == null) {
+      return null;
+    }
+    try {
+      String json = OBJECT_MAPPER.writeValueAsString(guide);
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(json.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(hash);
+    } catch (JsonProcessingException | NoSuchAlgorithmException e) {
+      log.warn("Failed to compute guide hash for segment type", e);
+      return null;
+    }
   }
 
   @Transactional

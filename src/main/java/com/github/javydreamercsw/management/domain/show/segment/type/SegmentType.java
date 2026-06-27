@@ -17,11 +17,15 @@
 package com.github.javydreamercsw.management.domain.show.segment.type;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuideConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -53,6 +57,14 @@ public class SegmentType extends AbstractEntity<Long> {
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
+
+  @Lob
+  @Column(name = "guide_json", columnDefinition = "LONGTEXT")
+  @Convert(converter = SegmentRulePlayGuideConverter.class)
+  @Nullable private SegmentRulePlayGuide guide;
+
+  @Column(name = "guide_hash", length = 64)
+  @Nullable private String guideHash;
 
   /** Ensure default values before persisting. */
   @PrePersist
