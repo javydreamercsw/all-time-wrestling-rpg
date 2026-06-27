@@ -45,7 +45,7 @@
 }, {
   "name": "Free-for-All",
   "description": "Multi-person match where everyone fights at once",
-  "expansion_code": "BASE_GAME",
+  "expansion_code": "RUMBLE",
   "playerAmount": -1,
   "guide": {
     "solo": {
@@ -67,7 +67,7 @@
 }, {
   "name": "Abu Dhabi Rumble",
   "description": "Large-scale elimination match with timed entries",
-  "expansion_code": "BASE_GAME",
+  "expansion_code": "RUMBLE",
   "playerAmount": -1,
   "guide": {
     "solo": {

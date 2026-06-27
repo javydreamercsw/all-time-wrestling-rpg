@@ -4,6 +4,7 @@
   "requiresHighHeat": false,
   "noDq": true,
   "bumpAddition": "ALL",
+  "expansion_code": "EXTREME",
   "guide": {
     "solo": {
       "overview": "An No DQ match is a contest where wrestlers cannot be disqualified; these rules are automatically in effect whenever weapons are included as part of the match setup.",
@@ -27,6 +28,7 @@
   "requiresHighHeat": false,
   "noDq": false,
   "bumpAddition": "NONE",
+  "expansion_code": "BASE_GAME",
   "guide": {
     "solo": {
       "overview": "A solo match is a single-player contest where you face an NPC (Automa) opponent governed by deck-driven decision-making and advanced 1v1 rules.",
@@ -74,6 +76,7 @@
   "requiresHighHeat": false,
   "noDq": false,
   "bumpAddition": "NONE",
+  "expansion_code": "RUMBLE",
   "guide": {
     "solo": {
       "overview": "A solo elimination contest where you lead a Faction against an NPC (Automa) Faction, aiming to throw opponents over the top rope until their entire team is eliminated.",
@@ -121,6 +124,7 @@
   "requiresHighHeat": false,
   "noDq": true,
   "bumpAddition": "NONE",
+  "expansion_code": "BASE_GAME",
   "guide": {
     "solo": {
       "overview": "A promo segment builds fan heat and advances storylines without physical combat. Your goal is to maximize crowd reaction and momentum.",
@@ -144,6 +148,7 @@
   "requiresHighHeat": true,
   "noDq": true,
   "bumpAddition": "ALL",
+  "expansion_code": "BASE_GAME",
   "guide": {
     "solo": {
       "overview": "A solo cage match combines standard Automa mechanics with a race to climb the cage; victory is achieved solely by reaching the 'Victory!' space on the escape track.",
@@ -167,6 +172,7 @@
   "requiresHighHeat": true,
   "noDq": true,
   "bumpAddition": "ALL",
+  "expansion_code": "EXTREME",
   "guide": {
     "solo": {
       "overview": "A solo last man standing match is a grueling no-disqualification contest where standard pinfalls are disabled; victory is only achieved by keeping the NPC down for a 10-count.",
@@ -334,6 +340,7 @@
   "requiresHighHeat": true,
   "noDq": true,
   "bumpAddition": "ALL",
+  "expansion_code": "EXTREME",
   "guide": {
     "solo": {
       "overview": "A Solo Barbwire Exploding Deathmatch is a brutal No-DQ contest where you face an NPC opponent in a ring surrounded by explosives set to detonate at the 25-minute mark.",
