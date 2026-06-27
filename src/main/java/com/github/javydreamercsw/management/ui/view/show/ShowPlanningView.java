@@ -271,23 +271,27 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                         preloaded ->
                             ui.access(
                                 () -> {
-                                  EditSegmentDialog dialog =
+                                  EditSegmentDialog[] ref = new EditSegmentDialog[1];
+                                  ref[0] =
                                       new EditSegmentDialog(
                                           segment,
                                           preloaded,
                                           wrestlerService,
                                           constraint,
                                           universeId,
-                                          () ->
-                                              proposedSegmentsGrid.getDataProvider().refreshAll());
-                                  dialog.addOpenedChangeListener(
+                                          () -> {
+                                            proposedSegmentsGrid.getDataProvider().refreshAll();
+                                            ref[0].close();
+                                            notificationService.showSuccess("Segment saved");
+                                          });
+                                  ref[0].addOpenedChangeListener(
                                       ev -> {
                                         if (!ev.isOpened()) {
                                           editButton.setEnabled(true);
                                           editButton.setText("Edit");
                                         }
                                       });
-                                  dialog.open();
+                                  ref[0].open();
                                 }))
                     .exceptionally(
                         ex -> {
