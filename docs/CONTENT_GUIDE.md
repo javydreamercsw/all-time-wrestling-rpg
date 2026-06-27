@@ -201,27 +201,27 @@ Both segment types (`guide`) and segment rules (`rules`) share the same play gui
 
 The guide has two top-level variant keys:
 
-| Key | When shown |
-|-----|-----------|
-| `solo` | Solo (player vs NPC) play |
+|      Key      |          When shown           |
+|---------------|-------------------------------|
+| `solo`        | Solo (player vs NPC) play     |
 | `multiplayer` | Head-to-head multiplayer play |
 
 Each variant is an object with any combination of the following optional text fields. Blank or absent fields are silently skipped in the rendered output:
 
-| Field | Purpose |
-|-------|---------|
-| `overview` | One-paragraph summary of this match type/stipulation |
-| `setup` | Board/card setup instructions before the match begins |
-| `attacking` | How to play cards and resolve attacks |
-| `defending` | How to respond to the opponent's attacks |
-| `winCondition` | How to win (pinfall, KO, etc.) |
-| `npcRecovery` | How the NPC/Automa recovers health or stamina |
-| `topOfCageStruggle` | Cage-specific rule for the top-of-cage struggle phase |
-| `npcWinConditions` | Conditions under which the NPC wins |
-| `concepts` | Multiplayer-specific core concepts |
-| `gameplayChanges` | How multiplayer differs from the base rules |
+|          Field          |                        Purpose                        |
+|-------------------------|-------------------------------------------------------|
+| `overview`              | One-paragraph summary of this match type/stipulation  |
+| `setup`                 | Board/card setup instructions before the match begins |
+| `attacking`             | How to play cards and resolve attacks                 |
+| `defending`             | How to respond to the opponent's attacks              |
+| `winCondition`          | How to win (pinfall, KO, etc.)                        |
+| `npcRecovery`           | How the NPC/Automa recovers health or stamina         |
+| `topOfCageStruggle`     | Cage-specific rule for the top-of-cage struggle phase |
+| `npcWinConditions`      | Conditions under which the NPC wins                   |
+| `concepts`              | Multiplayer-specific core concepts                    |
+| `gameplayChanges`       | How multiplayer differs from the base rules           |
 | `modeSpecificAbilities` | Special abilities or card substitutions for this mode |
-| `gameEndConditions` | Conditions that end the match in multiplayer |
+| `gameEndConditions`     | Conditions that end the match in multiplayer          |
 
 **Minimal example (solo only):**
 
