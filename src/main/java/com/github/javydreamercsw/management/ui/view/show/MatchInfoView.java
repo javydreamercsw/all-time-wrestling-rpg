@@ -20,10 +20,10 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleVariantGuide;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.ui.component.GuideTextRenderer;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -111,10 +111,6 @@ public class MatchInfoView extends VerticalLayout implements BeforeEnterObserver
   }
 
   private void addSection(final VerticalLayout parent, final String label, final String text) {
-    if (text == null || text.isBlank()) {
-      return;
-    }
-    parent.add(new H3(label));
-    parent.add(new Paragraph(text));
+    GuideTextRenderer.addSection(parent, label, text);
   }
 }

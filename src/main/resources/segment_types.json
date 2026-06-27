@@ -6,18 +6,18 @@
   "guide": {
     "solo": {
       "overview": "A solo match is a single-player contest where you face an NPC (Automa) opponent governed by deck-driven decision-making and specialized rules for automated play.",
-      "setup": "Place health and stamina cubes on your board and select 5 starting attack cards totaling no more than 9 damage. Configure the NPC with reversal cubes and specific Automa/Adapt cards based on your chosen difficulty level (Easy, Medium, or Hard).",
-      "attacking": "When you have initiative, play an attack card by spending stamina and rolling your player dice alongside a single Automa die. Your success depends on meeting the target number, but the Automa die can trigger NPC reversals or force you to resolve 'Adapt' card effects.",
-      "defending": "To resolve an NPC attack, reveal the top card of its deck. You may use your Defensive Ability Window to block or reverse; otherwise, draw an Automa card to determine the NPC's final attack total based on the listed 'D' value.",
-      "winCondition": "Victory is secured by successfully executing an attack that features a PIN icon. The NPC fails to kick out if the K-values on three consecutive Automa card draws exceed its current health.",
-      "npcRecovery": "NPCs do not track or spend stamina and only regain 1 health if you choose to use a taunt or recover action during your turn. If the NPC deck is depleted, it is reshuffled after removing its lowest-damage cards."
+      "setup": "Place [[health]] and [[stamina]] cubes on your board and select 5 starting attack [[card]]s totaling no more than 9 damage. Configure the NPC with [[reversal]] cubes and specific Automa/Adapt cards based on your chosen difficulty level (Easy, Medium, or Hard).",
+      "attacking": "When you have initiative, play an attack [[card]] by spending [[stamina]] and rolling your player dice alongside a single Automa die. Your success depends on meeting the target number, but the Automa die can trigger NPC [[reversal]]s or force you to resolve 'Adapt' card effects.",
+      "defending": "To resolve an NPC attack, reveal the top [[card]] of its deck. You may use your Defensive Ability Window to block or [[reversal]] reverse; otherwise, draw an Automa card to determine the NPC's final attack total based on the listed 'D' value.",
+      "winCondition": "Victory is secured by successfully executing an attack that features a [[pin]] icon. The NPC fails to kick out if the K-values on three consecutive Automa card draws exceed its current [[health]].",
+      "npcRecovery": "NPCs do not track or spend [[stamina]] and only regain 1 [[health]] if you choose to use a taunt or recover action during your turn. If the NPC deck is depleted, it is reshuffled after removing its lowest-damage cards."
     },
     "multiplayer": {
       "concepts": "Multiplayer 1v1 matches utilize an initiative system where the attacker continues to play cards from their hand until they miss an attack roll or the defender successfully blocks or reverses a move.",
-      "setup": "Both players start with maximum health and stamina, a hand of 5 cards (max 9 damage), and 3 tokens (1 reversal and 2 one-time abilities). A high-die roll determines the first attacker, who must then spend 1 stamina and shuffle 1 random card from their hand back into their deck.",
-      "gameplayChanges": "Attackers spend stamina to play cards against a target number modified by match momentum and opponent fatigue. For every successful attack suffered, the defender receives 'compensation' in the form of 1 card or 1 stamina to help them regain initiative.",
-      "modeSpecificAbilities": "Wrestlers can use Taunt or Recover icons to gain resources, though doing so allows the defender to recover health or stamina as well. Players can also chain moves with matching icons to form powerful Combo chains.",
-      "gameEndConditions": "The match ends via pinfall or submission if a defender fails three 2D6 kick-out rolls after a PIN icon move. Matches can also end in referee stoppage due to deck depletion or a time-limit draw after 7 'Blind Attacks'."
+      "setup": "Both players start with maximum [[health]] and [[stamina]], a hand of 5 [[card]]s (max 9 damage), and 3 tokens (1 [[reversal]] and 2 one-time abilities). A high-die roll determines the first attacker, who must then spend 1 [[stamina]] and shuffle 1 random [[card]] from their hand back into their deck.",
+      "gameplayChanges": "Attackers spend [[stamina]] to play [[card]]s against a target number modified by match [[momentum]] and opponent fatigue. For every successful attack suffered, the defender receives 'compensation' in the form of 1 [[card]] or 1 [[stamina]] to help them regain initiative.",
+      "modeSpecificAbilities": "Wrestlers can use Taunt or Recover icons to gain resources, though doing so allows the defender to recover [[health]] or [[stamina]] as well. Players can also chain moves with matching icons to form powerful Combo chains.",
+      "gameEndConditions": "The match ends via pinfall or submission if a defender fails three 2D6 kick-out rolls after a [[pin]] icon move. Matches can also end in referee stoppage due to deck depletion or a time-limit draw after 7 'Blind Attacks'."
     }
   }
 }, {

@@ -19,12 +19,12 @@ package com.github.javydreamercsw.management.ui.view.show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleVariantGuide;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.ui.component.GuideTextRenderer;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -155,11 +155,7 @@ public class MatchInfoDialog extends Dialog {
   }
 
   private void addSection(final VerticalLayout parent, final String label, final String text) {
-    if (!isPresent(text)) {
-      return;
-    }
-    parent.add(new H3(label));
-    parent.add(new Paragraph(text));
+    GuideTextRenderer.addSection(parent, label, text);
   }
 
   private boolean isPresent(final String text) {
