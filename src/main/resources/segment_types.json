@@ -1,6 +1,7 @@
 [ {
   "name": "One on One",
   "description": "Traditional singles wrestling match between two competitors",
+  "expansion_code": "BASE_GAME",
   "playerAmount": 2,
   "guide": {
     "solo": {
@@ -22,6 +23,7 @@
 }, {
   "name": "Tag Team",
   "description": "Team-based wrestling match with tag-in/tag-out mechanics",
+  "expansion_code": "BASE_GAME",
   "playerAmount": -1,
   "guide": {
     "solo": {
@@ -43,6 +45,7 @@
 }, {
   "name": "Free-for-All",
   "description": "Multi-person match where everyone fights at once",
+  "expansion_code": "BASE_GAME",
   "playerAmount": -1,
   "guide": {
     "solo": {
@@ -64,6 +67,7 @@
 }, {
   "name": "Abu Dhabi Rumble",
   "description": "Large-scale elimination match with timed entries",
+  "expansion_code": "BASE_GAME",
   "playerAmount": -1,
   "guide": {
     "solo": {
@@ -85,10 +89,12 @@
 }, {
   "name": "Promo",
   "description": "Non-wrestling segment for storyline development and character work",
+  "expansion_code": "BASE_GAME",
   "playerAmount": -1
 }, {
   "name": "Handicap Match",
   "description": "A match with uneven teams, where one side has a numerical disadvantage",
+  "expansion_code": "BASE_GAME",
   "playerAmount": -1,
   "guide": {
     "solo": {

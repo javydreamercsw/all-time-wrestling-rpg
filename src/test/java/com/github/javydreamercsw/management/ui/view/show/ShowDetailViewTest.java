@@ -38,9 +38,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -51,7 +49,9 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -87,13 +87,13 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private SegmentRepository segmentRepository;
-  @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private SegmentTypeService segmentTypeService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private TitleService titleService;
-  @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private SegmentRuleService segmentRuleService;
   @Mock private ShowTypeService showTypeService;
   @Mock private SeasonService seasonService;
   @Mock private ShowTemplateService showTemplateService;
@@ -165,8 +165,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               showService,
               segmentService,
               segmentRepository,
-              segmentTypeRepository,
-              segmentRuleRepository,
+              segmentTypeService,
+              segmentRuleService,
               npcService,
               wrestlerService,
               wrestlerStatsService,
@@ -259,8 +259,8 @@ class ShowDetailViewTest extends AbstractViewTest {
               showService,
               segmentService,
               segmentRepository,
-              segmentTypeRepository,
-              segmentRuleRepository,
+              segmentTypeService,
+              segmentRuleService,
               npcService,
               wrestlerService,
               wrestlerStatsService,
@@ -381,8 +381,8 @@ class ShowDetailViewTest extends AbstractViewTest {
         showService,
         segmentService,
         segmentRepository,
-        segmentTypeRepository,
-        segmentRuleRepository,
+        segmentTypeService,
+        segmentRuleService,
         npcService,
         wrestlerService,
         wrestlerStatsService,

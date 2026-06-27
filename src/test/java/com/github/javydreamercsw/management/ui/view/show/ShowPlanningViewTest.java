@@ -30,10 +30,10 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.CardValidationResult;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
@@ -74,8 +74,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
   @Mock private ShowTemplateService showTemplateService;
   private ShowPlanningView showPlanningView;
   @Mock private TitleService titleService;
-  @Mock private SegmentTypeRepository segmentTypeRepository;
-  @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private SegmentTypeService segmentTypeService;
+  @Mock private SegmentRuleService segmentRuleService;
   @Mock private NpcService npcService;
   @Mock private ObjectMapper objectMapper;
   @Mock private SegmentNarrationServiceFactory aiFactory;
@@ -95,8 +95,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
             showTemplateService,
             wrestlerRepository,
             titleService,
-            segmentTypeRepository,
-            segmentRuleRepository,
+            segmentTypeService,
+            segmentRuleService,
             npcService,
             objectMapper,
             aiFactory,

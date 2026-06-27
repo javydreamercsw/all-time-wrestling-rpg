@@ -21,12 +21,12 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -73,8 +73,8 @@ public class EditSegmentDialog extends Dialog {
       Map<String, Wrestler> wrestlerByName) {
 
     public static PreloadedData load(
-        final SegmentTypeRepository segmentTypeRepository,
-        final SegmentRuleRepository segmentRuleRepository,
+        final SegmentTypeService segmentTypeService,
+        final SegmentRuleService segmentRuleService,
         final com.github.javydreamercsw.management.service.npc.NpcService npcService,
         final TitleService titleService,
         final WrestlerService wrestlerService,
@@ -84,10 +84,10 @@ public class EditSegmentDialog extends Dialog {
           wrestlerService.getAllWrestlers().stream()
               .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
       return new PreloadedData(
-          segmentTypeRepository.findAll().stream()
+          segmentTypeService.findAll().stream()
               .sorted(Comparator.comparing(SegmentType::getName))
               .collect(Collectors.toList()),
-          segmentRuleRepository.findAll().stream()
+          segmentRuleService.findAll().stream()
               .sorted(Comparator.comparing(SegmentRule::getName))
               .collect(Collectors.toList()),
           npcService.findAllByType("Referee").stream()
@@ -615,8 +615,8 @@ public class EditSegmentDialog extends Dialog {
       final ProposedSegment segment,
       final WrestlerService wrestlerService,
       final TitleService titleService,
-      final SegmentTypeRepository segmentTypeRepository,
-      final SegmentRuleRepository segmentRuleRepository,
+      final SegmentTypeService segmentTypeService,
+      final SegmentRuleService segmentRuleService,
       final com.github.javydreamercsw.management.service.npc.NpcService npcService,
       final Gender defaultGenderConstraint,
       final Long universeId,
@@ -624,8 +624,8 @@ public class EditSegmentDialog extends Dialog {
     this(
         segment,
         PreloadedData.load(
-            segmentTypeRepository,
-            segmentRuleRepository,
+            segmentTypeService,
+            segmentRuleService,
             npcService,
             titleService,
             wrestlerService,

@@ -36,10 +36,8 @@ import com.github.javydreamercsw.management.domain.show.export.ShowExportService
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -50,7 +48,9 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -125,8 +125,8 @@ public class ShowDetailView extends Main
   private final ShowService showService;
   private final SegmentService segmentService;
   private final SegmentRepository segmentRepository;
-  private final SegmentTypeRepository segmentTypeRepository;
-  private final SegmentRuleRepository segmentRuleRepository;
+  private final SegmentTypeService segmentTypeService;
+  private final SegmentRuleService segmentRuleService;
   private final NpcService npcService;
   private final WrestlerService wrestlerService;
   private final WrestlerStatsService wrestlerStatsService;
@@ -177,8 +177,8 @@ public class ShowDetailView extends Main
       final ShowService showService,
       final SegmentService segmentService,
       final SegmentRepository segmentRepository,
-      final SegmentTypeRepository segmentTypeRepository,
-      final SegmentRuleRepository segmentRuleRepository,
+      final SegmentTypeService segmentTypeService,
+      final SegmentRuleService segmentRuleService,
       final NpcService npcService,
       final WrestlerService wrestlerService,
       final WrestlerStatsService wrestlerStatsService,
@@ -206,8 +206,8 @@ public class ShowDetailView extends Main
     this.showService = showService;
     this.segmentService = segmentService;
     this.segmentRepository = segmentRepository;
-    this.segmentTypeRepository = segmentTypeRepository;
-    this.segmentRuleRepository = segmentRuleRepository;
+    this.segmentTypeService = segmentTypeService;
+    this.segmentRuleService = segmentRuleService;
     this.npcService = npcService;
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
@@ -1370,7 +1370,7 @@ public class ShowDetailView extends Main
     // Segment type selection
     ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
     segmentTypeCombo.setItems(
-        segmentTypeRepository.findAll().stream()
+        segmentTypeService.findAll().stream()
             .sorted(Comparator.comparing(SegmentType::getName))
             .collect(Collectors.toList()));
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
@@ -1381,7 +1381,7 @@ public class ShowDetailView extends Main
     // Segment rules selection (multi-select)
     MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
     rulesCombo.setItems(
-        segmentRuleRepository.findAll().stream()
+        segmentRuleService.findAll().stream()
             .sorted(Comparator.comparing(SegmentRule::getName))
             .collect(Collectors.toList()));
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
@@ -1710,8 +1710,8 @@ public class ShowDetailView extends Main
                           segmentRepository.findByIdWithDetails(segment.getId()).orElse(segment);
                       EditSegmentDialog.PreloadedData preloaded =
                           EditSegmentDialog.PreloadedData.load(
-                              segmentTypeRepository,
-                              segmentRuleRepository,
+                              segmentTypeService,
+                              segmentRuleService,
                               npcService,
                               titleService,
                               wrestlerService,
