@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -92,9 +93,9 @@ public class SegmentRuleService {
       key = "'highHeat'")
   public List<SegmentRule> getHighHeatRules() {
     Set<String> enabled = enabledExpansionCodes();
-    return segmentRuleRepository.findSuitableForHighHeat().stream()
-        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
-        .collect(Collectors.toList());
+    return deduplicateByPriority(
+        segmentRuleRepository.findSuitableForHighHeat().stream()
+            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
   }
 
   /**
@@ -108,9 +109,9 @@ public class SegmentRuleService {
       key = "'standard'")
   public List<SegmentRule> getStandardRules() {
     Set<String> enabled = enabledExpansionCodes();
-    return segmentRuleRepository.findStandardRules().stream()
-        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
-        .collect(Collectors.toList());
+    return deduplicateByPriority(
+        segmentRuleRepository.findStandardRules().stream()
+            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
   }
 
   /**
@@ -259,9 +260,14 @@ public class SegmentRuleService {
       key = "'all'")
   public List<SegmentRule> findAll() {
     Set<String> enabled = enabledExpansionCodes();
+    return deduplicateByPriority(
+        segmentRuleRepository.findAll().stream()
+            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
+  }
+
+  private List<SegmentRule> deduplicateByPriority(Stream<SegmentRule> rules) {
     Map<String, Integer> priorities = expansionService.buildPriorityMap();
-    return segmentRuleRepository.findAll().stream()
-        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
+    return rules
         .collect(
             Collectors.toMap(
                 SegmentRule::getName,
