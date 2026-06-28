@@ -31,9 +31,14 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowContextFacade;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.CardValidationResult;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
@@ -42,10 +47,12 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
@@ -81,32 +88,40 @@ class ShowPlanningViewTest extends AbstractViewTest {
   @Mock private SegmentNarrationServiceFactory aiFactory;
   @Mock private ArenaService arenaService;
   @Mock private NotificationService notificationService;
-
   @Mock private UniverseContextService universeContextService;
-
-  @Mock
-  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+  @Mock private ExpansionService expansionService;
 
   @BeforeEach
   public void setUp() {
-    showPlanningView =
-        new ShowPlanningView(
+    ShowFacade showFacade =
+        new ShowFacade(
             showService,
-            showPlanningService,
-            showPlanningAiService,
-            wrestlerService,
-            showTemplateService,
-            wrestlerRepository,
-            titleService,
+            mock(SegmentService.class),
             segmentTypeService,
             segmentRuleService,
-            npcService,
-            objectMapper,
             aiFactory,
-            arenaService,
-            notificationService,
-            universeContextService,
-            expansionService);
+            mock(NarrationParserService.class),
+            npcService);
+    ShowContextFacade showContextFacade =
+        new ShowContextFacade(
+            mock(ShowTypeService.class),
+            null,
+            showTemplateService,
+            showPlanningService,
+            showPlanningAiService,
+            arenaService);
+    ViewContext viewContext =
+        new ViewContext(notificationService, null, universeContextService, expansionService);
+
+    showPlanningView =
+        new ShowPlanningView(
+            showFacade,
+            showContextFacade,
+            viewContext,
+            wrestlerService,
+            wrestlerRepository,
+            titleService,
+            objectMapper);
   }
 
   @Test

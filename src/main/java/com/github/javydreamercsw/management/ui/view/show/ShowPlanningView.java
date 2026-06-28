@@ -26,9 +26,10 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
-import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowContextFacade;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.CardValidationResult;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
@@ -38,8 +39,8 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
-import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -116,39 +117,30 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
   @Autowired
   public ShowPlanningView(
-      final ShowService showService,
-      final ShowPlanningService showPlanningService,
-      final ShowPlanningAiService showPlanningAiService,
+      final ShowFacade showFacade,
+      final ShowContextFacade showContextFacade,
+      final ViewContext viewContext,
       final WrestlerService wrestlerService,
-      final ShowTemplateService showTemplateService,
       final WrestlerRepository wrestlerRepository,
       final TitleService titleService,
-      final SegmentTypeService segmentTypeService,
-      final SegmentRuleService segmentRuleService,
-      final NpcService npcService,
-      final ObjectMapper objectMapper,
-      final SegmentNarrationServiceFactory aiFactory,
-      final ArenaService arenaService,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
-      final UniverseContextService universeContextService,
-      final ExpansionService expansionService) {
+      final ObjectMapper objectMapper) {
 
-    this.showService = showService;
-    this.showPlanningService = showPlanningService;
-    this.showPlanningAiService = showPlanningAiService;
+    this.showService = showFacade.getShowService();
+    this.showPlanningService = showContextFacade.getShowPlanningService();
+    this.showPlanningAiService = showContextFacade.getShowPlanningAiService();
     this.wrestlerService = wrestlerService;
-    this.showTemplateService = showTemplateService;
-    this.npcService = npcService;
+    this.showTemplateService = showContextFacade.getShowTemplateService();
+    this.npcService = showFacade.getNpcService();
     this.objectMapper = objectMapper;
-    this.aiFactory = aiFactory;
-    this.arenaService = arenaService;
-    this.notificationService = notificationService;
-    this.universeContextService = universeContextService;
+    this.aiFactory = showFacade.getNarrationFactory();
+    this.arenaService = showContextFacade.getArenaService();
+    this.notificationService = viewContext.getNotificationService();
+    this.universeContextService = viewContext.getUniverseContextService();
     this.wrestlerRepository = wrestlerRepository;
     this.titleService = titleService;
-    this.segmentTypeService = segmentTypeService;
-    this.segmentRuleService = segmentRuleService;
-    this.expansionService = expansionService;
+    this.segmentTypeService = showFacade.getSegmentTypeService();
+    this.segmentRuleService = showFacade.getSegmentRuleService();
+    this.expansionService = viewContext.getExpansionService();
 
     setSizeFull();
     addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
