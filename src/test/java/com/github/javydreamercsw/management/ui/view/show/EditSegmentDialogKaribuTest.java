@@ -74,7 +74,8 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
             List.of(),
             List.of(),
             List.of(canonical1, canonical2, canonical3),
-            Map.of("Alpha", canonical1, "Beta", canonical2, "Gamma", canonical3));
+            Map.of("Alpha", canonical1, "Beta", canonical2, "Gamma", canonical3),
+            Map.of());
 
     wrestlerService = mock(WrestlerService.class);
     // alignment-filter path (should never be reached in the no-filter case)

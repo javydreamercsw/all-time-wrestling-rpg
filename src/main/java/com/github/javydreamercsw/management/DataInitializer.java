@@ -656,7 +656,7 @@ public class DataInitializer implements Initializable {
               dto.isNoDq(),
               dto.getBumpAddition(),
               dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
-              dto.getRules());
+              dto.getGuide());
           log.debug(
               "Loaded segment rule: {} (High Heat: {}, No DQ: {}, Bump Addition: {})",
               dto.getName(),
@@ -713,21 +713,16 @@ public class DataInitializer implements Initializable {
         List<SegmentTypeDTO> segmentTypesFromFile = mapper.readValue(is, new TypeReference<>() {});
 
         for (SegmentTypeDTO dto : segmentTypesFromFile) {
-          // Only create if it's new
-          Optional<SegmentType> existingType = segmentTypeService.findByName(dto.getName());
-          if (existingType.isEmpty()) {
-            SegmentType segmentType =
-                segmentTypeService.createOrUpdateSegmentType(
-                    dto.getName(),
-                    dto.getDescription(),
-                    dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME");
-            log.debug(
-                "Loaded segment type: {} (Players: {})",
-                segmentType.getName(),
-                dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
-          } else {
-            log.debug("Segment type {} already exists, skipping creation.", dto.getName());
-          }
+          SegmentType segmentType =
+              segmentTypeService.createOrUpdateSegmentType(
+                  dto.getName(),
+                  dto.getDescription(),
+                  dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
+                  dto.getGuide());
+          log.debug(
+              "Loaded segment type: {} (Players: {})",
+              segmentType.getName(),
+              dto.isUnlimited() ? "Unlimited" : dto.getPlayerAmount());
         }
 
         log.debug("Segment type loading completed");

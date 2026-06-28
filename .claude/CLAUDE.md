@@ -11,11 +11,11 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-26 (commit c936582a8). Confidence: 100%.
+Last indexed: 2026-06-27 (commit ac01aff94). Confidence: 100%.
 
 ### Architecture
 
-repo is a Java-based enterprise management platform that ingests relational data models and business logic, processes them through a domain-driven service layer, and exposes stateful management interfaces via a Vitepress-powered documentation site. The system orchestrates complex wrestler and universe entities, persisting state in SQL databases while providing a structured web interface for administrative oversight. The repository follows a domain-centric architecture organized around core business entities:
+repo is a Java-based enterprise management platform that ingests relational data models and business logic, processes them through a domain-driven service layer, and exposes the resulting state via a VitePress-powered documentation site and a web-based UI. The system orchestrates complex entity relationships—specifically focused on wrestler and universe management—to provide a structured administrative interface for tracking accounts, matches, and campaign dramas. The repository follows a domain-driven design (DDD) pattern, organized around core business entities:
 
 ### Key Modules
 
@@ -64,20 +64,20 @@ repo is a Java-based enterprise management platform that ingests relational data
 
 ### Hotspots (High Churn)
 
-|                                            File                                            |    Churn     | 90d Commits |          Owner          |
-|--------------------------------------------------------------------------------------------|--------------|-------------|-------------------------|
-| `src/main/java/com/github/javydreamercsw/management/ui/view/show/ShowDetailView.java`      | 100.0th %ile | 26          | Javier A. Ortiz Bultron |
-| `src/test/java/com/github/javydreamercsw/AbstractE2ETest.java`                             | 99.9th %ile  | 18          | Javier A. Ortiz Bultron |
-| `src/main/java/com/github/javydreamercsw/management/DataInitializer.java`                  | 99.8th %ile  | 17          | Javier A. Ortiz Bultron |
-| `src/test/java/com/github/javydreamercsw/management/domain/wrestler/WrestlerTest.java`     | 99.8th %ile  | 3           | Javier A. Ortiz Bultron |
-| `src/main/java/com/github/javydreamercsw/management/service/campaign/CampaignService.java` | 99.7th %ile  | 18          | Javier A. Ortiz Bultron |
+|                                         File                                          |    Churn     | 90d Commits |          Owner          |
+|---------------------------------------------------------------------------------------|--------------|-------------|-------------------------|
+| `package.json`                                                                        | 100.0th %ile | 74          | Javier A. Ortiz Bultron |
+| `package-lock.json`                                                                   | 99.9th %ile  | 44          | Javier A. Ortiz Bultron |
+| `src/main/java/com/github/javydreamercsw/management/ui/view/show/ShowDetailView.java` | 99.9th %ile  | 29          | Javier A. Ortiz Bultron |
+| `src/test/java/com/github/javydreamercsw/AbstractE2ETest.java`                        | 99.8th %ile  | 18          | Javier A. Ortiz Bultron |
+| `src/main/resources/segment_rules.json`                                               | 99.7th %ile  | 6           | Javier A. Ortiz Bultron |
 
 ## Code health
 
 Three signals: **defect risk** (the overall score), **maintainability** (smells that hurt readability/change-cost without predicting bugs), and **performance** (static performance RISK: I/O-in-loop / N+1 shapes that waste work, high-precision/low-recall). Maintainability and performance are co-equal views, never blended into the defect headline. See `docs/CODE_HEALTH.md`.
 
-Defect risk, Hotspot health: 4.49/10 (stable) ·
-Average: 8.14/10 ·
+Defect risk, Hotspot health: 4.82/10 (stable) ·
+Average: 8.1/10 ·
 Worst: 1.0/10 (`src/main/java/com/github/javydreamercsw/base/ai/AbstractSegmentNarrationService.java`)
 Maintainability, Average: 8.68/10
 Performance risk, Average: 9.88/10
@@ -85,10 +85,10 @@ Performance risk, Average: 9.88/10
 ### Critical biomarkers
 
 - `src/main/java/com/github/javydreamercsw/management/service/campaign/PlaceholderResolverService.java` — change entropy — impact −3.0
-- `src/main/java/com/github/javydreamercsw/management/ui/view/inbox/InboxView.java` — change entropy — impact −3.0
 - `src/test/java/com/github/javydreamercsw/management/ui/view/MenuServiceTest.java` — change entropy — impact −3.0
 - `src/test/java/com/github/javydreamercsw/management/ui/view/inbox/InboxViewTest.java` — change entropy — impact −3.0
 - `src/main/java/com/github/javydreamercsw/management/ui/view/universe/UniverseListView.java` — change entropy — impact −2.9
+- `src/test/java/com/github/javydreamercsw/management/service/campaign/CampaignServiceTest.java` — change entropy — impact −2.7
 
 ### Repowise MCP Tools
 

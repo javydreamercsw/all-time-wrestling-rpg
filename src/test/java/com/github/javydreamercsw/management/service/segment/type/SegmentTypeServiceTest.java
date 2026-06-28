@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,9 @@ class SegmentTypeServiceTest {
     // Default: no active universe, all expansions enabled
     Mockito.when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     Mockito.when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(List.of("BASE_GAME", "CUS"));
+        .thenReturn(List.of("BASE_GAME", "CUSTOM"));
+    Mockito.when(expansionService.buildPriorityMap())
+        .thenReturn(Map.of("BASE_GAME", 10, "CUSTOM", 0));
   }
 
   // ==================== findByName ====================
@@ -184,5 +187,69 @@ class SegmentTypeServiceTest {
 
     assertTrue(ex.getMessage().contains("99"));
     verify(segmentTypeRepository, never()).deleteById(any());
+  }
+
+  // ==================== priority deduplication ====================
+
+  @Test
+  void findAll_sameNameDifferentExpansions_returnsHigherPriorityVersion() {
+    SegmentType baseTagTeam = new SegmentType();
+    baseTagTeam.setName("Tag Team");
+    baseTagTeam.setExpansionCode("BASE_GAME");
+    baseTagTeam.setDescription("Base version");
+
+    SegmentType v2TagTeam = new SegmentType();
+    v2TagTeam.setName("Tag Team");
+    v2TagTeam.setExpansionCode("TAG_V2");
+    v2TagTeam.setDescription("Enhanced version");
+
+    Mockito.when(expansionService.getEnabledExpansionCodes())
+        .thenReturn(List.of("BASE_GAME", "TAG_V2"));
+    Mockito.when(expansionService.buildPriorityMap())
+        .thenReturn(Map.of("BASE_GAME", 10, "TAG_V2", 20));
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(baseTagTeam, v2TagTeam));
+
+    List<SegmentType> result = segmentTypeService.findAll();
+
+    assertEquals(1, result.size());
+    assertEquals("Enhanced version", result.get(0).getDescription());
+    assertEquals("TAG_V2", result.get(0).getExpansionCode());
+  }
+
+  @Test
+  void findAll_customAndOfficialSameName_officialWins() {
+    SegmentType customLadder = new SegmentType();
+    customLadder.setName("Ladder Match");
+    customLadder.setExpansionCode("CUSTOM");
+    customLadder.setDescription("Custom variant");
+
+    SegmentType officialLadder = new SegmentType();
+    officialLadder.setName("Ladder Match");
+    officialLadder.setExpansionCode("BASE_GAME");
+    officialLadder.setDescription("Official");
+
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(customLadder, officialLadder));
+
+    List<SegmentType> result = segmentTypeService.findAll();
+
+    assertEquals(1, result.size());
+    assertEquals("Official", result.get(0).getDescription());
+  }
+
+  @Test
+  void findAll_resultIsSortedByName() {
+    SegmentType promo = new SegmentType();
+    promo.setName("Promo");
+    promo.setExpansionCode("BASE_GAME");
+
+    SegmentType match = new SegmentType();
+    match.setName("Match");
+    match.setExpansionCode("BASE_GAME");
+
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(promo, match));
+
+    List<SegmentType> result = segmentTypeService.findAll();
+
+    assertEquals(List.of("Match", "Promo"), result.stream().map(SegmentType::getName).toList());
   }
 }

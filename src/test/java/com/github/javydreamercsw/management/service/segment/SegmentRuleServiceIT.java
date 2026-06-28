@@ -62,9 +62,9 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
         segmentRuleService.createOrUpdateRule(
             "IT Cage", "IT Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);
 
-    assertThat(saved.getRules()).isNotNull();
-    assertThat(saved.getRules().solo().overview()).isEqualTo("overview");
-    assertThat(saved.getRulesHash()).isNotBlank();
+    assertThat(saved.getGuide()).isNotNull();
+    assertThat(saved.getGuide().solo().overview()).isEqualTo("overview");
+    assertThat(saved.getGuideHash()).isNotBlank();
   }
 
   @Test
@@ -78,14 +78,14 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
     SegmentRule first =
         segmentRuleService.createOrUpdateRule(
             "IT No DQ", "No DQ", false, true, BumpAddition.ALL, "BASE_GAME", guide);
-    String hashAfterFirst = first.getRulesHash();
+    String hashAfterFirst = first.getGuideHash();
 
     // Same content — should return without save
     SegmentRule second =
         segmentRuleService.createOrUpdateRule(
             "IT No DQ", "No DQ", false, true, BumpAddition.ALL, "BASE_GAME", guide);
 
-    assertThat(second.getRulesHash()).isEqualTo(hashAfterFirst);
+    assertThat(second.getGuideHash()).isEqualTo(hashAfterFirst);
     verify(segmentRuleRepository, times(1)).save(org.mockito.ArgumentMatchers.any());
   }
 
@@ -110,7 +110,7 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
         segmentRuleService.createOrUpdateRule(
             "IT Extreme", "Extreme", true, true, BumpAddition.ALL, "BASE_GAME", guideV2);
 
-    assertThat(v2.getRulesHash()).isNotEqualTo(v1.getRulesHash());
-    assertThat(v2.getRules().solo().overview()).isEqualTo("updated overview");
+    assertThat(v2.getGuideHash()).isNotEqualTo(v1.getGuideHash());
+    assertThat(v2.getGuide().solo().overview()).isEqualTo("updated overview");
   }
 }
