@@ -52,6 +52,8 @@ import com.github.javydreamercsw.management.service.segment.NarrationParserServi
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowContextFacade;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -59,8 +61,10 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
@@ -176,66 +180,51 @@ public class ShowDetailView extends Main
 
   @Autowired
   public ShowDetailView(
-      final ShowService showService,
-      final SegmentService segmentService,
+      final ShowFacade showFacade,
+      final ShowContextFacade showContextFacade,
+      final WrestlerFacade wrestlerFacade,
+      final ViewContext viewContext,
       final SegmentRepository segmentRepository,
-      final SegmentTypeService segmentTypeService,
-      final SegmentRuleService segmentRuleService,
-      final NpcService npcService,
-      final WrestlerService wrestlerService,
-      final WrestlerStatsService wrestlerStatsService,
       final TitleService titleService,
-      final ShowTypeService showTypeService,
-      final SeasonService seasonService,
-      final ShowTemplateService showTemplateService,
       final RivalryService rivalryService,
-      final ShowPlanningService showPlanningService,
-      final SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       final SegmentNarrationController segmentNarrationController,
       final ShowController showController,
       final MatchFulfillmentRepository matchFulfillmentRepository,
       final UniverseRepository universeRepository,
-      final UniverseContextService universeContextService,
       final CommentaryTeamRepository commentaryTeamRepository,
       final RingsideActionService ringsideActionService,
-      final ArenaService arenaService,
-      final WrestlerRelationshipService relationshipService,
-      final NotificationService notificationService,
       final ShowExportService exportService,
-      final LeagueRepository leagueRepository,
-      final SecurityUtils securityUtils,
-      final NarrationParserService narrationParserService,
-      final ExpansionService expansionService) {
-    this.showService = showService;
-    this.segmentService = segmentService;
+      final LeagueRepository leagueRepository) {
+    this.showService = showFacade.getShowService();
+    this.segmentService = showFacade.getSegmentService();
     this.segmentRepository = segmentRepository;
-    this.segmentTypeService = segmentTypeService;
-    this.segmentRuleService = segmentRuleService;
-    this.npcService = npcService;
-    this.wrestlerService = wrestlerService;
-    this.wrestlerStatsService = wrestlerStatsService;
+    this.segmentTypeService = showFacade.getSegmentTypeService();
+    this.segmentRuleService = showFacade.getSegmentRuleService();
+    this.npcService = showFacade.getNpcService();
+    this.wrestlerService = wrestlerFacade.getWrestlerService();
+    this.wrestlerStatsService = wrestlerFacade.getWrestlerStatsService();
     this.titleService = titleService;
-    this.showTypeService = showTypeService;
-    this.seasonService = seasonService;
-    this.showTemplateService = showTemplateService;
+    this.showTypeService = showContextFacade.getShowTypeService();
+    this.seasonService = showContextFacade.getSeasonService();
+    this.showTemplateService = showContextFacade.getShowTemplateService();
     this.rivalryService = rivalryService;
-    this.showPlanningService = showPlanningService;
-    this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
+    this.showPlanningService = showContextFacade.getShowPlanningService();
+    this.segmentNarrationServiceFactory = showFacade.getNarrationFactory();
     this.segmentNarrationController = segmentNarrationController;
     this.showController = showController;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.universeRepository = universeRepository;
-    this.universeContextService = universeContextService;
+    this.universeContextService = viewContext.getUniverseContextService();
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.ringsideActionService = ringsideActionService;
-    this.arenaService = arenaService;
-    this.relationshipService = relationshipService;
-    this.notificationService = notificationService;
+    this.arenaService = showContextFacade.getArenaService();
+    this.relationshipService = wrestlerFacade.getWrestlerRelationshipService();
+    this.notificationService = viewContext.getNotificationService();
     this.exportService = exportService;
     this.leagueRepository = leagueRepository;
-    this.securityUtils = securityUtils;
-    this.narrationParserService = narrationParserService;
-    this.expansionService = expansionService;
+    this.securityUtils = viewContext.getSecurityUtils();
+    this.narrationParserService = showFacade.getNarrationParserService();
+    this.expansionService = viewContext.getExpansionService();
     initializeComponents();
   }
 
