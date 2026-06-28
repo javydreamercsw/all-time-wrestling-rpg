@@ -244,6 +244,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
 
     // Create a minimal league so we can reach the Draft Room
     navigateTo("leagues");
+    waitForVaadinClientToLoad();
     waitForVaadinElement(driver, By.id("create-league-btn"));
     clickElement(By.id("create-league-btn"));
     waitForVaadinElement(driver, By.id("league-name-field"));

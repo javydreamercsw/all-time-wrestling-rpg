@@ -112,7 +112,43 @@ public class CampaignService {
     featureDataService.setFeatureValue(state, key, value);
   }
 
-  public Campaign startCampaign(@NonNull final Wrestler wrestlerParam) {
+  public List<CampaignChapterDTO> findStartingChapters(@NonNull final Wrestler wrestlerParam) {
+    Wrestler wrestler =
+        wrestlerRepository
+            .findById(wrestlerParam.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Wrestler not found"));
+    wrestler.getReigns().size();
+    Campaign fakeCampaign =
+        Campaign.builder()
+            .wrestler(wrestler)
+            .status(CampaignStatus.ACTIVE)
+            .startedAt(LocalDateTime.now())
+            .build();
+    CampaignState blankState =
+        CampaignState.builder()
+            .campaign(fakeCampaign)
+            .victoryPoints(0)
+            .skillTokens(0)
+            .healthPenalty(0)
+            .handSizePenalty(0)
+            .staminaPenalty(0)
+            .pendingL1Picks(0)
+            .build();
+    List<CampaignChapterDTO> available =
+        chapterService.findAvailableChapters(blankState, wrestler.getName());
+    if (available.isEmpty()) {
+      available = chapterService.findAvailableChapters(blankState, null);
+    }
+    return available;
+  }
+
+  public Campaign startCampaign(@NonNull final Wrestler wrestler) {
+    List<CampaignChapterDTO> available = findStartingChapters(wrestler);
+    return startCampaign(wrestler, available.isEmpty() ? null : available.get(0).getId());
+  }
+
+  public Campaign startCampaign(
+      @NonNull final Wrestler wrestlerParam, final String startingChapterId) {
     // Re-fetch to ensure attached and initialize lazy collections
     Wrestler wrestler =
         wrestlerRepository
@@ -178,7 +214,13 @@ public class CampaignService {
       available = chapterService.findAvailableChapters(state, null);
     }
     if (!available.isEmpty()) {
-      CampaignChapterDTO initialChapter = available.get(0);
+      CampaignChapterDTO initialChapter =
+          startingChapterId != null
+              ? available.stream()
+                  .filter(c -> c.getId().equals(startingChapterId))
+                  .findFirst()
+                  .orElse(available.get(0))
+              : available.get(0);
       state.setCurrentChapterId(initialChapter.getId());
       campaignProgressionService.applyInitialChampions(initialChapter);
     }

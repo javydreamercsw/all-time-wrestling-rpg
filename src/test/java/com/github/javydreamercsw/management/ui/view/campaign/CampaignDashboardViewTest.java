@@ -123,7 +123,8 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     when(campaignService.isChapterComplete(mockCampaign)).thenReturn(false);
     when(campaignService.getCurrentChapter(any()))
-        .thenReturn(Optional.of(new CampaignChapterDTO()));
+        .thenReturn(
+            Optional.of(CampaignChapterDTO.builder().title("All or Nothing (Season 1)").build()));
     when(titleRepository.findByName(any())).thenReturn(Optional.empty());
     when(wrestlerService.resolveWrestlerImage(any()))
         .thenReturn(new com.github.javydreamercsw.base.image.ImageResolution(null, true));
@@ -408,5 +409,68 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     // Verify Story Journal contains the storyline and a download link
     _get(view, Anchor.class, spec -> spec.withId("download-json-anchor-null"));
     _get(view, Button.class, spec -> spec.withId("download-json-button-null"));
+  }
+
+  // -------------------------------------------------------------------------
+  // showCampaignStartPicker coverage
+  // -------------------------------------------------------------------------
+
+  @Test
+  public void testStartPicker_singleChapter_startsCampaignDirectly() {
+    // No active campaign — view shows the "no campaign" state
+    when(campaignRepository.findActiveByWrestler(mockWrestler)).thenReturn(Optional.empty());
+    when(campaignService.getCampaignForWrestler(mockWrestler)).thenReturn(Optional.empty());
+
+    CampaignChapterDTO only =
+        CampaignChapterDTO.builder().id("beginning").title("All or Nothing Campaign").build();
+    when(campaignService.findStartingChapters(mockWrestler)).thenReturn(List.of(only));
+    when(campaignService.startCampaign(mockWrestler, "beginning")).thenReturn(mockCampaign);
+    when(campaignService.getCampaignForWrestler(mockWrestler))
+        .thenReturn(Optional.empty()) // first call during loadCampaign
+        .thenReturn(Optional.of(mockCampaign)); // after refreshUI
+
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    // Click the debug start button (non-production mode)
+    _click(_get(view, Button.class, spec -> spec.withId("debug-start-campaign")));
+
+    // Single chapter → startCampaign called directly, no dialog
+    verify(campaignService).startCampaign(mockWrestler, "beginning");
+  }
+
+  @Test
+  public void testStartPicker_multipleChapters_opensDialogAndConfirm() {
+    when(campaignRepository.findActiveByWrestler(mockWrestler)).thenReturn(Optional.empty());
+    when(campaignService.getCampaignForWrestler(mockWrestler)).thenReturn(Optional.empty());
+
+    CampaignChapterDTO ch1 =
+        CampaignChapterDTO.builder()
+            .id("beginning")
+            .title("All or Nothing Campaign")
+            .shortDescription("Start here.")
+            .build();
+    CampaignChapterDTO ch2 =
+        CampaignChapterDTO.builder()
+            .id("tournament")
+            .title("The Tournament")
+            .shortDescription("Compete.")
+            .build();
+    when(campaignService.findStartingChapters(mockWrestler)).thenReturn(List.of(ch1, ch2));
+    when(campaignService.startCampaign(any(), any())).thenReturn(mockCampaign);
+
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    _click(_get(view, Button.class, spec -> spec.withId("debug-start-campaign")));
+
+    // Multiple chapters → dialog should open (header title is not in text content tree)
+    Dialog dialog = _get(Dialog.class);
+    assertThat(dialog.isOpened()).isTrue();
+
+    // Confirm with the default selection (ch1)
+    _click(_get(dialog, Button.class, spec -> spec.withText("Start")));
+
+    verify(campaignService).startCampaign(mockWrestler, "beginning");
   }
 }

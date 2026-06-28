@@ -20,13 +20,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +54,8 @@ class CampaignChapterServiceTest {
             objectMapper,
             featureDataService,
             org.mockito.Mockito.mock(
-                com.github.javydreamercsw.management.service.expansion.ExpansionService.class));
+                com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
+            new org.springframework.core.io.support.PathMatchingResourcePatternResolver());
     chapterService.init();
   }
 
@@ -62,7 +70,7 @@ class CampaignChapterServiceTest {
   void testGetSpecificChapter() {
     Optional<CampaignChapterDTO> ch1 = chapterService.getChapter("beginning");
     assertThat(ch1).isPresent();
-    assertThat(ch1.get().getTitle()).isEqualTo("The Beginning");
+    assertThat(ch1.get().getTitle()).isEqualTo("All or Nothing Campaign");
 
     Optional<CampaignChapterDTO> ch2 = chapterService.getChapter("tournament");
     assertThat(ch2).isPresent();
@@ -170,11 +178,185 @@ class CampaignChapterServiceTest {
     assertThat(chapterService.isCriteriaMet(failCriteria, state)).isFalse();
   }
 
+  // -------------------------------------------------------------------------
+  // isCriteriaMet — feature-data branches
+  // -------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("tournamentWinner=true passes when featureData contains tournamentWinner=true")
+  void testCriteriaTournamentWinnerMatch() {
+    CampaignState state = buildMinimalState();
+    state.setFeatureData("{\"tournamentWinner\":true}");
+
+    ChapterCriteriaDTO criteria = ChapterCriteriaDTO.builder().tournamentWinner(true).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isTrue();
+  }
+
+  @Test
+  @DisplayName("tournamentWinner=true fails when featureData says false")
+  void testCriteriaTournamentWinnerMismatch() {
+    CampaignState state = buildMinimalState();
+    state.setFeatureData("{\"tournamentWinner\":false}");
+
+    ChapterCriteriaDTO criteria = ChapterCriteriaDTO.builder().tournamentWinner(true).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("failedToQualify=true passes when featureData contains failedToQualify=true")
+  void testCriteriaFailedToQualifyMatch() {
+    CampaignState state = buildMinimalState();
+    state.setFeatureData("{\"failedToQualify\":true}");
+
+    ChapterCriteriaDTO criteria = ChapterCriteriaDTO.builder().failedToQualify(true).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isTrue();
+  }
+
+  @Test
+  @DisplayName("wonFinale=true fails when featureData says false")
+  void testCriteriaWonFinaleMismatch() {
+    CampaignState state = buildMinimalState();
+    state.setFeatureData("{\"wonFinale\":false}");
+
+    ChapterCriteriaDTO criteria = ChapterCriteriaDTO.builder().wonFinale(true).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("isChampion=true passes when wrestler holds a current title reign")
+  void testCriteriaIsChampionTrue() {
+    CampaignState state = buildMinimalState();
+    TitleReign currentReign = new TitleReign();
+    // endDate == null → isCurrentReign() == true
+    state.getCampaign().getWrestler().getReigns().add(currentReign);
+
+    ChapterCriteriaDTO criteria = ChapterCriteriaDTO.builder().isChampion(true).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isTrue();
+  }
+
+  @Test
+  @DisplayName("isChampion=true fails when wrestler has no current reign")
+  void testCriteriaIsChampionFalse() {
+    CampaignState state = buildMinimalState();
+    // No reigns at all → not a champion
+    ChapterCriteriaDTO criteria = ChapterCriteriaDTO.builder().isChampion(true).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("hasFaction=true passes when wrestler has a faction in the campaign universe")
+  void testCriteriaHasFactionTrue() {
+    CampaignState state = buildMinimalState();
+
+    Universe universe = Universe.builder().name("Test").build();
+    universe.setId(1L);
+    state.getCampaign().setUniverse(universe);
+
+    Faction faction = Faction.builder().name("nWo").build();
+    WrestlerState ws =
+        WrestlerState.builder()
+            .wrestler(state.getCampaign().getWrestler())
+            .universe(universe)
+            .faction(faction)
+            .build();
+    state.getCampaign().getWrestler().getWrestlerStates().add(ws);
+
+    ChapterCriteriaDTO criteria = ChapterCriteriaDTO.builder().hasFaction(true).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isTrue();
+  }
+
+  @Test
+  @DisplayName("hasFaction=true fails when wrestler has no faction in the campaign universe")
+  void testCriteriaHasFactionFalse() {
+    CampaignState state = buildMinimalState();
+
+    Universe universe = Universe.builder().name("Test").build();
+    universe.setId(1L);
+    state.getCampaign().setUniverse(universe);
+
+    // WrestlerState exists but no faction
+    WrestlerState ws =
+        WrestlerState.builder()
+            .wrestler(state.getCampaign().getWrestler())
+            .universe(universe)
+            .build();
+    state.getCampaign().getWrestler().getWrestlerStates().add(ws);
+
+    ChapterCriteriaDTO criteria = ChapterCriteriaDTO.builder().hasFaction(true).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("requiredAlignmentType passes when wrestler alignment matches")
+  void testCriteriaAlignmentMatch() {
+    CampaignState state = buildMinimalState();
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.FACE);
+    alignment.setLevel(5);
+    state.getCampaign().getWrestler().setAlignment(alignment);
+
+    ChapterCriteriaDTO criteria =
+        ChapterCriteriaDTO.builder().requiredAlignmentType("FACE").minAlignmentLevel(3).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isTrue();
+  }
+
+  @Test
+  @DisplayName("requiredAlignmentType fails when alignment level is below minimum")
+  void testCriteriaAlignmentLevelTooLow() {
+    CampaignState state = buildMinimalState();
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.FACE);
+    alignment.setLevel(1);
+    state.getCampaign().getWrestler().setAlignment(alignment);
+
+    ChapterCriteriaDTO criteria =
+        ChapterCriteriaDTO.builder().requiredAlignmentType("FACE").minAlignmentLevel(3).build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("requiredAlignmentType fails when wrestler has no alignment")
+  void testCriteriaAlignmentNullWrestlerAlignment() {
+    CampaignState state = buildMinimalState();
+    // wrestler has no alignment set
+
+    ChapterCriteriaDTO criteria =
+        ChapterCriteriaDTO.builder().requiredAlignmentType("FACE").build();
+    assertThat(chapterService.isCriteriaMet(criteria, state)).isFalse();
+  }
+
+  @Test
+  @DisplayName("allExpansionsEnabled returns false when a required expansion is disabled")
+  void testAllExpansionsEnabledFalse() {
+    // ExpansionService mock returns false by default (no stubbing)
+    assertThat(chapterService.allExpansionsEnabled(List.of("EXPANSION_X"))).isFalse();
+  }
+
+  @Test
+  @DisplayName("findAvailableChapters filters out chapters restricted to other wrestler names")
+  void testFindAvailableChaptersWrestlerNameFilter() {
+    CampaignState state = buildMinimalState();
+    // "beginning" chapter has allowedWrestlerNames = [Kurt Angle, ...]; use a name not in the list
+    List<CampaignChapterDTO> chapters = chapterService.findAvailableChapters(state, "Unknown Joe");
+    assertThat(chapters).extracting(CampaignChapterDTO::getId).doesNotContain("beginning");
+  }
+
+  @Test
+  @DisplayName("findAvailableChapters with null wrestlerName bypasses wrestler name restriction")
+  void testFindAvailableChaptersNullWrestlerName() {
+    CampaignState state = buildMinimalState();
+    List<CampaignChapterDTO> withNull = chapterService.findAvailableChapters(state, null);
+    List<CampaignChapterDTO> withName = chapterService.findAvailableChapters(state, "Unknown Joe");
+    // Null name should return at least as many chapters as the restricted call
+    assertThat(withNull.size()).isGreaterThanOrEqualTo(withName.size());
+  }
+
   private CampaignState buildMinimalState() {
     CampaignState state = new CampaignState();
     Campaign campaign = new Campaign();
     Wrestler wrestler = new Wrestler();
-    wrestler.setReigns(new java.util.LinkedHashSet<>());
+    wrestler.setReigns(new LinkedHashSet<>());
+    wrestler.setWrestlerStates(new LinkedHashSet<>());
     campaign.setWrestler(wrestler);
     state.setCampaign(campaign);
     return state;

@@ -40,8 +40,9 @@ class AdvancedCampaignChaptersTest {
             objectMapper,
             featureDataService,
             org.mockito.Mockito.mock(
-                com.github.javydreamercsw.management.service.expansion.ExpansionService.class));
-    chapterService.init(); // Loads from campaign_chapters.json
+                com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
+            new org.springframework.core.io.support.PathMatchingResourcePatternResolver());
+    chapterService.init(); // Loads from campaigns/
   }
 
   @Test

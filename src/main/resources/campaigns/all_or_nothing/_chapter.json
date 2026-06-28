@@ -1,0 +1,47 @@
+{
+  "id": "beginning",
+  "title": "All or Nothing Campaign",
+  "shortDescription": "Your journey in All Time Wrestling starts here.",
+  "introText": "You stand backstage, the roar of the crowd muting your thoughts. This is your moment. The path to the All Time Championship starts here. Will you be a hero, or a villain? Your actions today will define your legacy. So many questions in your mind: How did I got here? A time machine? Is this the future?",
+  "aiSystemPrompt": "You are the Campaign Director for the All Or Nothing Campaign. Your goal is to introduce the player to the world of All Time Wrestling (ATW) and establish their initial reputation through backstage encounters.",
+  "difficulty": "ENTRY",
+  "tagTeam": false,
+  "entryPoints": [ {
+    "name": "New Career",
+    "criteria": [ {
+      "maxVictoryPoints": 0
+    } ]
+  } ],
+  "exitPoints": [ {
+    "name": "Tournament Invite",
+    "criteria": [ {
+      "minMatchesPlayed": 3,
+      "minVictoryPoints": 5
+    } ]
+  }, {
+    "name": "Sent to Development",
+    "criteria": [ {
+      "minMatchesPlayed": 5,
+      "maxVictoryPoints": 4
+    } ]
+  } ],
+  "rules": {
+    "qualifyingMatches": 0,
+    "minWinsToQualify": 0,
+    "victoryPointsWin": 2,
+    "victoryPointsLoss": -1,
+    "titleWinVP": 0,
+    "titleDefenseVP": 0
+  },
+  "exclusions": {
+    "excludeChampions": true,
+    "npcIds": [ ]
+  },
+  "allowedWrestlerNames": [ "Kurt Angle", "The British Bulldog", "Randy Savage" ],
+  "initialChampions": {
+    "ATW World": "Oda Tsurugi"
+  },
+  "defaultExcludedOpponents": [ "{{CHAMP}}" ],
+  "defaultOpponentGenderFilter": "MALE",
+  "mode": "STATIC_ONLY"
+}

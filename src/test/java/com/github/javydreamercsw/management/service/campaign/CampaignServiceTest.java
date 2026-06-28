@@ -35,15 +35,18 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class CampaignServiceTest {
@@ -57,11 +60,16 @@ class CampaignServiceTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseRepository universeRepository;
   @Mock private FeatureDataService featureDataService;
+  @Mock private CampaignProgressionService campaignProgressionService;
 
   @InjectMocks private CampaignService campaignService;
 
   @org.junit.jupiter.api.BeforeEach
   void setUpFeatureDataMock() {
+    // campaignProgressionService is field-injected (@Autowired), not constructor-injected,
+    // so @InjectMocks won't wire it automatically — inject it manually.
+    ReflectionTestUtils.setField(
+        campaignService, "campaignProgressionService", campaignProgressionService);
     // Return the defaultValue argument so Boolean auto-unboxing never receives null
     org.mockito.Mockito.lenient()
         .when(
@@ -151,6 +159,159 @@ class CampaignServiceTest {
 
     campaignService.shiftAlignment(campaign, -1);
     verify(alignmentService).shiftAlignment(campaign, -1);
+  }
+
+  @Test
+  void testStartCampaignWithExplicitChapterId() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setReigns(new LinkedHashSet<>());
+
+    Universe universe = Universe.builder().name("Default").build();
+    universe.setId(1L);
+
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+    when(campaignRepository.save(any(Campaign.class)))
+        .thenAnswer(
+            i -> {
+              Campaign c = i.getArgument(0);
+              if (c.getState() != null) {
+                c.getState().setFeatureData("{}");
+              }
+              return c;
+            });
+    lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+    alignment.setLevel(0);
+    lenient()
+        .when(wrestlerAlignmentRepository.findByWrestler(any()))
+        .thenReturn(Optional.of(alignment));
+    lenient().when(wrestlerAlignmentRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    // Chapter "beginning" is available (chapterService returns it for the blank state)
+    CampaignChapterDTO beginning =
+        CampaignChapterDTO.builder().id("beginning").title("All or Nothing Campaign").build();
+    when(chapterService.findAvailableChapters(any(), any())).thenReturn(List.of(beginning));
+
+    Campaign campaign = campaignService.startCampaign(wrestler, "beginning");
+
+    assertThat(campaign).isNotNull();
+    assertThat(campaign.getState().getCurrentChapterId()).isEqualTo("beginning");
+  }
+
+  @Test
+  void testStartCampaignWithUnknownChapterIdFallsBackToFirst() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setReigns(new LinkedHashSet<>());
+
+    Universe universe = Universe.builder().name("Default").build();
+    universe.setId(1L);
+
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+    when(campaignRepository.save(any(Campaign.class)))
+        .thenAnswer(
+            i -> {
+              Campaign c = i.getArgument(0);
+              if (c.getState() != null) {
+                c.getState().setFeatureData("{}");
+              }
+              return c;
+            });
+    lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+    alignment.setLevel(0);
+    lenient()
+        .when(wrestlerAlignmentRepository.findByWrestler(any()))
+        .thenReturn(Optional.of(alignment));
+    lenient().when(wrestlerAlignmentRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    CampaignChapterDTO beginning =
+        CampaignChapterDTO.builder().id("beginning").title("All or Nothing Campaign").build();
+    when(chapterService.findAvailableChapters(any(), any())).thenReturn(List.of(beginning));
+
+    // Pass an ID that doesn't match — should fall back to available.get(0)
+    Campaign campaign = campaignService.startCampaign(wrestler, "nonexistent");
+
+    assertThat(campaign.getState().getCurrentChapterId()).isEqualTo("beginning");
+  }
+
+  @Test
+  void testStartCampaignWithNoAvailableChapters() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setReigns(new LinkedHashSet<>());
+
+    Universe universe = Universe.builder().name("Default").build();
+    universe.setId(1L);
+
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+    when(campaignRepository.save(any(Campaign.class))).thenAnswer(i -> i.getArgument(0));
+    lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+    alignment.setLevel(0);
+    lenient()
+        .when(wrestlerAlignmentRepository.findByWrestler(any()))
+        .thenReturn(Optional.of(alignment));
+    lenient().when(wrestlerAlignmentRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    // No chapters available in either pass
+    when(chapterService.findAvailableChapters(any(), any())).thenReturn(List.of());
+
+    Campaign campaign = campaignService.startCampaign(wrestler, null);
+
+    assertThat(campaign).isNotNull();
+    assertThat(campaign.getState().getCurrentChapterId()).isNull();
+  }
+
+  @Test
+  void testFindStartingChaptersReturnsFromService() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setName("Kurt Angle");
+    wrestler.setReigns(new LinkedHashSet<>());
+
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    CampaignChapterDTO beginning =
+        CampaignChapterDTO.builder().id("beginning").title("All or Nothing Campaign").build();
+    when(chapterService.findAvailableChapters(any(), org.mockito.ArgumentMatchers.eq("Kurt Angle")))
+        .thenReturn(List.of(beginning));
+
+    List<CampaignChapterDTO> result = campaignService.findStartingChapters(wrestler);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getId()).isEqualTo("beginning");
+  }
+
+  @Test
+  void testFindStartingChaptersFallsBackToNullNameWhenEmpty() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setName("Unknown Joe");
+    wrestler.setReigns(new LinkedHashSet<>());
+
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    CampaignChapterDTO beginning =
+        CampaignChapterDTO.builder().id("beginning").title("All or Nothing Campaign").build();
+    // Wrestler-specific query returns empty; null-name query returns the chapter
+    when(chapterService.findAvailableChapters(
+            any(), org.mockito.ArgumentMatchers.eq("Unknown Joe")))
+        .thenReturn(List.of());
+    when(chapterService.findAvailableChapters(any(), org.mockito.ArgumentMatchers.isNull()))
+        .thenReturn(List.of(beginning));
+
+    List<CampaignChapterDTO> result = campaignService.findStartingChapters(wrestler);
+
+    assertThat(result).extracting(CampaignChapterDTO::getId).containsExactly("beginning");
   }
 
   @Test
