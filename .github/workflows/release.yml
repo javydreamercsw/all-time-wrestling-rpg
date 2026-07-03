@@ -30,30 +30,45 @@ jobs:
   preflight_checks:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify all checks pass on source branch
+      - name: Wait for all checks to complete on source branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SHA=$(gh api "repos/${{ github.repository }}/commits/${{ github.ref_name }}" \
                 --jq '.sha')
-          echo "Checking CI status for SHA $SHA on branch ${{ github.ref_name }}"
+          echo "Waiting for CI checks on SHA $SHA (branch ${{ github.ref_name }})"
 
-          # Collect all check runs for the SHA
-          RESULTS=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs" \
-                    --paginate --jq '
-                      .check_runs[]
-                      | select(.name != "${{ github.workflow }}" and .name != "preflight_checks")
-                      | {name: .name, status: .status, conclusion: .conclusion}')
+          TIMEOUT=1800  # 30 minutes
+          POLL=30       # seconds between polls
+          ELAPSED=0
+
+          while true; do
+            RESULTS=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs" \
+                      --paginate --jq '
+                        .check_runs[]
+                        | select(.name != "${{ github.workflow }}" and .name != "preflight_checks")
+                        | {name: .name, status: .status, conclusion: .conclusion}')
+
+            IN_PROGRESS=$(echo "$RESULTS" | jq -r 'select(.status != "completed") | .name')
+
+            if [ -z "$IN_PROGRESS" ]; then
+              echo "All checks have completed."
+              break
+            fi
+
+            if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+              echo "::error::Timed out after ${TIMEOUT}s waiting for checks to complete:"
+              echo "$IN_PROGRESS"
+              exit 1
+            fi
+
+            echo "Still pending (${ELAPSED}s elapsed), retrying in ${POLL}s:"
+            echo "$IN_PROGRESS"
+            sleep "$POLL"
+            ELAPSED=$((ELAPSED + POLL))
+          done
 
           echo "$RESULTS"
-
-          # Fail if any check is still in progress
-          IN_PROGRESS=$(echo "$RESULTS" | jq -r 'select(.status != "completed") | .name')
-          if [ -n "$IN_PROGRESS" ]; then
-            echo "::error::The following checks are not yet complete:"
-            echo "$IN_PROGRESS"
-            exit 1
-          fi
 
           # Fail if any completed check did not succeed
           FAILED=$(echo "$RESULTS" | jq -r 'select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "\(.name): \(.conclusion)"')
