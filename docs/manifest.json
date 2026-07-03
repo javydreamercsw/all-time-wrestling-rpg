@@ -666,5 +666,96 @@
     "description": "Step 2 guides the player to create their first show in the universe.",
     "imagePath": "screenshots/players-tutorial-step2.png",
     "order": 0
+  }, {
+    "id": "tutorial-tutorial-global-step4",
+    "category": "Tutorial",
+    "title": "Global Tutorial — Step 4",
+    "description": "Step 4 asks the player to run their show by adjudicating its segments.",
+    "imagePath": "screenshots/tutorial-global-step4.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-global-step1",
+    "category": "Tutorial",
+    "title": "Global Tutorial — Step 1",
+    "description": "The tutorial guides new players through the key actions for their mode. Step 1 asks the player to pick their featured wrestler.",
+    "imagePath": "screenshots/tutorial-global-step1.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-global-step3",
+    "category": "Tutorial",
+    "title": "Global Tutorial — Step 3",
+    "description": "Step 3 asks the player to plan their card by adding at least one segment to their show.",
+    "imagePath": "screenshots/tutorial-global-step3.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-global-step5",
+    "category": "Tutorial",
+    "title": "Global Tutorial — Step 5",
+    "description": "Step 5 introduces AI narration — players can configure an AI provider to generate match commentary.",
+    "imagePath": "screenshots/tutorial-global-step5.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-global-step2",
+    "category": "Tutorial",
+    "title": "Global Tutorial — Step 2",
+    "description": "Step 2 guides the player to create their first show in the universe.",
+    "imagePath": "screenshots/tutorial-global-step2.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-league-step1",
+    "category": "Tutorial",
+    "title": "League Tutorial — Step 1",
+    "description": "The league tutorial begins by creating a tutorial league and making the player the commissioner. Step 1 shows the Leagues page with the player's tutorial league.",
+    "imagePath": "screenshots/tutorial-league-step1.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-league-step2",
+    "category": "Tutorial",
+    "title": "League Tutorial — Step 2",
+    "description": "Step 2 guides the commissioner to invite other players to their league by generating an invite link.",
+    "imagePath": "screenshots/tutorial-league-step2.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-league-step3",
+    "category": "Tutorial",
+    "title": "League Tutorial — Step 3",
+    "description": "Step 3 instructs the commissioner to start the snake draft once all players have joined.",
+    "imagePath": "screenshots/tutorial-league-step3.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-league-step4",
+    "category": "Tutorial",
+    "title": "League Tutorial — Step 4",
+    "description": "Step 4 takes the player to the Draft page to make their first wrestler pick, completing the league setup tutorial.",
+    "imagePath": "screenshots/tutorial-league-step4.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-campaign-step1",
+    "category": "Tutorial",
+    "title": "Campaign Tutorial — Step 1",
+    "description": "The campaign tutorial starts by asking the player to assign a wrestler on their Player Dashboard. Only wrestlers allowed by the first campaign chapter are shown.",
+    "imagePath": "screenshots/tutorial-campaign-step1.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-campaign-step2",
+    "category": "Tutorial",
+    "title": "Campaign Tutorial — Step 2",
+    "description": "Step 2 directs the player to the Campaign view where an active campaign has been automatically created for their chosen wrestler.",
+    "imagePath": "screenshots/tutorial-campaign-step2.png",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-campaign-step3",
+    "category": "Tutorial",
+    "title": "Campaign Tutorial — Step 3",
+    "description": "Step 3 sends the player to the Backstage Actions page to make their first story-driven choice, completing the campaign tutorial.",
+    "imagePath": "screenshots/tutorial-campaign-step3.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-match-info",
+    "category": "Game Mechanics",
+    "title": "Match Rules Viewer",
+    "description": "Every match type has a built-in rules reference. Tap the info button on any segment or the How to Play button during a match to view solo and multiplayer rule summaries without leaving the app.",
+    "imagePath": "screenshots/mechanic-match-info.png",
+    "order": 0
   } ]
 }
