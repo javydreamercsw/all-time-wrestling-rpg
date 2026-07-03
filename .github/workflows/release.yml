@@ -622,8 +622,11 @@ jobs:
         run: |
           git checkout main
           git fetch origin release/${{ github.event.inputs.version }}
-          git merge --squash origin/release/${{ github.event.inputs.version }}
-          git commit -m "chore: Merge release ${{ github.event.inputs.version }} back to main"
+          # Use --no-ff so git records the merge ancestry. --squash creates an
+          # orphaned commit with no parent pointer back to the release branch,
+          # which causes phantom conflicts on every subsequent sync.
+          git merge --no-ff -m "chore: Merge release ${{ github.event.inputs.version }} back to main" \
+            origin/release/${{ github.event.inputs.version }}
           git push origin main
 
       - name: Sync back to source branch
@@ -637,6 +640,17 @@ jobs:
           # is behind origin and the subsequent push is rejected non-fast-forward.
           git fetch origin ${{ github.ref_name }}
           git checkout -B ${{ github.ref_name }} origin/${{ github.ref_name }}
-          git merge --squash origin/main
-          git commit -m "chore: Sync main back to ${{ github.ref_name }} after release ${{ github.event.inputs.version }}"
+
+          BEHIND=$(git log --oneline HEAD..origin/main | wc -l | tr -d ' ')
+          if [ "$BEHIND" -eq "0" ]; then
+            echo "Source branch is already up to date with main — nothing to sync."
+            exit 0
+          fi
+
+          # -X ours resolves conflicts in favour of the development branch.
+          # This correctly keeps the SNAPSHOT version in pom.xml and the latest
+          # release.yml rather than the release branch's older copies.
+          git merge --no-ff -X ours \
+            -m "chore: Sync main back to ${{ github.ref_name }} after release ${{ github.event.inputs.version }}" \
+            origin/main
           git push origin ${{ github.ref_name }}
