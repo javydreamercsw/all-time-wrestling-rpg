@@ -11,17 +11,17 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-27 (commit ac01aff94). Confidence: 100%.
+Last indexed: 2026-06-28 (commit 283da2b86). Confidence: 100%.
 
 ### Architecture
 
-repo is a Java-based enterprise management platform that ingests relational data models and business logic, processes them through a domain-driven service layer, and exposes the resulting state via a VitePress-powered documentation site and a web-based UI. The system orchestrates complex entity relationships—specifically focused on wrestler and universe management—to provide a structured administrative interface for tracking accounts, matches, and campaign dramas. The repository follows a domain-driven design (DDD) pattern, organized around core business entities:
+repo is a comprehensive wrestling promotion management platform that consumes user-defined wrestling entities and scheduling data, processes them through a domain-driven Java backend, and persists the state in a relational database to render interactive management dashboards. The system orchestrates complex domain logic—ranging from wrestler attributes to universe simulation—and exposes this data via a web-based UI to facilitate show planning and roster administration. The repository follows a domain-centric architecture organized into distinct functional layers:
 
 ### Key Modules
 
 |                                Module                                 |                                     Purpose                                      |
 |-----------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `src/main/java/com/github/javydreamercsw/management/service`          | The service module acts as the core application-layer orchestration subsystem…   |
+| `src/main/java/com/github/javydreamercsw/management/service`          | The service module acts as the core business logic layer of the management…      |
 | `src/main/java/com/github/javydreamercsw/base/domain`                 | The base/domain module serves as the core persistence and domain modeling layer… |
 | `src/main/java/com/github/javydreamercsw/management/domain`           | The domain module serves as the foundational persistence layer and data…         |
 | `src/test/java/com/github/javydreamercsw/base`                        | The test/base module serves as the foundational testing infrastructure and…      |
@@ -68,16 +68,16 @@ repo is a Java-based enterprise management platform that ingests relational data
 |---------------------------------------------------------------------------------------|--------------|-------------|-------------------------|
 | `package.json`                                                                        | 100.0th %ile | 74          | Javier A. Ortiz Bultron |
 | `package-lock.json`                                                                   | 99.9th %ile  | 44          | Javier A. Ortiz Bultron |
-| `src/main/java/com/github/javydreamercsw/management/ui/view/show/ShowDetailView.java` | 99.9th %ile  | 29          | Javier A. Ortiz Bultron |
+| `src/main/java/com/github/javydreamercsw/management/ui/view/show/ShowDetailView.java` | 99.9th %ile  | 31          | Javier A. Ortiz Bultron |
 | `src/test/java/com/github/javydreamercsw/AbstractE2ETest.java`                        | 99.8th %ile  | 18          | Javier A. Ortiz Bultron |
-| `src/main/resources/segment_rules.json`                                               | 99.7th %ile  | 6           | Javier A. Ortiz Bultron |
+| `src/main/resources/segment_rules.json`                                               | 99.7th %ile  | 7           | Javier A. Ortiz Bultron |
 
 ## Code health
 
 Three signals: **defect risk** (the overall score), **maintainability** (smells that hurt readability/change-cost without predicting bugs), and **performance** (static performance RISK: I/O-in-loop / N+1 shapes that waste work, high-precision/low-recall). Maintainability and performance are co-equal views, never blended into the defect headline. See `docs/CODE_HEALTH.md`.
 
-Defect risk, Hotspot health: 4.82/10 (stable) ·
-Average: 8.1/10 ·
+Defect risk, Hotspot health: 4.83/10 (stable) ·
+Average: 8.11/10 ·
 Worst: 1.0/10 (`src/main/java/com/github/javydreamercsw/base/ai/AbstractSegmentNarrationService.java`)
 Maintainability, Average: 8.68/10
 Performance risk, Average: 9.88/10

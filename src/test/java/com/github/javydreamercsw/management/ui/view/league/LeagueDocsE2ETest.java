@@ -75,8 +75,11 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     ensureWrestlers();
     ensureSeasonExists();
     ensureShowTemplateExists();
-    // Navigate to a known page after DB reset so Vaadin rebuilds views with fresh data.
-    // Without this, a view cached in the previous test's session may render stale state.
+    // Re-login after DB cleanup so the Vaadin security context is bound to the freshly
+    // recreated admin account. setup() logs in before cleanupLeagues() wipes accounts,
+    // leaving the session token pointing at a deleted entity. On the next full page load
+    // isAdmin()/isBooker() sees an unauthenticated context and omits create-league-btn.
+    login();
     navigateTo("leagues");
     waitForVaadinClientToLoad();
   }
