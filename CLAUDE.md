@@ -158,6 +158,14 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 
 **Rule of thumb:** every significant new user-facing feature needs at minimum a docs screenshot test. Add a video test when the feature has a non-obvious multi-step workflow that a static screenshot cannot convey.
 - **DTOs:** use `*ResponseDTO` / `*DTO` classes for REST responses; map via MapStruct.
+- **View facade pattern:** Vaadin views must use the four facade/context beans instead of injecting individual services directly into the constructor. This keeps constructors short and avoids Spring's 255-parameter limit.
+- `ShowFacade` — show execution services (ShowService, SegmentService, SegmentTypeService, SegmentRuleService, narration, NpcService)
+- `ShowContextFacade` — show scheduling/context services (ShowTypeService, SeasonService, ShowTemplateService, ShowPlanningService, ShowPlanningAiService, ArenaService)
+- `WrestlerFacade` — wrestler services (WrestlerService, WrestlerStatsService, WrestlerRelationshipService)
+- `ViewContext` — cross-cutting view utilities (NotificationService, SecurityUtils, UniverseContextService, ExpansionService)
+- All four live in `management.service.*` or `management.ui` — **never** add UI-layer dependencies (e.g. `base.ui.service.*`) to a bean under `management.service.*`; that violates the ArchUnit rule enforced by `ArchitectureTest`. Put anything that wraps a UI service in `ViewContext` (which lives in `management.ui`).
+- Views unpack individual services in the constructor body (`this.showService = showFacade.getShowService()`). Private field types stay unchanged — only the constructor signature shrinks.
+- When adding a new service to an existing view, add it to the appropriate facade first (or `ViewContext`), then unpack it in the view's constructor body. Do not add new raw service parameters to view constructors.
 - **ArchUnit:** architecture rules are enforced by tests in `*ArchTests.java`; violations fail the build.
 - **Flyway:** add new migrations as versioned SQL files in both `h2/` and `mysql/` directories when changing the schema.
 - **Never edit a released script.** Each directory has a `.released` file recording the highest version shipped to users (e.g. `V42` for MySQL, `V74` for H2). Scripts at or below that version are frozen — editing them causes Flyway checksum validation failures on every existing install. `ReleasedMigrationChecksumTest` enforces this on every `mvn test` build and will fail immediately if a released file is modified.

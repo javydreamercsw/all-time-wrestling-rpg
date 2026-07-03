@@ -27,7 +27,9 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -246,12 +248,14 @@ public class SegmentAdjudicationService {
     processRewards(segment, multiplier);
     applyOutcomeMatrix(segment, winners, losers);
     applyRatingAndNoise(segment);
-    applyWearAndTear(segment);
+    Set<Long> wearAndTearBumpedIds = applyWearAndTear(segment);
     applyRingsideActions(segment);
     applyTitleChange(segment, winners, losers);
 
     Long universeId =
         segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
+
+    assignBumps(segment, universeId, wearAndTearBumpedIds);
 
     applyFactionAffinity(segment, winners, universeId);
     applyHeatToRivaltiesAndFeuds(segment, segment.getWrestlers(), universeId);
@@ -646,17 +650,23 @@ public class SegmentAdjudicationService {
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> winners,
       @NonNull final List<Wrestler> participants) {
-    // Evaluate Status Card triggers
     if (wrestlerStatusService.isStatusMechanicEnabled()) {
+      Map<Long, Integer> recordedMomentum =
+          segment.getParticipants().stream()
+              .filter(p -> p.getFinalMomentum() != null)
+              .collect(
+                  Collectors.toMap(
+                      p -> p.getWrestler().getId(), SegmentParticipant::getFinalMomentum));
       for (Wrestler participant : participants) {
         boolean lost = !winners.contains(participant);
-        // Use effective starting momentum as a proxy for final momentum for now.
-        // In the future, we could parse the narration or track it in the match engine.
-        int momentum = participant.getEffectiveStartingMomentum();
+        int finalMomentum =
+            recordedMomentum.getOrDefault(
+                participant.getId(), participant.getEffectiveStartingMomentum());
         participant
             .getStatuses()
             .forEach(
-                status -> wrestlerStatusService.evaluateTriggerConditions(status, momentum, lost));
+                status ->
+                    wrestlerStatusService.evaluateTriggerConditions(status, finalMomentum, lost));
       }
     }
   }
@@ -730,8 +740,6 @@ public class SegmentAdjudicationService {
                 w -> log.debug("Deducted/awarded {} fans to loser {}", changeToApply, w.getName()));
       }
     }
-
-    assignBumps(segment, universeId);
 
     // Improve relationships between participants based on match quality
     if (roll >= 15) {
@@ -906,7 +914,10 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private void assignBumps(@NonNull final Segment segment, final Long universeId) {
+  private void assignBumps(
+      @NonNull final Segment segment,
+      final Long universeId,
+      @NonNull final Set<Long> alreadyBumpedIds) {
     for (SegmentRule rule : segment.getSegmentRules()) {
       if (rule.getBumpAddition() == null) {
         continue;
@@ -914,28 +925,41 @@ public class SegmentAdjudicationService {
       switch (rule.getBumpAddition()) {
         case WINNERS:
           for (Wrestler winner : segment.getWinners()) {
-            if (winner.getId() != null) {
+            if (winner.getId() != null && !alreadyBumpedIds.contains(winner.getId())) {
               GeneralSecurityUtils.runAsAdmin(
-                      () -> wrestlerService.addBump(winner.getId(), universeId))
-                  .ifPresent(w -> log.debug("Added bump to winner {}", w.getName()));
+                      () -> wrestlerService.addBump(winner.getId(), universeId, BumpSource.RULE))
+                  .ifPresent(w -> log.debug("Added rule bump to winner {}", w.getName()));
+            } else if (winner.getId() != null) {
+              log.debug(
+                  "Skipping rule bump for winner {} — already bumped by wear and tear",
+                  winner.getName());
             }
           }
           break;
         case LOSERS:
           for (Wrestler loser : segment.getLosers()) {
-            if (loser.getId() != null) {
+            if (loser.getId() != null && !alreadyBumpedIds.contains(loser.getId())) {
               GeneralSecurityUtils.runAsAdmin(
-                      () -> wrestlerService.addBump(loser.getId(), universeId))
-                  .ifPresent(w -> log.debug("Added bump to loser {}", w.getName()));
+                      () -> wrestlerService.addBump(loser.getId(), universeId, BumpSource.RULE))
+                  .ifPresent(w -> log.debug("Added rule bump to loser {}", w.getName()));
+            } else if (loser.getId() != null) {
+              log.debug(
+                  "Skipping rule bump for loser {} — already bumped by wear and tear",
+                  loser.getName());
             }
           }
           break;
         case ALL:
           for (Wrestler participant : segment.getWrestlers()) {
-            if (participant.getId() != null) {
+            if (participant.getId() != null && !alreadyBumpedIds.contains(participant.getId())) {
               GeneralSecurityUtils.runAsAdmin(
-                      () -> wrestlerService.addBump(participant.getId(), universeId))
-                  .ifPresent(w -> log.debug("Added bump to participant {}", w.getName()));
+                      () ->
+                          wrestlerService.addBump(participant.getId(), universeId, BumpSource.RULE))
+                  .ifPresent(w -> log.debug("Added rule bump to participant {}", w.getName()));
+            } else if (participant.getId() != null) {
+              log.debug(
+                  "Skipping rule bump for participant {} — already bumped by wear and tear",
+                  participant.getName());
             }
           }
           break;
@@ -957,10 +981,12 @@ public class SegmentAdjudicationService {
                 rivalry.getId(), diceBag.roll(), diceBag.roll(), threshold));
   }
 
-  private void applyWearAndTear(@NonNull final Segment segment) {
+  private Set<Long> applyWearAndTear(@NonNull final Segment segment) {
+    Set<Long> bumpedIds = new HashSet<>();
+
     if (SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())
         || !gameSettingService.isWearAndTearEnabled()) {
-      return;
+      return bumpedIds;
     }
 
     int baseLoss = 1 + random.nextInt(3); // 1-3% base loss
@@ -983,26 +1009,53 @@ public class SegmentAdjudicationService {
 
     Long universeId = universeContextService.getCurrentUniverseId();
 
+    // Build a map of wrestler ID -> reported final health for player-controlled wrestlers
+    Map<Long, Integer> reportedHealth =
+        segment.getParticipants().stream()
+            .filter(p -> p.getFinalHealth() != null && p.getWrestler().getAccount() != null)
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    p -> p.getWrestler().getId(),
+                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
+                        ::getFinalHealth,
+                    (a, b) -> a));
+
     for (Wrestler wrestler : segment.getWrestlers()) {
       WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
       int current = state.getPhysicalCondition();
-      int newCondition = Math.max(0, current - baseLoss);
+      int effectiveLoss;
+      if (wrestler.getAccount() != null && reportedHealth.containsKey(wrestler.getId())) {
+        // Player reported their actual end-health — derive loss from starting health
+        int startingHealth = wrestler.getStartingHealth();
+        int endHealth = reportedHealth.get(wrestler.getId());
+        int rawLoss = startingHealth > 0 ? (startingHealth - endHealth) * 100 / startingHealth : 0;
+        effectiveLoss = Math.max(0, rawLoss);
+        log.info(
+            "Using reported health for {}: starting={}, end={}, loss={}%",
+            wrestler.getName(), startingHealth, endHealth, effectiveLoss);
+      } else {
+        effectiveLoss = baseLoss;
+      }
+      int newCondition = Math.max(0, current - effectiveLoss);
       state.setPhysicalCondition(newCondition);
       log.info(
           "Applied {}% wear and tear to {} in league {}. New condition: {}%",
-          baseLoss, wrestler.getName(), universeId, newCondition);
+          effectiveLoss, wrestler.getName(), universeId, newCondition);
 
       int bumpChance = Math.max(0, 75 - newCondition);
       if (bumpChance > 0 && random.nextInt(100) < bumpChance) {
         log.info(
             "Wear-and-tear bump triggered for {} (condition: {}%, chance: {}%)",
             wrestler.getName(), newCondition, bumpChance);
-        wrestlerService.addBump(wrestler.getId(), universeId);
+        wrestlerService.addBump(wrestler.getId(), universeId, BumpSource.WEAR_AND_TEAR);
+        bumpedIds.add(wrestler.getId());
       }
 
       // Check for retirement
       retirementService.checkRetirement(wrestler, universeId);
     }
+
+    return bumpedIds;
   }
 
   private int calculateBaseRating() {

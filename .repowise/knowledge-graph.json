@@ -199422,7 +199422,8 @@
     "depth": 0,
     "kind": "overview",
     "reason": "Start here for the end-to-end picture before diving into the code.",
-    "layer_id": "layer:application"
+    "layer_id": "layer:application",
+    "wikiPageIds": [ ]
   }, {
     "order": 2,
     "target_path": "src/main/java/com/github/javydreamercsw/Application.java",
@@ -199431,7 +199432,8 @@
     "depth": 0,
     "kind": "code",
     "reason": "An entry point — execution and imports fan out from here.",
-    "layer_id": "layer:application"
+    "layer_id": "layer:application",
+    "wikiPageIds": [ ]
   }, {
     "order": 3,
     "target_path": "src/main/java/com/github/javydreamercsw/base/domain/account/RoleName.java",
@@ -199440,7 +199442,8 @@
     "depth": 1,
     "kind": "code",
     "reason": "Directly used by the entry points above; a core collaborator.",
-    "layer_id": "layer:service"
+    "layer_id": "layer:service",
+    "wikiPageIds": [ ]
   }, {
     "order": 4,
     "target_path": "src/main/java/com/github/javydreamercsw/management/domain/wrestler/WrestlerStateRepository.java",
@@ -199449,7 +199452,8 @@
     "depth": 1,
     "kind": "code",
     "reason": "Directly used by the entry points above; a core collaborator.",
-    "layer_id": "layer:service"
+    "layer_id": "layer:service",
+    "wikiPageIds": [ ]
   }, {
     "order": 5,
     "target_path": "src/main/java/com/github/javydreamercsw/management/DataInitializer.java",
@@ -199458,7 +199462,8 @@
     "depth": 1,
     "kind": "code",
     "reason": "Directly used by the entry points above; a core collaborator.",
-    "layer_id": "layer:application"
+    "layer_id": "layer:application",
+    "wikiPageIds": [ ]
   }, {
     "order": 6,
     "target_path": "src/main/java/com/github/javydreamercsw/base/service/ranking/RankingService.java",
@@ -199467,7 +199472,8 @@
     "depth": 1,
     "kind": "code",
     "reason": "Directly used by the entry points above; a core collaborator.",
-    "layer_id": "layer:application"
+    "layer_id": "layer:application",
+    "wikiPageIds": [ ]
   }, {
     "order": 7,
     "target_path": "src/main/java/com/github/javydreamercsw/base/AccountInitializer.java",
@@ -199476,7 +199482,8 @@
     "depth": 1,
     "kind": "code",
     "reason": "Directly used by the entry points above; a core collaborator.",
-    "layer_id": "layer:application"
+    "layer_id": "layer:application",
+    "wikiPageIds": [ ]
   }, {
     "order": 8,
     "target_path": "src/main/java/com/github/javydreamercsw/base/config/StorageProperties.java",
@@ -199485,7 +199492,8 @@
     "depth": 2,
     "kind": "code",
     "reason": "The Config layer's anchor — its most depended-on file.",
-    "layer_id": "layer:config"
+    "layer_id": "layer:config",
+    "wikiPageIds": [ ]
   }, {
     "order": 9,
     "target_path": "src/main/java/com/github/javydreamercsw/utils/DiceBag.java",
@@ -199494,7 +199502,8 @@
     "depth": 2,
     "kind": "code",
     "reason": "The Utility layer's anchor — its most depended-on file.",
-    "layer_id": "layer:utility"
+    "layer_id": "layer:utility",
+    "wikiPageIds": [ ]
   }, {
     "order": 10,
     "target_path": "src/main/java/com/github/javydreamercsw/base/service/db/DatabaseManager.java",
@@ -199503,7 +199512,8 @@
     "depth": 2,
     "kind": "code",
     "reason": "The Data layer's anchor — its most depended-on file.",
-    "layer_id": "layer:data"
+    "layer_id": "layer:data",
+    "wikiPageIds": [ ]
   }, {
     "order": 11,
     "target_path": "src/main/java/com/github/javydreamercsw/base/ui/component/ViewToolbar.java",
@@ -199512,7 +199522,8 @@
     "depth": 2,
     "kind": "code",
     "reason": "The UI layer's anchor — its most depended-on file.",
-    "layer_id": "layer:ui"
+    "layer_id": "layer:ui",
+    "wikiPageIds": [ ]
   }, {
     "order": 12,
     "target_path": "src/test/java/com/github/javydreamercsw/AccountE2ETest.java",
@@ -199521,7 +199532,8 @@
     "depth": 3,
     "kind": "code",
     "reason": "The test suite — how the system's behavior is verified.",
-    "layer_id": "layer:test"
+    "layer_id": "layer:test",
+    "wikiPageIds": [ ]
   } ],
   "modules": [ {
     "id": "module:src-main-java-com-github-javydreamercsw-base--ui",

@@ -224,6 +224,36 @@ class SecurityUtilsTest {
   }
 
   @Test
+  void playerCanDeleteOwnContent() {
+    CustomUserDetails player = mock(CustomUserDetails.class);
+    when(player.getAuthorities())
+        .thenAnswer(
+            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_PLAYER")));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(player));
+
+    Object ownedTarget = new Object();
+    when(permissionService.isOwner(ownedTarget)).thenReturn(true);
+    assertThat(securityUtils.canDelete(ownedTarget)).isTrue();
+
+    Object unownedTarget = new Object();
+    when(permissionService.isOwner(unownedTarget)).thenReturn(false);
+    assertThat(securityUtils.canDelete(unownedTarget)).isFalse();
+  }
+
+  @Test
+  void viewerCannotDeleteEvenOwnContent() {
+    CustomUserDetails viewer = mock(CustomUserDetails.class);
+    when(viewer.getAuthorities())
+        .thenAnswer(
+            invocation -> Collections.singletonList(new SimpleGrantedAuthority("ROLE_VIEWER")));
+    when(authenticationContext.getAuthenticatedUser(Object.class)).thenReturn(Optional.of(viewer));
+
+    Object target = new Object();
+    when(permissionService.isOwner(target)).thenReturn(true);
+    assertThat(securityUtils.canDelete(target)).isFalse();
+  }
+
+  @Test
   void testGetAuthenticatedUserWithAnonymousUser() {
     // Simulate anonymous user with a String principal
     when(authenticationContext.getAuthenticatedUser(Object.class))

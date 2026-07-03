@@ -17,10 +17,14 @@
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.util.Collection;
@@ -49,6 +53,7 @@ public class PermissionService {
   private final WrestlerRepository wrestlerRepository;
   private final AccountRepository accountRepository;
   private final DeckRepository deckRepository;
+  private final UniverseMembershipRepository universeMembershipRepository;
 
   /**
    * Checks if the currently authenticated user owns the target domain object.
@@ -113,6 +118,24 @@ public class PermissionService {
         Long wrestlerId = deck.getWrestler().getId();
         return ownedWrestlerIds.contains(wrestlerId);
       }
+    }
+
+    if (targetDomainObject instanceof Campaign campaign) {
+      Wrestler campaignWrestler = campaign.getWrestler();
+      if (campaignWrestler == null) {
+        return false;
+      }
+      Long wrestlerId = campaignWrestler.getId();
+      return wrestlerId != null && ownedWrestlerIds.contains(wrestlerId);
+    }
+
+    if (targetDomainObject instanceof Universe universe) {
+      return accountRepository
+          .findByUsername(userDetails.getUsername())
+          .flatMap(
+              account -> universeMembershipRepository.findByAccountAndUniverse(account, universe))
+          .map(m -> UniverseMembership.UniverseMemberRole.OWNER == m.getRole())
+          .orElse(false);
     }
 
     if (targetDomainObject instanceof InboxItem inboxItem) {

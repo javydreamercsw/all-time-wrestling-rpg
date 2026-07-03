@@ -108,6 +108,7 @@ public class SeasonListView extends Main {
 
     HorizontalLayout toolbar = new HorizontalLayout(searchField, addSeasonBtn, refreshBtn);
     toolbar.addClassName("toolbar");
+    toolbar.getStyle().set("flex-wrap", "wrap");
     return toolbar;
   }
 

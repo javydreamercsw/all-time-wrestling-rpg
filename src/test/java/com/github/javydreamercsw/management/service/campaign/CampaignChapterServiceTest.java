@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignStateReposit
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
+import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -177,6 +178,42 @@ class CampaignChapterServiceTest {
     campaign.setWrestler(wrestler);
     state.setCampaign(campaign);
     return state;
+  }
+
+  @Test
+  @DisplayName(
+      "isAnyPointActive returns defaultWhenEmpty=true when points list is empty (entry gate)")
+  void entryPointsEmptyReturnsTrue() {
+    CampaignState state = buildMinimalState();
+    assertThat(chapterService.isAnyPointActive(List.of(), state, true)).isTrue();
+  }
+
+  @Test
+  @DisplayName(
+      "isAnyPointActive returns defaultWhenEmpty=false when points list is empty (exit gate)")
+  void exitPointsEmptyReturnsFalse() {
+    CampaignState state = buildMinimalState();
+    assertThat(chapterService.isAnyPointActive(List.of(), state, false)).isFalse();
+  }
+
+  @Test
+  @DisplayName("isAnyPointActive evaluates criteria when points list is non-empty")
+  void pointsWithEmptyCriteriaAlwaysActive() {
+    CampaignState state = buildMinimalState();
+    ChapterPointDTO point = ChapterPointDTO.builder().name("open").criteria(List.of()).build();
+    assertThat(chapterService.isAnyPointActive(List.of(point), state, false)).isTrue();
+  }
+
+  @Test
+  @DisplayName(
+      "isAnyPointActive returns false when all criteria fail (defaultWhenEmpty irrelevant)")
+  void pointsWithUnsatisfiedCriteriaNotActive() {
+    CampaignState state = buildMinimalState();
+    state.setVictoryPoints(0);
+    ChapterCriteriaDTO gate = ChapterCriteriaDTO.builder().minVictoryPoints(10).build();
+    ChapterPointDTO point =
+        ChapterPointDTO.builder().name("locked").criteria(List.of(gate)).build();
+    assertThat(chapterService.isAnyPointActive(List.of(point), state, true)).isFalse();
   }
 
   @Test

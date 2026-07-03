@@ -356,5 +356,26 @@
     "description": "When someone follows the link and submits a request, click Requests to review it. Approve to add them as a member, Reject to decline, or Block to prevent future requests from that account.",
     "videoPath": "videos/universe-member-onboarding.mp4",
     "order": 0
+  }, {
+    "id": "tutorial-tutorial-campaign-walkthrough",
+    "category": "Tutorial",
+    "title": "Campaign Tutorial Walkthrough",
+    "description": "Step 3 — Make Your First Backstage Action",
+    "videoPath": "videos/tutorial-campaign-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-league-walkthrough",
+    "category": "Tutorial",
+    "title": "League Tutorial Walkthrough",
+    "description": "Step 4 — Make Your First Draft Pick",
+    "videoPath": "videos/tutorial-league-walkthrough.mp4",
+    "order": 0
+  }, {
+    "id": "tutorial-tutorial-global-walkthrough",
+    "category": "Tutorial",
+    "title": "Global Tutorial Walkthrough",
+    "description": "Step 5 — Enhance with AI",
+    "videoPath": "videos/tutorial-global-walkthrough.mp4",
+    "order": 0
   } ]
 }

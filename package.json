@@ -32,7 +32,7 @@
     "onecolor": "4.1.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-router": "7.13.1"
+    "react-router": "7.18.0"
   },
   "devDependencies": {
     "@babel/preset-react": "7.28.5",
@@ -50,7 +50,7 @@
     "strip-css-comments": "5.0.0",
     "transform-ast": "2.4.4",
     "typescript": "5.9.3",
-    "vite": "7.3.2",
+    "vite": "7.3.6",
     "vite-plugin-checker": "0.12.0"
   },
   "overrides": {
@@ -204,7 +204,7 @@
       "vite": "7.3.2",
       "vite-plugin-checker": "0.12.0"
     },
-    "hash": "2ff13f2ff1eecaf788a13029fadb569df3ff71a3593fdbabd27a0a09cc32d1f8",
+    "hash": "cbf2fa27bf7b239482cff42fd030380c5e5d531702f7bc83da24e149af744299",
     "overrides": {
       "@fullcalendar/core": "$@fullcalendar/core",
       "@fullcalendar/daygrid": "$@fullcalendar/daygrid",

@@ -96,13 +96,29 @@ class PerformanceControllerTest extends AbstractControllerTest {
 
   @Test
   void getCacheStatistics_returnsStats() throws Exception {
-    doNothing().when(cacheMonitor).logCacheStatistics();
+    java.util.List<java.util.Map<String, Object>> perCacheStats =
+        java.util.List.of(
+            java.util.Map.of(
+                "name",
+                "wrestlers",
+                "size",
+                5L,
+                "hitCount",
+                10L,
+                "missCount",
+                2L,
+                "hitRate",
+                0.83,
+                "evictionCount",
+                0L));
+    when(cacheMonitor.getDetailedCacheStatistics()).thenReturn(perCacheStats);
 
     mockMvc
         .perform(get("/api/system/performance/cache/stats").with(csrf()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("active"))
-        .andExpect(jsonPath("$.cacheCount").value(13));
+        .andExpect(jsonPath("$.cacheCount").value(1))
+        .andExpect(jsonPath("$.caches[0].name").value("wrestlers"));
   }
 
   @Test

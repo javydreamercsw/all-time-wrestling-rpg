@@ -164,6 +164,29 @@ settings take precedence:
 
 `application.properties` defaults to `spring.profiles.active=h2`; the JVM option overrides it.
 
+### Auto-starting Caddy with Tomcat (setenv.sh)
+
+Tomcat automatically sources `bin/setenv.sh` before startup. The repo ships one at `src/main/resources/docker/tomcat/setenv.sh` that:
+
+1. Detects the current LAN IP.
+2. Exports `QR_BASE_URL` so QR codes are always scannable from phones.
+3. Starts Caddy in the background using `conf/Caddyfile`.
+
+**One-time setup:**
+
+```bash
+# Copy setenv.sh into Tomcat's bin/
+cp src/main/resources/docker/tomcat/setenv.sh "$CATALINA_HOME/bin/setenv.sh"
+chmod +x "$CATALINA_HOME/bin/setenv.sh"
+
+# Copy the Caddyfile into Tomcat's conf/
+cp Caddyfile "$CATALINA_HOME/conf/Caddyfile"
+```
+
+After this, every `startup.sh` / service restart automatically picks up the current LAN IP and launches Caddy — no manual `./start-caddy.sh` or IP edits required.
+
+> **Windows service note:** `setenv.sh` is not executed by the Tomcat Windows service (`Procrun`). Set `QR_BASE_URL` manually in the Java Options tab of `tomcat11w.exe` as described in the _Configuring JVM options_ section above.
+
 ### Tomcat Manager roles for remote deploy
 
 The Cargo Maven plugin (`remote-deploy` profile) uses the Tomcat Manager **text interface**
@@ -212,6 +235,69 @@ Or to skip sync methods only when data already exists:
 ```
 -Ddata.initializer.skip-if-not-empty=true
 ```
+
+---
+
+## QR Code Share URL Configuration
+
+The "Share QR Code" button in Match Detail and Show Detail views generates a URL encoded into the QR image. For the QR code to be scannable from a phone on your network, that URL must use the machine's LAN IP (or public hostname) — not `localhost`.
+
+### How the URL is determined
+
+`UrlUtil.getNetworkUrl()` resolves the URL in this order:
+
+1. **`QR_BASE_URL` environment variable** — if set, used verbatim. This is the most reliable option for any deployment.
+2. **`X-Forwarded-Host` / `X-Forwarded-Proto` request headers** — used when the app sits behind a reverse proxy that injects these headers (Caddy, nginx, Tomcat `RemoteIpValve`).
+3. **LAN IP auto-detection** — replaces `localhost`/`127.0.0.1` in the servlet request URL with the machine's first site-local IPv4 address. Works for direct (non-proxied) local deployments.
+4. **Cached value** — when called from a WebSocket/push thread (no HTTP context), the URL computed during the last real HTTP request is reused.
+
+### Standalone / Desktop mode
+
+No configuration needed. LAN IP auto-detection handles it automatically.
+
+### Tomcat WAR deployment
+
+Tomcat's HTTP connector returns `localhost` in `getRequestURL()` unless you add `RemoteIpValve` to `conf/server.xml`. The bundled `docker/tomcat/server.xml` already includes it:
+
+```xml
+<Valve className="org.apache.catalina.valves.RemoteIpValve"
+       remoteIpHeader="x-forwarded-for"
+       protocolHeader="x-forwarded-proto" />
+```
+
+If you upgraded Tomcat and copied over an old `server.xml` that lacks this valve, QR URLs will encode `localhost` and fail to load on phones. Add the valve to your `conf/server.xml` inside the `<Host>` element and restart Tomcat.
+
+Alternatively, set `QR_BASE_URL` as a JVM system property in the Tomcat service manager to bypass all detection:
+
+```
+-DQR_BASE_URL=http://192.168.1.42:9090
+```
+
+Or as an environment variable via `setenv.bat` / the Tomcat service manager Java Options tab:
+
+```
+set QR_BASE_URL=http://192.168.1.42:9090
+```
+
+### Railway / Docker deployment
+
+Set `QR_BASE_URL` to your Railway public domain in the service's environment variables:
+
+```
+QR_BASE_URL=https://your-app.railway.app
+```
+
+### Reverse proxy (Caddy / nginx)
+
+Ensure your proxy forwards `X-Forwarded-Host` and `X-Forwarded-Proto` headers and that `server.forward-headers-strategy=native` is set in `application-prod.properties` (it already is). The app will then reconstruct the correct public URL automatically.
+
+The bundled `Caddyfile` uses `{$LAN_IP}` so the LAN block always binds to the current address. Use `start-caddy.sh` instead of `caddy run` directly — it detects the machine's current LAN IP, exports it, and passes it to Caddy:
+
+```bash
+./start-caddy.sh
+```
+
+If the machine gets a new DHCP lease, simply restart Caddy via the same script and the new IP is picked up automatically.
 
 ---
 

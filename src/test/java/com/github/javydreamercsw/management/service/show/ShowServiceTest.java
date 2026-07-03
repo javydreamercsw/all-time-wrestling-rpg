@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
@@ -97,6 +98,7 @@ class ShowServiceTest {
   @Mock private ArenaRepository arenaRepository;
   @Mock private GmModeService gmModeService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
+  @Mock private CampaignRepository campaignRepository;
   @Mock private Clock clock;
 
   private ShowService showService;
@@ -114,6 +116,7 @@ class ShowServiceTest {
 
     showService =
         new ShowService(
+            campaignRepository,
             showRepository,
             showTypeRepository,
             seasonRepository,
@@ -744,5 +747,44 @@ class ShowServiceTest {
     verify(wrestlerService, never()).healChance(eq(wrestler1.getId()), anyLong());
     // show has no date set — game date should not be updated
     verify(gameSettingService, never()).saveCurrentGameDate(any());
+  }
+
+  @Test
+  void adjudicateShow_campaignUniverse_noPassiveHealing() {
+    Universe universe = new Universe();
+    universe.setId(10L);
+    show.setUniverse(universe);
+
+    pendingSegment.getSegmentType().setName("One on One");
+    pendingSegment.addParticipant(wrestler1);
+
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of(pendingSegment));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(wrestler1, wrestler2));
+    when(campaignRepository.existsByUniverse(universe)).thenReturn(true);
+
+    showService.adjudicateShow(1L);
+
+    verify(wrestlerService, never()).healChance(anyLong(), anyLong());
+  }
+
+  @Test
+  void adjudicateShow_nonCampaignUniverse_passiveHealingFires() {
+    Universe universe = new Universe();
+    universe.setId(20L);
+    show.setUniverse(universe);
+
+    pendingSegment.getSegmentType().setName("One on One");
+    pendingSegment.addParticipant(wrestler1);
+
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of(pendingSegment));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(wrestler1, wrestler2));
+    when(campaignRepository.existsByUniverse(universe)).thenReturn(false);
+
+    showService.adjudicateShow(1L);
+
+    verify(wrestlerService, times(1)).healChance(eq(wrestler2.getId()), anyLong());
+    verify(wrestlerService, never()).healChance(eq(wrestler1.getId()), anyLong());
   }
 }

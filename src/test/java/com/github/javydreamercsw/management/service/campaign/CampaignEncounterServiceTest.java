@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignEncounter;
 import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -378,5 +379,83 @@ class CampaignEncounterServiceTest {
 
     verify(campaignService).shiftAlignment(campaign, -1);
     verify(stateRepository).save(campaign.getState());
+  }
+
+  @Test
+  void recordEncounterChoice_intendedPath_evaluatesProgressWithSuccess() {
+    CampaignStoryline storyline = new CampaignStoryline();
+    storyline.setStatus(CampaignStoryline.StorylineStatus.ACTIVE);
+    campaign.getState().setActiveStoryline(storyline);
+
+    CampaignEncounter encounter = new CampaignEncounter();
+    when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
+        .thenReturn(List.of(encounter));
+
+    CampaignEncounterResponseDTO.Choice choice =
+        CampaignEncounterResponseDTO.Choice.builder()
+            .text("Right choice")
+            .intendedPath(true)
+            .build();
+
+    encounterService.recordEncounterChoice(campaign, choice);
+
+    verify(storylineDirectorService).evaluateProgress(campaign, true);
+  }
+
+  @Test
+  void recordEncounterChoice_failurePath_evaluatesProgressWithFailure() {
+    CampaignStoryline storyline = new CampaignStoryline();
+    storyline.setStatus(CampaignStoryline.StorylineStatus.ACTIVE);
+    campaign.getState().setActiveStoryline(storyline);
+
+    CampaignEncounter encounter = new CampaignEncounter();
+    when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
+        .thenReturn(List.of(encounter));
+
+    CampaignEncounterResponseDTO.Choice choice =
+        CampaignEncounterResponseDTO.Choice.builder()
+            .text("Wrong choice")
+            .intendedPath(false)
+            .build();
+
+    encounterService.recordEncounterChoice(campaign, choice);
+
+    verify(storylineDirectorService).evaluateProgress(campaign, false);
+  }
+
+  @Test
+  void recordEncounterChoice_matchChoice_doesNotEvaluateStorylineProgress() {
+    CampaignStoryline storyline = new CampaignStoryline();
+    storyline.setStatus(CampaignStoryline.StorylineStatus.ACTIVE);
+    campaign.getState().setActiveStoryline(storyline);
+
+    CampaignEncounter encounter = new CampaignEncounter();
+    when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
+        .thenReturn(List.of(encounter));
+
+    // MATCH choices are evaluated later via POST_MATCH processing — not here
+    CampaignEncounterResponseDTO.Choice choice =
+        CampaignEncounterResponseDTO.Choice.builder()
+            .text("Fight!")
+            .nextPhase("MATCH")
+            .intendedPath(true)
+            .build();
+
+    encounterService.recordEncounterChoice(campaign, choice);
+
+    org.mockito.Mockito.verifyNoInteractions(storylineDirectorService);
+  }
+
+  @Test
+  void staticChoice_intendedPath_defaultsToTrue() {
+    StaticChoiceDTO sc = StaticChoiceDTO.builder().text("A choice").label("BTN").build();
+    assertThat(sc.isIntendedPath()).isTrue();
+  }
+
+  @Test
+  void staticChoice_intendedPath_canBeSetFalse() {
+    StaticChoiceDTO sc =
+        StaticChoiceDTO.builder().text("Wrong path").label("BTN").intendedPath(false).build();
+    assertThat(sc.isIntendedPath()).isFalse();
   }
 }

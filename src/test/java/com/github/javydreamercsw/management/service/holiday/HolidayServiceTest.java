@@ -33,13 +33,16 @@ import java.time.ZoneOffset;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 public class HolidayServiceTest {
@@ -164,5 +167,38 @@ public class HolidayServiceTest {
 
     Optional<String> theme = holidayService.getHolidayTheme(instant);
     assertFalse(theme.isPresent());
+  }
+
+  @Test
+  void findAll_withSort_delegatesSortToRepository() {
+    Sort sort = Sort.by(Sort.Direction.ASC, "description");
+    when(holidayRepository.findAll(sort)).thenReturn(List.of(fixedHoliday, floatingHoliday));
+
+    List<Holiday> result = holidayService.findAll(sort);
+
+    assertEquals(2, result.size());
+    ArgumentCaptor<Sort> captor = ArgumentCaptor.forClass(Sort.class);
+    org.mockito.Mockito.verify(holidayRepository).findAll(captor.capture());
+    assertEquals(sort, captor.getValue());
+  }
+
+  @Test
+  void findAll_withDescSort_delegatesSortToRepository() {
+    Sort sort = Sort.by(Sort.Direction.DESC, "theme");
+    when(holidayRepository.findAll(sort)).thenReturn(List.of(floatingHoliday, fixedHoliday));
+
+    List<Holiday> result = holidayService.findAll(sort);
+
+    assertEquals(floatingHoliday, result.get(0));
+    ArgumentCaptor<Sort> captor = ArgumentCaptor.forClass(Sort.class);
+    org.mockito.Mockito.verify(holidayRepository).findAll(captor.capture());
+    assertEquals(Sort.Direction.DESC, captor.getValue().getOrderFor("theme").getDirection());
+  }
+
+  @Test
+  void count_delegatesToRepository() {
+    when(holidayRepository.count()).thenReturn(5L);
+
+    assertEquals(5, holidayService.count());
   }
 }

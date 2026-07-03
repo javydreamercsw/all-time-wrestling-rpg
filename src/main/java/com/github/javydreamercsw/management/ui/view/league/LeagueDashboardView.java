@@ -147,16 +147,25 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
     layout.setSizeFull();
     layout.setPadding(true);
 
-    // Placeholder for standings logic (can be expanded later with actual points calculation)
-    // For now, listing members
     Grid<LeagueRoster> standingsGrid = new Grid<>(LeagueRoster.class, false);
-    standingsGrid.addColumn(r -> r.getOwner().getUsername()).setHeader("Player");
-    standingsGrid.addColumn(r -> r.getWrestler().getName()).setHeader("Wrestler");
+    standingsGrid.addColumn(r -> r.getOwner().getUsername()).setHeader("Player").setSortable(true);
+    standingsGrid.addColumn(r -> r.getWrestler().getName()).setHeader("Wrestler").setSortable(true);
     standingsGrid
         .addColumn(r -> "%d - %d - %d".formatted(r.getWins(), r.getLosses(), r.getDraws()))
-        .setHeader("Record");
+        .setHeader("Record (W-L-D)")
+        .setSortable(true);
+    standingsGrid
+        .addColumn(r -> r.getWins() * 2 + r.getDraws())
+        .setHeader("Points")
+        .setSortable(true);
 
-    List<LeagueRoster> rosters = leagueRosterRepository.findByLeagueWithWrestlerStates(league);
+    List<LeagueRoster> rosters =
+        leagueRosterRepository.findByLeagueWithWrestlerStates(league).stream()
+            .sorted(
+                java.util.Comparator.<LeagueRoster>comparingInt(r -> r.getWins() * 2 + r.getDraws())
+                    .reversed()
+                    .thenComparingInt(LeagueRoster::getLosses))
+            .toList();
     standingsGrid.setItems(rosters);
     standingsGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 

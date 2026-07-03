@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -38,6 +39,12 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 public class SecurityConfig {
+
+  @Value("${security.remember-me.key:atwrpg-remember-me-key}")
+  private String rememberMeKey;
+
+  @Value("${security.remember-me.token-validity-seconds:604800}")
+  private int rememberMeTokenValiditySeconds;
 
   @Bean
   @Profile("!test & !e2e")
@@ -81,8 +88,8 @@ public class SecurityConfig {
     http.rememberMe(
         rememberMe ->
             rememberMe
-                .key("atwrpg-remember-me-key") // Should be externalized to properties
-                .tokenValiditySeconds(7 * 24 * 60 * 60) // 7 days
+                .key(rememberMeKey)
+                .tokenValiditySeconds(rememberMeTokenValiditySeconds)
                 .userDetailsService(userDetailsService));
 
     // Configure logout

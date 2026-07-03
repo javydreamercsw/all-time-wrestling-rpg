@@ -107,6 +107,9 @@ public class MatchResultProcessorService {
 
   private final Random random = new Random();
 
+  private static final java.util.Set<String> PROMO_CAMPAIGN_RULES =
+      java.util.Set.of("Faction Beatdown", "GM Office Confrontation", "Performance Review");
+
   private static final String KEY_FINALS_PHASE = "finalsPhase";
   private static final String KEY_TOURNAMENT_WINNER = "tournamentWinner";
   private static final String KEY_WON_FINALE = "wonFinale";
@@ -155,6 +158,9 @@ public class MatchResultProcessorService {
       narration = "CHAPTER FINALE: " + narration;
     }
 
+    if (PROMO_CAMPAIGN_RULES.stream().anyMatch(actualRules::contains)) {
+      actualTypeName = SegmentTypeNames.PROMO;
+    }
     String finalTypeName = actualTypeName != null ? actualTypeName : SegmentTypeNames.ONE_ON_ONE;
     SegmentType type =
         segmentTypeRepository

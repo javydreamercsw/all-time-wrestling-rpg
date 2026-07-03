@@ -174,7 +174,11 @@ public class TitleService {
     Set<String> enabled = enabledExpansionCodes();
     return ((List<Title>) titleRepository.findAll())
         .stream()
-            .filter(t -> t.getExpansionCode() == null || enabled.contains(t.getExpansionCode()))
+            .filter(
+                t ->
+                    t.getExpansionCode() == null
+                        || enabled.isEmpty()
+                        || enabled.contains(t.getExpansionCode()))
             .collect(Collectors.toList());
   }
 

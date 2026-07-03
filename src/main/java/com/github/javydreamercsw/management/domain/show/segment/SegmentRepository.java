@@ -183,7 +183,17 @@ public interface SegmentRepository
       """)
   long countMatchSegmentsByWrestler(@Param("wrestler") Wrestler wrestler);
 
-  List<Segment> findByShowOrderBySegmentOrderAsc(Show show);
+  @Query(
+      """
+      SELECT DISTINCT s FROM Segment s
+      JOIN FETCH s.segmentType st
+      LEFT JOIN FETCH s.participants p
+      LEFT JOIN FETCH p.wrestler
+      LEFT JOIN FETCH s.titles
+      WHERE s.show = :show
+      ORDER BY s.segmentOrder ASC
+      """)
+  List<Segment> findByShowOrderBySegmentOrderAsc(@Param("show") Show show);
 
   @Query(
       value =

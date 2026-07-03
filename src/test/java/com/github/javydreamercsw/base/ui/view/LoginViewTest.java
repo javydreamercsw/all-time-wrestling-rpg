@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.base.ui.view;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -26,6 +27,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.login.LoginForm;
 import java.util.Optional;
@@ -87,5 +89,21 @@ class LoginViewTest extends AbstractViewTest {
 
     LoginView view = buildView();
     assertNotNull(_get(view, LoginForm.class));
+  }
+
+  @Test
+  @DisplayName("Remember-me checkbox is visible on the login view")
+  void rememberMeCheckboxIsVisible() {
+    LoginView view = buildView();
+    Checkbox checkbox = _get(view, Checkbox.class, spec -> spec.withId("remember-me-checkbox"));
+    assertTrue(checkbox.isVisible());
+  }
+
+  @Test
+  @DisplayName("Remember-me checkbox defaults to unchecked")
+  void rememberMeCheckboxDefaultsToUnchecked() {
+    LoginView view = buildView();
+    Checkbox checkbox = _get(view, Checkbox.class, spec -> spec.withId("remember-me-checkbox"));
+    assertFalse(checkbox.getValue(), "Remember-me should default to unchecked");
   }
 }

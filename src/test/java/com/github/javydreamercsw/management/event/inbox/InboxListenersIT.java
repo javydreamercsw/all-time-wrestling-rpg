@@ -265,7 +265,11 @@ public class InboxListenersIT extends ManagementIntegrationTest {
   @Test
   void testWrestlerBumpEventCreatesInboxItem() {
     state1.setBumps(5);
-    WrestlerBumpEvent event = new WrestlerBumpEvent(this, state1);
+    WrestlerBumpEvent event =
+        new WrestlerBumpEvent(
+            this,
+            state1,
+            com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource.MANUAL);
     eventPublisher.publishEvent(event);
 
     ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
@@ -289,7 +293,7 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     assertEquals(wrestlerBump, eventTypeCaptor.getValue());
 
     String expectedMessage =
-        "Wrestler %s received a bump. Total bumps: %d"
+        "Wrestler %s received a bump from manual assignment. Total bumps: %d"
             .formatted(wrestler1.getName(), state1.getBumps());
 
     assertEquals(expectedMessage, messageCaptor.getValue());

@@ -197,7 +197,7 @@ class DataInitializerTest {
     com.github.javydreamercsw.management.domain.show.segment.type.SegmentType mockSegmentType =
         mock(com.github.javydreamercsw.management.domain.show.segment.type.SegmentType.class);
     when(mockSegmentType.getName()).thenReturn("Mock Type");
-    when(segmentTypeService.createOrUpdateSegmentType(anyString(), anyString(), anyString()))
+    when(segmentTypeService.createOrUpdateSegmentType(anyString(), anyString(), anyString(), any()))
         .thenReturn(mockSegmentType);
 
     // Mock universeRepository to return a non-null Universe to avoid IllegalStateException in

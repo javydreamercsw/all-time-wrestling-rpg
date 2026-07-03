@@ -36,21 +36,24 @@ import com.github.javydreamercsw.management.domain.show.export.ShowExportService
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowContextFacade;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -58,8 +61,10 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
@@ -125,8 +130,8 @@ public class ShowDetailView extends Main
   private final ShowService showService;
   private final SegmentService segmentService;
   private final SegmentRepository segmentRepository;
-  private final SegmentTypeRepository segmentTypeRepository;
-  private final SegmentRuleRepository segmentRuleRepository;
+  private final SegmentTypeService segmentTypeService;
+  private final SegmentRuleService segmentRuleService;
   private final NpcService npcService;
   private final WrestlerService wrestlerService;
   private final WrestlerStatsService wrestlerStatsService;
@@ -146,6 +151,7 @@ public class ShowDetailView extends Main
   private final RingsideActionService ringsideActionService;
   private final ArenaService arenaService;
   private final WrestlerRelationshipService relationshipService;
+  private final ExpansionService expansionService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -174,64 +180,51 @@ public class ShowDetailView extends Main
 
   @Autowired
   public ShowDetailView(
-      final ShowService showService,
-      final SegmentService segmentService,
+      final ShowFacade showFacade,
+      final ShowContextFacade showContextFacade,
+      final WrestlerFacade wrestlerFacade,
+      final ViewContext viewContext,
       final SegmentRepository segmentRepository,
-      final SegmentTypeRepository segmentTypeRepository,
-      final SegmentRuleRepository segmentRuleRepository,
-      final NpcService npcService,
-      final WrestlerService wrestlerService,
-      final WrestlerStatsService wrestlerStatsService,
       final TitleService titleService,
-      final ShowTypeService showTypeService,
-      final SeasonService seasonService,
-      final ShowTemplateService showTemplateService,
       final RivalryService rivalryService,
-      final ShowPlanningService showPlanningService,
-      final SegmentNarrationServiceFactory segmentNarrationServiceFactory,
       final SegmentNarrationController segmentNarrationController,
       final ShowController showController,
       final MatchFulfillmentRepository matchFulfillmentRepository,
       final UniverseRepository universeRepository,
-      final UniverseContextService universeContextService,
       final CommentaryTeamRepository commentaryTeamRepository,
       final RingsideActionService ringsideActionService,
-      final ArenaService arenaService,
-      final WrestlerRelationshipService relationshipService,
-      final NotificationService notificationService,
       final ShowExportService exportService,
-      final LeagueRepository leagueRepository,
-      final SecurityUtils securityUtils,
-      final NarrationParserService narrationParserService) {
-    this.showService = showService;
-    this.segmentService = segmentService;
+      final LeagueRepository leagueRepository) {
+    this.showService = showFacade.getShowService();
+    this.segmentService = showFacade.getSegmentService();
     this.segmentRepository = segmentRepository;
-    this.segmentTypeRepository = segmentTypeRepository;
-    this.segmentRuleRepository = segmentRuleRepository;
-    this.npcService = npcService;
-    this.wrestlerService = wrestlerService;
-    this.wrestlerStatsService = wrestlerStatsService;
+    this.segmentTypeService = showFacade.getSegmentTypeService();
+    this.segmentRuleService = showFacade.getSegmentRuleService();
+    this.npcService = showFacade.getNpcService();
+    this.wrestlerService = wrestlerFacade.getWrestlerService();
+    this.wrestlerStatsService = wrestlerFacade.getWrestlerStatsService();
     this.titleService = titleService;
-    this.showTypeService = showTypeService;
-    this.seasonService = seasonService;
-    this.showTemplateService = showTemplateService;
+    this.showTypeService = showContextFacade.getShowTypeService();
+    this.seasonService = showContextFacade.getSeasonService();
+    this.showTemplateService = showContextFacade.getShowTemplateService();
     this.rivalryService = rivalryService;
-    this.showPlanningService = showPlanningService;
-    this.segmentNarrationServiceFactory = segmentNarrationServiceFactory;
+    this.showPlanningService = showContextFacade.getShowPlanningService();
+    this.segmentNarrationServiceFactory = showFacade.getNarrationFactory();
     this.segmentNarrationController = segmentNarrationController;
     this.showController = showController;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.universeRepository = universeRepository;
-    this.universeContextService = universeContextService;
+    this.universeContextService = viewContext.getUniverseContextService();
     this.commentaryTeamRepository = commentaryTeamRepository;
     this.ringsideActionService = ringsideActionService;
-    this.arenaService = arenaService;
-    this.relationshipService = relationshipService;
-    this.notificationService = notificationService;
+    this.arenaService = showContextFacade.getArenaService();
+    this.relationshipService = wrestlerFacade.getWrestlerRelationshipService();
+    this.notificationService = viewContext.getNotificationService();
     this.exportService = exportService;
     this.leagueRepository = leagueRepository;
-    this.securityUtils = securityUtils;
-    this.narrationParserService = narrationParserService;
+    this.securityUtils = viewContext.getSecurityUtils();
+    this.narrationParserService = showFacade.getNarrationParserService();
+    this.expansionService = viewContext.getExpansionService();
     initializeComponents();
   }
 
@@ -629,6 +622,7 @@ public class ShowDetailView extends Main
 
     segmentsGrid = createSegmentsGrid(segments);
     segmentsGrid.setSizeFull();
+    segmentsGrid.setMinWidth("1100px");
     segmentsGrid.setId("segments-grid");
 
     segmentsProgressBar = new com.vaadin.flow.component.progressbar.ProgressBar();
@@ -1269,25 +1263,15 @@ public class ShowDetailView extends Main
     infoButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     infoButton.setTooltipText("How to Play");
     infoButton.setId("match-info-button-" + segment.getId());
-    boolean hasRules = !segment.getSegmentRules().isEmpty();
-    infoButton.setVisible(hasRules);
+    boolean hasTypeGuide =
+        segment.getSegmentType() != null && segment.getSegmentType().getGuide() != null;
+    boolean hasRuleGuide = segment.getSegmentRules().stream().anyMatch(r -> r.getGuide() != null);
+    infoButton.setVisible(hasTypeGuide || hasRuleGuide);
     infoButton.addClickListener(
         e ->
-            segment.getSegmentRules().stream()
-                .findFirst()
-                .flatMap(
-                    r ->
-                        r.getId() != null
-                            ? java.util.Optional.of(r.getId())
-                            : java.util.Optional.empty())
-                .ifPresent(
-                    ruleId ->
-                        com.vaadin
-                            .flow
-                            .component
-                            .UI
-                            .getCurrent()
-                            .navigate("match-info/" + ruleId)));
+            new MatchInfoDialog(
+                    segment.getSegmentType(), segment.getSegmentRules().stream().toList())
+                .open());
 
     return new VerticalLayout(
         summaryButton, narrateButton, editButton, deleteButton, qrButton, infoButton);
@@ -1379,7 +1363,7 @@ public class ShowDetailView extends Main
     // Segment type selection
     ComboBox<SegmentType> segmentTypeCombo = new ComboBox<>("Segment Type");
     segmentTypeCombo.setItems(
-        segmentTypeRepository.findAll().stream()
+        segmentTypeService.findAll().stream()
             .sorted(Comparator.comparing(SegmentType::getName))
             .collect(Collectors.toList()));
     segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
@@ -1390,7 +1374,7 @@ public class ShowDetailView extends Main
     // Segment rules selection (multi-select)
     MultiSelectComboBox<SegmentRule> rulesCombo = new MultiSelectComboBox<>("Segment Rules");
     rulesCombo.setItems(
-        segmentRuleRepository.findAll().stream()
+        segmentRuleService.findAll().stream()
             .sorted(Comparator.comparing(SegmentRule::getName))
             .collect(Collectors.toList()));
     rulesCombo.setItemLabelGenerator(SegmentRule::getName);
@@ -1719,11 +1703,12 @@ public class ShowDetailView extends Main
                           segmentRepository.findByIdWithDetails(segment.getId()).orElse(segment);
                       EditSegmentDialog.PreloadedData preloaded =
                           EditSegmentDialog.PreloadedData.load(
-                              segmentTypeRepository,
-                              segmentRuleRepository,
+                              segmentTypeService,
+                              segmentRuleService,
                               npcService,
                               titleService,
                               wrestlerService,
+                              expansionService,
                               universeId);
                       return new Object[] {seg, preloaded};
                     }))
@@ -1788,6 +1773,16 @@ public class ShowDetailView extends Main
                                 }
                                 // In-memory sync (no DB)
                                 seg.syncParticipants(saveData.teams());
+                                if (saveData.finalHealthValues() != null
+                                    && !saveData.finalHealthValues().isEmpty()) {
+                                  for (var p : seg.getParticipants()) {
+                                    Integer health =
+                                        saveData.finalHealthValues().get(p.getWrestler().getId());
+                                    if (health != null) {
+                                      p.setFinalHealth(health);
+                                    }
+                                  }
+                                }
                                 seg.syncSegmentRules(new ArrayList<>(saveData.rules()));
                                 seg.setAdjudicationStatus(AdjudicationStatus.PENDING);
                                 seg.setSegmentType(saveData.segmentType());

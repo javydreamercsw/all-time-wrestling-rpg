@@ -63,6 +63,7 @@ import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.RingsideActionComponent;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.show.MatchInfoDialog;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -79,6 +80,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
@@ -93,8 +95,10 @@ import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,6 +136,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private TextArea narrationArea;
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
+  private Map<Long, IntegerField> momentumFields = new HashMap<>();
+  private Map<Long, IntegerField> healthFields = new HashMap<>();
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
   private Button aiGenerateButton;
@@ -319,21 +325,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     shareQrButton.addClickListener(e -> new QrCodeDialog(segment.getId()).open());
     header.add(shareQrButton);
 
-    if (!segment.getSegmentRules().isEmpty()) {
-      segment.getSegmentRules().stream()
-          .findFirst()
-          .ifPresent(
-              rule -> {
-                if (rule.getId() != null) {
-                  Button howToPlayButton =
-                      new Button("How to Play", new Icon(VaadinIcon.INFO_CIRCLE_O));
-                  howToPlayButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-                  howToPlayButton.setId("how-to-play-button");
-                  howToPlayButton.addClickListener(
-                      e -> UI.getCurrent().navigate("match-info/" + rule.getId()));
-                  header.add(howToPlayButton);
-                }
-              });
+    boolean hasTypeGuide =
+        segment.getSegmentType() != null && segment.getSegmentType().getGuide() != null;
+    boolean hasRuleGuide = segment.getSegmentRules().stream().anyMatch(r -> r.getGuide() != null);
+    if (hasTypeGuide || hasRuleGuide) {
+      Button howToPlayButton = new Button("How to Play", new Icon(VaadinIcon.INFO_CIRCLE_O));
+      howToPlayButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+      howToPlayButton.setId("how-to-play-button");
+      howToPlayButton.addClickListener(
+          e ->
+              new MatchInfoDialog(
+                      segment.getSegmentType(), segment.getSegmentRules().stream().toList())
+                  .open());
+      header.add(howToPlayButton);
     }
 
     add(header);
@@ -682,7 +686,71 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     saveWinnersButton.setWidthFull();
     saveWinnersButton.setId("save-winners-button");
 
-    winnersCard.add(winnersComboBox, saveWinnersButton);
+    winnersCard.add(winnersComboBox);
+
+    boolean hasPlayerWrestler =
+        wrestlers.stream().filter(java.util.Objects::nonNull).anyMatch(w -> w.getAccount() != null);
+    if (!isPromo && canSubmitResult && hasPlayerWrestler) {
+      VerticalLayout momentumLayout = new VerticalLayout();
+      momentumLayout.setPadding(false);
+      momentumLayout.setSpacing(false);
+      momentumLayout.add(new Span("Final Momentum per Wrestler"));
+      for (Wrestler w :
+          wrestlers.stream()
+              .filter(java.util.Objects::nonNull)
+              .filter(w -> w.getAccount() != null)
+              .toList()) {
+        IntegerField field = new IntegerField(w.getName());
+        field.setId("final-momentum-" + w.getId());
+        field.setPlaceholder("e.g. 3");
+        field.setWidthFull();
+        Integer existing =
+            segment.getParticipants().stream()
+                .filter(p -> w.getId().equals(p.getWrestler().getId()))
+                .map(
+                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
+                        ::getFinalMomentum)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+        field.setValue(existing);
+        momentumFields.put(w.getId(), field);
+        momentumLayout.add(field);
+      }
+      winnersCard.add(momentumLayout);
+
+      VerticalLayout healthLayout = new VerticalLayout();
+      healthLayout.setPadding(false);
+      healthLayout.setSpacing(false);
+      healthLayout.add(new Span("Final Health per Wrestler"));
+      for (Wrestler w :
+          wrestlers.stream()
+              .filter(java.util.Objects::nonNull)
+              .filter(w -> w.getAccount() != null)
+              .toList()) {
+        IntegerField field = new IntegerField(w.getName());
+        field.setId("final-health-" + w.getId());
+        field.setPlaceholder("Starting: " + w.getStartingHealth());
+        field.setMin(0);
+        field.setMax(w.getStartingHealth());
+        field.setWidthFull();
+        Integer existing =
+            segment.getParticipants().stream()
+                .filter(p -> w.getId().equals(p.getWrestler().getId()))
+                .map(
+                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
+                        ::getFinalHealth)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+        field.setValue(existing);
+        healthFields.put(w.getId(), field);
+        healthLayout.add(field);
+      }
+      winnersCard.add(healthLayout);
+    }
+
+    winnersCard.add(saveWinnersButton);
     winnersCard.setVisible(canSubmitResult);
     sideCol.add(winnersCard);
 
@@ -1141,6 +1209,29 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         winners.stream().map(Wrestler::getName).toList());
     segment.setWinners(winners);
     segment.setNotes(feedbackArea.getValue());
+
+    // Persist final momentum values entered by the player/booker
+    if (!momentumFields.isEmpty()) {
+      for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
+          segment.getParticipants()) {
+        IntegerField field = momentumFields.get(p.getWrestler().getId());
+        if (field != null) {
+          p.setFinalMomentum(field.getValue());
+        }
+      }
+    }
+
+    // Persist final health values for player-controlled wrestlers (non-promo only)
+    if (!healthFields.isEmpty()) {
+      for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
+          segment.getParticipants()) {
+        IntegerField field = healthFields.get(p.getWrestler().getId());
+        if (field != null) {
+          p.setFinalHealth(field.getValue());
+        }
+      }
+    }
+
     try {
       // runAsAdmin mirrors the pattern used for referee assignment (line ~252): PLAYER-role users
       // cannot call updateSegment directly because canUserUpdateSegment requires wrestler.account

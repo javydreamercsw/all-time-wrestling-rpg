@@ -120,7 +120,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     maxPicksField.sendKeys(Keys.TAB);
 
     clickElement(By.id("league-commissioner-plays-checkbox"));
-    selectFromVaadinMultiSelectComboBox(driver.findElement(By.id("participants-combo")), "player1");
+    selectFromVaadinMultiSelectComboBox(driver.findElement(By.id("players-combo")), "player1");
     clickElement(By.id("league-save-btn"));
     waitForNotification("League saved successfully");
 
@@ -263,7 +263,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     maxPicksField.sendKeys(Keys.TAB);
 
     clickElement(By.id("league-commissioner-plays-checkbox"));
-    selectFromVaadinMultiSelectComboBox(driver.findElement(By.id("participants-combo")), "player1");
+    selectFromVaadinMultiSelectComboBox(driver.findElement(By.id("players-combo")), "player1");
     clickElement(By.id("league-save-btn"));
     waitForNotification("League saved successfully");
 
@@ -369,7 +369,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
             maxPicksField);
     maxPicksField.sendKeys(Keys.TAB);
     clickElement(By.id("league-commissioner-plays-checkbox"));
-    selectFromVaadinMultiSelectComboBox(driver.findElement(By.id("participants-combo")), "player1");
+    selectFromVaadinMultiSelectComboBox(driver.findElement(By.id("players-combo")), "player1");
     clickElement(By.id("league-save-btn"));
     waitForNotification("League saved successfully");
 

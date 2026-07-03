@@ -37,7 +37,7 @@ class SegmentRuleDTOTest {
           "noDq": true,
           "bumpAddition": "ALL",
           "expansion_code": "BASE_GAME",
-          "rules": {
+          "guide": {
             "solo": {
               "overview": "Solo overview",
               "setup": "Solo setup",
@@ -56,13 +56,13 @@ class SegmentRuleDTOTest {
     assertThat(dto.getName()).isEqualTo("Cage");
     assertThat(dto.isRequiresHighHeat()).isTrue();
     assertThat(dto.getBumpAddition()).isEqualTo(BumpAddition.ALL);
-    assertThat(dto.getRules()).isNotNull();
-    assertThat(dto.getRules().solo()).isNotNull();
-    assertThat(dto.getRules().solo().overview()).isEqualTo("Solo overview");
-    assertThat(dto.getRules().solo().winCondition()).isEqualTo("Pin or escape");
-    assertThat(dto.getRules().multiplayer()).isNotNull();
-    assertThat(dto.getRules().multiplayer().concepts()).isEqualTo("Multiplayer concepts");
-    assertThat(dto.getRules().multiplayer().gameEndConditions()).isEqualTo("Last team standing");
+    assertThat(dto.getGuide()).isNotNull();
+    assertThat(dto.getGuide().solo()).isNotNull();
+    assertThat(dto.getGuide().solo().overview()).isEqualTo("Solo overview");
+    assertThat(dto.getGuide().solo().winCondition()).isEqualTo("Pin or escape");
+    assertThat(dto.getGuide().multiplayer()).isNotNull();
+    assertThat(dto.getGuide().multiplayer().concepts()).isEqualTo("Multiplayer concepts");
+    assertThat(dto.getGuide().multiplayer().gameEndConditions()).isEqualTo("Last team standing");
   }
 
   @Test
@@ -81,7 +81,7 @@ class SegmentRuleDTOTest {
     SegmentRuleDTO dto = mapper.readValue(json, SegmentRuleDTO.class);
 
     assertThat(dto.getName()).isEqualTo("Normal");
-    assertThat(dto.getRules()).isNull();
+    assertThat(dto.getGuide()).isNull();
   }
 
   @Test
@@ -94,7 +94,7 @@ class SegmentRuleDTOTest {
           "requiresHighHeat": true,
           "noDq": true,
           "bumpAddition": "ALL",
-          "rules": {
+          "guide": {
             "solo": {
               "overview": "Extreme overview",
               "unknownField": "should be ignored"
@@ -105,8 +105,8 @@ class SegmentRuleDTOTest {
 
     SegmentRuleDTO dto = mapper.readValue(json, SegmentRuleDTO.class);
 
-    assertThat(dto.getRules()).isNotNull();
-    assertThat(dto.getRules().solo().overview()).isEqualTo("Extreme overview");
-    assertThat(dto.getRules().multiplayer()).isNull();
+    assertThat(dto.getGuide()).isNotNull();
+    assertThat(dto.getGuide().solo().overview()).isEqualTo("Extreme overview");
+    assertThat(dto.getGuide().multiplayer()).isNull();
   }
 }

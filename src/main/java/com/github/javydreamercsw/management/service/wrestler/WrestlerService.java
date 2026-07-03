@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -546,15 +547,28 @@ public class WrestlerService {
       })
   public Optional<WrestlerState> addBump(
       @NonNull final Long wrestlerId, @NonNull final Long universeId) {
+    return addBump(wrestlerId, universeId, BumpSource.MANUAL);
+  }
+
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
+        @CacheEvict(
+            value = CacheConfig.WRESTLER_STATS_CACHE,
+            key = "#wrestlerId + ':' + #universeId")
+      })
+  public Optional<WrestlerState> addBump(
+      @NonNull final Long wrestlerId,
+      @NonNull final Long universeId,
+      @NonNull final BumpSource source) {
     WrestlerState state = getOrCreateState(wrestlerId, universeId);
 
     if (state.addBump()) {
-      // Automatic injury triggered
       injuryService.createInjuryFromBumps(wrestlerId, universeId);
     }
 
     WrestlerState savedState = wrestlerStateRepository.save(state);
-    eventPublisher.publishEvent(new WrestlerBumpEvent(this, savedState));
+    eventPublisher.publishEvent(new WrestlerBumpEvent(this, savedState, source));
 
     return Optional.of(savedState);
   }

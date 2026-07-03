@@ -36,6 +36,12 @@
       </Realm>
       <Host name="localhost"  appBase="webapps"
             unpackWARs="true" autoDeploy="true">
+        <!-- Required so that HttpServletRequest.getRequestURL() returns the client-visible
+             host/port/scheme rather than "localhost". This makes QR code URLs scannable from
+             phones on the same network. -->
+        <Valve className="org.apache.catalina.valves.RemoteIpValve"
+               remoteIpHeader="x-forwarded-for"
+               protocolHeader="x-forwarded-proto" />
         <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
                prefix="localhost_access_log" suffix=".txt"
                pattern="%h %l %u %t &quot;%r&quot; %s %b" />

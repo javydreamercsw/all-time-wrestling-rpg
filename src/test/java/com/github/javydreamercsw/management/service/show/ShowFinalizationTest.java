@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -89,6 +90,7 @@ class ShowFinalizationTest {
   @Mock private WrestlerContractRepository contractRepository;
   @Mock private GmModeService gmModeService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
+  @Mock private CampaignRepository campaignRepository;
 
   private ShowService showService;
 
@@ -96,6 +98,7 @@ class ShowFinalizationTest {
   void setUp() {
     showService =
         new ShowService(
+            campaignRepository,
             showRepository,
             showTypeRepository,
             seasonRepository,

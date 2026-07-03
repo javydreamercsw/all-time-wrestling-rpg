@@ -147,7 +147,7 @@ class CampaignDramaServiceTest {
 
     // Random returns value < 0.2 → triggers outsider event
     when(random.nextDouble()).thenReturn(0.1);
-    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of(rival));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(player, rival));
 
     DramaEvent event = new DramaEvent();
     when(dramaEventService.createDramaEvent(
@@ -215,7 +215,7 @@ class CampaignDramaServiceTest {
 
   @Test
   void triggerOutsiderEvent_noOpponentsAvailable_returnsEmpty() {
-    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of());
+    when(wrestlerRepository.findAll()).thenReturn(List.of(player));
 
     Optional<DramaEvent> result = campaignDramaService.triggerOutsiderEvent(campaign);
 
@@ -224,7 +224,7 @@ class CampaignDramaServiceTest {
 
   @Test
   void triggerOutsiderEvent_outsiderFound_createsEvent() {
-    when(wrestlerRepository.findRandomExcluding(eq(1L), any())).thenReturn(List.of(rival));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(player, rival));
 
     DramaEvent event = new DramaEvent();
     when(dramaEventService.createDramaEvent(

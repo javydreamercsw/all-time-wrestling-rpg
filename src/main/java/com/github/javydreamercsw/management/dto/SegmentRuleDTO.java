@@ -31,5 +31,5 @@ public class SegmentRuleDTO {
   @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
   private String expansionCode;
 
-  private SegmentRulePlayGuide rules;
+  private SegmentRulePlayGuide guide;
 }

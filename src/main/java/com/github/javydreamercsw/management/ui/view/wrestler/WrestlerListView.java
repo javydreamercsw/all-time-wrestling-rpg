@@ -252,6 +252,7 @@ public class WrestlerListView extends Main {
         .setFlexGrow(1)
         .setWidth("200px");
     wrestlerGrid.setSizeFull();
+    wrestlerGrid.setMinWidth("900px");
     wrestlerGrid.setId("wrestler-list-grid");
 
     setSizeFull();
@@ -262,13 +263,17 @@ public class WrestlerListView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.SMALL);
 
+    com.vaadin.flow.component.html.Div gridWrapper =
+        new com.vaadin.flow.component.html.Div(wrestlerGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+
     Button createButton = createWrestlerButton();
     if (securityUtils.canCreate()) {
       add(new ViewToolbar("Wrestler List", createButton));
     } else {
       add(new ViewToolbar("Wrestler List"));
     }
-    add(wrestlerGrid);
+    add(gridWrapper);
   }
 
   private Button createWrestlerButton() {

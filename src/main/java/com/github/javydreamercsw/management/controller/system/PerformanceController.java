@@ -105,21 +105,12 @@ public class PerformanceController {
       description = "Returns detailed cache usage statistics and performance metrics")
   @GetMapping("/cache/stats")
   public ResponseEntity<Map<String, Object>> getCacheStatistics() {
-    // This would return detailed cache statistics
-    // For now, we'll return basic information
-    Map<String, Object> cacheStats =
-        Map.of(
-            "status",
-            "active",
-            "cacheCount",
-            13,
-            "message",
-            "Cache statistics logged to application logs");
-
-    // Log cache statistics
-    cacheMonitor.logCacheStatistics();
-
-    return ResponseEntity.ok(cacheStats);
+    java.util.List<Map<String, Object>> perCacheStats = cacheMonitor.getDetailedCacheStatistics();
+    Map<String, Object> response = new java.util.LinkedHashMap<>();
+    response.put("status", "active");
+    response.put("cacheCount", perCacheStats.size());
+    response.put("caches", perCacheStats);
+    return ResponseEntity.ok(response);
   }
 
   @Operation(

@@ -80,10 +80,10 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Lob
   @Column(name = "rules_json", columnDefinition = "LONGTEXT")
   @Convert(converter = SegmentRulePlayGuideConverter.class)
-  @Nullable private SegmentRulePlayGuide rules;
+  @Nullable private SegmentRulePlayGuide guide;
 
   @Column(name = "rules_hash", length = 64)
-  @Nullable private String rulesHash;
+  @Nullable private String guideHash;
 
   /** Ensure default values before persisting. */
   @PrePersist

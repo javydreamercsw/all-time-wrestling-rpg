@@ -11,24 +11,24 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-22 (commit 62962cefd). Confidence: 100%.
+Last indexed: 2026-06-28 (commit 283da2b86). Confidence: 100%.
 
 ### Architecture
 
-repo is a comprehensive wrestling management platform that ingests user-defined wrestling universe configurations and match parameters, processes them through a Java-based business logic layer, and persists state in a relational database to render dynamic administrative dashboards and documentation via a VitePress-powered web interface. The repository follows a monolithic Java architecture structured around domain-driven design principles:
+repo is a comprehensive wrestling promotion management platform that consumes user-defined wrestling entities and scheduling data, processes them through a domain-driven Java backend, and persists the state in a relational database to render interactive management dashboards. The system orchestrates complex domain logic—ranging from wrestler attributes to universe simulation—and exposes this data via a web-based UI to facilitate show planning and roster administration. The repository follows a domain-centric architecture organized into distinct functional layers:
 
 ### Key Modules
 
 |                                Module                                 |                                     Purpose                                      |
 |-----------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `src/main/java/com/github/javydreamercsw/management/service`          | The service module acts as the core application-layer orchestration subsystem…   |
+| `src/main/java/com/github/javydreamercsw/management/service`          | The service module acts as the core business logic layer of the management…      |
 | `src/main/java/com/github/javydreamercsw/base/domain`                 | The base/domain module serves as the core persistence and domain modeling layer… |
 | `src/main/java/com/github/javydreamercsw/management/domain`           | The domain module serves as the foundational persistence layer and data…         |
 | `src/test/java/com/github/javydreamercsw/base`                        | The test/base module serves as the foundational testing infrastructure and…      |
 | `src/test/java/com/github/javydreamercsw/management/service`          | The test/service module serves as the verification and validation layer of the…  |
 | `src/test/java/com/github/javydreamercsw/management/ui/view`          | The ui/view module serves as the presentation layer of the management system —…  |
 | `src/main/java/com/github/javydreamercsw/management/domain/universe`  | The domain/universe module serves as the core multi-tenant persistence layer of… |
-| `src/main/java/com/github/javydreamercsw/management/ui`               | The ui module serves as the presentation layer of the management system — it…    |
+| `src/main/java/com/github/javydreamercsw/management/ui`               | The ui module serves as the presentation layer for the management system — it…   |
 | `src/test/java/com/github/javydreamercsw/management/domain`           | The test/domain module serves as the verification layer for the management…      |
 | `src/test/java/com/github/javydreamercsw/management/service/campaign` | The test/service/campaign module serves as the verification and validation…      |
 
@@ -54,37 +54,41 @@ repo is a comprehensive wrestling management platform that ingests user-defined 
 
 ### Guided Tour (12 steps)
 
-1. **README.md** — `README.md`
-2. **Application.java** — `src/main/java/com/github/javydreamercsw/Application.java`
-3. **RoleName.java** — `src/main/java/com/github/javydreamercsw/base/domain/account/RoleName.java`
-4. **WrestlerStateRepository.java** — `src/main/java/com/github/javydreamercsw/management/domain/wrestler/WrestlerStateRepository.java`
-5. **DataInitializer.java** — `src/main/java/com/github/javydreamercsw/management/DataInitializer.java`
-6. **RankingService.java** — `src/main/java/com/github/javydreamercsw/base/service/ranking/RankingService.java`
+1. `README.md` — Start here for the end-to-end picture before diving into the code.
+2. `src/main/java/com/github/javydreamercsw/Application.java` — An entry point — execution and imports fan out from here.
+3. `src/main/java/com/github/javydreamercsw/base/domain/account/RoleName.java` — Directly used by the entry points above; a core collaborator.
+4. `src/main/java/com/github/javydreamercsw/management/domain/wrestler/WrestlerStateRepository.java` — Directly used by the entry points above; a core collaborator.
+5. `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` — Directly used by the entry points above; a core collaborator.
+6. `src/main/java/com/github/javydreamercsw/base/service/ranking/RankingService.java` — Directly used by the entry points above; a core collaborator.
    ... and 6 more steps
 
 ### Hotspots (High Churn)
 
-|                                            File                                            |    Churn    | 90d Commits |          Owner          |
-|--------------------------------------------------------------------------------------------|-------------|-------------|-------------------------|
-| `src/main/java/com/github/javydreamercsw/management/ui/view/show/ShowDetailView.java`      | 99.9th %ile | 26          | Javier A. Ortiz Bultron |
-| `src/test/java/com/github/javydreamercsw/AbstractE2ETest.java`                             | 99.8th %ile | 18          | Javier A. Ortiz Bultron |
-| `src/main/java/com/github/javydreamercsw/management/DataInitializer.java`                  | 99.8th %ile | 17          | Javier A. Ortiz Bultron |
-| `src/test/java/com/github/javydreamercsw/management/domain/wrestler/WrestlerTest.java`     | 99.7th %ile | 3           | Javier A. Ortiz Bultron |
-| `src/main/java/com/github/javydreamercsw/management/service/campaign/CampaignService.java` | 99.6th %ile | 18          | Javier A. Ortiz Bultron |
+|                                         File                                          |    Churn     | 90d Commits |          Owner          |
+|---------------------------------------------------------------------------------------|--------------|-------------|-------------------------|
+| `package.json`                                                                        | 100.0th %ile | 74          | Javier A. Ortiz Bultron |
+| `package-lock.json`                                                                   | 99.9th %ile  | 44          | Javier A. Ortiz Bultron |
+| `src/main/java/com/github/javydreamercsw/management/ui/view/show/ShowDetailView.java` | 99.9th %ile  | 31          | Javier A. Ortiz Bultron |
+| `src/test/java/com/github/javydreamercsw/AbstractE2ETest.java`                        | 99.8th %ile  | 18          | Javier A. Ortiz Bultron |
+| `src/main/resources/segment_rules.json`                                               | 99.7th %ile  | 7           | Javier A. Ortiz Bultron |
 
 ## Code health
 
-Hotspot health: 4.63/10 (stable) ·
-Average: 8.13/10 ·
+Three signals: **defect risk** (the overall score), **maintainability** (smells that hurt readability/change-cost without predicting bugs), and **performance** (static performance RISK: I/O-in-loop / N+1 shapes that waste work, high-precision/low-recall). Maintainability and performance are co-equal views, never blended into the defect headline. See `docs/CODE_HEALTH.md`.
+
+Defect risk, Hotspot health: 4.83/10 (stable) ·
+Average: 8.11/10 ·
 Worst: 1.0/10 (`src/main/java/com/github/javydreamercsw/base/ai/AbstractSegmentNarrationService.java`)
+Maintainability, Average: 8.68/10
+Performance risk, Average: 9.88/10
 
 ### Critical biomarkers
 
+- `src/main/java/com/github/javydreamercsw/management/service/campaign/PlaceholderResolverService.java` — change entropy — impact −3.0
+- `src/test/java/com/github/javydreamercsw/management/ui/view/MenuServiceTest.java` — change entropy — impact −3.0
+- `src/test/java/com/github/javydreamercsw/management/ui/view/inbox/InboxViewTest.java` — change entropy — impact −3.0
 - `src/main/java/com/github/javydreamercsw/management/ui/view/universe/UniverseListView.java` — change entropy — impact −2.9
-- `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` — untested hotspot — impact −2.0
-- `src/main/java/com/github/javydreamercsw/management/domain/campaign/CampaignStoryline.java` — untested hotspot — impact −2.0
-- `src/main/java/com/github/javydreamercsw/management/domain/drama/DramaEventType.java` — untested hotspot — impact −2.0
-- `src/main/java/com/github/javydreamercsw/management/domain/drama/DramaEvent.java` — untested hotspot — impact −2.0
+- `src/test/java/com/github/javydreamercsw/management/service/campaign/CampaignServiceTest.java` — change entropy — impact −2.7
 
 ### Repowise MCP Tools
 
@@ -92,16 +96,17 @@ This repo has the Repowise MCP server configured. The tools below answer questio
 
 **When to call which tool:**
 
-|                Tool                 |                                                                                                                                            What only this tool answers                                                                                                                                             |
-|-------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `get_answer(question)`              | Synthesised answer with citations and a content-grounded `confidence`. First call for "how does X work" / "where is Y" / "why is Z". Value questions may return `grounding: "extracted"` — the verbatim source line, no synthesis involved. On low confidence returns `best_guesses` with one-line justifications. |
-| `get_context(targets=[...])`        | Triage card for files/modules/symbols — title, summary, signatures, `hotspot` bit, `decision_records` titles, `symbol_id`s. File targets auto-upgrade to a `verified` skeleton (every signature, ~37% of a full Read). `include=["callers"]` works on file targets too (import + call rollup).                     |
-| `get_symbol(...)`                   | Source bytes with live-verified bounds. Three forms: `"path.py::Name"` (indexed symbol), `"path.py:140-180"` (live range read, ≤200 lines), `"repowise#<hex>"` (omission ref). Index misses return `fallback_lines` from a live grep instead of a dead end.                                                        |
-| `search_codebase(query, kind?)`     | Find pages by concept when you don't know the file. Results carry `search_method` (`embedding` vs `bm25` fallback). Decision records rank below file pages unless the query is why-shaped. Identifier-bearing queries get a `grep_hint` — prefer Grep for those tokens.                                            |
-| `get_why(query, targets?)`          | Architectural decision archaeology — *why* the code is shaped this way. Call before refactors or pattern divergences. Falls back to git archaeology when no ADRs exist for a file.                                                                                                                                 |
-| `get_risk(targets, changed_files?)` | What history says about touching these files: churn, owners, blast radius. Pass `changed_files` for PR mode → returns a `directive` (`will_break`, `missing_cochanges`, `missing_tests`).                                                                                                                          |
-| `get_dead_code(...)`                | Tiered unreachable / unused-export / zombie-package findings. Run before a cleanup sprint, not before a targeted fix.                                                                                                                                                                                              |
-| `get_overview(repo?)`               | Architecture map + `tool_guide` recipes. One-time orientation; skip on subsequent calls in the same session.                                                                                                                                                                                                       |
+|                         Tool                         |                                                                                                                                                                                                                                                                                         What only this tool answers                                                                                                                                                                                                                                                                                          |
+|------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `get_answer(question)`                               | Synthesised answer with citations and a content-grounded `confidence`. First call for "how does X work" / "where is Y" / "why is Z". Value questions may return `grounding: "extracted"` — the verbatim source line, no synthesis involved. On low confidence returns `best_guesses` with one-line justifications.                                                                                                                                                                                                                                                                                           |
+| `get_context(targets=[...])`                         | Triage card for files/modules/symbols — title, summary, signatures, `hotspot` bit, `decision_records` titles, `symbol_id`s. File targets auto-upgrade to a `verified` skeleton (every signature, ~37% of a full Read). `include=["callers"]` works on file targets too (import + call rollup).                                                                                                                                                                                                                                                                                                               |
+| `get_symbol(...)`                                    | Source bytes with live-verified bounds. Three forms: `"path.py::Name"` (indexed symbol), `"path.py:140-180"` (live range read, ≤200 lines), `"repowise#<hex>"` (omission ref). Index misses return `fallback_lines` from a live grep instead of a dead end.                                                                                                                                                                                                                                                                                                                                                  |
+| `search_codebase(query, mode?, kind?, symbol_kind?)` | Hybrid code search. `mode="auto"` (default) routes by query shape: an identifier → indexed symbol hits (`symbol_id`/`file`/line bounds — pipe into `get_symbol`), a path → file pages (pipe into `get_context`), prose → wiki-semantic search, mixed → hybrid (symbols first). Force a branch with `mode=symbol\|path\|concept\|hybrid`. Concept hits carry `search_method` (`embedding` vs `bm25` fallback); decision records rank below file pages unless the query is why-shaped.                                                                                                                         |
+| `get_why(query, targets?)`                           | Architectural decision archaeology — *why* the code is shaped this way. Call before refactors or pattern divergences. Falls back to git archaeology when no ADRs exist for a file.                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `get_risk(targets, changed_files?)`                  | What history says about touching these files: churn, owners, blast radius. Pass `changed_files` for PR mode → returns a `directive` (`will_break`, `missing_cochanges`, `missing_tests`).                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `get_health(targets?, include?)`                     | Code-health scores + biomarker findings (defect / maintainability / performance pillars). Self-check before a PR — read the same signals the merge-gate judges your change on. Default is lean; opt in with `include`: `["accuracy"]` (does the score rank the buggy files first — precision@K + `lift`), `["signals"]` (per-file prior-defects / churn / owners / degree, targeted mode), `["churn_complexity"]` (volatile-and-complex danger-zone files), `["biomarkers"]` (all findings), and a dimension name `["performance"]` / `["defect"]` / `["maintainability"]` to filter findings to one pillar. |
+| `get_dead_code(...)`                                 | Tiered unreachable / unused-export / zombie-package findings. Run before a cleanup sprint, not before a targeted fix.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `get_overview(repo?)`                                | Architecture map + `tool_guide` recipes. One-time orientation; skip on subsequent calls in the same session.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 **Trust protocol — when a response replaces reading the source:**
 - `verified: true` on any response means the served content was checked against the live working tree. **Never follow a verified response with a Read of the same lines** — you would be paying twice for identical bytes.

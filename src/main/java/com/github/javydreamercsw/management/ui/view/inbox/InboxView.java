@@ -79,6 +79,7 @@ public class InboxView extends VerticalLayout {
   private final ComboBox<String> eventTypeFilter = new ComboBox<>("Event Type");
   private final VerticalLayout detailsView = new VerticalLayout();
   private final Checkbox selectAllCheckbox = new Checkbox("Select All");
+  private SplitLayout splitLayout;
   private final Button markSelectedReadButton = new Button("Mark Selected as Read");
   private final Button markSelectedUnreadButton = new Button("Mark Selected as Unread");
   private final Checkbox hideReadCheckbox = new Checkbox("Hide Read");
@@ -109,10 +110,11 @@ public class InboxView extends VerticalLayout {
     detailsView.setMinWidth("300px");
     showEmptyDetail();
 
-    SplitLayout splitLayout = new SplitLayout();
+    splitLayout = new SplitLayout();
     splitLayout.setSizeFull();
     splitLayout.addToPrimary(new VerticalLayout(getToolbar(), grid));
     splitLayout.addToSecondary(detailsView);
+    splitLayout.setSplitterPosition(100);
 
     add(splitLayout);
     configureForUser();
@@ -235,6 +237,7 @@ public class InboxView extends VerticalLayout {
             markSelectedUnreadButton,
             deleteSelectedButton);
     toolbar.addClassName("toolbar");
+    toolbar.getStyle().set("flex-wrap", "wrap");
     return toolbar;
   }
 
@@ -448,6 +451,9 @@ public class InboxView extends VerticalLayout {
     detailsView.setJustifyContentMode(JustifyContentMode.CENTER);
     detailsView.setSizeFull();
     detailsView.add(empty);
+    if (splitLayout != null) {
+      splitLayout.setSplitterPosition(100);
+    }
   }
 
   private void showDetails(final InboxItem item) {
@@ -468,6 +474,7 @@ public class InboxView extends VerticalLayout {
     detailsView.setSizeFull();
     detailsView.setPadding(true);
     detailsView.setSpacing(true);
+    splitLayout.setSplitterPosition(45);
 
     // Header row: event type badge + timestamp
     Span eventTypeBadge = new Span(item.getEventType().getFriendlyName());

@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,5 +89,11 @@ public class ExpansionService {
         .filter(Expansion::isEnabled)
         .map(Expansion::getCode)
         .collect(Collectors.toList());
+  }
+
+  /** Returns a map of expansion code → priority for use in same-name conflict resolution. */
+  public Map<String, Integer> buildPriorityMap() {
+    return getExpansions().stream()
+        .collect(Collectors.toMap(Expansion::getCode, Expansion::getPriority, Math::max));
   }
 }

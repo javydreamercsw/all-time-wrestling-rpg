@@ -17,14 +17,16 @@
 package com.github.javydreamercsw.management.service.drama;
 
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,7 +40,6 @@ import org.springframework.stereotype.Service;
  * <p>Can be enabled/disabled via application properties: drama.events.scheduler.enabled=true/false
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @ConditionalOnProperty(
     name = "drama.events.scheduler.enabled",
@@ -48,7 +49,20 @@ public class DramaEventScheduler {
 
   private final DramaEventService dramaEventService;
   private final WrestlerRepository wrestlerRepository;
+  private final UniverseRepository universeRepository;
   private final Random random = new Random();
+
+  @Value("${drama.events.scheduler.threshold.days:7}")
+  private int thresholdDays;
+
+  public DramaEventScheduler(
+      final DramaEventService dramaEventService,
+      final WrestlerRepository wrestlerRepository,
+      final UniverseRepository universeRepository) {
+    this.dramaEventService = dramaEventService;
+    this.wrestlerRepository = wrestlerRepository;
+    this.universeRepository = universeRepository;
+  }
 
   /**
    * Listen for game date changes and trigger drama events if enough game time has passed.
@@ -65,14 +79,9 @@ public class DramaEventScheduler {
 
     log.info("Game date advanced by {} days. Checking for drama events...", daysPassed);
 
-    // If game date advanced by a week or more, trigger drama events
-    // We could also make this more granular, but for now let's stick to the "weekly" logic
-    // but in game time.
-    if (daysPassed >= 7) {
+    if (daysPassed >= thresholdDays) {
       generateRandomDramaEvents();
-    } else // If less than a week passed, we still have a chance proportional to the time passed
-    // e.g. 1 day = 1/7 chance
-    if (random.nextDouble() < (double) daysPassed / 7.0) {
+    } else if (random.nextDouble() < (double) daysPassed / thresholdDays) {
       log.debug("Small time jump triggered random drama event check");
       generateRandomDramaEvents();
     }
@@ -105,14 +114,22 @@ public class DramaEventScheduler {
 
             log.info("Generating {} random drama events", eventsToGenerate);
 
+            List<Universe> universes = universeRepository.findAll();
+
             for (int i = 0; i < eventsToGenerate; i++) {
               Long randomWrestlerId = wrestlerIds.get(random.nextInt(wrestlerIds.size()));
 
               // Safety check: skip if this wrestler already has too many active injuries (max 3)
-              // This helps prevent injury accumulation if the scheduler runs too frequently.
-              // Default to universe 1 for now.
-              if (dramaEventService.getActiveInjuryCount(randomWrestlerId, 1L) < 3) {
-                generateSingleRandomEvent(randomWrestlerId);
+              // in any universe. This helps prevent injury accumulation if the scheduler runs too
+              // frequently.
+              boolean tooManyInjuries =
+                  universes.stream()
+                      .anyMatch(
+                          u ->
+                              dramaEventService.getActiveInjuryCount(randomWrestlerId, u.getId())
+                                  >= 3);
+              if (!tooManyInjuries) {
+                generateSingleRandomEvent(randomWrestlerId, universes);
               } else {
                 log.debug(
                     "Skipping drama event for wrestler {} - too many active injuries",
@@ -233,21 +250,26 @@ public class DramaEventScheduler {
     return 3;
   }
 
-  /** Generate a single random drama event. */
-  private void generateSingleRandomEvent(@NonNull final Long wrestlerId) {
-    try {
-      // Generate the event - default to universe 1 for now.
-      var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId, 1L);
+  /** Generate a single random drama event for all universes. */
+  private void generateSingleRandomEvent(
+      @NonNull final Long wrestlerId, @NonNull final List<Universe> universes) {
+    for (Universe universe : universes) {
+      try {
+        var eventOpt = dramaEventService.generateRandomDramaEvent(wrestlerId, universe.getId());
 
-      if (eventOpt.isPresent()) {
-        var event = eventOpt.get();
-        log.info("Generated drama event: {} ({})", event.getTitle(), event.getSeverity());
-      } else {
-        log.warn("Failed to generate drama event for wrestler ID: {}", wrestlerId);
+        if (eventOpt.isPresent()) {
+          var event = eventOpt.get();
+          log.info("Generated drama event: {} ({})", event.getTitle(), event.getSeverity());
+        } else {
+          log.warn(
+              "Failed to generate drama event for wrestler ID: {} in universe ID: {}",
+              wrestlerId,
+              universe.getId());
+        }
+
+      } catch (Exception e) {
+        log.error("Error generating single drama event", e);
       }
-
-    } catch (Exception e) {
-      log.error("Error generating single drama event", e);
     }
   }
 }

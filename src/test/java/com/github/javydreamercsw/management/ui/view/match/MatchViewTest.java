@@ -73,6 +73,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
@@ -571,6 +572,191 @@ class MatchViewTest extends AbstractViewTest {
     // Ringside Actions card must NOT appear for campaign universe matches
     boolean found = !_find(H3.class, spec -> spec.withText("Ringside Actions")).isEmpty();
     assertFalse(found, "Ringside Actions should not be visible in campaign universe matches");
+  }
+
+  @Test
+  void healthFieldsShownForPlayerWrestlerInNonPromoMatch() {
+    Segment segment = buildMinimalMatchSegment(8L, "Test Match");
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    playerAccount.setUsername("player1");
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler.setStartingHealth(100);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(8L)).thenReturn(Optional.of(segment));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "8"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertFalse(
+        _find(IntegerField.class, spec -> spec.withId("final-health-10")).isEmpty(),
+        "Final health field must appear for player-controlled wrestlers in non-promo matches");
+  }
+
+  @Test
+  void healthFieldsHiddenForPromoSegment() {
+    Segment segment = buildMinimalMatchSegment(9L, "Promo");
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    playerAccount.setUsername("player1");
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(9L)).thenReturn(Optional.of(segment));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "9"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertTrue(
+        _find(IntegerField.class, spec -> spec.withId("final-health-10")).isEmpty(),
+        "Final health fields must not appear for promo segments");
+  }
+
+  @Test
+  void healthFieldsHiddenWhenNoPlayerWrestler() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Wrestler npcWrestler = new Wrestler();
+    npcWrestler.setId(20L);
+    npcWrestler.setName("NPC Wrestler");
+    npcWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(npcWrestler).universe(universe).build());
+
+    Segment segment = buildMinimalMatchSegment(10L, "Test Match");
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(npcWrestler);
+    segment.getParticipants().add(p1);
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(userDetails.getWrestler()).thenReturn(npcWrestler);
+    when(segmentService.findByIdWithDetails(10L)).thenReturn(Optional.of(segment));
+    lenient().when(wrestlerService.findByIdWithDetails(20L)).thenReturn(Optional.of(npcWrestler));
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenAnswer(inv -> npcWrestler.getState(1L).orElseThrow());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "10"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertTrue(
+        _find(IntegerField.class, spec -> spec.withId("final-health-20")).isEmpty(),
+        "Final health fields must not appear when no player-controlled wrestlers are in the"
+            + " segment");
+  }
+
+  @Test
+  void saveWinnersPersistsFinalHealthToParticipant() {
+    Segment segment = buildMinimalMatchSegment(11L, "Test Match");
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    playerAccount.setUsername("player1");
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler.setStartingHealth(100);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(11L)).thenReturn(Optional.of(segment));
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+    lenient().when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+    lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "11"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    IntegerField healthField = _get(IntegerField.class, spec -> spec.withId("final-health-10"));
+    healthField.setValue(75);
+
+    _click(_get(Button.class, spec -> spec.withId("save-winners-button")));
+
+    assertEquals(
+        75, p1.getFinalHealth(), "Final health must be persisted to SegmentParticipant on save");
   }
 
   private Segment buildMinimalMatchSegment(final long id, final String typeName) {

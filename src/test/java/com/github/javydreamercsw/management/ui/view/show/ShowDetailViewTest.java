@@ -38,29 +38,35 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowContextFacade;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
@@ -87,13 +93,13 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private ShowService showService;
   @Mock private SegmentService segmentService;
   @Mock private SegmentRepository segmentRepository;
-  @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private SegmentTypeService segmentTypeService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private NpcService npcService;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private TitleService titleService;
-  @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private SegmentRuleService segmentRuleService;
   @Mock private ShowTypeService showTypeService;
   @Mock private SeasonService seasonService;
   @Mock private ShowTemplateService showTemplateService;
@@ -114,6 +120,8 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private WrestlerRelationshipService relationshipService;
   @Mock private SecurityUtils securityUtils;
   @Mock private NarrationParserService narrationParserService;
+  @Mock private ExpansionService expansionService;
+  @Mock private ShowPlanningAiService showPlanningAiService;
 
   @BeforeEach
   public void setUp() {
@@ -156,41 +164,7 @@ class ShowDetailViewTest extends AbstractViewTest {
 
       Set<Wrestler> wrestlers = new HashSet<>(Arrays.asList(wrestler1, wrestler2));
 
-      ShowExportService exportService = mock(ShowExportService.class);
-      com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository =
-          mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class);
-
-      ShowDetailView showDetailView =
-          new ShowDetailView(
-              showService,
-              segmentService,
-              segmentRepository,
-              segmentTypeRepository,
-              segmentRuleRepository,
-              npcService,
-              wrestlerService,
-              wrestlerStatsService,
-              titleService,
-              showTypeService,
-              seasonService,
-              showTemplateService,
-              rivalryService,
-              showPlanningService,
-              segmentNarrationServiceFactory,
-              segmentNarrationController,
-              showController,
-              matchFulfillmentRepository,
-              universeRepository,
-              universeContextService,
-              commentaryTeamRepository,
-              ringsideActionService,
-              arenaService,
-              relationshipService,
-              notificationService,
-              exportService,
-              leagueRepository,
-              mock(SecurityUtils.class),
-              mock(NarrationParserService.class));
+      ShowDetailView showDetailView = buildView(mock(SecurityUtils.class));
       java.util.Map<Integer, java.util.List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
       teamMap.put(1, List.of(wrestler1));
       teamMap.put(2, List.of(wrestler2));
@@ -250,41 +224,7 @@ class ShowDetailViewTest extends AbstractViewTest {
           .thenReturn(initialSegments);
       when(segmentRepository.findByShow(any(Show.class))).thenReturn(initialSegments);
 
-      ShowExportService exportService = mock(ShowExportService.class);
-      com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository =
-          mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class);
-
-      ShowDetailView showDetailView =
-          new ShowDetailView(
-              showService,
-              segmentService,
-              segmentRepository,
-              segmentTypeRepository,
-              segmentRuleRepository,
-              npcService,
-              wrestlerService,
-              wrestlerStatsService,
-              titleService,
-              showTypeService,
-              seasonService,
-              showTemplateService,
-              rivalryService,
-              showPlanningService,
-              segmentNarrationServiceFactory,
-              segmentNarrationController,
-              showController,
-              matchFulfillmentRepository,
-              universeRepository,
-              universeContextService,
-              commentaryTeamRepository,
-              ringsideActionService,
-              arenaService,
-              relationshipService,
-              notificationService,
-              exportService,
-              leagueRepository,
-              mock(SecurityUtils.class),
-              mock(NarrationParserService.class));
+      ShowDetailView showDetailView = buildView(mock(SecurityUtils.class));
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
       Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());
@@ -374,38 +314,42 @@ class ShowDetailViewTest extends AbstractViewTest {
   }
 
   private ShowDetailView buildView(final SecurityUtils su) {
-    ShowExportService exportService = mock(ShowExportService.class);
-    com.github.javydreamercsw.management.domain.league.LeagueRepository leagueRepository =
-        mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class);
+    ShowFacade showFacade =
+        new ShowFacade(
+            showService,
+            segmentService,
+            segmentTypeService,
+            segmentRuleService,
+            segmentNarrationServiceFactory,
+            narrationParserService,
+            npcService);
+    ShowContextFacade showContextFacade =
+        new ShowContextFacade(
+            showTypeService,
+            seasonService,
+            showTemplateService,
+            showPlanningService,
+            showPlanningAiService,
+            arenaService);
+    WrestlerFacade wrestlerFacade =
+        new WrestlerFacade(wrestlerService, wrestlerStatsService, relationshipService);
+    ViewContext viewContext =
+        new ViewContext(notificationService, su, universeContextService, expansionService);
     return new ShowDetailView(
-        showService,
-        segmentService,
+        showFacade,
+        showContextFacade,
+        wrestlerFacade,
+        viewContext,
         segmentRepository,
-        segmentTypeRepository,
-        segmentRuleRepository,
-        npcService,
-        wrestlerService,
-        wrestlerStatsService,
         titleService,
-        showTypeService,
-        seasonService,
-        showTemplateService,
         rivalryService,
-        showPlanningService,
-        segmentNarrationServiceFactory,
         segmentNarrationController,
         showController,
         matchFulfillmentRepository,
         universeRepository,
-        universeContextService,
         commentaryTeamRepository,
         ringsideActionService,
-        arenaService,
-        relationshipService,
-        notificationService,
-        exportService,
-        leagueRepository,
-        su,
-        narrationParserService);
+        mock(ShowExportService.class),
+        mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class));
   }
 }

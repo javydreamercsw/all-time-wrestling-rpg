@@ -371,15 +371,15 @@ public class CampaignEncounterService {
         4. If 'nextPhase' is MATCH, you may optionally provide a 'forcedOpponentName' (string) if\
          the story dictates a specific opponent from the ROSTER above. Also provide a\
          'matchType' (string) from this list: ['One on One', 'Tag Team', 'Free-for-All',\
-         'Abu Dhabi Rumble', 'Promo', 'Handicap Match', 'Faction Beatdown',\
-         'GM Office Confrontation', 'Performance Review']. Defaults to 'One on One'.
+         'Abu Dhabi Rumble', 'Promo', 'Handicap Match']. Defaults to 'One on One'.
         """);
     sb.append(
         """
         5. If 'nextPhase' is MATCH, you may also provide a 'segmentRules' (list of strings) for\
          special stipulations (e.g., ['No DQ', 'Cage Match', 'Submission Only']). Available\
          rules: Normal, Hardcore, Submission, No DQ, Cage, Ladder, Table, Last Man Standing,\
-         Iron Man.
+         Iron Man. When matchType is 'Promo', you may instead use one of: 'Faction Beatdown',\
+         'GM Office Confrontation', 'Performance Review'.
         """);
 
     Long currentPartnerId = null;
@@ -477,16 +477,11 @@ public class CampaignEncounterService {
           .forEach(key -> wrestlerStatusService.assignStatus(campaign.getWrestler().getId(), key));
     }
 
-    // Evaluate storyline progress
-    // If it's a POST_MATCH encounter, we already evaluated the match.
-    // For other encounters, we can consider the choice as a "success" unless we add failure logic
-    // to choices.
-    // For now, any choice made advances the current milestone if it's the intended path.
-    if (campaign.getState().getActiveStoryline() != null) {
-      // In this simple implementation, we assume choosing ANY option in a narrative encounter
-      // counts as a 'success' for that beat of the story, as failure is usually reserved for
-      // matches.
-      storylineDirectorService.evaluateProgress(campaign, true);
+    // Evaluate storyline progress for non-match encounters.
+    // Match outcomes are evaluated separately via POST_MATCH processing.
+    if (campaign.getState().getActiveStoryline() != null
+        && !"MATCH".equals(choice.getNextPhase())) {
+      storylineDirectorService.evaluateProgress(campaign, choice.isIntendedPath());
     }
 
     CampaignState state = campaign.getState();
@@ -628,6 +623,7 @@ public class CampaignEncounterService {
                         .nextEncounterId(sc.getNextEncounterId())
                         .onWinNextEncounterId(sc.getOnWinNextEncounterId())
                         .onLossNextEncounterId(sc.getOnLossNextEncounterId())
+                        .intendedPath(sc.isIntendedPath())
                         .build())
             .toList();
 

@@ -21,12 +21,13 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -37,10 +38,12 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -68,24 +71,33 @@ public class EditSegmentDialog extends Dialog {
       List<Npc> referees,
       List<Title> titles,
       List<Wrestler> activeWrestlers,
-      Map<String, Wrestler> wrestlerByName) {
+      Map<String, Wrestler> wrestlerByName,
+      Map<String, String> expansionNames) {
 
     public static PreloadedData load(
-        final SegmentTypeRepository segmentTypeRepository,
-        final SegmentRuleRepository segmentRuleRepository,
+        final SegmentTypeService segmentTypeService,
+        final SegmentRuleService segmentRuleService,
         final com.github.javydreamercsw.management.service.npc.NpcService npcService,
         final TitleService titleService,
         final WrestlerService wrestlerService,
+        final ExpansionService expansionService,
         final Long universeId) {
       List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
       Map<String, Wrestler> byName =
           wrestlerService.getAllWrestlers().stream()
               .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
+      Map<String, String> expNames =
+          expansionService.getExpansions().stream()
+              .collect(
+                  Collectors.toMap(
+                      com.github.javydreamercsw.management.service.expansion.Expansion::getCode,
+                      com.github.javydreamercsw.management.service.expansion.Expansion::getName,
+                      (a, b) -> a));
       return new PreloadedData(
-          segmentTypeRepository.findAll().stream()
+          segmentTypeService.findAll().stream()
               .sorted(Comparator.comparing(SegmentType::getName))
               .collect(Collectors.toList()),
-          segmentRuleRepository.findAll().stream()
+          segmentRuleService.findAll().stream()
               .sorted(Comparator.comparing(SegmentRule::getName))
               .collect(Collectors.toList()),
           npcService.findAllByType("Referee").stream()
@@ -93,7 +105,8 @@ public class EditSegmentDialog extends Dialog {
               .collect(Collectors.toList()),
           titleService.findAll(),
           active,
-          byName);
+          byName,
+          expNames);
     }
   }
 
@@ -209,7 +222,8 @@ public class EditSegmentDialog extends Dialog {
       String summary,
       String notes,
       boolean isTitleSegment,
-      Set<Title> titles) {}
+      Set<Title> titles,
+      Map<Long, Integer> finalHealthValues) {}
 
   @FunctionalInterface
   public interface SaveCallback {
@@ -246,6 +260,7 @@ public class EditSegmentDialog extends Dialog {
   private final Checkbox isTitleSegmentCheckbox;
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
   private final VerticalLayout teamsLayout = new VerticalLayout();
+  @Getter private final Map<Long, IntegerField> healthFields = new HashMap<>();
 
   // ==================== MAIN CONSTRUCTOR ====================
 
@@ -275,7 +290,8 @@ public class EditSegmentDialog extends Dialog {
 
     segmentTypeCombo = new ComboBox<>("Segment Type");
     segmentTypeCombo.setItems(data.segmentTypes());
-    segmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
+    segmentTypeCombo.setItemLabelGenerator(
+        st -> expansionLabel(st.getName(), st.getExpansionCode(), data.expansionNames()));
     segmentTypeCombo.setWidthFull();
     segmentTypeCombo.setRequired(true);
     if (initial.typeName() != null) {
@@ -295,7 +311,8 @@ public class EditSegmentDialog extends Dialog {
 
     rulesCombo = new MultiSelectComboBox<>("Segment Rules");
     rulesCombo.setItems(data.segmentRules());
-    rulesCombo.setItemLabelGenerator(SegmentRule::getName);
+    rulesCombo.setItemLabelGenerator(
+        r -> expansionLabel(r.getName(), r.getExpansionCode(), data.expansionNames()));
     rulesCombo.setWidthFull();
     rulesCombo.setValue(initial.segmentRules());
     rulesCombo.setId("edit-segment-rules-combo-box");
@@ -453,6 +470,50 @@ public class EditSegmentDialog extends Dialog {
     titleMultiSelectComboBox.setWidthFull();
     titleMultiSelectComboBox.setId("edit-title-multi-select-combo-box");
 
+    // Final health inputs — only shown for non-promo segments with player-controlled wrestlers
+    VerticalLayout healthLayout = new VerticalLayout();
+    healthLayout.setId("edit-final-health-layout");
+    healthLayout.setPadding(false);
+    healthLayout.setSpacing(false);
+    healthLayout.add(new Span("Final Health per Wrestler (Player-Controlled)"));
+
+    Runnable refreshHealthFields =
+        () -> {
+          healthLayout.removeAll();
+          healthFields.clear();
+          boolean isPromo =
+              segmentTypeCombo.getValue() != null
+                  && com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames
+                      .PROMO
+                      .equalsIgnoreCase(segmentTypeCombo.getValue().getName());
+          Set<Wrestler> allTeamWrestlers =
+              teamCombos.stream().flatMap(c -> c.getValue().stream()).collect(Collectors.toSet());
+          List<Wrestler> playerWrestlers =
+              allTeamWrestlers.stream()
+                  .filter(w -> w.getAccount() != null)
+                  .sorted(Comparator.comparing(Wrestler::getName))
+                  .collect(Collectors.toList());
+          boolean show = !isPromo && !playerWrestlers.isEmpty();
+          healthLayout.setVisible(show);
+          if (show) {
+            healthLayout.add(new Span("Final Health per Wrestler (Player-Controlled)"));
+            for (Wrestler w : playerWrestlers) {
+              IntegerField field = new IntegerField(w.getName());
+              field.setId("edit-final-health-" + w.getId());
+              field.setPlaceholder("Starting: " + w.getStartingHealth());
+              field.setMin(0);
+              field.setMax(w.getStartingHealth());
+              field.setWidthFull();
+              healthFields.put(w.getId(), field);
+              healthLayout.add(field);
+            }
+          }
+        };
+
+    segmentTypeCombo.addValueChangeListener(e -> refreshHealthFields.run());
+    teamCombos.forEach(c -> c.addValueChangeListener(e -> refreshHealthFields.run()));
+    refreshHealthFields.run();
+
     isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
     isTitleSegmentCheckbox.setId("edit-is-title-segment-checkbox");
     isTitleSegmentCheckbox.addValueChangeListener(
@@ -468,6 +529,7 @@ public class EditSegmentDialog extends Dialog {
       titleMultiSelectComboBox.setValue(initial.titles());
     }
 
+    formLayout.setColspan(healthLayout, 2);
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
@@ -481,7 +543,8 @@ public class EditSegmentDialog extends Dialog {
         titleMultiSelectComboBox,
         summaryArea,
         notesArea,
-        narrationArea);
+        narrationArea,
+        healthLayout);
 
     saveButton =
         new Button(
@@ -491,6 +554,13 @@ public class EditSegmentDialog extends Dialog {
               for (int i = 0; i < teamCombos.size(); i++) {
                 teamMap.put(i + 1, new ArrayList<>(teamCombos.get(i).getValue()));
               }
+              Map<Long, Integer> healthValues = new HashMap<>();
+              healthFields.forEach(
+                  (wrestlerId, field) -> {
+                    if (field.getValue() != null) {
+                      healthValues.put(wrestlerId, field.getValue());
+                    }
+                  });
               onSave.onSave(
                   new SegmentSaveData(
                       segmentTypeCombo.getValue(),
@@ -502,7 +572,8 @@ public class EditSegmentDialog extends Dialog {
                       summaryArea.getValue(),
                       notesArea.getValue(),
                       isTitleSegmentCheckbox.getValue(),
-                      titleMultiSelectComboBox.getValue()));
+                      titleMultiSelectComboBox.getValue(),
+                      healthValues));
             });
 
     saveButton.setId("edit-segment-save-button");
@@ -528,6 +599,7 @@ public class EditSegmentDialog extends Dialog {
         defaultGenderConstraint,
         universeId,
         saveData -> {
+          // finalHealthValues not applicable in planning context — health is tracked at match time
           segment.setType(saveData.segmentType().getName());
           segment.setNarration(saveData.narration());
           segment.setSummary(saveData.summary());
@@ -556,20 +628,22 @@ public class EditSegmentDialog extends Dialog {
       final ProposedSegment segment,
       final WrestlerService wrestlerService,
       final TitleService titleService,
-      final SegmentTypeRepository segmentTypeRepository,
-      final SegmentRuleRepository segmentRuleRepository,
+      final SegmentTypeService segmentTypeService,
+      final SegmentRuleService segmentRuleService,
       final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+      final ExpansionService expansionService,
       final Gender defaultGenderConstraint,
       final Long universeId,
       final Runnable onSave) {
     this(
         segment,
         PreloadedData.load(
-            segmentTypeRepository,
-            segmentRuleRepository,
+            segmentTypeService,
+            segmentRuleService,
             npcService,
             titleService,
             wrestlerService,
+            expansionService,
             universeId),
         wrestlerService,
         defaultGenderConstraint,
@@ -658,5 +732,14 @@ public class EditSegmentDialog extends Dialog {
 
   public void save() {
     saveButton.click();
+  }
+
+  private static String expansionLabel(
+      final String name, final String code, final Map<String, String> expansionNames) {
+    if (code == null || "BASE_GAME".equals(code)) {
+      return name;
+    }
+    String expName = expansionNames.getOrDefault(code, code);
+    return name + "  [" + expName + "]";
   }
 }

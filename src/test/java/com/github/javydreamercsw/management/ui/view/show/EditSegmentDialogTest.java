@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.show;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,13 +27,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -50,9 +52,10 @@ class EditSegmentDialogTest {
   private WrestlerRepository wrestlerRepository;
   private WrestlerService wrestlerService;
   private TitleService titleService;
-  private SegmentTypeRepository segmentTypeRepository;
-  private SegmentRuleRepository segmentRuleRepository;
+  private SegmentTypeService segmentTypeService;
+  private SegmentRuleService segmentRuleService;
   private NpcService npcService;
+  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
   private Runnable onSave;
   private SegmentType matchType;
   private UI ui;
@@ -74,9 +77,11 @@ class EditSegmentDialogTest {
     wrestlerRepository = mock(WrestlerRepository.class);
     wrestlerService = mock(WrestlerService.class);
     titleService = mock(TitleService.class);
-    segmentTypeRepository = mock(SegmentTypeRepository.class);
-    segmentRuleRepository = mock(SegmentRuleRepository.class);
+    segmentTypeService = mock(SegmentTypeService.class);
+    segmentRuleService = mock(SegmentRuleService.class);
     npcService = mock(NpcService.class);
+    expansionService =
+        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class);
 
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setId(1L);
@@ -99,8 +104,8 @@ class EditSegmentDialogTest {
 
     matchType = new SegmentType();
     matchType.setName("Match");
-    when(segmentTypeRepository.findAll()).thenReturn(List.of(matchType));
-    when(segmentTypeRepository.findByName("Match")).thenReturn(Optional.of(matchType));
+    when(segmentTypeService.findAll()).thenReturn(List.of(matchType));
+    when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(matchType));
 
     // Mock NpcService for referees
     when(npcService.findAllByType("Referee")).thenReturn(new ArrayList<>());
@@ -125,9 +130,10 @@ class EditSegmentDialogTest {
             segment,
             wrestlerService,
             titleService,
-            segmentTypeRepository,
-            segmentRuleRepository,
+            segmentTypeService,
+            segmentRuleService,
             npcService,
+            expansionService,
             null,
             1L,
             onSave);
@@ -156,9 +162,10 @@ class EditSegmentDialogTest {
             segment,
             wrestlerService,
             titleService,
-            segmentTypeRepository,
-            segmentRuleRepository,
+            segmentTypeService,
+            segmentRuleService,
             npcService,
+            expansionService,
             null,
             1L,
             onSave);
@@ -187,9 +194,10 @@ class EditSegmentDialogTest {
             segment,
             wrestlerService,
             titleService,
-            segmentTypeRepository,
-            segmentRuleRepository,
+            segmentTypeService,
+            segmentRuleService,
             npcService,
+            expansionService,
             null,
             1L,
             onSave);
@@ -198,5 +206,135 @@ class EditSegmentDialogTest {
     // Verify title MultiSelectComboBox is visible and populated
     assertTrue(dialog.getTitleMultiSelectComboBox().isVisible());
     assertNotNull(dialog.getTitleMultiSelectComboBox().getListDataView());
+  }
+
+  @Test
+  void healthFieldsPopulatedForNonPromoWithPlayerWrestler() {
+    UI.setCurrent(ui);
+
+    Account playerAccount = new Account();
+    playerAccount.setId(100L);
+    playerAccount.setUsername("player1");
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(3L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+
+    List<Wrestler> allWrestlersWithPlayer =
+        List.of(
+            playerWrestler,
+            new Wrestler() {
+              {
+                setId(1L);
+                setName("Wrestler 1");
+              }
+            },
+            new Wrestler() {
+              {
+                setId(2L);
+                setName("Wrestler 2");
+              }
+            });
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), any(), any()))
+        .thenReturn(allWrestlersWithPlayer);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), any(Set.class)))
+        .thenReturn(allWrestlersWithPlayer);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong()))
+        .thenReturn(allWrestlersWithPlayer);
+    when(wrestlerService.getAllWrestlers()).thenReturn(allWrestlersWithPlayer);
+    when(wrestlerService.findByName("Player Wrestler")).thenReturn(Optional.of(playerWrestler));
+
+    segment.setTeams(List.of(List.of("Player Wrestler"), List.of("Wrestler 2")));
+    segment.setType("Match");
+
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+
+    // Explicitly set non-promo type to ensure refreshHealthFields fires with correct state
+    dialog.getSegmentTypeCombo().setValue(matchType);
+
+    assertFalse(
+        dialog.getHealthFields().isEmpty(),
+        "Health fields must be created for player-controlled wrestlers in non-promo segments");
+    assertTrue(
+        dialog.getHealthFields().containsKey(3L),
+        "Health field must exist for the player-controlled wrestler (id=3)");
+  }
+
+  @Test
+  void healthFieldsNotPopulatedForPromoSegment() {
+    UI.setCurrent(ui);
+
+    Account playerAccount = new Account();
+    playerAccount.setId(100L);
+    playerAccount.setUsername("player1");
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(3L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+
+    List<Wrestler> allWrestlersWithPlayer =
+        List.of(
+            playerWrestler,
+            new Wrestler() {
+              {
+                setId(1L);
+                setName("Wrestler 1");
+              }
+            },
+            new Wrestler() {
+              {
+                setId(2L);
+                setName("Wrestler 2");
+              }
+            });
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), any(), any()))
+        .thenReturn(allWrestlersWithPlayer);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), any(Set.class)))
+        .thenReturn(allWrestlersWithPlayer);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong()))
+        .thenReturn(allWrestlersWithPlayer);
+    when(wrestlerService.getAllWrestlers()).thenReturn(allWrestlersWithPlayer);
+    when(wrestlerService.findByName("Player Wrestler")).thenReturn(Optional.of(playerWrestler));
+
+    segment.setTeams(List.of(List.of("Player Wrestler"), List.of("Wrestler 2")));
+
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    when(segmentTypeService.findAll()).thenReturn(List.of(matchType, promoType));
+    lenient().when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
+
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+
+    // Setting promo type must clear all health fields
+    dialog.getSegmentTypeCombo().setValue(promoType);
+
+    assertTrue(
+        dialog.getHealthFields().isEmpty(), "Health fields must not be created for promo segments");
   }
 }

@@ -137,10 +137,15 @@ public class LeagueDialog extends Dialog {
     excludedWrestlers.setItems(wrestlerRepository.findAll());
     excludedWrestlers.setItemLabelGenerator(Wrestler::getName);
 
-    MultiSelectComboBox<Account> participantList = new MultiSelectComboBox<>("Participants");
-    participantList.setId("participants-combo");
-    participantList.setItems(accountService.findAll());
-    participantList.setItemLabelGenerator(Account::getUsername);
+    MultiSelectComboBox<Account> playerList = new MultiSelectComboBox<>("Players");
+    playerList.setId("players-combo");
+    playerList.setItems(accountService.findAll());
+    playerList.setItemLabelGenerator(Account::getUsername);
+
+    MultiSelectComboBox<Account> viewerList = new MultiSelectComboBox<>("Viewers");
+    viewerList.setId("viewers-combo");
+    viewerList.setItems(accountService.findAll());
+    viewerList.setItemLabelGenerator(Account::getUsername);
 
     BigDecimalField budgetField = new BigDecimalField("Budget");
     budgetField.setId("league-budget-field");
@@ -181,9 +186,8 @@ public class LeagueDialog extends Dialog {
     formLayout.add(nameField, maxPicksField, commissionerPlays, statusField);
     formLayout.add(budgetField, durationWeeksField, moraleField, universeField);
     formLayout.add(excludedWrestlers);
-    formLayout.add(participantList);
+    formLayout.add(playerList, viewerList);
     formLayout.setColspan(excludedWrestlers, 2);
-    formLayout.setColspan(participantList, 2);
 
     binder
         .forField(nameField)
@@ -211,15 +215,18 @@ public class LeagueDialog extends Dialog {
               .map(m -> m.getRole() == LeagueMembership.LeagueRole.COMMISSIONER_PLAYER)
               .orElse(false));
 
-      Set<Account> players =
+      Set<Account> existingPlayers =
           leagueMembershipRepository.findByLeague(league).stream()
-              .filter(
-                  m ->
-                      m.getRole() == LeagueMembership.LeagueRole.PLAYER
-                          || m.getRole() == LeagueMembership.LeagueRole.VIEWER)
+              .filter(m -> m.getRole() == LeagueMembership.LeagueRole.PLAYER)
               .map(LeagueMembership::getMember)
               .collect(Collectors.toSet());
-      participantList.setValue(players);
+      Set<Account> existingViewers =
+          leagueMembershipRepository.findByLeague(league).stream()
+              .filter(m -> m.getRole() == LeagueMembership.LeagueRole.VIEWER)
+              .map(LeagueMembership::getMember)
+              .collect(Collectors.toSet());
+      playerList.setValue(existingPlayers);
+      viewerList.setValue(existingViewers);
     }
 
     Button saveButton =
@@ -257,23 +264,33 @@ public class LeagueDialog extends Dialog {
                                     statusField.getValue());
                           }
 
-                          // Sync participants
-                          Set<Account> selected = participantList.getSelectedItems();
-                          // For simplicity, just add as PLAYER for now.
-                          // Ideally we'd have a UI to distinguish PLAYER vs VIEWER.
-                          for (Account p : selected) {
+                          // Sync players
+                          Set<Account> selectedPlayers = playerList.getSelectedItems();
+                          for (Account p : selectedPlayers) {
                             if (!p.equals(targetLeague.getCommissioner())) {
                               leagueService.addPlayer(targetLeague, p);
                             }
                           }
 
-                          // Remove members not in selected list
+                          // Sync viewers
+                          Set<Account> selectedViewers = viewerList.getSelectedItems();
+                          for (Account v : selectedViewers) {
+                            if (!v.equals(targetLeague.getCommissioner())
+                                && !selectedPlayers.contains(v)) {
+                              leagueService.addMember(
+                                  targetLeague, v, LeagueMembership.LeagueRole.VIEWER);
+                            }
+                          }
+
+                          // Remove members not in either selected list
                           if (league != null) {
+                            Set<Account> allSelected = new java.util.HashSet<>(selectedPlayers);
+                            allSelected.addAll(selectedViewers);
                             leagueMembershipRepository.findByLeague(league).stream()
                                 .filter(
                                     m ->
                                         !m.getMember().equals(league.getCommissioner())
-                                            && !selected.contains(m.getMember()))
+                                            && !allSelected.contains(m.getMember()))
                                 .forEach(m -> leagueService.removeMember(league, m.getMember()));
                           }
 

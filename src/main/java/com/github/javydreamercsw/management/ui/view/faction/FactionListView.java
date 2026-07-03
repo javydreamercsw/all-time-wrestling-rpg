@@ -183,7 +183,11 @@ public class FactionListView extends VerticalLayout {
             ? new ViewToolbar("Factions", createBtn)
             : new ViewToolbar("Factions");
 
-    add(toolbar, factionGrid);
+    com.vaadin.flow.component.html.Div gridWrapper =
+        new com.vaadin.flow.component.html.Div(factionGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+
+    add(toolbar, gridWrapper);
     refreshGrid();
   }
 
@@ -294,6 +298,7 @@ public class FactionListView extends VerticalLayout {
             }));
 
     factionGrid.setSizeFull();
+    factionGrid.setMinWidth("1100px");
   }
 
   @Transactional(readOnly = true)

@@ -28,12 +28,15 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,9 +93,9 @@ public class SegmentRuleService {
       key = "'highHeat'")
   public List<SegmentRule> getHighHeatRules() {
     Set<String> enabled = enabledExpansionCodes();
-    return segmentRuleRepository.findSuitableForHighHeat().stream()
-        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
-        .collect(Collectors.toList());
+    return deduplicateByPriority(
+        segmentRuleRepository.findSuitableForHighHeat().stream()
+            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
   }
 
   /**
@@ -106,9 +109,9 @@ public class SegmentRuleService {
       key = "'standard'")
   public List<SegmentRule> getStandardRules() {
     Set<String> enabled = enabledExpansionCodes();
-    return segmentRuleRepository.findStandardRules().stream()
-        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
-        .collect(Collectors.toList());
+    return deduplicateByPriority(
+        segmentRuleRepository.findStandardRules().stream()
+            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
   }
 
   /**
@@ -257,8 +260,26 @@ public class SegmentRuleService {
       key = "'all'")
   public List<SegmentRule> findAll() {
     Set<String> enabled = enabledExpansionCodes();
-    return segmentRuleRepository.findAll().stream()
-        .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode()))
+    return deduplicateByPriority(
+        segmentRuleRepository.findAll().stream()
+            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
+  }
+
+  private List<SegmentRule> deduplicateByPriority(Stream<SegmentRule> rules) {
+    Map<String, Integer> priorities = expansionService.buildPriorityMap();
+    return rules
+        .collect(
+            Collectors.toMap(
+                SegmentRule::getName,
+                r -> r,
+                (a, b) ->
+                    priorities.getOrDefault(a.getExpansionCode(), 0)
+                            >= priorities.getOrDefault(b.getExpansionCode(), 0)
+                        ? a
+                        : b))
+        .values()
+        .stream()
+        .sorted(Comparator.comparing(SegmentRule::getName))
         .collect(Collectors.toList());
   }
 
@@ -279,19 +300,19 @@ public class SegmentRuleService {
       final boolean noDq,
       final BumpAddition bumpAddition,
       final String expansionCode,
-      final SegmentRulePlayGuide rules) {
+      final SegmentRulePlayGuide guide) {
     Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
-    String incomingHash = computeRulesHash(rules);
+    String incomingHash = computeGuideHash(guide);
 
     if (existingOpt.isPresent()) {
       SegmentRule sr = existingOpt.get();
-      boolean rulesChanged = !java.util.Objects.equals(sr.getRulesHash(), incomingHash);
+      boolean guideChanged = !java.util.Objects.equals(sr.getGuideHash(), incomingHash);
       if (java.util.Objects.equals(sr.getDescription(), description)
           && sr.getRequiresHighHeat() == requiresHighHeat
           && sr.getNoDq() == noDq
           && sr.getBumpAddition() == bumpAddition
           && java.util.Objects.equals(sr.getExpansionCode(), expansionCode)
-          && !rulesChanged) {
+          && !guideChanged) {
         return sr;
       }
       sr.setDescription(description);
@@ -299,9 +320,9 @@ public class SegmentRuleService {
       sr.setNoDq(noDq);
       sr.setBumpAddition(bumpAddition);
       sr.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
-      if (rulesChanged) {
-        sr.setRules(rules);
-        sr.setRulesHash(incomingHash);
+      if (guideChanged) {
+        sr.setGuide(guide);
+        sr.setGuideHash(incomingHash);
       }
       log.debug("Updating existing segment rule: {}", name);
       return segmentRuleRepository.save(sr);
@@ -315,22 +336,22 @@ public class SegmentRuleService {
     segmentRule.setNoDq(noDq);
     segmentRule.setBumpAddition(bumpAddition);
     segmentRule.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
-    segmentRule.setRules(rules);
-    segmentRule.setRulesHash(incomingHash);
+    segmentRule.setGuide(guide);
+    segmentRule.setGuideHash(incomingHash);
     return segmentRuleRepository.save(segmentRule);
   }
 
-  private String computeRulesHash(final SegmentRulePlayGuide rules) {
-    if (rules == null) {
+  private String computeGuideHash(final SegmentRulePlayGuide guide) {
+    if (guide == null) {
       return null;
     }
     try {
-      String json = objectMapper.writeValueAsString(rules);
+      String json = objectMapper.writeValueAsString(guide);
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
       byte[] hash = digest.digest(json.getBytes(StandardCharsets.UTF_8));
       return HexFormat.of().formatHex(hash);
     } catch (JsonProcessingException | NoSuchAlgorithmException e) {
-      log.warn("Failed to compute rules hash for segment rule", e);
+      log.warn("Failed to compute guide hash for segment rule", e);
       return null;
     }
   }

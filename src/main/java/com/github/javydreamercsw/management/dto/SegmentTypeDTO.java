@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto;
 
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import lombok.Data;
 
 @Data
@@ -27,4 +28,6 @@ public class SegmentTypeDTO {
 
   @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
   private String expansionCode;
+
+  private SegmentRulePlayGuide guide;
 }

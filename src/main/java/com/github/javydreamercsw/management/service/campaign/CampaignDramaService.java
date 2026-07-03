@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
@@ -26,6 +27,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
@@ -134,9 +137,7 @@ public class CampaignDramaService {
   public Optional<DramaEvent> triggerOutsiderEvent(@NonNull final Campaign campaign) {
     Wrestler player = campaign.getWrestler();
 
-    // Find a suitable outsider (someone not in the same faction, or high tier?)
-    // For now, just a random opponent
-    Wrestler outsider = findRival(player); // Reuse logic for now
+    Wrestler outsider = findOutsider(player);
     if (outsider == null) {
       return Optional.empty();
     }
@@ -158,6 +159,43 @@ public class CampaignDramaService {
         title,
         description,
         universeId);
+  }
+
+  private Wrestler findOutsider(@NonNull final Wrestler player) {
+    // Prefer wrestlers not in the same faction and with a higher tier than the player.
+    // Falls back to any active wrestler excluding the player if no strong candidate exists.
+    WrestlerTier playerTier =
+        player.getDefaultState().map(s -> s.getTier()).orElse(WrestlerTier.ROOKIE);
+
+    Object playerFaction = player.getDefaultState().map(s -> s.getFaction()).orElse(null);
+
+    List<Wrestler> candidates =
+        wrestlerRepository.findAll().stream()
+            .filter(w -> !w.getId().equals(player.getId()))
+            .filter(
+                w -> {
+                  Object wFaction = w.getDefaultState().map(s -> s.getFaction()).orElse(null);
+                  return playerFaction == null || !playerFaction.equals(wFaction);
+                })
+            .sorted(
+                Comparator.comparingInt(
+                        (Wrestler w) ->
+                            w.getDefaultState()
+                                .map(s -> s.getTier())
+                                .orElse(WrestlerTier.ROOKIE)
+                                .ordinal())
+                    .reversed())
+            .toList();
+
+    // Prefer a candidate at least one tier above the player
+    return candidates.stream()
+        .filter(
+            w ->
+                w.getDefaultState().map(s -> s.getTier()).orElse(WrestlerTier.ROOKIE).ordinal()
+                    > playerTier.ordinal())
+        .findFirst()
+        .or(() -> candidates.stream().findFirst())
+        .orElse(null);
   }
 
   private Wrestler findRival(@NonNull final Wrestler player) {

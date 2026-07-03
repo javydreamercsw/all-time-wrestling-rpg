@@ -51,12 +51,23 @@ public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBu
   @Override
   public void onApplicationEvent(@NonNull final WrestlerBumpEvent event) {
     log.debug("Received WrestlerBumpEvent for wrestler: {}", event.getWrestlerState().getName());
+    String sourceName =
+        switch (event.getBumpSource()) {
+          case WEAR_AND_TEAR -> "wear and tear";
+          case RULE -> "match stipulation";
+          case OUTCOME_MATRIX -> "chart result";
+          case DRAMA_EVENT -> "drama event";
+          case MANUAL -> "manual assignment";
+        };
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             wrestlerBump,
             "Wrestler Bump: " + event.getWrestlerState().getName(),
-            "Wrestler %s received a bump. Total bumps: %d"
-                .formatted(event.getWrestlerState().getName(), event.getWrestlerState().getBumps()),
+            "Wrestler %s received a bump from %s. Total bumps: %d"
+                .formatted(
+                    event.getWrestlerState().getName(),
+                    sourceName,
+                    event.getWrestlerState().getBumps()),
             InboxItem.Urgency.WARNING,
             event.getWrestlerState().getWrestler().getId().toString(),
             InboxItemTarget.TargetType.WRESTLER);
