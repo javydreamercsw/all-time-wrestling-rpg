@@ -94,6 +94,8 @@ node/
 .repowise/.augment-warned
 .repowise/*.pkl
 .repowise/*.db
+.repowise/*.db-shm
+.repowise/*.db-wal
 .repowise/knowledge-graph.json
 .repowise/state.json
 .repowise/mcp.json
