@@ -259,10 +259,21 @@ public class SegmentRuleService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
       key = "'all'")
   public List<SegmentRule> findAll() {
-    Set<String> enabled = enabledExpansionCodes();
+    return findAll(enabledExpansionCodes());
+  }
+
+  /**
+   * Expansion-filtered lookup using caller-supplied codes. Use this from async contexts where the
+   * thread-local universe context is unavailable (e.g. PreloadedData.load).
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<SegmentRule> findAll(@NonNull final Set<String> enabledExpansionCodes) {
     return deduplicateByPriority(
         segmentRuleRepository.findAll().stream()
-            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
+            .filter(
+                r ->
+                    r.getExpansionCode() == null
+                        || enabledExpansionCodes.contains(r.getExpansionCode())));
   }
 
   private List<SegmentRule> deduplicateByPriority(Stream<SegmentRule> rules) {

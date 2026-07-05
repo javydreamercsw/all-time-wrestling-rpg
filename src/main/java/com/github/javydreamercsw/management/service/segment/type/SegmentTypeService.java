@@ -81,10 +81,21 @@ public class SegmentTypeService {
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.SEGMENT_TYPES_CACHE, key = "'all'")
   public List<SegmentType> findAll() {
-    Set<String> enabled = enabledExpansionCodes();
+    return findAll(enabledExpansionCodes());
+  }
+
+  /**
+   * Expansion-filtered lookup using caller-supplied codes. Use this from async contexts where the
+   * thread-local universe context is unavailable (e.g. PreloadedData.load).
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<SegmentType> findAll(@NonNull final Set<String> enabledExpansionCodes) {
     Map<String, Integer> priorities = expansionService.buildPriorityMap();
     return segmentTypeRepository.findAll().stream()
-        .filter(st -> st.getExpansionCode() == null || enabled.contains(st.getExpansionCode()))
+        .filter(
+            st ->
+                st.getExpansionCode() == null
+                    || enabledExpansionCodes.contains(st.getExpansionCode()))
         .collect(
             Collectors.toMap(
                 SegmentType::getName,
