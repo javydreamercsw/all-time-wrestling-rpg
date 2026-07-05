@@ -85,10 +85,17 @@ public class ExpansionService {
   }
 
   public List<String> getEnabledExpansionCodes() {
-    return getExpansions().stream()
-        .filter(Expansion::isEnabled)
-        .map(Expansion::getCode)
-        .collect(Collectors.toList());
+    List<String> codes =
+        getExpansions().stream()
+            .filter(Expansion::isEnabled)
+            .map(Expansion::getCode)
+            .collect(Collectors.toList());
+    log.debug(
+        "[DEBUG-ATW8djt] getEnabledExpansionCodes() → {} codes: {} [thread={}]",
+        codes.size(),
+        codes,
+        Thread.currentThread().getName());
+    return codes;
   }
 
   /** Returns a map of expansion code → priority for use in same-name conflict resolution. */

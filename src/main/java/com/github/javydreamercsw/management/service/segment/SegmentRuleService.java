@@ -62,8 +62,12 @@ public class SegmentRuleService {
   @Autowired private ObjectMapper objectMapper;
 
   private Set<String> enabledExpansionCodes() {
-    return universeContextService
-        .getCurrentUniverse()
+    var universe = universeContextService.getCurrentUniverse();
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentRuleService.enabledExpansionCodes: universe={} [thread={}]",
+        universe.map(u -> u.getId().toString()).orElse("(none)"),
+        Thread.currentThread().getName());
+    return universe
         .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
         .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
@@ -268,12 +272,26 @@ public class SegmentRuleService {
    */
   @PreAuthorize("isAuthenticated()")
   public List<SegmentRule> findAll(@NonNull final Set<String> enabledExpansionCodes) {
-    return deduplicateByPriority(
-        segmentRuleRepository.findAll().stream()
-            .filter(
-                r ->
-                    r.getExpansionCode() == null
-                        || enabledExpansionCodes.contains(r.getExpansionCode())));
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentRuleService.findAll(Set) called with {} codes: {} [thread={}]",
+        enabledExpansionCodes.size(),
+        enabledExpansionCodes,
+        Thread.currentThread().getName());
+    List<SegmentRule> all = segmentRuleRepository.findAll();
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentRuleService: repository returned {} total segment rules",
+        all.size());
+    List<SegmentRule> result =
+        deduplicateByPriority(
+            all.stream()
+                .filter(
+                    r ->
+                        r.getExpansionCode() == null
+                            || enabledExpansionCodes.contains(r.getExpansionCode())));
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentRuleService.findAll(Set) returning {} segment rules",
+        result.size());
+    return result;
   }
 
   private List<SegmentRule> deduplicateByPriority(Stream<SegmentRule> rules) {
