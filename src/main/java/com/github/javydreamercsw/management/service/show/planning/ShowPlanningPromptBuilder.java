@@ -218,6 +218,10 @@ public class ShowPlanningPromptBuilder {
                       .append(", Injured: ")
                       .append(wrestler.isInjured())
                       .append("\n"));
+      prompt.append(
+          "IMPORTANT: You MUST only book wrestlers listed in the Full Roster above."
+              + " Do not use names from other sections (e.g. recent segments or rivalries)"
+              + " that are not present in this roster.\n");
     }
 
     if (context.getFactions() != null && !context.getFactions().isEmpty()) {

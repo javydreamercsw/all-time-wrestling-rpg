@@ -82,6 +82,19 @@ public class EditSegmentDialog extends Dialog {
         final WrestlerService wrestlerService,
         final ExpansionService expansionService,
         final Long universeId) {
+      // Collect enabled codes via ExpansionService (thread-safe, no Vaadin session needed).
+      // The universe-context-aware findAll() overload is unreliable in async threads because
+      // VaadinSession.getCurrent() returns null there, and a poisoned cache entry persists for
+      // 10 minutes. Using the global enabled codes is correct for the edit dialog.
+      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+          .info(
+              "[DEBUG-ATW8djt] PreloadedData.load() entry — thread={} VaadinSession={}",
+              Thread.currentThread().getName(),
+              com.vaadin.flow.server.VaadinSession.getCurrent());
+      Set<String> enabledCodes =
+          new java.util.HashSet<>(expansionService.getEnabledExpansionCodes());
+      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+          .info("[DEBUG-ATW8djt] PreloadedData.load() enabledCodes={}", enabledCodes);
       List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
       Map<String, Wrestler> byName =
           wrestlerService.getAllWrestlers().stream()
@@ -93,13 +106,22 @@ public class EditSegmentDialog extends Dialog {
                       com.github.javydreamercsw.management.service.expansion.Expansion::getCode,
                       com.github.javydreamercsw.management.service.expansion.Expansion::getName,
                       (a, b) -> a));
-      return new PreloadedData(
-          segmentTypeService.findAll().stream()
+      List<SegmentType> segmentTypes =
+          segmentTypeService.findAll(enabledCodes).stream()
               .sorted(Comparator.comparing(SegmentType::getName))
-              .collect(Collectors.toList()),
-          segmentRuleService.findAll().stream()
+              .collect(Collectors.toList());
+      List<SegmentRule> segmentRules =
+          segmentRuleService.findAll(enabledCodes).stream()
               .sorted(Comparator.comparing(SegmentRule::getName))
-              .collect(Collectors.toList()),
+              .collect(Collectors.toList());
+      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+          .info(
+              "[DEBUG-ATW8djt] PreloadedData.load() result — {} segmentTypes, {} segmentRules",
+              segmentTypes.size(),
+              segmentRules.size());
+      return new PreloadedData(
+          segmentTypes,
+          segmentRules,
           npcService.findAllByType("Referee").stream()
               .sorted(Comparator.comparing(Npc::getName))
               .collect(Collectors.toList()),

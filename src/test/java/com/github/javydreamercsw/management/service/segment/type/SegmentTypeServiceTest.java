@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -251,5 +252,38 @@ class SegmentTypeServiceTest {
     List<SegmentType> result = segmentTypeService.findAll();
 
     assertEquals(List.of("Match", "Promo"), result.stream().map(SegmentType::getName).toList());
+  }
+
+  // ==================== findAll(Set<String>) — async-safe overload ====================
+
+  @Test
+  void findAllWithCodes_returnsTypesMatchingExplicitCodes() {
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(segmentType));
+
+    List<SegmentType> result = segmentTypeService.findAll(Set.of("BASE_GAME"));
+
+    assertEquals(1, result.size(), "Should return BASE_GAME type when code is in the supplied set");
+  }
+
+  @Test
+  void findAllWithCodes_emptyCodesFiltersOutAllTypesWithExpansionCode() {
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(segmentType));
+
+    List<SegmentType> result = segmentTypeService.findAll(Set.of());
+
+    assertTrue(
+        result.isEmpty(), "Types with non-null expansionCode must be excluded when set is empty");
+  }
+
+  @Test
+  void findAllWithCodes_nullExpansionCodeAlwaysIncluded() {
+    SegmentType noCode = new SegmentType();
+    noCode.setName("Legacy");
+    noCode.setExpansionCode(null);
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(noCode));
+
+    List<SegmentType> result = segmentTypeService.findAll(Set.of());
+
+    assertEquals(1, result.size(), "Types with null expansionCode must always be included");
   }
 }

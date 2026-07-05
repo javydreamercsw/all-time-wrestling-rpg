@@ -14,7 +14,8 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "esbuild": ">=0.25.0"
   },
   "overrides": {
     "esbuild": ">=0.25.0",

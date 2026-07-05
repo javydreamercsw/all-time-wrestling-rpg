@@ -67,8 +67,12 @@ public class SegmentTypeService {
   }
 
   private Set<String> enabledExpansionCodes() {
-    return universeContextService
-        .getCurrentUniverse()
+    var universe = universeContextService.getCurrentUniverse();
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentTypeService.enabledExpansionCodes: universe={} [thread={}]",
+        universe.map(u -> u.getId().toString()).orElse("(none)"),
+        Thread.currentThread().getName());
+    return universe
         .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
         .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
@@ -81,23 +85,48 @@ public class SegmentTypeService {
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.SEGMENT_TYPES_CACHE, key = "'all'")
   public List<SegmentType> findAll() {
-    Set<String> enabled = enabledExpansionCodes();
+    return findAll(enabledExpansionCodes());
+  }
+
+  /**
+   * Expansion-filtered lookup using caller-supplied codes. Use this from async contexts where the
+   * thread-local universe context is unavailable (e.g. PreloadedData.load).
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<SegmentType> findAll(@NonNull final Set<String> enabledExpansionCodes) {
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentTypeService.findAll(Set) called with {} codes: {} [thread={}]",
+        enabledExpansionCodes.size(),
+        enabledExpansionCodes,
+        Thread.currentThread().getName());
     Map<String, Integer> priorities = expansionService.buildPriorityMap();
-    return segmentTypeRepository.findAll().stream()
-        .filter(st -> st.getExpansionCode() == null || enabled.contains(st.getExpansionCode()))
-        .collect(
-            Collectors.toMap(
-                SegmentType::getName,
-                st -> st,
-                (a, b) ->
-                    priorities.getOrDefault(a.getExpansionCode(), 0)
-                            >= priorities.getOrDefault(b.getExpansionCode(), 0)
-                        ? a
-                        : b))
-        .values()
-        .stream()
-        .sorted(Comparator.comparing(SegmentType::getName))
-        .collect(Collectors.toList());
+    List<SegmentType> all = segmentTypeRepository.findAll();
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentTypeService: repository returned {} total segment types",
+        all.size());
+    List<SegmentType> result =
+        all.stream()
+            .filter(
+                st ->
+                    st.getExpansionCode() == null
+                        || enabledExpansionCodes.contains(st.getExpansionCode()))
+            .collect(
+                Collectors.toMap(
+                    SegmentType::getName,
+                    st -> st,
+                    (a, b) ->
+                        priorities.getOrDefault(a.getExpansionCode(), 0)
+                                >= priorities.getOrDefault(b.getExpansionCode(), 0)
+                            ? a
+                            : b))
+            .values()
+            .stream()
+            .sorted(Comparator.comparing(SegmentType::getName))
+            .collect(Collectors.toList());
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentTypeService.findAll(Set) returning {} segment types",
+        result.size());
+    return result;
   }
 
   public long count() {
