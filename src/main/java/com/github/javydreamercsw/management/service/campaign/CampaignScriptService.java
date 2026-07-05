@@ -107,7 +107,9 @@ public class CampaignScriptService {
 
   private groovy.lang.Script getScript(final String scriptPath, final Binding binding)
       throws IOException {
-    Resource resource = new ClassPathResource("scripts/campaign/" + scriptPath);
+    // Use the class's own ClassLoader — ForkJoinPool threads have a null context ClassLoader.
+    Resource resource =
+        new ClassPathResource("scripts/campaign/" + scriptPath, CampaignScriptService.class);
     if (!resource.exists()) {
       throw new IOException("Script not found: " + scriptPath);
     }
