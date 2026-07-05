@@ -51,7 +51,7 @@
     <!-- npm packages for @vaadin/* components lag behind Maven releases. Set this to the latest
          version actually published to npm. Update when npm catches up to vaadin.version. -->
     <vaadin.npm.version>25.1.3</vaadin.npm.version>
-    <vaadin.version>25.1.6</vaadin.version>
+    <vaadin.version>25.2.1</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
