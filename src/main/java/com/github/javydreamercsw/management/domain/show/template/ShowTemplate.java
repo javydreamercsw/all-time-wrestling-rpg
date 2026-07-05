@@ -108,6 +108,9 @@ public class ShowTemplate extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
+  @Column(name = "is_active", nullable = false)
+  private boolean isActive = true;
+
   /**
    * Check if this is a Premium Live Event (PLE) template.
    *

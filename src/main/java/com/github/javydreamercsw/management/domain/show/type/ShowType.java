@@ -59,6 +59,9 @@ public class ShowType extends AbstractEntity<Long> {
   @Column(name = "expected_promos", nullable = false)
   private int expectedPromos;
 
+  @Column(name = "is_active", nullable = false)
+  private boolean isActive = true;
+
   /** Ensure default values before persisting. */
   @PrePersist
   private void ensureDefaults() {

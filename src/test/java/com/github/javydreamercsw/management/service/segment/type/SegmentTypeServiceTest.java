@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.segment.type;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -285,5 +286,58 @@ class SegmentTypeServiceTest {
     List<SegmentType> result = segmentTypeService.findAll(Set.of());
 
     assertEquals(1, result.size(), "Types with null expansionCode must always be included");
+  }
+
+  @Test
+  void findAll_excludesInactiveSegmentTypes() {
+    SegmentType active = new SegmentType();
+    active.setName("Active Match");
+    active.setExpansionCode("BASE_GAME");
+    active.setActive(true);
+
+    SegmentType inactive = new SegmentType();
+    inactive.setName("Inactive Match");
+    inactive.setExpansionCode("BASE_GAME");
+    inactive.setActive(false);
+
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(active, inactive));
+
+    List<SegmentType> result = segmentTypeService.findAll();
+
+    assertEquals(1, result.size());
+    assertEquals("Active Match", result.get(0).getName());
+  }
+
+  @Test
+  void findAllForAdmin_includesInactiveSegmentTypes() {
+    SegmentType active = new SegmentType();
+    active.setName("Active Match");
+    active.setExpansionCode("BASE_GAME");
+    active.setActive(true);
+
+    SegmentType inactive = new SegmentType();
+    inactive.setName("Inactive Match");
+    inactive.setExpansionCode("BASE_GAME");
+    inactive.setActive(false);
+
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(active, inactive));
+
+    List<SegmentType> result = segmentTypeService.findAllForAdmin();
+
+    assertEquals(2, result.size());
+  }
+
+  @Test
+  void setActive_persistsChange() {
+    SegmentType st = new SegmentType();
+    st.setName("Promo");
+    st.setExpansionCode("BASE_GAME");
+    st.setActive(true);
+    when(segmentTypeRepository.findById(1L)).thenReturn(Optional.of(st));
+
+    segmentTypeService.setActive(1L, false);
+
+    assertFalse(st.isActive());
+    verify(segmentTypeRepository).save(st);
   }
 }

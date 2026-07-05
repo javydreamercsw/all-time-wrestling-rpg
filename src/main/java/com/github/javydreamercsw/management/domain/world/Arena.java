@@ -77,6 +77,10 @@ public class Arena extends AbstractEntity<Long> {
   @Column(name = "image_url")
   private String imageUrl;
 
+  @Column(name = "is_active", nullable = false)
+  @Builder.Default
+  private boolean isActive = true;
+
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "arena_environmental_trait", joinColumns = @JoinColumn(name = "arena_id"))
   @Column(name = "environmental_trait")

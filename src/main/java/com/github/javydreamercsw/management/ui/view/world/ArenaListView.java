@@ -70,7 +70,9 @@ public class ArenaListView extends Main {
     this.dataProvider =
         DataProvider.fromCallbacks(
             query ->
-                arenaService.findAll().stream().skip(query.getOffset()).limit(query.getLimit()),
+                arenaService.findAllForAdmin().stream()
+                    .skip(query.getOffset())
+                    .limit(query.getLimit()),
             query -> (int) arenaService.count());
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -92,7 +94,25 @@ public class ArenaListView extends Main {
   private Component createGrid() {
     grid.setId("arena-grid");
     grid.setDataProvider(dataProvider);
-    grid.addColumn(Arena::getName).setHeader("Name").setSortable(true).setAutoWidth(true);
+    grid.addComponentColumn(
+            arena -> {
+              HorizontalLayout nameLayout = new HorizontalLayout();
+              nameLayout.setAlignItems(
+                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setSpacing(false);
+              nameLayout.setPadding(false);
+              if (!arena.isActive()) {
+                Icon inactiveIcon = VaadinIcon.EYE_SLASH.create();
+                inactiveIcon.setColor("var(--lumo-disabled-text-color)");
+                inactiveIcon.getStyle().set("margin-right", "6px");
+                nameLayout.add(inactiveIcon);
+              }
+              nameLayout.add(new com.vaadin.flow.component.html.Span(arena.getName()));
+              return nameLayout;
+            })
+        .setHeader("Name")
+        .setSortable(true)
+        .setAutoWidth(true);
     grid.addColumn(arena -> arena.getLocation().getName())
         .setHeader("Location")
         .setSortable(true)
@@ -135,12 +155,24 @@ public class ArenaListView extends Main {
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.addClickListener(e -> editItem(arena));
 
+    Icon toggleIcon = arena.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
+    toggleIcon.setColor(
+        arena.isActive() ? "var(--lumo-success-color)" : "var(--lumo-disabled-text-color)");
+    Button toggleButton = new Button(toggleIcon);
+    toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    toggleButton.setTooltipText(arena.isActive() ? "Deactivate" : "Activate");
+    toggleButton.addClickListener(
+        e -> {
+          arenaService.setActive(arena.getId(), !arena.isActive());
+          listItems();
+        });
+
     Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
     deleteButton.setId("delete-arena-" + arena.getId());
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.addClickListener(e -> deleteItem(arena));
 
-    return new HorizontalLayout(editButton, deleteButton);
+    return new HorizontalLayout(editButton, toggleButton, deleteButton);
   }
 
   private void deleteItem(final Arena arena) {

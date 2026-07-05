@@ -267,6 +267,34 @@ public class SegmentRuleService {
   }
 
   /**
+   * Returns all segment rules including inactive ones, filtered only by enabled expansions. Use
+   * this in admin list views where managers need to see and re-enable disabled rules.
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<SegmentRule> findAllForAdmin() {
+    Set<String> enabled = enabledExpansionCodes();
+    return deduplicateByPriority(
+        segmentRuleRepository.findAll().stream()
+            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      allEntries = true)
+  public void setActive(@NonNull final Long id, final boolean active) {
+    segmentRuleRepository
+        .findById(id)
+        .ifPresent(
+            r -> {
+              r.setActive(active);
+              segmentRuleRepository.save(r);
+            });
+  }
+
+  /**
    * Expansion-filtered lookup using caller-supplied codes. Use this from async contexts where the
    * thread-local universe context is unavailable (e.g. PreloadedData.load).
    */
@@ -284,6 +312,7 @@ public class SegmentRuleService {
     List<SegmentRule> result =
         deduplicateByPriority(
             all.stream()
+                .filter(SegmentRule::isActive)
                 .filter(
                     r ->
                         r.getExpansionCode() == null
