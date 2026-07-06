@@ -197,8 +197,25 @@ public class ShowTemplateListView extends Main {
 
     // Name column
     templateGrid
-        .addColumn(ShowTemplate::getName)
+        .addComponentColumn(
+            template -> {
+              com.vaadin.flow.component.orderedlayout.HorizontalLayout nameLayout =
+                  new com.vaadin.flow.component.orderedlayout.HorizontalLayout();
+              nameLayout.setAlignItems(
+                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setSpacing(false);
+              nameLayout.setPadding(false);
+              if (!template.isActive()) {
+                Icon inactiveIcon = VaadinIcon.EYE_SLASH.create();
+                inactiveIcon.setColor("var(--lumo-disabled-text-color)");
+                inactiveIcon.getStyle().set("margin-right", "6px");
+                nameLayout.add(inactiveIcon);
+              }
+              nameLayout.add(new com.vaadin.flow.component.html.Span(template.getName()));
+              return nameLayout;
+            })
         .setHeader("Name")
+        .setComparator(Comparator.comparing(ShowTemplate::getName))
         .setSortable(true)
         .setFlexGrow(2);
 
@@ -311,6 +328,22 @@ public class ShowTemplateListView extends Main {
               editBtn.addClickListener(e -> openEditDialog(template));
               editBtn.setVisible(securityUtils.canEdit());
 
+              Icon toggleIcon =
+                  template.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
+              toggleIcon.setColor(
+                  template.isActive()
+                      ? "var(--lumo-success-color)"
+                      : "var(--lumo-disabled-text-color)");
+              Button toggleBtn = new Button(toggleIcon);
+              toggleBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+              toggleBtn.setTooltipText(template.isActive() ? "Deactivate" : "Activate");
+              toggleBtn.setVisible(securityUtils.canEdit());
+              toggleBtn.addClickListener(
+                  e -> {
+                    showTemplateService.setActive(template.getId(), !template.isActive());
+                    refreshGrid();
+                  });
+
               Button generateArtBtn = new Button("Generate Art", new Icon(VaadinIcon.PICTURE));
               generateArtBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
               generateArtBtn.addClickListener(e -> openGenerateArtDialog(template));
@@ -322,7 +355,7 @@ public class ShowTemplateListView extends Main {
               deleteBtn.addClickListener(e -> deleteTemplate(template));
               deleteBtn.setVisible(securityUtils.canDelete());
 
-              actions.add(editBtn, generateArtBtn, deleteBtn);
+              actions.add(editBtn, toggleBtn, generateArtBtn, deleteBtn);
               return actions;
             })
         .setHeader("Actions")
@@ -746,7 +779,7 @@ public class ShowTemplateListView extends Main {
   }
 
   private void refreshGrid() {
-    List<ShowTemplate> templates = showTemplateService.findAll();
+    List<ShowTemplate> templates = showTemplateService.findAllForAdmin();
 
     // Apply filters
     String nameFilterValue = nameFilter.getValue();

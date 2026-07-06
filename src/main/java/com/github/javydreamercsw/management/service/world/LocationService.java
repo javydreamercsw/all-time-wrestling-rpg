@@ -88,7 +88,26 @@ public class LocationService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @Cacheable(value = CacheConfig.LOCATIONS_CACHE, key = "'all'")
   public List<Location> findAll() {
+    return repository.findAll().stream()
+        .filter(Location::isActive)
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<Location> findAllForAdmin() {
     return repository.findAll();
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(value = CacheConfig.LOCATIONS_CACHE, allEntries = true)
+  public void setActive(final Long id, final boolean active) {
+    repository
+        .findById(id)
+        .ifPresent(
+            loc -> {
+              loc.setActive(active);
+              repository.save(loc);
+            });
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")

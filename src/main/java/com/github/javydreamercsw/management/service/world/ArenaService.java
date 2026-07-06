@@ -119,7 +119,26 @@ public class ArenaService {
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.ARENAS_CACHE, key = "'all'")
   public List<Arena> findAll() {
+    return repository.findAllWithLocation().stream()
+        .filter(Arena::isActive)
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<Arena> findAllForAdmin() {
     return repository.findAllWithLocation();
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(value = CacheConfig.ARENAS_CACHE, allEntries = true)
+  public void setActive(final Long id, final boolean active) {
+    repository
+        .findById(id)
+        .ifPresent(
+            arena -> {
+              arena.setActive(active);
+              repository.save(arena);
+            });
   }
 
   @PreAuthorize("isAuthenticated()")

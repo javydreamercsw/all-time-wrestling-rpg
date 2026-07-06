@@ -58,7 +58,28 @@ public class ShowTypeService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       key = "'all'")
   public List<ShowType> findAll() {
+    return showTypeRepository.findAll().stream()
+        .filter(ShowType::isActive)
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<ShowType> findAllForAdmin() {
     return showTypeRepository.findAll();
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
+      allEntries = true)
+  public void setActive(@NonNull final Long id, final boolean active) {
+    showTypeRepository
+        .findById(id)
+        .ifPresent(
+            st -> {
+              st.setActive(active);
+              showTypeRepository.save(st);
+            });
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")

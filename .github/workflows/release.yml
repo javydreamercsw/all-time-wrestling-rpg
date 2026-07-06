@@ -17,6 +17,11 @@ on:
       version:
         description: 'The release version (e.g., 1.2.0)'
         required: true
+      discard_existing_release:
+        description: 'Allow discarding an existing release that already has assets. Default: false — pipeline stops with an error if assets already exist.'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: "pages"
@@ -425,6 +430,27 @@ jobs:
 
       - name: Build Portable ZIP
         run: mvn -B package -Pportable -DskipTests --file pom.xml
+
+      - name: Guard against accidental release discard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="v${{ github.event.inputs.version }}"
+          DISCARD="${{ github.event.inputs.discard_existing_release }}"
+
+          ASSET_COUNT=$(gh release view "$VERSION" --json assets \
+            --jq '.assets | length' 2>/dev/null || echo "0")
+
+          if [ "$ASSET_COUNT" -gt "0" ] && [ "$DISCARD" != "true" ]; then
+            echo "::error::Release $VERSION already has $ASSET_COUNT asset(s) attached."
+            echo "::error::Re-run the workflow with 'discard_existing_release: true' to explicitly approve overwriting them."
+            exit 1
+          elif [ "$ASSET_COUNT" -gt "0" ] && [ "$DISCARD" = "true" ]; then
+            echo "⚠️ User approved discarding existing release $VERSION. Deleting it before recreating..."
+            gh release delete "$VERSION" --yes
+          else
+            echo "No existing release with assets found for $VERSION — proceeding."
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v3

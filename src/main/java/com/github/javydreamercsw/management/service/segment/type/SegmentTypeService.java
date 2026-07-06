@@ -67,8 +67,12 @@ public class SegmentTypeService {
   }
 
   private Set<String> enabledExpansionCodes() {
-    return universeContextService
-        .getCurrentUniverse()
+    var universe = universeContextService.getCurrentUniverse();
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentTypeService.enabledExpansionCodes: universe={} [thread={}]",
+        universe.map(u -> u.getId().toString()).orElse("(none)"),
+        Thread.currentThread().getName());
+    return universe
         .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
         .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
@@ -81,8 +85,17 @@ public class SegmentTypeService {
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.SEGMENT_TYPES_CACHE, key = "'all'")
   public List<SegmentType> findAll() {
-    Set<String> enabled = enabledExpansionCodes();
+    return findAll(enabledExpansionCodes());
+  }
+
+  /**
+   * Returns all segment types including inactive ones, filtered only by enabled expansions. Use
+   * this in admin list views where managers need to see and re-enable disabled types.
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<SegmentType> findAllForAdmin() {
     Map<String, Integer> priorities = expansionService.buildPriorityMap();
+    Set<String> enabled = enabledExpansionCodes();
     return segmentTypeRepository.findAll().stream()
         .filter(st -> st.getExpansionCode() == null || enabled.contains(st.getExpansionCode()))
         .collect(
@@ -98,6 +111,62 @@ public class SegmentTypeService {
         .stream()
         .sorted(Comparator.comparing(SegmentType::getName))
         .collect(Collectors.toList());
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
+  public void setActive(@NonNull final Long id, final boolean active) {
+    segmentTypeRepository
+        .findById(id)
+        .ifPresent(
+            st -> {
+              st.setActive(active);
+              segmentTypeRepository.save(st);
+            });
+  }
+
+  /**
+   * Expansion-filtered lookup using caller-supplied codes. Use this from async contexts where the
+   * thread-local universe context is unavailable (e.g. PreloadedData.load).
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<SegmentType> findAll(@NonNull final Set<String> enabledExpansionCodes) {
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentTypeService.findAll(Set) called with {} codes: {} [thread={}]",
+        enabledExpansionCodes.size(),
+        enabledExpansionCodes,
+        Thread.currentThread().getName());
+    Map<String, Integer> priorities = expansionService.buildPriorityMap();
+    List<SegmentType> all = segmentTypeRepository.findAll();
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentTypeService: repository returned {} total segment types",
+        all.size());
+    List<SegmentType> result =
+        all.stream()
+            .filter(SegmentType::isActive)
+            .filter(
+                st ->
+                    st.getExpansionCode() == null
+                        || enabledExpansionCodes.contains(st.getExpansionCode()))
+            .collect(
+                Collectors.toMap(
+                    SegmentType::getName,
+                    st -> st,
+                    (a, b) ->
+                        priorities.getOrDefault(a.getExpansionCode(), 0)
+                                >= priorities.getOrDefault(b.getExpansionCode(), 0)
+                            ? a
+                            : b))
+            .values()
+            .stream()
+            .sorted(Comparator.comparing(SegmentType::getName))
+            .collect(Collectors.toList());
+    log.debug(
+        "[DEBUG-ATW8djt] SegmentTypeService.findAll(Set) returning {} segment types",
+        result.size());
+    return result;
   }
 
   public long count() {

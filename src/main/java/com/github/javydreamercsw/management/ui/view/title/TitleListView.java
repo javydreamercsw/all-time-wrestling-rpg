@@ -132,7 +132,20 @@ public class TitleListView extends Main {
         .setSortable(true);
     grid.addColumn(Title::getChampionshipType).setHeader("Championship Type").setSortable(true);
     grid.addColumn(Title::getChampionNames).setHeader("Champion(s)").setSortable(true);
-    grid.addColumn(Title::getIsActive).setHeader("Active").setSortable(true);
+    grid.addComponentColumn(
+            title -> {
+              Icon icon =
+                  Boolean.TRUE.equals(title.getIsActive())
+                      ? VaadinIcon.EYE.create()
+                      : VaadinIcon.EYE_SLASH.create();
+              icon.setColor(
+                  Boolean.TRUE.equals(title.getIsActive())
+                      ? "var(--lumo-success-color)"
+                      : "var(--lumo-disabled-text-color)");
+              return icon;
+            })
+        .setHeader("Active")
+        .setSortable(true);
     grid.addColumn(Title::getIncludeInRankings).setHeader("Rankings").setSortable(true);
     grid.addColumn(
             title ->
@@ -204,12 +217,32 @@ public class TitleListView extends Main {
               editButton.addClickListener(e -> openEditDialog(title).open());
               editButton.setVisible(securityUtils.canEdit());
 
+              Icon toggleIcon =
+                  Boolean.TRUE.equals(title.getIsActive())
+                      ? new Icon(VaadinIcon.EYE)
+                      : new Icon(VaadinIcon.EYE_SLASH);
+              toggleIcon.setColor(
+                  Boolean.TRUE.equals(title.getIsActive())
+                      ? "var(--lumo-success-color)"
+                      : "var(--lumo-disabled-text-color)");
+              Button toggleButton = new Button(toggleIcon);
+              toggleButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+              toggleButton.setTooltipText(
+                  Boolean.TRUE.equals(title.getIsActive()) ? "Deactivate" : "Activate");
+              toggleButton.setVisible(securityUtils.canEdit());
+              toggleButton.addClickListener(
+                  e -> {
+                    titleService.setActive(
+                        title.getId(), !Boolean.TRUE.equals(title.getIsActive()));
+                    refreshGrid();
+                  });
+
               Button deleteButton = new Button("Delete", new Icon(VaadinIcon.TRASH));
               deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               deleteButton.addClickListener(e -> deleteTitle(title));
               deleteButton.setVisible(securityUtils.canDelete());
 
-              return new HorizontalLayout(editButton, deleteButton);
+              return new HorizontalLayout(editButton, toggleButton, deleteButton);
             })
         .setHeader("Actions");
   }

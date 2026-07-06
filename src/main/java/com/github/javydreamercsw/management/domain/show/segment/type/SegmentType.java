@@ -66,6 +66,9 @@ public class SegmentType extends AbstractEntity<Long> {
   @Column(name = "guide_hash", length = 64)
   @Nullable private String guideHash;
 
+  @Column(name = "is_active", nullable = false)
+  private boolean isActive = true;
+
   /** Ensure default values before persisting. */
   @PrePersist
   private void ensureDefaults() {

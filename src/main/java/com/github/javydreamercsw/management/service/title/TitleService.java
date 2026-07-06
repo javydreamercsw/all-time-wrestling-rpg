@@ -157,6 +157,18 @@ public class TitleService {
     return titleRepository.save(title);
   }
 
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void setActive(final Long id, final boolean active) {
+    titleRepository
+        .findById(id)
+        .ifPresent(
+            title -> {
+              title.setIsActive(active);
+              titleRepository.save(title);
+            });
+  }
+
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(

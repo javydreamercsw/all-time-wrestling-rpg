@@ -163,4 +163,51 @@ class NpcServiceTest {
 
     assertEquals(2, result.size());
   }
+
+  @Test
+  void findAll_excludesInactiveNpcs() {
+    Npc activeNpc = Npc.builder().name("Active Ref").expansionCode("BASE_GAME").build();
+    activeNpc.setActive(true);
+
+    Npc inactiveNpc = Npc.builder().name("Inactive Ref").expansionCode("BASE_GAME").build();
+    inactiveNpc.setActive(false);
+
+    when(npcRepository.findAll()).thenReturn(Arrays.asList(activeNpc, inactiveNpc));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(Arrays.asList("BASE_GAME"));
+
+    List<Npc> result = npcService.findAll();
+
+    assertEquals(1, result.size());
+    assertEquals("Active Ref", result.get(0).getName());
+  }
+
+  @Test
+  void findAllIncludingInactive_includesInactiveNpcs() {
+    Npc activeNpc = Npc.builder().name("Active Ref").expansionCode("BASE_GAME").build();
+    activeNpc.setActive(true);
+
+    Npc inactiveNpc = Npc.builder().name("Inactive Ref").expansionCode("BASE_GAME").build();
+    inactiveNpc.setActive(false);
+
+    when(npcRepository.findAll()).thenReturn(Arrays.asList(activeNpc, inactiveNpc));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(Arrays.asList("BASE_GAME"));
+
+    List<Npc> result = npcService.findAllIncludingInactive();
+
+    assertEquals(2, result.size());
+  }
+
+  @Test
+  void setActive_persistsChange() {
+    Npc activeNpc = Npc.builder().name("Ref").expansionCode("BASE_GAME").build();
+    activeNpc.setId(42L);
+    activeNpc.setActive(true);
+
+    when(npcRepository.findById(42L)).thenReturn(Optional.of(activeNpc));
+
+    npcService.setActive(42L, false);
+
+    assertFalse(activeNpc.isActive());
+    verify(npcRepository).save(activeNpc);
+  }
 }

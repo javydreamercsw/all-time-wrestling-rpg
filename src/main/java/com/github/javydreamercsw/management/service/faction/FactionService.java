@@ -112,6 +112,18 @@ public class FactionService {
         .collect(Collectors.toList());
   }
 
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void setActive(final Long id, final boolean active) {
+    factionRepository
+        .findById(id)
+        .ifPresent(
+            faction -> {
+              faction.setActive(active);
+              factionRepository.save(faction);
+            });
+  }
+
   /** Get all factions for a specific universe. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")

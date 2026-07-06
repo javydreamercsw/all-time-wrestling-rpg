@@ -44,13 +44,15 @@ public class ExpansionService {
 
   public List<Expansion> getExpansions() {
     List<Expansion> expansions = new ArrayList<>();
-    // Use PathMatchingResourcePatternResolver so this works in both IDE and WAR/Tomcat contexts
-    // where ClassPathResource alone may not resolve inside WEB-INF/classes.
+    // Use the class's own ClassLoader, not the thread context ClassLoader.
+    // ForkJoinPool worker threads have a null/wrong context ClassLoader, which causes
+    // PathMatchingResourcePatternResolver() (no-arg) to fail to locate expansions.json.
+    ClassLoader cl = ExpansionService.class.getClassLoader();
     Resource resource;
     try {
       Resource[] resources =
-          new PathMatchingResourcePatternResolver().getResources("classpath*:expansions.json");
-      resource = resources.length > 0 ? resources[0] : new ClassPathResource("expansions.json");
+          new PathMatchingResourcePatternResolver(cl).getResources("classpath*:expansions.json");
+      resource = resources.length > 0 ? resources[0] : new ClassPathResource("expansions.json", cl);
     } catch (IOException e) {
       log.error("Error locating expansions.json", e);
       return expansions;
@@ -85,10 +87,17 @@ public class ExpansionService {
   }
 
   public List<String> getEnabledExpansionCodes() {
-    return getExpansions().stream()
-        .filter(Expansion::isEnabled)
-        .map(Expansion::getCode)
-        .collect(Collectors.toList());
+    List<String> codes =
+        getExpansions().stream()
+            .filter(Expansion::isEnabled)
+            .map(Expansion::getCode)
+            .collect(Collectors.toList());
+    log.debug(
+        "[DEBUG-ATW8djt] getEnabledExpansionCodes() → {} codes: {} [thread={}]",
+        codes.size(),
+        codes,
+        Thread.currentThread().getName());
+    return codes;
   }
 
   /** Returns a map of expansion code → priority for use in same-name conflict resolution. */

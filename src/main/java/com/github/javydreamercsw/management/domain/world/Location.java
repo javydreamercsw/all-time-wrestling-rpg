@@ -60,6 +60,10 @@ public class Location extends AbstractEntity<Long> {
   @Column(name = "image_url")
   private String imageUrl;
 
+  @Column(name = "is_active", nullable = false)
+  @Builder.Default
+  private boolean isActive = true;
+
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "location_cultural_tag", joinColumns = @JoinColumn(name = "location_id"))
   @Column(name = "cultural_tag")

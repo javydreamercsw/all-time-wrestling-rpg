@@ -93,6 +93,10 @@ public class ShowPlanningService {
 
     ShowPlanningContext context = new ShowPlanningContext();
 
+    // Resolve gender constraint early — needed to filter rivalries, titles, and roster
+    Gender genderConstraint =
+        show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
+
     // Get segments from the last 7 days
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     context.setShowDate(showDate);
@@ -124,9 +128,20 @@ public class ShowPlanningService {
 
     context.setRecentSegments(lastWeekSegments);
 
-    // Get current rivalries (full list; heat filtering happens in ShowPlanningDtoMapper)
-    List<Rivalry> currentRivalries = rivalryService.getActiveRivalries();
-    log.debug("Found {} active rivalries", currentRivalries.size());
+    // Get current rivalries, filtered by gender constraint so the AI isn't prompted to book
+    // wrestlers that aren't in the allowed roster for this show.
+    List<Rivalry> currentRivalries =
+        rivalryService.getActiveRivalries().stream()
+            .filter(
+                r ->
+                    genderConstraint == null
+                        || (r.getWrestler1().getGender() == genderConstraint
+                            && r.getWrestler2().getGender() == genderConstraint))
+            .collect(Collectors.toList());
+    log.debug(
+        "Found {} active rivalries after gender filtering (constraint={})",
+        currentRivalries.size(),
+        genderConstraint);
     context.setCurrentRivalries(currentRivalries);
 
     // Get show template
@@ -154,9 +169,6 @@ public class ShowPlanningService {
     // Get championships
     List<ShowPlanningChampionship> championships = new ArrayList<>();
     List<Title> activeTitles = titleService.getActiveTitles();
-
-    Gender genderConstraint =
-        show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
 
     log.debug(
         "Found {} active titles, filtering by gender: {}", activeTitles.size(), genderConstraint);

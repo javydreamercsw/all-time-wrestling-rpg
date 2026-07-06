@@ -93,7 +93,26 @@ public class SegmentRuleListView extends Main {
     segmentRuleGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     segmentRuleGrid.setSizeFull();
 
-    segmentRuleGrid.addColumn(SegmentRule::getName).setHeader("Name").setSortable(true);
+    segmentRuleGrid
+        .addComponentColumn(
+            sr -> {
+              HorizontalLayout nameLayout = new HorizontalLayout();
+              nameLayout.setAlignItems(
+                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setSpacing(false);
+              nameLayout.setPadding(false);
+              if (!sr.isActive()) {
+                Icon inactiveIcon = VaadinIcon.EYE_SLASH.create();
+                inactiveIcon.setColor("var(--lumo-disabled-text-color)");
+                inactiveIcon.getStyle().set("margin-right", "6px");
+                nameLayout.add(inactiveIcon);
+              }
+              nameLayout.add(new com.vaadin.flow.component.html.Span(sr.getName()));
+              return nameLayout;
+            })
+        .setHeader("Name")
+        .setComparator(Comparator.comparing(SegmentRule::getName))
+        .setSortable(true);
     segmentRuleGrid
         .addColumn(SegmentRule::getDescription)
         .setHeader("Description")
@@ -140,19 +159,33 @@ public class SegmentRuleListView extends Main {
     editButton.addClickListener(e -> openEditDialog(segmentRule));
     editButton.setVisible(securityUtils.canEdit());
 
+    Icon toggleIcon =
+        segmentRule.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
+    toggleIcon.setColor(
+        segmentRule.isActive() ? "var(--lumo-success-color)" : "var(--lumo-disabled-text-color)");
+    Button toggleButton = new Button(toggleIcon);
+    toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    toggleButton.setTooltipText(segmentRule.isActive() ? "Deactivate" : "Activate");
+    toggleButton.setVisible(securityUtils.canEdit());
+    toggleButton.addClickListener(
+        e -> {
+          segmentRuleService.setActive(segmentRule.getId(), !segmentRule.isActive());
+          refreshGrid();
+        });
+
     Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.setTooltipText("Delete Segment Rule");
     deleteButton.addClickListener(e -> confirmDelete(segmentRule));
     deleteButton.setVisible(securityUtils.canDelete());
 
-    HorizontalLayout actions = new HorizontalLayout(editButton, deleteButton);
+    HorizontalLayout actions = new HorizontalLayout(editButton, toggleButton, deleteButton);
     actions.setSpacing(true);
     return actions;
   }
 
   private void refreshGrid() {
-    segmentRuleGrid.setItems(segmentRuleService.findAll());
+    segmentRuleGrid.setItems(segmentRuleService.findAllForAdmin());
   }
 
   private void openCreateDialog() {

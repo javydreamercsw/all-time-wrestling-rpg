@@ -1,8 +1,8 @@
 # Changelog
 
-## [v2.5.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.5.0) (2026-07-03)
+## [v2.5.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.5.1) (2026-07-03)
 
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.4.3...v2.5.0)
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.5.0...v2.5.1)
 
 **Implemented enhancements:**
 
@@ -21,6 +21,10 @@
 - Build\(deps-dev\): Bump org.openrewrite.maven:rewrite-maven-plugin from 6.41.0 to 6.42.0 [\#388](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/388) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump org.openrewrite.recipe:rewrite-migrate-java from 3.36.0 to 3.38.0 [\#387](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/387) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump io.swagger.core.v3:swagger-models-jakarta from 2.2.51 to 2.2.52 [\#386](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/386) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v2.5.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.5.0) (2026-06-25)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.4.3...v2.5.0)
 
 ## [v2.4.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.4.3) (2026-06-23)
 
