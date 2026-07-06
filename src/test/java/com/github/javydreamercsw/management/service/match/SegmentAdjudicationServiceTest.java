@@ -25,9 +25,11 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -36,6 +38,10 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -442,5 +448,124 @@ class SegmentAdjudicationServiceTest {
     verify(rivalryService, atLeastOnce()).getRivalryBetweenWrestlers(eq(1L), eq(2L));
     // Direct resolution must NOT be called with a specific id
     verify(rivalryService, never()).attemptResolution(anyLong(), anyInt(), anyInt(), anyInt());
+  }
+
+  // --- Health-based bump tests ---
+
+  private Wrestler buildPlayerWrestler(long id, WrestlerState state, int lowHealth) {
+    Wrestler w = mock(Wrestler.class);
+    Account account = mock(Account.class);
+    when(w.getId()).thenReturn(id);
+    when(w.getAccount()).thenReturn(account);
+    when(w.getLowHealth()).thenReturn(lowHealth);
+    when(w.getStartingHealth()).thenReturn(15);
+    when(wrestlerService.getOrCreateState(eq(id), anyLong())).thenReturn(state);
+    when(w.getState(anyLong())).thenReturn(Optional.of(state));
+    lenient().when(state.getPhysicalCondition()).thenReturn(100);
+    return w;
+  }
+
+  private SegmentParticipant buildParticipant(Wrestler w, int finalHealth) {
+    SegmentParticipant p = mock(SegmentParticipant.class);
+    when(p.getWrestler()).thenReturn(w);
+    when(p.getFinalHealth()).thenReturn(finalHealth);
+    return p;
+  }
+
+  @Test
+  void testTwoHealthBumpsAtOneHp() {
+    WrestlerState playerState = mock(WrestlerState.class);
+    lenient().when(playerState.getPhysicalCondition()).thenReturn(100);
+    Wrestler player = buildPlayerWrestler(10L, playerState, 4);
+
+    SegmentParticipant participant = buildParticipant(player, 1);
+    when(segment.getParticipants()).thenReturn(Set.of(participant));
+    when(segment.getWrestlers()).thenReturn(List.of(player));
+    when(segment.getWinners()).thenReturn(List.of(player));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestlerService, times(2)).addBump(eq(10L), anyLong(), eq(BumpSource.WEAR_AND_TEAR));
+  }
+
+  @Test
+  void testOneBumpAtLowHealthThreshold() {
+    WrestlerState playerState = mock(WrestlerState.class);
+    lenient().when(playerState.getPhysicalCondition()).thenReturn(100);
+    Wrestler player = buildPlayerWrestler(10L, playerState, 4);
+
+    SegmentParticipant participant = buildParticipant(player, 4); // exactly at lowHealth
+    when(segment.getParticipants()).thenReturn(Set.of(participant));
+    when(segment.getWrestlers()).thenReturn(List.of(player));
+    when(segment.getWinners()).thenReturn(List.of(player));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestlerService, times(1)).addBump(eq(10L), anyLong(), eq(BumpSource.WEAR_AND_TEAR));
+  }
+
+  @Test
+  void testNoBumpAboveLowHealthThreshold() {
+    WrestlerState playerState = mock(WrestlerState.class);
+    lenient().when(playerState.getPhysicalCondition()).thenReturn(100);
+    Wrestler player = buildPlayerWrestler(10L, playerState, 4);
+
+    SegmentParticipant participant = buildParticipant(player, 5); // above lowHealth
+    when(segment.getParticipants()).thenReturn(Set.of(participant));
+    when(segment.getWrestlers()).thenReturn(List.of(player));
+    when(segment.getWinners()).thenReturn(List.of(player));
+    // Seed random so probabilistic check never fires (newCondition ~100%, bumpChance = 0)
+    lenient().when(random.nextInt(100)).thenReturn(99);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(wrestlerService, never()).addBump(eq(10L), anyLong(), eq(BumpSource.WEAR_AND_TEAR));
+  }
+
+  @Test
+  void testRuleBumpNotSuppressedWhenHealthAboveThreshold() {
+    WrestlerState playerState = mock(WrestlerState.class);
+    lenient().when(playerState.getPhysicalCondition()).thenReturn(100);
+    Wrestler player = buildPlayerWrestler(10L, playerState, 4);
+
+    SegmentParticipant participant = buildParticipant(player, 8); // well above lowHealth
+    when(segment.getParticipants()).thenReturn(Set.of(participant));
+    when(segment.getWrestlers()).thenReturn(List.of(player));
+    when(segment.getWinners()).thenReturn(List.of(player));
+
+    SegmentRule rule = mock(SegmentRule.class);
+    when(rule.getBumpAddition()).thenReturn(BumpAddition.ALL);
+    when(rule.getName()).thenReturn("TestRule");
+    when(segment.getSegmentRules()).thenReturn(Set.of(rule));
+    // Ensure probabilistic check never fires
+    lenient().when(random.nextInt(100)).thenReturn(99);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Rule bump must fire because no health-based bump was added
+    verify(wrestlerService, atLeastOnce()).addBump(eq(10L), anyLong(), eq(BumpSource.RULE));
+  }
+
+  @Test
+  void testRuleBumpSuppressedWhenHealthBumpFired() {
+    WrestlerState playerState = mock(WrestlerState.class);
+    lenient().when(playerState.getPhysicalCondition()).thenReturn(100);
+    Wrestler player = buildPlayerWrestler(10L, playerState, 4);
+
+    SegmentParticipant participant = buildParticipant(player, 1); // triggers 2 health bumps
+    when(segment.getParticipants()).thenReturn(Set.of(participant));
+    when(segment.getWrestlers()).thenReturn(List.of(player));
+    when(segment.getWinners()).thenReturn(List.of(player));
+
+    SegmentRule rule = mock(SegmentRule.class);
+    when(rule.getBumpAddition()).thenReturn(BumpAddition.ALL);
+    when(rule.getName()).thenReturn("TestRule");
+    when(segment.getSegmentRules()).thenReturn(Set.of(rule));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Only WEAR_AND_TEAR bumps — no RULE bump
+    verify(wrestlerService, never()).addBump(eq(10L), anyLong(), eq(BumpSource.RULE));
+    verify(wrestlerService, times(2)).addBump(eq(10L), anyLong(), eq(BumpSource.WEAR_AND_TEAR));
   }
 }

@@ -1044,8 +1044,28 @@ public class SegmentAdjudicationService {
           "Applied {}% wear and tear to {} in league {}. New condition: {}%",
           effectiveLoss, wrestler.getName(), universeId, newCondition);
 
+      if (wrestler.getAccount() != null && reportedHealth.containsKey(wrestler.getId())) {
+        int endHealth = reportedHealth.get(wrestler.getId());
+        if (endHealth == 1) {
+          wrestlerService.addBump(wrestler.getId(), universeId, BumpSource.WEAR_AND_TEAR);
+          wrestlerService.addBump(wrestler.getId(), universeId, BumpSource.WEAR_AND_TEAR);
+          bumpedIds.add(wrestler.getId());
+          log.info("Health-based bumps (x2) for {} — ended at 1 HP", wrestler.getName());
+        } else if (endHealth <= wrestler.getLowHealth()) {
+          wrestlerService.addBump(wrestler.getId(), universeId, BumpSource.WEAR_AND_TEAR);
+          bumpedIds.add(wrestler.getId());
+          log.info(
+              "Health-based bump (x1) for {} — ended at {} HP (low health threshold: {})",
+              wrestler.getName(),
+              endHealth,
+              wrestler.getLowHealth());
+        }
+      }
+
       int bumpChance = Math.max(0, 75 - newCondition);
-      if (bumpChance > 0 && random.nextInt(100) < bumpChance) {
+      if (!bumpedIds.contains(wrestler.getId())
+          && bumpChance > 0
+          && random.nextInt(100) < bumpChance) {
         log.info(
             "Wear-and-tear bump triggered for {} (condition: {}%, chance: {}%)",
             wrestler.getName(), newCondition, bumpChance);
