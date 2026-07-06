@@ -144,6 +144,56 @@ class ShowPlanningPromptBuilderTest {
     assertTrue(prompt.contains("Feudoverride:system"));
   }
 
+  @Test
+  void testInjuredWrestlerExcludedFromPrompt() {
+    // The upstream filter removes injured wrestlers before building the context.
+    // Verify that a wrestler absent from fullRoster does not appear in the prompt.
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowPlanningRosterEntryDTO healthy = new ShowPlanningRosterEntryDTO();
+    healthy.setId(1L);
+    healthy.setName("Healthy Wrestler");
+    healthy.setInjured(false);
+    ctx.setFullRoster(List.of(healthy));
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(prompt.contains("Injured Wrestler"), "Absent injured wrestler must not appear");
+    assertTrue(prompt.contains("Healthy Wrestler"), "Healthy wrestler must appear");
+  }
+
+  @Test
+  void testLowConditionWrestlerExcludedFromPrompt() {
+    // The upstream filter removes low-condition wrestlers before building the context.
+    // Verify that only the healthy wrestler (above threshold) appears in the roster section.
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowPlanningRosterEntryDTO healthy = new ShowPlanningRosterEntryDTO();
+    healthy.setId(2L);
+    healthy.setName("Top Condition Wrestler");
+    healthy.setInjured(false);
+    ctx.setFullRoster(List.of(healthy));
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(
+        prompt.contains("Low Condition Wrestler"), "Absent low-condition wrestler must not appear");
+    assertTrue(prompt.contains("Top Condition Wrestler"), "Full-health wrestler must appear");
+  }
+
+  @Test
+  void testHealthyWrestlerIncludedInPrompt() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();
+    wrestler.setId(3L);
+    wrestler.setName("Roman Reigns");
+    wrestler.setInjured(false);
+    ctx.setFullRoster(List.of(wrestler));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Roman Reigns"), "Healthy wrestler must appear in roster section");
+    assertTrue(prompt.contains("Injured: false"), "Injured flag must be rendered as false");
+  }
+
   private ShowPlanningContextDTO contextWithTemplate(int matches, int promos) {
     ShowPlanningContextDTO ctx = new ShowPlanningContextDTO();
     ShowTemplate template = new ShowTemplate();

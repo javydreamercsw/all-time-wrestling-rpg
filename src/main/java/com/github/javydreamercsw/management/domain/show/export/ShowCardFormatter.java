@@ -18,7 +18,10 @@ package com.github.javydreamercsw.management.domain.show.export;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Interface for formatting a show card for export. */
 public interface ShowCardFormatter {
@@ -54,5 +57,32 @@ public interface ShowCardFormatter {
    */
   default int getPriority() {
     return 100;
+  }
+
+  /**
+   * Format the participants of a segment respecting team groupings.
+   *
+   * <p>Within each team names are joined with ", " and " &amp;" before the last member (e.g.
+   * "Alpha, Beta &amp; Gamma"). Teams are separated by " vs. ". A single-member team is rendered as
+   * just the wrestler's name, so standard singles and multi-person matches continue to display as
+   * "A vs. B vs. C".
+   */
+  static String formatParticipants(Segment segment) {
+    Map<Integer, List<Wrestler>> byTeam = segment.getWrestlersByTeam();
+    if (byTeam.isEmpty()) {
+      return "";
+    }
+    return byTeam.values().stream()
+        .map(
+            wrestlers -> {
+              if (wrestlers.size() == 1) {
+                return wrestlers.get(0).getName();
+              }
+              String joined =
+                  wrestlers.stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+              int lastComma = joined.lastIndexOf(", ");
+              return joined.substring(0, lastComma) + " & " + joined.substring(lastComma + 2);
+            })
+        .collect(Collectors.joining(" vs. "));
   }
 }
