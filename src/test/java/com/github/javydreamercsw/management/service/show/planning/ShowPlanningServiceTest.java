@@ -41,6 +41,9 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -85,6 +88,8 @@ class ShowPlanningServiceTest {
   @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
   @Mock private TitleReignRepository titleReignRepository;
   @Mock private Clock clock;
+  @Mock private InjuryService injuryService;
+  @Mock private GameSettingService gameSettingService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
@@ -94,6 +99,14 @@ class ShowPlanningServiceTest {
   @BeforeEach
   public void setUp() {
     MockitoAnnotations.openMocks(this);
+
+    lenient().when(gameSettingService.getConditionRestThreshold()).thenReturn(0);
+    lenient()
+        .when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(List.of());
+    WrestlerState healthyState = new WrestlerState();
+    healthyState.setPhysicalCondition(100);
+    lenient().when(wrestlerService.getOrCreateState(anyLong(), anyLong())).thenReturn(healthyState);
 
     // Setup basic date handling
     LocalDate today = LocalDate.of(2025, 1, 1);
