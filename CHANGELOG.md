@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.5.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.5.1) (2026-07-05)
+## [v2.5.1](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.5.1) (2026-07-03)
 
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.5.0...v2.5.1)
 
