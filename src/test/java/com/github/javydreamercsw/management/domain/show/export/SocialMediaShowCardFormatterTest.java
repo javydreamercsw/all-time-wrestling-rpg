@@ -30,6 +30,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +59,8 @@ class SocialMediaShowCardFormatterTest {
     when(w2.getName()).thenReturn("The Rock");
 
     when(segment.getWrestlers()).thenReturn(Arrays.asList(w1, w2));
+    when(segment.getWrestlersByTeam())
+        .thenReturn(new TreeMap<>(Map.of(1, List.of(w1), 2, List.of(w2))));
     when(segment.getIsTitleSegment()).thenReturn(true);
     when(segment.getSummary()).thenReturn("A brutal battle for the gold.");
     when(segment.isMainEvent()).thenReturn(true);

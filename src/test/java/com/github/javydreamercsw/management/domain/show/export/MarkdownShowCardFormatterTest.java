@@ -30,7 +30,9 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 
 class MarkdownShowCardFormatterTest {
@@ -58,6 +60,8 @@ class MarkdownShowCardFormatterTest {
     when(w2.getName()).thenReturn("Wrestler 2");
 
     when(segment.getWrestlers()).thenReturn(Arrays.asList(w1, w2));
+    TreeMap<Integer, List<Wrestler>> byTeam = new TreeMap<>(Map.of(1, List.of(w1), 2, List.of(w2)));
+    when(segment.getWrestlersByTeam()).thenReturn(byTeam);
     when(segment.getSegmentRulesAsString()).thenReturn("No DQ");
     when(segment.hasSegmentRules()).thenReturn(true);
     when(segment.getIsTitleSegment()).thenReturn(true);
@@ -103,6 +107,8 @@ class MarkdownShowCardFormatterTest {
     Wrestler w2 = mock(Wrestler.class);
     when(w2.getName()).thenReturn("Challenger");
     when(segment.getWrestlers()).thenReturn(List.of(w1, w2));
+    when(segment.getWrestlersByTeam())
+        .thenReturn(new TreeMap<>(Map.of(1, List.of(w1), 2, List.of(w2))));
 
     String result = formatter.format(show, List.of(segment), false, false, false);
 
@@ -136,6 +142,7 @@ class MarkdownShowCardFormatterTest {
     Wrestler w1 = mock(Wrestler.class);
     when(w1.getName()).thenReturn("A");
     when(segment.getWrestlers()).thenReturn(List.of(w1));
+    when(segment.getWrestlersByTeam()).thenReturn(new TreeMap<>(Map.of(1, List.of(w1))));
 
     String result = formatter.format(show, List.of(segment), false, false, false);
 
@@ -167,6 +174,45 @@ class MarkdownShowCardFormatterTest {
   }
 
   @Test
+  void testTagTeamParticipantsGroupedByTeam() {
+    MarkdownShowCardFormatter formatter = new MarkdownShowCardFormatter();
+
+    Show show = mock(Show.class);
+    when(show.getName()).thenReturn("Tag Show");
+    when(show.getShowDate()).thenReturn(null);
+    when(show.getArena()).thenReturn(null);
+
+    Segment segment = mock(Segment.class);
+    SegmentType type = mock(SegmentType.class);
+    when(type.getName()).thenReturn("Tag Team");
+    when(segment.getSegmentType()).thenReturn(type);
+    when(segment.isMainEvent()).thenReturn(false);
+    when(segment.getIsTitleSegment()).thenReturn(false);
+    when(segment.hasSegmentRules()).thenReturn(false);
+    when(segment.getSummary()).thenReturn(null);
+    when(segment.getNarration()).thenReturn(null);
+    when(segment.getWinners()).thenReturn(Collections.emptyList());
+
+    Wrestler w1 = mock(Wrestler.class);
+    when(w1.getName()).thenReturn("Alpha");
+    Wrestler w2 = mock(Wrestler.class);
+    when(w2.getName()).thenReturn("Beta");
+    Wrestler w3 = mock(Wrestler.class);
+    when(w3.getName()).thenReturn("Gamma");
+    Wrestler w4 = mock(Wrestler.class);
+    when(w4.getName()).thenReturn("Delta");
+
+    TreeMap<Integer, List<Wrestler>> byTeam = new TreeMap<>();
+    byTeam.put(1, List.of(w1, w2));
+    byTeam.put(2, List.of(w3, w4));
+    when(segment.getWrestlersByTeam()).thenReturn(byTeam);
+
+    String result = formatter.format(show, List.of(segment), false, false, false);
+
+    assertTrue(result.contains("Alpha & Beta vs. Gamma & Delta"), result);
+  }
+
+  @Test
   void testFormatWithMainEventAndNarration() {
     MarkdownShowCardFormatter formatter = new MarkdownShowCardFormatter();
 
@@ -190,6 +236,8 @@ class MarkdownShowCardFormatterTest {
     Wrestler w2 = mock(Wrestler.class);
     when(w2.getName()).thenReturn("Mankind");
     when(segment.getWrestlers()).thenReturn(Arrays.asList(w1, w2));
+    when(segment.getWrestlersByTeam())
+        .thenReturn(new TreeMap<>(Map.of(1, List.of(w1), 2, List.of(w2))));
     when(segment.getWinners()).thenReturn(Collections.emptyList());
 
     List<Segment> segments = Collections.singletonList(segment);
@@ -221,6 +269,11 @@ class MarkdownShowCardFormatterTest {
                 })
             .toList();
     when(segment.getWrestlers()).thenReturn(wrestlers);
+    TreeMap<Integer, List<Wrestler>> byTeam = new TreeMap<>();
+    for (int i = 0; i < wrestlers.size(); i++) {
+      byTeam.put(i + 1, List.of(wrestlers.get(i)));
+    }
+    when(segment.getWrestlersByTeam()).thenReturn(byTeam);
     return segment;
   }
 }

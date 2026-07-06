@@ -83,10 +83,7 @@ public class MarkdownShowCardFormatter implements ShowCardFormatter {
         }
       }
 
-      String participants =
-          segment.getWrestlers().stream()
-              .map(Wrestler::getName)
-              .collect(Collectors.joining(" vs. "));
+      String participants = ShowCardFormatter.formatParticipants(segment);
 
       sb.append(participants).append("\n");
 
