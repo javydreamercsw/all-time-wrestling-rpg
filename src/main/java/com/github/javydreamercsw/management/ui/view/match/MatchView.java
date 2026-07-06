@@ -617,8 +617,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     .filter(w -> w != null && !w.equals(playerWrestler))
                     .forEach(
                         opponent ->
-                            opponent
-                                .getDefaultState()
+                            wrestlerService
+                                .findByIdWithDetails(opponent.getId())
+                                .flatMap(Wrestler::getDefaultState)
                                 .map(WrestlerState::getManager)
                                 .flatMap(
                                     manager ->
