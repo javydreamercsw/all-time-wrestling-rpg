@@ -1029,7 +1029,9 @@ public class SegmentAdjudicationService {
         int startingHealth = wrestler.getStartingHealth();
         int endHealth = reportedHealth.get(wrestler.getId());
         int rawLoss = startingHealth > 0 ? (startingHealth - endHealth) * 100 / startingHealth : 0;
-        effectiveLoss = Math.max(0, rawLoss);
+        // Scale HP% loss to condition loss: 100% HP loss ≈ 10 pts, capped at 15 pts per match.
+        // Keeps condition on the same slow-decay scale as the NPC path (1–3 pts/match).
+        effectiveLoss = Math.min(15, Math.max(1, rawLoss / 10));
         log.info(
             "Using reported health for {}: starting={}, end={}, loss={}%",
             wrestler.getName(), startingHealth, endHealth, effectiveLoss);
