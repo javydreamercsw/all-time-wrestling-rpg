@@ -99,7 +99,29 @@ public class ShowTemplateService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "'all'")
   public List<ShowTemplate> findAll() {
+    return showTemplateRepository.findAllWithShowType().stream()
+        .filter(ShowTemplate::isActive)
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<ShowTemplate> findAllForAdmin() {
     return showTemplateRepository.findAllWithShowType();
+  }
+
+  @org.springframework.transaction.annotation.Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+      allEntries = true)
+  public void setActive(@NonNull final Long id, final boolean active) {
+    showTemplateRepository
+        .findById(id)
+        .ifPresent(
+            t -> {
+              t.setActive(active);
+              showTemplateRepository.save(t);
+            });
   }
 
   /**
@@ -151,7 +173,9 @@ public class ShowTemplateService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "'ple'")
   public List<ShowTemplate> getPremiumLiveEventTemplates() {
-    return showTemplateRepository.findPremiumLiveEventTemplates();
+    return showTemplateRepository.findPremiumLiveEventTemplates().stream()
+        .filter(ShowTemplate::isActive)
+        .collect(java.util.stream.Collectors.toList());
   }
 
   /**
@@ -164,7 +188,9 @@ public class ShowTemplateService {
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "'weekly'")
   public List<ShowTemplate> getWeeklyShowTemplates() {
-    return showTemplateRepository.findWeeklyShowTemplates();
+    return showTemplateRepository.findWeeklyShowTemplates().stream()
+        .filter(ShowTemplate::isActive)
+        .collect(java.util.stream.Collectors.toList());
   }
 
   /**

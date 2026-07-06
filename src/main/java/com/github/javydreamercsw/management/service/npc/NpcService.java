@@ -100,6 +100,7 @@ public class NpcService {
   public List<Npc> findAllByType(final String npcType) {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAllByNpcType(npcType).stream()
+        .filter(Npc::isActive)
         .filter(
             npc ->
                 npc.getExpansionCode() == null
@@ -108,22 +109,30 @@ public class NpcService {
   }
 
   /**
-   * Returns all NPCs of a given type without expansion filtering. Safe to call from background
-   * threads.
+   * Returns active NPCs of a given type without expansion filtering. Safe to call from background
+   * threads (e.g. NarrationDialog async load).
    */
   public List<Npc> findAllByTypeUnfiltered(final String npcType) {
     return npcRepository.findAllByNpcType(npcType).stream()
+        .filter(Npc::isActive)
         .sorted(Comparator.comparing(Npc::getName))
         .collect(Collectors.toList());
   }
 
-  /** Returns all NPCs without expansion filtering. Safe to call from background threads. */
+  /**
+   * Returns all NPCs without any filtering. Used by DataInitializer for seeding dirty-checks — must
+   * include inactive so disabled NPCs are not re-created.
+   */
   public List<Npc> findAllUnfiltered() {
     return npcRepository.findAll().stream()
         .sorted(Comparator.comparing(Npc::getName))
         .collect(Collectors.toList());
   }
 
+  /**
+   * Returns all NPCs including inactive ones, filtered only by enabled expansions. Use this in
+   * admin list views where managers need to see and re-enable disabled NPCs.
+   */
   public List<Npc> findAllIncludingInactive() {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAll().stream()
@@ -131,6 +140,7 @@ public class NpcService {
             npc ->
                 npc.getExpansionCode() == null
                     || enabledExpansions.contains(npc.getExpansionCode()))
+        .sorted(Comparator.comparing(Npc::getName))
         .collect(Collectors.toList());
   }
 
@@ -138,6 +148,7 @@ public class NpcService {
   public List<Npc> findAll() {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return npcRepository.findAll().stream()
+        .filter(Npc::isActive)
         .filter(
             npc ->
                 npc.getExpansionCode() == null
@@ -176,6 +187,18 @@ public class NpcService {
         "Universe {} expansion '{}' toggled, evicting NPC cache.",
         event.getUniverseId(),
         event.getExpansionCode());
+  }
+
+  @Transactional
+  @CacheEvict(value = NPCS_CACHE, allEntries = true)
+  public void setActive(final Long id, final boolean active) {
+    npcRepository
+        .findById(id)
+        .ifPresent(
+            npc -> {
+              npc.setActive(active);
+              npcRepository.save(npc);
+            });
   }
 
   public void delete(final Npc npc) {

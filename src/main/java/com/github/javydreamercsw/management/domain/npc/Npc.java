@@ -75,6 +75,10 @@ public class Npc extends AbstractEntity<Long> {
   @Builder.Default
   private AlignmentType alignment = AlignmentType.NEUTRAL;
 
+  @Column(name = "is_active", nullable = false)
+  @Builder.Default
+  private boolean isActive = true;
+
   @jakarta.persistence.Convert(converter = NpcAttributesConverter.class)
   @Column(columnDefinition = "TEXT")
   @Builder.Default

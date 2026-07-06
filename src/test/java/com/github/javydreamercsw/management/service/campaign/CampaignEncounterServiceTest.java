@@ -36,19 +36,25 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -72,6 +78,10 @@ class CampaignEncounterServiceTest {
   @Mock
   private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
 
+  @Mock private InjuryService injuryService;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private GameSettingService gameSettingService;
+
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @InjectMocks private CampaignEncounterService encounterService;
@@ -93,7 +103,10 @@ class CampaignEncounterServiceTest {
             commentatorRepository,
             objectMapper,
             featureDataService,
-            expansionService);
+            expansionService,
+            injuryService,
+            wrestlerService,
+            gameSettingService);
 
     Wrestler wrestler = new Wrestler();
     wrestler.setName("Test Wrestler");
@@ -444,6 +457,55 @@ class CampaignEncounterServiceTest {
     encounterService.recordEncounterChoice(campaign, choice);
 
     org.mockito.Mockito.verifyNoInteractions(storylineDirectorService);
+  }
+
+  @Test
+  void testInjuredWrestlerExcludedFromOpponentRoster() {
+    Wrestler npc = new Wrestler();
+    npc.setName("Kurt Angle");
+    npc.setId(99L);
+    npc.setActive(true);
+    when(wrestlerRepository.findAll()).thenReturn(List.of(npc));
+    when(expansionService.isExpansionEnabled(any())).thenReturn(true);
+    when(gameSettingService.getConditionRestThreshold()).thenReturn(75);
+    when(injuryService.getAllInjuriesForWrestler(eq(99L), any())).thenReturn(List.of(new Injury()));
+    when(campaignService.getCurrentChapter(campaign)).thenReturn(Optional.of(chapter));
+    when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
+        .thenReturn(new ArrayList<>());
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    when(aiFactory.generateText(promptCaptor.capture()))
+        .thenReturn(
+            "{\"narrative\":\"x\",\"choices\":[{\"text\":\"c\",\"label\":\"BTN\",\"nextPhase\":\"PROMO\"}]}");
+
+    encounterService.generateEncounter(campaign);
+
+    assertThat(promptCaptor.getValue()).doesNotContain("Kurt Angle");
+  }
+
+  @Test
+  void testLowConditionWrestlerExcludedFromOpponentRoster() {
+    Wrestler npc = new Wrestler();
+    npc.setName("Jeff Hardy");
+    npc.setId(98L);
+    npc.setActive(true);
+    WrestlerState lowState = new WrestlerState();
+    lowState.setPhysicalCondition(40);
+    when(wrestlerRepository.findAll()).thenReturn(List.of(npc));
+    when(expansionService.isExpansionEnabled(any())).thenReturn(true);
+    when(gameSettingService.getConditionRestThreshold()).thenReturn(75);
+    when(injuryService.getAllInjuriesForWrestler(eq(98L), any())).thenReturn(List.of());
+    when(wrestlerService.getOrCreateState(eq(98L), any())).thenReturn(lowState);
+    when(campaignService.getCurrentChapter(campaign)).thenReturn(Optional.of(chapter));
+    when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
+        .thenReturn(new ArrayList<>());
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    when(aiFactory.generateText(promptCaptor.capture()))
+        .thenReturn(
+            "{\"narrative\":\"x\",\"choices\":[{\"text\":\"c\",\"label\":\"BTN\",\"nextPhase\":\"PROMO\"}]}");
+
+    encounterService.generateEncounter(campaign);
+
+    assertThat(promptCaptor.getValue()).doesNotContain("Jeff Hardy");
   }
 
   @Test

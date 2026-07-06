@@ -159,6 +159,18 @@ public class SeasonService {
     return seasonRepository.saveAndFlush(season);
   }
 
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void setActive(final Long id, final boolean active) {
+    seasonRepository
+        .findById(id)
+        .ifPresent(
+            season -> {
+              season.setIsActive(active);
+              seasonRepository.saveAndFlush(season);
+            });
+  }
+
   /** Get all seasons with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")

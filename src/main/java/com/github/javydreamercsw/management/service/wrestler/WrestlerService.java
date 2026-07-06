@@ -138,6 +138,21 @@ public class WrestlerService {
   @CacheEvict(
       value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
       allEntries = true)
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void setActive(final Long id, final boolean active) {
+    wrestlerRepository
+        .findById(id)
+        .ifPresent(
+            wrestler -> {
+              wrestler.setActive(active);
+              wrestlerRepository.save(wrestler);
+            });
+  }
+
+  @Transactional
+  @CacheEvict(
+      value = {CacheConfig.WRESTLERS_CACHE, CacheConfig.WRESTLER_STATS_CACHE},
+      allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public void delete(@NonNull final Long id) {
     wrestlerRepository.deleteById(id);
@@ -653,6 +668,25 @@ public class WrestlerService {
   public Optional<WrestlerState> healChance(
       @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     return healChance(wrestlerId, universeId, new DiceBag(6));
+  }
+
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
+        @CacheEvict(
+            value = CacheConfig.WRESTLER_STATS_CACHE,
+            key = "#wrestlerId + ':' + #universeId")
+      })
+  @Transactional
+  public Optional<WrestlerState> recoverCondition(
+      @NonNull final Long wrestlerId, @NonNull final Long universeId, final int amount) {
+    WrestlerState state = getOrCreateState(wrestlerId, universeId);
+    int recovered = Math.min(100, state.getPhysicalCondition() + amount);
+    state.setPhysicalCondition(recovered);
+    log.debug(
+        "Recovered condition for wrestler {} in universe {} by {}% (new: {}%)",
+        wrestlerId, universeId, amount, recovered);
+    return Optional.of(wrestlerStateRepository.save(state));
   }
 
   /**

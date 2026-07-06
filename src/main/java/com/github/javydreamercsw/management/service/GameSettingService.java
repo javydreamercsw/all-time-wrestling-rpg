@@ -63,6 +63,7 @@ public class GameSettingService {
   public static final String RIVALRY_HEAT_DECAY_INTERVAL_DAYS_KEY =
       "rivalry_heat_decay_interval_days";
   public static final String RIVALRY_RESOLUTION_MIN_HEAT_KEY = "rivalry_resolution_min_heat";
+  public static final String CONDITION_REST_THRESHOLD_KEY = "condition_rest_threshold";
 
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
@@ -336,6 +337,17 @@ public class GameSettingService {
   @Transactional
   public void setRivalryResolutionMinHeat(final int minHeat) {
     saveInternal(RIVALRY_RESOLUTION_MIN_HEAT_KEY, String.valueOf(minHeat));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getConditionRestThreshold() {
+    return resolveValue(CONDITION_REST_THRESHOLD_KEY).map(Integer::parseInt).orElse(75);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setConditionRestThreshold(final int threshold) {
+    saveInternal(CONDITION_REST_THRESHOLD_KEY, String.valueOf(threshold));
   }
 
   // ── Generic access (used by AiSettingsService and other consumers) ────────

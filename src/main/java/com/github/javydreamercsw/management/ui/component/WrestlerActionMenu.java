@@ -129,6 +129,21 @@ public class WrestlerActionMenu extends MenuBar {
     editItem.setId("edit-" + wrestler.getId());
     editItem.setVisible(securityUtils.canEdit(wrestler));
 
+    boolean wrestlerActive = Boolean.TRUE.equals(wrestler.getActive());
+    String toggleLabel = wrestlerActive ? "Disable" : "Enable";
+    MenuItem toggleActiveItem =
+        subMenu.addItem(
+            toggleLabel,
+            e -> {
+              wrestlerService.setActive(
+                  wrestler.getId(), !Boolean.TRUE.equals(wrestler.getActive()));
+              refreshProvider.run();
+            });
+    toggleActiveItem.addComponentAsFirst(
+        new Icon(wrestlerActive ? VaadinIcon.EYE_SLASH : VaadinIcon.EYE));
+    toggleActiveItem.setId("toggle-active-" + wrestler.getId());
+    toggleActiveItem.setVisible(securityUtils.canEdit(wrestler));
+
     MenuItem deleteItem =
         subMenu.addItem(
             "Delete",

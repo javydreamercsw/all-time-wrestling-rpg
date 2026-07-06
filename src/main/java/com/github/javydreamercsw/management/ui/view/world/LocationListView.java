@@ -65,7 +65,8 @@ public class LocationListView extends Main {
     this.storageService = storageService;
     this.dataProvider =
         DataProvider.fromCallbacks(
-            query -> service.findAll().stream().skip(query.getOffset()).limit(query.getLimit()),
+            query ->
+                service.findAllForAdmin().stream().skip(query.getOffset()).limit(query.getLimit()),
             query -> (int) service.count());
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -87,7 +88,25 @@ public class LocationListView extends Main {
   private Component createGrid() {
     grid.setId("location-grid");
     grid.setDataProvider(dataProvider);
-    grid.addColumn(Location::getName).setHeader("Name").setSortable(true).setAutoWidth(true);
+    grid.addComponentColumn(
+            location -> {
+              HorizontalLayout nameLayout = new HorizontalLayout();
+              nameLayout.setAlignItems(
+                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setSpacing(false);
+              nameLayout.setPadding(false);
+              if (!location.isActive()) {
+                Icon inactiveIcon = VaadinIcon.EYE_SLASH.create();
+                inactiveIcon.setColor("var(--lumo-disabled-text-color)");
+                inactiveIcon.getStyle().set("margin-right", "6px");
+                nameLayout.add(inactiveIcon);
+              }
+              nameLayout.add(new com.vaadin.flow.component.html.Span(location.getName()));
+              return nameLayout;
+            })
+        .setHeader("Name")
+        .setSortable(true)
+        .setAutoWidth(true);
     grid.addColumn(Location::getDescription).setHeader("Description").setFlexGrow(1);
     grid.addComponentColumn(
             location -> {
@@ -122,12 +141,25 @@ public class LocationListView extends Main {
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     editButton.addClickListener(e -> editItem(location));
 
+    Icon toggleIcon =
+        location.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
+    toggleIcon.setColor(
+        location.isActive() ? "var(--lumo-success-color)" : "var(--lumo-disabled-text-color)");
+    Button toggleButton = new Button(toggleIcon);
+    toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    toggleButton.setTooltipText(location.isActive() ? "Deactivate" : "Activate");
+    toggleButton.addClickListener(
+        e -> {
+          service.setActive(location.getId(), !location.isActive());
+          listItems();
+        });
+
     Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
     deleteButton.setId("delete-location-" + location.getId());
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.addClickListener(e -> deleteItem(location));
 
-    return new HorizontalLayout(editButton, deleteButton);
+    return new HorizontalLayout(editButton, toggleButton, deleteButton);
   }
 
   private void deleteItem(final Location location) {

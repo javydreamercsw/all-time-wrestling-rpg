@@ -93,7 +93,26 @@ public class SegmentTypeListView extends Main {
     segmentTypeGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
     segmentTypeGrid.setSizeFull();
 
-    segmentTypeGrid.addColumn(SegmentType::getName).setHeader("Name").setSortable(true);
+    segmentTypeGrid
+        .addComponentColumn(
+            st -> {
+              HorizontalLayout nameLayout = new HorizontalLayout();
+              nameLayout.setAlignItems(
+                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setSpacing(false);
+              nameLayout.setPadding(false);
+              if (!st.isActive()) {
+                Icon inactiveIcon = VaadinIcon.EYE_SLASH.create();
+                inactiveIcon.setColor("var(--lumo-disabled-text-color)");
+                inactiveIcon.getStyle().set("margin-right", "6px");
+                nameLayout.add(inactiveIcon);
+              }
+              nameLayout.add(new com.vaadin.flow.component.html.Span(st.getName()));
+              return nameLayout;
+            })
+        .setHeader("Name")
+        .setComparator(java.util.Comparator.comparing(SegmentType::getName))
+        .setSortable(true);
     segmentTypeGrid
         .addColumn(SegmentType::getDescription)
         .setHeader("Description")
@@ -114,19 +133,33 @@ public class SegmentTypeListView extends Main {
     editButton.addClickListener(e -> openEditDialog(segmentType));
     editButton.setVisible(securityUtils.canEdit());
 
+    Icon toggleIcon =
+        segmentType.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
+    toggleIcon.setColor(
+        segmentType.isActive() ? "var(--lumo-success-color)" : "var(--lumo-disabled-text-color)");
+    Button toggleButton = new Button(toggleIcon);
+    toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    toggleButton.setTooltipText(segmentType.isActive() ? "Deactivate" : "Activate");
+    toggleButton.setVisible(securityUtils.canEdit());
+    toggleButton.addClickListener(
+        e -> {
+          segmentTypeService.setActive(segmentType.getId(), !segmentType.isActive());
+          refreshGrid();
+        });
+
     Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
     deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
     deleteButton.setTooltipText("Delete Segment Type");
     deleteButton.addClickListener(e -> confirmDelete(segmentType));
     deleteButton.setVisible(securityUtils.canDelete());
 
-    HorizontalLayout actions = new HorizontalLayout(editButton, deleteButton);
+    HorizontalLayout actions = new HorizontalLayout(editButton, toggleButton, deleteButton);
     actions.setSpacing(true);
     return actions;
   }
 
   private void refreshGrid() {
-    segmentTypeGrid.setItems(segmentTypeService.findAll());
+    segmentTypeGrid.setItems(segmentTypeService.findAllForAdmin());
   }
 
   private void openCreateDialog() {

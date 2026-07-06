@@ -16,8 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view.npc;
 
-import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest;
-
 import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
@@ -29,6 +27,8 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -71,18 +71,32 @@ public class NpcListView extends Main {
         new Button(
             "Create NPC",
             event -> {
-              new NpcFormDialog(
-                      npcService,
-                      storageService,
-                      new Npc(),
-                      () -> npcGrid.getDataProvider().refreshAll())
-                  .open();
+              new NpcFormDialog(npcService, storageService, new Npc(), () -> refreshGrid()).open();
             });
     createBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     createBtn.setVisible(securityUtils.canCreate());
 
-    npcGrid.setItems(query -> npcService.findAll(toSpringPageRequest(query)).stream());
-    npcGrid.addColumn(Npc::getName).setHeader("Name").setSortable(true);
+    refreshGrid();
+    npcGrid
+        .addComponentColumn(
+            npc -> {
+              HorizontalLayout nameLayout = new HorizontalLayout();
+              nameLayout.setAlignItems(
+                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setSpacing(false);
+              nameLayout.setPadding(false);
+              if (!npc.isActive()) {
+                Icon inactiveIcon = VaadinIcon.EYE_SLASH.create();
+                inactiveIcon.setColor("var(--lumo-disabled-text-color)");
+                inactiveIcon.getStyle().set("margin-right", "6px");
+                nameLayout.add(inactiveIcon);
+              }
+              nameLayout.add(new com.vaadin.flow.component.html.Span(npc.getName()));
+              return nameLayout;
+            })
+        .setHeader("Name")
+        .setComparator(java.util.Comparator.comparing(Npc::getName))
+        .setSortable(true);
     npcGrid.addColumn(Npc::getNpcType).setHeader("Type").setSortable(true);
 
     npcGrid
@@ -115,15 +129,28 @@ public class NpcListView extends Main {
               Button editButton = new Button("Edit");
               editButton.addClickListener(
                   e -> {
-                    new NpcFormDialog(
-                            npcService,
-                            storageService,
-                            npc,
-                            () -> npcGrid.getDataProvider().refreshAll())
-                        .open();
+                    new NpcFormDialog(npcService, storageService, npc, () -> refreshGrid()).open();
                   });
               editButton.setVisible(securityUtils.canEdit());
               buttons.add(editButton);
+
+              if (securityUtils.canEdit()) {
+                Icon toggleIcon =
+                    npc.isActive() ? VaadinIcon.EYE.create() : VaadinIcon.EYE_SLASH.create();
+                toggleIcon.setColor(
+                    npc.isActive()
+                        ? "var(--lumo-success-color)"
+                        : "var(--lumo-disabled-text-color)");
+                Button toggleButton = new Button(toggleIcon);
+                toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+                toggleButton.setTooltipText(npc.isActive() ? "Deactivate" : "Activate");
+                toggleButton.addClickListener(
+                    e -> {
+                      npcService.setActive(npc.getId(), !npc.isActive());
+                      refreshGrid();
+                    });
+                buttons.add(toggleButton);
+              }
 
               Button generateImageButton = new Button("Generate Image");
               generateImageButton.setId("generate-image-btn-" + npc.getId());
@@ -153,7 +180,7 @@ public class NpcListView extends Main {
               deleteButton.addClickListener(
                   e -> {
                     npcService.delete(npc);
-                    npcGrid.getDataProvider().refreshAll();
+                    refreshGrid();
                     Notification.show("NPC deleted", 2000, Notification.Position.BOTTOM_END)
                         .addThemeVariants(NotificationVariant.LUMO_ERROR);
                   });
@@ -174,5 +201,9 @@ public class NpcListView extends Main {
 
     add(new ViewToolbar("NPC List", ViewToolbar.group(createBtn)));
     add(npcGrid);
+  }
+
+  private void refreshGrid() {
+    npcGrid.setItems(npcService.findAllIncludingInactive());
   }
 }

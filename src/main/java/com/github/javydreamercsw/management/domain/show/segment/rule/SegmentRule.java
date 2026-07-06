@@ -85,6 +85,9 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "rules_hash", length = 64)
   @Nullable private String guideHash;
 
+  @Column(name = "is_active", nullable = false)
+  private boolean isActive = true;
+
   /** Ensure default values before persisting. */
   @PrePersist
   private void ensureDefaults() {

@@ -29,6 +29,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -161,13 +162,33 @@ public class SeasonListView extends Main {
               editBtn.addClickListener(e -> openEditDialog(season));
               editBtn.setVisible(securityUtils.canEdit());
 
+              Icon toggleIcon =
+                  Boolean.TRUE.equals(season.getIsActive())
+                      ? VaadinIcon.EYE.create()
+                      : VaadinIcon.EYE_SLASH.create();
+              toggleIcon.setColor(
+                  Boolean.TRUE.equals(season.getIsActive())
+                      ? "var(--lumo-success-color)"
+                      : "var(--lumo-disabled-text-color)");
+              Button toggleBtn = new Button(toggleIcon);
+              toggleBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+              toggleBtn.setTooltipText(
+                  Boolean.TRUE.equals(season.getIsActive()) ? "Deactivate" : "Activate");
+              toggleBtn.setVisible(securityUtils.canEdit());
+              toggleBtn.addClickListener(
+                  e -> {
+                    seasonService.setActive(
+                        season.getId(), !Boolean.TRUE.equals(season.getIsActive()));
+                    updateGrid();
+                  });
+
               Button deleteBtn = new Button("Delete", VaadinIcon.TRASH.create());
               deleteBtn.addThemeVariants(
                   ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
               deleteBtn.addClickListener(e -> deleteSeason(season));
               deleteBtn.setVisible(securityUtils.canDelete());
 
-              return new HorizontalLayout(editBtn, deleteBtn);
+              return new HorizontalLayout(editBtn, toggleBtn, deleteBtn);
             })
         .setHeader("Actions")
         .setFlexGrow(0);

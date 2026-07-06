@@ -555,6 +555,7 @@ public class ShowService {
               resting -> {
                 Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : 1L;
                 wrestlerService.healChance(resting.getId(), universeId);
+                wrestlerService.recoverCondition(resting.getId(), universeId, 5);
               });
     }
 

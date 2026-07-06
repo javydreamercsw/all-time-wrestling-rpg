@@ -264,7 +264,22 @@ public class FactionListView extends VerticalLayout {
           deleteButton.setVisible(securityUtils.canDelete());
           deleteButton.setId("delete-" + faction.getId());
 
-          actions.add(editButton, membersButton, deleteButton);
+          Icon toggleIcon =
+              faction.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
+          toggleIcon.setColor(
+              faction.isActive() ? "var(--lumo-success-color)" : "var(--lumo-disabled-text-color)");
+          Button toggleButton = new Button(toggleIcon);
+          toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+          toggleButton.setTooltipText(faction.isActive() ? "Deactivate" : "Activate");
+          toggleButton.setVisible(securityUtils.canEdit());
+          toggleButton.setId("toggle-" + faction.getId());
+          toggleButton.addClickListener(
+              ev -> {
+                factionService.setActive(faction.getId(), !faction.isActive());
+                refreshGrid();
+              });
+
+          actions.add(editButton, membersButton, toggleButton, deleteButton);
           return actions;
         });
 
