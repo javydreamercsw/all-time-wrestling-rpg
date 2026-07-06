@@ -27,8 +27,11 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -73,6 +76,8 @@ public class ShowPlanningService {
   private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
   private final ApplicationEventPublisher eventPublisher;
   private final TitleReignRepository titleReignRepository;
+  private final InjuryService injuryService;
+  private final GameSettingService gameSettingService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -220,12 +225,15 @@ public class ShowPlanningService {
     }
     context.setChampionships(championships);
 
-    // Get all wrestlers
+    // Get all wrestlers, excluding injured/low-condition (they should rest)
+    Long universeId = show.getUniverse().getId();
+    int conditionThreshold = gameSettingService.getConditionRestThreshold();
     List<Wrestler> allWrestlers =
-        wrestlerService.findAllFiltered(
-            null, genderConstraint, show.getUniverse().getId(), null, null);
+        wrestlerService.findAllFiltered(null, genderConstraint, universeId, null, null).stream()
+            .filter(w -> !isUnavailable(w, universeId, conditionThreshold))
+            .collect(Collectors.toList());
 
-    log.debug("Found {} wrestlers in the roster", allWrestlers.size());
+    log.debug("Found {} available wrestlers in the roster", allWrestlers.size());
     context.setFullRoster(allWrestlers);
 
     // Get all factions, filtered by gender constraint
@@ -472,5 +480,14 @@ public class ShowPlanningService {
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
+  }
+
+  private boolean isUnavailable(
+      final Wrestler wrestler, final Long universeId, final int conditionThreshold) {
+    if (!injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()) {
+      return true;
+    }
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+    return state.getPhysicalCondition() < conditionThreshold;
   }
 }

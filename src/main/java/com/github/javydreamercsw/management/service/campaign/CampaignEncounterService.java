@@ -35,7 +35,10 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +64,9 @@ public class CampaignEncounterService {
   private final ObjectMapper objectMapper;
   private final FeatureDataService featureDataService;
   private final ExpansionService expansionService;
+  private final InjuryService injuryService;
+  private final WrestlerService wrestlerService;
+  private final GameSettingService gameSettingService;
 
   public CampaignEncounterService(
       final SegmentNarrationServiceFactory aiFactory,
@@ -73,7 +79,10 @@ public class CampaignEncounterService {
       final CommentatorRepository commentatorRepository,
       final ObjectMapper objectMapper,
       final FeatureDataService featureDataService,
-      final ExpansionService expansionService) {
+      final ExpansionService expansionService,
+      final InjuryService injuryService,
+      final WrestlerService wrestlerService,
+      final GameSettingService gameSettingService) {
     this.aiFactory = aiFactory;
     this.encounterRepository = encounterRepository;
     this.stateRepository = stateRepository;
@@ -85,6 +94,9 @@ public class CampaignEncounterService {
     this.objectMapper = objectMapper;
     this.featureDataService = featureDataService;
     this.expansionService = expansionService;
+    this.injuryService = injuryService;
+    this.wrestlerService = wrestlerService;
+    this.gameSettingService = gameSettingService;
   }
 
   @Transactional
@@ -303,12 +315,24 @@ public class CampaignEncounterService {
       sb.append("- Opponents: ").append(opponents).append("\n");
     }
 
-    // List available NPCs for the AI to pick from
+    // List available NPCs for the AI to pick from (exclude injured/worn wrestlers)
+    Long universeId =
+        campaign.getUniverse() != null
+            ? campaign.getUniverse().getId()
+            : campaign.getWrestler().getDefaultState().map(s -> s.getUniverse().getId()).orElse(1L);
+    int conditionThreshold = gameSettingService.getConditionRestThreshold();
     sb.append("\nAVAILABLE ROSTER (Possible Opponents/Participants):\n");
     wrestlerRepository.findAll().stream()
         .filter(w -> !w.getName().equals(campaign.getWrestler().getName()))
         .filter(w -> Boolean.TRUE.equals(w.getActive()))
         .filter(w -> expansionService.isExpansionEnabled(w.getExpansionCode()))
+        .filter(
+            w ->
+                injuryService.getAllInjuriesForWrestler(w.getId(), universeId).isEmpty()
+                    && wrestlerService
+                            .getOrCreateState(w.getId(), universeId)
+                            .getPhysicalCondition()
+                        >= conditionThreshold)
         .limit(20) // Don't overwhelm but give choice
         .forEach(
             w -> {

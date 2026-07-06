@@ -670,6 +670,25 @@ public class WrestlerService {
     return healChance(wrestlerId, universeId, new DiceBag(6));
   }
 
+  @org.springframework.cache.annotation.Caching(
+      evict = {
+        @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
+        @CacheEvict(
+            value = CacheConfig.WRESTLER_STATS_CACHE,
+            key = "#wrestlerId + ':' + #universeId")
+      })
+  @Transactional
+  public Optional<WrestlerState> recoverCondition(
+      @NonNull final Long wrestlerId, @NonNull final Long universeId, final int amount) {
+    WrestlerState state = getOrCreateState(wrestlerId, universeId);
+    int recovered = Math.min(100, state.getPhysicalCondition() + amount);
+    state.setPhysicalCondition(recovered);
+    log.debug(
+        "Recovered condition for wrestler {} in universe {} by {}% (new: {}%)",
+        wrestlerId, universeId, amount, recovered);
+    return Optional.of(wrestlerStateRepository.save(state));
+  }
+
   /**
    * Get all active wrestlers in a specific universe by their tier.
    *
