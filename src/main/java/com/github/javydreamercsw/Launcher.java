@@ -138,12 +138,17 @@ public final class Launcher {
 
   record ReleaseInfo(String version, String jarUrl) {}
 
-  private static ReleaseInfo fetchLatestRelease() {
+  private static String releasesApiUrl() {
+    String override = System.getProperty("atw.launcher.releases-api");
+    return override != null ? override : RELEASES_API;
+  }
+
+  static ReleaseInfo fetchLatestRelease() {
     try {
       HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
       HttpRequest req =
           HttpRequest.newBuilder()
-              .uri(URI.create(RELEASES_API))
+              .uri(URI.create(releasesApiUrl()))
               .header("Accept", "application/vnd.github+json")
               .header("User-Agent", "all-time-wrestling-rpg-launcher")
               .timeout(Duration.ofSeconds(15))
@@ -190,7 +195,7 @@ public final class Launcher {
   // Version comparison
   // -------------------------------------------------------------------------
 
-  private static boolean isNewer(final String candidate, final String current) {
+  static boolean isNewer(final String candidate, final String current) {
     try {
       int[] c = semver(candidate);
       int[] r = semver(current);
@@ -203,8 +208,11 @@ public final class Launcher {
     }
   }
 
-  private static int[] semver(final String v) {
+  static int[] semver(final String v) {
     String numeric = v.replaceAll("[^0-9.].*$", "");
+    if (numeric.isBlank()) {
+      throw new IllegalArgumentException("Unparseable version: " + v);
+    }
     String[] parts = numeric.split("\\.");
     int[] result = new int[3];
     for (int i = 0; i < 3 && i < parts.length; i++) {
@@ -217,7 +225,7 @@ public final class Launcher {
   // Download with safe swap
   // -------------------------------------------------------------------------
 
-  private static Path download(final ReleaseInfo release, final Path appDir, final Path oldJar) {
+  static Path download(final ReleaseInfo release, final Path appDir, final Path oldJar) {
     Path newJarName = appDir.resolve("all-time-wrestling-rpg-" + release.version() + ".jar");
     Path tmpPath = appDir.resolve("all-time-wrestling-rpg-" + release.version() + ".jar.tmp");
     Path oldBackup =
