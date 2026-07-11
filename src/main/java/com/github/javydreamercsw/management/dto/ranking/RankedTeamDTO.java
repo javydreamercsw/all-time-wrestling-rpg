@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.ranking;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,6 +31,7 @@ import lombok.Setter;
 public class RankedTeamDTO {
   private Long id;
   private String name;
+  private List<String> memberNames;
   private Long fans;
   private int rank;
 }

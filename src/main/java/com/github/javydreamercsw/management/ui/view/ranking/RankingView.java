@@ -148,7 +148,24 @@ public class RankingView extends Main {
                   return span;
                 }))
         .setHeader("Rank");
-    teamContendersGrid.addColumn(RankedTeamDTO::getName).setHeader("Name");
+    teamContendersGrid
+        .addColumn(
+            new ComponentRenderer<>(
+                team -> {
+                  VerticalLayout layout = new VerticalLayout();
+                  layout.setPadding(false);
+                  layout.setSpacing(false);
+                  layout.add(new Span(team.getName()));
+                  if (team.getMemberNames() != null && !team.getMemberNames().isEmpty()) {
+                    Span members = new Span(String.join(" & ", team.getMemberNames()));
+                    members.addClassNames(
+                        LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+                    layout.add(members);
+                  }
+                  return layout;
+                }))
+        .setHeader("Name")
+        .setComparator(Comparator.comparing(RankedTeamDTO::getName));
     teamContendersGrid.addColumn(RankedTeamDTO::getFans).setHeader("Fans");
     teamContendersGrid.setId("team-contenders-grid");
 
