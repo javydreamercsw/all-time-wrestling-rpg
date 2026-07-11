@@ -165,7 +165,7 @@ public final class Launcher {
       String version = tag != null && tag.startsWith("v") ? tag.substring(1) : tag;
       String jarUrl = findJarAssetUrl(body);
 
-      return (version != null && jarUrl != null) ? new ReleaseInfo(version, jarUrl) : null;
+      return version != null && jarUrl != null ? new ReleaseInfo(version, jarUrl) : null;
     } catch (Exception e) {
       System.err.println("[Launcher] Could not fetch release info: " + e.getMessage());
       return null;
@@ -200,7 +200,9 @@ public final class Launcher {
       int[] c = semver(candidate);
       int[] r = semver(current);
       for (int i = 0; i < 3; i++) {
-        if (c[i] != r[i]) return c[i] > r[i];
+        if (c[i] != r[i]) {
+          return c[i] > r[i];
+        }
       }
       return false;
     } catch (Exception e) {
@@ -254,7 +256,9 @@ public final class Launcher {
 
       // Validate it's a valid ZIP/JAR before swapping
       try (ZipFile zf = new ZipFile(tmpPath.toFile())) {
-        if (zf.size() == 0) throw new IOException("Empty ZIP");
+        if (zf.size() == 0) {
+          throw new IOException("Empty ZIP");
+        }
       } catch (IOException e) {
         System.err.println("[Launcher] Downloaded file is corrupt — aborting update.");
         Files.deleteIfExists(tmpPath);
@@ -331,7 +335,9 @@ public final class Launcher {
   // -------------------------------------------------------------------------
 
   private static void cleanStaleTmp(final Path dir) throws IOException {
-    if (!Files.exists(dir)) return;
+    if (!Files.exists(dir)) {
+      return;
+    }
     Instant cutoff = Instant.now().minus(STALE_TMP_THRESHOLD);
     Files.list(dir)
         .filter(p -> p.getFileName().toString().endsWith(".tmp"))
@@ -354,11 +360,15 @@ public final class Launcher {
   }
 
   private static void restoreBackupIfNeeded(final Path dir) throws IOException {
-    if (!Files.exists(dir)) return;
+    if (!Files.exists(dir)) {
+      return;
+    }
     // If a .old backup exists but no current JAR, restore it
     Optional<Path> backup =
         Files.list(dir).filter(p -> p.getFileName().toString().endsWith(".jar.old")).findFirst();
-    if (backup.isEmpty()) return;
+    if (backup.isEmpty()) {
+      return;
+    }
     Optional<Path> current = findCurrentJar(dir);
     if (current.isEmpty()) {
       String name = backup.get().getFileName().toString().replace(".old", "");
