@@ -58,16 +58,20 @@ public final class Launcher {
     restoreBackupIfNeeded(appDir);
 
     Path currentJar = findCurrentJar(appDir).orElse(null);
-    String currentVersion = currentJar == null ? null : extractVersion(currentJar.getFileName().toString());
+    String currentVersion =
+        currentJar == null ? null : extractVersion(currentJar.getFileName().toString());
 
     ReleaseInfo release = fetchLatestRelease();
 
     if (release == null) {
       if (currentJar == null) {
-        showError("Could not connect to GitHub to download the application.\nCheck your network and try again.");
+        showError(
+            "Could not connect to GitHub to download the application.\n"
+                + "Check your network and try again.");
         System.exit(1);
       }
-      System.out.println("[Launcher] Update check failed — launching existing version " + currentVersion);
+      System.out.println(
+          "[Launcher] Update check failed — launching existing version " + currentVersion);
       launchApp(currentJar, args);
       return;
     }
@@ -213,13 +217,11 @@ public final class Launcher {
   // Download with safe swap
   // -------------------------------------------------------------------------
 
-  private static Path download(
-      final ReleaseInfo release, final Path appDir, final Path oldJar) {
+  private static Path download(final ReleaseInfo release, final Path appDir, final Path oldJar) {
     Path newJarName = appDir.resolve("all-time-wrestling-rpg-" + release.version() + ".jar");
     Path tmpPath = appDir.resolve("all-time-wrestling-rpg-" + release.version() + ".jar.tmp");
-    Path oldBackup = oldJar != null
-        ? appDir.resolve(oldJar.getFileName().toString() + ".old")
-        : null;
+    Path oldBackup =
+        oldJar != null ? appDir.resolve(oldJar.getFileName().toString() + ".old") : null;
 
     System.out.println("[Launcher] Downloading v" + release.version() + "...");
     try {
@@ -262,7 +264,10 @@ public final class Launcher {
 
     } catch (Exception e) {
       System.err.println("[Launcher] Download error: " + e.getMessage());
-      try { Files.deleteIfExists(tmpPath); } catch (IOException ignored) {}
+      try {
+        Files.deleteIfExists(tmpPath);
+      } catch (IOException ignored) {
+      }
       return null;
     }
   }
@@ -272,11 +277,14 @@ public final class Launcher {
   // -------------------------------------------------------------------------
 
   private static void launchApp(final Path jar, final String[] extraArgs) throws Exception {
-    String java = ProcessHandle.current().info().command()
-        .orElse(Path.of(System.getProperty("java.home"), "bin", "java").toString());
+    String javaExe =
+        ProcessHandle.current()
+            .info()
+            .command()
+            .orElse(Path.of(System.getProperty("java.home"), "bin", "java").toString());
 
     List<String> cmd = new ArrayList<>();
-    cmd.add(java);
+    cmd.add(javaExe);
     cmd.add("-jar");
     cmd.add(jar.toAbsolutePath().toString());
     cmd.add("--atw.desktop.enabled=true");
@@ -293,11 +301,16 @@ public final class Launcher {
     // Wait up to 5 s to catch an immediate crash (bad JAR, wrong Java version, etc.)
     boolean exited = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
     if (exited && process.exitValue() != 0) {
-      System.err.println("[Launcher] Application exited immediately with code " + process.exitValue()
-          + " — restoring previous version if available.");
+      System.err.println(
+          "[Launcher] Application exited immediately with code "
+              + process.exitValue()
+              + " — restoring previous version if available.");
       restoreBackupIfNeeded(jar.getParent());
-      showError("The application failed to start (exit code " + process.exitValue() + ").\n"
-          + "The previous version has been restored. Please try again.");
+      showError(
+          "The application failed to start (exit code "
+              + process.exitValue()
+              + ").\n"
+              + "The previous version has been restored. Please try again.");
       System.exit(process.exitValue());
     }
 
@@ -314,19 +327,29 @@ public final class Launcher {
     Instant cutoff = Instant.now().minus(STALE_TMP_THRESHOLD);
     Files.list(dir)
         .filter(p -> p.getFileName().toString().endsWith(".tmp"))
-        .filter(p -> {
-          try { return Files.getLastModifiedTime(p).toInstant().isBefore(cutoff); }
-          catch (IOException e) { return false; }
-        })
-        .forEach(p -> { try { Files.delete(p); } catch (IOException e) { /* ignore */ } });
+        .filter(
+            p -> {
+              try {
+                return Files.getLastModifiedTime(p).toInstant().isBefore(cutoff);
+              } catch (IOException e) {
+                return false;
+              }
+            })
+        .forEach(
+            p -> {
+              try {
+                Files.delete(p);
+              } catch (IOException e) {
+                /* ignore */
+              }
+            });
   }
 
   private static void restoreBackupIfNeeded(final Path dir) throws IOException {
     if (!Files.exists(dir)) return;
     // If a .old backup exists but no current JAR, restore it
-    Optional<Path> backup = Files.list(dir)
-        .filter(p -> p.getFileName().toString().endsWith(".jar.old"))
-        .findFirst();
+    Optional<Path> backup =
+        Files.list(dir).filter(p -> p.getFileName().toString().endsWith(".jar.old")).findFirst();
     if (backup.isEmpty()) return;
     Optional<Path> current = findCurrentJar(dir);
     if (current.isEmpty()) {
@@ -350,12 +373,13 @@ public final class Launcher {
       return response != null && response.trim().equalsIgnoreCase("y");
     }
     // GUI prompt for desktop installs
-    int choice = JOptionPane.showConfirmDialog(
-        null,
-        "All Time Wrestling RPG v" + newVersion + " is available.\nDownload and apply update?",
-        "Update Available",
-        JOptionPane.YES_NO_OPTION,
-        JOptionPane.INFORMATION_MESSAGE);
+    int choice =
+        JOptionPane.showConfirmDialog(
+            null,
+            "All Time Wrestling RPG v" + newVersion + " is available.\nDownload and apply update?",
+            "Update Available",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.INFORMATION_MESSAGE);
     return choice == JOptionPane.YES_OPTION;
   }
 
@@ -363,7 +387,8 @@ public final class Launcher {
     System.err.println("[Launcher] " + message);
     try {
       JOptionPane.showMessageDialog(null, message, "Launcher Error", JOptionPane.ERROR_MESSAGE);
-    } catch (Exception ignored) {}
+    } catch (Exception ignored) {
+    }
   }
 
   private Launcher() {}

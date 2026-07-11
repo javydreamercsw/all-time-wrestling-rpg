@@ -1461,7 +1461,7 @@
                 <configuration>
                   <target>
                     <mkdir dir="${project.build.directory}/jpackage-input"/>
-                    <copy file="${project.build.directory}/atw-launcher-${project.version}.jar" tofile="${project.build.directory}/jpackage-input/atw-launcher-${project.version}.jar"/>
+                    <copy file="${project.build.directory}/${project.artifactId}-${project.version}-launcher.jar" tofile="${project.build.directory}/jpackage-input/atw-launcher-${project.version}.jar"/>
                   </target>
                 </configuration>
               </execution>
@@ -1543,25 +1543,6 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <version>3.6.1</version>
-            <executions>
-              <execution>
-                <id>add-launcher-source</id>
-                <goals>
-                  <goal>add-source</goal>
-                </goals>
-                <phase>generate-sources</phase>
-                <configuration>
-                  <sources>
-                    <source>src/launcher/java</source>
-                  </sources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-jar-plugin</artifactId>
             <executions>
@@ -1570,10 +1551,9 @@
                 <goals>
                   <goal>jar</goal>
                 </goals>
-                <phase>package</phase>
+                <phase>prepare-package</phase>
                 <configuration>
                   <classifier>launcher</classifier>
-                  <finalName>atw-launcher-${project.version}</finalName>
                   <includes>
                     <include>com/github/javydreamercsw/Launcher.class</include>
                   </includes>
@@ -1582,7 +1562,6 @@
                       <mainClass>com.github.javydreamercsw.Launcher</mainClass>
                     </manifest>
                   </archive>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
                 </configuration>
               </execution>
             </executions>
