@@ -391,6 +391,8 @@ public class ShowPlanningService {
           validation.getWarnings().size());
     }
 
+    validateNoDuplicateParticipants(proposedSegments);
+
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
     for (int i = 0; i < proposedSegments.size(); i++) {
@@ -480,6 +482,47 @@ public class ShowPlanningService {
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
+  }
+
+  private void validateNoDuplicateParticipants(final List<ProposedSegment> proposedSegments) {
+    for (int i = 0; i < proposedSegments.size(); i++) {
+      ProposedSegment ps = proposedSegments.get(i);
+      String segmentLabel = "segment " + (i + 1) + " (" + ps.getType() + ")";
+
+      if (ps.getTeamIds() != null && !ps.getTeamIds().isEmpty()) {
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        for (List<Long> team : ps.getTeamIds()) {
+          if (team == null) continue;
+          for (Long id : team) {
+            if (!seen.add(id)) {
+              String name =
+                  wrestlerRepository.findById(id).map(w -> w.getName()).orElse("ID " + id);
+              throw new IllegalArgumentException(
+                  "'"
+                      + name
+                      + "' appears in multiple teams in "
+                      + segmentLabel
+                      + ". Edit the segment and remove the duplicate before approving.");
+            }
+          }
+        }
+      } else if (ps.getTeams() != null && !ps.getTeams().isEmpty()) {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (List<String> team : ps.getTeams()) {
+          if (team == null) continue;
+          for (String name : team) {
+            if (!seen.add(name)) {
+              throw new IllegalArgumentException(
+                  "'"
+                      + name
+                      + "' appears in multiple teams in "
+                      + segmentLabel
+                      + ". Edit the segment and remove the duplicate before approving.");
+            }
+          }
+        }
+      }
+    }
   }
 
   private boolean isUnavailable(

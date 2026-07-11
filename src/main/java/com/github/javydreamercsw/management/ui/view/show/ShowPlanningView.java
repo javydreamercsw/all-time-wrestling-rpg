@@ -552,10 +552,32 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       showPlanningService.approveSegments(show, segments);
       notificationService.showSuccess("Segments created for " + show.getName());
       UI.getCurrent().navigate(ShowDetailView.class, show.getId());
+    } catch (IllegalArgumentException e) {
+      log.warn("Segment participant validation failed: {}", e.getMessage());
+      showParticipantErrorDialog(e.getMessage());
     } catch (Exception e) {
       log.error("Error approving planning", e);
       notificationService.showError("Failed to approve planning: " + e.getMessage());
     }
+  }
+
+  private void showParticipantErrorDialog(final String message) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Duplicate Participant");
+
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    content.add(new Paragraph(message));
+    content.add(
+        new Span(
+            "Click the edit (pencil) icon on the affected segment, "
+                + "then remove the wrestler from all but one team."));
+
+    Button closeButton = new Button("Close", e -> dialog.close());
+    closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    dialog.getFooter().add(closeButton);
+    dialog.add(content);
+    dialog.open();
   }
 
   @Override
