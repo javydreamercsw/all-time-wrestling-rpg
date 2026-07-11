@@ -275,8 +275,27 @@ public class TitleService {
     // Reload from DB so titleReigns lazy collection is accessible within the transaction.
     Title managed =
         title.getId() != null ? titleRepository.findById(title.getId()).orElse(title) : title;
-    managed.awardTitleTo(newChampions, Instant.now(clock), wonAtSegment);
+    managed.awardTitleTo(newChampions, awardDateFor(wonAtSegment), wonAtSegment);
     titleRepository.save(managed);
+  }
+
+  /**
+   * Resolves the in-game date a title change should be recorded on. Prefers the show's in-game date
+   * (kayfabe date) so reign history reflects the fictional timeline rather than the real-world
+   * moment a booker clicked "Adjudicate".
+   */
+  private Instant awardDateFor(
+      final com.github.javydreamercsw.management.domain.show.segment.Segment wonAtSegment) {
+    if (wonAtSegment != null
+        && wonAtSegment.getShow() != null
+        && wonAtSegment.getShow().getShowDate() != null) {
+      return wonAtSegment
+          .getShow()
+          .getShowDate()
+          .atStartOfDay(java.time.ZoneOffset.UTC)
+          .toInstant();
+    }
+    return Instant.now(clock);
   }
 
   @PreAuthorize(

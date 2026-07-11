@@ -422,6 +422,47 @@ class TitleServiceTest {
     verify(titleRepository).save(title);
   }
 
+  @Test
+  void awardTitleTo_withSegment_usesShowInGameDateNotClock() {
+    // Regression: title reign dates must reflect the show's in-game (kayfabe) date, not the
+    // real-world wall-clock time the adjudication happened to run.
+    List<Wrestler> champions = List.of(wrestler);
+
+    com.github.javydreamercsw.management.domain.show.Show show =
+        new com.github.javydreamercsw.management.domain.show.Show();
+    show.setShowDate(java.time.LocalDate.of(2020, 6, 15));
+
+    com.github.javydreamercsw.management.domain.show.segment.Segment segment =
+        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+    segment.setShow(show);
+
+    titleService.awardTitleTo(title, champions, segment);
+
+    Instant expectedDate =
+        java.time.LocalDate.of(2020, 6, 15).atStartOfDay(ZoneOffset.UTC).toInstant();
+    assertThat(title.getCurrentReign()).isPresent();
+    assertThat(title.getCurrentReign().get().getStartDate()).isEqualTo(expectedDate);
+  }
+
+  @Test
+  void awardTitleTo_withSegmentButNoShowDate_fallsBackToClock() {
+    List<Wrestler> champions = List.of(wrestler);
+
+    com.github.javydreamercsw.management.domain.show.Show show =
+        new com.github.javydreamercsw.management.domain.show.Show();
+    // showDate intentionally left null
+
+    com.github.javydreamercsw.management.domain.show.segment.Segment segment =
+        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+    segment.setShow(show);
+
+    titleService.awardTitleTo(title, champions, segment);
+
+    assertThat(title.getCurrentReign()).isPresent();
+    assertThat(title.getCurrentReign().get().getStartDate())
+        .isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+  }
+
   // =====================================================================
   // vacateTitle
   // =====================================================================
