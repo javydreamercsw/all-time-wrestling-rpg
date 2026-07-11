@@ -501,6 +501,45 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void approveSegments_withTeamIds_assignsCorrectTeamNumbers() {
+    Wrestler wrestlerA = new Wrestler();
+    wrestlerA.setId(10L);
+    wrestlerA.setName("Wrestler A");
+    Wrestler wrestlerB = new Wrestler();
+    wrestlerB.setId(20L);
+    wrestlerB.setName("Wrestler B");
+
+    ProposedSegment ps = new ProposedSegment();
+    ps.setType("Tag Match");
+    ps.setTeamIds(List.of(List.of(10L), List.of(20L)));
+    // teams intentionally null — simulates AI-generated proposals that use IDs
+
+    SegmentType tagMatch = new SegmentType();
+    tagMatch.setName("Tag Match");
+    when(segmentTypeService.findByName("Tag Match")).thenReturn(Optional.of(tagMatch));
+    when(wrestlerRepository.findById(10L)).thenReturn(Optional.of(wrestlerA));
+    when(wrestlerRepository.findById(20L)).thenReturn(Optional.of(wrestlerB));
+
+    showPlanningService.approveSegments(show, List.of(ps));
+
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    Segment saved = captor.getValue().get(0);
+
+    assertEquals(2, saved.getParticipants().size());
+    saved
+        .getParticipants()
+        .forEach(
+            p -> {
+              if ("Wrestler A".equals(p.getWrestler().getName())) {
+                assertEquals(1, p.getTeamNumber(), "Wrestler A must be on team 1");
+              } else if ("Wrestler B".equals(p.getWrestler().getName())) {
+                assertEquals(2, p.getTeamNumber(), "Wrestler B must be on team 2");
+              }
+            });
+  }
+
+  @Test
   void approveSegments_withStipulationRequiredViolation_throws() {
     // A rivalry on the card with heat >= 30 but no rules must still be a hard block
     Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 35);

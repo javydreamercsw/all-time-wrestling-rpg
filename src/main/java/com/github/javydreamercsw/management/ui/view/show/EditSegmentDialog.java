@@ -158,6 +158,20 @@ public class EditSegmentDialog extends Dialog {
           teams.put(i + 1, team);
         }
       }
+      if (teams.isEmpty() && proposed.getTeamIds() != null && !proposed.getTeamIds().isEmpty()) {
+        Map<Long, Wrestler> wrestlerById =
+            data.wrestlerByName().values().stream()
+                .filter(w -> w.getId() != null)
+                .collect(Collectors.toMap(Wrestler::getId, w -> w, (a, b) -> a));
+        for (int i = 0; i < proposed.getTeamIds().size(); i++) {
+          List<Wrestler> team =
+              proposed.getTeamIds().get(i).stream()
+                  .map(wrestlerById::get)
+                  .filter(java.util.Objects::nonNull)
+                  .collect(Collectors.toList());
+          teams.put(i + 1, team);
+        }
+      }
       if (teams.isEmpty()) {
         teams.put(1, new ArrayList<>());
         teams.put(2, new ArrayList<>());
@@ -633,6 +647,7 @@ public class EditSegmentDialog extends Dialog {
                           wrestlers.stream().map(Wrestler::getName).collect(Collectors.toList()))
                   .collect(Collectors.toList());
           segment.setTeams(teams);
+          segment.setTeamIds(null);
           segment.setWinners(
               saveData.winners().stream().map(Wrestler::getName).collect(Collectors.toList()));
           segment.setRules(
