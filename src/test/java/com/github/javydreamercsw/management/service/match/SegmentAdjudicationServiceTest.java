@@ -568,4 +568,93 @@ class SegmentAdjudicationServiceTest {
     verify(wrestlerService, never()).addBump(eq(10L), anyLong(), eq(BumpSource.RULE));
     verify(wrestlerService, times(2)).addBump(eq(10L), anyLong(), eq(BumpSource.WEAR_AND_TEAR));
   }
+
+  @Test
+  void applyTitleChange_tagTeamPartialPinfall_countsAsDefense() {
+    // Regression: when only one of two tag team champions is listed as winner (the partner who got
+    // the pin), the old containsAll check incorrectly triggered a title change. The fix uses
+    // anyMatch so that one champion winning is enough to count as a successful defense.
+    Wrestler champion1 = mock(Wrestler.class);
+    Wrestler champion2 = mock(Wrestler.class);
+    when(champion1.getId()).thenReturn(10L);
+    when(champion2.getId()).thenReturn(11L);
+    when(champion1.getState(anyLong())).thenReturn(Optional.empty());
+    when(champion2.getState(anyLong())).thenReturn(Optional.empty());
+    lenient()
+        .when(wrestlerService.getOrCreateState(eq(10L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+    lenient()
+        .when(wrestlerService.getOrCreateState(eq(11L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+
+    Wrestler challenger = mock(Wrestler.class);
+    when(challenger.getId()).thenReturn(12L);
+    when(challenger.getState(anyLong())).thenReturn(Optional.empty());
+    lenient()
+        .when(wrestlerService.getOrCreateState(eq(12L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+
+    Title title = mock(Title.class);
+    when(title.getCurrentChampions()).thenReturn(List.of(champion1, champion2));
+
+    when(segment.getIsTitleSegment()).thenReturn(Boolean.TRUE);
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    when(segment.getWrestlers()).thenReturn(List.of(champion1, champion2, challenger));
+    when(segment.getWinners()).thenReturn(List.of(champion1)); // only the pin-taker listed
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleService, never()).awardTitleTo(any(Title.class), any(), any());
+    verify(eventPublisher)
+        .publishEvent(
+            any(com.github.javydreamercsw.management.event.ChampionshipDefendedEvent.class));
+  }
+
+  @Test
+  void applyTitleChange_challengersWinTagTeamMatch_triggersNewReign() {
+    Wrestler champion1 = mock(Wrestler.class);
+    Wrestler champion2 = mock(Wrestler.class);
+    when(champion1.getId()).thenReturn(10L);
+    when(champion2.getId()).thenReturn(11L);
+    when(champion1.getState(anyLong())).thenReturn(Optional.empty());
+    when(champion2.getState(anyLong())).thenReturn(Optional.empty());
+    lenient()
+        .when(wrestlerService.getOrCreateState(eq(10L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+    lenient()
+        .when(wrestlerService.getOrCreateState(eq(11L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+
+    Wrestler challenger1 = mock(Wrestler.class);
+    Wrestler challenger2 = mock(Wrestler.class);
+    when(challenger1.getId()).thenReturn(12L);
+    when(challenger2.getId()).thenReturn(13L);
+    when(challenger1.getState(anyLong())).thenReturn(Optional.empty());
+    when(challenger2.getState(anyLong())).thenReturn(Optional.empty());
+    lenient()
+        .when(wrestlerService.getOrCreateState(eq(12L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+    lenient()
+        .when(wrestlerService.getOrCreateState(eq(13L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+
+    Title title = mock(Title.class);
+    when(title.getCurrentChampions()).thenReturn(List.of(champion1, champion2));
+
+    when(segment.getIsTitleSegment()).thenReturn(Boolean.TRUE);
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    when(segment.getWrestlers())
+        .thenReturn(List.of(champion1, champion2, challenger1, challenger2));
+    when(segment.getWinners()).thenReturn(List.of(challenger1, challenger2));
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleService)
+        .awardTitleTo(eq(title), eq(List.of(challenger1, challenger2)), eq(segment));
+    verify(eventPublisher)
+        .publishEvent(
+            any(com.github.javydreamercsw.management.event.ChampionshipChangeEvent.class));
+  }
 }
