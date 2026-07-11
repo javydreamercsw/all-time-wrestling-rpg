@@ -26,7 +26,6 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.List;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationListener;
@@ -34,15 +33,23 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class UpdateAvailableInboxListener implements ApplicationListener<UpdateAvailableEvent> {
 
   private final InboxService inboxService;
-
-  @Qualifier("UPDATE_AVAILABLE") private final InboxEventType updateAvailableEventType;
-
+  private final InboxEventType updateAvailableEventType;
   private final AccountRepository accountRepository;
   private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
+
+  public UpdateAvailableInboxListener(
+      @NonNull final InboxService inboxService,
+      @NonNull @Qualifier("updateAvailable") final InboxEventType updateAvailableEventType,
+      @NonNull final AccountRepository accountRepository,
+      @NonNull final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
+    this.inboxService = inboxService;
+    this.updateAvailableEventType = updateAvailableEventType;
+    this.accountRepository = accountRepository;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
+  }
 
   @Override
   public void onApplicationEvent(@NonNull final UpdateAvailableEvent event) {
