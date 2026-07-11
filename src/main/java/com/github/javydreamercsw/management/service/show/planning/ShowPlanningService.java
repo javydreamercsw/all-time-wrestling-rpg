@@ -492,7 +492,9 @@ public class ShowPlanningService {
       if (ps.getTeamIds() != null && !ps.getTeamIds().isEmpty()) {
         java.util.Set<Long> seen = new java.util.HashSet<>();
         for (List<Long> team : ps.getTeamIds()) {
-          if (team == null) continue;
+          if (team == null) {
+            continue;
+          }
           for (Long id : team) {
             if (!seen.add(id)) {
               String name =
@@ -509,7 +511,9 @@ public class ShowPlanningService {
       } else if (ps.getTeams() != null && !ps.getTeams().isEmpty()) {
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (List<String> team : ps.getTeams()) {
-          if (team == null) continue;
+          if (team == null) {
+            continue;
+          }
           for (String name : team) {
             if (!seen.add(name)) {
               throw new IllegalArgumentException(
