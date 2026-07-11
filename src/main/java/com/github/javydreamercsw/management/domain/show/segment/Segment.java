@@ -190,6 +190,9 @@ public class Segment extends AbstractEntity<Long> {
 
   /** Add a participant to the segment with an explicit team number. */
   public void addParticipant(@NonNull final Wrestler wrestler, final int teamNumber) {
+    if (participants.stream().anyMatch(p -> wrestler.equals(p.getWrestler()))) {
+      return;
+    }
     SegmentParticipant participant = new SegmentParticipant();
     participant.setSegment(this);
     participant.setWrestler(wrestler);

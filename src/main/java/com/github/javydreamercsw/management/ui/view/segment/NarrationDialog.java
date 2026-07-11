@@ -294,9 +294,19 @@ public class NarrationDialog extends Dialog {
     log.debug("Sending narration context to AI: {}", context);
     showProgress(true);
     UI ui = UI.getCurrent();
+    org.springframework.security.core.context.SecurityContext securityContext =
+        org.springframework.security.core.context.SecurityContextHolder.getContext();
 
     java.util.concurrent.CompletableFuture.supplyAsync(
-            () -> segmentNarrationController.narrateSegment(context))
+            () -> {
+              org.springframework.security.core.context.SecurityContextHolder.setContext(
+                  securityContext);
+              try {
+                return segmentNarrationController.narrateSegment(context);
+              } finally {
+                org.springframework.security.core.context.SecurityContextHolder.clearContext();
+              }
+            })
         .thenAccept(
             response ->
                 ui.access(
@@ -680,9 +690,19 @@ public class NarrationDialog extends Dialog {
     log.info("Retrying narration with provider {} and context: {}", provider, context);
     showProgress(true);
     UI ui = UI.getCurrent();
+    org.springframework.security.core.context.SecurityContext retrySecurityContext =
+        org.springframework.security.core.context.SecurityContextHolder.getContext();
 
     java.util.concurrent.CompletableFuture.supplyAsync(
-            () -> segmentNarrationController.narrateSegmentWithProvider(provider, context))
+            () -> {
+              org.springframework.security.core.context.SecurityContextHolder.setContext(
+                  retrySecurityContext);
+              try {
+                return segmentNarrationController.narrateSegmentWithProvider(provider, context);
+              } finally {
+                org.springframework.security.core.context.SecurityContextHolder.clearContext();
+              }
+            })
         .thenAccept(
             response ->
                 ui.access(

@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.show;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -336,5 +337,35 @@ class EditSegmentDialogTest {
 
     assertTrue(
         dialog.getHealthFields().isEmpty(), "Health fields must not be created for promo segments");
+  }
+
+  @Test
+  void save_clearsStaleTeamIdsFromAiProposal() {
+    // Regression: AI-proposed segments carry teamIds; editing via dialog must clear them so
+    // approveSegments uses the user's name-based teams, not the stale ID-based teams.
+    segment.setTeamIds(List.of(List.of(1L), List.of(2L)));
+
+    UI.setCurrent(ui);
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+    dialog.getSegmentTypeCombo().setValue(matchType);
+
+    dialog.save();
+
+    assertNull(
+        segment.getTeamIds(),
+        "teamIds must be null after save so approveSegments uses the user-edited teams, not stale"
+            + " AI team IDs");
   }
 }
