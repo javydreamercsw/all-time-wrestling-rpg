@@ -189,10 +189,20 @@ class SegmentOutcomeServiceTest {
     genericDeck.setCards(genericDeckCards);
     genericWrestler.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(genericDeck)));
 
-    when(wrestlerRepository.findByName("Rob Van Dam")).thenReturn(Optional.of(robVanDam));
-    when(wrestlerRepository.findByName("Kurt Angle")).thenReturn(Optional.of(kurtAngle));
+    lenient().when(wrestlerRepository.findByName("Rob Van Dam")).thenReturn(Optional.of(robVanDam));
+    lenient().when(wrestlerRepository.findByName("Kurt Angle")).thenReturn(Optional.of(kurtAngle));
     lenient()
         .when(wrestlerRepository.findByName("Generic Wrestler"))
+        .thenReturn(Optional.of(genericWrestler));
+
+    lenient()
+        .when(wrestlerRepository.findByNameWithDecksAndCards("Rob Van Dam"))
+        .thenReturn(Optional.of(robVanDam));
+    lenient()
+        .when(wrestlerRepository.findByNameWithDecksAndCards("Kurt Angle"))
+        .thenReturn(Optional.of(kurtAngle));
+    lenient()
+        .when(wrestlerRepository.findByNameWithDecksAndCards("Generic Wrestler"))
         .thenReturn(Optional.of(genericWrestler));
   }
 
@@ -258,5 +268,91 @@ class SegmentOutcomeServiceTest {
     assertTrue(
         result.getDeterminedOutcome().contains("Five-Star Frog Splash"),
         result.getDeterminedOutcome());
+  }
+
+  /**
+   * Regression test: getRandomFinishingMove must re-fetch the winner via
+   * findByNameWithDecksAndCards rather than accessing Deck.cards on the already-loaded entity. In
+   * production the method runs on a ForkJoinPool thread where the original Hibernate session is
+   * closed, making lazy collections inaccessible.
+   */
+  @Test
+  void testFinishingMoveUsesEagerFetchedDecksWhenWinnerHasNoDecks() {
+    // winner returned by findByName has no decks — simulates a detached/session-closed entity
+    Wrestler detachedWinner = Wrestler.builder().build();
+    detachedWinner.setId(4L);
+    detachedWinner.setName("Detached Winner");
+    detachedWinner.setStartingStamina(10);
+    detachedWinner.setLowStamina(2);
+    detachedWinner.setStartingHealth(10);
+    detachedWinner.setLowHealth(2);
+    detachedWinner.setDeckSize(10);
+    detachedWinner.setCreationDate(java.time.Instant.now());
+    // intentionally no decks — getDecks() returns null
+
+    WrestlerState detachedState =
+        WrestlerState.builder()
+            .wrestler(detachedWinner)
+            .fans(200L)
+            .tier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ICON)
+            .build();
+    lenient().when(wrestlerService.getOrCreateState(eq(4L), anyLong())).thenReturn(detachedState);
+
+    CardSet cs = new CardSet();
+    cs.setName("TestSet");
+    Card eagerFinisher = new Card();
+    eagerFinisher.setName("Eagerly Fetched Finisher");
+    eagerFinisher.setFinisher(true);
+    eagerFinisher.setSet(cs);
+    eagerFinisher.setDamage(5);
+    eagerFinisher.setTarget(1);
+    eagerFinisher.setStamina(1);
+    eagerFinisher.setMomentum(1);
+    eagerFinisher.setType("Finisher");
+    eagerFinisher.setCreationDate(java.time.Instant.now());
+
+    Deck eagerDeck = new Deck();
+    eagerDeck.setWrestler(detachedWinner);
+    eagerDeck.setCreationDate(java.time.Instant.now());
+    DeckCard eagerDeckCard = new DeckCard();
+    eagerDeckCard.setCard(eagerFinisher);
+    eagerDeckCard.setSet(cs);
+    eagerDeckCard.setAmount(1);
+    eagerDeckCard.setDeck(eagerDeck);
+    eagerDeck.setCards(Set.of(eagerDeckCard));
+
+    Wrestler eagerVersion = Wrestler.builder().build();
+    eagerVersion.setName("Detached Winner");
+    eagerVersion.setDecks(new java.util.LinkedHashSet<>(List.of(eagerDeck)));
+
+    when(wrestlerRepository.findByName("Detached Winner")).thenReturn(Optional.of(detachedWinner));
+    when(wrestlerRepository.findByNameWithDecksAndCards("Detached Winner"))
+        .thenReturn(Optional.of(eagerVersion));
+
+    SegmentNarrationService.WrestlerContext detachedCtx =
+        new SegmentNarrationService.WrestlerContext();
+    detachedCtx.setName("Detached Winner");
+    SegmentNarrationService.WrestlerContext opponentCtx =
+        new SegmentNarrationService.WrestlerContext();
+    opponentCtx.setName("Kurt Angle");
+
+    SegmentNarrationService.SegmentNarrationContext context =
+        new SegmentNarrationService.SegmentNarrationContext();
+    context.setWrestlers(List.of(detachedCtx, opponentCtx));
+    SegmentNarrationService.SegmentTypeContext segmentType =
+        new SegmentNarrationService.SegmentTypeContext();
+    segmentType.setSegmentType("Match");
+    context.setSegmentType(segmentType);
+
+    SegmentNarrationService.SegmentNarrationContext result =
+        segmentOutcomeService.determineOutcomeIfNeeded(context);
+
+    assertNotNull(result.getDeterminedOutcome());
+    assertTrue(
+        result.getDeterminedOutcome().contains("Detached Winner"), result.getDeterminedOutcome());
+    // Finisher must come from the eager re-fetch, not from the decks-less detached entity
+    assertTrue(
+        result.getDeterminedOutcome().contains("Eagerly Fetched Finisher"),
+        "Expected finisher from eager-fetch but got: " + result.getDeterminedOutcome());
   }
 }
