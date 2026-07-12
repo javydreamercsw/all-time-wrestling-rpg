@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -101,6 +102,13 @@ public class TitleReignRepairService {
     // held by the same champion(s) into a single reign spanning the earliest start to the
     // latest end, before the dates are used for anything below.
     mergeConsecutivePreservedReigns(managed);
+
+    // Some preserved reigns' start_date is itself a corrupted real-world timestamp rather than
+    // the in-game date the title was actually won. When a title-tagged segment shows this
+    // reign's champion(s) winning/defending earlier than the recorded start_date, backfill from
+    // that segment's show date instead — it's ground truth.
+    backfillPreservedReignStartDates(managed, segments);
+
     titleRepository.saveAndFlush(managed);
 
     // Seed initial champion state from the last open preserved reign (if any). If a title
@@ -201,6 +209,44 @@ public class TitleReignRepairService {
     for (int i = 0; i < survivors.size(); i++) {
       survivors.get(i).setReignNumber(i + 1);
     }
+  }
+
+  /**
+   * Corrects a preserved reign's {@code start_date} when a title-tagged segment shows the same
+   * champion(s) winning earlier than the recorded date. This targets rows saved with a real-world
+   * timestamp instead of the in-game date the title was actually won — the earliest segment where
+   * the exact champion set appears as winners is ground truth.
+   */
+  private static void backfillPreservedReignStartDates(Title managed, List<Segment> segments) {
+    managed.getTitleReigns().stream()
+        .filter(r -> r.getWonAtSegment() == null)
+        .forEach(reign -> backfillStartDate(reign, segments));
+  }
+
+  private static void backfillStartDate(TitleReign reign, List<Segment> segments) {
+    Set<Long> championIds =
+        reign.getChampions().stream().map(Wrestler::getId).collect(Collectors.toSet());
+    if (championIds.isEmpty()) {
+      return;
+    }
+    Optional<Segment> earliestMatch =
+        segments.stream()
+            .filter(segment -> winnerIdsOf(segment).equals(championIds))
+            .min(Comparator.comparing(TitleReignRepairService::showDateInstant));
+    earliestMatch.ifPresent(
+        segment -> {
+          Instant segmentDate = showDateInstant(segment);
+          if (segmentDate.isBefore(reign.getStartDate())) {
+            reign.setStartDate(segmentDate);
+          }
+        });
+  }
+
+  private static Set<Long> winnerIdsOf(Segment segment) {
+    return segment.getParticipants().stream()
+        .filter(p -> Boolean.TRUE.equals(p.getIsWinner()))
+        .map(p -> p.getWrestler().getId())
+        .collect(Collectors.toSet());
   }
 
   private static boolean sameChampions(TitleReign a, TitleReign b) {
