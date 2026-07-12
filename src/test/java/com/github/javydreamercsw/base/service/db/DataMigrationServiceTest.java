@@ -133,9 +133,9 @@ class DataMigrationServiceTest {
       stmt.execute(
           """
           MERGE INTO injury (injury_id, wrestler_id, universe_id, injury_type_id, name,\
-           description, severity, health_penalty, healing_cost, is_active, injury_date,\
+           description, severity, health_penalty, healing_cost, injury_date,\
            creation_date) KEY(injury_id) VALUES (10, 10, 10, 10,\
-           'Migration Torn ACL', 'Migration Torn ACL', 'SEVERE', 2, 100, true,\
+           'Migration Torn ACL', 'Migration Torn ACL', 'SEVERE', 2, 100,\
            CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())\
           """);
     }
