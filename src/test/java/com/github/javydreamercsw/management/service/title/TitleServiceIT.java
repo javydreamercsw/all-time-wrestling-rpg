@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.title;
 
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -37,6 +38,11 @@ class TitleServiceIT extends ManagementIntegrationTest {
   @Test
   @DisplayName("Test that createTitle evicts cache")
   void testCreateTitleEvictsCache() {
+    // Startup (DataInitializer -> TitleReignRepairService.repairIfNeeded()) already called
+    // findAll() on this spy before the test body runs; clear that so the counts below reflect
+    // only this test's calls.
+    clearInvocations(titleRepository);
+
     // First call, should hit the repository
     titleService.findAll();
     verify(titleRepository, times(1)).findAll();
