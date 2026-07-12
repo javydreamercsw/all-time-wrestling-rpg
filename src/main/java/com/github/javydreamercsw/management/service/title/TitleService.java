@@ -397,8 +397,9 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional(readOnly = true)
   public List<com.github.javydreamercsw.management.domain.title.TitleReign> getAllReigns() {
-    return titleReignRepository.findAll();
+    return titleReignRepository.findAllWithTitle();
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
