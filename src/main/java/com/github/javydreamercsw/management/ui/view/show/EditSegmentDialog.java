@@ -461,7 +461,7 @@ public class EditSegmentDialog extends Dialog {
                 t -> {
                   String name = t.getName();
                   String members = t.getWrestler1().getName() + " & " + t.getWrestler2().getName();
-                  return (name != null && !name.isBlank()) ? name + " (" + members + ")" : members;
+                  return name != null && !name.isBlank() ? name + " (" + members + ")" : members;
                 });
             rosterTeamPicker.addValueChangeListener(
                 e -> {
