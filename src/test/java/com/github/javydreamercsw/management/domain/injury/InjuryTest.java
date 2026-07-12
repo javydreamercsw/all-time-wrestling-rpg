@@ -72,12 +72,7 @@ class InjuryTest {
     // Active injury with no healed date
     assertThat(injury.isCurrentlyActive()).isTrue();
 
-    // Inactive injury
-    injury.setIsActive(false);
-    assertThat(injury.isCurrentlyActive()).isFalse();
-
-    // Active but healed injury
-    injury.setIsActive(true);
+    // Healed injury (healedDate set) is no longer active
     injury.setHealedDate(Instant.now());
     assertThat(injury.isCurrentlyActive()).isFalse();
   }

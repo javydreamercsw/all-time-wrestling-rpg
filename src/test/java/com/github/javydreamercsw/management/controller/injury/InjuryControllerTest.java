@@ -67,7 +67,6 @@ class InjuryControllerTest extends AbstractControllerTest {
     testInjury.setSeverity(InjurySeverity.SEVERE);
     testInjury.setInjuryDate(Instant.now());
     testInjury.setHealthPenalty(10);
-    testInjury.setIsActive(true);
   }
 
   // ==================== POST /api/injuries ====================

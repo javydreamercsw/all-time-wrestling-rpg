@@ -91,7 +91,6 @@ public class InjuryService {
               injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
               injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
               injury.setHealingCost(severity.getBaseHealingCost());
-              injury.setIsActive(true);
               injury.setInjuryDate(Instant.now(clock));
               injury.setInjuryNotes(injuryNotes);
               injury.setCreationDate(Instant.now(clock));
@@ -136,7 +135,6 @@ public class InjuryService {
     injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
     injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
     injury.setHealingCost(severity.getBaseHealingCost());
-    injury.setIsActive(true);
     injury.setInjuryDate(Instant.now(clock));
     injury.setInjuryNotes(
         "Generated from bump accumulation (tier: " + state.getTier().name() + ")");
@@ -238,14 +236,42 @@ public class InjuryService {
     return new HealingResult(success, message, injury, roll, success);
   }
 
-  /** Force heal an injury (Admin only). Bypasses dice roll check by ensuring a successful roll. */
+  /**
+   * Force heal an injury (Admin only). An unconditional override: bypasses the dice roll and the
+   * fan cost entirely, so it works even when the wrestler can't afford the healing cost.
+   */
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.INJURIES_CACHE,
       allEntries = true)
   public HealingResult forceHeal(@NonNull final Long injuryId) {
-    // 6 is sufficient to heal even CRITICAL injuries (threshold 6)
-    return attemptHealing(injuryId, 6);
+    Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
+
+    if (injuryOpt.isEmpty()) {
+      return new HealingResult(false, "Injury not found", null, 0, false);
+    }
+
+    Injury injury = injuryOpt.get();
+
+    if (!injury.canBeHealed()) {
+      return new HealingResult(
+          false, "Injury cannot be healed (already healed or inactive)", injury, 0, false);
+    }
+
+    if (injury.getUniverse() == null) {
+      return new HealingResult(false, "Injury is not associated with a universe", injury, 0, false);
+    }
+
+    WrestlerState state =
+        wrestlerStateRepository
+            .findByWrestlerAndUniverse(injury.getWrestler(), injury.getUniverse())
+            .orElseThrow(() -> new IllegalStateException("Wrestler has no state in universe"));
+
+    injury.heal();
+    injuryRepository.saveAndFlush(injury);
+    eventPublisher.publishEvent(new WrestlerInjuryHealedEvent(this, state, injury));
+
+    return new HealingResult(true, "Injury force healed successfully", injury, 6, false);
   }
 
   /** Get injury by ID. */

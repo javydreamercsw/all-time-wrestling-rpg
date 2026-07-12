@@ -41,7 +41,7 @@ public interface InjuryRepository
   @Query(
       """
       SELECT i FROM Injury i WHERE i.wrestler = :wrestler AND i.universe = :universe AND\
-       i.isActive = true\
+       i.healedDate is null\
       """)
   List<Injury> findActiveInjuriesForWrestler(
       @Param("wrestler") Wrestler wrestler, @Param("universe") Universe universe);
@@ -50,18 +50,18 @@ public interface InjuryRepository
   List<Injury> findByWrestler(Wrestler wrestler);
 
   /** Find active injuries for a specific wrestler. */
-  @Query("SELECT i FROM Injury i WHERE i.wrestler = :wrestler AND i.isActive = true")
+  @Query("SELECT i FROM Injury i WHERE i.wrestler = :wrestler AND i.healedDate is null")
   List<Injury> findActiveInjuriesForWrestler(@Param("wrestler") Wrestler wrestler);
 
   /** Find healed injuries for a specific wrestler. */
-  @Query("SELECT i FROM Injury i WHERE i.wrestler = :wrestler AND i.isActive = false")
+  @Query("SELECT i FROM Injury i WHERE i.wrestler = :wrestler AND i.healedDate is not null")
   List<Injury> findHealedInjuriesForWrestler(@Param("wrestler") Wrestler wrestler);
 
   /** Find injuries by severity. */
   List<Injury> findBySeverity(InjurySeverity severity);
 
   /** Find all active injuries. */
-  @Query("SELECT i FROM Injury i WHERE i.isActive = true")
+  @Query("SELECT i FROM Injury i WHERE i.healedDate is null")
   List<Injury> findAllActiveInjuries();
 
   /** Get total health penalty for a wrestler from active injuries in a specific universe. */
@@ -69,7 +69,7 @@ public interface InjuryRepository
       """
       SELECT COALESCE(SUM(i.healthPenalty), 0)
       FROM Injury i
-      WHERE i.wrestler = :wrestler AND i.universe = :universe AND i.isActive = true
+      WHERE i.wrestler = :wrestler AND i.universe = :universe AND i.healedDate is null
       """)
   Integer getTotalHealthPenaltyForWrestler(
       @Param("wrestler") Wrestler wrestler, @Param("universe") Universe universe);
@@ -79,7 +79,7 @@ public interface InjuryRepository
       """
       SELECT COALESCE(SUM(i.healthPenalty), 0)
       FROM Injury i
-      WHERE i.wrestler = :wrestler AND i.isActive = true
+      WHERE i.wrestler = :wrestler AND i.healedDate is null
       """)
   Integer getTotalHealthPenaltyForWrestler(@Param("wrestler") Wrestler wrestler);
 
@@ -88,7 +88,7 @@ public interface InjuryRepository
       """
       SELECT COUNT(i)
       FROM Injury i
-      WHERE i.wrestler = :wrestler AND i.isActive = true
+      WHERE i.wrestler = :wrestler AND i.healedDate is null
       """)
   long countActiveInjuriesForWrestler(@Param("wrestler") Wrestler wrestler);
 
@@ -97,7 +97,7 @@ public interface InjuryRepository
       """
       SELECT DISTINCT i.wrestler
       FROM Injury i
-      WHERE i.isActive = true AND i.universe = :universe
+      WHERE i.healedDate is null AND i.universe = :universe
       """)
   List<Wrestler> findWrestlersWithActiveInjuries(@Param("universe") Universe universe);
 
@@ -106,19 +106,19 @@ public interface InjuryRepository
       """
       SELECT DISTINCT i.wrestler
       FROM Injury i
-      WHERE i.isActive = true
+      WHERE i.healedDate is null
       """)
   List<Wrestler> findWrestlersWithActiveInjuries();
 
   /** Find injuries that can be healed (active injuries). */
-  @Query("SELECT i FROM Injury i WHERE i.isActive = true ORDER BY i.injuryDate ASC")
+  @Query("SELECT i FROM Injury i WHERE i.healedDate is null ORDER BY i.injuryDate ASC")
   List<Injury> findHealableInjuries();
 
   /** Find the most severe active injury for a wrestler in a universe. */
   @Query(
       """
       SELECT i FROM Injury i
-      WHERE i.wrestler = :wrestler AND i.universe = :universe AND i.isActive = true
+      WHERE i.wrestler = :wrestler AND i.universe = :universe AND i.healedDate is null
       ORDER BY i.severity DESC, i.healthPenalty DESC
       LIMIT 1
       """)
@@ -129,7 +129,7 @@ public interface InjuryRepository
   @Query(
       """
       SELECT i FROM Injury i
-      WHERE i.wrestler = :wrestler AND i.isActive = true
+      WHERE i.wrestler = :wrestler AND i.healedDate is null
       ORDER BY i.severity DESC, i.healthPenalty DESC
       LIMIT 1
       """)
