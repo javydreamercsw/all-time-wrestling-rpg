@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
@@ -80,7 +81,7 @@ public class EditSegmentDialog extends Dialog {
     public static PreloadedData load(
         final SegmentTypeService segmentTypeService,
         final SegmentRuleService segmentRuleService,
-        final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+        final NpcService npcService,
         final TitleService titleService,
         final WrestlerService wrestlerService,
         final ExpansionService expansionService,
@@ -299,6 +300,7 @@ public class EditSegmentDialog extends Dialog {
   private final ComboBox<AlignmentType> alignmentFilter;
   private final MultiSelectComboBox<SegmentRule> rulesCombo;
   private final MultiSelectComboBox<Wrestler> winnersCombo;
+  private final HorizontalLayout winnerTeamButtonsLayout = new HorizontalLayout();
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
   private final com.vaadin.flow.component.html.Span synergyBonusLabel;
@@ -386,6 +388,10 @@ public class EditSegmentDialog extends Dialog {
     participantsCombo = new MultiSelectComboBox<>();
     participantsCombo.setVisible(false);
 
+    winnerTeamButtonsLayout.setSpacing(true);
+    winnerTeamButtonsLayout.setPadding(false);
+    winnerTeamButtonsLayout.setId("edit-winner-team-buttons-layout");
+
     Runnable refreshWinners =
         () -> {
           Set<Wrestler> allSelected =
@@ -398,6 +404,21 @@ public class EditSegmentDialog extends Dialog {
           winnersCombo.setValue(
               currentWinners.stream().filter(allSelected::contains).collect(Collectors.toSet()));
           updateSynergyBonus(allSelected);
+
+          // Whole-team winner quick-select: one button per team with 2+ members so recording
+          // a tag win doesn't require picking each partner individually in the winners combo.
+          winnerTeamButtonsLayout.removeAll();
+          for (int i = 0; i < teamCombos.size(); i++) {
+            Set<Wrestler> teamWrestlers = teamCombos.get(i).getValue();
+            if (teamWrestlers.size() > 1) {
+              int teamNum = i + 1;
+              Button teamWinsButton = new Button("Team " + teamNum + " Wins");
+              teamWinsButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_SUCCESS);
+              teamWinsButton.setId("edit-team-" + teamNum + "-wins-button");
+              teamWinsButton.addClickListener(e -> winnersCombo.setValue(teamWrestlers));
+              winnerTeamButtonsLayout.add(teamWinsButton);
+            }
+          }
         };
 
     java.util.function.Consumer<Set<Wrestler>> addTeamRow =
@@ -579,7 +600,7 @@ public class EditSegmentDialog extends Dialog {
               allTeamWrestlers.stream()
                   .filter(w -> w.getAccount() != null)
                   .sorted(Comparator.comparing(Wrestler::getName))
-                  .collect(Collectors.toList());
+                  .toList();
           boolean show = !isPromo && !playerWrestlers.isEmpty();
           healthLayout.setVisible(show);
           if (show) {
@@ -617,6 +638,7 @@ public class EditSegmentDialog extends Dialog {
     }
 
     formLayout.setColspan(healthLayout, 2);
+    formLayout.setColspan(winnerTeamButtonsLayout, 2);
     formLayout.add(
         segmentTypeCombo,
         rulesCombo,
@@ -626,6 +648,7 @@ public class EditSegmentDialog extends Dialog {
         teamsSection,
         synergyBonusLabel,
         winnersCombo,
+        winnerTeamButtonsLayout,
         isTitleSegmentCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
@@ -778,7 +801,7 @@ public class EditSegmentDialog extends Dialog {
           mustInclude.stream()
               .filter(w -> w.getId() != null && !presentIds.contains(w.getId()))
               .sorted(Comparator.comparing(Wrestler::getName))
-              .collect(Collectors.toList());
+              .toList();
       if (!extra.isEmpty()) {
         filtered.addAll(extra);
         filtered.sort(Comparator.comparing(Wrestler::getName));

@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -28,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -98,7 +101,7 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
 
     assertThat(dialog.getTeamCombos()).hasSize(2);
 
-    Set<Wrestler> team1 = dialog.getTeamCombos().get(0).getValue();
+    Set<Wrestler> team1 = dialog.getTeamCombos().getFirst().getValue();
     assertThat(team1).as("Team 1 must show the wrestler from the existing segment").hasSize(1);
     assertThat(team1.iterator().next().getId()).isEqualTo(1L);
 
@@ -152,11 +155,50 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
     dialog.getAddTeamButton().click();
 
     assertThat(dialog.getTeamCombos()).hasSize(before + 1);
-    MultiSelectComboBox<Wrestler> newCombo =
-        dialog.getTeamCombos().get(dialog.getTeamCombos().size() - 1);
+    MultiSelectComboBox<Wrestler> newCombo = dialog.getTeamCombos().getLast();
     assertThat(newCombo.getListDataView().getItemCount())
         .as("Newly added team combo must list all wrestlers")
         .isEqualTo(3);
+  }
+
+  /**
+   * ATW-4h05 AC3: clicking a "Team N Wins" button must mark every member of that team as a winner
+   * in one action, without requiring each partner to be selected individually.
+   */
+  @Test
+  void teamWinsButtonMarksWholeTeamAsWinners() {
+    Map<Integer, List<Wrestler>> teams = new LinkedHashMap<>();
+    teams.put(1, List.of(segmentCopy1, segmentCopy2));
+    teams.put(2, List.of());
+
+    EditSegmentDialog dialog = openDialog(teams);
+
+    Button team1WinsButton =
+        _get(dialog, Button.class, spec -> spec.withId("edit-team-1-wins-button"));
+    team1WinsButton.click();
+
+    @SuppressWarnings("unchecked")
+    MultiSelectComboBox<Wrestler> winnersCombo =
+        _get(dialog, MultiSelectComboBox.class, spec -> spec.withId("edit-winners-combo-box"));
+    Set<Wrestler> winners = winnersCombo.getValue();
+    assertThat(winners.stream().map(Wrestler::getId)).containsExactlyInAnyOrder(1L, 2L);
+  }
+
+  /** A team with a single member has no ambiguity to resolve, so no quick-select button appears. */
+  @Test
+  void teamWinsButtonNotShownForSingleMemberTeam() {
+    Map<Integer, List<Wrestler>> teams = new LinkedHashMap<>();
+    teams.put(1, List.of(segmentCopy1));
+    teams.put(2, List.of(segmentCopy2));
+
+    EditSegmentDialog dialog = openDialog(teams);
+
+    List<Button> teamWinsButtons =
+        _find(
+            dialog,
+            Button.class,
+            spec -> spec.withPredicate(b -> String.valueOf(b.getId()).contains("wins-button")));
+    assertThat(teamWinsButtons).isEmpty();
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────
