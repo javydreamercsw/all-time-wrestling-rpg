@@ -345,6 +345,7 @@ public class RankingService {
     return RankedTeamDTO.builder()
         .id(team.getId())
         .name(team.getName())
+        .memberNames(List.of(team.getWrestler1().getName(), team.getWrestler2().getName()))
         .fans(s1.getFans() + s2.getFans())
         .rank(rank)
         .build();

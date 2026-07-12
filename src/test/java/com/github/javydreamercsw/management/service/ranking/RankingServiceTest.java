@@ -235,9 +235,14 @@ class RankingServiceTest {
 
     assertEquals(1, contenders.size());
     assertTrue(contenders.get(0) instanceof RankedTeamDTO);
-    assertEquals("The Contenders", ((RankedTeamDTO) contenders.get(0)).getName());
-    assertEquals(1, ((RankedTeamDTO) contenders.get(0)).getRank());
-    assertEquals(1500, ((RankedTeamDTO) contenders.get(0)).getFans());
+    RankedTeamDTO teamDto = (RankedTeamDTO) contenders.get(0);
+    assertEquals("The Contenders", teamDto.getName());
+    assertEquals(1, teamDto.getRank());
+    assertEquals(1500, teamDto.getFans());
+    assertEquals(
+        List.of("Team 2 Member 1", "Team 2 Member 2"),
+        teamDto.getMemberNames(),
+        "Both team members must be present, not just the first");
   }
 
   @Test

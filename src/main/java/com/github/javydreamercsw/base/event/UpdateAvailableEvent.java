@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,24 +14,21 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.dto.ranking;
+package com.github.javydreamercsw.base.event;
 
-import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import org.springframework.context.ApplicationEvent;
 
 @Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class RankedTeamDTO {
-  private Long id;
-  private String name;
-  private List<String> memberNames;
-  private Long fans;
-  private int rank;
+public class UpdateAvailableEvent extends ApplicationEvent {
+
+  private final String newVersion;
+  private final String releaseUrl;
+
+  public UpdateAvailableEvent(
+      final Object source, final String newVersion, final String releaseUrl) {
+    super(source);
+    this.newVersion = newVersion;
+    this.releaseUrl = releaseUrl;
+  }
 }

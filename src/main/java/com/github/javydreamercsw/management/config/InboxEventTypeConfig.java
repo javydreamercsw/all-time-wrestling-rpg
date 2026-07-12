@@ -130,4 +130,9 @@ public class InboxEventTypeConfig {
   @Qualifier("TUTORIAL_REMINDER") InboxEventType tutorialReminder() {
     return new InboxEventType("TUTORIAL_REMINDER", "Tutorial Reminder");
   }
+
+  @Bean
+  @Qualifier("UPDATE_AVAILABLE") InboxEventType updateAvailable() {
+    return new InboxEventType("UPDATE_AVAILABLE", "Update Available");
+  }
 }

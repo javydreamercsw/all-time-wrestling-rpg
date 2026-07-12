@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.config;
 
+import com.github.javydreamercsw.base.event.UpdateAvailableEvent;
 import jakarta.servlet.ServletContext;
 import java.awt.AWTException;
 import java.awt.Desktop;
@@ -37,6 +38,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.server.servlet.context.ServletWebServerApplicationContext;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -58,6 +60,9 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
 
   @Value("${server.port:8080}")
   private int defaultPort;
+
+  private TrayIcon trayIcon;
+  private PopupMenu trayPopup;
 
   @Override
   public void onApplicationEvent(final ApplicationReadyEvent event) {
@@ -149,18 +154,18 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
     try {
       SystemTray tray = SystemTray.getSystemTray();
 
-      PopupMenu popup = new PopupMenu();
+      trayPopup = new PopupMenu();
       MenuItem openItem = new MenuItem("Open Game");
       openItem.addActionListener(e -> launchBrowser(url));
-      popup.add(openItem);
+      trayPopup.add(openItem);
 
-      popup.addSeparator();
+      trayPopup.addSeparator();
 
       MenuItem exitItem = new MenuItem("Exit");
       exitItem.addActionListener(e -> System.exit(0));
-      popup.add(exitItem);
+      trayPopup.add(exitItem);
 
-      TrayIcon trayIcon = new TrayIcon(image, "All Time Wrestling RPG", popup);
+      trayIcon = new TrayIcon(image, "All Time Wrestling RPG", trayPopup);
       trayIcon.setImageAutoSize(true);
       trayIcon.addActionListener(e -> launchBrowser(url));
 
@@ -170,5 +175,25 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
     } catch (AWTException e) {
       log.error("Failed to setup System Tray", e);
     }
+  }
+
+  @EventListener
+  public void onUpdateAvailable(final UpdateAvailableEvent event) {
+    if (trayIcon == null || trayPopup == null) {
+      return;
+    }
+
+    String label = "Update available: v" + event.getNewVersion();
+
+    MenuItem updateItem = new MenuItem(label);
+    updateItem.addActionListener(e -> launchBrowser(event.getReleaseUrl()));
+
+    // Insert before the Exit separator (second-to-last item)
+    trayPopup.insert(updateItem, trayPopup.getItemCount() - 2);
+
+    trayIcon.displayMessage(
+        "Update Available",
+        "All Time Wrestling RPG v" + event.getNewVersion() + " is ready to download.",
+        TrayIcon.MessageType.INFO);
   }
 }

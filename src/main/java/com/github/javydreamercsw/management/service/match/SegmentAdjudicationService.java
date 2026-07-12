@@ -395,7 +395,15 @@ public class SegmentAdjudicationService {
       if (segment.getIsTitleSegment()) {
         for (Title title : segment.getTitles()) {
           List<Wrestler> currentChampions = title.getCurrentChampions();
-          if (new HashSet<>(winners).containsAll(currentChampions)) {
+          Set<Wrestler> winnerSet = new HashSet<>(winners);
+          // Defense: at least one current champion won (handles tag team matches where
+          // only one partner gets the pin — requiring all champions would falsely trigger
+          // a title change when only the pin-taker is in the winners list).
+          boolean championsDefended =
+              !winnerSet.isEmpty()
+                  && !currentChampions.isEmpty()
+                  && currentChampions.stream().anyMatch(winnerSet::contains);
+          if (championsDefended || winnerSet.isEmpty()) {
             eventPublisher.publishEvent(
                 new ChampionshipDefendedEvent(this, title, currentChampions, losers));
           } else {

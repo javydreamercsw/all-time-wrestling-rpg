@@ -37,8 +37,10 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.vaadin.flow.component.UI;
@@ -103,6 +105,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
   private final ExpansionService expansionService;
+  private final TeamService teamService;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
@@ -119,6 +122,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   public ShowPlanningView(
       final ShowFacade showFacade,
       final ShowContextFacade showContextFacade,
+      final WrestlerFacade wrestlerFacade,
       final ViewContext viewContext,
       final WrestlerService wrestlerService,
       final WrestlerRepository wrestlerRepository,
@@ -141,6 +145,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.segmentTypeService = showFacade.getSegmentTypeService();
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.expansionService = viewContext.getExpansionService();
+    this.teamService = wrestlerFacade.getTeamService();
 
     setSizeFull();
     addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
@@ -258,6 +263,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                                         titleService,
                                         wrestlerService,
                                         expansionService,
+                                        teamService,
                                         universeId)))
                     .thenAccept(
                         preloaded ->

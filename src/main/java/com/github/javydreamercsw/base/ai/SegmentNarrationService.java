@@ -104,6 +104,7 @@ public interface SegmentNarrationService {
     // defenses.
     private String instructions; // Add instructions field
     private String segmentChampionship; // Add championship field
+    private boolean isTitleMatch; // True only when a title is actually on the line
     private int segmentOrder; // The order of the segment in the show
     private boolean isMainEvent; // Whether the segment is the main event
     private List<SegmentNarrationContext> previousSegments; // List of previous segments in the show

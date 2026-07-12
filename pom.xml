@@ -43,7 +43,7 @@
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <selenium.version>4.45.0</selenium.version>
+    <selenium.version>4.46.0</selenium.version>
     <skipTests>false</skipTests>
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
@@ -227,7 +227,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>7.3.2</version>
+      <version>7.4.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
@@ -536,12 +536,12 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.37</version>
+      <version>1.5.38</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.5.37</version>
+      <version>1.5.38</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
@@ -1243,7 +1243,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>1.1.3</version>
+            <version>1.1.4</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>
@@ -1461,7 +1461,7 @@
                 <configuration>
                   <target>
                     <mkdir dir="${project.build.directory}/jpackage-input"/>
-                    <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/jpackage-input/${project.build.finalName}-thin.jar"/>
+                    <copy file="${project.build.directory}/${project.artifactId}-${project.version}-launcher.jar" tofile="${project.build.directory}/jpackage-input/atw-launcher-${project.version}.jar"/>
                   </target>
                 </configuration>
               </execution>
@@ -1484,15 +1484,9 @@
                   <vendor>Javier Ortiz Bultron</vendor>
                   <appVersion>${jpackage.appVersion}</appVersion>
                   <input>${project.build.directory}/jpackage-input</input>
-                  <mainJar>${project.build.finalName}-thin.jar</mainJar>
-                  <mainClass>com.github.javydreamercsw.Application</mainClass>
+                  <mainJar>atw-launcher-${project.version}.jar</mainJar>
+                  <mainClass>com.github.javydreamercsw.Launcher</mainClass>
                   <destination>${project.build.directory}/dist</destination>
-                  <javaOptions>
-                    <option>-Dspring.profiles.active=prod</option>
-                    <option>-Djava.awt.headless=false</option>
-                    <option>-Datw.desktop.enabled=true</option>
-                    <option>-Dserver.port=0</option>
-                  </javaOptions>
                   <type>${jpackage.type}</type>
                   <icon>${jpackage.icon}</icon>
                   <!-- Platform specific configurations -->
@@ -1541,6 +1535,39 @@
           <artifactId>spring-boot-starter-jetty</artifactId>
         </dependency>
       </dependencies>
+    </profile>
+    <profile>
+      <!-- Builds the tiny standalone launcher JAR used by desktop installers. -->
+      <!-- Activate alongside the desktop profile: -Pproduction,desktop,launcher -->
+      <id>launcher</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>launcher-jar</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <phase>prepare-package</phase>
+                <configuration>
+                  <classifier>launcher</classifier>
+                  <includes>
+                    <include>com/github/javydreamercsw/Launcher.class</include>
+                  </includes>
+                  <archive>
+                    <manifest>
+                      <mainClass>com.github.javydreamercsw.Launcher</mainClass>
+                    </manifest>
+                  </archive>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>war</id>
