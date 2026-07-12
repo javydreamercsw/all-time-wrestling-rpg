@@ -302,7 +302,7 @@ class RankingServiceTest {
 
     assertFalse(result.isEmpty());
     assertEquals(1, result.size());
-    assertEquals("Champion", result.get(0).getName());
+    assertEquals("Champion", result.getFirst().getName());
   }
 
   private Wrestler createMockWrestler(

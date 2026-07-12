@@ -395,6 +395,29 @@ public class TitleService {
         .orElse(false);
   }
 
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public List<com.github.javydreamercsw.management.domain.title.TitleReign> getAllReigns() {
+    return titleReignRepository.findAll();
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public com.github.javydreamercsw.management.domain.title.TitleReign saveReign(
+      @NonNull final com.github.javydreamercsw.management.domain.title.TitleReign reign) {
+    return titleReignRepository.save(reign);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public void deleteReign(@NonNull final Long reignId) {
+    titleReignRepository.deleteById(reignId);
+  }
+
   @PreAuthorize("isAuthenticated()")
   public Long getChallengeCost(@NonNull final Title title) {
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
