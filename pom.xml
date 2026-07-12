@@ -1074,6 +1074,8 @@
               <exclude>.claude/**</exclude>
               <!-- beads issue-tracker internal DB files — not project code -->
               <exclude>.beads/**</exclude>
+              <!-- Repowise session/index files — rewritten live outside of any commit -->
+              <exclude>.repowise/**</exclude>
             </excludes>
             <jackson/>
           </json>
