@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -40,8 +41,11 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -60,7 +64,8 @@ class RankingServiceTest {
   @Mock private FactionRepository factionRepository;
   @Mock private TeamRepository teamRepository;
   @Mock private WrestlerService wrestlerService;
-  @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
+  @Mock private DefaultImageService imageService;
+  @Mock private GameSettingService gameSettingService;
   @InjectMocks private RankingService rankingService;
 
   private Title title;
@@ -85,6 +90,9 @@ class RankingServiceTest {
     WrestlerState championState =
         WrestlerState.builder().wrestler(champion).fans(1000L).tier(WrestlerTier.CONTENDER).build();
     lenient().when(wrestlerService.getOrCreateState(eq(1L), anyLong())).thenReturn(championState);
+    lenient()
+        .when(gameSettingService.getCurrentGameDate())
+        .thenReturn(LocalDate.now(ZoneOffset.UTC));
 
     TitleReign reign = new TitleReign();
     reign.setTitle(title);
@@ -123,8 +131,8 @@ class RankingServiceTest {
     List<ChampionshipDTO> championships = rankingService.getChampionships();
 
     assertEquals(1, championships.size());
-    assertEquals("World Heavyweight Championship", championships.get(0).getName());
-    assertEquals("default.png", championships.get(0).getImageUrl());
+    assertEquals("World Heavyweight Championship", championships.getFirst().getName());
+    assertEquals("default.png", championships.getFirst().getImageUrl());
   }
 
   @Test
@@ -235,7 +243,7 @@ class RankingServiceTest {
 
     assertEquals(1, contenders.size());
     assertTrue(contenders.get(0) instanceof RankedTeamDTO);
-    RankedTeamDTO teamDto = (RankedTeamDTO) contenders.get(0);
+    RankedTeamDTO teamDto = (RankedTeamDTO) contenders.getFirst();
     assertEquals("The Contenders", teamDto.getName());
     assertEquals(1, teamDto.getRank());
     assertEquals(1500, teamDto.getFans());
@@ -262,7 +270,7 @@ class RankingServiceTest {
     List<?> contenders = rankingService.getRankedContenders(1L);
 
     assertEquals(1, contenders.size());
-    assertEquals("Contender 1", ((RankedWrestlerDTO) contenders.get(0)).getName());
+    assertEquals("Contender 1", ((RankedWrestlerDTO) contenders.getFirst()).getName());
   }
 
   @Test
@@ -272,8 +280,8 @@ class RankingServiceTest {
     List<TitleReignDTO> history = rankingService.getTitleReignHistory(1L);
 
     assertEquals(1, history.size());
-    assertEquals("Champion", history.get(0).getChampionNames().get(0));
-    assertTrue(history.get(0).isCurrent());
+    assertEquals("Champion", history.getFirst().getChampionNames().getFirst());
+    assertTrue(history.getFirst().isCurrent());
   }
 
   @Test
@@ -283,7 +291,7 @@ class RankingServiceTest {
     List<TitleReignDTO> history = rankingService.getWrestlerTitleHistory(1L);
 
     assertEquals(1, history.size());
-    assertEquals("World Heavyweight Championship", history.get(0).getChampionshipName());
+    assertEquals("World Heavyweight Championship", history.getFirst().getChampionshipName());
   }
 
   @Test

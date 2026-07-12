@@ -66,12 +66,20 @@ public class TitleService {
   private final ExpansionService expansionService;
   private final UniverseContextService universeContextService;
   private final UniverseSettingsService universeSettingsService;
+  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
 
   private Set<String> enabledExpansionCodes() {
     return universeContextService
         .getCurrentUniverse()
         .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
         .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
+  }
+
+  private Instant currentGameInstant() {
+    return gameSettingService
+        .getCurrentGameDate()
+        .atStartOfDay(java.time.ZoneOffset.UTC)
+        .toInstant();
   }
 
   public boolean isWrestlerEligible(@NonNull final Wrestler wrestler, @NonNull final Title title) {
@@ -507,7 +515,7 @@ public class TitleService {
                 new TitleStats(
                     title.getName(),
                     title.getTotalReigns(),
-                    title.getCurrentReignDays(Instant.now(clock)),
+                    title.getCurrentReignDays(currentGameInstant()),
                     title.getCurrentChampions().size()))
         .orElse(null);
   }
