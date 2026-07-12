@@ -48,9 +48,11 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -90,6 +92,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
   @Mock private NotificationService notificationService;
   @Mock private UniverseContextService universeContextService;
   @Mock private ExpansionService expansionService;
+  @Mock private TeamService teamService;
 
   @BeforeEach
   public void setUp() {
@@ -110,6 +113,14 @@ class ShowPlanningViewTest extends AbstractViewTest {
             showPlanningService,
             showPlanningAiService,
             arenaService);
+    WrestlerFacade wrestlerFacade =
+        new WrestlerFacade(
+            wrestlerService,
+            mock(com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService.class),
+            mock(
+                com.github.javydreamercsw.management.service.relationship
+                    .WrestlerRelationshipService.class),
+            teamService);
     ViewContext viewContext =
         new ViewContext(notificationService, null, universeContextService, expansionService);
 
@@ -117,6 +128,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
         new ShowPlanningView(
             showFacade,
             showContextFacade,
+            wrestlerFacade,
             viewContext,
             wrestlerService,
             wrestlerRepository,

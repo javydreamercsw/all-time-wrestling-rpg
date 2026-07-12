@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -29,6 +30,7 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
@@ -72,7 +74,8 @@ public class EditSegmentDialog extends Dialog {
       List<Title> titles,
       List<Wrestler> activeWrestlers,
       Map<String, Wrestler> wrestlerByName,
-      Map<String, String> expansionNames) {
+      Map<String, String> expansionNames,
+      List<Team> teams) {
 
     public static PreloadedData load(
         final SegmentTypeService segmentTypeService,
@@ -81,6 +84,7 @@ public class EditSegmentDialog extends Dialog {
         final TitleService titleService,
         final WrestlerService wrestlerService,
         final ExpansionService expansionService,
+        final TeamService teamService,
         final Long universeId) {
       // Collect enabled codes via ExpansionService (thread-safe, no Vaadin session needed).
       // The universe-context-aware findAll() overload is unreliable in async threads because
@@ -119,6 +123,8 @@ public class EditSegmentDialog extends Dialog {
               "[DEBUG-ATW8djt] PreloadedData.load() result — {} segmentTypes, {} segmentRules",
               segmentTypes.size(),
               segmentRules.size());
+      List<Team> teams =
+          teamService != null ? teamService.getActiveTeams() : java.util.Collections.emptyList();
       return new PreloadedData(
           segmentTypes,
           segmentRules,
@@ -128,7 +134,8 @@ public class EditSegmentDialog extends Dialog {
           titleService.findAll(),
           active,
           byName,
-          expNames);
+          expNames,
+          teams);
     }
   }
 
@@ -420,6 +427,46 @@ public class EditSegmentDialog extends Dialog {
               });
           teamCombos.add(teamCombo);
 
+          ComboBox<Team> rosterTeamPicker = new ComboBox<>();
+          rosterTeamPicker.setPlaceholder("Quick-pick roster team…");
+          rosterTeamPicker.setClearButtonVisible(true);
+          rosterTeamPicker.setWidthFull();
+          if (!data.teams().isEmpty()) {
+            rosterTeamPicker.setItems(data.teams());
+            Map<Long, Wrestler> activeById =
+                data.activeWrestlers().stream()
+                    .collect(Collectors.toMap(Wrestler::getId, w -> w, (a, b) -> a));
+            rosterTeamPicker.setItemLabelGenerator(
+                t -> {
+                  String name = t.getName();
+                  String members = t.getWrestler1().getName() + " & " + t.getWrestler2().getName();
+                  return (name != null && !name.isBlank()) ? name + " (" + members + ")" : members;
+                });
+            rosterTeamPicker.addValueChangeListener(
+                e -> {
+                  Team picked = e.getValue();
+                  if (picked != null) {
+                    Set<Wrestler> current = new HashSet<>(teamCombo.getValue());
+                    if (picked.getWrestler1() != null) {
+                      current.add(
+                          activeById.getOrDefault(
+                              picked.getWrestler1().getId(), picked.getWrestler1()));
+                    }
+                    if (picked.getWrestler2() != null) {
+                      current.add(
+                          activeById.getOrDefault(
+                              picked.getWrestler2().getId(), picked.getWrestler2()));
+                    }
+                    List<Wrestler> newItems = getFilteredWrestlers(current);
+                    teamCombo.setItems(newItems);
+                    teamCombo.setValue(current);
+                    rosterTeamPicker.clear();
+                  }
+                });
+          } else {
+            rosterTeamPicker.setVisible(false);
+          }
+
           Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
           removeTeamButton.addThemeVariants(
               ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -428,9 +475,13 @@ public class EditSegmentDialog extends Dialog {
           teamRow.setFlexGrow(1, teamCombo);
           teamRow.setAlignItems(HorizontalLayout.Alignment.END);
           teamRow.setWidthFull();
+          VerticalLayout teamSection = new VerticalLayout(rosterTeamPicker, teamRow);
+          teamSection.setSpacing(false);
+          teamSection.setPadding(false);
+          teamSection.setWidthFull();
           removeTeamButton.addClickListener(
               e -> {
-                teamsLayout.remove(teamRow);
+                teamsLayout.remove(teamSection);
                 teamCombos.remove(teamCombo);
                 for (int i = 0; i < teamCombos.size(); i++) {
                   teamCombos.get(i).setLabel("Team " + (i + 1));
@@ -439,7 +490,7 @@ public class EditSegmentDialog extends Dialog {
                 teamCombos.forEach(c -> allAssignedWrestlers.addAll(c.getValue()));
                 refreshWinners.run();
               });
-          teamsLayout.add(teamRow);
+          teamsLayout.add(teamSection);
           refreshWinners.run();
         };
 
@@ -681,6 +732,7 @@ public class EditSegmentDialog extends Dialog {
             titleService,
             wrestlerService,
             expansionService,
+            null,
             universeId),
         wrestlerService,
         defaultGenderConstraint,
