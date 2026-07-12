@@ -94,6 +94,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleReignRepairService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
@@ -160,6 +161,7 @@ public class DataInitializer implements Initializable {
   private final ResourcePatternResolver resourcePatternResolver;
   private final ObjectMapper objectMapper;
   private final OutcomeMatrixService outcomeMatrixService;
+  private final TitleReignRepairService titleReignRepairService;
 
   @Autowired
   public DataInitializer(
@@ -199,7 +201,8 @@ public class DataInitializer implements Initializable {
       final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
           relationshipService,
       final ObjectMapper objectMapper,
-      final OutcomeMatrixService outcomeMatrixService) {
+      final OutcomeMatrixService outcomeMatrixService,
+      final TitleReignRepairService titleReignRepairService) {
     this.enabled = enabled;
     this.skipIfNotEmpty = skipIfNotEmpty;
     this.showTemplateService = showTemplateService;
@@ -235,6 +238,7 @@ public class DataInitializer implements Initializable {
     this.relationshipService = relationshipService;
     this.objectMapper = objectMapper;
     this.outcomeMatrixService = outcomeMatrixService;
+    this.titleReignRepairService = titleReignRepairService;
   }
 
   public void init() {
@@ -260,6 +264,7 @@ public class DataInitializer implements Initializable {
     wrestlerService.evictWrestlerCache();
     syncRelationshipsFromFile();
     syncChampionshipsFromFile();
+    titleReignRepairService.repairIfNeeded();
     syncDecksFromFile();
     syncFactionsFromFile();
     syncTeamsFromFile();

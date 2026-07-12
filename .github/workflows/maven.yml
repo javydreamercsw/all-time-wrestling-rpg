@@ -45,6 +45,9 @@ jobs:
       github.ref == 'refs/heads/main' ||
       startsWith(github.ref, 'refs/heads/release/') ||
       startsWith(github.ref, 'refs/tags/')
+    # NOTE: docker-image-release-branch / docker-image-main-release (below) are gated on
+    # build-and-unit-test, integration-tests, and docker-it succeeding (or being legitimately
+    # skipped) — see their `if:` conditions — so they no longer fire independently of test results.
     outputs:
       code_changed: ${{ steps.filter.outputs.code_changed }}
       mysql_migration_changed: ${{ steps.filter.outputs.mysql_migration_changed }}
@@ -385,7 +388,19 @@ jobs:
 
   # Build and push Docker image (no release profile) on release/* branches
   docker-image-release-branch:
-    if: startsWith(github.ref, 'refs/heads/release/')
+    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it]
+    # rewrite-check/build-and-unit-test/integration-tests/docker-it "skip" both when their
+    # path filter doesn't apply AND when an upstream dependency fails (GitHub cascades failures
+    # as skips). rewrite-check shares build-and-unit-test's skip condition (code_changed), so
+    # including it closes that gap: a real rewrite-check failure surfaces as result == 'failure',
+    # not 'skipped', and still blocks the image push.
+    if: >-
+      always() &&
+      startsWith(github.ref, 'refs/heads/release/') &&
+      (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
+      (needs.build-and-unit-test.result == 'success' || needs.build-and-unit-test.result == 'skipped') &&
+      (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
+      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -416,7 +431,14 @@ jobs:
 
   # Build and push Docker image with release profile on version tag
   docker-image-main-release:
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it]
+    if: >-
+      always() &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) &&
+      (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
+      (needs.build-and-unit-test.result == 'success' || needs.build-and-unit-test.result == 'skipped') &&
+      (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
+      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

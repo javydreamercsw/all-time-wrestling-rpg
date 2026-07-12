@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.title.TitleService.ChallengeResult;
@@ -73,6 +74,7 @@ class TitleServiceTest {
   @Mock private ExpansionService expansionService;
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseSettingsService universeSettingsService;
+  @Mock private GameSettingService gameSettingService;
 
   @InjectMocks private TitleService titleService;
 
@@ -110,6 +112,8 @@ class TitleServiceTest {
     when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME"));
     when(titleRepository.save(any(Title.class))).thenAnswer(inv -> inv.getArgument(0));
     when(wrestlerService.getOrCreateState(anyLong(), anyLong())).thenReturn(wrestlerState);
+    when(gameSettingService.getCurrentGameDate())
+        .thenReturn(fixedInstant.atZone(ZoneOffset.UTC).toLocalDate());
   }
 
   // =====================================================================

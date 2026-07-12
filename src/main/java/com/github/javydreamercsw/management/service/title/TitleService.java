@@ -66,12 +66,20 @@ public class TitleService {
   private final ExpansionService expansionService;
   private final UniverseContextService universeContextService;
   private final UniverseSettingsService universeSettingsService;
+  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
 
   private Set<String> enabledExpansionCodes() {
     return universeContextService
         .getCurrentUniverse()
         .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
         .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
+  }
+
+  private Instant currentGameInstant() {
+    return gameSettingService
+        .getCurrentGameDate()
+        .atStartOfDay(java.time.ZoneOffset.UTC)
+        .toInstant();
   }
 
   public boolean isWrestlerEligible(@NonNull final Wrestler wrestler, @NonNull final Title title) {
@@ -387,6 +395,30 @@ public class TitleService {
         .orElse(false);
   }
 
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional(readOnly = true)
+  public List<com.github.javydreamercsw.management.domain.title.TitleReign> getAllReigns() {
+    return titleReignRepository.findAllWithTitle();
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public com.github.javydreamercsw.management.domain.title.TitleReign saveReign(
+      @NonNull final com.github.javydreamercsw.management.domain.title.TitleReign reign) {
+    return titleReignRepository.save(reign);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
+      allEntries = true)
+  public void deleteReign(@NonNull final Long reignId) {
+    titleReignRepository.deleteById(reignId);
+  }
+
   @PreAuthorize("isAuthenticated()")
   public Long getChallengeCost(@NonNull final Title title) {
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
@@ -507,7 +539,7 @@ public class TitleService {
                 new TitleStats(
                     title.getName(),
                     title.getTotalReigns(),
-                    title.getCurrentReignDays(Instant.now(clock)),
+                    title.getCurrentReignDays(currentGameInstant()),
                     title.getCurrentChampions().size()))
         .orElse(null);
   }

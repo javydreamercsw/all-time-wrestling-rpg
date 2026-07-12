@@ -349,17 +349,15 @@ class InjuryServiceTest {
   }
 
   @Test
-  @DisplayName("Should force heal injury as admin")
+  @DisplayName("Should force heal injury as admin without spending fans")
   void shouldForceHealInjuryAsAdmin() {
     // Given
     Universe universe = Universe.builder().name("Test Universe").build();
     universe.setId(1L);
 
-    Wrestler wrestler = createWrestler("Test Wrestler", 50_000L);
+    Wrestler wrestler = createWrestler("Test Wrestler", 0L);
     WrestlerState state =
-        WrestlerState.builder().wrestler(wrestler).universe(universe).fans(50_000L).build();
-    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
-        .thenReturn(Optional.of(state));
+        WrestlerState.builder().wrestler(wrestler).universe(universe).fans(0L).build();
     when(wrestlerStateRepository.findByWrestlerAndUniverse(
             any(Wrestler.class), any(Universe.class)))
         .thenReturn(Optional.of(state));
@@ -374,11 +372,12 @@ class InjuryServiceTest {
 
     // Then
     assertThat(result.success()).isTrue();
-    assertThat(result.message()).isEqualTo("Injury healed successfully");
+    assertThat(result.message()).isEqualTo("Injury force healed successfully");
     assertThat(result.diceRoll()).isEqualTo(6);
-    assertThat(result.fansSpent()).isTrue();
+    assertThat(result.fansSpent()).isFalse();
     assertThat(injury.getIsActive()).isFalse();
-    verify(wrestlerStateRepository).saveAndFlush(state);
+    assertThat(state.getFans()).isEqualTo(0L);
+    verify(wrestlerStateRepository, never()).saveAndFlush(any(WrestlerState.class));
     verify(injuryRepository).saveAndFlush(injury);
   }
 
@@ -502,7 +501,6 @@ class InjuryServiceTest {
     injury.setSeverity(severity);
     injury.setHealthPenalty(severity.getRandomHealthPenalty(random));
     injury.setHealingCost(severity.getBaseHealingCost());
-    injury.setIsActive(true);
     injury.setInjuryDate(Instant.now(fixedClock));
     return injury;
   }
