@@ -37,8 +37,10 @@ import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -65,6 +67,7 @@ public class RankingService {
   private final DefaultImageService imageService;
   private final WrestlerService wrestlerService;
   private final WrestlerStateRepository wrestlerStateRepository;
+  private final GameSettingService gameSettingService;
 
   @org.springframework.beans.factory.annotation.Autowired
   public RankingService(
@@ -74,7 +77,8 @@ public class RankingService {
       final TeamRepository teamRepository,
       final DefaultImageService imageService,
       final WrestlerService wrestlerService,
-      final WrestlerStateRepository wrestlerStateRepository) {
+      final WrestlerStateRepository wrestlerStateRepository,
+      final GameSettingService gameSettingService) {
     this.titleRepository = titleRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.factionRepository = factionRepository;
@@ -82,6 +86,11 @@ public class RankingService {
     this.imageService = imageService;
     this.wrestlerService = wrestlerService;
     this.wrestlerStateRepository = wrestlerStateRepository;
+    this.gameSettingService = gameSettingService;
+  }
+
+  private Instant currentGameInstant() {
+    return gameSettingService.getCurrentGameDate().atStartOfDay(ZoneOffset.UTC).toInstant();
   }
 
   @Transactional(readOnly = true)
@@ -303,7 +312,7 @@ public class RankingService {
                               .id(champion.getId())
                               .name(champion.getName())
                               .fans(state.getFans())
-                              .reignDays(reign.getReignLengthDays(Instant.now()))
+                              .reignDays(reign.getReignLengthDays(currentGameInstant()))
                               .build();
                         })
                     .collect(Collectors.toList()))
@@ -360,7 +369,7 @@ public class RankingService {
             reign.getChampions().stream().map(Wrestler::getId).collect(Collectors.toList()))
         .startDate(reign.getStartDate())
         .endDate(reign.getEndDate())
-        .durationDays(reign.getReignLengthDays(Instant.now()))
+        .durationDays(reign.getReignLengthDays(currentGameInstant()))
         .isCurrent(reign.isCurrentReign())
         .wonAtShowId(
             reign.getWonAtSegment() != null ? reign.getWonAtSegment().getShow().getId() : null)

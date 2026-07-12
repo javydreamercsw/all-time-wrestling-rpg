@@ -21,10 +21,19 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TitleReignRepository extends JpaRepository<TitleReign, Long> {
+
+  /**
+   * Fetches every reign with its {@code title} eagerly loaded — used outside a Hibernate session
+   * (e.g. Vaadin views with {@code open-in-view=false}) to avoid {@code
+   * LazyInitializationException} when rendering {@code reign.getTitle().getName()}.
+   */
+  @Query("SELECT tr FROM TitleReign tr JOIN FETCH tr.title")
+  List<TitleReign> findAllWithTitle();
 
   List<TitleReign> findByTitle(Title title);
 

@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
@@ -93,7 +94,9 @@ public class InjuryDialog extends Dialog {
     injuryGrid.addColumn(Injury::getSeverity).setHeader("Severity");
     injuryGrid.addColumn(Injury::getHealthPenalty).setHeader("Health Penalty");
     injuryGrid.addColumn(Injury::getInjuryDate).setHeader("Injury Date");
-    injuryGrid.addColumn(injury -> injury.getIsActive() ? "Active" : "Healed").setHeader("Status");
+    injuryGrid
+        .addColumn(injury -> injury.isCurrentlyActive() ? "Active" : "Healed")
+        .setHeader("Status");
     injuryGrid
         .addComponentColumn(
             injury -> {
@@ -101,7 +104,7 @@ public class InjuryDialog extends Dialog {
 
               Button healButton = new Button("Heal");
               healButton.setId("heal-injury-" + injury.getId());
-              healButton.setEnabled(injury.getIsActive());
+              healButton.setEnabled(injury.canBeHealed());
               healButton.addClickListener(
                   e -> {
                     var result = injuryService.attemptHealing(injury.getId());
@@ -122,25 +125,39 @@ public class InjuryDialog extends Dialog {
                 Button forceHealButton = new Button("Force Heal");
                 forceHealButton.setId("force-heal-injury-" + injury.getId());
                 forceHealButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-                forceHealButton.setEnabled(injury.getIsActive());
-                forceHealButton.addClickListener(
-                    e -> {
-                      var result = injuryService.forceHeal(injury.getId());
-                      if (result.success()) {
-                        Notification.show(result.message())
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                      } else {
-                        Notification.show(result.message())
-                            .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                      }
-                      updateGrid();
-                      onSave.run();
-                    });
+                forceHealButton.setEnabled(injury.canBeHealed());
+                forceHealButton.addClickListener(e -> confirmForceHeal(injury));
                 actions.add(forceHealButton);
               }
 
               return actions;
             })
         .setHeader("Actions");
+  }
+
+  private void confirmForceHeal(final Injury injury) {
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Force Heal Injury");
+    dialog.setText(
+        "Force healing '"
+            + injury.getName()
+            + "' bypasses the dice roll and fan cost entirely, even if "
+            + wrestler.getName()
+            + " can't afford it. Continue?");
+    dialog.setCancelable(true);
+    dialog.setConfirmText("Force Heal");
+    dialog.setConfirmButtonTheme("error primary");
+    dialog.addConfirmListener(
+        e -> {
+          var result = injuryService.forceHeal(injury.getId());
+          if (result.success()) {
+            Notification.show(result.message()).addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          } else {
+            Notification.show(result.message()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+          updateGrid();
+          onSave.run();
+        });
+    dialog.open();
   }
 }

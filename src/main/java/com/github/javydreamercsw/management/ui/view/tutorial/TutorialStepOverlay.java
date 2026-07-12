@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -68,7 +69,7 @@ public class TutorialStepOverlay extends Dialog {
     this.tutorialService = tutorialService;
     this.accountService = accountService;
 
-    setModal(false);
+    setModality(ModalityMode.MODELESS);
     setDraggable(true);
     setResizable(false);
     setCloseOnEsc(false);

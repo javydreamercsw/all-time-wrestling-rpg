@@ -26,8 +26,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Formula;
 import org.jspecify.annotations.Nullable;
 
 @Entity
@@ -75,14 +77,18 @@ public class Injury extends AbstractEntity<Long> {
   @Column(name = "hand_size_penalty", nullable = false)
   @Min(0) private Integer handSizePenalty = 0;
 
-  @Column(name = "is_active", nullable = false)
-  private Boolean isActive = true;
-
   @Column(name = "injury_date", nullable = false)
   private Instant injuryDate;
 
   @Column(name = "healed_date")
   private Instant healedDate;
+
+  // Derived from healedDate so display and healing-eligibility checks can never disagree.
+  // Hibernate overwrites this from the formula on load; the initializer only covers
+  // not-yet-persisted instances (e.g. new Injury() before the first save).
+  @Formula("(healed_date is null)")
+  @Setter(AccessLevel.NONE)
+  private Boolean isActive = true;
 
   @Column(name = "healing_cost", nullable = false)
   @Min(0) private Long healingCost = 10000L;
@@ -96,12 +102,12 @@ public class Injury extends AbstractEntity<Long> {
 
   @JsonIgnore
   public boolean isCurrentlyActive() {
-    return isActive && healedDate == null;
+    return healedDate == null;
   }
 
   public void heal() {
-    this.isActive = false;
     this.healedDate = Instant.now();
+    this.isActive = false;
   }
 
   @JsonIgnore
@@ -119,7 +125,7 @@ public class Injury extends AbstractEntity<Long> {
 
   @JsonIgnore
   public String getStatusEmoji() {
-    if (!isActive) {
+    if (!isCurrentlyActive()) {
       return "✅";
     }
     return severity.getEmoji();

@@ -82,6 +82,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleReignRepairService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
@@ -142,6 +143,7 @@ class DataInitializerTest {
   @Mock private ArenaRepository arenaRepository;
   @Mock private WrestlerRelationshipService relationshipService;
   @Mock private OutcomeMatrixService outcomeMatrixService;
+  @Mock private TitleReignRepairService titleReignRepairService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
@@ -183,7 +185,8 @@ class DataInitializerTest {
             arenaRepository,
             relationshipService,
             objectMapper,
-            outcomeMatrixService);
+            outcomeMatrixService,
+            titleReignRepairService);
 
     // Common setup for many tests: ensure resources are found
     Resource mockResource = mock(Resource.class);
@@ -250,7 +253,8 @@ class DataInitializerTest {
             arenaRepository,
             relationshipService,
             objectMapper,
-            outcomeMatrixService);
+            outcomeMatrixService,
+            titleReignRepairService);
 
     disabledInitializer.init();
     verify(gameSettingService, never()).findById(anyString());
