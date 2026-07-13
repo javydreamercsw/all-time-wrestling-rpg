@@ -361,7 +361,7 @@ public class MatchResultProcessorService {
       if (tournamentService.isPlayerChampion(campaign)) {
         log.info("Wrestler {} WON the tournament finals!", wrestler.getName());
         featureDataService.setFeatureValue(state, KEY_TOURNAMENT_WINNER, true);
-        awardTitleToWinner(wrestler.getId());
+        awardTitleToWinner(wrestler.getId(), finalShow);
       } else {
         TournamentDTO tournament = tournamentService.getTournamentState(campaign);
         if (tournament != null) {
@@ -372,7 +372,7 @@ public class MatchResultProcessorService {
                   .orElse(null);
           if (finals != null && finals.getWinnerId() != null) {
             log.info("Tournament won by wrestler ID: {}", finals.getWinnerId());
-            awardTitleToWinner(finals.getWinnerId());
+            awardTitleToWinner(finals.getWinnerId(), finalShow);
           }
         }
       }
@@ -558,7 +558,7 @@ public class MatchResultProcessorService {
     participantRepository.save(participant);
   }
 
-  private void awardTitleToWinner(final Long winnerId) {
+  private void awardTitleToWinner(final Long winnerId, final Show wonAtShow) {
     Wrestler winner =
         wrestlerRepository
             .findById(winnerId)
@@ -569,18 +569,25 @@ public class MatchResultProcessorService {
             .findByName("ATW World")
             .orElseThrow(() -> new IllegalStateException("ATW World Championship not found"));
 
+    // Use the show's in-game date (kayfabe date) rather than the real-world moment this ran, so
+    // reign history reflects the fictional timeline.
+    java.time.Instant awardDate =
+        wonAtShow != null && wonAtShow.getShowDate() != null
+            ? wonAtShow.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant()
+            : java.time.Instant.now();
+
     titleReignRepository
         .findByTitleAndEndDateIsNull(title)
         .forEach(
             reign -> {
-              reign.setEndDate(java.time.Instant.now());
+              reign.setEndDate(awardDate);
               titleReignRepository.save(reign);
             });
 
     TitleReign newReign = new TitleReign();
     newReign.setTitle(title);
     newReign.getChampions().add(winner);
-    newReign.setStartDate(java.time.Instant.now());
+    newReign.setStartDate(awardDate);
     titleReignRepository.save(newReign);
 
     log.info("Awarded {} to {}", title.getName(), winner.getName());

@@ -67,8 +67,10 @@ CREATE INDEX IF NOT EXISTS idx_rivalry_creation_date ON rivalry(creation_date);
 
 -- ==================== INJURY TABLE INDEXES ====================
 
--- Index for active injuries (critical for wrestler availability checks)
-CREATE INDEX IF NOT EXISTS idx_injury_active ON injury(is_active);
+-- Index for active injuries (critical for wrestler availability checks).
+-- isActive is derived from healed_date (see Injury.java @Formula), so the index is on
+-- healed_date directly rather than a stored is_active column.
+CREATE INDEX IF NOT EXISTS idx_injury_healed_date ON injury(healed_date);
 
 -- Index for wrestler injuries
 CREATE INDEX IF NOT EXISTS idx_injury_wrestler ON injury(wrestler_id);
@@ -80,10 +82,10 @@ CREATE INDEX IF NOT EXISTS idx_injury_severity ON injury(severity);
 CREATE INDEX IF NOT EXISTS idx_injury_date ON injury(injury_date);
 
 -- Composite index for finding active injuries by wrestler
-CREATE INDEX IF NOT EXISTS idx_injury_wrestler_active ON injury(wrestler_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_injury_wrestler_active ON injury(wrestler_id, healed_date);
 
 -- Composite index for severity-based queries
-CREATE INDEX IF NOT EXISTS idx_injury_active_severity ON injury(is_active, severity);
+CREATE INDEX IF NOT EXISTS idx_injury_active_severity ON injury(healed_date, severity);
 
 -- ==================== TITLE TABLE INDEXES ====================
 
@@ -200,7 +202,7 @@ CREATE INDEX IF NOT EXISTS idx_show_calendar ON wrestling_show(show_date DESC, s
 CREATE INDEX IF NOT EXISTS idx_rivalry_heat_tracking ON rivalry(is_active, heat DESC, creation_date);
 
 -- Index for injury recovery tracking
-CREATE INDEX IF NOT EXISTS idx_injury_recovery ON injury(is_active, severity, injury_date);
+CREATE INDEX IF NOT EXISTS idx_injury_recovery ON injury(healed_date, severity, injury_date);
 
 -- ==================== FOREIGN KEY PERFORMANCE INDEXES ====================
 

@@ -201,6 +201,7 @@ class NarrationDialogTest {
     champion.setName("John Cena");
     title.getCurrentChampions().add(champion);
     segment.getTitles().add(title);
+    segment.setIsTitleSegment(true);
 
     // When
     SegmentNarrationService.SegmentNarrationContext context = narrationDialog.buildSegmentContext();

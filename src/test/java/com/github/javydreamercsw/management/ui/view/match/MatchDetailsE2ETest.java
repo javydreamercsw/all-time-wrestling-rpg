@@ -90,7 +90,6 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     activeInjury.setName("Broken Arm");
     activeInjury.setSeverity(InjurySeverity.SEVERE);
     activeInjury.setHealthPenalty(20);
-    activeInjury.setIsActive(true);
     activeInjury.setInjuryDate(Instant.now());
     activeInjury.setInjuryType(legacyType);
     injuryRepository.saveAndFlush(activeInjury);
@@ -102,7 +101,6 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     healedInjury.setName("Twisted Ankle");
     healedInjury.setSeverity(InjurySeverity.MINOR);
     healedInjury.setHealthPenalty(5);
-    healedInjury.setIsActive(false);
     healedInjury.setHealedDate(Instant.now().minusSeconds(3600));
     healedInjury.setInjuryDate(Instant.now().minusSeconds(7200));
     healedInjury.setInjuryType(legacyType);

@@ -1802,16 +1802,16 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO injury (INJURY_ID, WRESTLER_ID, INJURY_TYPE_ID, NAME, DESCRIPTION, SEVERITY,\
-         HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, \
+         HEALTH_PENALTY, INJURY_DATE, HEALED_DATE, HEALING_COST, \
         INJURY_NOTES, CREATION_DATE, UNIVERSE_ID) \
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
                 """
                 SELECT INJURY_ID, WRESTLER_ID, INJURY_TYPE_ID, NAME, DESCRIPTION, SEVERITY,\
-                 HEALTH_PENALTY, IS_ACTIVE, INJURY_DATE, HEALED_DATE, HEALING_COST, INJURY_NOTES,\
+                 HEALTH_PENALTY, INJURY_DATE, HEALED_DATE, HEALING_COST, INJURY_NOTES,\
                  CREATION_DATE, UNIVERSE_ID FROM injury\
                 """);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
@@ -1826,16 +1826,15 @@ public class DataMigrationService {
         targetStatement.setString(5, resultSet.getString("DESCRIPTION"));
         targetStatement.setString(6, resultSet.getString("SEVERITY"));
         targetStatement.setInt(7, resultSet.getInt("HEALTH_PENALTY"));
-        targetStatement.setBoolean(8, resultSet.getBoolean("IS_ACTIVE"));
-        targetStatement.setTimestamp(9, resultSet.getTimestamp("INJURY_DATE"));
-        targetStatement.setTimestamp(10, resultSet.getTimestamp("HEALED_DATE"));
-        targetStatement.setLong(11, resultSet.getLong("HEALING_COST"));
-        targetStatement.setString(12, resultSet.getString("INJURY_NOTES"));
-        targetStatement.setTimestamp(13, resultSet.getTimestamp("CREATION_DATE"));
+        targetStatement.setTimestamp(8, resultSet.getTimestamp("INJURY_DATE"));
+        targetStatement.setTimestamp(9, resultSet.getTimestamp("HEALED_DATE"));
+        targetStatement.setLong(10, resultSet.getLong("HEALING_COST"));
+        targetStatement.setString(11, resultSet.getString("INJURY_NOTES"));
+        targetStatement.setTimestamp(12, resultSet.getTimestamp("CREATION_DATE"));
         if (resultSet.getObject("UNIVERSE_ID") != null) {
-          targetStatement.setLong(14, resultSet.getLong("UNIVERSE_ID"));
+          targetStatement.setLong(13, resultSet.getLong("UNIVERSE_ID"));
         } else {
-          targetStatement.setObject(14, null);
+          targetStatement.setObject(13, null);
         }
         targetStatement.addBatch();
         count++;

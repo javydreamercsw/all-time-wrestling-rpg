@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.service.title.TitleService.ChallengeResult;
@@ -73,6 +74,7 @@ class TitleServiceTest {
   @Mock private ExpansionService expansionService;
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseSettingsService universeSettingsService;
+  @Mock private GameSettingService gameSettingService;
 
   @InjectMocks private TitleService titleService;
 
@@ -110,6 +112,8 @@ class TitleServiceTest {
     when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME"));
     when(titleRepository.save(any(Title.class))).thenAnswer(inv -> inv.getArgument(0));
     when(wrestlerService.getOrCreateState(anyLong(), anyLong())).thenReturn(wrestlerState);
+    when(gameSettingService.getCurrentGameDate())
+        .thenReturn(fixedInstant.atZone(ZoneOffset.UTC).toLocalDate());
   }
 
   // =====================================================================
@@ -420,6 +424,47 @@ class TitleServiceTest {
 
     assertThat(title.getCurrentChampions()).contains(wrestler);
     verify(titleRepository).save(title);
+  }
+
+  @Test
+  void awardTitleTo_withSegment_usesShowInGameDateNotClock() {
+    // Regression: title reign dates must reflect the show's in-game (kayfabe) date, not the
+    // real-world wall-clock time the adjudication happened to run.
+    List<Wrestler> champions = List.of(wrestler);
+
+    com.github.javydreamercsw.management.domain.show.Show show =
+        new com.github.javydreamercsw.management.domain.show.Show();
+    show.setShowDate(java.time.LocalDate.of(2020, 6, 15));
+
+    com.github.javydreamercsw.management.domain.show.segment.Segment segment =
+        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+    segment.setShow(show);
+
+    titleService.awardTitleTo(title, champions, segment);
+
+    Instant expectedDate =
+        java.time.LocalDate.of(2020, 6, 15).atStartOfDay(ZoneOffset.UTC).toInstant();
+    assertThat(title.getCurrentReign()).isPresent();
+    assertThat(title.getCurrentReign().get().getStartDate()).isEqualTo(expectedDate);
+  }
+
+  @Test
+  void awardTitleTo_withSegmentButNoShowDate_fallsBackToClock() {
+    List<Wrestler> champions = List.of(wrestler);
+
+    com.github.javydreamercsw.management.domain.show.Show show =
+        new com.github.javydreamercsw.management.domain.show.Show();
+    // showDate intentionally left null
+
+    com.github.javydreamercsw.management.domain.show.segment.Segment segment =
+        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+    segment.setShow(show);
+
+    titleService.awardTitleTo(title, champions, segment);
+
+    assertThat(title.getCurrentReign()).isPresent();
+    assertThat(title.getCurrentReign().get().getStartDate())
+        .isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
   }
 
   // =====================================================================

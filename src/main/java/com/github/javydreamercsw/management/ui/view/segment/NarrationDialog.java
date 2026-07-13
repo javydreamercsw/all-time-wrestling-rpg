@@ -294,9 +294,19 @@ public class NarrationDialog extends Dialog {
     log.debug("Sending narration context to AI: {}", context);
     showProgress(true);
     UI ui = UI.getCurrent();
+    org.springframework.security.core.context.SecurityContext securityContext =
+        org.springframework.security.core.context.SecurityContextHolder.getContext();
 
     java.util.concurrent.CompletableFuture.supplyAsync(
-            () -> segmentNarrationController.narrateSegment(context))
+            () -> {
+              org.springframework.security.core.context.SecurityContextHolder.setContext(
+                  securityContext);
+              try {
+                return segmentNarrationController.narrateSegment(context);
+              } finally {
+                org.springframework.security.core.context.SecurityContextHolder.clearContext();
+              }
+            })
         .thenAccept(
             response ->
                 ui.access(
@@ -351,7 +361,11 @@ public class NarrationDialog extends Dialog {
     context.setSegmentOrder(segment.getSegmentOrder());
     context.setMainEvent(segment.isMainEvent());
 
-    if (!segment.getTitles().isEmpty()) {
+    boolean isTitleMatch =
+        Boolean.TRUE.equals(segment.getIsTitleSegment()) && !segment.getTitles().isEmpty();
+    context.setTitleMatch(isTitleMatch);
+
+    if (isTitleMatch) {
       String championshipNames =
           segment.getTitles().stream()
               .map(Title::getName)
@@ -413,11 +427,12 @@ public class NarrationDialog extends Dialog {
          from the 'npcs' list.
         4.  **No New Characters:** Do not invent or introduce any characters not listed in\
          the provided context. This is a strict rule.
-        5.  **Title Matches:** If the segment is a title match, the narration should\
-         prominently feature the championship at stake. Emphasize the prestige of the\
-         title, the champion's reign, and the challenger's quest to win it. The narration\
-         should build drama around the championship, making it the central focus of the\
-         segment.\
+        5.  **Title Matches:** The `isTitleMatch` field is the authoritative indicator of\
+         whether a championship is on the line. If `isTitleMatch` is true, prominently\
+         feature the championship at stake, emphasize the prestige of the title, the\
+         champion's reign, and the challenger's quest. If `isTitleMatch` is false, this\
+         is NOT a championship match — do not frame it as one even if a current champion\
+         is participating. Champions may compete in non-title matches.\
         """);
 
     StringBuilder outcomeBuilder = new StringBuilder();
@@ -680,9 +695,19 @@ public class NarrationDialog extends Dialog {
     log.info("Retrying narration with provider {} and context: {}", provider, context);
     showProgress(true);
     UI ui = UI.getCurrent();
+    org.springframework.security.core.context.SecurityContext retrySecurityContext =
+        org.springframework.security.core.context.SecurityContextHolder.getContext();
 
     java.util.concurrent.CompletableFuture.supplyAsync(
-            () -> segmentNarrationController.narrateSegmentWithProvider(provider, context))
+            () -> {
+              org.springframework.security.core.context.SecurityContextHolder.setContext(
+                  retrySecurityContext);
+              try {
+                return segmentNarrationController.narrateSegmentWithProvider(provider, context);
+              } finally {
+                org.springframework.security.core.context.SecurityContextHolder.clearContext();
+              }
+            })
         .thenAccept(
             response ->
                 ui.access(

@@ -60,6 +60,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAi
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -122,6 +123,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private NarrationParserService narrationParserService;
   @Mock private ExpansionService expansionService;
   @Mock private ShowPlanningAiService showPlanningAiService;
+  @Mock private TeamService teamService;
 
   @BeforeEach
   public void setUp() {
@@ -332,7 +334,7 @@ class ShowDetailViewTest extends AbstractViewTest {
             showPlanningAiService,
             arenaService);
     WrestlerFacade wrestlerFacade =
-        new WrestlerFacade(wrestlerService, wrestlerStatsService, relationshipService);
+        new WrestlerFacade(wrestlerService, wrestlerStatsService, relationshipService, teamService);
     ViewContext viewContext =
         new ViewContext(notificationService, su, universeContextService, expansionService);
     return new ShowDetailView(

@@ -152,6 +152,7 @@ public class ShowDetailView extends Main
   private final ArenaService arenaService;
   private final WrestlerRelationshipService relationshipService;
   private final ExpansionService expansionService;
+  private final com.github.javydreamercsw.management.service.team.TeamService teamService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -219,6 +220,7 @@ public class ShowDetailView extends Main
     this.ringsideActionService = ringsideActionService;
     this.arenaService = showContextFacade.getArenaService();
     this.relationshipService = wrestlerFacade.getWrestlerRelationshipService();
+    this.teamService = wrestlerFacade.getTeamService();
     this.notificationService = viewContext.getNotificationService();
     this.exportService = exportService;
     this.leagueRepository = leagueRepository;
@@ -1709,6 +1711,7 @@ public class ShowDetailView extends Main
                               titleService,
                               wrestlerService,
                               expansionService,
+                              teamService,
                               universeId);
                       return new Object[] {seg, preloaded};
                     }))

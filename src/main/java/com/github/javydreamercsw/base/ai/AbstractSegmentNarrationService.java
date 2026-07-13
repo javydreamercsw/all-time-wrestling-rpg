@@ -159,8 +159,10 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
         """);
     prompt.append(
         """
-        If the match is a championship match, the context will include the current champion. Make\
-         sure to acknowledge the current champion in your narration.
+        The `isTitleMatch` field explicitly states whether a championship is on the line.\
+         If `isTitleMatch` is true, acknowledge the current champion and emphasize the title\
+         stakes. If `isTitleMatch` is false, this is NOT a championship match — do not\
+         describe it as one, even if a current champion is a participant.
 
         """);
     prompt.append(

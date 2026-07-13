@@ -36,7 +36,6 @@ public class InjuryDialog extends Dialog {
   private final Wrestler wrestler;
   private final Long universeId;
   private final InjuryService injuryService;
-  private final InjuryTypeService injuryTypeService;
   private final Runnable onSave;
   private final Grid<Injury> injuryGrid = new Grid<>(Injury.class);
   private final SecurityUtils securityUtils;
@@ -51,7 +50,6 @@ public class InjuryDialog extends Dialog {
     this.wrestler = wrestler;
     this.universeId = universeId;
     this.injuryService = injuryService;
-    this.injuryTypeService = injuryTypeService;
     this.onSave = onSave;
     this.securityUtils = securityUtils;
 
@@ -93,7 +91,9 @@ public class InjuryDialog extends Dialog {
     injuryGrid.addColumn(Injury::getSeverity).setHeader("Severity");
     injuryGrid.addColumn(Injury::getHealthPenalty).setHeader("Health Penalty");
     injuryGrid.addColumn(Injury::getInjuryDate).setHeader("Injury Date");
-    injuryGrid.addColumn(injury -> injury.getIsActive() ? "Active" : "Healed").setHeader("Status");
+    injuryGrid
+        .addColumn(injury -> injury.isCurrentlyActive() ? "Active" : "Healed")
+        .setHeader("Status");
     injuryGrid
         .addComponentColumn(
             injury -> {
@@ -101,7 +101,7 @@ public class InjuryDialog extends Dialog {
 
               Button healButton = new Button("Heal");
               healButton.setId("heal-injury-" + injury.getId());
-              healButton.setEnabled(injury.getIsActive());
+              healButton.setEnabled(injury.canBeHealed());
               healButton.addClickListener(
                   e -> {
                     var result = injuryService.attemptHealing(injury.getId());
@@ -122,7 +122,7 @@ public class InjuryDialog extends Dialog {
                 Button forceHealButton = new Button("Force Heal");
                 forceHealButton.setId("force-heal-injury-" + injury.getId());
                 forceHealButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-                forceHealButton.setEnabled(injury.getIsActive());
+                forceHealButton.setEnabled(injury.canBeHealed());
                 forceHealButton.addClickListener(
                     e -> {
                       var result = injuryService.forceHeal(injury.getId());
@@ -141,6 +141,7 @@ public class InjuryDialog extends Dialog {
 
               return actions;
             })
-        .setHeader("Actions");
+        .setHeader("Actions")
+        .setKey("actions");
   }
 }

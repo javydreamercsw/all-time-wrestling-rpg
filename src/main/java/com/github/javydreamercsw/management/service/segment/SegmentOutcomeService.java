@@ -244,15 +244,21 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
   }
 
   private String getRandomFinishingMove(Wrestler winner) {
-    if (winner != null && winner.getDecks() != null) {
+    if (winner != null) {
+      // Re-fetch with deck cards eagerly loaded — this method may be called from an async
+      // thread (ForkJoinPool) where the original Hibernate session is already closed.
+      Wrestler eagerWinner =
+          wrestlerRepository.findByNameWithDecksAndCards(winner.getName()).orElse(winner);
       List<String> finishers =
-          winner.getDecks().stream()
-              .flatMap(deck -> deck.getCards().stream())
-              .map(DeckCard::getCard)
-              .filter(Card::getFinisher)
-              .map(Card::getName)
-              .distinct()
-              .toList();
+          eagerWinner.getDecks() == null
+              ? List.of()
+              : eagerWinner.getDecks().stream()
+                  .flatMap(deck -> deck.getCards().stream())
+                  .map(DeckCard::getCard)
+                  .filter(Card::getFinisher)
+                  .map(Card::getName)
+                  .distinct()
+                  .toList();
       if (!finishers.isEmpty()) {
         return finishers.get(random.nextInt(finishers.size()));
       }

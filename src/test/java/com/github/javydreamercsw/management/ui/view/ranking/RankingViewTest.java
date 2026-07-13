@@ -94,8 +94,22 @@ class RankingViewTest extends AbstractViewTest {
   @Test
   void testTeamRankings() {
     List<RankedTeamDTO> teamContenders = new ArrayList<>();
-    teamContenders.add(RankedTeamDTO.builder().id(1L).name("Team 1").fans(1500L).rank(1).build());
-    teamContenders.add(RankedTeamDTO.builder().id(2L).name("Team 2").fans(1200L).rank(2).build());
+    teamContenders.add(
+        RankedTeamDTO.builder()
+            .id(1L)
+            .name("Team 1")
+            .memberNames(List.of("Wrestler A", "Wrestler B"))
+            .fans(1500L)
+            .rank(1)
+            .build());
+    teamContenders.add(
+        RankedTeamDTO.builder()
+            .id(2L)
+            .name("Team 2")
+            .memberNames(List.of("Wrestler C", "Wrestler D"))
+            .fans(1200L)
+            .rank(2)
+            .build());
     when(rankingService.getRankedContenders(championshipDTO.getId()))
         .thenAnswer(invocation -> teamContenders);
 
@@ -111,6 +125,9 @@ class RankingViewTest extends AbstractViewTest {
     assertEquals(2, items.size());
     assertEquals("Team 1", items.get(0).getName());
     assertEquals("Team 2", items.get(1).getName());
+    // Regression: both tag team members must be present, not just the first.
+    assertEquals(List.of("Wrestler A", "Wrestler B"), items.get(0).getMemberNames());
+    assertEquals(List.of("Wrestler C", "Wrestler D"), items.get(1).getMemberNames());
   }
 
   @Test
