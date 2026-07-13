@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
@@ -93,5 +94,13 @@ class TeamFormDialogFieldsTest extends AbstractViewTest {
   void statusFieldExists() {
     ComboBox<?> statusField = (ComboBox<?>) ReflectionTestUtils.getField(dialog, "statusField");
     assertNotNull(statusField, "statusField should not be null");
+  }
+
+  @Test
+  @DisplayName("setTeam(null) should not throw when initializing a new team's wrestler fields")
+  void setTeamWithNullDoesNotThrowForNewTeam() {
+    // A new team has no wrestlers selected yet, so wrestler1Id/wrestler2Id are null.
+    // The binder must not call wrestlerRepository.findById(null).
+    assertDoesNotThrow(() -> dialog.setTeam(null));
   }
 }
