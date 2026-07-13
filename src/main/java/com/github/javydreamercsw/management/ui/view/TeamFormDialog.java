@@ -211,7 +211,10 @@ public class TeamFormDialog extends Dialog {
         .forField(wrestler1Field)
         .withValidator(wrestler -> wrestler != null, "First wrestler is required")
         .bind(
-            dto -> wrestlerRepository.findById(dto.getWrestler1Id()).orElse(null),
+            dto ->
+                dto.getWrestler1Id() != null
+                    ? wrestlerRepository.findById(dto.getWrestler1Id()).orElse(null)
+                    : null,
             (dto, wrestler) -> {
               if (wrestler != null) {
                 dto.setWrestler1Id(wrestler.getId());
@@ -223,7 +226,10 @@ public class TeamFormDialog extends Dialog {
         .forField(wrestler2Field)
         .withValidator(wrestler -> wrestler != null, "Second wrestler is required")
         .bind(
-            dto -> wrestlerRepository.findById(dto.getWrestler2Id()).orElse(null),
+            dto ->
+                dto.getWrestler2Id() != null
+                    ? wrestlerRepository.findById(dto.getWrestler2Id()).orElse(null)
+                    : null,
             (dto, wrestler) -> {
               if (wrestler != null) {
                 dto.setWrestler2Id(wrestler.getId());
