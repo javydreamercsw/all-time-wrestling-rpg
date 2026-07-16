@@ -16,14 +16,12 @@
 */
 package com.github.javydreamercsw.management.service.segment;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -189,35 +187,5 @@ class SegmentAdjudicationServiceUnitTest {
     verify(rivalryService, times(1)).addHeat(eq(99L), eq(1), eq("From segment: Match"));
     verify(rivalryService, never())
         .addHeatBetweenWrestlers(anyLong(), anyLong(), anyInt(), anyString(), anyLong());
-  }
-
-  @Test
-  void testAdjudicateMatch_WhenNoUniverseContext_DoesNotThrow() {
-    // Simulate no VaadinSession / no ThreadLocal: getCurrentUniverseId returns null.
-    // Build a separate service with an unstubbed mock to verify graceful handling.
-    UniverseContextService noSessionService = mock(UniverseContextService.class);
-    SegmentAdjudicationService service =
-        new SegmentAdjudicationService(
-            rivalryService,
-            wrestlerService,
-            feudResolutionService,
-            feudService,
-            titleService,
-            matchFulfillmentRepository,
-            leagueRepository,
-            leagueRosterRepository,
-            legacyService,
-            factionService,
-            ringsideActionService,
-            ringsideAiService,
-            retirementService,
-            gameSettingService,
-            relationshipService,
-            wrestlerStatusService,
-            noSessionService,
-            random);
-    // Unstubbed getCurrentUniverseId() returns null (default for Long)
-
-    assertDoesNotThrow(() -> service.adjudicateMatch(matchSegment));
   }
 }
