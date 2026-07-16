@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -106,6 +107,31 @@ class SegmentTypeServiceTest {
     List<SegmentType> result = segmentTypeService.findAll();
 
     assertEquals(2, result.size());
+  }
+
+  @Test
+  void findAll_usesUniverseSpecificExpansionCodes() {
+    Universe universe = Universe.builder().build();
+    universe.setId(99L);
+    Mockito.when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    Mockito.when(universeSettingsService.getEnabledExpansionCodesForUniverse(universe))
+        .thenReturn(Set.of("UNIVERSE_CODE"));
+
+    SegmentType universeType = new SegmentType();
+    universeType.setName("Universe Type");
+    universeType.setExpansionCode("UNIVERSE_CODE");
+
+    SegmentType excludedType = new SegmentType();
+    excludedType.setName("Base Type");
+    excludedType.setExpansionCode("BASE_GAME");
+
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(universeType, excludedType));
+
+    List<SegmentType> result = segmentTypeService.findAll();
+
+    assertEquals(1, result.size());
+    assertEquals("Universe Type", result.get(0).getName());
+    verify(universeSettingsService).getEnabledExpansionCodesForUniverse(universe);
   }
 
   // ==================== count ====================

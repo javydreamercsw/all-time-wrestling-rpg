@@ -981,6 +981,32 @@ class TitleServiceTest {
     assertThat(result).containsExactly(title);
   }
 
+  @Test
+  void findAll_usesUniverseSpecificExpansionCodes() {
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(universeSettingsService.getEnabledExpansionCodesForUniverse(universe))
+        .thenReturn(Set.of("UNIVERSE_CODE"));
+
+    Title universeTitle = new Title();
+    universeTitle.setId(300L);
+    universeTitle.setName("Universe Title");
+    universeTitle.setExpansionCode("UNIVERSE_CODE");
+    universeTitle.setIsActive(true);
+
+    Title excludedTitle = new Title();
+    excludedTitle.setId(301L);
+    excludedTitle.setName("Excluded Title");
+    excludedTitle.setExpansionCode("BASE_GAME");
+    excludedTitle.setIsActive(true);
+
+    when(titleRepository.findAll()).thenReturn(List.of(universeTitle, excludedTitle));
+
+    List<Title> result = titleService.findAll();
+
+    assertThat(result).containsExactly(universeTitle);
+    verify(universeSettingsService).getEnabledExpansionCodesForUniverse(universe);
+  }
+
   // =====================================================================
   // helpers
   // =====================================================================

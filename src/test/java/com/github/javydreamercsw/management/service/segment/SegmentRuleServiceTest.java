@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleVariantGuide;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -290,6 +292,30 @@ class SegmentRuleServiceTest {
 
     assertThat(result).hasSize(2);
     verify(segmentRuleRepository).findAll();
+  }
+
+  @Test
+  void findAll_usesUniverseSpecificExpansionCodes() {
+    Universe universe = Universe.builder().build();
+    universe.setId(99L);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(universeSettingsService.getEnabledExpansionCodesForUniverse(universe))
+        .thenReturn(Set.of("UNIVERSE_CODE"));
+
+    SegmentRule matchingRule = new SegmentRule();
+    matchingRule.setName("Universe Rule");
+    matchingRule.setExpansionCode("UNIVERSE_CODE");
+
+    SegmentRule excludedRule = new SegmentRule();
+    excludedRule.setName("Base Rule");
+    excludedRule.setExpansionCode("BASE_GAME");
+
+    when(segmentRuleRepository.findAll()).thenReturn(List.of(matchingRule, excludedRule));
+
+    List<SegmentRule> result = segmentRuleService.findAll();
+
+    assertThat(result).containsExactly(matchingRule);
+    verify(universeSettingsService).getEnabledExpansionCodesForUniverse(universe);
   }
 
   @Test
