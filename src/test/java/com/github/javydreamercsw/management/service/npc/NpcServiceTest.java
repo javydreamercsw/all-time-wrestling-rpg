@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -195,6 +196,60 @@ class NpcServiceTest {
     List<Npc> result = npcService.findAllIncludingInactive();
 
     assertEquals(2, result.size());
+  }
+
+  // ==================== findAll(Set<String>) — async-safe overload ====================
+  // Regression coverage for ATW-uwqv: findAll() is @Cacheable with no explicit key, so a caller
+  // on a thread with no universe context (e.g. cache warm-up from a request thread) must not
+  // populate that shared cache entry with the wrong universe's filtered list. Callers outside the
+  // UI thread should use this uncached, explicit-codes overload instead (mirrors the
+  // SegmentTypeService/SegmentRuleService fix for ATW-8djt).
+
+  @Test
+  void findAllWithCodes_doesNotConsultUniverseContext() {
+    Npc baseNpc = Npc.builder().name("Base").expansionCode("BASE_GAME").build();
+    when(npcRepository.findAll()).thenReturn(Arrays.asList(baseNpc));
+
+    List<Npc> result = npcService.findAll(Set.of("BASE_GAME"));
+
+    assertEquals(1, result.size());
+    verify(universeContextService, never()).getCurrentUniverse();
+  }
+
+  @Test
+  void findAllWithCodes_emptyCodesFiltersOutAllNpcsWithExpansionCode() {
+    Npc baseNpc = Npc.builder().name("Base").expansionCode("BASE_GAME").build();
+    when(npcRepository.findAll()).thenReturn(Arrays.asList(baseNpc));
+
+    List<Npc> result = npcService.findAll(Set.of());
+
+    assertTrue(
+        result.isEmpty(), "NPCs with non-null expansionCode must be excluded when set is empty");
+  }
+
+  @Test
+  void findAllWithCodes_nullExpansionCodeAlwaysIncluded() {
+    Npc noCode = Npc.builder().name("Commentator").expansionCode(null).build();
+    when(npcRepository.findAll()).thenReturn(Arrays.asList(noCode));
+
+    List<Npc> result = npcService.findAll(Set.of());
+
+    assertEquals(1, result.size(), "NPCs with null expansionCode must always be included");
+  }
+
+  @Test
+  void findAllWithCodes_excludesInactiveNpcs() {
+    Npc activeNpc = Npc.builder().name("Active Ref").expansionCode("BASE_GAME").build();
+    activeNpc.setActive(true);
+    Npc inactiveNpc = Npc.builder().name("Inactive Ref").expansionCode("BASE_GAME").build();
+    inactiveNpc.setActive(false);
+
+    when(npcRepository.findAll()).thenReturn(Arrays.asList(activeNpc, inactiveNpc));
+
+    List<Npc> result = npcService.findAll(Set.of("BASE_GAME"));
+
+    assertEquals(1, result.size());
+    assertEquals("Active Ref", result.get(0).getName());
   }
 
   @Test

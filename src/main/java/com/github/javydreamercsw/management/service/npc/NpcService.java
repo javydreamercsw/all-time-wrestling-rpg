@@ -146,13 +146,22 @@ public class NpcService {
 
   @Cacheable(value = NPCS_CACHE)
   public List<Npc> findAll() {
-    Set<String> enabledExpansions = enabledExpansionCodes();
+    return findAll(enabledExpansionCodes());
+  }
+
+  /**
+   * Expansion-filtered lookup using caller-supplied codes. Use this from async contexts or request
+   * threads where the thread-local universe context is unavailable (e.g. cache warm-up), so the
+   * result isn't cached under the universe-agnostic {@link #findAll()} key and served back to
+   * unrelated universes for the cache TTL.
+   */
+  public List<Npc> findAll(final Set<String> enabledExpansionCodes) {
     return npcRepository.findAll().stream()
         .filter(Npc::isActive)
         .filter(
             npc ->
                 npc.getExpansionCode() == null
-                    || enabledExpansions.contains(npc.getExpansionCode()))
+                    || enabledExpansionCodes.contains(npc.getExpansionCode()))
         .collect(Collectors.toList());
   }
 
