@@ -16,4 +16,3 @@
 - Build\(deps-dev\): Bump org.graalvm.buildtools:native-maven-plugin from 1.1.0 to 1.1.3 [\#402](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/402) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump org.openrewrite.maven:rewrite-maven-plugin from 6.42.0 to 6.43.0 [\#401](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/401) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump org.openrewrite.recipe:rewrite-static-analysis from 2.37.0 to 2.38.0 [\#400](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/400) ([dependabot[bot]](https://github.com/apps/dependabot))
-

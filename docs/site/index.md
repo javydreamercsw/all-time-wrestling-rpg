@@ -21,7 +21,9 @@ details: Lead your wrestler to glory in an immersive single-player campaign.
 details: Take control of the promotion and book the ultimate card.
 - title: Multiplayer
 details: Challenge other players in online leagues and tournaments.
--------------------------------------------------------------------
+---
+
+---
 
 ## Download & Play
 
@@ -34,4 +36,3 @@ For the best experience, use the **Native Installer** for your operating system.
 <DownloadLinks />
 
 - **Docker**: For advanced users. `docker pull javydreamercsw/all-time-wrestling-rpg`
-
