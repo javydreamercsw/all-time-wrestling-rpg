@@ -48,6 +48,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -913,6 +914,71 @@ class TitleServiceTest {
     when(titleRepository.count()).thenReturn(7L);
 
     assertThat(titleService.count()).isEqualTo(7L);
+  }
+
+  // =====================================================================
+  // findAll(Set<String>) — async-safe overload
+  // =====================================================================
+  // Regression coverage for ATW-aq20: findAll() is @Cacheable with no explicit key, so a caller
+  // on a thread with no universe context (e.g. EditSegmentDialog.PreloadedData#load running on an
+  // async pre-fetch thread) must not populate that shared cache entry with the wrong universe's
+  // filtered list. Callers outside the UI thread should use this uncached, explicit-codes
+  // overload instead (mirrors the SegmentTypeService/SegmentRuleService fix for ATW-8djt and the
+  // NpcService fix for ATW-uwqv).
+
+  @Test
+  void findAllWithCodes_doesNotConsultUniverseContext() {
+    title.setExpansionCode("BASE_GAME");
+    when(titleRepository.findAll()).thenReturn(List.of(title));
+
+    List<Title> result = titleService.findAll(Set.of("BASE_GAME"));
+
+    assertThat(result).containsExactly(title);
+    verify(universeContextService, never()).getCurrentUniverse();
+  }
+
+  @Test
+  void findAllWithCodes_emptyCodesIncludesAllTitlesDefensiveFallback() {
+    // Unlike NpcService, TitleService treats an empty enabled-codes set as a defensive
+    // fallback (e.g. expansions.json unreadable) and still returns every title rather than
+    // hiding them all (ATW-ncn6) — this overload must preserve that behavior.
+    title.setExpansionCode("BASE_GAME");
+    when(titleRepository.findAll()).thenReturn(List.of(title));
+
+    List<Title> result = titleService.findAll(Set.of());
+
+    assertThat(result).containsExactly(title);
+  }
+
+  @Test
+  void findAllWithCodes_nullExpansionCodeAlwaysIncluded() {
+    title.setExpansionCode(null);
+    when(titleRepository.findAll()).thenReturn(List.of(title));
+
+    List<Title> result = titleService.findAll(Set.of("SOME_OTHER_EXPANSION"));
+
+    assertThat(result).containsExactly(title);
+  }
+
+  @Test
+  void findAllWithCodes_excludesTitleWhoseExpansionCodeIsDisabled() {
+    title.setExpansionCode("RUMBLE");
+    when(titleRepository.findAll()).thenReturn(List.of(title));
+
+    List<Title> result = titleService.findAll(Set.of("BASE_GAME"));
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void findAll_delegatesToCodesOverloadUsingCurrentContext() {
+    title.setExpansionCode("BASE_GAME");
+    when(titleRepository.findAll()).thenReturn(List.of(title));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME"));
+
+    List<Title> result = titleService.findAll();
+
+    assertThat(result).containsExactly(title);
   }
 
   // =====================================================================
