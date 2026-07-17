@@ -93,24 +93,25 @@ class WearAndTearAdjudicationTest {
   public void setUp() {
     segmentAdjudicationService =
         new SegmentAdjudicationService(
-            rivalryService,
-            wrestlerService,
-            feudResolutionService,
-            feudService,
-            titleService,
-            matchFulfillmentRepository,
-            leagueRepository,
-            leagueRosterRepository,
-            legacyService,
-            factionService,
-            ringsideActionService,
-            ringsideAiService,
-            retirementService,
-            gameSettingService,
-            relationshipService,
-            wrestlerStatusService,
-            universeContextService,
-            random);
+            new SegmentAdjudicationService.Dependencies(
+                rivalryService,
+                wrestlerService,
+                feudResolutionService,
+                feudService,
+                titleService,
+                matchFulfillmentRepository,
+                leagueRepository,
+                leagueRosterRepository,
+                legacyService,
+                factionService,
+                ringsideActionService,
+                ringsideAiService,
+                retirementService,
+                gameSettingService,
+                relationshipService,
+                wrestlerStatusService,
+                universeContextService,
+                random));
 
     when(universe.getId()).thenReturn(1L);
     when(show.getUniverse()).thenReturn(universe);

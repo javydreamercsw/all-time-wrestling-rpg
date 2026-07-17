@@ -34,6 +34,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 class NpcListViewTest extends AbstractViewTest {
 
@@ -48,7 +49,7 @@ class NpcListViewTest extends AbstractViewTest {
   @SuppressWarnings("unchecked")
   @BeforeEach
   void setup() {
-    Mockito.when(npcService.findAll(ArgumentMatchers.any())).thenReturn(Page.empty());
+    Mockito.when(npcService.findAll(ArgumentMatchers.any(Pageable.class))).thenReturn(Page.empty());
     view =
         new NpcListView(npcService, securityUtils, imageFactory, storageService, aiSettingsService);
     UI.getCurrent().add(view);

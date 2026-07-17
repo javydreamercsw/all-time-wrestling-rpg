@@ -104,20 +104,28 @@ public class CacheConfig {
   public CacheMonitor cacheMonitor(
       final CacheManager cacheManager,
       @org.springframework.context.annotation.Lazy
-          final com.github.javydreamercsw.management.service.npc.NpcService npcService) {
-    return new CacheMonitor(cacheManager, npcService);
+          final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+      @org.springframework.context.annotation.Lazy
+          final com.github.javydreamercsw.management.service.expansion.ExpansionService
+              expansionService) {
+    return new CacheMonitor(cacheManager, npcService, expansionService);
   }
 
   /** Cache monitoring utility for performance analysis. */
   public static class CacheMonitor {
     private final CacheManager cacheManager;
     private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
+    private final com.github.javydreamercsw.management.service.expansion.ExpansionService
+        expansionService;
 
     public CacheMonitor(
         final CacheManager cacheManager,
-        final com.github.javydreamercsw.management.service.npc.NpcService npcService) {
+        final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+        final com.github.javydreamercsw.management.service.expansion.ExpansionService
+            expansionService) {
       this.cacheManager = cacheManager;
       this.npcService = npcService;
+      this.expansionService = expansionService;
     }
 
     /** Logs cache statistics for monitoring performance. */
@@ -204,9 +212,14 @@ public class CacheConfig {
     public void warmUpCaches() {
       log.debug("🔥 Warming up caches...");
       try {
-        // Warm up NPCs cache
+        // Warm up NPCs cache. This can run from a request thread with no VaadinSession (e.g.
+        // triggered via the admin endpoint), so it must NOT call the universe-agnostic cached
+        // npcService.findAll() — that would poison the shared cache entry with this thread's
+        // fallback expansion codes and serve them to every universe for the cache TTL. Use the
+        // uncached, explicit-codes overload instead (mirrors SegmentTypeService/SegmentRuleService
+        // fix for ATW-8djt).
         log.debug("Warming up NPCs cache...");
-        npcService.findAll();
+        npcService.findAll(new java.util.HashSet<>(expansionService.getEnabledExpansionCodes()));
 
         log.debug("✅ Cache warm-up completed");
       } catch (Exception e) {

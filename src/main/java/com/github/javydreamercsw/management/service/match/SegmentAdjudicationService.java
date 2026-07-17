@@ -171,25 +171,72 @@ public class SegmentAdjudicationService {
       final WrestlerStatusService wrestlerStatusService,
       final UniverseContextService universeContextService,
       final Random random) {
-    this.rivalryService = rivalryService;
-    this.wrestlerService = wrestlerService;
-    this.feudResolutionService = feudResolutionService;
-    this.feudService = feudService;
-    this.titleService = titleService;
-    this.matchFulfillmentRepository = matchFulfillmentRepository;
-    this.leagueRepository = leagueRepository;
-    this.leagueRosterRepository = leagueRosterRepository;
-    this.legacyService = legacyService;
-    this.factionService = factionService;
-    this.ringsideActionService = ringsideActionService;
-    this.ringsideAiService = ringsideAiService;
-    this.retirementService = retirementService;
-    this.gameSettingService = gameSettingService;
-    this.relationshipService = relationshipService;
-    this.wrestlerStatusService = wrestlerStatusService;
-    this.universeContextService = universeContextService;
-    this.random = random;
+    this(
+        new Dependencies(
+            rivalryService,
+            wrestlerService,
+            feudResolutionService,
+            feudService,
+            titleService,
+            matchFulfillmentRepository,
+            leagueRepository,
+            leagueRosterRepository,
+            legacyService,
+            factionService,
+            ringsideActionService,
+            ringsideAiService,
+            retirementService,
+            gameSettingService,
+            relationshipService,
+            wrestlerStatusService,
+            universeContextService,
+            random));
   }
+
+  public SegmentAdjudicationService(final Dependencies dep) {
+    this.rivalryService = dep.rivalryService;
+    this.wrestlerService = dep.wrestlerService;
+    this.feudResolutionService = dep.feudResolutionService;
+    this.feudService = dep.feudService;
+    this.titleService = dep.titleService;
+    this.matchFulfillmentRepository = dep.matchFulfillmentRepository;
+    this.leagueRepository = dep.leagueRepository;
+    this.leagueRosterRepository = dep.leagueRosterRepository;
+    this.legacyService = dep.legacyService;
+    this.factionService = dep.factionService;
+    this.ringsideActionService = dep.ringsideActionService;
+    this.ringsideAiService = dep.ringsideAiService;
+    this.retirementService = dep.retirementService;
+    this.gameSettingService = dep.gameSettingService;
+    this.relationshipService = dep.relationshipService;
+    this.wrestlerStatusService = dep.wrestlerStatusService;
+    this.universeContextService = dep.universeContextService;
+    this.random = dep.random;
+  }
+
+  /**
+   * Groups all constructor dependencies into a single parameter object, reducing the visible
+   * constructor surface from 18 parameters to 1.
+   */
+  public record Dependencies(
+      RivalryService rivalryService,
+      WrestlerService wrestlerService,
+      FeudResolutionService feudResolutionService,
+      MultiWrestlerFeudService feudService,
+      TitleService titleService,
+      MatchFulfillmentRepository matchFulfillmentRepository,
+      LeagueRepository leagueRepository,
+      LeagueRosterRepository leagueRosterRepository,
+      LegacyService legacyService,
+      FactionService factionService,
+      RingsideActionService ringsideActionService,
+      RingsideAiService ringsideAiService,
+      RetirementService retirementService,
+      GameSettingService gameSettingService,
+      WrestlerRelationshipService relationshipService,
+      WrestlerStatusService wrestlerStatusService,
+      UniverseContextService universeContextService,
+      Random random) {}
 
   /**
    * Adjudicates a segment by ID. Preferred entry point from UI callers (e.g. MatchView) that hold a
