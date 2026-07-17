@@ -125,24 +125,25 @@ class SegmentAdjudicationServiceTest {
     lenient().when(gameSettingService.getRivalryResolutionThresholdRegular()).thenReturn(35);
     segmentAdjudicationService =
         new SegmentAdjudicationService(
-            rivalryService,
-            wrestlerService,
-            feudResolutionService,
-            feudService,
-            titleService,
-            matchFulfillmentRepository,
-            leagueRepository,
-            leagueRosterRepository,
-            legacyService,
-            factionService,
-            ringsideActionService,
-            ringsideAiService,
-            retirementService,
-            gameSettingService,
-            relationshipService,
-            wrestlerStatusService,
-            universeContextService,
-            random);
+            new SegmentAdjudicationService.Dependencies(
+                rivalryService,
+                wrestlerService,
+                feudResolutionService,
+                feudService,
+                titleService,
+                matchFulfillmentRepository,
+                leagueRepository,
+                leagueRosterRepository,
+                legacyService,
+                factionService,
+                ringsideActionService,
+                ringsideAiService,
+                retirementService,
+                gameSettingService,
+                relationshipService,
+                wrestlerStatusService,
+                universeContextService,
+                random));
     org.springframework.test.util.ReflectionTestUtils.setField(
         segmentAdjudicationService, "eventPublisher", eventPublisher);
 

@@ -154,6 +154,53 @@ class FactionServiceTest {
     assertThat(result).containsExactly(faction);
   }
 
+  @Test
+  void findAll_usesUniverseSpecificExpansionCodes() {
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(universeSettingsService.getEnabledExpansionCodesForUniverse(universe))
+        .thenReturn(Set.of("UNIVERSE_CODE"));
+
+    Wrestler matchingMember = Wrestler.builder().build();
+    matchingMember.setId(77L);
+    matchingMember.setExpansionCode("UNIVERSE_CODE");
+    WrestlerState matchingState =
+        WrestlerState.builder()
+            .wrestler(matchingMember)
+            .universe(universe)
+            .tier(WrestlerTier.ROOKIE)
+            .build();
+
+    Wrestler excludedMember = Wrestler.builder().build();
+    excludedMember.setId(78L);
+    excludedMember.setExpansionCode("BASE_GAME");
+    WrestlerState excludedState =
+        WrestlerState.builder()
+            .wrestler(excludedMember)
+            .universe(universe)
+            .tier(WrestlerTier.ROOKIE)
+            .build();
+
+    Set<WrestlerState> matchingMembers = new HashSet<>();
+    matchingMembers.add(matchingState);
+    Faction matchingFaction = Faction.builder().members(matchingMembers).build();
+    matchingFaction.setId(10L);
+    matchingFaction.setName("Matching Faction");
+
+    Set<WrestlerState> excludedMembers = new HashSet<>();
+    excludedMembers.add(excludedState);
+    Faction excludedFaction = Faction.builder().members(excludedMembers).build();
+    excludedFaction.setId(11L);
+    excludedFaction.setName("Excluded Faction");
+
+    when(factionRepository.findAll()).thenReturn(List.of(matchingFaction, excludedFaction));
+
+    List<Faction> result = factionService.findAll();
+
+    assertThat(result).containsExactly(matchingFaction);
+    assertThat(result.get(0).getName()).isEqualTo("Matching Faction");
+    verify(universeSettingsService).getEnabledExpansionCodesForUniverse(universe);
+  }
+
   // ==================== findAllByUniverse ====================
 
   @Test

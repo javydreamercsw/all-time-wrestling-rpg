@@ -132,7 +132,7 @@ public class EditSegmentDialog extends Dialog {
           npcService.findAllByType("Referee").stream()
               .sorted(Comparator.comparing(Npc::getName))
               .collect(Collectors.toList()),
-          titleService.findAll(),
+          titleService.findAll(enabledCodes),
           active,
           byName,
           expNames,

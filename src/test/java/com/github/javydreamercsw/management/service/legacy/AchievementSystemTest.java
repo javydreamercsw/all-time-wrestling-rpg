@@ -109,24 +109,25 @@ class AchievementSystemTest {
             eventPublisher);
     segmentAdjudicationService =
         new SegmentAdjudicationService(
-            rivalryService,
-            wrestlerService,
-            feudResolutionService,
-            feudService,
-            titleService,
-            matchFulfillmentRepository,
-            leagueRepository,
-            leagueRosterRepository,
-            legacyService,
-            factionService,
-            ringsideActionService,
-            ringsideAiService,
-            retirementService,
-            gameSettingService,
-            relationshipService,
-            wrestlerStatusService,
-            universeContextService,
-            new Random());
+            new SegmentAdjudicationService.Dependencies(
+                rivalryService,
+                wrestlerService,
+                feudResolutionService,
+                feudService,
+                titleService,
+                matchFulfillmentRepository,
+                leagueRepository,
+                leagueRosterRepository,
+                legacyService,
+                factionService,
+                ringsideActionService,
+                ringsideAiService,
+                retirementService,
+                gameSettingService,
+                relationshipService,
+                wrestlerStatusService,
+                universeContextService,
+                new Random()));
 
     account = new Account();
     account.setId(1L);
