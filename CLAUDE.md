@@ -44,7 +44,13 @@ git status  # MUST show "up to date with origin"
 
 5. **Clean up** - Clear stashes, prune remote branches
 6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+7. **Update Repowise index** - Run after pushing so the index reflects the new commits:
+
+```bash
+repowise update
+```
+
+8. **Hand off** - Provide context for next session
 
 **CRITICAL RULES:**
 - Work is NOT complete until `git push` succeeds

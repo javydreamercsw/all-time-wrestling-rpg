@@ -137,6 +137,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
   private Map<Long, IntegerField> momentumFields = new HashMap<>();
+  private Map<Long, IntegerField> staminaFields = new HashMap<>();
   private Map<Long, IntegerField> healthFields = new HashMap<>();
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
@@ -720,6 +721,34 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       }
       winnersCard.add(momentumLayout);
 
+      VerticalLayout staminaLayout = new VerticalLayout();
+      staminaLayout.setPadding(false);
+      staminaLayout.setSpacing(false);
+      staminaLayout.add(new Span("Final Stamina per Wrestler"));
+      for (Wrestler w :
+          wrestlers.stream()
+              .filter(java.util.Objects::nonNull)
+              .filter(w -> w.getAccount() != null)
+              .toList()) {
+        IntegerField field = new IntegerField(w.getName());
+        field.setId("final-stamina-" + w.getId());
+        field.setPlaceholder("e.g. 3");
+        field.setWidthFull();
+        Integer existing =
+            segment.getParticipants().stream()
+                .filter(p -> w.getId().equals(p.getWrestler().getId()))
+                .map(
+                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
+                        ::getFinalStamina)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+        field.setValue(existing);
+        staminaFields.put(w.getId(), field);
+        staminaLayout.add(field);
+      }
+      winnersCard.add(staminaLayout);
+
       VerticalLayout healthLayout = new VerticalLayout();
       healthLayout.setPadding(false);
       healthLayout.setSpacing(false);
@@ -1218,6 +1247,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         IntegerField field = momentumFields.get(p.getWrestler().getId());
         if (field != null) {
           p.setFinalMomentum(field.getValue());
+        }
+      }
+    }
+
+    // Persist final stamina values entered by the player/booker
+    if (!staminaFields.isEmpty()) {
+      for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
+          segment.getParticipants()) {
+        IntegerField field = staminaFields.get(p.getWrestler().getId());
+        if (field != null) {
+          p.setFinalStamina(field.getValue());
         }
       }
     }
