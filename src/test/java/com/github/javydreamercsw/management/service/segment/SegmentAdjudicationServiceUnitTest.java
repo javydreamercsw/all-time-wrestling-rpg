@@ -100,24 +100,25 @@ class SegmentAdjudicationServiceUnitTest {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     adjudicationService =
         new SegmentAdjudicationService(
-            rivalryService,
-            wrestlerService,
-            feudResolutionService,
-            feudService,
-            titleService,
-            matchFulfillmentRepository,
-            leagueRepository,
-            leagueRosterRepository,
-            legacyService,
-            factionService,
-            ringsideActionService,
-            ringsideAiService,
-            retirementService,
-            gameSettingService,
-            relationshipService,
-            wrestlerStatusService,
-            universeContextService,
-            random);
+            new SegmentAdjudicationService.Dependencies(
+                rivalryService,
+                wrestlerService,
+                feudResolutionService,
+                feudService,
+                titleService,
+                matchFulfillmentRepository,
+                leagueRepository,
+                leagueRosterRepository,
+                legacyService,
+                factionService,
+                ringsideActionService,
+                ringsideAiService,
+                retirementService,
+                gameSettingService,
+                relationshipService,
+                wrestlerStatusService,
+                universeContextService,
+                random));
 
     wrestler1 = Wrestler.builder().build();
     wrestler1.setId(1L);
@@ -198,24 +199,25 @@ class SegmentAdjudicationServiceUnitTest {
     UniverseContextService noSessionService = mock(UniverseContextService.class);
     SegmentAdjudicationService service =
         new SegmentAdjudicationService(
-            rivalryService,
-            wrestlerService,
-            feudResolutionService,
-            feudService,
-            titleService,
-            matchFulfillmentRepository,
-            leagueRepository,
-            leagueRosterRepository,
-            legacyService,
-            factionService,
-            ringsideActionService,
-            ringsideAiService,
-            retirementService,
-            gameSettingService,
-            relationshipService,
-            wrestlerStatusService,
-            noSessionService,
-            random);
+            new SegmentAdjudicationService.Dependencies(
+                rivalryService,
+                wrestlerService,
+                feudResolutionService,
+                feudService,
+                titleService,
+                matchFulfillmentRepository,
+                leagueRepository,
+                leagueRosterRepository,
+                legacyService,
+                factionService,
+                ringsideActionService,
+                ringsideAiService,
+                retirementService,
+                gameSettingService,
+                relationshipService,
+                wrestlerStatusService,
+                noSessionService,
+                random));
     // Unstubbed getCurrentUniverseId() returns null (default for Long)
 
     assertDoesNotThrow(() -> service.adjudicateMatch(matchSegment));
