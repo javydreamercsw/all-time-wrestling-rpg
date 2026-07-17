@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -40,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -66,11 +66,9 @@ class SegmentTypeServiceTest {
     segmentType.setExpansionCode("BASE_GAME");
 
     // Default: no active universe, all expansions enabled
-    Mockito.when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
-    Mockito.when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(List.of("BASE_GAME", "CUSTOM"));
-    Mockito.when(expansionService.buildPriorityMap())
-        .thenReturn(Map.of("BASE_GAME", 10, "CUSTOM", 0));
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME", "CUSTOM"));
+    when(expansionService.buildPriorityMap()).thenReturn(Map.of("BASE_GAME", 10, "CUSTOM", 0));
   }
 
   // ==================== findByName ====================
@@ -106,6 +104,31 @@ class SegmentTypeServiceTest {
     List<SegmentType> result = segmentTypeService.findAll();
 
     assertEquals(2, result.size());
+  }
+
+  @Test
+  void findAll_usesUniverseSpecificExpansionCodes() {
+    Universe universe = Universe.builder().build();
+    universe.setId(99L);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(universeSettingsService.getEnabledExpansionCodesForUniverse(universe))
+        .thenReturn(Set.of("UNIVERSE_CODE"));
+
+    SegmentType universeType = new SegmentType();
+    universeType.setName("Universe Type");
+    universeType.setExpansionCode("UNIVERSE_CODE");
+
+    SegmentType excludedType = new SegmentType();
+    excludedType.setName("Base Type");
+    excludedType.setExpansionCode("BASE_GAME");
+
+    when(segmentTypeRepository.findAll()).thenReturn(List.of(universeType, excludedType));
+
+    List<SegmentType> result = segmentTypeService.findAll();
+
+    assertEquals(1, result.size());
+    assertEquals("Universe Type", result.get(0).getName());
+    verify(universeSettingsService).getEnabledExpansionCodesForUniverse(universe);
   }
 
   // ==================== count ====================
@@ -205,10 +228,8 @@ class SegmentTypeServiceTest {
     v2TagTeam.setExpansionCode("TAG_V2");
     v2TagTeam.setDescription("Enhanced version");
 
-    Mockito.when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(List.of("BASE_GAME", "TAG_V2"));
-    Mockito.when(expansionService.buildPriorityMap())
-        .thenReturn(Map.of("BASE_GAME", 10, "TAG_V2", 20));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME", "TAG_V2"));
+    when(expansionService.buildPriorityMap()).thenReturn(Map.of("BASE_GAME", 10, "TAG_V2", 20));
     when(segmentTypeRepository.findAll()).thenReturn(List.of(baseTagTeam, v2TagTeam));
 
     List<SegmentType> result = segmentTypeService.findAll();

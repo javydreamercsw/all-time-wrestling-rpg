@@ -191,14 +191,26 @@ public class TitleService {
       value = com.github.javydreamercsw.management.config.CacheConfig.TITLES_CACHE,
       key = "'all'")
   public List<Title> findAll() {
-    Set<String> enabled = enabledExpansionCodes();
+    return findAll(enabledExpansionCodes());
+  }
+
+  /**
+   * Expansion-filtered lookup using caller-supplied codes. Use this from async contexts or request
+   * threads where the thread-local universe context is unavailable (e.g. {@link
+   * com.github.javydreamercsw.management.ui.view.show.EditSegmentDialog.PreloadedData#load}), so
+   * the result isn't cached under the universe-agnostic {@link #findAll()} key and served back to
+   * unrelated universes for the cache TTL (mirrors the SegmentTypeService/SegmentRuleService fix
+   * for ATW-8djt and the NpcService fix for ATW-uwqv).
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<Title> findAll(@NonNull final Set<String> enabledExpansionCodes) {
     return ((List<Title>) titleRepository.findAll())
         .stream()
             .filter(
                 t ->
                     t.getExpansionCode() == null
-                        || enabled.isEmpty()
-                        || enabled.contains(t.getExpansionCode()))
+                        || enabledExpansionCodes.isEmpty()
+                        || enabledExpansionCodes.contains(t.getExpansionCode()))
             .collect(Collectors.toList());
   }
 
