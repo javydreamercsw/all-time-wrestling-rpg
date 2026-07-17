@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -67,11 +66,9 @@ class SegmentTypeServiceTest {
     segmentType.setExpansionCode("BASE_GAME");
 
     // Default: no active universe, all expansions enabled
-    Mockito.when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
-    Mockito.when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(List.of("BASE_GAME", "CUSTOM"));
-    Mockito.when(expansionService.buildPriorityMap())
-        .thenReturn(Map.of("BASE_GAME", 10, "CUSTOM", 0));
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME", "CUSTOM"));
+    when(expansionService.buildPriorityMap()).thenReturn(Map.of("BASE_GAME", 10, "CUSTOM", 0));
   }
 
   // ==================== findByName ====================
@@ -113,8 +110,8 @@ class SegmentTypeServiceTest {
   void findAll_usesUniverseSpecificExpansionCodes() {
     Universe universe = Universe.builder().build();
     universe.setId(99L);
-    Mockito.when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
-    Mockito.when(universeSettingsService.getEnabledExpansionCodesForUniverse(universe))
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(universe));
+    when(universeSettingsService.getEnabledExpansionCodesForUniverse(universe))
         .thenReturn(Set.of("UNIVERSE_CODE"));
 
     SegmentType universeType = new SegmentType();
@@ -231,10 +228,8 @@ class SegmentTypeServiceTest {
     v2TagTeam.setExpansionCode("TAG_V2");
     v2TagTeam.setDescription("Enhanced version");
 
-    Mockito.when(expansionService.getEnabledExpansionCodes())
-        .thenReturn(List.of("BASE_GAME", "TAG_V2"));
-    Mockito.when(expansionService.buildPriorityMap())
-        .thenReturn(Map.of("BASE_GAME", 10, "TAG_V2", 20));
+    when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME", "TAG_V2"));
+    when(expansionService.buildPriorityMap()).thenReturn(Map.of("BASE_GAME", 10, "TAG_V2", 20));
     when(segmentTypeRepository.findAll()).thenReturn(List.of(baseTagTeam, v2TagTeam));
 
     List<SegmentType> result = segmentTypeService.findAll();
