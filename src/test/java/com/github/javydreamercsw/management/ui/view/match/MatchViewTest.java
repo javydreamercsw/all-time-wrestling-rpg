@@ -759,6 +759,108 @@ class MatchViewTest extends AbstractViewTest {
         75, p1.getFinalHealth(), "Final health must be persisted to SegmentParticipant on save");
   }
 
+  @Test
+  void staminaFieldsShownForPlayerWrestlerInNonPromoMatch() {
+    Segment segment = buildMinimalMatchSegment(12L, "Test Match");
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    playerAccount.setUsername("player1");
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler.setStartingHealth(100);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(12L)).thenReturn(Optional.of(segment));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "12"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertFalse(
+        _find(IntegerField.class, spec -> spec.withId("final-stamina-10")).isEmpty(),
+        "Final stamina field must appear for player-controlled wrestlers in non-promo matches");
+    assertFalse(
+        _find(IntegerField.class, spec -> spec.withId("final-momentum-10")).isEmpty(),
+        "Final momentum field must still appear alongside the final stamina field");
+  }
+
+  @Test
+  void saveWinnersPersistsFinalStaminaToParticipant() {
+    Segment segment = buildMinimalMatchSegment(13L, "Test Match");
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    playerAccount.setUsername("player1");
+
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler.setStartingHealth(100);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(13L)).thenReturn(Optional.of(segment));
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+    lenient().when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
+    lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "13"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    IntegerField staminaField = _get(IntegerField.class, spec -> spec.withId("final-stamina-10"));
+    staminaField.setValue(60);
+
+    _click(_get(Button.class, spec -> spec.withId("save-winners-button")));
+
+    assertEquals(
+        60, p1.getFinalStamina(), "Final stamina must be persisted to SegmentParticipant on save");
+  }
+
   private Segment buildMinimalMatchSegment(final long id, final String typeName) {
     Segment segment = new Segment();
     segment.setId(id);
