@@ -73,14 +73,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
 @NoArgsConstructor
 @PermitAll
 @AnonymousAllowed
+@Slf4j
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
   private MenuService menuService;
@@ -320,16 +324,34 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   }
 
   private void refreshInboxBadge() {
-    if (inboxBadge == null || securityUtils == null || !securityUtils.isAuthenticated()) {
+    if (inboxBadge == null || securityUtils == null) {
+      return;
+    }
+    // Use the same direct check that @PreAuthorize("isAuthenticated()") interceptors perform.
+    // Vaadin push-handler threads do not run SecurityContextHolderFilter, so the ThreadLocal may
+    // be absent after rapid logout/login cycles; this guard matches the interceptor's own null
+    // check and prevents AuthenticationCredentialsNotFoundException from propagating.
+    var auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated() || !securityUtils.isAuthenticated()) {
+      inboxBadge.setVisible(false);
       return;
     }
     Long accountId =
         securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
-    long unread = inboxService != null ? inboxService.countUnread(accountId) : 0L;
-    if (unread > 0) {
-      inboxBadge.setText(String.valueOf(unread));
-      inboxBadge.setVisible(true);
-    } else {
+    if (accountId == null) {
+      inboxBadge.setVisible(false);
+      return;
+    }
+    try {
+      long unread = inboxService != null ? inboxService.countUnread(accountId) : 0L;
+      if (unread > 0) {
+        inboxBadge.setText(String.valueOf(unread));
+        inboxBadge.setVisible(true);
+      } else {
+        inboxBadge.setVisible(false);
+      }
+    } catch (AuthenticationCredentialsNotFoundException e) {
+      log.debug("Skipping inbox badge refresh: auth context lost between check and service call");
       inboxBadge.setVisible(false);
     }
   }
