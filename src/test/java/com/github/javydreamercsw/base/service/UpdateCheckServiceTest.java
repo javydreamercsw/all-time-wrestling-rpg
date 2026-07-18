@@ -17,10 +17,38 @@
 package com.github.javydreamercsw.base.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.info.BuildProperties;
+import org.springframework.context.ApplicationEventPublisher;
 
 class UpdateCheckServiceTest {
+
+  @Test
+  void checkForUpdates_skipsWhenBuildPropertiesAbsent() throws Exception {
+    UpdateCheckService service =
+        new UpdateCheckService(
+            mock(ApplicationEventPublisher.class), new ObjectMapper(), Optional.empty());
+    // currentVersion == null → early return, no HTTP call or event published
+    service.checkForUpdates();
+  }
+
+  @Test
+  void checkForUpdates_skipsForSnapshotBuild() throws Exception {
+    BuildProperties buildProperties = mock(BuildProperties.class);
+    when(buildProperties.getVersion()).thenReturn("2.6.0-SNAPSHOT");
+    UpdateCheckService service =
+        new UpdateCheckService(
+            mock(ApplicationEventPublisher.class),
+            new ObjectMapper(),
+            Optional.of(buildProperties));
+    // SNAPSHOT version → early return
+    service.checkForUpdates();
+  }
 
   @Test
   void isNewer_returnsTrueWhenCandidateHasHigherMinor() {

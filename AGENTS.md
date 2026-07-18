@@ -14,7 +14,7 @@ To ensure a fast feedback loop and efficient context usage, always follow this h
 - **Command Examples:**
 - **Unit Tests:** `./mvnw test -Dtest=ClassName#methodName`
 - **Integration Tests:** `./mvnw verify -Pintegration-test -Dit.test=ClassName#methodName`
-- **E2E Tests:** `./mvnw verify -Pe2e -Dit.test=ClassName#methodName`
+- **E2E Tests:** `./mvnw verify -Pe2e -Dit.test=ClassName#methodName -Dsurefire.skip=true` (add `-Dsurefire.skip=true` to skip unit tests and run only the E2E target)
 - **Short-Circuit Rule:** If the change is **strictly limited to test code** (e.g., updating an assertion, fixing a mock, or adjusting local test data) and does not modify any application source code (`src/main`) or shared test infrastructure (e.g., `AbstractIntegrationTest`, `DatabaseCleaner`), you may skip Progressive Validation after the targeted test passes.
 
 2. **Progressive Validation:**
