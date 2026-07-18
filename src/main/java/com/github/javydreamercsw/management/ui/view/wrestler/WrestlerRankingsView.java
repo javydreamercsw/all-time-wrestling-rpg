@@ -204,7 +204,13 @@ public class WrestlerRankingsView extends Main {
               return state != null ? "%,d".formatted(state.getFans()) : "0";
             })
         .setHeader("Fans")
-        .setSortable(true);
+        .setSortable(true)
+        .setComparator(
+            Comparator.comparingLong(
+                wrestler -> {
+                  WrestlerState state = statesByWrestlerId.get(wrestler.getId());
+                  return state != null ? state.getFans() : 0L;
+                }));
 
     grid.addColumn(
             wrestler -> {

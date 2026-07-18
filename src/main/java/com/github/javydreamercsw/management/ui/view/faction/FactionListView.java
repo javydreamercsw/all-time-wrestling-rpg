@@ -56,6 +56,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -222,66 +223,71 @@ public class FactionListView extends VerticalLayout {
         .setSortable(true)
         .setTooltipGenerator(f -> "Faction affinity/synergy score built through shared victories");
 
-    factionGrid.addComponentColumn(
-        faction -> {
-          HorizontalLayout actions = new HorizontalLayout();
-          actions.setSpacing(true);
+    factionGrid
+        .addComponentColumn(
+            faction -> {
+              HorizontalLayout actions = new HorizontalLayout();
+              actions.setSpacing(true);
 
-          Button editButton = new Button(new Icon(VaadinIcon.EDIT), e -> editFaction(faction));
-          editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-          editButton.setTooltipText("Edit Faction");
-          editButton.setVisible(securityUtils.canEdit());
-          editButton.setId("edit-" + faction.getId());
+              Button editButton = new Button(new Icon(VaadinIcon.EDIT), e -> editFaction(faction));
+              editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+              editButton.setTooltipText("Edit Faction");
+              editButton.setVisible(securityUtils.canEdit());
+              editButton.setId("edit-" + faction.getId());
 
-          Button membersButton =
-              new Button(new Icon(VaadinIcon.USERS), e -> openMembersDialog(faction));
-          membersButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SUCCESS);
-          membersButton.setTooltipText("Manage Members");
-          membersButton.setVisible(securityUtils.canEdit());
-          membersButton.setId("members-" + faction.getId());
+              Button membersButton =
+                  new Button(new Icon(VaadinIcon.USERS), e -> openMembersDialog(faction));
+              membersButton.addThemeVariants(
+                  ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SUCCESS);
+              membersButton.setTooltipText("Manage Members");
+              membersButton.setVisible(securityUtils.canEdit());
+              membersButton.setId("members-" + faction.getId());
 
-          Button deleteButton =
-              new Button(
-                  new Icon(VaadinIcon.TRASH),
-                  e -> {
-                    ConfirmDialog confirm = new ConfirmDialog();
-                    confirm.setHeader("Delete Faction");
-                    confirm.setText(
-                        "Are you sure you want to delete \"" + faction.getName() + "\"?");
-                    confirm.setConfirmText("Delete");
-                    confirm.setConfirmButtonTheme("error primary");
-                    confirm.setCancelable(true);
-                    confirm.addConfirmListener(
-                        ev -> {
-                          factionService.deleteById(faction.getId());
-                          refreshGrid();
-                          Notification.show("Faction deleted.");
-                        });
-                    confirm.open();
+              Button deleteButton =
+                  new Button(
+                      new Icon(VaadinIcon.TRASH),
+                      e -> {
+                        ConfirmDialog confirm = new ConfirmDialog();
+                        confirm.setHeader("Delete Faction");
+                        confirm.setText(
+                            "Are you sure you want to delete \"" + faction.getName() + "\"?");
+                        confirm.setConfirmText("Delete");
+                        confirm.setConfirmButtonTheme("error primary");
+                        confirm.setCancelable(true);
+                        confirm.addConfirmListener(
+                            ev -> {
+                              factionService.deleteById(faction.getId());
+                              refreshGrid();
+                              Notification.show("Faction deleted.");
+                            });
+                        confirm.open();
+                      });
+              deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
+              deleteButton.setTooltipText("Delete Faction");
+              deleteButton.setVisible(securityUtils.canDelete());
+              deleteButton.setId("delete-" + faction.getId());
+
+              Icon toggleIcon =
+                  faction.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
+              toggleIcon.setColor(
+                  faction.isActive()
+                      ? "var(--lumo-success-color)"
+                      : "var(--lumo-disabled-text-color)");
+              Button toggleButton = new Button(toggleIcon);
+              toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+              toggleButton.setTooltipText(faction.isActive() ? "Deactivate" : "Activate");
+              toggleButton.setVisible(securityUtils.canEdit());
+              toggleButton.setId("toggle-" + faction.getId());
+              toggleButton.addClickListener(
+                  ev -> {
+                    factionService.setActive(faction.getId(), !faction.isActive());
+                    refreshGrid();
                   });
-          deleteButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
-          deleteButton.setTooltipText("Delete Faction");
-          deleteButton.setVisible(securityUtils.canDelete());
-          deleteButton.setId("delete-" + faction.getId());
 
-          Icon toggleIcon =
-              faction.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
-          toggleIcon.setColor(
-              faction.isActive() ? "var(--lumo-success-color)" : "var(--lumo-disabled-text-color)");
-          Button toggleButton = new Button(toggleIcon);
-          toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-          toggleButton.setTooltipText(faction.isActive() ? "Deactivate" : "Activate");
-          toggleButton.setVisible(securityUtils.canEdit());
-          toggleButton.setId("toggle-" + faction.getId());
-          toggleButton.addClickListener(
-              ev -> {
-                factionService.setActive(faction.getId(), !faction.isActive());
-                refreshGrid();
-              });
-
-          actions.add(editButton, membersButton, toggleButton, deleteButton);
-          return actions;
-        });
+              actions.add(editButton, membersButton, toggleButton, deleteButton);
+              return actions;
+            })
+        .setKey("actions");
 
     factionGrid.setItemDetailsRenderer(
         new com.vaadin.flow.data.renderer.ComponentRenderer<>(
@@ -430,7 +436,8 @@ public class FactionListView extends VerticalLayout {
     currentMembersGrid
         .addColumn(s -> "%,d".formatted(s.getFans()))
         .setHeader("Fans")
-        .setSortable(true);
+        .setSortable(true)
+        .setComparator(Comparator.comparingLong(WrestlerState::getFans));
     currentMembersGrid.setId("members-grid");
     currentMembersGrid.setItems(loadedFaction.getMembers());
 
