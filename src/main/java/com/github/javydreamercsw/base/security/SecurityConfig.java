@@ -17,8 +17,10 @@
 package com.github.javydreamercsw.base.security;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.vaadin.flow.spring.security.VaadinAwareSecurityContextHolderStrategy;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -29,6 +31,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -45,6 +48,16 @@ public class SecurityConfig {
 
   @Value("${security.remember-me.token-validity-seconds:604800}")
   private int rememberMeTokenValiditySeconds;
+
+  // Registered here (in a @Configuration class, not @AutoConfiguration) so that Spring Security
+  // 7's PrePostMethodSecurityConfiguration can @Autowired it early — before Vaadin's
+  // SpringSecurityAutoConfiguration runs — preventing a ThreadLocal mismatch on ForkJoinPool
+  // threads where @PreAuthorize would see an empty SecurityContext.
+  @Bean
+  @ConditionalOnMissingBean(SecurityContextHolderStrategy.class)
+  public SecurityContextHolderStrategy securityContextHolderStrategy() {
+    return new VaadinAwareSecurityContextHolderStrategy();
+  }
 
   @Bean
   @Profile("!test & !e2e")
