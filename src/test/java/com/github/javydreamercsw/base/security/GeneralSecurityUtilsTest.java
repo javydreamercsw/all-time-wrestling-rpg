@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
 
 class GeneralSecurityUtilsTest {
 
@@ -114,6 +115,24 @@ class GeneralSecurityUtilsTest {
 
     Assertions.assertEquals("done", result);
     Assertions.assertNull(SecurityContextHolder.getContext().getAuthentication());
+  }
+
+  @Test
+  void testRunWithContextRestoresContextOnException() {
+    SecurityContext before = SecurityContextHolder.getContext();
+    SecurityContext context = new SecurityContextImpl();
+
+    Assertions.assertThrows(
+        RuntimeException.class,
+        () ->
+            GeneralSecurityUtils.runWithContext(
+                context,
+                () -> {
+                  throw new RuntimeException("test error");
+                }));
+
+    // Original context must be restored even after the supplier threw
+    Assertions.assertSame(before, SecurityContextHolder.getContext());
   }
 
   @Test
