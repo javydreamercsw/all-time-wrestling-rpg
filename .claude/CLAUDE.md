@@ -83,6 +83,8 @@ repo is a comprehensive wrestling promotion management platform that consumes us
 
 ### Code health
 
+Three co-equal signals: defect risk 8.2/10 avg, hotspot health 5.22/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` at 1.0/10 · maintainability 8.75/10 · performance risk 288 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
+
 Three co-equal signals: defect risk 8.07/10 avg, hotspot health 4.84/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` at 1.0/10 · maintainability 8.77/10 · performance risk 324 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
 
 Critical files:
