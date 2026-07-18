@@ -201,6 +201,9 @@ public final class GeneralSecurityUtils {
   /**
    * Run a task within a specific security context.
    *
+   * <p>Intended for propagating an authenticated context captured on a Vaadin request/push thread
+   * onto a background thread (e.g. inside {@code CompletableFuture.runAsync}).
+   *
    * @param <T> The return type.
    * @param context The security context.
    * @param supplier The task.
@@ -209,13 +212,57 @@ public final class GeneralSecurityUtils {
   public static <T> T runWithContext(final SecurityContext context, final Supplier<T> supplier) {
     SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
     SecurityContext originalContext = strategy.getContext();
+
+    // VaadinAwareSecurityContextHolderStrategy reads from VaadinSession's HTTP session
+    // BEFORE the ThreadLocal, so we must update both — otherwise a stale/absent session
+    // attribute on this thread (e.g. a reused ForkJoinPool.commonPool worker) shadows the
+    // context we're propagating and @PreAuthorize sees no Authentication.
+    Object originalSessionCtx = null;
+    VaadinSession vaadinSession = null;
+    try {
+      vaadinSession = VaadinSession.getCurrent();
+    } catch (Exception ignored) {
+      // No Vaadin context available
+    }
+    if (vaadinSession != null) {
+      try {
+        originalSessionCtx =
+            vaadinSession
+                .getSession()
+                .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+      } catch (IllegalStateException ignored) {
+        vaadinSession = null;
+      }
+    }
+
     try {
       strategy.setContext(context);
       setTestSecurityContext(context);
+      if (vaadinSession != null) {
+        try {
+          vaadinSession
+              .getSession()
+              .setAttribute(
+                  HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+        } catch (IllegalStateException ignored) {
+          // Session invalidated between the check and here
+        }
+      }
       return supplier.get();
     } finally {
       strategy.setContext(originalContext);
       setTestSecurityContext(originalContext);
+      if (vaadinSession != null) {
+        try {
+          vaadinSession
+              .getSession()
+              .setAttribute(
+                  HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                  originalSessionCtx);
+        } catch (IllegalStateException ignored) {
+          // Session invalidated
+        }
+      }
     }
   }
 
