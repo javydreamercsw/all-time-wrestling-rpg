@@ -191,6 +191,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   }
 
   private List<Universe> resolveAccessibleUniverses() {
+    if (securityUtils == null || !securityUtils.isAuthenticated()) {
+      return Collections.emptyList();
+    }
     if (securityUtils.isAdmin()) {
       return universeRepository.findAll();
     }
