@@ -90,7 +90,10 @@
     "lit": "3.3.3",
     "moment": "2.30.1",
     "moment-timezone": "0.6.0",
-    "onecolor": "4.1.0"
+    "onecolor": "4.1.0",
+    "react-dom": "19.2.7",
+    "react": "19.2.7",
+    "react-router": "7.18.0"
   },
   "devDependencies": {
     "@babel/core": "7.29.7",
@@ -110,7 +113,9 @@
     "transform-ast": "2.4.4",
     "typescript": "6.0.3",
     "vite": "8.0.16",
-    "vite-plugin-checker": "0.14.4"
+    "vite-plugin-checker": "0.14.4",
+    "@types/react-dom": "19.2.3",
+    "@types/react": "19.2.17"
   },
   "overrides": {
     "magic-string": "0.30.21",
@@ -298,7 +303,10 @@
       "lit": "3.3.3",
       "moment": "2.30.1",
       "moment-timezone": "0.6.0",
-      "onecolor": "4.1.0"
+      "onecolor": "4.1.0",
+      "react-dom": "19.2.7",
+      "react": "19.2.7",
+      "react-router": "7.18.0"
     },
     "devDependencies": {
       "@babel/core": "7.29.7",
@@ -318,7 +326,9 @@
       "transform-ast": "2.4.4",
       "typescript": "6.0.3",
       "vite": "8.0.16",
-      "vite-plugin-checker": "0.14.4"
+      "vite-plugin-checker": "0.14.4",
+      "@types/react-dom": "19.2.3",
+      "@types/react": "19.2.17"
     },
     "hash": "6e33d7c4adbeb39e904a1978d5c757d83ab672b6ce527830c6208ef60809781f",
     "overrides": {
