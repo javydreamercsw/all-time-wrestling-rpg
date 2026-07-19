@@ -115,7 +115,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 /** Detail view for displaying comprehensive information about a specific show. */
 @Route("show-detail")
@@ -1093,7 +1092,7 @@ public class ShowDetailView extends Main
       saveOrderButton.setEnabled(false);
     }
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = SecurityContextHolder.getContext();
+    SecurityContext ctx = GeneralSecurityUtils.captureCurrentContext();
     List<Segment> snapshot = new ArrayList<>(segmentOrder);
     CompletableFuture.runAsync(
             () ->
@@ -1199,7 +1198,7 @@ public class ShowDetailView extends Main
     narrateButton.addClickListener(
         e -> {
           final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-          SecurityContext securityContext = SecurityContextHolder.getContext();
+          SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
           CompletableFuture.supplyAsync(
                   () ->
                       GeneralSecurityUtils.runWithContext(
@@ -1286,7 +1285,7 @@ public class ShowDetailView extends Main
     }
 
     final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext securityContext = SecurityContextHolder.getContext();
+    SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
     CompletableFuture.supplyAsync(
             () ->
                 GeneralSecurityUtils.runWithContext(
@@ -1691,7 +1690,7 @@ public class ShowDetailView extends Main
 
   private void openEditSegmentDialog(@NonNull Segment segment) {
     final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext securityContext = SecurityContextHolder.getContext();
+    SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
     Gender defaultGender =
         currentShow.getTemplate() != null ? currentShow.getTemplate().getGenderConstraint() : null;
     Long universeId = universeContextService.getCurrentUniverseId();
@@ -1794,7 +1793,8 @@ public class ShowDetailView extends Main
                                 }
                                 // Async DB write
                                 dialogHolder[0].getSaveButton().setEnabled(false);
-                                SecurityContext saveCtx = SecurityContextHolder.getContext();
+                                SecurityContext saveCtx =
+                                    GeneralSecurityUtils.captureCurrentContext();
                                 CompletableFuture.supplyAsync(
                                         () ->
                                             GeneralSecurityUtils.runWithContext(
@@ -1963,7 +1963,7 @@ public class ShowDetailView extends Main
     adjudicateButton.setEnabled(false);
     addSegmentButton.setEnabled(false);
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = SecurityContextHolder.getContext();
+    SecurityContext ctx = GeneralSecurityUtils.captureCurrentContext();
     CompletableFuture.runAsync(
             () ->
                 GeneralSecurityUtils.runWithContext(
@@ -2009,7 +2009,7 @@ public class ShowDetailView extends Main
     }
     showSegmentsProgress(true);
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = SecurityContextHolder.getContext();
+    SecurityContext ctx = GeneralSecurityUtils.captureCurrentContext();
     Show show = currentShow;
     CompletableFuture.supplyAsync(
             () ->

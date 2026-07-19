@@ -78,7 +78,6 @@ import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @Route(
     value = "show-planning",
@@ -249,7 +248,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 editButton.setEnabled(false);
                 editButton.setText("...");
                 UI ui = UI.getCurrent();
-                SecurityContext securityContext = SecurityContextHolder.getContext();
+                SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
 
                 CompletableFuture.supplyAsync(
                         () ->
@@ -378,7 +377,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     loadContextButton.setEnabled(false);
     loadContextButton.setText("Loading...");
     UI ui = UI.getCurrent();
-    SecurityContext securityContext = SecurityContextHolder.getContext();
+    SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
 
     return CompletableFuture.supplyAsync(
             () ->
@@ -435,7 +434,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposeSegmentsButton.setEnabled(false);
     proposeSegmentsButton.setText("AI Planning...");
     UI ui = UI.getCurrent();
-    SecurityContext securityContext = SecurityContextHolder.getContext();
+    SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
 
     return CompletableFuture.supplyAsync(
             () ->

@@ -199,6 +199,53 @@ public final class GeneralSecurityUtils {
   }
 
   /**
+   * Captures the current authenticated {@link SecurityContext} for propagation onto a background
+   * thread.
+   *
+   * <p>When the application uses {@link
+   * com.vaadin.flow.spring.security.VaadinAwareSecurityContextHolderStrategy}, the context may live
+   * in the HTTP session rather than the thread-local. If the thread-local context has no
+   * authentication (e.g. during a WebSocket push event before the holder strategy is fully
+   * synchronised), this method falls back to reading the context directly from the current {@link
+   * VaadinSession}'s underlying HTTP session attribute so that callers can still propagate a valid
+   * context.
+   *
+   * @return The best available {@link SecurityContext}, never {@code null}.
+   */
+  public static SecurityContext captureCurrentContext() {
+    SecurityContext ctx = SecurityContextHolder.getContext();
+    if (ctx.getAuthentication() == null) {
+      VaadinSession vaadinSession = null;
+      try {
+        vaadinSession = VaadinSession.getCurrent();
+      } catch (Exception ignored) {
+        // No Vaadin context — fall through
+      }
+      if (vaadinSession != null) {
+        try {
+          Object sessionAttr =
+              vaadinSession
+                  .getSession()
+                  .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+          if (sessionAttr instanceof SecurityContext sc && sc.getAuthentication() != null) {
+            log.debug(
+                "captureCurrentContext: falling back to HTTP session attribute on thread={}",
+                Thread.currentThread().getName());
+            return sc;
+          }
+        } catch (IllegalStateException ignored) {
+          // Session already invalidated
+        }
+      }
+      log.warn(
+          "captureCurrentContext: no authenticated context available — thread={}, strategy={}",
+          Thread.currentThread().getName(),
+          SecurityContextHolder.getContextHolderStrategy().getClass().getSimpleName());
+    }
+    return ctx;
+  }
+
+  /**
    * Run a task within a specific security context.
    *
    * <p>Intended for propagating an authenticated context captured on a Vaadin request/push thread
