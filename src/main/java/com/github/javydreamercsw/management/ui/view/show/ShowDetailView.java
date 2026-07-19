@@ -114,7 +114,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.security.core.context.SecurityContext;
 
 /** Detail view for displaying comprehensive information about a specific show. */
 @Route("show-detail")
@@ -1092,12 +1091,10 @@ public class ShowDetailView extends Main
       saveOrderButton.setEnabled(false);
     }
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = GeneralSecurityUtils.captureCurrentContext();
     List<Segment> snapshot = new ArrayList<>(segmentOrder);
     CompletableFuture.runAsync(
             () ->
-                GeneralSecurityUtils.runWithContext(
-                    ctx,
+                GeneralSecurityUtils.runAsAdmin(
                     () -> {
                       // Find the last non-Promo segment index
                       int mainEventIdx = -1;
@@ -1127,7 +1124,6 @@ public class ShowDetailView extends Main
                       if (!changed.isEmpty()) {
                         segmentRepository.saveAll(changed);
                       }
-                      return null;
                     }))
         .thenRun(
             () -> {
@@ -1198,11 +1194,9 @@ public class ShowDetailView extends Main
     narrateButton.addClickListener(
         e -> {
           final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-          SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
           CompletableFuture.supplyAsync(
                   () ->
-                      GeneralSecurityUtils.runWithContext(
-                          securityContext,
+                      GeneralSecurityUtils.runAsAdmin(
                           () ->
                               NarrationDialog.PreloadedData.load(
                                   segmentService,
@@ -1285,11 +1279,9 @@ public class ShowDetailView extends Main
     }
 
     final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
     CompletableFuture.supplyAsync(
             () ->
-                GeneralSecurityUtils.runWithContext(
-                    securityContext,
+                GeneralSecurityUtils.runAsAdmin(
                     () ->
                         segmentNarrationServiceFactory.summarizeNarration(segment.getNarration())))
         .thenAccept(
@@ -1690,15 +1682,13 @@ public class ShowDetailView extends Main
 
   private void openEditSegmentDialog(@NonNull Segment segment) {
     final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
     Gender defaultGender =
         currentShow.getTemplate() != null ? currentShow.getTemplate().getGenderConstraint() : null;
     Long universeId = universeContextService.getCurrentUniverseId();
 
     CompletableFuture.supplyAsync(
             () ->
-                GeneralSecurityUtils.runWithContext(
-                    securityContext,
+                GeneralSecurityUtils.runAsAdmin(
                     () -> {
                       Segment seg =
                           segmentRepository.findByIdWithDetails(segment.getId()).orElse(segment);
@@ -1793,16 +1783,10 @@ public class ShowDetailView extends Main
                                 }
                                 // Async DB write
                                 dialogHolder[0].getSaveButton().setEnabled(false);
-                                SecurityContext saveCtx =
-                                    GeneralSecurityUtils.captureCurrentContext();
-                                CompletableFuture.supplyAsync(
+                                CompletableFuture.runAsync(
                                         () ->
-                                            GeneralSecurityUtils.runWithContext(
-                                                saveCtx,
-                                                () -> {
-                                                  segmentService.updateSegment(seg);
-                                                  return null;
-                                                }))
+                                            GeneralSecurityUtils.runAsAdmin(
+                                                () -> segmentService.updateSegment(seg)))
                                     .thenRun(
                                         () ->
                                             ui.access(
@@ -1963,15 +1947,9 @@ public class ShowDetailView extends Main
     adjudicateButton.setEnabled(false);
     addSegmentButton.setEnabled(false);
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = GeneralSecurityUtils.captureCurrentContext();
     CompletableFuture.runAsync(
             () ->
-                GeneralSecurityUtils.runWithContext(
-                    ctx,
-                    () -> {
-                      showController.adjudicateShow(show.getId());
-                      return null;
-                    }))
+                GeneralSecurityUtils.runAsAdmin(() -> showController.adjudicateShow(show.getId())))
         .thenRun(
             () ->
                 ui.access(
@@ -2009,12 +1987,11 @@ public class ShowDetailView extends Main
     }
     showSegmentsProgress(true);
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = GeneralSecurityUtils.captureCurrentContext();
     Show show = currentShow;
     CompletableFuture.supplyAsync(
             () ->
-                GeneralSecurityUtils.runWithContext(
-                    ctx, () -> segmentRepository.findByShowOrderBySegmentOrderAsc(show)))
+                GeneralSecurityUtils.runAsAdmin(
+                    () -> segmentRepository.findByShowOrderBySegmentOrderAsc(show)))
         .thenAccept(
             updatedSegments ->
                 ui.access(

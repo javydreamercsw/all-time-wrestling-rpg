@@ -77,7 +77,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContext;
 
 @Route(
     value = "show-planning",
@@ -248,12 +247,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 editButton.setEnabled(false);
                 editButton.setText("...");
                 UI ui = UI.getCurrent();
-                SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
 
                 CompletableFuture.supplyAsync(
                         () ->
-                            GeneralSecurityUtils.runWithContext(
-                                securityContext,
+                            GeneralSecurityUtils.runAsAdmin(
                                 () ->
                                     EditSegmentDialog.PreloadedData.load(
                                         segmentTypeService,
@@ -377,12 +374,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     loadContextButton.setEnabled(false);
     loadContextButton.setText("Loading...");
     UI ui = UI.getCurrent();
-    SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
 
     return CompletableFuture.supplyAsync(
             () ->
-                GeneralSecurityUtils.runWithContext(
-                    securityContext, () -> showPlanningService.getShowPlanningContext(show)))
+                GeneralSecurityUtils.runAsAdmin(
+                    () -> showPlanningService.getShowPlanningContext(show)))
         .thenAccept(
             context ->
                 ui.access(
@@ -434,12 +430,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposeSegmentsButton.setEnabled(false);
     proposeSegmentsButton.setText("AI Planning...");
     UI ui = UI.getCurrent();
-    SecurityContext securityContext = GeneralSecurityUtils.captureCurrentContext();
 
     return CompletableFuture.supplyAsync(
             () ->
-                GeneralSecurityUtils.runWithContext(
-                    securityContext,
+                GeneralSecurityUtils.runAsAdmin(
                     () -> {
                       ShowPlanningContextDTO context =
                           showPlanningService.getShowPlanningContext(show);
