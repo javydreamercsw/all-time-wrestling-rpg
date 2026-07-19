@@ -21,7 +21,9 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.annotation.DirtiesContext;
 
+@DirtiesContext
 public abstract class AbstractMockUserIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired protected AccountRepository accountRepository;
