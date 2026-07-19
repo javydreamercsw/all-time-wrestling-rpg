@@ -194,6 +194,15 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     if (securityUtils == null || !securityUtils.isAuthenticated()) {
       return Collections.emptyList();
     }
+    // Use the same direct check that @PreAuthorize("isAuthenticated()") interceptors perform.
+    // During error-recovery navigations (e.g. routing to the login view after session expiry),
+    // the VaadinSession may still report auth while the Spring Security ThreadLocal is empty.
+    // This prevents AuthenticationCredentialsNotFoundException from propagating out of the
+    // MainLayout constructor and crashing Vaadin's navigation machinery.
+    var auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated()) {
+      return Collections.emptyList();
+    }
     if (securityUtils.isAdmin()) {
       return universeRepository.findAll();
     }
