@@ -162,6 +162,8 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+      - name: Ensure Maven local repository directory exists
+        run: mkdir -p ~/.m2/repository
       - name: Clear OpenRewrite POM cache (prevents stale RocksDB deserialization errors)
         run: rm -rf ~/.rewrite-cache ~/.rewrite ~/.m2/repository/.rewrite
       - name: OpenRewrite dry-run (fail if changes needed)
@@ -180,6 +182,8 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Ensure Maven local repository directory exists
+      run: mkdir -p ~/.m2/repository
 
     - name: Run unit tests with coverage
       run: mvn -B test -Pcoverage -DnvdApiKey=${{ secrets.NVD_API }}
@@ -206,6 +210,8 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Ensure Maven local repository directory exists
+      run: mkdir -p ~/.m2/repository
 
     - name: Run Integration Tests
       run: |
@@ -248,6 +254,8 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Ensure Maven local repository directory exists
+      run: mkdir -p ~/.m2/repository
     - name: Build production frontend bundle
       run: mvn -B package -Pproduction -DskipTests
     - name: Upload Vaadin bundle
@@ -272,6 +280,8 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Ensure Maven local repository directory exists
+      run: mkdir -p ~/.m2/repository
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v2
     - name: Download Vaadin bundle
@@ -309,6 +319,8 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Ensure Maven local repository directory exists
+      run: mkdir -p ~/.m2/repository
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v2
     - name: Download Vaadin bundle
@@ -346,6 +358,8 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Ensure Maven local repository directory exists
+      run: mkdir -p ~/.m2/repository
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v2
     - name: Download Vaadin bundle
@@ -382,6 +396,8 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Ensure Maven local repository directory exists
+      run: mkdir -p ~/.m2/repository
 
     - name: Download unit test coverage data
       uses: actions/download-artifact@v8
@@ -453,6 +469,8 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+      - name: Ensure Maven local repository directory exists
+        run: mkdir -p ~/.m2/repository
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
         with:
@@ -491,6 +509,8 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+      - name: Ensure Maven local repository directory exists
+        run: mkdir -p ~/.m2/repository
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
         with:
@@ -522,6 +542,8 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
         cache: maven
+    - name: Ensure Maven local repository directory exists
+      run: mkdir -p ~/.m2/repository
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:
