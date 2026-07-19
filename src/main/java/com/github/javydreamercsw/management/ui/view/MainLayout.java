@@ -194,22 +194,26 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     if (securityUtils == null || !securityUtils.isAuthenticated()) {
       return Collections.emptyList();
     }
-    // Use the same direct check that @PreAuthorize("isAuthenticated()") interceptors perform.
-    // During error-recovery navigations (e.g. routing to the login view after session expiry),
-    // the VaadinSession may still report auth while the Spring Security ThreadLocal is empty.
-    // This prevents AuthenticationCredentialsNotFoundException from propagating out of the
-    // MainLayout constructor and crashing Vaadin's navigation machinery.
-    var auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null || !auth.isAuthenticated()) {
+    // Guard against AuthenticationCredentialsNotFoundException propagating out of the MainLayout
+    // constructor. During error-recovery navigations (e.g. routing to the login view after session
+    // expiry) the VaadinSession HTTP session may be invalidated between the isAuthenticated() check
+    // and the @PreAuthorize-protected service call, producing a TOCTOU window where
+    // @PreAuthorize("isAuthenticated()") sees an empty SecurityContext and throws.
+    // Catching the exception here mirrors the same defensive pattern used by refreshInboxBadge().
+    try {
+      if (securityUtils.isAdmin()) {
+        return universeRepository.findAll();
+      }
+      return securityUtils
+          .getAuthenticatedUser()
+          .map(user -> universeMembershipService.getUniversesForAccount(user.getAccount()))
+          .orElseGet(Collections::emptyList);
+    } catch (AuthenticationCredentialsNotFoundException e) {
+      log.debug(
+          "resolveAccessibleUniverses: auth context lost between check and service call"
+              + " — returning empty universe list");
       return Collections.emptyList();
     }
-    if (securityUtils.isAdmin()) {
-      return universeRepository.findAll();
-    }
-    return securityUtils
-        .getAuthenticatedUser()
-        .map(user -> universeMembershipService.getUniversesForAccount(user.getAccount()))
-        .orElseGet(Collections::emptyList);
   }
 
   private Div createHeader() {
