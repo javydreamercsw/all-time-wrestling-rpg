@@ -168,7 +168,7 @@ jobs:
         run: mvn -B rewrite:dryRun
 
   build-and-unit-test:
-    needs: [check-paths, rewrite-check]
+    needs: [check-paths]
     if: needs.check-paths.outputs.code_changed == 'true' || needs.check-paths.outputs.deps_changed == 'true'
     runs-on: ubuntu-latest
 
@@ -238,7 +238,7 @@ jobs:
   # does not extend the critical path.
   build-frontend:
     runs-on: ubuntu-latest
-    needs: [check-paths, rewrite-check]
+    needs: [check-paths]
     if: needs.check-paths.outputs.ui_changed == 'true' && github.event_name == 'pull_request'
     steps:
     - uses: actions/checkout@v6
@@ -364,10 +364,11 @@ jobs:
 
   coverage-and-analysis:
     runs-on: ubuntu-latest
-    needs: [check-paths, build-and-unit-test, integration-tests, e2e-tests, docs-e2e-tests, validate-video-tests]
+    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, e2e-tests, docs-e2e-tests, validate-video-tests]
     if: >-
       always() &&
       needs.check-paths.outputs.code_changed == 'true' &&
+      (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
       needs.build-and-unit-test.result == 'success' &&
       (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
       (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') &&
