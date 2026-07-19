@@ -192,11 +192,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
 
-    - name: Run unit tests with coverage
-      run: mvn -B test -Pcoverage -DnvdApiKey=${{ secrets.NVD_API }}
-
-    - name: Verify WAR packaging
-      run: mvn -B package -Pwar -DskipTests
+    - name: Run unit tests with coverage and verify WAR packaging
+      # Single Maven invocation: compile once, run tests, then package WAR.
+      # Previously two separate invocations caused a full recompile in the WAR step (~3-5 min wasted).
+      run: mvn -B package -Pwar,coverage -DnvdApiKey=${{ secrets.NVD_API }}
 
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v7
