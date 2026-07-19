@@ -571,6 +571,7 @@ public class ShowService {
 
     securityUtils
         .getAuthenticatedUser()
+        .filter(details -> details.getId() != null && details.getId() > 0)
         .ifPresent(details -> legacyService.incrementShowsBooked(details.getAccount()));
 
     gmModeService.processShowUpdates(show, participatingWrestlerIds);
