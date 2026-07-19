@@ -41,6 +41,30 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 public final class GeneralSecurityUtils {
 
   /**
+   * The strategy instance captured before Vaadin's SpringSecurityAutoConfiguration replaces the
+   * global with VaadinAwareSecurityContextHolderStrategy. Spring Security's
+   * AuthorizationManagerBeforeMethodInterceptor captures the global strategy at bean-creation time
+   * and holds that reference forever. After Vaadin replaces the global, runAsAdmin() sets context
+   * on the VaadinAware strategy but @PreAuthorize reads from this earlier instance — causing
+   * AuthenticationCredentialsNotFoundException on ForkJoinPool threads. We set context on BOTH
+   * strategies to close the gap.
+   *
+   * <p>Set by Application's static initializer immediately after setStrategyName().
+   */
+  static volatile SecurityContextHolderStrategy methodSecurityStrategy;
+
+  /**
+   * Called by Application's static initializer to record the strategy instance that Spring
+   * Security's method-security interceptors will capture at bean-creation time.
+   *
+   * @param strategy the active strategy immediately after setStrategyName(), before Vaadin replaces
+   *     it
+   */
+  public static void setMethodSecurityStrategy(final SecurityContextHolderStrategy strategy) {
+    methodSecurityStrategy = strategy;
+  }
+
+  /**
    * Run a task as an admin user.
    *
    * @param task The task to run.
@@ -137,6 +161,12 @@ public final class GeneralSecurityUtils {
 
       // Establish the new context globally/thread-locally
       strategy.setContext(newContext);
+      // Also propagate to the strategy that @PreAuthorize interceptors captured at bean-creation
+      // time (before Vaadin replaced the global). Without this, interceptors on ForkJoinPool
+      // worker threads see an empty SecurityContext even though VaadinAware has admin context.
+      if (methodSecurityStrategy != null && methodSecurityStrategy != strategy) {
+        methodSecurityStrategy.setContext(newContext);
+      }
       setTestSecurityContext(newContext);
       if (vaadinSession != null) {
         try {
@@ -158,6 +188,9 @@ public final class GeneralSecurityUtils {
     } finally {
       // Restore the original context
       strategy.setContext(originalContext);
+      if (methodSecurityStrategy != null && methodSecurityStrategy != strategy) {
+        methodSecurityStrategy.setContext(originalContext);
+      }
       setTestSecurityContext(originalContext);
       if (vaadinSession != null) {
         try {
@@ -284,6 +317,9 @@ public final class GeneralSecurityUtils {
 
     try {
       strategy.setContext(context);
+      if (methodSecurityStrategy != null && methodSecurityStrategy != strategy) {
+        methodSecurityStrategy.setContext(context);
+      }
       setTestSecurityContext(context);
       if (vaadinSession != null) {
         try {
@@ -298,6 +334,9 @@ public final class GeneralSecurityUtils {
       return supplier.get();
     } finally {
       strategy.setContext(originalContext);
+      if (methodSecurityStrategy != null && methodSecurityStrategy != strategy) {
+        methodSecurityStrategy.setContext(originalContext);
+      }
       setTestSecurityContext(originalContext);
       if (vaadinSession != null) {
         try {

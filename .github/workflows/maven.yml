@@ -478,19 +478,23 @@ jobs:
 
   # Build and push Docker image (no release profile) on release/* branches
   docker-image-release-branch:
-    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it]
+    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it, e2e-tests, docs-e2e-tests, validate-video-tests]
     # rewrite-check/build-and-unit-test/integration-tests/docker-it "skip" both when their
     # path filter doesn't apply AND when an upstream dependency fails (GitHub cascades failures
     # as skips). rewrite-check shares build-and-unit-test's skip condition (code_changed), so
     # including it closes that gap: a real rewrite-check failure surfaces as result == 'failure',
-    # not 'skipped', and still blocks the image push.
+    # not 'skipped', and still blocks the image push. E2E jobs are included so the image is
+    # never pushed before all E2E tests have completed and passed.
     if: >-
       always() &&
       (startsWith(github.ref, 'refs/heads/release/') || startsWith(github.head_ref, 'release/')) &&
       (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
       (needs.build-and-unit-test.result == 'success' || needs.build-and-unit-test.result == 'skipped') &&
       (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
-      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped')
+      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped') &&
+      (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') &&
+      (needs.docs-e2e-tests.result == 'success' || needs.docs-e2e-tests.result == 'skipped') &&
+      (needs.validate-video-tests.result == 'success' || needs.validate-video-tests.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -527,14 +531,17 @@ jobs:
 
   # Build and push Docker image with release profile on version tag
   docker-image-main-release:
-    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it]
+    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it, e2e-tests, docs-e2e-tests, validate-video-tests]
     if: >-
       always() &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
       (needs.build-and-unit-test.result == 'success' || needs.build-and-unit-test.result == 'skipped') &&
       (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
-      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped')
+      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped') &&
+      (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') &&
+      (needs.docs-e2e-tests.result == 'success' || needs.docs-e2e-tests.result == 'skipped') &&
+      (needs.validate-video-tests.result == 'success' || needs.validate-video-tests.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
