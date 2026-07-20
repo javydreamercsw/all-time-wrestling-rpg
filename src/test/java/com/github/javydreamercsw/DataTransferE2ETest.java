@@ -241,6 +241,9 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     System.setProperty("simulateFailure", "true");
     System.setProperty("simulateRollbackFailure", "true");
     navigateTo("data-transfer");
+    // This may run as the first test in the job (no other test has warmed up Vaadin yet).
+    // Wait for Vaadin to finish its initial bundle load before looking for elements.
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);

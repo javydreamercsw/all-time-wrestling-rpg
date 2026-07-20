@@ -20,9 +20,9 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.spring.security.VaadinAwareSecurityContextHolderStrategy;
 import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -31,6 +31,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
@@ -53,10 +54,20 @@ public class SecurityConfig {
   // 7's PrePostMethodSecurityConfiguration can @Autowired it early — before Vaadin's
   // SpringSecurityAutoConfiguration runs — preventing a ThreadLocal mismatch on ForkJoinPool
   // threads where @PreAuthorize would see an empty SecurityContext.
+  //
+  // We also explicitly call SecurityContextHolder.setContextHolderStrategy() so that the static
+  // holder and the autowired bean share the same ThreadLocal. Without this, Spring Boot 4's
+  // autoconfiguration may not register the strategy before the E2E test application context
+  // initialises, leaving SecurityContextHolder on the default ThreadLocal strategy while
+  // @PreAuthorize reads from the Vaadin bean — two separate ThreadLocals, so runWithContext()
+  // on ForkJoinPool sets auth in one but @PreAuthorize reads empty from the other.
   @Bean
-  @ConditionalOnMissingBean(SecurityContextHolderStrategy.class)
+  @Primary
   public SecurityContextHolderStrategy securityContextHolderStrategy() {
-    return new VaadinAwareSecurityContextHolderStrategy();
+    VaadinAwareSecurityContextHolderStrategy strategy =
+        new VaadinAwareSecurityContextHolderStrategy();
+    SecurityContextHolder.setContextHolderStrategy(strategy);
+    return strategy;
   }
 
   @Bean
