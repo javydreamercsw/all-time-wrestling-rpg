@@ -195,7 +195,12 @@ public final class GeneralSecurityUtils {
             vaadinSession
                 .getSession()
                 .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
-      } catch (IllegalStateException ignored) {
+      } catch (IllegalStateException | AssertionError ignored) {
+        // IllegalStateException: session invalidated.
+        // AssertionError: Vaadin lock not held (e.g. ForkJoinPool worker). Clear the session
+        // ThreadLocal so VaadinAwareSecurityContextHolderStrategy.getContext() falls back to
+        // the instance ThreadLocal path rather than trying to call getSession() again.
+        VaadinSession.setCurrent(null);
         vaadinSession = null;
       }
     }
@@ -336,8 +341,8 @@ public final class GeneralSecurityUtils {
                 Thread.currentThread().getName());
             return sc;
           }
-        } catch (IllegalStateException ignored) {
-          // Session already invalidated
+        } catch (IllegalStateException | AssertionError ignored) {
+          // Session invalidated or Vaadin lock not held — fall through
         }
       }
       log.warn(
@@ -380,7 +385,11 @@ public final class GeneralSecurityUtils {
             vaadinSession
                 .getSession()
                 .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
-      } catch (IllegalStateException ignored) {
+      } catch (IllegalStateException | AssertionError ignored) {
+        // IllegalStateException: session invalidated.
+        // AssertionError: Vaadin lock not held (ForkJoinPool worker). Clear the session
+        // ThreadLocal so VaadinAware falls back to the instance ThreadLocal path.
+        VaadinSession.setCurrent(null);
         vaadinSession = null;
       }
     }
