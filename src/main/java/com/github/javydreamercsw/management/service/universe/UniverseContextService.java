@@ -63,8 +63,11 @@ public class UniverseContextService implements Serializable {
           return id;
         }
       }
-    } catch (Exception e) {
-      // Ignore session access errors in non-web contexts
+    } catch (Exception | AssertionError e) {
+      // Exception: no session in non-web contexts.
+      // AssertionError: VaadinSession.getAttribute() requires the session lock, which
+      // background threads (e.g. ForkJoinPool workers) don't hold. Fall back to the
+      // ThreadLocal below.
     }
     return threadLocalUniverseId.get();
   }
@@ -76,8 +79,9 @@ public class UniverseContextService implements Serializable {
         session.setAttribute(UNIVERSE_ID_SESSION_KEY, id);
         return;
       }
-    } catch (Exception e) {
-      // Ignore session access errors in non-web contexts
+    } catch (Exception | AssertionError e) {
+      // Exception: no session in non-web contexts.
+      // AssertionError: session lock not held on this thread. Fall back to the ThreadLocal.
     }
     threadLocalUniverseId.set(id);
   }

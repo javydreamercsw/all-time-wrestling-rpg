@@ -345,11 +345,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       Assertions.assertNotNull(approveButton);
       clickElement(approveButton);
 
-      // Wait for the notification that segments are approved to appear and disappear
+      // Wait for the notification that segments are approved to appear
       log.info("Waiting for notification");
-      wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-notification")));
-      wait.until(
-          ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-notification")));
+      waitForNotification("Segments created for " + showName);
 
       // Navigate directly back to the show detail view
       log.info("Navigating back to show detail view");
