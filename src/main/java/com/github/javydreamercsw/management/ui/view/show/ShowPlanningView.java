@@ -248,19 +248,17 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 editButton.setText("...");
                 UI ui = UI.getCurrent();
 
-                CompletableFuture.supplyAsync(
+                GeneralSecurityUtils.runAsAdminAsync(
                         () ->
-                            GeneralSecurityUtils.runAsAdmin(
-                                () ->
-                                    EditSegmentDialog.PreloadedData.load(
-                                        segmentTypeService,
-                                        segmentRuleService,
-                                        npcService,
-                                        titleService,
-                                        wrestlerService,
-                                        expansionService,
-                                        teamService,
-                                        universeId)))
+                            EditSegmentDialog.PreloadedData.load(
+                                segmentTypeService,
+                                segmentRuleService,
+                                npcService,
+                                titleService,
+                                wrestlerService,
+                                expansionService,
+                                teamService,
+                                universeId))
                     .thenAccept(
                         preloaded ->
                             ui.access(
@@ -375,10 +373,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     loadContextButton.setText("Loading...");
     UI ui = UI.getCurrent();
 
-    return CompletableFuture.supplyAsync(
-            () ->
-                GeneralSecurityUtils.runAsAdmin(
-                    () -> showPlanningService.getShowPlanningContext(show)))
+    return GeneralSecurityUtils.runAsAdminAsync(
+            () -> showPlanningService.getShowPlanningContext(show))
         .thenAccept(
             context ->
                 ui.access(
@@ -431,14 +427,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposeSegmentsButton.setText("AI Planning...");
     UI ui = UI.getCurrent();
 
-    return CompletableFuture.supplyAsync(
-            () ->
-                GeneralSecurityUtils.runAsAdmin(
-                    () -> {
-                      ShowPlanningContextDTO context =
-                          showPlanningService.getShowPlanningContext(show);
-                      return showPlanningAiService.planShow(context);
-                    }))
+    return GeneralSecurityUtils.runAsAdminAsync(
+            () -> {
+              ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
+              return showPlanningAiService.planShow(context);
+            })
         .thenAccept(
             proposedShow ->
                 ui.access(

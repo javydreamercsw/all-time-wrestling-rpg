@@ -22,12 +22,16 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.server.VaadinSession;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -82,6 +86,95 @@ public final class GeneralSecurityUtils {
    */
   public static <T> T runAsAdmin(@NonNull final Supplier<T> supplier) {
     return runAs(supplier, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER");
+  }
+
+  /**
+   * Runs a task as an admin user on a background thread (via {@code ForkJoinPool.commonPool()}),
+   * safely for {@code @PreAuthorize}-guarded calls.
+   *
+   * <p>{@code CompletableFuture.supplyAsync(() -> runAsAdmin(...))} does NOT work reliably: {@code
+   * runAsAdmin()} sets the admin {@link SecurityContext} via {@code
+   * SecurityContextHolderStrategy.setContext()}, which — for {@code
+   * VaadinAwareSecurityContextHolderStrategy} — writes to a private, non-inheritable {@code
+   * ThreadLocal} on whichever thread happens to run the lambda. Since {@code
+   * ForkJoinPool.commonPool()} workers are long-lived and reused across unrelated requests, this
+   * has produced intermittent {@code AuthenticationCredentialsNotFoundException} on CI even though
+   * the same code passes locally — a classic ThreadLocal/thread-pool race.
+   *
+   * <p>This method instead uses Spring Security's {@link DelegatingSecurityContextCallable}, which
+   * captures the given {@link SecurityContext} on the calling thread and explicitly installs it on
+   * the worker thread's strategy immediately before running the delegate, then restores/clears it
+   * afterwards — regardless of which thread ends up executing the task.
+   *
+   * @param <T> The return type of the task.
+   * @param supplier The task to run.
+   * @return A {@link CompletableFuture} completing with the task's result.
+   */
+  public static <T> CompletableFuture<T> runAsAdminAsync(@NonNull final Supplier<T> supplier) {
+    SecurityContext adminContext = buildAdminContext();
+    Callable<T> delegatingCallable =
+        DelegatingSecurityContextCallable.create(supplier::get, adminContext);
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return delegatingCallable.call();
+          } catch (RuntimeException e) {
+            throw e;
+          } catch (Exception e) {
+            throw new CompletionException(e);
+          }
+        });
+  }
+
+  /**
+   * Runs a task as an admin user on a background thread. See {@link #runAsAdminAsync(Supplier)} for
+   * why this is necessary instead of {@code CompletableFuture.runAsync(() -> runAsAdmin(...))}.
+   *
+   * @param task The task to run.
+   * @return A {@link CompletableFuture} completing when the task finishes.
+   */
+  public static CompletableFuture<Void> runAsAdminAsync(@NonNull final Runnable task) {
+    return runAsAdminAsync(
+        () -> {
+          task.run();
+          return null;
+        });
+  }
+
+  /**
+   * Builds a {@link SecurityContext} authenticated as the synthetic admin/system user, using the
+   * same principal/authority construction as {@link #runAsAdmin(Supplier)}.
+   */
+  private static SecurityContext buildAdminContext() {
+    String username = "system";
+    String password = "password";
+    String[] roles = {"ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER"};
+
+    Account account = new Account(username, password, username + "@example.com");
+    account.setId(-1L);
+
+    Set<Role> accountRoles = new HashSet<>();
+    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+
+    for (String role : roles) {
+      String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
+      try {
+        RoleName roleName = RoleName.valueOf(cleanRole);
+        accountRoles.add(new Role(roleName, roleName.name()));
+      } catch (IllegalArgumentException e) {
+        log.trace("Non-enum role provided: {}", role);
+      }
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
+    }
+    account.setRoles(accountRoles);
+
+    CustomUserDetails principal = new CustomUserDetails(account, null);
+    Authentication authentication =
+        new UsernamePasswordAuthenticationToken(principal, password, authorities);
+
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+    context.setAuthentication(authentication);
+    return context;
   }
 
   /**
