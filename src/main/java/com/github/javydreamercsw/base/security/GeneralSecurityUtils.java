@@ -22,16 +22,13 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.server.VaadinSession;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -92,37 +89,31 @@ public final class GeneralSecurityUtils {
    * Runs a task as an admin user on a background thread (via {@code ForkJoinPool.commonPool()}),
    * safely for {@code @PreAuthorize}-guarded calls.
    *
-   * <p>{@code CompletableFuture.supplyAsync(() -> runAsAdmin(...))} does NOT work reliably: {@code
-   * runAsAdmin()} sets the admin {@link SecurityContext} via {@code
-   * SecurityContextHolderStrategy.setContext()}, which — for {@code
-   * VaadinAwareSecurityContextHolderStrategy} — writes to a private, non-inheritable {@code
-   * ThreadLocal} on whichever thread happens to run the lambda. Since {@code
-   * ForkJoinPool.commonPool()} workers are long-lived and reused across unrelated requests, this
-   * has produced intermittent {@code AuthenticationCredentialsNotFoundException} on CI even though
-   * the same code passes locally — a classic ThreadLocal/thread-pool race.
+   * <p>{@code CompletableFuture.supplyAsync(() -> runAsAdmin(...))} is unreliable because {@code
+   * VaadinAwareSecurityContextHolderStrategy.getContext()} prefers the VaadinSession's HTTP session
+   * attribute over the ThreadLocal. A ForkJoinPool worker can accumulate a stale VaadinSession from
+   * prior Vaadin request-handling work on the same thread. When that happens, {@code setContext()}
+   * silently writes to the ThreadLocal, but {@code getContext()} reads the HTTP session and finds
+   * the wrong (or absent) authentication — causing {@code
+   * AuthenticationCredentialsNotFoundException} even though the code passes locally.
    *
-   * <p>This method instead uses Spring Security's {@link DelegatingSecurityContextCallable}, which
-   * captures the given {@link SecurityContext} on the calling thread and explicitly installs it on
-   * the worker thread's strategy immediately before running the delegate, then restores/clears it
-   * afterwards — regardless of which thread ends up executing the task.
+   * <p>This method clears any stale VaadinSession from the worker thread before delegating to
+   * {@link #runAsAdmin(Supplier)}, forcing {@code VaadinAwareSecurityContextHolderStrategy} into
+   * ThreadLocal mode for the duration of the call.
    *
    * @param <T> The return type of the task.
    * @param supplier The task to run.
    * @return A {@link CompletableFuture} completing with the task's result.
    */
   public static <T> CompletableFuture<T> runAsAdminAsync(@NonNull final Supplier<T> supplier) {
-    SecurityContext adminContext = buildAdminContext();
-    Callable<T> delegatingCallable =
-        DelegatingSecurityContextCallable.create(supplier::get, adminContext);
     return CompletableFuture.supplyAsync(
         () -> {
-          try {
-            return delegatingCallable.call();
-          } catch (RuntimeException e) {
-            throw e;
-          } catch (Exception e) {
-            throw new CompletionException(e);
-          }
+          // Clear any stale VaadinSession this ForkJoinPool worker may have accumulated.
+          // VaadinAwareSecurityContextHolderStrategy.getContext() prefers the HTTP session
+          // attribute over the ThreadLocal, so a stale session would shadow the admin context
+          // we're about to set. With no VaadinSession, the strategy falls back to ThreadLocal.
+          VaadinSession.setCurrent(null);
+          return runAsAdmin(supplier);
         });
   }
 
@@ -139,42 +130,6 @@ public final class GeneralSecurityUtils {
           task.run();
           return null;
         });
-  }
-
-  /**
-   * Builds a {@link SecurityContext} authenticated as the synthetic admin/system user, using the
-   * same principal/authority construction as {@link #runAsAdmin(Supplier)}.
-   */
-  private static SecurityContext buildAdminContext() {
-    String username = "system";
-    String password = "password";
-    String[] roles = {"ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER"};
-
-    Account account = new Account(username, password, username + "@example.com");
-    account.setId(-1L);
-
-    Set<Role> accountRoles = new HashSet<>();
-    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-
-    for (String role : roles) {
-      String cleanRole = role.startsWith("ROLE_") ? role.substring(5) : role;
-      try {
-        RoleName roleName = RoleName.valueOf(cleanRole);
-        accountRoles.add(new Role(roleName, roleName.name()));
-      } catch (IllegalArgumentException e) {
-        log.trace("Non-enum role provided: {}", role);
-      }
-      authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
-    }
-    account.setRoles(accountRoles);
-
-    CustomUserDetails principal = new CustomUserDetails(account, null);
-    Authentication authentication =
-        new UsernamePasswordAuthenticationToken(principal, password, authorities);
-
-    SecurityContext context = SecurityContextHolder.createEmptyContext();
-    context.setAuthentication(authentication);
-    return context;
   }
 
   /**

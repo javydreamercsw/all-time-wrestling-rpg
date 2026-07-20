@@ -75,7 +75,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Import(TestE2ESecurityConfig.class)
 @Slf4j
 @WithCustomMockUser(roles = {"ADMIN"})
-@ExtendWith(UITestWatcher.class)
+@ExtendWith({UITestWatcher.class, E2EShardCondition.class})
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @Autowired protected ObjectMapper objectMapper;

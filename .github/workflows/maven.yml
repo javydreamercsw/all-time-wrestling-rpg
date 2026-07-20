@@ -286,55 +286,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - shard: 1
-            tests: >-
-              DataTransferE2ETest,
-              WrestlerListViewE2ETest,
-              WrestlerProfileViewE2ETest,
-              PlayerViewE2ETest,
-              FactionListViewE2ETest,
-              SeasonSettingsViewE2ETest,
-              InboxViewE2ETest,
-              HolidayListViewE2ETest,
-              EntityImageE2ETest,
-              CardListViewE2ETest,
-              ShowDetailViewE2ETest,
-              ShowPlanningViewE2ETest,
-              MatchDetailsE2ETest,
-              MatchNarrationE2ETest,
-              InteractivePromoE2ETest,
-              AutomaticShowCreationE2ETest,
-              WrestlerRankingsViewE2ETest
-          - shard: 2
-            tests: >-
-              BookerJourneyE2ETest,
-              RivalryListViewE2ETest,
-              LoginE2ETest,
-              LocationListViewE2ETest,
-              GenderFilteringE2ETest,
-              CampaignAdvancedChaptersE2ETest,
-              ArenaListViewE2ETest,
-              AdvancedCampaignE2ETest,
-              AccountE2ETest,
-              ThemePersistenceE2ETest,
-              MainLayoutE2ETest,
-              HallOfFameE2ETest,
-              DeckListViewE2ETest,
-              CampaignE2ETest,
-              SeasonListViewE2ETest,
-              SmartPromoE2ETest,
-              RankingViewE2ETest,
-              NpcImageGenerationE2ETest,
-              LeagueLifecycleE2ETest,
-              ExpansionNPCManagementE2ETest,
-              ExpansionManagementE2ETest,
-              CampaignTournamentE2ETest,
-              CampaignPromoE2ETest,
-              BookerViewE2ETest,
-              BackstageEncounterE2ETest,
-              AccountFormE2ETest,
-              ShowTemplateImageGenerationE2ETest
+        shard: [1, 2]
     env:
       HEADLESS: 'true'
       GITHUB_ACTIONS: 'true'
@@ -359,10 +311,10 @@ jobs:
       with:
         name: vaadin-frontend-bundle
         path: target/classes/META-INF/VAADIN/
-    - name: Run E2E Tests (shard ${{ matrix.shard }})
+    - name: Run E2E Tests (shard ${{ matrix.shard }} of 2)
       run: >-
         mvn -B verify -Pe2e,coverage,production -Dsurefire.skip=true
-        -Dit.test="${{ matrix.tests }}"
+        -De2e.shard.index=${{ matrix.shard }} -De2e.shard.total=2
         -Djacoco.e2e.destFile=target/jacoco-e2e-${{ matrix.shard }}.exec
     - name: Upload E2E test failure artifacts
       if: failure()
@@ -381,6 +333,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check-paths, build-and-unit-test, build-frontend]
     if: needs.check-paths.outputs.ui_changed == 'true' && github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     env:
       HEADLESS: 'true'
       GITHUB_ACTIONS: 'true'
@@ -405,25 +361,32 @@ jobs:
       with:
         name: vaadin-frontend-bundle
         path: target/classes/META-INF/VAADIN/
-    - name: Run Docs E2E Tests
-      run: mvn -B verify -Pdocs-e2e,coverage,production -Dsurefire.skip=true
+    - name: Run Docs E2E Tests (shard ${{ matrix.shard }} of 2)
+      run: >-
+        mvn -B verify -Pdocs-e2e,coverage,production -Dsurefire.skip=true
+        -De2e.shard.index=${{ matrix.shard }} -De2e.shard.total=2
+        -Djacoco.docs-e2e.destFile=target/jacoco-docs-e2e-${{ matrix.shard }}.exec
     - name: Upload Docs E2E test failure artifacts
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: docs-e2e-test-failures
+        name: docs-e2e-test-failures-${{ matrix.shard }}
         path: target/test-failures
     - name: Upload Docs E2E test coverage data
       uses: actions/upload-artifact@v7
       with:
-        name: jacoco-docs-e2e-exec
-        path: target/jacoco-docs-e2e.exec
+        name: jacoco-docs-e2e-exec-${{ matrix.shard }}
+        path: target/jacoco-docs-e2e-${{ matrix.shard }}.exec
         if-no-files-found: ignore
 
   validate-video-tests:
     runs-on: ubuntu-latest
     needs: [check-paths, build-and-unit-test, build-frontend]
     if: needs.check-paths.outputs.ui_changed == 'true' && github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     env:
       HEADLESS: 'true'
       GITHUB_ACTIONS: 'true'
@@ -448,13 +411,15 @@ jobs:
       with:
         name: vaadin-frontend-bundle
         path: target/classes/META-INF/VAADIN/
-    - name: Validate video tests (dry run — no artifacts generated)
-      run: mvn -B verify -Pvalidate-videos,production -Dsurefire.skip=true -Dheadless=true
+    - name: Validate video tests (shard ${{ matrix.shard }} of 2, dry run)
+      run: >-
+        mvn -B verify -Pvalidate-videos,production -Dsurefire.skip=true -Dheadless=true
+        -De2e.shard.index=${{ matrix.shard }} -De2e.shard.total=2
     - name: Upload video test failure artifacts
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: validate-video-test-failures
+        name: validate-video-test-failures-${{ matrix.shard }}
         path: target/test-failures
 
   coverage-and-analysis:
@@ -509,8 +474,9 @@ jobs:
       continue-on-error: true
       uses: actions/download-artifact@v8
       with:
-        name: jacoco-docs-e2e-exec
+        pattern: jacoco-docs-e2e-exec-*
         path: target/
+        merge-multiple: true
 
     - name: Ensure classes are compiled
       run: mvn -B compile -Pcoverage
