@@ -89,31 +89,53 @@ public final class GeneralSecurityUtils {
    * Runs a task as an admin user on a background thread (via {@code ForkJoinPool.commonPool()}),
    * safely for {@code @PreAuthorize}-guarded calls.
    *
-   * <p>{@code CompletableFuture.supplyAsync(() -> runAsAdmin(...))} is unreliable because {@code
-   * VaadinAwareSecurityContextHolderStrategy.getContext()} prefers the VaadinSession's HTTP session
-   * attribute over the ThreadLocal. A ForkJoinPool worker can accumulate a stale VaadinSession from
-   * prior Vaadin request-handling work on the same thread. When that happens, {@code setContext()}
-   * silently writes to the ThreadLocal, but {@code getContext()} reads the HTTP session and finds
-   * the wrong (or absent) authentication — causing {@code
-   * AuthenticationCredentialsNotFoundException} even though the code passes locally.
+   * <p>{@code VaadinAwareSecurityContextHolderStrategy.getContext()} has two paths: (1) when {@code
+   * VaadinSession.getCurrent()} is non-null it reads the HTTP session attribute, (2) otherwise it
+   * reads the instance-field {@code ThreadLocal}. ForkJoinPool workers do not inherit {@code
+   * VaadinSession} (it is stored in a plain {@code ThreadLocal} via {@code CurrentInstance} rather
+   * than an {@code InheritableThreadLocal}), so the ThreadLocal path is used on workers — but
+   * calling {@code setContext()} on that ThreadLocal has proven unreliable across Vaadin versions
+   * (the context is visible right after {@code set()} but not when the {@code @PreAuthorize}
+   * interceptor later calls {@code getContext()} on the same thread).
    *
-   * <p>This method clears any stale VaadinSession from the worker thread before delegating to
-   * {@link #runAsAdmin(Supplier)}, forcing {@code VaadinAwareSecurityContextHolderStrategy} into
-   * ThreadLocal mode for the duration of the call.
+   * <p>This method instead captures the caller's {@code VaadinSession} on the originating (Vaadin
+   * UI) thread and propagates it to the worker. With a {@code VaadinSession} set on the worker,
+   * {@code VaadinAwareSecurityContextHolderStrategy} takes the HTTP session path — the same path
+   * Vaadin's own request handling uses and which is known to be reliable. {@link #runAs(Supplier,
+   * String, String, String...)} then writes the admin context into the HTTP session attribute
+   * before invoking the supplier and restores the original value afterwards.
    *
    * @param <T> The return type of the task.
    * @param supplier The task to run.
    * @return A {@link CompletableFuture} completing with the task's result.
    */
   public static <T> CompletableFuture<T> runAsAdminAsync(@NonNull final Supplier<T> supplier) {
+    // Capture VaadinSession on the calling (Vaadin UI) thread. CurrentInstance stores it in a
+    // plain ThreadLocal so ForkJoinPool workers would otherwise have no session reference.
+    VaadinSession capturedSession = null;
+    try {
+      capturedSession = VaadinSession.getCurrent();
+    } catch (Exception ignored) {
+      // No Vaadin context on calling thread — worker will use ThreadLocal path as fallback.
+    }
+    final VaadinSession sessionToPropagate = capturedSession;
+
     return CompletableFuture.supplyAsync(
         () -> {
-          // Clear any stale VaadinSession this ForkJoinPool worker may have accumulated.
-          // VaadinAwareSecurityContextHolderStrategy.getContext() prefers the HTTP session
-          // attribute over the ThreadLocal, so a stale session would shadow the admin context
-          // we're about to set. With no VaadinSession, the strategy falls back to ThreadLocal.
-          VaadinSession.setCurrent(null);
-          return runAsAdmin(supplier);
+          if (sessionToPropagate != null) {
+            // Bind the caller's VaadinSession to this worker thread so that
+            // VaadinAwareSecurityContextHolderStrategy.getContext() uses its proven
+            // HTTP-session path. runAs() will update the HTTP session attribute to the admin
+            // context before calling the supplier and restore the original value afterwards.
+            VaadinSession.setCurrent(sessionToPropagate);
+          }
+          try {
+            return runAsAdmin(supplier);
+          } finally {
+            if (sessionToPropagate != null) {
+              VaadinSession.setCurrent(null);
+            }
+          }
         });
   }
 
