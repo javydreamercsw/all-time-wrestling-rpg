@@ -175,6 +175,79 @@ class LauncherTest {
   }
 
   @Test
+  void fetchLatestRelease_returnsNullWhenApiReturnsNon200() throws Exception {
+    HttpServer server = startJsonServer("/releases", "Not Found");
+    server.createContext(
+        "/bad",
+        exchange -> {
+          exchange.sendResponseHeaders(404, 0);
+          exchange.getResponseBody().close();
+        });
+    server.stop(0);
+
+    // Repurpose: start a server that returns 503
+    HttpServer errorServer = HttpServer.create(new InetSocketAddress(0), 0);
+    errorServer.createContext(
+        "/releases",
+        exchange -> {
+          exchange.sendResponseHeaders(503, 0);
+          exchange.getResponseBody().close();
+        });
+    errorServer.start();
+    int port = errorServer.getAddress().getPort();
+    System.setProperty("atw.launcher.releases-api", "http://127.0.0.1:" + port + "/releases");
+    try {
+      assertThat(Launcher.fetchLatestRelease()).isNull();
+    } finally {
+      System.clearProperty("atw.launcher.releases-api");
+      errorServer.stop(0);
+    }
+  }
+
+  @Test
+  void fetchLatestRelease_returnsNullWhenTagNameMissing() throws Exception {
+    String json =
+        """
+        {"html_url": "https://example.com/releases/v2.6.0",
+         "assets": [{"browser_download_url": "https://example.com/app.jar"}]}
+        """;
+    HttpServer server = startJsonServer("/releases", json);
+    int port = server.getAddress().getPort();
+    System.setProperty("atw.launcher.releases-api", "http://127.0.0.1:" + port + "/releases");
+    try {
+      assertThat(Launcher.fetchLatestRelease()).isNull();
+    } finally {
+      System.clearProperty("atw.launcher.releases-api");
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void fetchLatestRelease_returnsNullWhenNoJarAsset() throws Exception {
+    String json =
+        """
+        {"tag_name": "v2.6.0",
+         "assets": [{"browser_download_url": "https://example.com/app.war"}]}
+        """;
+    HttpServer server = startJsonServer("/releases", json);
+    int port = server.getAddress().getPort();
+    System.setProperty("atw.launcher.releases-api", "http://127.0.0.1:" + port + "/releases");
+    try {
+      assertThat(Launcher.fetchLatestRelease()).isNull();
+    } finally {
+      System.clearProperty("atw.launcher.releases-api");
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void semver_parsesVersionSegments() {
+    assertThat(Launcher.semver("2.6.0")).containsExactly(2, 6, 0);
+    assertThat(Launcher.semver("1.0")).containsExactly(1, 0, 0);
+    assertThat(Launcher.semver("3.0.0-RC1")).containsExactly(3, 0, 0);
+  }
+
+  @Test
   void download_returnsNullWhenServerIsUnreachable(@TempDir Path tempDir) throws Exception {
     Path oldJar = tempDir.resolve("all-time-wrestling-rpg-2.5.2.jar");
     Files.write(oldJar, minimalJarBytes());

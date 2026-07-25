@@ -44,6 +44,11 @@ public class UpdateCheckService {
   private static final String RELEASES_API =
       "https://api.github.com/repos/javydreamercsw/all-time-wrestling-rpg/releases/latest";
 
+  static String releasesApiUrl() {
+    String override = System.getProperty("atw.update-check.releases-api");
+    return override != null ? override : RELEASES_API;
+  }
+
   private final ApplicationEventPublisher eventPublisher;
   private final ObjectMapper objectMapper;
   private final Optional<BuildProperties> buildProperties;
@@ -61,7 +66,7 @@ public class UpdateCheckService {
       HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
       HttpRequest request =
           HttpRequest.newBuilder()
-              .uri(URI.create(RELEASES_API))
+              .uri(URI.create(releasesApiUrl()))
               .header("Accept", "application/vnd.github+json")
               .header("User-Agent", "all-time-wrestling-rpg/" + currentVersion)
               .timeout(Duration.ofSeconds(15))

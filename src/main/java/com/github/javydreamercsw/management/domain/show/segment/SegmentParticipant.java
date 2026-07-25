@@ -69,6 +69,9 @@ public class SegmentParticipant extends AbstractEntity<Long> {
   @Column(name = "final_momentum")
   private Integer finalMomentum;
 
+  @Column(name = "final_stamina")
+  private Integer finalStamina;
+
   @Column(name = "final_health")
   private Integer finalHealth;
 }
