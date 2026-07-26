@@ -1,0 +1,70 @@
+[ {
+  "id": "underground_debut",
+  "title": "Welcome to the Underground",
+  "narrativeText": "The arena smells like blood and cheap beer. The crowd doesn't want a match — they want carnage. Tonight, you give them what they came for.",
+  "choices": [ {
+    "id": "go_brawl",
+    "label": "Start the Brawl",
+    "text": "No rules. No referees. Just you and them.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "setRivalFromMatchOpponent": true
+  } ]
+}, {
+  "id": "backstage_confrontation",
+  "title": "Backstage Ambush",
+  "narrativeText": "{{RIVAL}} jumps you before the show even starts. Chairs fly. The crowd outside can hear the commotion through the walls.",
+  "choices": [ {
+    "id": "fight_back",
+    "label": "Fight Back Right Now",
+    "text": "No waiting. You return every shot with interest.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  }, {
+    "id": "bide_time",
+    "label": "Bide Your Time",
+    "text": "Let them think they got the better of you. Your moment will come.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 1
+  } ]
+}, {
+  "id": "weapon_stash",
+  "title": "The Stash",
+  "narrativeText": "You find a storage closet packed with steel chairs, tables, and a bag of thumbtacks. Someone left it unlocked. Tonight's tools are ready.",
+  "choices": [ {
+    "id": "use_them_tonight",
+    "label": "Use Everything Tonight",
+    "text": "Why save them? The crowd wants a Last Man Standing war.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ]
+  }, {
+    "id": "save_for_later",
+    "label": "Save Them for the Right Moment",
+    "text": "Patience. The right opponent will come. You pocket the tacks.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 1
+  } ]
+}, {
+  "id": "underground_proving_match",
+  "title": "The Booker's Demand",
+  "narrativeText": "The underground booker has a simple message: make a statement or go home. {{RIVAL}} is waiting in the ring. The crowd is hungry.",
+  "choices": [ {
+    "id": "make_statement",
+    "label": "Make the Statement",
+    "text": "No more warm-ups. This is where legends are made.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+} ]

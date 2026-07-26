@@ -1,0 +1,15 @@
+[ {
+  "id": "sabu_no_limits",
+  "requiredWrestlerName": "Sabu",
+  "title": "No Limits",
+  "narrativeText": "Fire. Barbwire. Thumbtacks. A steel chair that has long since been bent out of shape. Sabu has no concept of limits, no concept of self-preservation, no concept of anything except ending this match in the most spectacular manner possible.",
+  "choices": [ {
+    "id": "through_fire",
+    "label": "Go Through Everything",
+    "text": "Homicidal. Suicidal. Genocidal. Through fire if necessary.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Barbwire Exploding Deathmatch" ]
+  } ]
+} ]

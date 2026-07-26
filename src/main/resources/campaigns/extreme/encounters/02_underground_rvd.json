@@ -1,0 +1,15 @@
+[ {
+  "id": "rvd_five_star_setup",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "Five-Star Setup",
+  "narrativeText": "R-V-D! R-V-D! The crowd chants your name before you even set foot in the ring. You climb to the top rope. The crowd holds its breath. Everything that makes you special comes down to this — the Five-Star Frog Splash.",
+  "choices": [ {
+    "id": "launch_five_star",
+    "label": "Launch From the Top",
+    "text": "Everything you have. The whole crowd on its feet.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ]
+  } ]
+} ]

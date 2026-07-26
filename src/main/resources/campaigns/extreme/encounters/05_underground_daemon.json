@@ -1,0 +1,15 @@
+[ {
+  "id": "daemon_dark_ritual",
+  "requiredWrestlerName": "Daemon",
+  "title": "Dark Ritual",
+  "narrativeText": "The lights go out completely. When they return — red. Daemon stands in the center of the ring, arms spread, head back. No opponent has answered the call tonight. One of them will regret that.",
+  "choices": [ {
+    "id": "call_the_darkness",
+    "label": "Summon the Challenge",
+    "text": "The darkness answers. An opponent steps forward — or is dragged forward.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ]
+  } ]
+} ]

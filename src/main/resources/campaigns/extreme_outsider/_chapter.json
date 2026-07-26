@@ -1,0 +1,44 @@
+{
+  "id": "extreme_campaign_outsider",
+  "title": "The Outsider's Extreme Path",
+  "shortDescription": "You're not one of them — but you'll survive them.",
+  "introText": "You heard the stories. The blood. The barbwire. The crowds that come for violence and leave satisfied. You don't belong here — but you're going in anyway. Survive the extreme underground, take their championship, and prove that an outsider can conquer the most violent division in wrestling.",
+  "aiSystemPrompt": "You are the Campaign Director for the Outsider's Extreme Path. Narrate the shock, adaptation, and hard-won survival of an outsider thrust into the extreme world. The four extreme icons — Rob Van Dam, Sabu, Raven, and Daemon — are both the opponents and the measuring stick for success.",
+  "difficulty": "HARD",
+  "tagTeam": false,
+  "mode": "STATIC_ONLY",
+  "requiredExpansions": [ "EXTREME" ],
+  "defaultOpponentGenderFilter": "MALE",
+  "defaultExcludedOpponents": [ "{{CHAMP}}" ],
+  "initialChampions": {
+    "ATW Extreme Championship": "Rob Van Dam"
+  },
+  "entryPoints": [ {
+    "name": "Outsider's Challenge",
+    "criteria": [ {
+      "maxVictoryPoints": 0
+    } ]
+  } ],
+  "exitPoints": [ {
+    "name": "Outsider Legend",
+    "criteria": [ {
+      "wonFinale": true
+    } ]
+  }, {
+    "name": "Reclaimed by the Extreme",
+    "criteria": [ {
+      "minMatchesPlayed": 7,
+      "maxVictoryPoints": -2
+    } ]
+  } ],
+  "rules": {
+    "victoryPointsWin": 2,
+    "victoryPointsLoss": -1,
+    "titleWinVP": 5,
+    "titleDefenseVP": 3
+  },
+  "exclusions": {
+    "excludeChampions": false,
+    "npcIds": [ ]
+  }
+}

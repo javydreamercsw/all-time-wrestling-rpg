@@ -1,0 +1,57 @@
+[ {
+  "id": "contender_brawl",
+  "title": "Proving the Contendership",
+  "narrativeText": "You've earned the shot. But first, another challenger stands between you and the title match. {{RIVAL}} has been here longer than you and doesn't think you've paid enough dues.",
+  "choices": [ {
+    "id": "prove_worthiness",
+    "label": "Prove Your Worth",
+    "text": "Every match in this circuit has been a dues payment.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "title_challenge",
+  "title": "The Outsider's Title Shot",
+  "narrativeText": "The ATW Extreme Championship. The champion — {{CHAMP}} — stands across the ring. They built this division. They own this ring. And you, an outsider, are about to take it all from them.",
+  "choices": [ {
+    "id": "challenge_for_extreme_title",
+    "label": "Take What You've Earned",
+    "text": "Outsider? Not for much longer.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "forcedOpponentName": "{{CHAMP}}"
+  } ]
+}, {
+  "id": "first_defense",
+  "title": "Defending the Unthinkable",
+  "narrativeText": "An outsider holding the Extreme Championship. The extreme icons are furious. {{RIVAL}} demands the first shot — and they're not asking nicely.",
+  "choices": [ {
+    "id": "defend_the_extreme_title",
+    "label": "Defend Your Championship",
+    "text": "You didn't come this far to hand it back.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "extreme_defense_2",
+  "title": "No Rest for the Champion",
+  "narrativeText": "Another challenger. Another extreme brawler who thinks an outsider has no right to their title. Every defense makes the story more remarkable.",
+  "choices": [ {
+    "id": "another_defense_outsider",
+    "label": "Keep the Title",
+    "text": "You'll defend it against everyone. Every. Single. One.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "opponentPool": [ "Rob Van Dam", "Sabu", "Raven", "Daemon" ]
+  } ]
+} ]

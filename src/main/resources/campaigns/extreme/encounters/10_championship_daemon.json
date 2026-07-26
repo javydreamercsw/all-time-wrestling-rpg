@@ -1,0 +1,15 @@
+[ {
+  "id": "daemon_darkness_descends",
+  "requiredWrestlerName": "Daemon",
+  "title": "Darkness Descends",
+  "narrativeText": "The arena goes dark. Not a flicker — total blackness. When the lights return, Daemon is already in the ring. The Extreme Championship is at stake. The opponent is not prepared for what comes next.",
+  "choices": [ {
+    "id": "darkness_takes_hold",
+    "label": "Let the Darkness Win",
+    "text": "The championship belongs to the darkness.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ]
+  } ]
+} ]
