@@ -25,6 +25,10 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
@@ -259,6 +263,180 @@ class LauncherTest {
 
     assertThat(result).isNull();
     assertThat(oldJar).exists();
+  }
+
+  // ── app directory resolution ──────────────────────────────────────────────
+
+  @Test
+  void resolveAppDir_returnsMacPath_whenOsNameContainsMac() {
+    String saved = System.getProperty("os.name");
+    try {
+      System.setProperty("os.name", "Mac OS X");
+      Path dir = Launcher.resolveAppDir();
+      assertThat(dir.toString()).contains("Application Support");
+      assertThat(dir.getFileName().toString()).isEqualTo("ATW");
+    } finally {
+      System.setProperty("os.name", saved);
+    }
+  }
+
+  @Test
+  void resolveAppDir_returnsWindowsPath_whenOsNameContainsWin() {
+    String saved = System.getProperty("os.name");
+    try {
+      System.setProperty("os.name", "Windows 10");
+      Path dir = Launcher.resolveAppDir();
+      assertThat(dir.getFileName().toString()).isEqualTo("ATW");
+    } finally {
+      System.setProperty("os.name", saved);
+    }
+  }
+
+  @Test
+  void resolveAppDir_returnsLinuxPath_whenOsNameIsOther() {
+    String saved = System.getProperty("os.name");
+    try {
+      System.setProperty("os.name", "Linux");
+      Path dir = Launcher.resolveAppDir();
+      assertThat(dir.getFileName().toString()).isEqualTo("atw");
+    } finally {
+      System.setProperty("os.name", saved);
+    }
+  }
+
+  // ── extractVersion ────────────────────────────────────────────────────────
+
+  @Test
+  void extractVersion_parsesVersionFromStandardFilename() {
+    assertThat(Launcher.extractVersion("all-time-wrestling-rpg-2.6.0.jar")).isEqualTo("2.6.0");
+  }
+
+  @Test
+  void extractVersion_parsesVersionWithPreReleaseSuffix() {
+    assertThat(Launcher.extractVersion("all-time-wrestling-rpg-2.5.2-SNAPSHOT.jar"))
+        .isEqualTo("2.5.2-SNAPSHOT");
+  }
+
+  @Test
+  void extractVersion_returnsDefaultWhenFilenameDoesNotMatch() {
+    assertThat(Launcher.extractVersion("unknown.jar")).isEqualTo("0.0.0");
+    assertThat(Launcher.extractVersion("")).isEqualTo("0.0.0");
+  }
+
+  // ── findCurrentJar ────────────────────────────────────────────────────────
+
+  @Test
+  void findCurrentJar_returnsHighestVersionWhenMultipleJarsPresent(@TempDir Path dir)
+      throws Exception {
+    Files.write(dir.resolve("all-time-wrestling-rpg-2.5.0.jar"), new byte[] {});
+    Files.write(dir.resolve("all-time-wrestling-rpg-2.6.0.jar"), new byte[] {});
+    Files.write(dir.resolve("unrelated.txt"), new byte[] {});
+
+    Optional<Path> result = Launcher.findCurrentJar(dir);
+    assertThat(result).isPresent();
+    assertThat(result.get().getFileName().toString()).isEqualTo("all-time-wrestling-rpg-2.6.0.jar");
+  }
+
+  @Test
+  void findCurrentJar_returnsEmptyWhenNoJarPresent(@TempDir Path dir) throws Exception {
+    Files.write(dir.resolve("readme.txt"), new byte[] {});
+    assertThat(Launcher.findCurrentJar(dir)).isEmpty();
+  }
+
+  @Test
+  void findCurrentJar_returnsEmptyWhenDirectoryDoesNotExist(@TempDir Path parent) throws Exception {
+    assertThat(Launcher.findCurrentJar(parent.resolve("missing"))).isEmpty();
+  }
+
+  // ── cleanStaleTmp ─────────────────────────────────────────────────────────
+
+  @Test
+  void cleanStaleTmp_deletesStaleTemporaryFiles(@TempDir Path dir) throws Exception {
+    Path stale = dir.resolve("old.jar.tmp");
+    Files.write(stale, new byte[] {1});
+    Files.setLastModifiedTime(stale, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
+
+    Launcher.cleanStaleTmp(dir);
+
+    assertThat(stale).doesNotExist();
+  }
+
+  @Test
+  void cleanStaleTmp_keepsRecentTemporaryFiles(@TempDir Path dir) throws Exception {
+    Path fresh = dir.resolve("recent.jar.tmp");
+    Files.write(fresh, new byte[] {1});
+
+    Launcher.cleanStaleTmp(dir);
+
+    assertThat(fresh).exists();
+  }
+
+  @Test
+  void cleanStaleTmp_doesNothingWhenDirectoryDoesNotExist(@TempDir Path parent) throws Exception {
+    Launcher.cleanStaleTmp(parent.resolve("no-such-dir")); // must not throw
+  }
+
+  // ── restoreBackupIfNeeded ─────────────────────────────────────────────────
+
+  @Test
+  void restoreBackupIfNeeded_restoresBackupWhenNoCurrentJar(@TempDir Path dir) throws Exception {
+    Path backup = dir.resolve("all-time-wrestling-rpg-2.5.2.jar.old");
+    Files.write(backup, minimalJarBytes());
+
+    Launcher.restoreBackupIfNeeded(dir);
+
+    assertThat(dir.resolve("all-time-wrestling-rpg-2.5.2.jar")).exists();
+    assertThat(backup).doesNotExist();
+  }
+
+  @Test
+  void restoreBackupIfNeeded_deletesBackupWhenCurrentJarExists(@TempDir Path dir) throws Exception {
+    Files.write(dir.resolve("all-time-wrestling-rpg-2.6.0.jar"), minimalJarBytes());
+    Path backup = dir.resolve("all-time-wrestling-rpg-2.5.2.jar.old");
+    Files.write(backup, minimalJarBytes());
+
+    Launcher.restoreBackupIfNeeded(dir);
+
+    assertThat(dir.resolve("all-time-wrestling-rpg-2.6.0.jar")).exists();
+    assertThat(backup).doesNotExist();
+  }
+
+  @Test
+  void restoreBackupIfNeeded_doesNothingWhenNoBackupExists(@TempDir Path dir) throws Exception {
+    Path current = dir.resolve("all-time-wrestling-rpg-2.6.0.jar");
+    Files.write(current, minimalJarBytes());
+
+    Launcher.restoreBackupIfNeeded(dir);
+
+    assertThat(current).exists();
+  }
+
+  @Test
+  void restoreBackupIfNeeded_doesNothingWhenDirectoryDoesNotExist(@TempDir Path parent)
+      throws Exception {
+    Launcher.restoreBackupIfNeeded(parent.resolve("no-such-dir")); // must not throw
+  }
+
+  // ── download non-200 ──────────────────────────────────────────────────────
+
+  @Test
+  void download_returnsNullWhenDownloadServerReturnsNon200(@TempDir Path tempDir) throws Exception {
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    server.createContext(
+        "/app.jar",
+        exchange -> {
+          exchange.sendResponseHeaders(503, 0);
+          exchange.getResponseBody().close();
+        });
+    server.start();
+    int port = server.getAddress().getPort();
+    try {
+      Launcher.ReleaseInfo release =
+          new Launcher.ReleaseInfo("2.6.0", "http://127.0.0.1:" + port + "/app.jar");
+      assertThat(Launcher.download(release, tempDir, null)).isNull();
+    } finally {
+      server.stop(0);
+    }
   }
 
   // ── helpers ───────────────────────────────────────────────────────────────

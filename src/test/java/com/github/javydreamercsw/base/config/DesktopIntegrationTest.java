@@ -17,10 +17,12 @@
 package com.github.javydreamercsw.base.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.event.UpdateAvailableEvent;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -52,6 +54,22 @@ class DesktopIntegrationTest {
         .run(
             context -> {
               assertThat(context).hasSingleBean(DesktopIntegration.class);
+            });
+  }
+
+  @Test
+  void testOnUpdateAvailable_doesNothingWhenTrayIconIsNull() {
+    contextRunner
+        .withPropertyValues("atw.desktop.enabled=true")
+        .withBean(ResourceLoader.class, () -> mock(ResourceLoader.class))
+        .run(
+            context -> {
+              DesktopIntegration integration = context.getBean(DesktopIntegration.class);
+              // trayIcon is null because onApplicationEvent was never invoked successfully;
+              // onUpdateAvailable must return early without throwing.
+              UpdateAvailableEvent event =
+                  new UpdateAvailableEvent(this, "2.7.0", "https://example.com/releases/v2.7.0");
+              assertThatCode(() -> integration.onUpdateAvailable(event)).doesNotThrowAnyException();
             });
   }
 

@@ -248,6 +248,27 @@ class GeneralSecurityUtilsTest {
         });
   }
 
+  @Test
+  void testRunAs_reentrantCallRunsDirectlyWithoutReauth() {
+    AtomicBoolean innerRan = new AtomicBoolean(false);
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          Authentication outer = SecurityContextHolder.getContext().getAuthentication();
+          Assertions.assertNotNull(outer);
+          // Nested call with same username ("system") hits the re-entrancy guard —
+          // it skips creating a new token and runs the supplier with the existing context.
+          GeneralSecurityUtils.runAsAdmin(
+              () -> {
+                Authentication inner = SecurityContextHolder.getContext().getAuthentication();
+                Assertions.assertSame(outer, inner, "re-entrancy path must reuse outer auth");
+                innerRan.set(true);
+                return null;
+              });
+          return null;
+        });
+    Assertions.assertTrue(innerRan.get());
+  }
+
   private static SecurityContextHolderStrategy simpleStrategy() {
     java.util.concurrent.atomic.AtomicReference<SecurityContext> holder =
         new java.util.concurrent.atomic.AtomicReference<>(
