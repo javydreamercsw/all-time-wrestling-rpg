@@ -336,9 +336,12 @@ class CampaignChapterServiceTest {
   @DisplayName("findAvailableChapters filters out chapters restricted to other wrestler names")
   void testFindAvailableChaptersWrestlerNameFilter() {
     CampaignState state = buildMinimalState();
-    // "beginning" chapter has allowedWrestlerNames = [Kurt Angle, ...]; use a name not in the list
+    // "extreme" chapter has allowedWrestlerNames = [Rob Van Dam, Sabu, Raven, Daemon]
+    // A generic wrestler should NOT see the extreme insider chapter
     List<CampaignChapterDTO> chapters = chapterService.findAvailableChapters(state, "Unknown Joe");
-    assertThat(chapters).extracting(CampaignChapterDTO::getId).doesNotContain("beginning");
+    assertThat(chapters).extracting(CampaignChapterDTO::getId).doesNotContain("extreme");
+    // But "beginning" (no allowedWrestlerNames restriction) IS available to all
+    assertThat(chapters).extracting(CampaignChapterDTO::getId).contains("beginning");
   }
 
   @Test
