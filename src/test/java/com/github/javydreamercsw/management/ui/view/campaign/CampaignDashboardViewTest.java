@@ -440,6 +440,22 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   }
 
   @Test
+  public void testStartPicker_noChapters_startsCampaignWithNull() {
+    when(campaignRepository.findActiveByWrestler(mockWrestler)).thenReturn(Optional.empty());
+    when(campaignService.getCampaignForWrestler(mockWrestler)).thenReturn(Optional.empty());
+
+    when(campaignService.findStartingChapters(mockWrestler)).thenReturn(List.of());
+    when(campaignService.startCampaign(mockWrestler, null)).thenReturn(mockCampaign);
+
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    _click(_get(view, Button.class, spec -> spec.withId("debug-start-campaign")));
+
+    verify(campaignService).startCampaign(mockWrestler, null);
+  }
+
+  @Test
   public void testStartPicker_multipleChapters_opensDialogAndConfirm() {
     when(campaignRepository.findActiveByWrestler(mockWrestler)).thenReturn(Optional.empty());
     when(campaignService.getCampaignForWrestler(mockWrestler)).thenReturn(Optional.empty());
@@ -472,5 +488,64 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     _click(_get(dialog, Button.class, spec -> spec.withText("Start")));
 
     verify(campaignService).startCampaign(mockWrestler, "beginning");
+  }
+
+  @Test
+  public void testStartPicker_nullShortDescription_dialogOpensWithoutException() {
+    when(campaignRepository.findActiveByWrestler(mockWrestler)).thenReturn(Optional.empty());
+    when(campaignService.getCampaignForWrestler(mockWrestler)).thenReturn(Optional.empty());
+
+    CampaignChapterDTO ch1 =
+        CampaignChapterDTO.builder()
+            .id("beginning")
+            .title("All or Nothing Campaign")
+            .shortDescription(null) // null triggers the "" arm of the ternary in label generator
+            .build();
+    CampaignChapterDTO ch2 =
+        CampaignChapterDTO.builder().id("tournament").title("The Tournament").build();
+    when(campaignService.findStartingChapters(mockWrestler)).thenReturn(List.of(ch1, ch2));
+    when(campaignService.startCampaign(any(), any())).thenReturn(mockCampaign);
+
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    // Should open the dialog without NPE from the label generator's null-check branch
+    _click(_get(view, Button.class, spec -> spec.withId("debug-start-campaign")));
+
+    Dialog dialog = _get(Dialog.class);
+    assertThat(dialog.isOpened()).isTrue();
+  }
+
+  @Test
+  public void testStartPicker_cancel_doesNotStartCampaign() {
+    when(campaignRepository.findActiveByWrestler(mockWrestler)).thenReturn(Optional.empty());
+    when(campaignService.getCampaignForWrestler(mockWrestler)).thenReturn(Optional.empty());
+
+    CampaignChapterDTO ch1 =
+        CampaignChapterDTO.builder()
+            .id("beginning")
+            .title("All or Nothing Campaign")
+            .shortDescription("Start here.")
+            .build();
+    CampaignChapterDTO ch2 =
+        CampaignChapterDTO.builder()
+            .id("tournament")
+            .title("The Tournament")
+            .shortDescription("Compete.")
+            .build();
+    when(campaignService.findStartingChapters(mockWrestler)).thenReturn(List.of(ch1, ch2));
+
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    _click(_get(view, Button.class, spec -> spec.withId("debug-start-campaign")));
+
+    Dialog dialog = _get(Dialog.class);
+    assertThat(dialog.isOpened()).isTrue();
+
+    _click(_get(dialog, Button.class, spec -> spec.withText("Cancel")));
+
+    org.mockito.Mockito.verify(campaignService, org.mockito.Mockito.never())
+        .startCampaign(any(), any());
   }
 }

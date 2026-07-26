@@ -315,6 +315,37 @@ class CampaignServiceTest {
   }
 
   @Test
+  void testStartCampaign_oneArg_noChaptersAvailable_usesNullChapterId() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setReigns(new LinkedHashSet<>());
+
+    Universe universe = Universe.builder().name("Default").build();
+    universe.setId(1L);
+
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    when(universeRepository.findById(1L)).thenReturn(Optional.of(universe));
+    when(campaignRepository.save(any(Campaign.class))).thenAnswer(i -> i.getArgument(0));
+    lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.NEUTRAL);
+    alignment.setLevel(0);
+    lenient()
+        .when(wrestlerAlignmentRepository.findByWrestler(any()))
+        .thenReturn(Optional.of(alignment));
+    lenient().when(wrestlerAlignmentRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    // Both wrestler-specific and null-name passes return empty → isEmpty() ? null branch
+    when(chapterService.findAvailableChapters(any(), any())).thenReturn(List.of());
+
+    Campaign campaign = campaignService.startCampaign(wrestler);
+
+    assertThat(campaign).isNotNull();
+    assertThat(campaign.getState().getCurrentChapterId()).isNull();
+  }
+
+  @Test
   void testShiftAlignment_NeutralToHeel() {
     Wrestler wrestler = new Wrestler();
     Campaign campaign = new Campaign();
