@@ -23,7 +23,7 @@
   "effect_script": "gainHitPoints(2)",
   "expansion_code": "ATW_VS_WOW"
 }, {
-  "name": "ATW Extreme Championship",
+  "name": "ATW Extreme",
   "tier": "MAIN_EVENTER",
   "description": "The most extreme title in wrestling. No rules, no limits.",
   "gender": "MALE",

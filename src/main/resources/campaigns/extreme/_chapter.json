@@ -12,7 +12,7 @@
   "defaultOpponentGenderFilter": "MALE",
   "defaultExcludedOpponents": [ "{{CHAMP}}" ],
   "initialChampions": {
-    "ATW Extreme Championship": "Raven"
+    "ATW Extreme": "Raven"
   },
   "entryPoints": [ {
     "name": "Extreme Awakening",

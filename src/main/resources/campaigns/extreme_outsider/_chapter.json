@@ -11,7 +11,7 @@
   "defaultOpponentGenderFilter": "MALE",
   "defaultExcludedOpponents": [ "{{CHAMP}}" ],
   "initialChampions": {
-    "ATW Extreme Championship": "Rob Van Dam"
+    "ATW Extreme": "Rob Van Dam"
   },
   "entryPoints": [ {
     "name": "Outsider's Challenge",
