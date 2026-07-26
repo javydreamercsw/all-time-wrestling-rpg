@@ -100,7 +100,7 @@ public final class Launcher {
   // App directory resolution
   // -------------------------------------------------------------------------
 
-  private static Path resolveAppDir() {
+  static Path resolveAppDir() {
     String os = System.getProperty("os.name", "").toLowerCase();
     String home = System.getProperty("user.home");
     if (os.contains("mac")) {
@@ -118,7 +118,7 @@ public final class Launcher {
   // JAR discovery
   // -------------------------------------------------------------------------
 
-  private static Optional<Path> findCurrentJar(final Path dir) throws IOException {
+  static Optional<Path> findCurrentJar(final Path dir) throws IOException {
     if (!Files.exists(dir)) {
       return Optional.empty();
     }
@@ -127,7 +127,7 @@ public final class Launcher {
         .max(Comparator.comparing(p -> extractVersion(p.getFileName().toString())));
   }
 
-  private static String extractVersion(final String filename) {
+  static String extractVersion(final String filename) {
     Matcher m = JAR_PATTERN.matcher(filename);
     return m.matches() ? m.group(1) : "0.0.0";
   }
@@ -334,7 +334,7 @@ public final class Launcher {
   // Cleanup helpers
   // -------------------------------------------------------------------------
 
-  private static void cleanStaleTmp(final Path dir) throws IOException {
+  static void cleanStaleTmp(final Path dir) throws IOException {
     if (!Files.exists(dir)) {
       return;
     }
@@ -359,7 +359,7 @@ public final class Launcher {
             });
   }
 
-  private static void restoreBackupIfNeeded(final Path dir) throws IOException {
+  static void restoreBackupIfNeeded(final Path dir) throws IOException {
     if (!Files.exists(dir)) {
       return;
     }
