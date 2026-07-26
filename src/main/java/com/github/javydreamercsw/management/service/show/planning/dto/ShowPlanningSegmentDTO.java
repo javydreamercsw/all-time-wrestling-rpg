@@ -23,6 +23,7 @@ import lombok.Data;
 @Data
 public class ShowPlanningSegmentDTO {
   private Long id;
+  private String segmentType;
   private String name;
   private String showName;
   private Instant showDate;
