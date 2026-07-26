@@ -165,7 +165,7 @@ public class CampaignService {
     // Every new campaign starts at NEUTRAL regardless of the wrestler's previous alignment.
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
-            .findByWrestler(wrestler)
+            .findFirstByWrestler(wrestler)
             .orElseGet(
                 () ->
                     WrestlerAlignment.builder()
@@ -394,6 +394,7 @@ public class CampaignService {
 
   public void abandonCampaign(@NonNull final Campaign campaign) {
     campaignProgressionService.abandonCampaign(campaign);
+    wrestlerAlignmentRepository.deleteByWrestler(campaign.getWrestler());
   }
 
   public Optional<String> advanceChapter(@NonNull final Campaign campaignParam) {
@@ -426,7 +427,7 @@ public class CampaignService {
     Wrestler wrestler = campaign.getWrestler();
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
-            .findByWrestler(wrestler)
+            .findFirstByWrestler(wrestler)
             .orElseThrow(() -> new IllegalStateException("Alignment not found"));
 
     CampaignState state = campaign.getState();

@@ -71,6 +71,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -232,6 +233,7 @@ public class CampaignDashboardView extends VerticalLayout {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Choose Your Campaign");
     RadioButtonGroup<CampaignChapterDTO> group = new RadioButtonGroup<>();
+    group.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
     group.setItems(available);
     group.setItemLabelGenerator(
         c ->
