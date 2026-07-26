@@ -82,6 +82,15 @@ public class CampaignChapterService {
     try {
       Resource[] chapterFiles =
           resourcePatternResolver.getResources("classpath*:campaigns/*/_chapter.json");
+      Arrays.sort(
+          chapterFiles,
+          (a, b) -> {
+            try {
+              return a.getURL().toString().compareTo(b.getURL().toString());
+            } catch (IOException e) {
+              return 0;
+            }
+          });
       for (Resource chapterResource : chapterFiles) {
         log.debug("Loading folder-based campaign chapter: {}", chapterResource.getURL());
         try (InputStream is = chapterResource.getInputStream()) {
