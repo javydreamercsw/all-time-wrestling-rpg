@@ -102,13 +102,14 @@ public class ShowPlanningService {
     Gender genderConstraint =
         show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
 
-    // Get segments from the last 7 days
+    // Get segments from the last 21 days (3 weeks of shows) for richer anti-repetition context
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     context.setShowDate(showDate);
     context.setPremiumLiveEvent(show.isPremiumLiveEvent());
-    Instant lastWeek = showDate.minus(7, ChronoUnit.DAYS);
-    log.debug("Getting segments between {} and {}", lastWeek, showDate);
-    List<Segment> lastWeekSegments = segmentRepository.findBySegmentDateBetween(lastWeek, showDate);
+    Instant lookbackStart = showDate.minus(21, ChronoUnit.DAYS);
+    log.debug("Getting segments between {} and {}", lookbackStart, showDate);
+    List<Segment> lastWeekSegments =
+        segmentRepository.findBySegmentDateBetween(lookbackStart, showDate);
     log.debug("Found {} segments", lastWeekSegments.size());
 
     // New logic to generate summaries

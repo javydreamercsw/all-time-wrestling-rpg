@@ -42,6 +42,9 @@ public class StaticEncounterDTO {
    */
   private String requiredExpansion;
 
+  /** Wrestler name required to show this encounter. Null = shown for all wrestlers. */
+  private String requiredWrestlerName;
+
   @Data
   @Builder
   @NoArgsConstructor

@@ -1,0 +1,15 @@
+[ {
+  "id": "daemon_darkness_absolute",
+  "requiredWrestlerName": "Daemon",
+  "title": "Darkness Absolute",
+  "narrativeText": "They say the ring explodes at the end of a Barbwire Deathmatch. When Daemon is involved, the darkness claims the explosion first. The crowd cannot see what happens in those final moments. Only the result matters — and Daemon is still standing.",
+  "choices": [ {
+    "id": "call_the_final_dark",
+    "label": "Claim the Darkness",
+    "text": "The ring, the barbwire, the explosions — all of it belongs to the dark.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Barbwire Exploding Deathmatch" ]
+  } ]
+} ]

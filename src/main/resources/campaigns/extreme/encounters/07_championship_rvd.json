@@ -1,0 +1,15 @@
+[ {
+  "id": "rvd_mr_monday_night",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "Mr. Monday Night",
+  "narrativeText": "You won the Extreme Championship and the celebration was exactly thirty seconds long. Now a new challenger waits, claiming the title was a fluke. The crowd doesn't think so. Neither do you.",
+  "choices": [ {
+    "id": "prove_it_again",
+    "label": "Prove It Again",
+    "text": "Every night is Monday night for R-V-D.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ]
+  } ]
+} ]

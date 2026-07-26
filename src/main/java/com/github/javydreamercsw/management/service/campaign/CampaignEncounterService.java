@@ -554,7 +554,14 @@ public class CampaignEncounterService {
   public CampaignEncounterResponseDTO generateStaticEncounter(
       final Campaign campaign, final CampaignChapterDTO chapter) {
     CampaignState state = campaign.getState();
-    List<StaticEncounterDTO> encounters = chapter.getStaticEncounters();
+    String wrestlerName = campaign.getWrestler().getName();
+    List<StaticEncounterDTO> encounters =
+        chapter.getStaticEncounters().stream()
+            .filter(
+                e ->
+                    e.getRequiredWrestlerName() == null
+                        || wrestlerName.equals(e.getRequiredWrestlerName()))
+            .toList();
     if (encounters.isEmpty()) {
       throw new IllegalStateException("No static encounters for chapter " + chapter.getId());
     }

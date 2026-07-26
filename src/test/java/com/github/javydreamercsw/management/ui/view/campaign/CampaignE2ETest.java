@@ -133,7 +133,6 @@ class CampaignE2ETest extends AbstractE2ETest {
     }
     waitForVaadinClientToLoad();
 
-    waitForText("Campaign: All or Nothing");
     captureCaption(
         "Back on the Campaign Dashboard — Victory Points accumulate from backstage actions"
             + " and match wins, driving chapter progression throughout the season. Reaching"

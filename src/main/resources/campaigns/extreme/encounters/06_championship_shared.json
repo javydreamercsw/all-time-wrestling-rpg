@@ -1,0 +1,56 @@
+[ {
+  "id": "contender_gauntlet",
+  "title": "The Contender's Gauntlet",
+  "narrativeText": "To earn a title shot, you must beat whoever they put in front of you. The booker grins. Easy enough for him to say.",
+  "choices": [ {
+    "id": "enter_gauntlet",
+    "label": "Accept the Challenge",
+    "text": "Win this, and the championship match is yours.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "setRivalFromMatchOpponent": true
+  } ]
+}, {
+  "id": "title_shot_earned",
+  "title": "The Championship Confrontation",
+  "narrativeText": "The Extreme Championship is on the line. The champion waits — {{CHAMP}}. Everything you've survived underground has led to this single, violent moment.",
+  "choices": [ {
+    "id": "challenge_for_title",
+    "label": "Demand the Title Match",
+    "text": "No more waiting. The championship changes hands tonight.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "forcedOpponentName": "{{CHAMP}}"
+  } ]
+}, {
+  "id": "championship_defense",
+  "title": "First Defense",
+  "narrativeText": "You won the title and the challengers are already lining up. {{RIVAL}} has unfinished business — and a steel chair.",
+  "choices": [ {
+    "id": "defend_the_title",
+    "label": "Defend Your Championship",
+    "text": "No one takes this from you without a fight.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "extreme_rules_showdown",
+  "title": "Extreme Rules Showdown",
+  "narrativeText": "Another challenger. Another extreme stipulation. The title makes you a target every single night.",
+  "choices": [ {
+    "id": "another_defense",
+    "label": "Accept the Extreme Challenge",
+    "text": "It never stops. That's fine — neither do you.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ]
+  } ]
+} ]

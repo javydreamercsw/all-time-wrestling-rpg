@@ -29,6 +29,10 @@ import org.springframework.stereotype.Repository;
 public interface WrestlerAlignmentRepository extends JpaRepository<WrestlerAlignment, Long> {
   Optional<WrestlerAlignment> findByWrestler(Wrestler wrestler);
 
+  Optional<WrestlerAlignment> findFirstByWrestler(Wrestler wrestler);
+
+  void deleteByWrestler(Wrestler wrestler);
+
   Optional<WrestlerAlignment> findByWrestlerAndUniverse(Wrestler wrestler, Universe universe);
 
   @Query(

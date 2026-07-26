@@ -1,0 +1,15 @@
+[ {
+  "id": "sabu_homicidal",
+  "requiredWrestlerName": "Sabu",
+  "title": "Homicidal, Suicidal, Genocidal",
+  "narrativeText": "The champion stands across the ring. Sabu doesn't wait for introductions. The moment the bell rings — or before it — he is airborne. Tables. Chairs. Bodies. All of it is a weapon.",
+  "choices": [ {
+    "id": "full_assault",
+    "label": "Unleash Full Chaos",
+    "text": "Homicidal. Suicidal. Genocidal. The title or nothing.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ]
+  } ]
+} ]

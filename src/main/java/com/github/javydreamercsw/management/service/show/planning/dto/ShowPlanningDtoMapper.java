@@ -83,6 +83,9 @@ public class ShowPlanningDtoMapper {
       dto.setShowDate(
           segment.getShow().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
     }
+    if (segment.getSegmentType() != null) {
+      dto.setSegmentType(segment.getSegmentType().getName());
+    }
     dto.setParticipants(
         segment.getParticipants().stream()
             .map(p -> p.getWrestler().getName())

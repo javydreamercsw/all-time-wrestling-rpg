@@ -1,0 +1,16 @@
+[ {
+  "id": "sabu_table_apocalypse",
+  "requiredWrestlerName": "Sabu",
+  "title": "Table Apocalypse",
+  "narrativeText": "Sabu points at the stack of tables ringside. The crowd already knows what's coming. {{RIVAL}} stands in the ring, trying to look unafraid. They should be afraid. Sabu is homicidal, suicidal, genocidal.",
+  "choices": [ {
+    "id": "bring_the_tables",
+    "label": "Call for the Tables",
+    "text": "One is not enough. All of them. Right now.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+} ]

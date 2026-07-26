@@ -1,0 +1,66 @@
+[ {
+  "id": "final_challenger_emerges",
+  "title": "The Last Challenger",
+  "narrativeText": "A message arrives with no signature. Just a time and a location. When you arrive, {{RIVAL}} is already there. This is the last test before the finale.",
+  "choices": [ {
+    "id": "accept_final_test",
+    "label": "Accept the Final Test",
+    "text": "One more match before the war.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "pre_deathmatch_promo",
+  "title": "The Last Word",
+  "narrativeText": "The crowd packs the venue knowing what's coming. The Barbwire Exploding Deathmatch is announced. The air crackles with tension. You have one moment before the most dangerous match of your career.",
+  "choices": [ {
+    "id": "fire_up_crowd",
+    "label": "Fire Up the Crowd",
+    "text": "Point to every corner. Let them know you're ready to bleed for them.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 2,
+    "featureFlags": {
+      "finale_promo_done": true
+    }
+  }, {
+    "id": "menacing_threat",
+    "label": "Deliver a Menacing Threat",
+    "text": "Stare down your opponent. No words needed — the look says everything.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -2,
+    "featureFlags": {
+      "finale_promo_done": true
+    }
+  } ]
+}, {
+  "id": "deathmatch_finale",
+  "title": "The Barbwire Exploding Deathmatch",
+  "narrativeText": "The ring is wrapped in barbwire. There are explosives at every corner. The crowd has fallen silent. This is it — the most extreme match in ATW history. Win, and your legacy is cemented forever.",
+  "choices": [ {
+    "id": "enter_deathmatch",
+    "label": "Step Into the Barbwire",
+    "text": "There is no going back. This ends in blood — theirs or yours.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Barbwire Exploding Deathmatch" ],
+    "featureFlags": {
+      "wonFinale": true
+    },
+    "onWinNextEncounterId": "extreme_legend",
+    "onLossNextEncounterId": "extreme_defeated"
+  } ]
+}, {
+  "id": "extreme_legend",
+  "title": "Undisputed Extreme Legend",
+  "narrativeText": "The explosion fades. The smoke clears. You stand. The ATW Extreme Championship is held high above your head. The crowd is on its feet, chanting your name. You survived the most extreme match in history — and you are undisputed. The Extreme Legend. The one they'll talk about forever."
+}, {
+  "id": "extreme_defeated",
+  "title": "Dethroned in the Deathmatch",
+  "narrativeText": "The barbwire tears. The explosions deafen. When the smoke clears, you are face down in the canvas. The title is gone. But you went further than anyone else dared — into the barbwire, into the fire. The legend of this match will outlast the defeat."
+} ]
