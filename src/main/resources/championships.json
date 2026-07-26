@@ -16,7 +16,7 @@
   "expansion_code": "ATW_VS_WOW"
 }, {
   "name": "WOW Women",
-  "tier": "MAIN_EVENTER",
+  "tier": "MIDCARDER",
   "description": "WOW Championship.",
   "gender": "FEMALE",
   "championshipType": "SINGLE",
@@ -24,7 +24,7 @@
   "expansion_code": "ATW_VS_WOW"
 }, {
   "name": "ATW Extreme",
-  "tier": "MAIN_EVENTER",
+  "tier": "ROOKIE",
   "description": "The most extreme title in wrestling. No rules, no limits.",
   "gender": "MALE",
   "championshipType": "SINGLE",
