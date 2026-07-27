@@ -837,7 +837,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       if (activeCampaign != null) {
         finishTypeGroup =
             new com.vaadin.flow.component.radiobutton.RadioButtonGroup<>("Finish Type");
-        finishTypeGroup.setItems("PINFALL", "SUBMISSION", "COUNTOUT", "REFEREE STOPPAGE", "OTHER");
+        boolean refereeStoppageAllowed =
+            segment.getSegmentRules().isEmpty()
+                || segment.getSegmentRules().stream()
+                    .allMatch(
+                        com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
+                            ::isAllowsRefereeStopage);
+        java.util.List<String> finishTypes =
+            new java.util.ArrayList<>(java.util.List.of("PINFALL", "SUBMISSION", "COUNTOUT"));
+        if (refereeStoppageAllowed) {
+          finishTypes.add("REFEREE STOPPAGE");
+        }
+        finishTypes.add("OTHER");
+        finishTypeGroup.setItems(finishTypes);
         finishTypeGroup.setWidthFull();
         finishTypeGroup.setId("finish-type-group");
 
