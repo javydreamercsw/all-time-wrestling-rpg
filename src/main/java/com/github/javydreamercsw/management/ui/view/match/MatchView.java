@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -585,6 +586,39 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             }
           });
     }
+
+    // Title skill button — visible to the champion of a contested title, once per match
+    if (!isPromo
+        && isPlayerInMatch
+        && playerWrestler != null
+        && segment.getIsTitleSegment()
+        && !segment.isTitleSkillUsed()
+        && titles != null) {
+      final Wrestler finalPlayer = playerWrestler;
+      titles.stream()
+          .filter(
+              t ->
+                  t != null
+                      && t.getEffectScript() != null
+                      && !t.getEffectScript().isBlank()
+                      && t.getCurrentChampions().stream()
+                          .anyMatch(c -> c.getId().equals(finalPlayer.getId())))
+          .findFirst()
+          .ifPresent(
+              championTitle -> {
+                Button skillBtn =
+                    new Button(
+                        "Activate Title Skill: " + championTitle.getName(),
+                        new Icon(VaadinIcon.STAR));
+                skillBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+                skillBtn.setId("activate-title-skill-button");
+                skillBtn.setWidthFull();
+                skillBtn.addClickListener(
+                    e -> onActivateTitleSkill(championTitle, finalPlayer, skillBtn));
+                infoCard.add(skillBtn);
+              });
+    }
+
     sideCol.add(infoCard);
 
     // Ringside Actions Section — only available in GLOBAL universe matches
@@ -1228,6 +1262,28 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     } catch (Exception e) {
       log.error("Failed to build narration context", e);
       notificationService.showAIServiceError(e);
+    }
+  }
+
+  private void onActivateTitleSkill(
+      final Title title, final Wrestler playerWrestler, final Button skillBtn) {
+    WrestlerContext wc = new WrestlerContext();
+    wc.setName(playerWrestler.getName());
+    var result = titleScriptService.activateTitleSkill(title, segment, wc);
+    segment.setTitleSkillUsed(true);
+    GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
+    skillBtn.setEnabled(false);
+    skillBtn.setText("Title Skill Activated");
+    if (result.weaponCardSetupNeeded()) {
+      Notification n =
+          Notification.show(
+              "Title Skill: Draw the top card from the weapons deck and place it face-up in"
+                  + " the display.");
+      n.addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+      n.setDuration(0);
+    } else {
+      Notification.show("Title skill activated! Match rules updated.")
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
   }
 
