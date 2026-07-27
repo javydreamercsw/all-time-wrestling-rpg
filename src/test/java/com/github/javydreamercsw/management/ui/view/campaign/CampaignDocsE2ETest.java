@@ -287,6 +287,65 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  @Order(13)
+  void testCaptureExtremeCampaignView() {
+    // Setup — must use a wrestler in the allowedWrestlerNames list for the extreme chapter
+    Wrestler rvd =
+        wrestlerRepository
+            .findByName("Rob Van Dam")
+            .orElseGet(
+                () -> {
+                  Wrestler w =
+                      Wrestler.builder()
+                          .name("Rob Van Dam")
+                          .startingHealth(100)
+                          .startingStamina(100)
+                          .account(accountRepository.findByUsername("admin").get())
+                          .isPlayer(true)
+                          .active(true)
+                          .gender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE)
+                          .build();
+                  return wrestlerRepository.saveAndFlush(w);
+                });
+    createCampaignInChapter(rvd, "extreme_campaign");
+
+    navigateTo("campaign");
+    waitForText("Chapter: The Extreme Path");
+    documentFeature(
+        "Campaign",
+        "The Extreme Path",
+        """
+        For the legends of extreme wrestling — Rob Van Dam, Sabu, Raven, and Daemon — this\
+         campaign puts you at the centre of the ATW Extreme division. No disqualifications,\
+         improvised weapons, and a rabid crowd. Survive the underground, claim the ATW Extreme\
+         championship, and cement your legacy.\
+        """,
+        "campaign-extreme-path");
+  }
+
+  @Test
+  @Order(14)
+  void testCaptureOutsiderExtremeCampaignView() {
+    // Setup — any wrestler can take the outsider path
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "extreme_campaign_outsider");
+
+    navigateTo("campaign");
+    waitForText("Chapter: The Outsider's Extreme Path");
+    documentFeature(
+        "Campaign",
+        "The Outsider's Extreme Path",
+        """
+        You don't belong here — but you're going in anyway. Any wrestler can step into the\
+         extreme underground as an outsider, facing the four legends on their own turf.\
+         Survive the brutality, adapt your style, and prove an outsider can conquer the most\
+         violent division in All Time Wrestling.\
+        """,
+        "campaign-extreme-outsider-path");
+  }
+
+  @Test
   @Order(12)
   void testCaptureCampaignListUniverseFilter() {
     // 1. Setup — ensure at least one campaign exists in the default universe
