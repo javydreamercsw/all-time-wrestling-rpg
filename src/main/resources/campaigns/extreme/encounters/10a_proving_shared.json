@@ -1,0 +1,77 @@
+[ {
+  "id": "proving_war_games",
+  "title": "War of Attrition",
+  "narrativeText": "Two rings. One massive steel cage bolted over both of them. Your team enters first. Their team enters one by one at timed intervals. Once everyone is inside, the Match Beyond begins. This is not a championship match. This is a war. The winner proves they can survive anything.",
+  "choices": [ {
+    "id": "enter_war_games",
+    "label": "Enter the Cage",
+    "text": "You lead your team in. The cage door locks behind you.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "Free-for-All",
+    "segmentRules": [ "🪖 War Games" ]
+  } ]
+}, {
+  "id": "proving_contract_signing_tlc",
+  "title": "Contract Signing Chaos",
+  "narrativeText": "The booker sets up a table center-ring for a contract signing. Both sides stand on opposite sides. The documents are there. The pens are there. The ladders and chairs set up 'for decoration' are also there. The crowd knows this is not going to be a simple signing.",
+  "choices": [ {
+    "id": "sign_then_swing",
+    "label": "Sign, Then Swing",
+    "text": "You sign your name. Then you flip the table.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Tables, Ladders and Chairs (TLC)" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "proving_betrayal_setup",
+  "title": "The Stab in the Back",
+  "narrativeText": "Someone in your corner — someone who was supposed to have your back — attacks you from behind after the match. While you're still down on the mat, they take the microphone and side with your enemies. The crowd is stunned silent.",
+  "choices": [ {
+    "id": "fight_back_immediately",
+    "label": "Fight Back Now",
+    "text": "You get up. Bloodied, exhausted, and furious — you get up.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": 1
+  }, {
+    "id": "absorb_the_betrayal",
+    "label": "Absorb It",
+    "text": "You let them say their piece. You remember every word. And you leave quietly, already planning.",
+    "vpReward": 2,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 1,
+    "featureFlags": {
+      "survived_betrayal": true
+    }
+  } ]
+}, {
+  "id": "proving_championship_press",
+  "title": "Pre-Finale Media",
+  "narrativeText": "Two reporters and a camera crew are waiting outside the arena. The Barbwire Exploding Deathmatch has been announced. They want a statement. The camera is live. The whole world is watching.",
+  "choices": [ {
+    "id": "embrace_the_extreme",
+    "label": "Embrace the Extreme",
+    "text": "'I have been waiting my entire career for a match like this.' The crowd watching at home loses their minds.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 2,
+    "featureFlags": {
+      "media_statement_made": true
+    }
+  }, {
+    "id": "stare_into_camera",
+    "label": "Stare Into the Camera",
+    "text": "No words. You look directly into the lens for ten full seconds, then walk away. The silence is louder than anything you could have said.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -2,
+    "featureFlags": {
+      "media_statement_made": true
+    }
+  } ]
+} ]

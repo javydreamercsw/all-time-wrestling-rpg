@@ -67,4 +67,77 @@
     "segmentRules": [ "No DQ" ],
     "forcedOpponentName": "{{RIVAL}}"
   } ]
+}, {
+  "id": "underground_crowd_brawl",
+  "title": "Riot in the Aisle",
+  "narrativeText": "The guardrail collapses. Fans scatter. The brawl spills from the ring into the crowd. There is no ring anymore — the whole building is the arena. Three other wrestlers are already out here. This has become something else entirely.",
+  "choices": [ {
+    "id": "join_the_riot",
+    "label": "Join the Riot",
+    "text": "You dive into the chaos. It's every person for themselves.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "Free-for-All",
+    "segmentRules": [ "Free-For-All" ]
+  }, {
+    "id": "reclaim_the_ring",
+    "label": "Reclaim the Ring",
+    "text": "While everyone brawls outside, you hold the ring. The crowd respects the strategy.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -1
+  } ]
+}, {
+  "id": "underground_outsider_test",
+  "title": "The Outsider's Test",
+  "narrativeText": "A masked figure steps through the curtain. No music. No introduction. They point at you. The underground booker announces: this is an elimination challenge. Beat them, and your name stays on the board. Lose, and you go to the back of the line.",
+  "choices": [ {
+    "id": "accept_outsider",
+    "label": "Accept the Challenge",
+    "text": "Prove you belong here.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Elimination" ]
+  } ]
+}, {
+  "id": "underground_locker_room_message",
+  "title": "Threat on the Locker",
+  "narrativeText": "Taped to your locker, written in marker on a paper towel: 'You're next. And you won't get up.' No name. No explanation. The smell of sweat and blood fills the room around you.",
+  "choices": [ {
+    "id": "ignore_threat",
+    "label": "Ignore It",
+    "text": "Anonymous cowards don't deserve a response. You crumple it and toss it.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE"
+  }, {
+    "id": "post_counter",
+    "label": "Post a Counter-Threat",
+    "text": "You write your own note and pin it to the corkboard where everyone will see it.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -1,
+    "featureFlags": {
+      "accepted_locker_challenge": true
+    }
+  } ]
+}, {
+  "id": "underground_fan_chant",
+  "title": "The Parking Lot Chant",
+  "narrativeText": "Outside the venue, a group of fans in the parking lot starts chanting your name before the show even starts. Word must have spread. They are here for you — holding handmade signs, wearing your colors, waiting.",
+  "choices": [ {
+    "id": "acknowledge_fans",
+    "label": "Stop and Acknowledge Them",
+    "text": "You walk over. Slap hands. Point to the building. They roar.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 2
+  }, {
+    "id": "stay_in_character",
+    "label": "Walk Past in Character",
+    "text": "You're the bad guy tonight. No time for sentiment.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -1
+  } ]
 } ]

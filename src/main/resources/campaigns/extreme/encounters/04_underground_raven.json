@@ -16,4 +16,19 @@
       "raven_quote_delivered": true
     }
   } ]
+}, {
+  "id": "raven_concrete_ddt",
+  "requiredWrestlerName": "Raven",
+  "title": "Concrete Revelation",
+  "narrativeText": "Raven doesn't wait for the ring. He takes the fight to the concrete floor outside, where there are no ropes and no rules even attempted. He whips the opponent into the guardrail, then drops — DDT on the bare floor. The crowd goes absolutely silent, then erupts.",
+  "choices": [ {
+    "id": "ddt_on_concrete",
+    "label": "Take It to the Floor",
+    "text": "The ring is a suggestion. The concrete is where the truth lives.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": -2
+  } ]
 } ]

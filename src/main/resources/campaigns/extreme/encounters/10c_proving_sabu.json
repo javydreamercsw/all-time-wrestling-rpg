@@ -1,0 +1,16 @@
+[ {
+  "id": "sabu_proving_table",
+  "requiredWrestlerName": "Sabu",
+  "title": "Table Spot",
+  "narrativeText": "Sabu has positioned a table leaning against the turnbuckle, another flat on the outside. A ladder stands center-ring. His opponent is across from him, arms wide, daring him to try something. Sabu does not need to be dared.",
+  "choices": [ {
+    "id": "sabu_tlc_proving",
+    "label": "Make the Most Extreme Spot in History",
+    "text": "Homicidal. Suicidal. Genocidal. Curtain call.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Tables, Ladders and Chairs (TLC)" ],
+    "alignmentShift": -1
+  } ]
+} ]
