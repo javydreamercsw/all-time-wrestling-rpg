@@ -372,7 +372,7 @@ public class CampaignCardExportView extends VerticalLayout {
       #campaign-card-print-area,
       #campaign-card-print-area * { visibility: visible !important; }
       #campaign-card-print-area {
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         width: 100%;
