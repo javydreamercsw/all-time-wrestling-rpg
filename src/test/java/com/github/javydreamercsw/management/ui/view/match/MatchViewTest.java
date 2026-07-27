@@ -52,7 +52,9 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -83,12 +85,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class MatchViewTest extends AbstractViewTest {
@@ -117,6 +121,8 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private InjuryService injuryService;
 
   @Mock private UniverseContextService universeContextService;
+  @Mock private CampaignEncounterService campaignEncounterService;
+  @Mock private DeckService deckService;
 
   private MatchView matchView;
 
@@ -147,6 +153,14 @@ class MatchViewTest extends AbstractViewTest {
             ringsideActionDataService,
             titleScriptService,
             notificationService);
+    ReflectionTestUtils.setField(matchView, "campaignEncounterService", campaignEncounterService);
+    ReflectionTestUtils.setField(matchView, "deckService", deckService);
+    lenient()
+        .when(campaignEncounterService.getCurrentChoiceBonusConditions(ArgumentMatchers.any()))
+        .thenReturn(List.of());
+    lenient()
+        .when(deckService.findByWrestlerWithCards(ArgumentMatchers.any()))
+        .thenReturn(List.of());
   }
 
   @Test

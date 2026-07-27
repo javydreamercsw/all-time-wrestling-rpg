@@ -88,7 +88,7 @@ public class AlignmentService {
 
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
-            .findByWrestler(campaign.getWrestler())
+            .findByWrestlerAndUniverse(campaign.getWrestler(), campaign.getUniverse())
             .orElseThrow(() -> new IllegalStateException("Alignment not found"));
 
     int oldLevel = alignment.getLevel();
@@ -134,7 +134,8 @@ public class AlignmentService {
 
   public void updateAbilityCards(@NonNull final Campaign campaign) {
     Wrestler wrestler = campaign.getWrestler();
-    Optional<WrestlerAlignment> alignmentOpt = wrestlerAlignmentRepository.findByWrestler(wrestler);
+    Optional<WrestlerAlignment> alignmentOpt =
+        wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, campaign.getUniverse());
 
     if (alignmentOpt.isEmpty()) {
       return; // No alignment tracking yet
@@ -165,7 +166,7 @@ public class AlignmentService {
     Wrestler wrestler = campaign.getWrestler();
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
-            .findByWrestler(wrestler)
+            .findByWrestlerAndUniverse(wrestler, campaign.getUniverse())
             .orElseThrow(() -> new IllegalStateException("Alignment not found"));
 
     AlignmentType type = alignment.getAlignmentType();

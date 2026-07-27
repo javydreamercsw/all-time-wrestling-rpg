@@ -432,7 +432,7 @@ public class MatchResultProcessorService {
     if (state.getMatchesPlayed() == 1 && state.getCompletedChapterIds().isEmpty()) {
       WrestlerAlignment alignment =
           wrestlerAlignmentRepository
-              .findByWrestler(wrestler)
+              .findByWrestlerAndUniverse(wrestler, campaign.getUniverse())
               .orElseThrow(() -> new IllegalStateException("Alignment not found"));
 
       if (alignment.getAlignmentType() == AlignmentType.FACE) {

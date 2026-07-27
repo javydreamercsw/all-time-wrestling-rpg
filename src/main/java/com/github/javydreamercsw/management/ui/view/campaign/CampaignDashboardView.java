@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -1068,7 +1069,7 @@ public class CampaignDashboardView extends VerticalLayout {
     debugContent.setPadding(true);
     debugContent.setSpacing(true);
 
-    // --- Chapter Jumper ---
+    // --- Chapter + Encounter Jumper ---
     HorizontalLayout chapterLayout = new HorizontalLayout();
     chapterLayout.setAlignItems(Alignment.BASELINE);
 
@@ -1078,6 +1079,24 @@ public class CampaignDashboardView extends VerticalLayout {
     chapterSelect.setPlaceholder("Select Chapter...");
     chapterSelect.setWidth("300px");
 
+    ComboBox<StaticEncounterDTO> encounterSelect = new ComboBox<>("Jump to Encounter");
+    encounterSelect.setItemLabelGenerator(e -> e.getId() + " — " + e.getTitle());
+    encounterSelect.setPlaceholder("Select Encounter (optional)...");
+    encounterSelect.setWidth("400px");
+    encounterSelect.setEnabled(false);
+
+    chapterSelect.addValueChangeListener(
+        ev -> {
+          if (ev.getValue() != null && ev.getValue().getStaticEncounters() != null) {
+            encounterSelect.setItems(ev.getValue().getStaticEncounters());
+            encounterSelect.setEnabled(true);
+          } else {
+            encounterSelect.setItems(new java.util.ArrayList<>());
+            encounterSelect.clear();
+            encounterSelect.setEnabled(false);
+          }
+        });
+
     Button jumpButton =
         new Button(
             "Jump",
@@ -1086,7 +1105,9 @@ public class CampaignDashboardView extends VerticalLayout {
               if (selected != null) {
                 CampaignState state = currentCampaign.getState();
                 state.setCurrentChapterId(selected.getId());
-                state.setCurrentEncounterId(null);
+                StaticEncounterDTO selectedEncounter = encounterSelect.getValue();
+                state.setCurrentEncounterId(
+                    selectedEncounter != null ? selectedEncounter.getId() : null);
                 // Reset Counters
                 state.setMatchesPlayed(0);
                 state.setWins(0);
@@ -1104,11 +1125,17 @@ public class CampaignDashboardView extends VerticalLayout {
                 }
 
                 campaignRepository.save(currentCampaign);
-                Notification.show("Jumped to chapter: " + selected.getTitle());
+                String msg =
+                    "Jumped to chapter: "
+                        + selected.getTitle()
+                        + (selectedEncounter != null
+                            ? " → encounter: " + selectedEncounter.getId()
+                            : "");
+                Notification.show(msg);
                 refreshUI();
               }
             });
-    chapterLayout.add(chapterSelect, jumpButton);
+    chapterLayout.add(chapterSelect, encounterSelect, jumpButton);
     debugContent.add(chapterLayout);
 
     // --- Storyline Export ---

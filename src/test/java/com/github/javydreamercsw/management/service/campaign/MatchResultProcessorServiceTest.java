@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
@@ -175,9 +176,11 @@ class MatchResultProcessorServiceTest {
   @Test
   void testProcessMatchResult_Win() {
     Wrestler wrestler = new Wrestler();
+    Universe universe = Universe.builder().name("Test Universe").build();
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
     CampaignState state = new CampaignState();
     state.setWins(0);
     state.setLosses(0);
@@ -202,7 +205,8 @@ class MatchResultProcessorServiceTest {
     WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     service.processMatchResult(campaign, true); // Win 1
 
@@ -239,10 +243,12 @@ class MatchResultProcessorServiceTest {
   @Test
   void testProcessMatchResult_Tournament() {
     Wrestler wrestler = new Wrestler();
+    Universe universe = Universe.builder().name("Test Universe").build();
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     wrestler.setId(1L);
     campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
     CampaignState state = new CampaignState();
     state.setWins(0);
     state.setLosses(0);
@@ -274,7 +280,8 @@ class MatchResultProcessorServiceTest {
     WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     service.processMatchResult(campaign, true);
 
@@ -425,9 +432,11 @@ class MatchResultProcessorServiceTest {
   }
 
   private Campaign buildCampaignWithWrestler(final Wrestler wrestler, final int initialVp) {
+    Universe universe = Universe.builder().name("Test Universe").build();
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
     CampaignState state = new CampaignState();
     state.setWins(0);
     state.setLosses(0);
@@ -451,7 +460,8 @@ class MatchResultProcessorServiceTest {
     WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
     return campaign;
   }
 }

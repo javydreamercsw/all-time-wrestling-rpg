@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -134,6 +135,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final TitleScriptService titleScriptService;
   @Autowired private ArenaService arenaService;
   @Autowired private CampaignEncounterService campaignEncounterService;
+  @Autowired private DeckService deckService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -143,7 +145,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private Map<Long, IntegerField> staminaFields = new HashMap<>();
   private Map<Long, IntegerField> healthFields = new HashMap<>();
   private com.vaadin.flow.component.radiobutton.RadioButtonGroup<String> finishTypeGroup;
-  private com.vaadin.flow.component.textfield.TextField winningCardField;
+  private com.vaadin.flow.component.combobox.ComboBox<String> winningCardField;
   private Map<String, IntegerField> cardPlayedFields = new HashMap<>();
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
@@ -835,14 +837,22 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       if (activeCampaign != null) {
         finishTypeGroup =
             new com.vaadin.flow.component.radiobutton.RadioButtonGroup<>("Finish Type");
-        finishTypeGroup.setItems("PINFALL", "SUBMISSION", "COUNTOUT", "OTHER");
+        finishTypeGroup.setItems("PINFALL", "SUBMISSION", "COUNTOUT", "REFEREE STOPPAGE", "OTHER");
         finishTypeGroup.setWidthFull();
         finishTypeGroup.setId("finish-type-group");
 
-        winningCardField = new com.vaadin.flow.component.textfield.TextField("Winning Card");
-        winningCardField.setPlaceholder("e.g. Elbow Drop");
+        winningCardField = new com.vaadin.flow.component.combobox.ComboBox<>("Winning Card");
+        winningCardField.setPlaceholder("Select finishing card...");
         winningCardField.setWidthFull();
         winningCardField.setId("winning-card-field");
+        List<String> deckCardNames =
+            deckService.findByWrestlerWithCards(activeCampaign.getWrestler()).stream()
+                .flatMap(deck -> deck.getCards().stream())
+                .map(dc -> dc.getCard().getName())
+                .distinct()
+                .sorted()
+                .toList();
+        winningCardField.setItems(deckCardNames);
 
         winnersCard.add(finishTypeGroup, winningCardField);
 
@@ -1396,10 +1406,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     // Persist bonus match data (finish type, winning card) for bonus VP evaluation
     if (finishTypeGroup != null || winningCardField != null) {
       String ft = finishTypeGroup != null ? finishTypeGroup.getValue() : null;
-      String wc =
-          winningCardField != null && !winningCardField.isEmpty()
-              ? winningCardField.getValue()
-              : null;
+      String wc = winningCardField != null ? winningCardField.getValue() : null;
       for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
           segment.getParticipants()) {
         if (p.getWrestler() != null && p.getWrestler().getAccount() != null) {

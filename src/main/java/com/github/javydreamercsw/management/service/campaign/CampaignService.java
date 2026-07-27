@@ -162,23 +162,25 @@ public class CampaignService {
       throw new IllegalStateException("Wrestler already has an active campaign.");
     }
 
+    Universe universe =
+        universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
+
     // Every new campaign starts at NEUTRAL regardless of the wrestler's previous alignment.
+    // Scoped to the current universe to avoid collisions when the wrestler has records in others.
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
-            .findFirstByWrestler(wrestler)
+            .findByWrestlerAndUniverse(wrestler, universe)
             .orElseGet(
                 () ->
                     WrestlerAlignment.builder()
                         .wrestler(wrestler)
+                        .universe(universe)
                         .alignmentType(AlignmentType.NEUTRAL)
                         .level(0)
                         .build());
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
     wrestlerAlignmentRepository.save(alignment);
-
-    Universe universe =
-        universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
 
     Campaign campaign =
         Campaign.builder()
