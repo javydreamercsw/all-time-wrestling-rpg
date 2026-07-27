@@ -340,8 +340,8 @@ class CampaignChapterServiceTest {
     // A generic wrestler should NOT see the extreme insider chapter
     List<CampaignChapterDTO> chapters = chapterService.findAvailableChapters(state, "Unknown Joe");
     assertThat(chapters).extracting(CampaignChapterDTO::getId).doesNotContain("extreme");
-    // But "beginning" (no allowedWrestlerNames restriction) IS available to all
-    assertThat(chapters).extracting(CampaignChapterDTO::getId).contains("beginning");
+    // "beginning" (all_or_nothing) is now restricted to Randy Savage, British Bulldog, Kurt Angle
+    assertThat(chapters).extracting(CampaignChapterDTO::getId).doesNotContain("beginning");
   }
 
   @Test

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -35,11 +36,13 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -525,6 +528,20 @@ public class CampaignEncounterService {
       state.setCurrentEncounterId(choice.getNextEncounterId());
     }
 
+    // Store bonus VP conditions so MatchResultProcessorService can evaluate them after the match
+    if ("MATCH".equals(choice.getNextPhase())
+        && choice.getBonusVpConditions() != null
+        && !choice.getBonusVpConditions().isEmpty()) {
+      try {
+        String bonusJson = objectMapper.writeValueAsString(choice.getBonusVpConditions());
+        featureDataService.setFeatureValue(state, "_pendingBonusConditions", bonusJson);
+      } catch (Exception e) {
+        log.error("Failed to serialize bonus VP conditions", e);
+      }
+    } else if ("MATCH".equals(choice.getNextPhase())) {
+      featureDataService.removeFeatureValue(state, "_pendingBonusConditions");
+    }
+
     stateRepository.save(state);
 
     log.debug(
@@ -655,6 +672,7 @@ public class CampaignEncounterService {
                         .onWinNextEncounterId(sc.getOnWinNextEncounterId())
                         .onLossNextEncounterId(sc.getOnLossNextEncounterId())
                         .intendedPath(sc.isIntendedPath())
+                        .bonusVpConditions(sc.getBonusVpConditions())
                         .build())
             .toList();
 
@@ -671,6 +689,29 @@ public class CampaignEncounterService {
         .narrative(encounter.getTitle() + "\n\n" + encounter.getNarrativeText())
         .choices(choices)
         .build();
+  }
+
+  /**
+   * Returns any bonus VP conditions stored from the last match-triggering choice, or an empty list
+   * if none were recorded. Called by MatchResultProcessorService after the match completes.
+   */
+  public List<BonusVpCondition> getCurrentChoiceBonusConditions(final CampaignState state) {
+    String bonusJson =
+        featureDataService.getFeatureValue(state, "_pendingBonusConditions", String.class, null);
+    if (bonusJson == null) {
+      return Collections.emptyList();
+    }
+    try {
+      return objectMapper.readValue(bonusJson, new TypeReference<List<BonusVpCondition>>() {});
+    } catch (Exception e) {
+      log.error("Failed to deserialize bonus VP conditions", e);
+      return Collections.emptyList();
+    }
+  }
+
+  /** Clears pending bonus VP conditions from featureData after evaluation. */
+  public void clearPendingBonusConditions(final CampaignState state) {
+    featureDataService.removeFeatureValue(state, "_pendingBonusConditions");
   }
 
   /** Merges choice-level and chapter-level exclusion lists, deduplicating entries. */

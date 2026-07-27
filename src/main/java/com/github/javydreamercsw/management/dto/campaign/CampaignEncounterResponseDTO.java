@@ -73,5 +73,11 @@ public class CampaignEncounterResponseDTO {
      * so the storyline advances to nextMilestoneOnFailure instead of nextMilestoneOnSuccess.
      */
     @Builder.Default private boolean intendedPath = true;
+
+    /**
+     * Per-match bonus VP conditions from the static encounter choice. Null/empty for AI-generated
+     * choices. Evaluated by MatchResultProcessorService after the match result is recorded.
+     */
+    private List<StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition> bonusVpConditions;
   }
 }

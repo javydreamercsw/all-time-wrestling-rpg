@@ -140,6 +140,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private Map<Long, IntegerField> momentumFields = new HashMap<>();
   private Map<Long, IntegerField> staminaFields = new HashMap<>();
   private Map<Long, IntegerField> healthFields = new HashMap<>();
+  private com.vaadin.flow.component.radiobutton.RadioButtonGroup<String> finishTypeGroup;
+  private com.vaadin.flow.component.textfield.TextField winningCardField;
+  private Map<String, IntegerField> cardPlayedFields = new HashMap<>();
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
   private Button aiGenerateButton;
@@ -812,6 +815,35 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         healthLayout.add(field);
       }
       winnersCard.add(healthLayout);
+
+      // Bonus match data — shown for campaign matches to enable bonus VP evaluation
+      boolean isCampaignMatchForBuild =
+          wrestlers.stream()
+              .filter(java.util.Objects::nonNull)
+              .filter(w -> w.getAccount() != null)
+              .anyMatch(
+                  w -> {
+                    var opt = campaignRepository.findActiveByWrestler(w);
+                    if (opt.isEmpty()) {
+                      return false;
+                    }
+                    var cm = opt.get().getState().getCurrentMatch();
+                    return cm != null && cm.getId().equals(segment.getId());
+                  });
+      if (isCampaignMatchForBuild) {
+        finishTypeGroup =
+            new com.vaadin.flow.component.radiobutton.RadioButtonGroup<>("Finish Type");
+        finishTypeGroup.setItems("PINFALL", "SUBMISSION", "COUNTOUT", "OTHER");
+        finishTypeGroup.setWidthFull();
+        finishTypeGroup.setId("finish-type-group");
+
+        winningCardField = new com.vaadin.flow.component.textfield.TextField("Winning Card");
+        winningCardField.setPlaceholder("e.g. Elbow Drop");
+        winningCardField.setWidthFull();
+        winningCardField.setId("winning-card-field");
+
+        winnersCard.add(finishTypeGroup, winningCardField);
+      }
     }
 
     winnersCard.add(saveWinnersButton);
@@ -1325,6 +1357,32 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         IntegerField field = healthFields.get(p.getWrestler().getId());
         if (field != null) {
           p.setFinalHealth(field.getValue());
+        }
+      }
+    }
+
+    // Persist bonus match data (finish type, winning card) for bonus VP evaluation
+    if (finishTypeGroup != null || winningCardField != null) {
+      String ft = finishTypeGroup != null ? finishTypeGroup.getValue() : null;
+      String wc =
+          winningCardField != null && !winningCardField.isEmpty()
+              ? winningCardField.getValue()
+              : null;
+      for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
+          segment.getParticipants()) {
+        if (p.getWrestler() != null && p.getWrestler().getAccount() != null) {
+          p.setFinishType(ft);
+          p.setWinningCardName(wc);
+          if (!cardPlayedFields.isEmpty()) {
+            java.util.Map<String, Integer> played = new java.util.HashMap<>();
+            cardPlayedFields.forEach(
+                (cardName, f) -> {
+                  if (f.getValue() != null && f.getValue() > 0) {
+                    played.put(cardName, f.getValue());
+                  }
+                });
+            p.setCardsPlayed(played);
+          }
         }
       }
     }
