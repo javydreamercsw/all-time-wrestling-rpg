@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -141,6 +142,8 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
     // Title whose script triggers No DQ + weapon card
     extremeTitle = new Title();
     extremeTitle.setName("E2E Extreme Title");
+    extremeTitle.setChampionshipType(ChampionshipType.SINGLE);
+    extremeTitle.setTier(WrestlerTier.ROOKIE);
     extremeTitle.setEffectScript(EFFECT_SCRIPT);
     extremeTitle.getChampion().add(championWrestler);
     extremeTitle = titleRepository.saveAndFlush(extremeTitle);

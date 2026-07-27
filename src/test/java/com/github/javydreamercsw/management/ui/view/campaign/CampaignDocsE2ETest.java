@@ -309,6 +309,11 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
                 });
     createCampaignInChapter(rvd, "extreme_campaign");
 
+    // The dashboard uses activeWrestlerId to select which wrestler's campaign to show.
+    Account admin = accountRepository.findByUsername("admin").get();
+    admin.setActiveWrestlerId(rvd.getId());
+    accountRepository.save(admin);
+
     navigateTo("campaign");
     waitForText("Chapter: The Extreme Path");
     documentFeature(
@@ -330,6 +335,9 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     Account admin = accountRepository.findByUsername("admin").get();
     Wrestler player = getOrCreateWrestler(admin);
     createCampaignInChapter(player, "extreme_campaign_outsider");
+
+    admin.setActiveWrestlerId(player.getId());
+    accountRepository.save(admin);
 
     navigateTo("campaign");
     waitForText("Chapter: The Outsider's Extreme Path");
@@ -497,6 +505,10 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(@NonNull final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    String xpath =
+        text.contains("'")
+            ? "//*[contains(., \"" + text + "\")]"
+            : "//*[contains(., '" + text + "')]";
+    waitForVaadinElement(driver, org.openqa.selenium.By.xpath(xpath));
   }
 }
