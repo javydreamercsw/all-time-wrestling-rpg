@@ -12,4 +12,26 @@
     "matchType": "One on One",
     "segmentRules": [ "Last Man Standing" ]
   } ]
+}, {
+  "id": "daemon_territorial",
+  "requiredWrestlerName": "Daemon",
+  "title": "Territorial",
+  "narrativeText": "Daemon has claimed the entire backstage area as his domain. He stands at the locker room entrance and will not move. Catering, production, other wrestlers — all of them take the long way around. The champion comes through next. Daemon does not step aside.",
+  "choices": [ {
+    "id": "back_down",
+    "label": "Take the Long Way",
+    "text": "This isn't the fight worth having tonight. You circle around.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -1
+  }, {
+    "id": "claim_the_territory",
+    "label": "Stand Your Ground",
+    "text": "Your locker room. Your hallway. Your championship. Nobody moves you.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": 1
+  } ]
 } ]

@@ -1,0 +1,16 @@
+[ {
+  "id": "rvd_proving_aerial",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "Title Defense Aerial",
+  "narrativeText": "The championship contract is suspended above the ring from a cable. R-V-D has exactly one option: climb. But first, you have to get past the person who rips the ladder away every time you set it up. The crowd is chanting. The ladder is across the ring.",
+  "choices": [ {
+    "id": "rvd_ladder_climb",
+    "label": "Use the Ladder",
+    "text": "You are the most athletic person in this building. Prove it.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Ladder Match" ],
+    "alignmentShift": 1
+  } ]
+} ]

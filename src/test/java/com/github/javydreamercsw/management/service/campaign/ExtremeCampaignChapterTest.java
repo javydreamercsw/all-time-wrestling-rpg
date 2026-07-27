@@ -96,6 +96,28 @@ class ExtremeCampaignChapterTest {
         .findFirst();
   }
 
+  private StaticEncounterDTO findEncounterInPathA(final String encounterId) {
+    return findChapter(PATH_A_ID)
+        .map(
+            ch ->
+                ch.getStaticEncounters().stream()
+                    .filter(e -> encounterId.equals(e.getId()))
+                    .findFirst()
+                    .orElse(null))
+        .orElse(null);
+  }
+
+  private StaticEncounterDTO.StaticChoiceDTO findChoice(
+      final StaticEncounterDTO encounter, final String choiceId) {
+    if (encounter == null || encounter.getChoices() == null) {
+      return null;
+    }
+    return encounter.getChoices().stream()
+        .filter(c -> choiceId.equals(c.getId()))
+        .findFirst()
+        .orElse(null);
+  }
+
   // ---------------------------------------------------------------------------
   // Path A — wrestler restriction
   // ---------------------------------------------------------------------------
@@ -218,8 +240,8 @@ class ExtremeCampaignChapterTest {
             .filter(e -> e.getRequiredWrestlerName() == null)
             .toList();
 
-    // Underground (4) + Championship (4) + Finale (5) shared cards = 13 total
-    assertThat(shared).hasSizeGreaterThanOrEqualTo(11);
+    // Underground (8) + Championship (14) + Proving (4) + Finale (5) shared cards = 31 total
+    assertThat(shared).hasSizeGreaterThanOrEqualTo(25);
   }
 
   // ---------------------------------------------------------------------------
@@ -298,5 +320,238 @@ class ExtremeCampaignChapterTest {
     assertThat(available)
         .extracting(CampaignChapterDTO::getId)
         .doesNotContain(PATH_A_ID, PATH_B_ID);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Win/loss branching — title shot loss creates a comeback arc
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Losing the title shot routes to the comeback_betrayal encounter")
+  void titleShotLoss_routesToComebackBetrayal() {
+    StaticEncounterDTO encounter = findEncounterInPathA("title_shot_earned");
+    assertThat(encounter).as("title_shot_earned must exist in Path A").isNotNull();
+
+    StaticEncounterDTO.StaticChoiceDTO choice = findChoice(encounter, "challenge_for_title");
+    assertThat(choice).as("challenge_for_title choice must exist").isNotNull();
+    assertThat(choice.getOnLossNextEncounterId())
+        .as("Loss from title shot must route to comeback_betrayal")
+        .isEqualTo("comeback_betrayal");
+  }
+
+  @Test
+  @DisplayName("comeback_betrayal regroup choice routes to comeback_fan_support")
+  void comebackArc_betray_routesToFanSupport() {
+    StaticEncounterDTO encounter = findEncounterInPathA("comeback_betrayal");
+    assertThat(encounter).as("comeback_betrayal must exist in Path A").isNotNull();
+
+    StaticEncounterDTO.StaticChoiceDTO choice = findChoice(encounter, "regroup_alone");
+    assertThat(choice).as("regroup_alone choice must exist in comeback_betrayal").isNotNull();
+    assertThat(choice.getNextEncounterId())
+        .as("Regroup choice must route to comeback_fan_support")
+        .isEqualTo("comeback_fan_support");
+  }
+
+  @Test
+  @DisplayName("comeback_fan_support routes to comeback_qualifier")
+  void comebackArc_fanSupport_routesToQualifier() {
+    StaticEncounterDTO encounter = findEncounterInPathA("comeback_fan_support");
+    assertThat(encounter).as("comeback_fan_support must exist in Path A").isNotNull();
+
+    StaticEncounterDTO.StaticChoiceDTO choice = findChoice(encounter, "channel_the_support");
+    assertThat(choice).as("channel_the_support choice must exist").isNotNull();
+    assertThat(choice.getNextEncounterId())
+        .as("Fan support must route to comeback_qualifier")
+        .isEqualTo("comeback_qualifier");
+  }
+
+  @Test
+  @DisplayName("Winning comeback_qualifier routes back to title_shot_earned")
+  void comebackArc_qualifier_winRoutesBackToTitleShot() {
+    StaticEncounterDTO encounter = findEncounterInPathA("comeback_qualifier");
+    assertThat(encounter).as("comeback_qualifier must exist in Path A").isNotNull();
+
+    StaticEncounterDTO.StaticChoiceDTO choice = findChoice(encounter, "win_the_qualifier");
+    assertThat(choice).as("win_the_qualifier choice must exist").isNotNull();
+    assertThat(choice.getOnWinNextEncounterId())
+        .as("Qualifier win must route back to title_shot_earned")
+        .isEqualTo("title_shot_earned");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Proving Ground phase — new 4th phase encounters
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Proving Ground shared encounters exist in Path A")
+  void provingGround_sharedEncountersExist() {
+    Optional<CampaignChapterDTO> chapter = findChapter(PATH_A_ID);
+    assertThat(chapter).isPresent();
+
+    List<String> ids =
+        chapter.get().getStaticEncounters().stream().map(StaticEncounterDTO::getId).toList();
+
+    assertThat(ids)
+        .as("All four Proving Ground shared encounters must be present")
+        .contains(
+            "proving_war_games",
+            "proving_contract_signing_tlc",
+            "proving_betrayal_setup",
+            "proving_championship_press");
+  }
+
+  @Test
+  @DisplayName("Proving Ground wrestler-specific encounters exist for all four wrestlers")
+  void provingGround_wrestlerSpecificEncountersExist() {
+    Optional<CampaignChapterDTO> chapter = findChapter(PATH_A_ID);
+    assertThat(chapter).isPresent();
+
+    List<String> ids =
+        chapter.get().getStaticEncounters().stream().map(StaticEncounterDTO::getId).toList();
+
+    assertThat(ids)
+        .as("Proving Ground wrestler-specific encounters must exist for RVD, Sabu, Raven, Daemon")
+        .contains(
+            "rvd_proving_aerial",
+            "sabu_proving_table",
+            "raven_proving_monologue",
+            "daemon_proving_pain");
+  }
+
+  @Test
+  @DisplayName("Proving Ground RVD encounter has requiredWrestlerName = Rob Van Dam")
+  void provingGround_rvd_hasWrestlerRestriction() {
+    StaticEncounterDTO encounter = findEncounterInPathA("rvd_proving_aerial");
+    assertThat(encounter).as("rvd_proving_aerial must exist").isNotNull();
+    assertThat(encounter.getRequiredWrestlerName()).isEqualTo("Rob Van Dam");
+  }
+
+  @Test
+  @DisplayName("Proving Ground Raven encounter has requiredWrestlerName = Raven")
+  void provingGround_raven_hasWrestlerRestriction() {
+    StaticEncounterDTO encounter = findEncounterInPathA("raven_proving_monologue");
+    assertThat(encounter).as("raven_proving_monologue must exist").isNotNull();
+    assertThat(encounter.getRequiredWrestlerName()).isEqualTo("Raven");
+  }
+
+  // ---------------------------------------------------------------------------
+  // New match types — all six custom types present in Path A
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("All six new match types are present in at least one Path A encounter choice")
+  void newMatchTypes_allSixPresentInPathA() {
+    Optional<CampaignChapterDTO> chapter = findChapter(PATH_A_ID);
+    assertThat(chapter).isPresent();
+
+    List<String> allRules =
+        chapter.get().getStaticEncounters().stream()
+            .filter(e -> e.getChoices() != null)
+            .flatMap(e -> e.getChoices().stream())
+            .filter(c -> c.getSegmentRules() != null)
+            .flatMap(c -> c.getSegmentRules().stream())
+            .toList();
+
+    assertThat(allRules)
+        .as("Free-For-All must appear in at least one choice")
+        .contains("Free-For-All");
+    assertThat(allRules)
+        .as("Elimination must appear in at least one choice")
+        .contains("Elimination");
+    assertThat(allRules)
+        .as("Ladder Match must appear in at least one choice")
+        .contains("Ladder Match");
+    assertThat(allRules)
+        .as("TLC must appear in at least one choice")
+        .contains("Tables, Ladders and Chairs (TLC)");
+    assertThat(allRules).as("Gauntlet must appear in at least one choice").contains("Gauntlet");
+    assertThat(allRules)
+        .as("War Games must appear in at least one choice")
+        .contains("🪖 War Games");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Feature flags — choices that set flags used by exit criteria and branching
+  // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("underground_locker_room_message sets accepted_locker_challenge featureFlag")
+  void featureFlag_acceptedLockerChallenge_setByChoice() {
+    StaticEncounterDTO encounter = findEncounterInPathA("underground_locker_room_message");
+    assertThat(encounter).as("underground_locker_room_message must exist in Path A").isNotNull();
+
+    boolean flagSet =
+        encounter.getChoices().stream()
+            .filter(c -> c.getFeatureFlags() != null)
+            .anyMatch(
+                c -> Boolean.TRUE.equals(c.getFeatureFlags().get("accepted_locker_challenge")));
+
+    assertThat(flagSet)
+        .as("A choice in underground_locker_room_message must set accepted_locker_challenge=true")
+        .isTrue();
+  }
+
+  @Test
+  @DisplayName("championship_dirty_politics sets challenged_booker featureFlag")
+  void featureFlag_challengedBooker_setByChoice() {
+    StaticEncounterDTO encounter = findEncounterInPathA("championship_dirty_politics");
+    assertThat(encounter).as("championship_dirty_politics must exist in Path A").isNotNull();
+
+    boolean flagSet =
+        encounter.getChoices().stream()
+            .filter(c -> c.getFeatureFlags() != null)
+            .anyMatch(c -> Boolean.TRUE.equals(c.getFeatureFlags().get("challenged_booker")));
+
+    assertThat(flagSet)
+        .as("A choice in championship_dirty_politics must set challenged_booker=true")
+        .isTrue();
+  }
+
+  @Test
+  @DisplayName("championship_faction_offer sets refused_faction featureFlag")
+  void featureFlag_refusedFaction_setByChoice() {
+    StaticEncounterDTO encounter = findEncounterInPathA("championship_faction_offer");
+    assertThat(encounter).as("championship_faction_offer must exist in Path A").isNotNull();
+
+    boolean flagSet =
+        encounter.getChoices().stream()
+            .filter(c -> c.getFeatureFlags() != null)
+            .anyMatch(c -> Boolean.TRUE.equals(c.getFeatureFlags().get("refused_faction")));
+
+    assertThat(flagSet)
+        .as("A choice in championship_faction_offer must set refused_faction=true")
+        .isTrue();
+  }
+
+  @Test
+  @DisplayName("proving_betrayal_setup sets survived_betrayal featureFlag")
+  void featureFlag_survivedBetrayal_setByChoice() {
+    StaticEncounterDTO encounter = findEncounterInPathA("proving_betrayal_setup");
+    assertThat(encounter).as("proving_betrayal_setup must exist in Path A").isNotNull();
+
+    boolean flagSet =
+        encounter.getChoices().stream()
+            .filter(c -> c.getFeatureFlags() != null)
+            .anyMatch(c -> Boolean.TRUE.equals(c.getFeatureFlags().get("survived_betrayal")));
+
+    assertThat(flagSet)
+        .as("A choice in proving_betrayal_setup must set survived_betrayal=true")
+        .isTrue();
+  }
+
+  @Test
+  @DisplayName("raven_proving_monologue sets raven_monologue featureFlag")
+  void featureFlag_ravenMonologue_setByChoice() {
+    StaticEncounterDTO encounter = findEncounterInPathA("raven_proving_monologue");
+    assertThat(encounter).as("raven_proving_monologue must exist in Path A").isNotNull();
+
+    boolean flagSet =
+        encounter.getChoices().stream()
+            .filter(c -> c.getFeatureFlags() != null)
+            .anyMatch(c -> Boolean.TRUE.equals(c.getFeatureFlags().get("raven_monologue")));
+
+    assertThat(flagSet)
+        .as("A choice in raven_proving_monologue must set raven_monologue=true")
+        .isTrue();
   }
 }

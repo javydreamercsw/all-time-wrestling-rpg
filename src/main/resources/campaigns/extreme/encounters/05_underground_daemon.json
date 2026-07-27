@@ -12,4 +12,19 @@
     "matchType": "One on One",
     "segmentRules": [ "Last Man Standing" ]
   } ]
+}, {
+  "id": "daemon_lights_out",
+  "requiredWrestlerName": "Daemon",
+  "title": "Lights Out",
+  "narrativeText": "Daemon reaches into the circuit breaker panel behind the curtain and kills the main lights. The building goes completely dark. The crowd screams — not in fear, in anticipation. When the emergency lighting flickers on (dim, red-tinged), Daemon is already in the ring.",
+  "choices": [ {
+    "id": "fight_in_the_dark",
+    "label": "Fight in the Dark",
+    "text": "Your opponent can't see you. You don't need to see them.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": -1
+  } ]
 } ]
