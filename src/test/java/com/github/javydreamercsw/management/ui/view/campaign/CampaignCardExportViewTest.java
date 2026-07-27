@@ -74,6 +74,31 @@ class CampaignCardExportViewTest {
   // ---------------------------------------------------------------------------
 
   @Test
+  @DisplayName("Print CSS includes visible #campaign-card-print-title block; screen hides it")
+  void printCss_includesPrintTitleBlock() {
+    String css = CampaignCardExportView.cardCss();
+
+    // Must be hidden on screen
+    int screenRuleIdx = css.indexOf("#campaign-card-print-title");
+    assertThat(screenRuleIdx)
+        .as("#campaign-card-print-title rule must exist outside @media print")
+        .isGreaterThan(-1);
+    String beforeMedia = css.substring(0, css.indexOf("@media print"));
+    assertThat(beforeMedia)
+        .as("#campaign-card-print-title must be hidden on screen")
+        .contains("#campaign-card-print-title")
+        .contains("display: none");
+
+    // Must be visible in print with block display
+    int mediaStart = css.indexOf("@media print");
+    String printBlock = css.substring(mediaStart);
+    assertThat(printBlock)
+        .as("#campaign-card-print-title must appear in @media print with display:block")
+        .contains("#campaign-card-print-title")
+        .contains("display: block");
+  }
+
+  @Test
   @DisplayName("Print CSS uses position:absolute, not position:fixed")
   void printCss_usesAbsolutePositioning_notFixed() {
     String css = CampaignCardExportView.cardCss();

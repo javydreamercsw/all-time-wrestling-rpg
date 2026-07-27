@@ -34,7 +34,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Comparator;
@@ -47,14 +47,16 @@ import lombok.extern.slf4j.Slf4j;
  * automatically via @media print.
  */
 @Route(value = "campaign-card-export", layout = MainLayout.class)
-@PageTitle("Campaign Card Export")
 @RolesAllowed(ADMIN_ROLE)
 @Slf4j
-public class CampaignCardExportView extends VerticalLayout {
+public class CampaignCardExportView extends VerticalLayout implements HasDynamicTitle {
 
   private static final String STYLE_ID = "campaign-card-export-styles";
+  private static final String DEFAULT_TITLE = "Campaign Card Export";
 
   private final CampaignChapterService chapterService;
+  private String currentTitle = DEFAULT_TITLE;
+  private final Div printTitle = new Div();
   private final ComboBox<CampaignChapterDTO> chapterSelect = new ComboBox<>("Campaign Chapter");
   private final Div cardGrid = new Div();
   private final Button printBtn =
@@ -65,6 +67,11 @@ public class CampaignCardExportView extends VerticalLayout {
     setPadding(true);
     setSpacing(true);
     buildUi();
+  }
+
+  @Override
+  public String getPageTitle() {
+    return currentTitle;
   }
 
   @Override
@@ -116,6 +123,8 @@ public class CampaignCardExportView extends VerticalLayout {
     cardGrid.setId("campaign-card-print-area");
     cardGrid.addClassName("campaign-card-grid");
 
+    printTitle.setId("campaign-card-print-title");
+
     add(toolbar, cardGrid);
 
     // Default to extreme_campaign, fallback to first available
@@ -137,8 +146,14 @@ public class CampaignCardExportView extends VerticalLayout {
     cardGrid.removeAll();
     printBtn.setEnabled(chapter != null);
     if (chapter == null) {
+      currentTitle = DEFAULT_TITLE;
+      UI.getCurrent().getPage().setTitle(currentTitle);
       return;
     }
+    currentTitle = chapter.getTitle() + " — Card Export";
+    UI.getCurrent().getPage().setTitle(currentTitle);
+    printTitle.setText(chapter.getTitle());
+    cardGrid.add(printTitle);
     cardGrid.add(buildChapterCard(chapter));
     List<StaticEncounterDTO> encounters = chapter.getStaticEncounters();
     for (int i = 0; i < encounters.size(); i++) {
@@ -367,6 +382,10 @@ public class CampaignCardExportView extends VerticalLayout {
       opacity: 0.7;
     }
 
+    #campaign-card-print-title {
+      display: none;
+    }
+
     @media print {
       body * { visibility: hidden !important; }
       #campaign-card-print-area,
@@ -376,6 +395,14 @@ public class CampaignCardExportView extends VerticalLayout {
         top: 0;
         left: 0;
         width: 100%;
+      }
+      #campaign-card-print-title {
+        display: block;
+        flex: 0 0 100%;
+        font-family: Georgia, serif;
+        font-size: 14pt;
+        font-weight: bold;
+        margin-bottom: 5mm;
       }
       .campaign-card { border-color: #aaa; }
       .choice-label { color: #000; }
