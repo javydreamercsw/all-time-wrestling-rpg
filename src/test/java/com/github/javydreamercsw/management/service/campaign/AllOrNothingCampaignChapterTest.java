@@ -97,7 +97,9 @@ class AllOrNothingCampaignChapterTest {
 
   private StaticEncounterDTO.StaticChoiceDTO findChoice(
       final StaticEncounterDTO encounter, final String choiceId) {
-    if (encounter == null || encounter.getChoices() == null) return null;
+    if (encounter == null || encounter.getChoices() == null) {
+      return null;
+    }
     return encounter.getChoices().stream()
         .filter(c -> choiceId.equals(c.getId()))
         .findFirst()
