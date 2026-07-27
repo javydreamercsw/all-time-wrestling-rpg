@@ -85,6 +85,8 @@ public class MenuService {
     campaignMenu.addChild(
         new MenuItem("Campaigns", VaadinIcon.FILM, "campaign-list", RoleName.ADMIN));
     campaignMenu.addChild(
+        new MenuItem("Card Export", VaadinIcon.PRINT, "campaign-card-export", RoleName.ADMIN));
+    campaignMenu.addChild(
         new MenuItem(
             "Dashboard",
             VaadinIcon.DASHBOARD,

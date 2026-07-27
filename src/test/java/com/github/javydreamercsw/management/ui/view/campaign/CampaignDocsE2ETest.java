@@ -479,6 +479,28 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
         "campaign-promo-outcome");
   }
 
+  @Test
+  @Order(15)
+  void testCaptureCampaignCardExport() {
+    // Card export reads chapters from classpath — no DB data setup needed.
+    login("admin", "admin");
+    navigateTo("campaign-card-export");
+    waitForVaadinClientToLoad();
+
+    // Default selection is extreme_campaign; wait for at least one card to render.
+    waitForText("The Extreme Path");
+
+    documentFeature(
+        "Campaign",
+        "Campaign Card Export",
+        """
+        Admins can print physical encounter cards for any campaign chapter directly from the\
+         browser. Cards are rendered at standard poker size (63.5 × 88.9 mm) and laid out\
+         ready to print on A4 paper — no external tools required.\
+        """,
+        "campaign-card-export");
+  }
+
   private Wrestler getOrCreateWrestler(@NonNull final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
