@@ -1,0 +1,17 @@
+[ {
+  "id": "raven_proving_monologue",
+  "requiredWrestlerName": "Raven",
+  "title": "The Manifesto",
+  "narrativeText": "Raven takes the microphone before the match is even announced. He sits cross-legged in the center of the ring. He speaks — not at the crowd, but at himself, as if working through something. His words form a manifesto: about pain, about purpose, about the barbwire that awaits. The arena goes utterly quiet.",
+  "choices": [ {
+    "id": "deliver_the_manifesto",
+    "label": "Deliver the Manifesto",
+    "text": "Every word is a wound. The crowd listens to every single one.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -2,
+    "featureFlags": {
+      "raven_monologue": true
+    }
+  } ]
+} ]

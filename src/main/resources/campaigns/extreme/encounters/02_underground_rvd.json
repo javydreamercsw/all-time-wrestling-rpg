@@ -12,4 +12,19 @@
     "matchType": "One on One",
     "segmentRules": [ "No DQ" ]
   } ]
+}, {
+  "id": "rvd_rolling_thunder_extreme",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "Rolling Thunder",
+  "narrativeText": "The crowd is already chanting your initials. The opponent stands in the center of the ring trying to look unimpressed. You run the ropes — Rolling Thunder. The building erupts. No DQ means no limits on what comes next.",
+  "choices": [ {
+    "id": "rolling_thunder_attack",
+    "label": "Rolling Thunder Into the Brawl",
+    "text": "The signature move opens the door. Now finish what you started.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": 1
+  } ]
 } ]
