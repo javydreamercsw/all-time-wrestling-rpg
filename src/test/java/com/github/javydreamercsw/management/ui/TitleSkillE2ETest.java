@@ -73,6 +73,7 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
   @BeforeEach
   public void setUpTitleSkillData() {
     // Full state reset — mirrors BookerJourneyE2ETest pattern to avoid cross-test contamination
+    // Step 1: clear TitleReign → Segment FK, then delete reigns
     titleReignRepository
         .findAll()
         .forEach(
@@ -81,15 +82,21 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
               titleReignRepository.save(reign);
             });
     titleReignRepository.deleteAll();
+    // Step 2: delete segments first — Segment owns segment_title join table, so deleting segments
+    // removes those FK rows and allows titles to be deleted afterwards
+    segmentRepository.deleteAll();
+    showRepository.deleteAll();
+    // Step 3: clear title → wrestler join tables, then delete titles
     titleRepository
         .findAll()
         .forEach(
             title -> {
-              title.setChampion(null);
+              title.getChampion().clear();
+              title.getChallengers().clear();
               titleRepository.save(title);
             });
-    segmentRepository.deleteAll();
-    showRepository.deleteAll();
+    titleRepository.deleteAll();
+    // Step 4: delete wrestlers (no remaining FK violations)
     wrestlerRepository.deleteAll();
 
     // Ensure minimal infrastructure (ShowType, Season, Template, SegmentType, No DQ rule)
@@ -216,13 +223,15 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
     // Weapon card notification must appear (persistent — duration 0)
     waitForNotification("weapons deck");
 
-    // Button must be disabled immediately after activation
-    WebElement btnAfter =
-        new WebDriverWait(driver, getWaitTimeout())
-            .until(
-                ExpectedConditions.presenceOfElementLocated(By.id("activate-title-skill-button")));
-    Assertions.assertFalse(
-        btnAfter.isEnabled(), "Title skill button must be disabled after activation");
+    // Button must be disabled immediately after activation.
+    // vaadin-button is a custom element — WebElement.isEnabled() checks the JS `.disabled`
+    // property which is undefined on custom elements (always true). Use the HTML `disabled`
+    // attribute instead, which Vaadin sets via setEnabled(false).
+    new WebDriverWait(driver, getWaitTimeout())
+        .until(
+            d ->
+                d.findElement(By.id("activate-title-skill-button")).getAttribute("disabled")
+                    != null);
   }
 
   /**
