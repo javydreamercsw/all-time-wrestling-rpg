@@ -260,7 +260,7 @@ public class CampaignCardExportView extends VerticalLayout {
 
   // ── CSS injected into the page head on attach ─────────────────────────────
 
-  private static String cardCss() {
+  static String cardCss() {
     return """
     .campaign-card-grid {
       display: flex;
