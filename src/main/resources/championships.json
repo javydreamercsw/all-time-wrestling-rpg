@@ -28,6 +28,6 @@
   "description": "The most extreme title in wrestling. No rules, no limits.",
   "gender": "MALE",
   "championshipType": "SINGLE",
-  "effect_script": "gainInitiative()",
+  "effect_script": "addMatchRule('No DQ'); setupWeaponCard()",
   "expansion_code": "CUSTOM"
 } ]

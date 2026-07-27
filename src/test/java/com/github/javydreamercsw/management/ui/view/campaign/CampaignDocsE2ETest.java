@@ -289,7 +289,10 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   @Order(13)
   void testCaptureExtremeCampaignView() {
-    // Setup — must use a wrestler in the allowedWrestlerNames list for the extreme chapter
+    // Setup — must use a wrestler in the allowedWrestlerNames list for the extreme chapter.
+    // dataInitializer.init() loads Rob Van Dam from wrestlers JSON with account=null, so the
+    // orElseGet branch would never fire after init. Always link to admin after find-or-create.
+    Account admin = accountRepository.findByUsername("admin").get();
     Wrestler rvd =
         wrestlerRepository
             .findByName("Rob Van Dam")
@@ -300,14 +303,22 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
                           .name("Rob Van Dam")
                           .startingHealth(100)
                           .startingStamina(100)
-                          .account(accountRepository.findByUsername("admin").get())
+                          .account(admin)
                           .isPlayer(true)
                           .active(true)
                           .gender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE)
                           .build();
                   return wrestlerRepository.saveAndFlush(w);
                 });
+    rvd.setAccount(admin);
+    rvd.setIsPlayer(true);
+    rvd.setActive(true);
+    rvd = wrestlerRepository.saveAndFlush(rvd);
     createCampaignInChapter(rvd, "extreme_campaign");
+
+    // The dashboard uses activeWrestlerId to select which wrestler's campaign to show.
+    admin.setActiveWrestlerId(rvd.getId());
+    accountRepository.save(admin);
 
     navigateTo("campaign");
     waitForText("Chapter: The Extreme Path");
@@ -330,6 +341,9 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     Account admin = accountRepository.findByUsername("admin").get();
     Wrestler player = getOrCreateWrestler(admin);
     createCampaignInChapter(player, "extreme_campaign_outsider");
+
+    admin.setActiveWrestlerId(player.getId());
+    accountRepository.save(admin);
 
     navigateTo("campaign");
     waitForText("Chapter: The Outsider's Extreme Path");
@@ -497,6 +511,10 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(@NonNull final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    String xpath =
+        text.contains("'")
+            ? "//*[contains(., \"" + text + "\")]"
+            : "//*[contains(., '" + text + "')]";
+    waitForVaadinElement(driver, org.openqa.selenium.By.xpath(xpath));
   }
 }

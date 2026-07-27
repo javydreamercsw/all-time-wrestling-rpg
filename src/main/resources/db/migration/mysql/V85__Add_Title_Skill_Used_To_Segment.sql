@@ -1,0 +1,1 @@
+ALTER TABLE segment ADD COLUMN title_skill_used TINYINT(1) NOT NULL DEFAULT 0;
