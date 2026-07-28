@@ -42,7 +42,7 @@ class AllOrNothingCampaignChapterTest {
 
   private static final String CHAPTER_ID = "beginning";
   private static final List<String> AON_WRESTLERS =
-      List.of("Randy Savage", "British Bulldog", "Kurt Angle");
+      List.of("Randy Savage", "The British Bulldog", "Kurt Angle");
 
   private CampaignChapterService chapterService;
 
