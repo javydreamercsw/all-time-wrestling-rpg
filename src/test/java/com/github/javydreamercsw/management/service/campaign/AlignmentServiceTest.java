@@ -58,6 +58,7 @@ class AlignmentServiceTest {
   @InjectMocks private AlignmentService alignmentService;
 
   private Wrestler wrestler;
+  private Universe universe;
   private Campaign campaign;
   private CampaignState state;
   private WrestlerAlignment alignment;
@@ -69,9 +70,12 @@ class AlignmentServiceTest {
 
     state = CampaignState.builder().activeCards(new ArrayList<>()).build();
 
+    universe = Universe.builder().name("Test Universe").build();
+
     campaign = new Campaign();
     campaign.setWrestler(wrestler);
     campaign.setState(state);
+    campaign.setUniverse(universe);
 
     alignment = new WrestlerAlignment();
     alignment.setWrestler(wrestler);
@@ -86,7 +90,7 @@ class AlignmentServiceTest {
   void shiftAlignment_zeroAmount_doesNothing() {
     alignmentService.shiftAlignment(campaign, 0);
 
-    verify(wrestlerAlignmentRepository, never()).findByWrestler(any());
+    verify(wrestlerAlignmentRepository, never()).findByWrestlerAndUniverse(any(), any());
     verify(campaignStateRepository, never()).save(any());
   }
 
@@ -94,7 +98,8 @@ class AlignmentServiceTest {
   void shiftAlignment_neutralPositive_becomesFace() {
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, 2);
 
@@ -108,7 +113,8 @@ class AlignmentServiceTest {
   void shiftAlignment_neutralNegative_becomesHeel() {
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, -3);
 
@@ -122,7 +128,8 @@ class AlignmentServiceTest {
   void shiftAlignment_facePositive_levelIncreases() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(2);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, 1);
 
@@ -136,7 +143,8 @@ class AlignmentServiceTest {
   void shiftAlignment_faceLevel_cappedAt5() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(4);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, 10);
 
@@ -148,7 +156,8 @@ class AlignmentServiceTest {
   void shiftAlignment_faceGoesNegative_becomesNeutral() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, -2);
 
@@ -163,7 +172,8 @@ class AlignmentServiceTest {
   void shiftAlignment_faceGoesToZero_becomesNeutral() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(2);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, -2);
 
@@ -175,7 +185,8 @@ class AlignmentServiceTest {
   void shiftAlignment_heelPositiveAmount_movesTowardNeutral() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(3);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, 1);
 
@@ -189,7 +200,8 @@ class AlignmentServiceTest {
   void shiftAlignment_heelLevelDropsToZero_becomesNeutral() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(2);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, 2);
 
@@ -204,7 +216,8 @@ class AlignmentServiceTest {
   void shiftAlignment_heelNegativeAmount_deepensHeel() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(2);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, -1);
 
@@ -216,7 +229,8 @@ class AlignmentServiceTest {
   void shiftAlignment_heelLevel_cappedAt5() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(4);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, -10);
 
@@ -226,7 +240,8 @@ class AlignmentServiceTest {
 
   @Test
   void shiftAlignment_alignmentNotFound_throwsIllegalStateException() {
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.empty());
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
 
     assertThrows(IllegalStateException.class, () -> alignmentService.shiftAlignment(campaign, 1));
   }
@@ -237,7 +252,8 @@ class AlignmentServiceTest {
   void handleLevelChange_neutralToLevel1_grantsPendingL1Pick() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
     state.setPendingL1Picks(0);
 
     alignmentService.handleLevelChange(campaign, 0, 1);
@@ -250,7 +266,8 @@ class AlignmentServiceTest {
   void handleLevelChange_faceReachesLevel4_grantsPendingL2Pick() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(4);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
     state.setPendingL2Picks(0);
 
     alignmentService.handleLevelChange(campaign, 3, 4);
@@ -263,7 +280,8 @@ class AlignmentServiceTest {
   void handleLevelChange_faceReachesLevel5_grantsPendingL3PickAndRemovesL1Card() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(5);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard l1Card =
         CampaignAbilityCard.builder()
@@ -285,7 +303,8 @@ class AlignmentServiceTest {
   void handleLevelChange_heelReachesLevel4_grantsPendingL2PickAndRemovesL1Card() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(4);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard l1Card =
         CampaignAbilityCard.builder()
@@ -309,7 +328,8 @@ class AlignmentServiceTest {
   void handleLevelChange_heelReachesLevel5_grantsPendingL1Pick() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(5);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
     state.setPendingL1Picks(0);
 
     alignmentService.handleLevelChange(campaign, 4, 5);
@@ -320,7 +340,8 @@ class AlignmentServiceTest {
 
   @Test
   void handleLevelChange_alignmentNotFound_throwsIllegalStateException() {
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.empty());
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
 
     assertThrows(
         IllegalStateException.class, () -> alignmentService.handleLevelChange(campaign, 0, 1));
@@ -330,7 +351,8 @@ class AlignmentServiceTest {
 
   @Test
   void updateAbilityCards_noAlignmentFound_doesNothing() {
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.empty());
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
 
     alignmentService.updateAbilityCards(campaign);
 
@@ -340,7 +362,8 @@ class AlignmentServiceTest {
   @Test
   void updateAbilityCards_noMismatch_doesNotClearCards() {
     alignment.setAlignmentType(AlignmentType.FACE);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard faceCard =
         CampaignAbilityCard.builder()
@@ -360,7 +383,8 @@ class AlignmentServiceTest {
   void updateAbilityCards_alignmentMismatch_clearsCardsAndRecalculates() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(2);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard faceCard =
         CampaignAbilityCard.builder()
@@ -385,7 +409,8 @@ class AlignmentServiceTest {
   void recalculatePendingPicks_faceLevel1_setsL1PickOnly() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     // Force a mismatch to trigger recalculation
     CampaignAbilityCard heelCard =
@@ -407,7 +432,8 @@ class AlignmentServiceTest {
   void recalculatePendingPicks_faceLevel4_setsL1AndL2Picks() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(4);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard heelCard =
         CampaignAbilityCard.builder()
@@ -428,7 +454,8 @@ class AlignmentServiceTest {
   void recalculatePendingPicks_faceLevel5_setsAllPickLevels() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(5);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard heelCard =
         CampaignAbilityCard.builder()
@@ -450,7 +477,8 @@ class AlignmentServiceTest {
   void recalculatePendingPicks_heelLevel1_setsL1PickOnly() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard faceCard =
         CampaignAbilityCard.builder()
@@ -471,7 +499,8 @@ class AlignmentServiceTest {
   void recalculatePendingPicks_heelLevel4_setsL2PickOnly() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(4);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard faceCard =
         CampaignAbilityCard.builder()
@@ -493,7 +522,8 @@ class AlignmentServiceTest {
   void recalculatePendingPicks_heelLevel5_setsL1AndL2Picks() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(5);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     CampaignAbilityCard faceCard =
         CampaignAbilityCard.builder()
@@ -515,7 +545,8 @@ class AlignmentServiceTest {
   void recalculatePendingPicks_neutralAlignment_resetsAllPicks() {
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     // Build a card list with a HEEL card to trigger mismatch — but alignment is NEUTRAL
     // NEUTRAL has no cards to mismatch against; inject a FACE card to force the code path
@@ -544,7 +575,8 @@ class AlignmentServiceTest {
   void shiftAlignment_faceReachesLevel4_pendingL2PickGranted() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(3);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
     state.setPendingL2Picks(0);
 
     alignmentService.shiftAlignment(campaign, 1);
@@ -558,7 +590,8 @@ class AlignmentServiceTest {
   void shiftAlignment_heelReachesLevel5_pendingL1PickGranted() {
     alignment.setAlignmentType(AlignmentType.HEEL);
     alignment.setLevel(4);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
     state.setPendingL1Picks(0);
     state
         .getActiveCards()
@@ -580,7 +613,8 @@ class AlignmentServiceTest {
   void shiftAlignment_neutralToFace_savedAndAbilityCardsUpdated() {
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, 1);
 
@@ -594,7 +628,8 @@ class AlignmentServiceTest {
   void shiftAlignment_neutralToHeel_savedAndAbilityCardsUpdated() {
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     alignmentService.shiftAlignment(campaign, -1);
 
@@ -607,7 +642,8 @@ class AlignmentServiceTest {
   void shiftAlignment_sameAlignmentNoTypeChange_updateAbilityCardsNotTriggered() {
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(2);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     List<CampaignAbilityCard> cards = state.getActiveCards();
     int originalSize = cards.size();

@@ -1,0 +1,285 @@
+[ {
+  "id": "ka_intro_1",
+  "title": "It's True — It's Damn True",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Kurt Angle — Olympic gold medalist, amateur wrestling champion, and the most technically gifted competitor on the planet — has arrived in All Time Wrestling. He strides to the ring with his medals around his neck, looking utterly unimpressed by everything around him. \"I have a gold medal. I have intensity, integrity, and intelligence. The people here? They have NOTHING on me. It's true — it's DAMN true.\"",
+  "choices": [ {
+    "id": "ka_intro_1_continue",
+    "label": "Continue",
+    "text": "Begin your campaign in ATW.",
+    "nextEncounterId": "ka_intro_2",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "ka_intro_2",
+  "title": "The Olympic Machine Evaluates the Competition",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Kurt Angle studies the ATW roster with the analytical mind of an Olympic athlete. He identifies Mukundi Shumba — a powerful African powerhouse — as his first test. This concerns nobody who has seen Kurt work. The man can make ANYONE tap to the Ankle Lock. He begins preparing with the focus and discipline that won him Olympic gold.",
+  "choices": [ {
+    "id": "ka_intro_2_continue",
+    "label": "Study Mukundi Shumba",
+    "text": "Prepare for your first opponent.",
+    "nextEncounterId": "ka_intro_3",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "ka_intro_3",
+  "title": "The Preparation",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Scouts confirm that Mukundi Shumba is as powerful as he looks, but his technique has gaps. Kurt Angle begins drilling Olympic amateur wrestling takedowns, perfecting his German Suplex series and the Olympic Slam. His Ankle Lock submission is already immaculate. \"By the time I'm done with Mukundi Shumba, he'll be tapping inside of five minutes.\"",
+  "choices": [ {
+    "id": "ka_intro_3_continue",
+    "label": "Go to the ring",
+    "text": "The preparation is complete. Head to the ring.",
+    "nextEncounterId": "ka_part_1",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "ka_part_1",
+  "title": "Part 1: Mukundi Shumba",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Kurt Angle and Mukundi Shumba square off. Shumba's raw power is immediately apparent — he shakes off Kurt's initial takedown attempts and lands heavy strikes. But the Olympic machine keeps working, looking for the Ankle Lock opportunity. Can Kurt's technical excellence overcome Shumba's brute strength?",
+  "choices": [ {
+    "id": "ka_part_1_match",
+    "label": "Fight Mukundi Shumba!",
+    "text": "Take on Mukundi Shumba in your first ATW match.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Mukundi Shumba",
+    "matchType": "One on One",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "ka_part_2",
+    "onLossNextEncounterId": "ka_part_2"
+  } ]
+}, {
+  "id": "ka_part_2",
+  "title": "Part 2: The Shumba Ambush",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "After the match, Mukundi Shumba ambushes Kurt Angle backstage! Shumba is furious about the loss and takes out his frustration on the Olympic champion. Kurt is hurt — draw one Injury Card and apply its effects. Trainers rush to assist. Kurt, holding his arm, snarls: \"Big mistake. Now you've made it PERSONAL.\"",
+  "choices": [ {
+    "id": "ka_part_2_continue",
+    "label": "Shake it off",
+    "text": "Apply the injury and move forward despite the setback.",
+    "nextEncounterId": "ka_part_3",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "featureFlags": {
+      "injury_draw": "random"
+    }
+  } ]
+}, {
+  "id": "ka_part_3",
+  "title": "Part 3: Jax Felix — The Technical Challenge",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Still nursing the injury from Shumba's ambush, Kurt Angle is matched against Jax Felix. To make matters worse, Kurt begins this match at −2 Stamina due to his injury. This match rewards technical excellence: if Kurt executes at least 2 German Suplexes (any combination of: German Suplex, Series of German Suplexes, Release German Suplex) AND the Olympic Slam, he earns a +2 VP bonus — proving he's the superior technical wrestler even while injured.",
+  "choices": [ {
+    "id": "ka_part_3_match",
+    "label": "Fight Jax Felix (−2 Stamina)!",
+    "text": "Take on Jax Felix. Execute 2+ German Suplexes and the Olympic Slam for a +2 VP bonus.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Jax Felix",
+    "matchType": "One on One",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "ka_part_4",
+    "onLossNextEncounterId": "ka_part_4",
+    "featureFlags": {
+      "player_stamina_penalty": -2
+    },
+    "bonusVpConditions": [ {
+      "vpReward": 2,
+      "description": "2+ German Suplexes and the Olympic Slam",
+      "requireWin": false,
+      "cardGroups": [ {
+        "anyOf": [ "German Suplex", "Series of German Suplexes", "Release German Suplex" ],
+        "minCount": 2
+      }, {
+        "anyOf": [ "Olympic Slam" ],
+        "minCount": 1
+      } ]
+    } ]
+  } ]
+}, {
+  "id": "ka_part_4",
+  "title": "Part 4: A Man of Principle or Pure Ambition?",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Kurt Angle has proven himself in the ring despite adversity. Now comes the moment that defines his character in ATW. Does he compete with the integrity that won him an Olympic gold medal — earning respect through superior technique? Or does the ruthless competitor who will do ANYTHING to win take over? \"Intensity, integrity, intelligence.\" Two out of three ain't bad.",
+  "choices": [ {
+    "id": "ka_part_4_face",
+    "label": "Integrity first (Face)",
+    "text": "Compete with the principles that made you an Olympic champion.",
+    "alignmentShift": 1,
+    "unlockPromo": true,
+    "nextEncounterId": "ka_part_5a",
+    "vpReward": 0,
+    "intendedPath": true
+  }, {
+    "id": "ka_part_4_heel",
+    "label": "Win at all costs (Heel)",
+    "text": "Olympic gold was earned by being the BEST. No excuses, no mercy.",
+    "alignmentShift": -1,
+    "unlockPromo": true,
+    "unlockAttack": true,
+    "nextEncounterId": "ka_part_5b",
+    "vpReward": 0,
+    "intendedPath": false
+  } ]
+}, {
+  "id": "ka_part_5a",
+  "title": "Part 5A: The Honorable Path",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Kurt Angle uses a Backstage Action to recover from the injury sustained in the Shumba ambush — rest, ice, and treatment from the training staff. The crowd begins to warm to the Olympic champion's straightforward approach. He doesn't cheat, he doesn't complain. He simply trains harder and wrestles better than everyone else. Mukundi Shumba is watching — and he's not done.",
+  "choices": [ {
+    "id": "ka_part_5a_continue",
+    "label": "Take the recovery action",
+    "text": "Rest and prepare for Mukundi Shumba's return.",
+    "nextEncounterId": "ka_part_6a",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "ka_part_6a",
+  "title": "Part 6A: Shumba Returns — Disadvantage",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Mukundi Shumba challenges Kurt Angle to a rematch — and this time he's done his homework. Shumba enters with +5 starting momentum from studying Kurt's tendencies (opponent advantage, future feature). The crowd is rooting for Kurt, but Shumba's power and preparation make this far from a sure thing. The Olympic machine must be at his absolute best.",
+  "choices": [ {
+    "id": "ka_part_6a_match",
+    "label": "Fight Shumba again!",
+    "text": "Take on Mukundi Shumba — who starts with +5 momentum.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Mukundi Shumba",
+    "matchType": "One on One",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "ka_part_7a",
+    "onLossNextEncounterId": "ka_part_7a",
+    "featureFlags": {
+      "opponent_momentum_bonus": 5
+    }
+  } ]
+}, {
+  "id": "ka_part_7a",
+  "title": "Part 7A: Head Injury and Recovery",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "The Shumba match was brutal. Kurt Angle draws a Head Injury card — apply its effects. A concussion-level blow has forced the training staff to order him to rest. Use one Backstage Action to seek medical attention if available. Jax Felix, sensing vulnerability, sends a personal message: \"Kurt Angle isn't invincible. I proved it before and I'll prove it again.\"",
+  "choices": [ {
+    "id": "ka_part_7a_continue",
+    "label": "Recover and respond",
+    "text": "Apply the head injury and use a backstage action for treatment.",
+    "nextEncounterId": "ka_part_8a",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "featureFlags": {
+      "injury_type": "head"
+    }
+  } ]
+}, {
+  "id": "ka_part_8a",
+  "title": "Part 8A: Jax Felix Issues a Challenge",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Jax Felix confronts Kurt Angle directly: \"You've been struggling, Kurt. Maybe ATW is too much for an Olympic wrestler. I've beaten you before and I'll do it again.\" Kurt Angle adjusts his medal. \"You beat a hurt man. Let's see how you do against a healthy one. I accept your challenge.\" Management makes it official — Kurt Angle vs Jax Felix, in what could be the final match of Chapter 1.",
+  "choices": [ {
+    "id": "ka_part_8a_continue",
+    "label": "Accept the challenge",
+    "text": "Face Jax Felix in the Chapter 1 finale.",
+    "nextEncounterId": "ka_part_9a",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "ka_part_9a",
+  "title": "Part 9A: Chapter Finale — Kurt vs Jax (Face)",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "The rematch is here. Kurt Angle vs Jax Felix, with everything on the line. A win earns Kurt 4 VP and validates his place at the top of ATW. A loss costs him 1 VP, but Chapter 1 ends either way — Kurt Angle doesn't quit. The Ankle Lock is ready. The Olympic Slam is ready. It's time to remind everyone why you have that gold medal.",
+  "choices": [ {
+    "id": "ka_part_9a_win",
+    "label": "Fight Jax Felix — win or lose!",
+    "text": "Take on Jax Felix in the Chapter 1 finale.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Jax Felix",
+    "matchType": "One on One",
+    "vpReward": 4,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "ka_chapter_end_face",
+    "onLossNextEncounterId": "ka_chapter_end_face",
+    "intendedPath": true
+  } ]
+}, {
+  "id": "ka_chapter_end_face",
+  "title": "Chapter 1 Complete: The Olympic Machine! (Face)",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "It's true — it's DAMN true! Kurt Angle has completed Chapter 1 of the All or Nothing campaign with his integrity intact. Through injuries, ambushes, and worthy opponents, the Olympic gold medalist proved that his skills transcend any era of professional wrestling. The crowd cheers as Kurt raises his medal. Mukundi Shumba and Jax Felix both know they'll need to regroup. Chapter 2 awaits.",
+  "choices": [ {
+    "id": "ka_chapter_end_face_done",
+    "label": "Advance to Chapter 2",
+    "text": "Chapter 1 complete. Proceed to the next chapter.",
+    "nextPhase": "BACKSTAGE",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "ka_part_5b",
+  "title": "Part 5B: The Ruthless Champion",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Kurt Angle decides that sentiment has no place in a wrestling ring. He uses a Backstage Action to gain a psychological edge — spreading word through the locker room that he's recovered from the injury (whether true or not) to prevent anyone from targeting him. Jax Felix notices the intimidation tactic and confronts Kurt directly. The stage is set for a brutal heel encounter.",
+  "choices": [ {
+    "id": "ka_part_5b_continue",
+    "label": "Play the psychological game",
+    "text": "Intimidate the locker room and set up the confrontation with Jax Felix.",
+    "nextEncounterId": "ka_part_6b",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "ka_part_6b",
+  "title": "Part 6B: Jax Felix Confronts Kurt",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Jax Felix corners Kurt Angle backstage: \"I know you're still hurt, Kurt. And I know you're trying to hide it. I'm calling you out.\" Kurt Angle steps close, meeting Jax eye to eye. \"You want to see how hurt I am? Let's do this in the ring.\" The match is signed. No more games.",
+  "choices": [ {
+    "id": "ka_part_6b_continue",
+    "label": "Accept Jax Felix's challenge",
+    "text": "This confrontation ends in the ring.",
+    "nextEncounterId": "ka_part_7b",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "ka_part_7b",
+  "title": "Part 7B: Jax Felix — The Heel Finale",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Kurt Angle enters with significant disadvantages: −2 Health, −2 Stamina, and −4 Momentum due to his injury and the psychological warfare of recent weeks (future feature: these penalties apply automatically). If Kurt has suffered 1 or fewer injuries during Chapter 1, draw an additional Injury Card before this match begins. Jax Felix is confident. A win earns Kurt 3 VP; a loss costs 1 VP, but Chapter 1 ends either way.",
+  "choices": [ {
+    "id": "ka_part_7b_match",
+    "label": "Fight Jax Felix — heel finale!",
+    "text": "Battle Jax Felix with your back against the wall.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Jax Felix",
+    "matchType": "One on One",
+    "vpReward": 3,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "ka_chapter_end_heel",
+    "onLossNextEncounterId": "ka_chapter_end_heel",
+    "featureFlags": {
+      "player_health_penalty": -2,
+      "player_stamina_penalty": -2,
+      "player_momentum_penalty": -4,
+      "conditional_injury_draw": true
+    }
+  } ]
+}, {
+  "id": "ka_chapter_end_heel",
+  "title": "Chapter 1 Complete: Cold and Calculating! (Heel)",
+  "requiredWrestlerName": "Kurt Angle",
+  "narrativeText": "Kurt Angle has completed Chapter 1 through sheer determination and ruthlessness! Even with injuries and disadvantages, the Olympic machine refused to lose what mattered most. Jax Felix has been dispatched. The locker room respects — and fears — Kurt Angle. He walks away without a word, already planning his Chapter 2 strategy. The intensity never stops. It's true. It's damn true.",
+  "choices": [ {
+    "id": "ka_chapter_end_heel_done",
+    "label": "Advance to Chapter 2",
+    "text": "Chapter 1 complete. Proceed to the next chapter.",
+    "nextPhase": "BACKSTAGE",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+} ]

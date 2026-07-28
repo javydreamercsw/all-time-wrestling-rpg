@@ -67,6 +67,9 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "no_dq", nullable = false)
   private Boolean noDq = false;
 
+  @Column(name = "allows_referee_stoppage", nullable = false)
+  private boolean allowsRefereeStopage = true;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "bump_addition", nullable = false)
   private BumpAddition bumpAddition = BumpAddition.NONE;

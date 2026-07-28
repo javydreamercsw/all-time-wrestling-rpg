@@ -12,17 +12,18 @@
       "maxVictoryPoints": 0
     } ]
   } ],
+  "allowedWrestlerNames": [ "Randy Savage", "The British Bulldog", "Kurt Angle" ],
   "exitPoints": [ {
     "name": "Tournament Invite",
     "criteria": [ {
       "minMatchesPlayed": 3,
-      "minVictoryPoints": 5
+      "minVictoryPoints": 3
     } ]
   }, {
     "name": "Sent to Development",
     "criteria": [ {
       "minMatchesPlayed": 5,
-      "maxVictoryPoints": 4
+      "maxVictoryPoints": 2
     } ]
   } ],
   "rules": {

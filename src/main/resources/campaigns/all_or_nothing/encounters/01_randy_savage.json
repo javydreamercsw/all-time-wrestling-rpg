@@ -1,0 +1,230 @@
+[ {
+  "id": "rs_intro_1",
+  "title": "The Macho Man Arrives",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The Macho Man Randy Savage has arrived in All Time Wrestling! The crowd erupts as he makes his way to the ring, resplendent in his signature flashy ring gear. His manager Miss Elizabeth is at his side. Randy grabs the microphone. \"OH YEAH! The Macho Man Randy Savage is HERE and the competition better be ready! Because nobody — NOBODY — is on my level! DIG IT!\"",
+  "choices": [ {
+    "id": "rs_intro_1_continue",
+    "label": "Continue",
+    "text": "Make your mark in ATW.",
+    "nextEncounterId": "rs_intro_2",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "rs_intro_2",
+  "title": "Snapping Into It",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "Backstage, the Macho Man is informed that his first test in ATW will be against the British Bulldog — a powerful technical wrestler known for his strength and tenacity. Randy nods, already plotting his strategy. Miss Elizabeth offers words of encouragement. Randy adjusts his sunglasses and points to the sky. \"The cream always rises to the top, and the Macho Man is the cream! Elizabeth, the valet distraction is OFF THE TABLE — we win on Macho Man power alone!\"",
+  "choices": [ {
+    "id": "rs_intro_2_continue",
+    "label": "Prepare for battle",
+    "text": "Head to the ring for the first match.",
+    "nextEncounterId": "rs_part_1",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "featureFlags": {
+      "lock_ability": "valet_distraction"
+    }
+  } ]
+}, {
+  "id": "rs_part_1",
+  "title": "Part 1: The British Bulldog Challenge",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The bell rings and the Macho Man locks up with the British Bulldog. Davey Boy Smith is no pushover — his raw power threatens to neutralize Randy's aerial attack. But the Macho Man is crafty, using the ropes and ring positioning to his advantage. This first encounter will set the tone for the entire campaign. NOTE: After this match, Kurt Angle is watching from the crowd — he'll be your Chapter 2 rival if you make it that far.",
+  "choices": [ {
+    "id": "rs_part_1_match",
+    "label": "Fight!",
+    "text": "Take on the British Bulldog.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "The British Bulldog",
+    "matchType": "One on One",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "rs_part_2",
+    "onLossNextEncounterId": "rs_part_2",
+    "featureFlags": {
+      "ch2_rival_trigger": "Kurt Angle"
+    }
+  } ]
+}, {
+  "id": "rs_part_2",
+  "title": "Part 2: Unfinished Business",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "Whether you won or lost that first encounter, the British Bulldog demands a rematch! The crowd is buzzing — this rivalry is already heating up. Davey Boy comes to the ring fired up, and Randy Savage meets him with equal intensity. The Macho Man knows this is a test of his endurance and ring intelligence as much as his athleticism.",
+  "choices": [ {
+    "id": "rs_part_2_match",
+    "label": "Rematch!",
+    "text": "Face the British Bulldog again.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "The British Bulldog",
+    "matchType": "One on One",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "rs_part_3",
+    "onLossNextEncounterId": "rs_part_3"
+  } ]
+}, {
+  "id": "rs_part_3",
+  "title": "Part 3: An Unwelcome Setback",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "After the grueling rivalry with the British Bulldog, a surprise attack leaves the Macho Man nursing an injury! Draw one Injury Card and apply its effects. Randy Savage is down but not out. Miss Elizabeth rushes to his side backstage. \"You've been hurt, Randy. You need to be smart about how you proceed from here.\" The Macho Man grinds his teeth. Pain is temporary — glory is forever.",
+  "choices": [ {
+    "id": "rs_part_3_continue",
+    "label": "Push through",
+    "text": "Play through the injury and decide your path.",
+    "nextEncounterId": "rs_part_4",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "featureFlags": {
+      "injury_draw": "random"
+    }
+  } ]
+}, {
+  "id": "rs_part_4",
+  "title": "Part 4: Which Path Will You Choose?",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "Backstage, the Macho Man faces a defining moment. The road ahead splits. He can play the fan favorite — using his natural charisma and showmanship to win the crowd — or he can embrace the darker side and let his ruthless ambition take over. Miss Elizabeth watches quietly, knowing that whatever Randy decides will shape the rest of this campaign. \"The Macho Man makes his OWN destiny!\"",
+  "choices": [ {
+    "id": "rs_part_4_face",
+    "label": "Play it straight (Face)",
+    "text": "Embrace the crowd's energy and compete with honor and showmanship.",
+    "alignmentShift": 1,
+    "unlockPromo": true,
+    "nextEncounterId": "rs_part_5a",
+    "vpReward": 0,
+    "intendedPath": true
+  }, {
+    "id": "rs_part_4_heel",
+    "label": "Do it your way (Heel)",
+    "text": "Rules are for lesser men. The Macho Man plays by Macho Man rules.",
+    "alignmentShift": -1,
+    "unlockPromo": true,
+    "unlockAttack": true,
+    "nextEncounterId": "rs_part_5b",
+    "vpReward": 0,
+    "intendedPath": false
+  } ]
+}, {
+  "id": "rs_part_5a",
+  "title": "Part 5A: The People's Macho Man",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The fans are ELECTRIC for the Macho Man! Randy Savage leans into his natural charisma, cutting babyface promos and working the crowd into a frenzy. Word travels fast — a young competitor named Jax Felix has been making noise, and management has set up a must-win showcase match. Randy must win this one to prove he belongs at the top. \"OH YEAH! The Macho Man always delivers for his fans!\"",
+  "choices": [ {
+    "id": "rs_part_5a_continue",
+    "label": "Accept the challenge",
+    "text": "Take on Jax Felix in the spotlight match.",
+    "nextEncounterId": "rs_part_6a",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "rs_part_6a",
+  "title": "Part 6A: Showcase Finale (Face Path) — Must Win!",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The Macho Man stands across the ring from Jax Felix. This is a MUST WIN match — if Randy loses, he takes a −2VP penalty and must try again. The Elbow Drop connects! The crowd erupts! But Jax is resilient. The Macho Man must dig deep and find a way to win this showcase to close out Chapter 1 in glory.",
+  "choices": [ {
+    "id": "rs_part_6a_match",
+    "label": "Fight Jax Felix (must win)!",
+    "text": "Defeat Jax Felix to advance to Chapter 2.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Jax Felix",
+    "matchType": "One on One",
+    "vpReward": 2,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "rs_chapter_end_face",
+    "onLossNextEncounterId": "rs_part_6a_retry",
+    "intendedPath": true
+  } ]
+}, {
+  "id": "rs_part_6a_retry",
+  "title": "Part 6A Retry: So Close — Try Again",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The Macho Man came up short! Jax Felix caught him off guard. The crowd is stunned. Randy Savage paces the locker room, furious. \"That's NOT how the story ends! The Macho Man ALWAYS gets back up!\" The retry costs 2 VP — Randy must prove himself again.",
+  "choices": [ {
+    "id": "rs_part_6a_retry_go",
+    "label": "Try again",
+    "text": "Pay the price (−2 VP) and face Jax Felix again.",
+    "nextEncounterId": "rs_part_6a",
+    "vpReward": -2,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "rs_chapter_end_face",
+  "title": "Chapter 1 Complete: The Macho Man Prevails! (Face)",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "OHHHH YEAH! The Macho Man Randy Savage has completed Chapter 1 of the All or Nothing campaign! His natural charisma, ring savvy, and never-say-die attitude carried him through British Bulldog's power and Jax Felix's challenge. Miss Elizabeth — now revealed as Courtney, his loyal valet — applauds from ringside. As Chapter 1 closes, a familiar music hits. Kurt Angle steps out from behind the curtain, pointing at Randy. Your Chapter 2 rival has been established. The journey continues! Remove the 'A Helping Hand' card from your Chapter 2 deck — the valet is already on your side.",
+  "choices": [ {
+    "id": "rs_chapter_end_face_done",
+    "label": "Advance to Chapter 2",
+    "text": "Chapter 1 complete. Proceed to the next chapter.",
+    "nextPhase": "BACKSTAGE",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "featureFlags": {
+      "ch2_remove_card": "A Helping Hand",
+      "unlock_valet": "courtney"
+    }
+  } ]
+}, {
+  "id": "rs_part_5b",
+  "title": "Part 5B: Macho Man Rules",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The Macho Man has decided — the rules don't apply to him. Randy Savage begins using every underhanded tactic available, infuriating the crowd and drawing the ire of the locker room. But results are results. Management has set up a match with Jax Felix — and the Macho Man intends to make an example of him. \"You play to WIN, and the Macho Man ALWAYS wins!\"",
+  "choices": [ {
+    "id": "rs_part_5b_continue",
+    "label": "Embrace the heel path",
+    "text": "Use every advantage available to beat Jax Felix.",
+    "nextEncounterId": "rs_part_6b",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "rs_part_6b",
+  "title": "Part 6B: Heel Showcase Finale — Must Win!",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The Macho Man stands across from Jax Felix, and this time there are NO rules holding him back — at least in spirit. This is a MUST WIN match. If Randy loses, he takes −2VP and must try again. The crowd boos loudly as Randy flexes. He doesn't care. He's here to win, and that's exactly what he intends to do.",
+  "choices": [ {
+    "id": "rs_part_6b_match",
+    "label": "Destroy Jax Felix (must win)!",
+    "text": "Defeat Jax Felix by any means necessary.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Jax Felix",
+    "matchType": "One on One",
+    "vpReward": 2,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "rs_chapter_end_heel",
+    "onLossNextEncounterId": "rs_part_6b_retry",
+    "intendedPath": true
+  } ]
+}, {
+  "id": "rs_part_6b_retry",
+  "title": "Part 6B Retry: Unacceptable",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The Macho Man LOST?! Randy Savage storms out of the arena, furious beyond words. Even with every advantage, Jax Felix found a way to beat him. The penalty is 2 VP — a painful lesson. But the Macho Man doesn't accept defeat. He's coming back, and next time there will be no escape for Jax Felix.",
+  "choices": [ {
+    "id": "rs_part_6b_retry_go",
+    "label": "Try again",
+    "text": "Pay the price (−2 VP) and face Jax Felix again.",
+    "nextEncounterId": "rs_part_6b",
+    "vpReward": -2,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "rs_chapter_end_heel",
+  "title": "Chapter 1 Complete: Macho Madness Unleashed! (Heel)",
+  "requiredWrestlerName": "Randy Savage",
+  "narrativeText": "The Macho Man Randy Savage has conquered Chapter 1 through sheer force of will and no small amount of ruthlessness! The crowd hates him — but he's got wins, and that's all that matters. Courtney (Miss Elizabeth's true name) stands loyally at his side, having proven her worth as valet. As Chapter 1 closes, Kurt Angle watches from the shadows, having witnessed everything. He doesn't look pleased. Your Chapter 2 rival is set. Remove the 'The Valet' card from your Chapter 2 deck — Courtney is already with you, no need to recruit her again.",
+  "choices": [ {
+    "id": "rs_chapter_end_heel_done",
+    "label": "Advance to Chapter 2",
+    "text": "Chapter 1 complete. Proceed to the next chapter.",
+    "nextPhase": "BACKSTAGE",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "featureFlags": {
+      "ch2_remove_card": "The Valet",
+      "unlock_valet": "courtney"
+    }
+  } ]
+} ]

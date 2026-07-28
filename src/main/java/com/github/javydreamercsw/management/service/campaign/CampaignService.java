@@ -162,23 +162,25 @@ public class CampaignService {
       throw new IllegalStateException("Wrestler already has an active campaign.");
     }
 
+    Universe universe =
+        universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
+
     // Every new campaign starts at NEUTRAL regardless of the wrestler's previous alignment.
+    // Scoped to the current universe to avoid collisions when the wrestler has records in others.
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
-            .findFirstByWrestler(wrestler)
+            .findByWrestlerAndUniverse(wrestler, universe)
             .orElseGet(
                 () ->
                     WrestlerAlignment.builder()
                         .wrestler(wrestler)
+                        .universe(universe)
                         .alignmentType(AlignmentType.NEUTRAL)
                         .level(0)
                         .build());
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
     wrestlerAlignmentRepository.save(alignment);
-
-    Universe universe =
-        universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
 
     Campaign campaign =
         Campaign.builder()
@@ -213,14 +215,16 @@ public class CampaignService {
     if (available.isEmpty()) {
       available = chapterService.findAvailableChapters(state, null);
     }
-    if (!available.isEmpty()) {
-      CampaignChapterDTO initialChapter =
-          startingChapterId != null
-              ? available.stream()
-                  .filter(c -> c.getId().equals(startingChapterId))
-                  .findFirst()
-                  .orElse(available.get(0))
-              : available.get(0);
+    // When an explicit chapter is requested, fetch it directly so wrestler-name filters on
+    // allowedWrestlerNames don't silently override an intentional chapter selection.
+    final List<CampaignChapterDTO> resolvedAvailable = available;
+    CampaignChapterDTO initialChapter =
+        startingChapterId != null
+            ? chapterService
+                .getChapter(startingChapterId)
+                .orElseGet(() -> resolvedAvailable.isEmpty() ? null : resolvedAvailable.get(0))
+            : available.isEmpty() ? null : available.get(0);
+    if (initialChapter != null) {
       state.setCurrentChapterId(initialChapter.getId());
       campaignProgressionService.applyInitialChampions(initialChapter);
     }

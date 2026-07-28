@@ -26,6 +26,7 @@ public class SegmentRuleDTO {
   private String description;
   private boolean requiresHighHeat;
   private boolean noDq;
+  private boolean allowsRefereeStopage = true;
   private BumpAddition bumpAddition;
 
   @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
