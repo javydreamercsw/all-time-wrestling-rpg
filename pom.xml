@@ -38,7 +38,7 @@
     <jacoco.version>0.8.15</jacoco.version>
     <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
-    <jpackage.appVersion/>
+
     <lombok.version>1.18.46</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
@@ -1445,6 +1445,30 @@
                 <configuration>
                   <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
                   <includeScope>runtime</includeScope>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>launcher-jar</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <phase>prepare-package</phase>
+                <configuration>
+                  <classifier>launcher</classifier>
+                  <includes>
+                    <include>com/github/javydreamercsw/Launcher.class</include>
+                  </includes>
+                  <archive>
+                    <manifest>
+                      <mainClass>com.github.javydreamercsw.Launcher</mainClass>
+                    </manifest>
+                  </archive>
                 </configuration>
               </execution>
             </executions>
