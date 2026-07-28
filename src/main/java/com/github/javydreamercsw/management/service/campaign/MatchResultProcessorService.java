@@ -433,16 +433,20 @@ public class MatchResultProcessorService {
       WrestlerAlignment alignment =
           wrestlerAlignmentRepository
               .findByWrestlerAndUniverse(wrestler, campaign.getUniverse())
-              .orElseThrow(() -> new IllegalStateException("Alignment not found"));
+              .or(() -> wrestlerAlignmentRepository.findByWrestler(wrestler))
+              .orElse(null);
 
-      if (alignment.getAlignmentType() == AlignmentType.FACE) {
-        state.setPromoUnlocked(true);
-        log.debug("Wrestler {} unlocked Promo action (Face alignment).", wrestler.getName());
-      } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
-        state.setPromoUnlocked(true);
-        state.setAttackUnlocked(true);
-        log.debug(
-            "Wrestler {} unlocked Promo and Attack actions (Heel alignment).", wrestler.getName());
+      if (alignment != null) {
+        if (alignment.getAlignmentType() == AlignmentType.FACE) {
+          state.setPromoUnlocked(true);
+          log.debug("Wrestler {} unlocked Promo action (Face alignment).", wrestler.getName());
+        } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
+          state.setPromoUnlocked(true);
+          state.setAttackUnlocked(true);
+          log.debug(
+              "Wrestler {} unlocked Promo and Attack actions (Heel alignment).",
+              wrestler.getName());
+        }
       }
     }
 
