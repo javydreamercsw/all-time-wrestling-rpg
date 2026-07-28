@@ -215,14 +215,16 @@ public class CampaignService {
     if (available.isEmpty()) {
       available = chapterService.findAvailableChapters(state, null);
     }
-    if (!available.isEmpty()) {
-      CampaignChapterDTO initialChapter =
-          startingChapterId != null
-              ? available.stream()
-                  .filter(c -> c.getId().equals(startingChapterId))
-                  .findFirst()
-                  .orElse(available.get(0))
-              : available.get(0);
+    // When an explicit chapter is requested, fetch it directly so wrestler-name filters on
+    // allowedWrestlerNames don't silently override an intentional chapter selection.
+    final List<CampaignChapterDTO> resolvedAvailable = available;
+    CampaignChapterDTO initialChapter =
+        startingChapterId != null
+            ? chapterService
+                .getChapter(startingChapterId)
+                .orElseGet(() -> resolvedAvailable.isEmpty() ? null : resolvedAvailable.get(0))
+            : available.isEmpty() ? null : available.get(0);
+    if (initialChapter != null) {
       state.setCurrentChapterId(initialChapter.getId());
       campaignProgressionService.applyInitialChampions(initialChapter);
     }

@@ -82,15 +82,7 @@ public class CampaignChapterService {
     try {
       Resource[] chapterFiles =
           resourcePatternResolver.getResources("classpath*:campaigns/*/_chapter.json");
-      Arrays.sort(
-          chapterFiles,
-          (a, b) -> {
-            try {
-              return a.getURL().toString().compareTo(b.getURL().toString());
-            } catch (IOException e) {
-              return 0;
-            }
-          });
+      List<CampaignChapterDTO> folderChapters = new ArrayList<>();
       for (Resource chapterResource : chapterFiles) {
         log.debug("Loading folder-based campaign chapter: {}", chapterResource.getURL());
         try (InputStream is = chapterResource.getInputStream()) {
@@ -109,11 +101,14 @@ public class CampaignChapterService {
               log.error("Error loading encounters from {}", enc.getFilename(), e);
             }
           }
-          merged.add(chapter);
+          folderChapters.add(chapter);
         } catch (IOException e) {
           log.error("Error loading folder-based chapter from {}", chapterResource.getURL(), e);
         }
       }
+      // Sort by chapter ID for deterministic ordering regardless of classpath URL format in CI.
+      folderChapters.sort(Comparator.comparing(CampaignChapterDTO::getId));
+      merged.addAll(folderChapters);
     } catch (IOException e) {
       log.error("Error scanning campaigns/ for folder-based chapters", e);
     }
@@ -183,11 +178,6 @@ public class CampaignChapterService {
                 c.getAllowedWrestlerNames().isEmpty()
                     || wrestlerName == null
                     || c.getAllowedWrestlerNames().contains(wrestlerName))
-        // Base-game chapters (no required expansions) sort before expansion chapters; then by id.
-        .sorted(
-            Comparator.comparingInt(
-                    (CampaignChapterDTO c) -> c.getRequiredExpansions().isEmpty() ? 0 : 1)
-                .thenComparing(CampaignChapterDTO::getId))
         .toList();
   }
 
