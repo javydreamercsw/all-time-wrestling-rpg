@@ -431,6 +431,51 @@ class MatchResultProcessorServiceTest {
     assertThat(campaign.getState().getVictoryPoints()).isEqualTo(-1);
   }
 
+  @Test
+  void processMatchResult_alignmentFallback_whenUniverseScopedLookupReturnsEmpty() {
+    Wrestler wrestler = new Wrestler();
+    Universe universe = Universe.builder().name("Test Universe").build();
+    Campaign campaign = new Campaign();
+    campaign.setId(1L);
+    campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
+    CampaignState state = new CampaignState();
+    state.setWins(0);
+    state.setLosses(0);
+    state.setVictoryPoints(0);
+    state.setMatchesPlayed(0);
+    state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapterId("test-chapter");
+    campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(campaignService.getCurrentChapter(campaign))
+        .thenReturn(
+            Optional.of(
+                CampaignChapterDTO.builder()
+                    .rules(
+                        CampaignChapterDTO.ChapterRules.builder()
+                            .victoryPointsWin(2)
+                            .victoryPointsLoss(-1)
+                            .build())
+                    .build()));
+
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
+    WrestlerAlignment faceAlignment = new WrestlerAlignment();
+    faceAlignment.setAlignmentType(AlignmentType.FACE);
+    faceAlignment.setLevel(1);
+    when(wrestlerAlignmentRepository.findByWrestler(wrestler))
+        .thenReturn(Optional.of(faceAlignment));
+
+    service.processMatchResult(campaign, true);
+
+    assertThat(state.isPromoUnlocked())
+        .as("Face alignment found via fallback must unlock Promo action")
+        .isTrue();
+    assertThat(state.isAttackUnlocked()).isFalse();
+  }
+
   private Campaign buildCampaignWithWrestler(final Wrestler wrestler, final int initialVp) {
     Universe universe = Universe.builder().name("Test Universe").build();
     Campaign campaign = new Campaign();

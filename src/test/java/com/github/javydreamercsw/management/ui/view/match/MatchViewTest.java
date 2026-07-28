@@ -42,12 +42,16 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStatus;
+import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -73,8 +77,10 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -873,6 +879,186 @@ class MatchViewTest extends AbstractViewTest {
 
     assertEquals(
         60, p1.getFinalStamina(), "Final stamina must be persisted to SegmentParticipant on save");
+  }
+
+  // -------------------------------------------------------------------------
+  // Referee stoppage and winning card — campaign match UI (PR #429 features)
+  // -------------------------------------------------------------------------
+
+  @Test
+  void finishTypeGroup_includesRefereeStoppage_whenNoSegmentRules() {
+    Segment segment = buildMinimalMatchSegment(20L, "One on One");
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    CampaignState campaignState = CampaignState.builder().build();
+    campaignState.setCurrentMatch(segment);
+    Campaign campaign =
+        Campaign.builder()
+            .wrestler(playerWrestler)
+            .status(CampaignStatus.ACTIVE)
+            .state(campaignState)
+            .build();
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(20L)).thenReturn(Optional.of(segment));
+    when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.of(campaign));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "20"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    @SuppressWarnings("unchecked")
+    RadioButtonGroup<String> group =
+        _get(RadioButtonGroup.class, spec -> spec.withId("finish-type-group"));
+    List<String> items = group.getListDataView().getItems().toList();
+    assertTrue(
+        items.contains("REFEREE STOPPAGE"),
+        "REFEREE STOPPAGE must appear when the segment has no restricting rules");
+  }
+
+  @Test
+  void finishTypeGroup_excludesRefereeStoppage_whenRuleDisallowsIt() {
+    Segment segment = buildMinimalMatchSegment(21L, "One on One");
+    SegmentRule lmsRule = new SegmentRule();
+    lmsRule.setName("Last Man Standing");
+    lmsRule.setAllowsRefereeStopage(false);
+    segment.getSegmentRules().add(lmsRule);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    CampaignState campaignState = CampaignState.builder().build();
+    campaignState.setCurrentMatch(segment);
+    Campaign campaign =
+        Campaign.builder()
+            .wrestler(playerWrestler)
+            .status(CampaignStatus.ACTIVE)
+            .state(campaignState)
+            .build();
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(21L)).thenReturn(Optional.of(segment));
+    when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.of(campaign));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "21"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    @SuppressWarnings("unchecked")
+    RadioButtonGroup<String> group =
+        _get(RadioButtonGroup.class, spec -> spec.withId("finish-type-group"));
+    List<String> items = group.getListDataView().getItems().toList();
+    assertFalse(
+        items.contains("REFEREE STOPPAGE"),
+        "REFEREE STOPPAGE must be absent when a rule sets allowsRefereeStopage=false");
+  }
+
+  @Test
+  void winningCardComboBox_populatedFromDeck() {
+    Segment segment = buildMinimalMatchSegment(22L, "One on One");
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Account playerAccount = new Account();
+    playerAccount.setId(42L);
+    Wrestler playerWrestler = new Wrestler();
+    playerWrestler.setId(10L);
+    playerWrestler.setName("Player Wrestler");
+    playerWrestler.setAccount(playerAccount);
+    playerWrestler
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(playerWrestler).universe(universe).build());
+
+    SegmentParticipant p1 = new SegmentParticipant();
+    p1.setSegment(segment);
+    p1.setWrestler(playerWrestler);
+    segment.getParticipants().add(p1);
+
+    CampaignState campaignState = CampaignState.builder().build();
+    campaignState.setCurrentMatch(segment);
+    Campaign campaign =
+        Campaign.builder()
+            .wrestler(playerWrestler)
+            .status(CampaignStatus.ACTIVE)
+            .state(campaignState)
+            .build();
+
+    Card card = mock(Card.class);
+    when(card.getName()).thenReturn("Powerslam");
+    DeckCard deckCard = mock(DeckCard.class);
+    when(deckCard.getCard()).thenReturn(card);
+    Deck deck = mock(Deck.class);
+    when(deck.getCards()).thenReturn(new HashSet<>(List.of(deckCard)));
+    when(deckService.findByWrestlerWithCards(playerWrestler)).thenReturn(List.of(deck));
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(42L));
+    when(userDetails.getWrestler()).thenReturn(playerWrestler);
+    when(segmentService.findByIdWithDetails(22L)).thenReturn(Optional.of(segment));
+    when(campaignRepository.findActiveByWrestler(playerWrestler)).thenReturn(Optional.of(campaign));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "22"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    @SuppressWarnings("unchecked")
+    ComboBox<String> winningCard = _get(ComboBox.class, spec -> spec.withId("winning-card-field"));
+    List<String> items = winningCard.getListDataView().getItems().toList();
+    assertTrue(
+        items.contains("Powerslam"),
+        "Winning card ComboBox must be populated from the wrestler's deck");
   }
 
   private Segment buildMinimalMatchSegment(final long id, final String typeName) {

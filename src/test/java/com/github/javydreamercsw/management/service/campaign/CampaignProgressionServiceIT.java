@@ -54,7 +54,7 @@ class CampaignProgressionServiceIT extends AbstractMockUserIntegrationTest {
     wrestler.setAccount(account);
     wrestlerRepository.saveAndFlush(wrestler);
     login(account);
-    campaign = campaignService.startCampaign(wrestler);
+    campaign = campaignService.startCampaign(wrestler, "beginning");
   }
 
   @Test

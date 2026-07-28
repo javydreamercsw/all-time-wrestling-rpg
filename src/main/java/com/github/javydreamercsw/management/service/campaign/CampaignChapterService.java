@@ -183,6 +183,11 @@ public class CampaignChapterService {
                 c.getAllowedWrestlerNames().isEmpty()
                     || wrestlerName == null
                     || c.getAllowedWrestlerNames().contains(wrestlerName))
+        // Base-game chapters (no required expansions) sort before expansion chapters; then by id.
+        .sorted(
+            Comparator.comparingInt(
+                    (CampaignChapterDTO c) -> c.getRequiredExpansions().isEmpty() ? 0 : 1)
+                .thenComparing(CampaignChapterDTO::getId))
         .toList();
   }
 
