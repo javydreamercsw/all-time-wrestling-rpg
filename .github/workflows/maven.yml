@@ -497,12 +497,19 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         skip_validation: true
 
-  # Verify the macOS desktop installer (jpackage DMG) builds cleanly.
-  # Catches regressions in the desktop profile without waiting for the full test suite.
+  # Verify the desktop installer builds cleanly on each supported OS.
+  # Only runs on release branches and main — not on every feature-branch PR,
+  # since installer creation (jpackage) is expensive and release-gate relevant.
   desktop-build:
     needs: [check-paths]
-    if: needs.check-paths.outputs.code_changed == 'true' || needs.check-paths.outputs.deps_changed == 'true'
-    runs-on: macos-latest
+    if: >-
+      (needs.check-paths.outputs.code_changed == 'true' || needs.check-paths.outputs.deps_changed == 'true') &&
+      (startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
       - name: Set up JDK 25
@@ -517,7 +524,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      - name: Build desktop installer (DMG)
+      - name: Build desktop installer
         run: mvn -B package -Pdesktop -DskipTests -Dsurefire.skip=true
 
   # Build and push Docker image (no release profile) on release/* branches
