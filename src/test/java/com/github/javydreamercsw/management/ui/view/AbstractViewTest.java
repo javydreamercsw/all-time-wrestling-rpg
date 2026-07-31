@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.ui.view;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
+import com.github.mvysny.kaributesting.v10.mock.MockedUI;
+import com.github.mvysny.kaributesting.v10.spring.MockSpringServlet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +38,9 @@ public abstract class AbstractViewTest extends AbstractMockUserIntegrationTest {
   @BeforeEach
   public void setupKaribu() {
     MockitoAnnotations.openMocks(this);
-    MockVaadin.setup(routes); // Set up Karibu with your discovered routes
+    // Use Spring to instantiate the root "" route (HomeView needs DI constructor)
+    MockVaadin.setup(
+        MockedUI::new, new MockSpringServlet(routes, applicationContext, MockedUI::new));
   }
 
   @AfterEach

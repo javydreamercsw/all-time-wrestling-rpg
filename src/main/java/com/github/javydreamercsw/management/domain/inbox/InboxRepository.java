@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.inbox;
 
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -43,4 +44,14 @@ public interface InboxRepository
       """)
   boolean existsUnreadByEventTypeAndAccountId(
       @Param("eventType") InboxEventType eventType, @Param("accountId") String accountId);
+
+  @Query(
+      """
+      SELECT i FROM InboxItem i JOIN i.targets t
+      WHERE t.targetId = :wrestlerId AND i.isRead = false
+      AND i.eventTimestamp >= :since
+      ORDER BY i.eventTimestamp DESC
+      """)
+  List<InboxItem> findUnreadForWrestlerSince(
+      @Param("wrestlerId") String wrestlerId, @Param("since") Instant since);
 }
