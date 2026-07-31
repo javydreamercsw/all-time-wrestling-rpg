@@ -13,7 +13,7 @@
   "matchType": "Normal",
   "conditions": [ "Cannot Recover or use Taunt." ],
   "modifiers": [ ],
-  "imageUrl": "/challenges/week1.png",
+  "imageUrl": "challenges/week1.png",
   "notes": null,
   "active": true
 }, {
@@ -31,7 +31,7 @@
   "matchType": "Normal",
   "conditions": [ ],
   "modifiers": [ "Whenever Angle would take damage, his player may discard a card from the top of the deck for every damage dealt instead, representing him 'gutting it out' through the pain. For example: if Kurt would take 3 damage, he may discard 3 cards from the top of his deck instead.", "IMPORTANT: If the Anklelock would be discarded this way, draw it into your hand instead." ],
-  "imageUrl": "/challenges/week2.png",
+  "imageUrl": "challenges/week2.png",
   "notes": "Do not forget the Referee Stoppage Rules (P15 of the ATW Base Manual).",
   "active": true
 }, {
@@ -49,7 +49,7 @@
   "matchType": "Barbwire Exploding Deathmatch",
   "conditions": [ "No pinfalls.", "Wrestlers are defeated when their Health reaches 1." ],
   "modifiers": [ "The first match proceeds and concludes as normal. If Matt Cardona wins, randomly select the next wrestler from those remaining and reset the timer for the exploding death match.", "Before each new match: Matt Cardona gains +5 Health and +7 Stamina (up to his max). Reset his deck and randomly discard 2 cards — his Finisher cannot be discarded this way; return it to the deck if drawn.", "Repeat this process before the third and final match as well." ],
-  "imageUrl": "/challenges/week3.png",
+  "imageUrl": "challenges/week3.png",
   "notes": null,
   "active": true
 } ]
