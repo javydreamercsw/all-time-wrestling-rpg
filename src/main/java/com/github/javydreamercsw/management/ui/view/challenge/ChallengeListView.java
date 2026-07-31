@@ -351,63 +351,83 @@ public class ChallengeListView extends VerticalLayout {
     Optional<AccountChallengeCompletion> existing =
         completionService.find(account, challenge.getId());
 
-    if (existing.isPresent()
-        && existing.get().getStatus()
-            == com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus
-                .COMPLETED) {
-      AccountChallengeCompletion completion = existing.get();
+    AccountChallengeCompletion existing0 = existing.orElse(null);
+    boolean alreadyCompleted =
+        existing0 != null
+            && existing0.getStatus()
+                == com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus
+                    .COMPLETED;
 
+    if (alreadyCompleted) {
       Span completedOn =
           new Span(
               "Completed on: "
-                  + (completion.getCompletedAt() != null
-                      ? completion.getCompletedAt().format(DATE_FMT)
+                  + (existing0.getCompletedAt() != null
+                      ? existing0.getCompletedAt().format(DATE_FMT)
                       : "—"));
       completedOn.addClassNames(FontSize.SMALL, FontWeight.BOLD, TextColor.SUCCESS);
       content.add(completedOn);
-
-      if (completion.getProofImageUrl() != null && !completion.getProofImageUrl().isBlank()) {
-        Image proof = new Image(completion.getProofImageUrl(), "Completion proof");
-        proof.setMaxWidth("100%");
-        proof.addClassName(Margin.Top.SMALL);
-        content.add(proof);
-      }
-
-      if (completion.getPlayerNotes() != null && !completion.getPlayerNotes().isBlank()) {
-        Paragraph playerNotes = new Paragraph(completion.getPlayerNotes());
-        playerNotes.addClassNames(FontSize.SMALL, Margin.Top.SMALL);
-        content.add(playerNotes);
-      }
-    } else {
-      TextArea notesField = new TextArea("Notes");
-      notesField.setPlaceholder("How did it go? Any tips for other players?");
-      notesField.setWidthFull();
-      notesField.setMaxHeight("120px");
-      content.add(notesField);
-
-      Span uploadLabel = new Span("Proof photo (optional)");
-      uploadLabel.addClassNames(FontSize.SMALL, TextColor.SECONDARY);
-      content.add(uploadLabel);
-
-      String[] proofUrl = {null};
-      ImageUploadComponent uploadComponent =
-          new ImageUploadComponent(imageStorageService, url -> proofUrl[0] = url);
-      content.add(uploadComponent);
-
-      Button completeBtn = new Button("Mark as Complete", new Icon(VaadinIcon.CHECK_CIRCLE));
-      completeBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
-      completeBtn.addClassName(Margin.Top.SMALL);
-      completeBtn.addClickListener(
-          e -> {
-            completionService.markComplete(
-                account, challenge.getId(), notesField.getValue(), proofUrl[0]);
-            Notification.show("Challenge marked as complete!")
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            dialog.close();
-            refreshCards();
-          });
-      content.add(completeBtn);
     }
+
+    TextArea notesField = new TextArea("Notes");
+    notesField.setPlaceholder("How did it go? Any tips for other players?");
+    notesField.setWidthFull();
+    notesField.setMaxHeight("120px");
+    if (existing0 != null && existing0.getPlayerNotes() != null) {
+      notesField.setValue(existing0.getPlayerNotes());
+    }
+    content.add(notesField);
+
+    String[] proofUrl = {existing0 != null ? existing0.getProofImageUrl() : null};
+
+    if (proofUrl[0] != null && !proofUrl[0].isBlank()) {
+      Span proofLabel = new Span("Current proof photo:");
+      proofLabel.addClassNames(FontSize.SMALL, TextColor.SECONDARY);
+      content.add(proofLabel);
+
+      Image currentProof = new Image(proofUrl[0], "Completion proof");
+      currentProof.setMaxWidth("100%");
+      currentProof.addClassName(Margin.Top.XSMALL);
+      content.add(currentProof);
+
+      Button removePhoto = new Button("Remove photo", new Icon(VaadinIcon.TRASH));
+      removePhoto.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
+      removePhoto.addClassName(Margin.Bottom.SMALL);
+      removePhoto.addClickListener(
+          e -> {
+            proofUrl[0] = null;
+            content.remove(proofLabel);
+            content.remove(currentProof);
+            content.remove(removePhoto);
+          });
+      content.add(removePhoto);
+    }
+
+    Span uploadLabel =
+        new Span(alreadyCompleted ? "Replace proof photo (optional):" : "Proof photo (optional):");
+    uploadLabel.addClassNames(FontSize.SMALL, TextColor.SECONDARY);
+    content.add(uploadLabel);
+
+    ImageUploadComponent uploadComponent =
+        new ImageUploadComponent(imageStorageService, url -> proofUrl[0] = url);
+    content.add(uploadComponent);
+
+    Button actionBtn =
+        alreadyCompleted
+            ? new Button("Save Changes", new Icon(VaadinIcon.CHECK))
+            : new Button("Mark as Complete", new Icon(VaadinIcon.CHECK_CIRCLE));
+    actionBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+    actionBtn.addClassName(Margin.Top.SMALL);
+    actionBtn.addClickListener(
+        e -> {
+          completionService.markComplete(
+              account, challenge.getId(), notesField.getValue(), proofUrl[0]);
+          String msg = alreadyCompleted ? "Changes saved!" : "Challenge marked as complete!";
+          Notification.show(msg).addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          dialog.close();
+          refreshCards();
+        });
+    content.add(actionBtn);
   }
 
   private void addSection(

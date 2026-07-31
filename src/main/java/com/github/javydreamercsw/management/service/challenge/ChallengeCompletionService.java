@@ -65,7 +65,9 @@ public class ChallengeCompletionService {
                 });
 
     completion.setStatus(ChallengeCompletionStatus.COMPLETED);
-    completion.setCompletedAt(LocalDateTime.now());
+    if (completion.getCompletedAt() == null) {
+      completion.setCompletedAt(LocalDateTime.now());
+    }
     completion.setPlayerNotes(playerNotes);
     completion.setProofImageUrl(proofImageUrl);
     return repository.save(completion);
