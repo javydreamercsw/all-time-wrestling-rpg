@@ -43,6 +43,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.theme.lumo.LumoUtility.Background;
 import com.vaadin.flow.theme.lumo.LumoUtility.Border;
 import com.vaadin.flow.theme.lumo.LumoUtility.BorderRadius;
@@ -211,7 +212,12 @@ public class ChallengeListView extends VerticalLayout {
     content.add(titleRow);
 
     if (challenge.getImageUrl() != null && !challenge.getImageUrl().isBlank()) {
-      Image img = new Image(challenge.getImageUrl(), challenge.getTitle());
+      String imagePath = challenge.getImageUrl();
+      String filename = imagePath.substring(imagePath.lastIndexOf('/') + 1);
+      StreamResource resource =
+          new StreamResource(
+              filename, () -> getClass().getResourceAsStream("/META-INF/resources/" + imagePath));
+      Image img = new Image(resource, challenge.getTitle());
       img.setMaxWidth("100%");
       img.addClassName(Margin.Bottom.MEDIUM);
       content.add(img);
