@@ -304,4 +304,46 @@
   "description": "Participate in an Abu Dhabi Rumble",
   "xpValue": 250,
   "category": "SPECIAL_EVENT"
+}, {
+  "key": "CHALLENGE_WEEK_01",
+  "name": "Locker Room Warrior",
+  "description": "Completed the \"Locker Room Attack!!!\" challenge as Rey Jaguar",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_WEEK_02",
+  "name": "Unbreakable Will",
+  "description": "Completed the \"Broken Neck, Unbreakable Will\" challenge as Kurt Angle",
+  "xpValue": 75,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_WEEK_03",
+  "name": "Deathmatch King",
+  "description": "Completed the \"All Time King!!!\" Barbwire Exploding Gauntlet as Matt Cardona",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_FIRST_HARD",
+  "name": "Glutton for Punishment",
+  "description": "Completed your first HARD-difficulty challenge",
+  "xpValue": 150,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_S1_COMPLETE",
+  "name": "Season 1 Champion",
+  "description": "Completed every Season 1 challenge",
+  "xpValue": 250,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_5_COMPLETE",
+  "name": "Challenge Accepted",
+  "description": "Completed 5 challenges in total",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_10_COMPLETE",
+  "name": "Proving Ground",
+  "description": "Completed 10 challenges in total",
+  "xpValue": 200,
+  "category": "CHALLENGE"
 } ]

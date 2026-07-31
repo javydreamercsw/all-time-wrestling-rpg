@@ -63,7 +63,7 @@ public class ImageUploadComponent extends Composite<Div> {
               }
             }));
 
-    upload.setAcceptedFileTypes("image/png", "image/jpeg", "image/gif");
+    upload.setAcceptedFileTypes("image/*");
     upload.setMaxFiles(1);
     // Set max file size to 5MB
     upload.setMaxFileSize(5 * 1024 * 1024);

@@ -14,23 +14,9 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.domain.account;
+package com.github.javydreamercsw.management.domain.challenge;
 
-import lombok.Getter;
-
-@Getter
-public enum AchievementCategory {
-  COLLECTION("Collection"),
-  FANS("Fans"),
-  CHAMPIONSHIP("Championship"),
-  MATCH_TYPE("Match Type"),
-  BOOKING("Booking"),
-  SPECIAL_EVENT("Special Event"),
-  CHALLENGE("Challenge");
-
-  private final String displayName;
-
-  AchievementCategory(final String displayName) {
-    this.displayName = displayName;
-  }
+public enum ChallengeCompletionStatus {
+  IN_PROGRESS,
+  COMPLETED
 }

@@ -14,23 +14,21 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.domain.account;
+package com.github.javydreamercsw.management.domain.challenge;
 
-import lombok.Getter;
+import com.github.javydreamercsw.base.domain.account.Account;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Getter
-public enum AchievementCategory {
-  COLLECTION("Collection"),
-  FANS("Fans"),
-  CHAMPIONSHIP("Championship"),
-  MATCH_TYPE("Match Type"),
-  BOOKING("Booking"),
-  SPECIAL_EVENT("Special Event"),
-  CHALLENGE("Challenge");
+public interface AccountChallengeCompletionRepository
+    extends JpaRepository<AccountChallengeCompletion, Long> {
 
-  private final String displayName;
+  Optional<AccountChallengeCompletion> findByAccountAndChallengeId(
+      Account account, String challengeId);
 
-  AchievementCategory(final String displayName) {
-    this.displayName = displayName;
-  }
+  List<AccountChallengeCompletion> findByAccount(Account account);
+
+  List<AccountChallengeCompletion> findByAccountAndStatus(
+      Account account, ChallengeCompletionStatus status);
 }
