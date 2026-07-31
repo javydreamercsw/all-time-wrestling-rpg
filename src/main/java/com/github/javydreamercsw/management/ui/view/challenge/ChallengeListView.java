@@ -135,9 +135,8 @@ public class ChallengeListView extends VerticalLayout {
         BoxShadow.SMALL);
     card.setWidth("320px");
 
-    HorizontalLayout badges = new HorizontalLayout();
-    badges.setSpacing(true);
-    badges.addClassName(Margin.Bottom.SMALL);
+    FlexLayout badges = new FlexLayout();
+    badges.addClassNames(FlexWrap.WRAP, Gap.SMALL, Margin.Bottom.SMALL);
 
     if (challenge.getWeekNumber() != null) {
       Span week = new Span("Week " + challenge.getWeekNumber());
