@@ -454,7 +454,9 @@ public class ChallengeListView extends VerticalLayout {
   }
 
   private String difficultyTheme(final ChallengeDTO challenge) {
-    if (challenge.getDifficulty() == null) return "badge contrast";
+    if (challenge.getDifficulty() == null) {
+      return "badge contrast";
+    }
     return switch (challenge.getDifficulty()) {
       case ENTRY, EASY -> "badge success";
       case MEDIUM -> "badge";

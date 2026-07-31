@@ -81,6 +81,12 @@ public class ChallengeDTO {
    */
   private String season;
 
+  /**
+   * Achievement key awarded when this challenge is marked complete. Matches {@code Achievement.key}
+   * exactly. Null = no per-challenge achievement for this entry.
+   */
+  private String achievementKey;
+
   /** Optional image URL displayed in the challenge detail dialog. */
   private String imageUrl;
 

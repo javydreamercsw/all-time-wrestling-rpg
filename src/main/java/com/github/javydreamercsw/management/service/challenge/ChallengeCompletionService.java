@@ -17,22 +17,30 @@
 package com.github.javydreamercsw.management.service.challenge;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletion;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletionRepository;
 import com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ChallengeCompletionService {
 
   private final AccountChallengeCompletionRepository repository;
+  private final ChallengeService challengeService;
+  private final LegacyService legacyService;
 
   @Transactional(readOnly = true)
   public Optional<AccountChallengeCompletion> find(
@@ -64,17 +72,89 @@ public class ChallengeCompletionService {
                   return c;
                 });
 
+    boolean firstCompletion = completion.getCompletedAt() == null;
+
     completion.setStatus(ChallengeCompletionStatus.COMPLETED);
-    if (completion.getCompletedAt() == null) {
+    if (firstCompletion) {
       completion.setCompletedAt(LocalDateTime.now());
     }
     completion.setPlayerNotes(playerNotes);
     completion.setProofImageUrl(proofImageUrl);
-    return repository.save(completion);
+    repository.save(completion);
+
+    if (firstCompletion) {
+      checkAchievements(account, challengeId);
+    }
+
+    return completion;
   }
 
   @Transactional(readOnly = true)
   public List<AccountChallengeCompletion> getCompletions(final Account account) {
     return repository.findByAccount(account);
+  }
+
+  private void checkAchievements(final Account account, final String challengeId) {
+    challengeService
+        .getChallenge(challengeId)
+        .ifPresent(
+            challenge -> {
+              // Per-challenge achievement
+              if (challenge.getAchievementKey() != null
+                  && !challenge.getAchievementKey().isBlank()) {
+                legacyService.unlockAchievement(account, challenge.getAchievementKey());
+              }
+
+              // First HARD difficulty completion
+              if (Difficulty.HARD == challenge.getDifficulty()) {
+                Set<String> completedIds = completedChallengeIds(account);
+                long hardCount =
+                    challengeService.getAllChallenges().stream()
+                        .filter(c -> Difficulty.HARD == c.getDifficulty())
+                        .filter(c -> completedIds.contains(c.getId()))
+                        .count();
+                if (hardCount == 1) {
+                  legacyService.unlockAchievement(account, "CHALLENGE_FIRST_HARD");
+                }
+              }
+
+              // Season completion
+              String season = challenge.getSeason();
+              if (season != null && !season.isBlank()) {
+                Set<String> completedIds = completedChallengeIds(account);
+                boolean seasonDone =
+                    challengeService.getActiveChallenges().stream()
+                        .filter(c -> season.equals(c.getSeason()))
+                        .allMatch(c -> completedIds.contains(c.getId()));
+                if (seasonDone) {
+                  String seasonKey = seasonAchievementKey(season);
+                  legacyService.unlockAchievement(account, seasonKey);
+                }
+              }
+
+              // Cumulative count milestones
+              long total =
+                  repository.findByAccount(account).stream()
+                      .filter(c -> ChallengeCompletionStatus.COMPLETED == c.getStatus())
+                      .count();
+              if (total >= 10) {
+                legacyService.unlockAchievement(account, "CHALLENGE_10_COMPLETE");
+              }
+              if (total >= 5) {
+                legacyService.unlockAchievement(account, "CHALLENGE_5_COMPLETE");
+              }
+            });
+  }
+
+  private Set<String> completedChallengeIds(final Account account) {
+    return repository.findByAccountAndStatus(account, ChallengeCompletionStatus.COMPLETED).stream()
+        .map(AccountChallengeCompletion::getChallengeId)
+        .collect(Collectors.toSet());
+  }
+
+  /** Derives the season achievement key from the season display label. */
+  static String seasonAchievementKey(final String season) {
+    // "Season 1" → "CHALLENGE_S1_COMPLETE", "Season 12" → "CHALLENGE_S12_COMPLETE"
+    return "CHALLENGE_" + season.toUpperCase().replace(" ", "_") + "_COMPLETE";
   }
 }
