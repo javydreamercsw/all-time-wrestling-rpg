@@ -32,12 +32,10 @@ public class ChallengeDTO {
 
   private String id;
 
-  /** Week number for weekly challenges; null for non-weekly content. */
   private Integer weekNumber;
 
   private String title;
 
-  /** Narrative/hype text describing the scenario. */
   private String flavorText;
 
   /** Human-readable product label, e.g. "ATW Extreme Edition". Display only. */
@@ -56,52 +54,29 @@ public class ChallengeDTO {
    */
   @Builder.Default private List<String> requiredExpansions = new ArrayList<>();
 
-  /** Wrestler names required by the challenge setup. */
   @Builder.Default private List<String> requiredWrestlerNames = new ArrayList<>();
 
   private Difficulty difficulty;
 
-  /** One-line objective the player must achieve. */
   private String objective;
 
-  /** Step-by-step setup instructions. */
   private String setupInstructions;
 
-  /** Match type name, e.g. "Barbwire Exploding Death Match". Null for standard matches. */
+  /**
+   * Name of the ATW segment rule that governs this challenge (e.g. {@code "Barbwire Exploding
+   * Deathmatch"}, {@code "Normal"}). Must match the {@code SegmentRule.name} exactly so the detail
+   * dialog can resolve an in-app match-info link. Null = standard match with no special rule page.
+   */
   private String matchType;
 
-  /** Rule restrictions that the player must not violate (as plain text). */
   @Builder.Default private List<String> conditions = new ArrayList<>();
 
-  /** Special modifiers or house-rule overrides that apply during this challenge (as plain text). */
   @Builder.Default private List<String> modifiers = new ArrayList<>();
 
-  /** Extra notes, e.g. page references to the rulebook. Null if none. */
   private String notes;
 
   /** Optional image URL displayed in the challenge detail dialog. */
   private String imageUrl;
 
-  /**
-   * In-app and external rule reference links shown in the detail dialog. Use {@code
-   * segmentRuleName} to link to the in-app match-info view; use {@code url} for an external page.
-   */
-  @Builder.Default private List<MatchHelpLink> matchHelpLinks = new ArrayList<>();
-
-  /** When false this challenge is hidden from all views. */
   @Builder.Default private boolean active = true;
-
-  @Data
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class MatchHelpLink {
-    private String label;
-
-    /** Segment rule name looked up in-app to navigate to {@code match-info/{id}}. */
-    private String segmentRuleName;
-
-    /** External URL used when {@code segmentRuleName} is absent or not found. */
-    private String url;
-  }
 }

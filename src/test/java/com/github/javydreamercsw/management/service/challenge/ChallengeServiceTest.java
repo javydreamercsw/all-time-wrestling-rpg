@@ -70,7 +70,7 @@ class ChallengeServiceTest {
 
   @Test
   void challengeTwoRequiresTwoExpansions() {
-    ChallengeDTO c2 = service.getChallenge("week_02_all_time_king").orElseThrow();
+    ChallengeDTO c2 = service.getChallenge("week_03_all_time_king").orElseThrow();
     assertTrue(c2.getRequiredExpansions().contains("EXTREME"));
     assertTrue(c2.getRequiredExpansions().contains("MATT_CARDONA"));
   }
@@ -83,7 +83,7 @@ class ChallengeServiceTest {
 
   @Test
   void challengeThreeHasModifiersAndNotes() {
-    ChallengeDTO c3 = service.getChallenge("week_03_broken_neck").orElseThrow();
+    ChallengeDTO c3 = service.getChallenge("week_02_broken_neck").orElseThrow();
     assertFalse(c3.getModifiers().isEmpty());
     assertTrue(c3.getNotes() != null && !c3.getNotes().isBlank());
   }

@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.ui.view.challenge;
 
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
-import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO.MatchHelpLink;
 import com.github.javydreamercsw.management.service.challenge.ChallengeService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -229,7 +228,24 @@ public class ChallengeListView extends VerticalLayout {
     }
 
     if (challenge.getMatchType() != null) {
-      addSection(content, "Match Type", List.of(challenge.getMatchType()), false);
+      H4 matchHeader = new H4("Match Type");
+      matchHeader.addClassNames(Margin.Top.MEDIUM, Margin.Bottom.XSMALL, FontWeight.BOLD);
+      content.add(matchHeader);
+
+      segmentRuleRepository
+          .findByName(challenge.getMatchType())
+          .ifPresentOrElse(
+              rule -> {
+                Anchor link = new Anchor("match-info/" + rule.getId(), challenge.getMatchType());
+                link.addClassNames(FontSize.SMALL, Margin.Bottom.XSMALL);
+                link.getElement().addEventListener("click", e -> dialog.close());
+                content.add(link);
+              },
+              () -> {
+                Paragraph p = new Paragraph(challenge.getMatchType());
+                p.addClassNames(FontSize.SMALL, Margin.Top.NONE, Margin.Bottom.XSMALL);
+                content.add(p);
+              });
     }
 
     if (!challenge.getConditions().isEmpty()) {
@@ -240,36 +256,6 @@ public class ChallengeListView extends VerticalLayout {
       addSection(content, "Modifiers", challenge.getModifiers(), true);
     }
 
-    if (!challenge.getMatchHelpLinks().isEmpty()) {
-      H4 linksHeader = new H4("Match Rules");
-      linksHeader.addClassNames(Margin.Top.MEDIUM, Margin.Bottom.XSMALL, FontWeight.BOLD);
-      content.add(linksHeader);
-
-      VerticalLayout linksLayout = new VerticalLayout();
-      linksLayout.setPadding(false);
-      linksLayout.setSpacing(false);
-
-      for (MatchHelpLink link : challenge.getMatchHelpLinks()) {
-        String href = resolveMatchHelpHref(link);
-        if (href != null) {
-          Anchor anchor = new Anchor(href, link.getLabel());
-          anchor.addClassNames(FontSize.SMALL, Margin.Bottom.XSMALL);
-          if (link.getSegmentRuleName() == null) {
-            anchor.setTarget("_blank");
-          } else {
-            anchor.getElement().addEventListener("click", e -> dialog.close());
-          }
-          linksLayout.add(anchor);
-        } else {
-          Span unresolved = new Span(link.getLabel());
-          unresolved.addClassNames(FontSize.SMALL, TextColor.SECONDARY, Margin.Bottom.XSMALL);
-          linksLayout.add(unresolved);
-        }
-      }
-
-      content.add(linksLayout);
-    }
-
     if (challenge.getNotes() != null && !challenge.getNotes().isBlank()) {
       Paragraph notes = new Paragraph("📌 " + challenge.getNotes());
       notes.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Top.MEDIUM);
@@ -278,16 +264,6 @@ public class ChallengeListView extends VerticalLayout {
 
     dialog.add(content);
     dialog.open();
-  }
-
-  private String resolveMatchHelpHref(final MatchHelpLink link) {
-    if (link.getSegmentRuleName() != null) {
-      return segmentRuleRepository
-          .findByName(link.getSegmentRuleName())
-          .map(rule -> "match-info/" + rule.getId())
-          .orElse(link.getUrl());
-    }
-    return link.getUrl();
   }
 
   private void addSection(
