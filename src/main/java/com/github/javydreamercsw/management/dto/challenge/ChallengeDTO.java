@@ -79,6 +79,29 @@ public class ChallengeDTO {
   /** Extra notes, e.g. page references to the rulebook. Null if none. */
   private String notes;
 
+  /** Optional image URL displayed in the challenge detail dialog. */
+  private String imageUrl;
+
+  /**
+   * In-app and external rule reference links shown in the detail dialog. Use {@code
+   * segmentRuleName} to link to the in-app match-info view; use {@code url} for an external page.
+   */
+  @Builder.Default private List<MatchHelpLink> matchHelpLinks = new ArrayList<>();
+
   /** When false this challenge is hidden from all views. */
   @Builder.Default private boolean active = true;
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class MatchHelpLink {
+    private String label;
+
+    /** Segment rule name looked up in-app to navigate to {@code match-info/{id}}. */
+    private String segmentRuleName;
+
+    /** External URL used when {@code segmentRuleName} is absent or not found. */
+    private String url;
+  }
 }

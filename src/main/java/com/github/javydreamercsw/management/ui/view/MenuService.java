@@ -133,6 +133,7 @@ public class MenuService {
             RoleName.ADMIN,
             RoleName.BOOKER,
             RoleName.PLAYER));
+    cardGame.addChild(new MenuItem("Weekly Challenges", VaadinIcon.TROPHY, "challenges"));
 
     // Configuration: Only ADMIN
     MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
