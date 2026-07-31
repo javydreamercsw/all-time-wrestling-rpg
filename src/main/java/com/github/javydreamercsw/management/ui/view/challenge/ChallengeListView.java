@@ -21,11 +21,11 @@ import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
 import com.github.javydreamercsw.management.service.challenge.ChallengeService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.show.MatchInfoDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -35,6 +35,8 @@ import com.vaadin.flow.component.html.ListItem;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.html.UnorderedList;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -236,10 +238,13 @@ public class ChallengeListView extends VerticalLayout {
           .findByName(challenge.getMatchType())
           .ifPresentOrElse(
               rule -> {
-                Anchor link = new Anchor("match-info/" + rule.getId(), challenge.getMatchType());
-                link.addClassNames(FontSize.SMALL, Margin.Bottom.XSMALL);
-                link.getElement().addEventListener("click", e -> dialog.close());
-                content.add(link);
+                Button rulesBtn =
+                    new Button(
+                        challenge.getMatchType(),
+                        new Icon(VaadinIcon.INFO_CIRCLE_O),
+                        e -> new MatchInfoDialog(null, List.of(rule)).open());
+                rulesBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+                content.add(rulesBtn);
               },
               () -> {
                 Paragraph p = new Paragraph(challenge.getMatchType());
