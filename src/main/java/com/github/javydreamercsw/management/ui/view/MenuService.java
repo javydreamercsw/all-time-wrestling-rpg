@@ -49,6 +49,7 @@ public class MenuService {
     dashboards.addChild(new MenuItem("News & Rumors", VaadinIcon.NEWSPAPER, "news"));
     dashboards.addChild(new MenuItem("Wrestling World Feed", VaadinIcon.CHAT, "news/feed"));
     dashboards.addChild(new MenuItem("Hall of Fame", VaadinIcon.ACADEMY_CAP, "hall-of-fame"));
+    dashboards.addChild(new MenuItem("Weekly Challenges", VaadinIcon.TROPHY, "challenges"));
 
     // Booker Dashboard: Only BOOKER and ADMIN
     MenuItem bookerDashboard =
@@ -133,7 +134,6 @@ public class MenuService {
             RoleName.ADMIN,
             RoleName.BOOKER,
             RoleName.PLAYER));
-    cardGame.addChild(new MenuItem("Weekly Challenges", VaadinIcon.TROPHY, "challenges"));
 
     // Configuration: Only ADMIN
     MenuItem configuration = new MenuItem("Configuration", VaadinIcon.COG, null, RoleName.ADMIN);
