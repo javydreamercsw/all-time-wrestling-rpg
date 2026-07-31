@@ -75,6 +75,12 @@ public class ChallengeDTO {
 
   private String notes;
 
+  /**
+   * Season label for grouping (e.g. {@code "Season 1"}). Null = unassigned. Used only for display
+   * and filtering — not a machine key.
+   */
+  private String season;
+
   /** Optional image URL displayed in the challenge detail dialog. */
   private String imageUrl;
 

@@ -1,6 +1,7 @@
 [ {
   "id": "week_01_locker_room_attack",
   "weekNumber": 1,
+  "season": "Season 1",
   "title": "Locker Room Attack!!!",
   "flavorText": "Rey Jaguar was attacked in the Locker Room before his match, but that's not stopping him from going out there and winning anyways!!!",
   "productLine": "Base Game",
@@ -19,6 +20,7 @@
 }, {
   "id": "week_02_broken_neck",
   "weekNumber": 2,
+  "season": "Season 1",
   "title": "Broken Neck, Unbreakable Will",
   "flavorText": "Kurt Angle competed at the Olympics with a legit broken neck. Somehow, some way, he's still walking away with the gold!!! Can you?",
   "productLine": "ATW All or Nothing",
@@ -37,6 +39,7 @@
 }, {
   "id": "week_03_all_time_king",
   "weekNumber": 3,
+  "season": "Season 1",
   "title": "All Time King!!!",
   "flavorText": "The Deathmatch King Matt Cardona has something to prove. That he is the King no matter what era! Where better to prove it than at ATW!!! How better than in a Barbwire Exploding Death Match!!! What better way to crown himself THE UNDISPUTED DEATHMATCH KING OF ALLLLLL TIIIIIME????? Ladies and Gentlemen... I present you Matt Cardona vs Sabu, Raven and RVD in a Barbwire Exploding.... GAUNTLET DEATHMATCH!!!!!",
   "productLine": "ATW Extreme Edition",

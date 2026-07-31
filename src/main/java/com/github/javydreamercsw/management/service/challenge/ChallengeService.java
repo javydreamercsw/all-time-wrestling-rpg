@@ -51,7 +51,7 @@ public class ChallengeService {
   public void loadChallenges() {
     List<ChallengeDTO> loaded = new ArrayList<>();
     try {
-      Resource[] files = resourcePatternResolver.getResources("classpath*:challenges/*.json");
+      Resource[] files = resourcePatternResolver.getResources("classpath*:challenges/**/*.json");
       for (Resource resource : files) {
         log.debug("Loading challenges from: {}", resource.getFilename());
         try (InputStream is = resource.getInputStream()) {

@@ -16,8 +16,15 @@
 */
 package com.github.javydreamercsw.management.ui.view.challenge;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
+import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletion;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
+import com.github.javydreamercsw.management.service.challenge.ChallengeCompletionService;
 import com.github.javydreamercsw.management.service.challenge.ChallengeService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -25,6 +32,7 @@ import com.github.javydreamercsw.management.ui.view.show.MatchInfoDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
@@ -37,9 +45,12 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.html.UnorderedList;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -57,7 +68,9 @@ import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import jakarta.annotation.security.PermitAll;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -67,22 +80,35 @@ import org.springframework.beans.factory.annotation.Autowired;
 @PermitAll
 public class ChallengeListView extends VerticalLayout {
 
+  private static final DateTimeFormatter DATE_FMT =
+      DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a");
+
   private final ChallengeService challengeService;
   private final ExpansionService expansionService;
   private final SegmentRuleRepository segmentRuleRepository;
+  private final ChallengeCompletionService completionService;
+  private final ImageStorageService imageStorageService;
+  private final SecurityUtils securityUtils;
 
   private FlexLayout cardsLayout;
   private Checkbox officialOnlyFilter;
   private Checkbox myExpansionsFilter;
+  private ComboBox<String> seasonFilter;
 
   @Autowired
   public ChallengeListView(
       final ChallengeService challengeService,
       final ExpansionService expansionService,
-      final SegmentRuleRepository segmentRuleRepository) {
+      final SegmentRuleRepository segmentRuleRepository,
+      final ChallengeCompletionService completionService,
+      final ImageStorageService imageStorageService,
+      final SecurityUtils securityUtils) {
     this.challengeService = challengeService;
     this.expansionService = expansionService;
     this.segmentRuleRepository = segmentRuleRepository;
+    this.completionService = completionService;
+    this.imageStorageService = imageStorageService;
+    this.securityUtils = securityUtils;
 
     setPadding(true);
     setSpacing(true);
@@ -91,6 +117,7 @@ public class ChallengeListView extends VerticalLayout {
 
     HorizontalLayout filters = new HorizontalLayout();
     filters.setAlignItems(Alignment.CENTER);
+    filters.setFlexGrow(0, filters);
 
     officialOnlyFilter = new Checkbox("Official only", true);
     officialOnlyFilter.addValueChangeListener(e -> refreshCards());
@@ -98,7 +125,21 @@ public class ChallengeListView extends VerticalLayout {
     myExpansionsFilter = new Checkbox("My expansions only", false);
     myExpansionsFilter.addValueChangeListener(e -> refreshCards());
 
-    filters.add(officialOnlyFilter, myExpansionsFilter);
+    List<String> seasons =
+        challengeService.getAllChallenges().stream()
+            .map(ChallengeDTO::getSeason)
+            .filter(s -> s != null && !s.isBlank())
+            .distinct()
+            .sorted()
+            .toList();
+
+    seasonFilter = new ComboBox<>("Season");
+    seasonFilter.setItems(seasons);
+    seasonFilter.setPlaceholder("All seasons");
+    seasonFilter.setClearButtonVisible(true);
+    seasonFilter.addValueChangeListener(e -> refreshCards());
+
+    filters.add(officialOnlyFilter, myExpansionsFilter, seasonFilter);
     add(filters);
 
     cardsLayout = new FlexLayout();
@@ -108,11 +149,16 @@ public class ChallengeListView extends VerticalLayout {
     refreshCards();
   }
 
+  private Optional<Account> currentAccount() {
+    return securityUtils.getAuthenticatedUser().map(CustomUserDetails::getAccount);
+  }
+
   private void refreshCards() {
     cardsLayout.removeAll();
 
     List<ChallengeDTO> all = challengeService.getActiveChallenges();
     Set<String> enabledCodes = Set.copyOf(expansionService.getEnabledExpansionCodes());
+    String selectedSeason = seasonFilter.getValue();
 
     all.stream()
         .filter(c -> !officialOnlyFilter.getValue() || !"CUSTOM".equals(c.getExpansionCode()))
@@ -121,6 +167,11 @@ public class ChallengeListView extends VerticalLayout {
                 !myExpansionsFilter.getValue()
                     || c.getRequiredExpansions().isEmpty()
                     || enabledCodes.containsAll(c.getRequiredExpansions()))
+        .filter(
+            c ->
+                selectedSeason == null
+                    || selectedSeason.isBlank()
+                    || selectedSeason.equals(c.getSeason()))
         .forEach(c -> cardsLayout.add(buildCard(c)));
   }
 
@@ -161,6 +212,15 @@ public class ChallengeListView extends VerticalLayout {
       expBadge.getElement().getThemeList().add("badge error");
       badges.add(expBadge);
     }
+
+    currentAccount()
+        .filter(account -> completionService.isCompleted(account, challenge.getId()))
+        .ifPresent(
+            account -> {
+              Span done = new Span("Completed ✓");
+              done.getElement().getThemeList().add("badge success");
+              badges.add(done);
+            });
 
     card.add(badges);
 
@@ -267,8 +327,87 @@ public class ChallengeListView extends VerticalLayout {
       content.add(notes);
     }
 
+    currentAccount()
+        .ifPresent(account -> addCompletionSection(content, dialog, challenge, account));
+
     dialog.add(content);
     dialog.open();
+  }
+
+  private void addCompletionSection(
+      final VerticalLayout content,
+      final Dialog dialog,
+      final ChallengeDTO challenge,
+      final Account account) {
+    Div divider = new Div();
+    divider.getStyle().set("border-top", "1px solid var(--lumo-contrast-10pct)");
+    divider.addClassNames(Margin.Vertical.MEDIUM);
+    content.add(divider);
+
+    H4 header = new H4("Your Completion");
+    header.addClassNames(Margin.Top.NONE, Margin.Bottom.SMALL, FontWeight.BOLD);
+    content.add(header);
+
+    Optional<AccountChallengeCompletion> existing =
+        completionService.find(account, challenge.getId());
+
+    if (existing.isPresent()
+        && existing.get().getStatus()
+            == com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus
+                .COMPLETED) {
+      AccountChallengeCompletion completion = existing.get();
+
+      Span completedOn =
+          new Span(
+              "Completed on: "
+                  + (completion.getCompletedAt() != null
+                      ? completion.getCompletedAt().format(DATE_FMT)
+                      : "—"));
+      completedOn.addClassNames(FontSize.SMALL, FontWeight.BOLD, TextColor.SUCCESS);
+      content.add(completedOn);
+
+      if (completion.getProofImageUrl() != null && !completion.getProofImageUrl().isBlank()) {
+        Image proof = new Image(completion.getProofImageUrl(), "Completion proof");
+        proof.setMaxWidth("100%");
+        proof.addClassName(Margin.Top.SMALL);
+        content.add(proof);
+      }
+
+      if (completion.getPlayerNotes() != null && !completion.getPlayerNotes().isBlank()) {
+        Paragraph playerNotes = new Paragraph(completion.getPlayerNotes());
+        playerNotes.addClassNames(FontSize.SMALL, Margin.Top.SMALL);
+        content.add(playerNotes);
+      }
+    } else {
+      TextArea notesField = new TextArea("Notes");
+      notesField.setPlaceholder("How did it go? Any tips for other players?");
+      notesField.setWidthFull();
+      notesField.setMaxHeight("120px");
+      content.add(notesField);
+
+      Span uploadLabel = new Span("Proof photo (optional)");
+      uploadLabel.addClassNames(FontSize.SMALL, TextColor.SECONDARY);
+      content.add(uploadLabel);
+
+      String[] proofUrl = {null};
+      ImageUploadComponent uploadComponent =
+          new ImageUploadComponent(imageStorageService, url -> proofUrl[0] = url);
+      content.add(uploadComponent);
+
+      Button completeBtn = new Button("Mark as Complete", new Icon(VaadinIcon.CHECK_CIRCLE));
+      completeBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+      completeBtn.addClassName(Margin.Top.SMALL);
+      completeBtn.addClickListener(
+          e -> {
+            completionService.markComplete(
+                account, challenge.getId(), notesField.getValue(), proofUrl[0]);
+            Notification.show("Challenge marked as complete!")
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            dialog.close();
+            refreshCards();
+          });
+      content.add(completeBtn);
+    }
   }
 
   private void addSection(
