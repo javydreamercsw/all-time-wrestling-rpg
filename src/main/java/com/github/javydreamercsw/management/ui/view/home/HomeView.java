@@ -236,10 +236,18 @@ public class HomeView extends VerticalLayout {
 
   private Set<RoleName> resolveRoles(final SecurityUtils securityUtils) {
     java.util.EnumSet<RoleName> roles = java.util.EnumSet.noneOf(RoleName.class);
-    if (securityUtils.isAdmin()) roles.add(RoleName.ADMIN);
-    if (securityUtils.isBooker()) roles.add(RoleName.BOOKER);
-    if (securityUtils.isPlayer()) roles.add(RoleName.PLAYER);
-    if (securityUtils.isViewer()) roles.add(RoleName.VIEWER);
+    if (securityUtils.isAdmin()) {
+      roles.add(RoleName.ADMIN);
+    }
+    if (securityUtils.isBooker()) {
+      roles.add(RoleName.BOOKER);
+    }
+    if (securityUtils.isPlayer()) {
+      roles.add(RoleName.PLAYER);
+    }
+    if (securityUtils.isViewer()) {
+      roles.add(RoleName.VIEWER);
+    }
     return roles;
   }
 }
