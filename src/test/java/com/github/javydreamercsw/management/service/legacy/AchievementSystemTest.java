@@ -191,6 +191,13 @@ class AchievementSystemTest {
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("ROSTER_BUILDER");
     verify(eventPublisher, atLeastOnce()).publishEvent(any(AchievementUnlockedEvent.class));
+
+    // 50 wrestlers - FULL_HOUSE
+    for (int i = 0; i < 40; i++) {
+      wrestlers.add(new Wrestler());
+    }
+    legacyService.updateLegacyScore(account);
+    verify(achievementRepository).findByKey("FULL_HOUSE");
   }
 
   @Test
@@ -299,6 +306,17 @@ class AchievementSystemTest {
 
     // Main Event
     verify(achievementRepository).findByKey("MAIN_EVENT");
+  }
+
+  @Test
+  void testFiveStarClassicAchievementKey() {
+    // FIVE_STAR_CLASSIC fires when the match quality roll equals 20 in
+    // SegmentAdjudicationService — a random event not reproducible without a
+    // seeded Random. This test validates the key string is correct and that
+    // unlockAchievement resolves it from the repository.
+    legacyService.unlockAchievement(account, "FIVE_STAR_CLASSIC");
+    verify(achievementRepository).findByKey("FIVE_STAR_CLASSIC");
+    verify(eventPublisher).publishEvent(any(AchievementUnlockedEvent.class));
   }
 
   @Test
