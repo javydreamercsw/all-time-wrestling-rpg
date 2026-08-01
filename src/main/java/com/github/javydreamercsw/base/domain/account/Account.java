@@ -99,6 +99,8 @@ public class Account {
 
   @Column private LocalDateTime lastLogin;
 
+  @Column private LocalDateTime previousLastLogin;
+
   @CreationTimestamp
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdDate;

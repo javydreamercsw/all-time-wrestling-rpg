@@ -19,7 +19,7 @@ doing a simple exact-string sanity check after Repowise already pointed you at a
 
 ## Codebase Intelligence for all-time-wrestling-rpg (Repowise)
 
-Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-07-31 (commit 9f9005bf8). Confidence: 100%.
+Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-07-31 (commit abaefb64f). Confidence: 100%.
 The MCP tools below serve pre-verified docs, symbols, history, and health from that index. Every response carries `_meta` freshness fields; a `stale_warning` appears only when a file the response actually serves changed after indexing — silence means current.
 
 ### How to work in this repo
