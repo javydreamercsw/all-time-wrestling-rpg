@@ -135,4 +135,9 @@ public class InboxEventTypeConfig {
   @Qualifier("UPDATE_AVAILABLE") InboxEventType updateAvailable() {
     return new InboxEventType("UPDATE_AVAILABLE", "Update Available");
   }
+
+  @Bean
+  @Qualifier("DIRECT_MESSAGE") InboxEventType directMessage() {
+    return new InboxEventType("DIRECT_MESSAGE", "Direct Message");
+  }
 }

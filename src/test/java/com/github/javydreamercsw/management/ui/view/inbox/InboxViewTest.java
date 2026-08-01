@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
+import com.github.javydreamercsw.management.service.inbox.DirectMessageService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -60,6 +61,7 @@ class InboxViewTest extends AbstractViewTest {
   @Mock private MatchFulfillmentService matchFulfillmentService;
   @Mock private SecurityUtils securityUtils;
   @Mock private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
+  @Mock private DirectMessageService directMessageService;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private InboxView view;
@@ -79,7 +81,8 @@ class InboxViewTest extends AbstractViewTest {
             matchFulfillmentService,
             securityUtils,
             objectMapper,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            directMessageService);
     UI.getCurrent().add(view);
   }
 
@@ -112,7 +115,8 @@ class InboxViewTest extends AbstractViewTest {
             matchFulfillmentService,
             securityUtils,
             objectMapper,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            directMessageService);
     UI.getCurrent().add(playerView);
 
     MultiSelectComboBox<?> targetFilter = _get(playerView, MultiSelectComboBox.class);
@@ -142,7 +146,8 @@ class InboxViewTest extends AbstractViewTest {
             matchFulfillmentService,
             securityUtils,
             objectMapper,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            directMessageService);
     UI.getCurrent().add(freshView);
 
     Button markRead = _get(freshView, Button.class, spec -> spec.withText("Mark Selected as Read"));
@@ -177,7 +182,8 @@ class InboxViewTest extends AbstractViewTest {
             matchFulfillmentService,
             securityUtils,
             objectMapper,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            directMessageService);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -210,7 +216,8 @@ class InboxViewTest extends AbstractViewTest {
             matchFulfillmentService,
             securityUtils,
             objectMapper,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            directMessageService);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -242,7 +249,8 @@ class InboxViewTest extends AbstractViewTest {
             matchFulfillmentService,
             securityUtils,
             objectMapper,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            directMessageService);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -279,7 +287,8 @@ class InboxViewTest extends AbstractViewTest {
             matchFulfillmentService,
             securityUtils,
             objectMapper,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            directMessageService);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -315,7 +324,8 @@ class InboxViewTest extends AbstractViewTest {
             matchFulfillmentService,
             securityUtils,
             objectMapper,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            directMessageService);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);

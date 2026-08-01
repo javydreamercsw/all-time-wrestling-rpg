@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
+import com.github.javydreamercsw.management.service.inbox.DirectMessageService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -86,6 +87,7 @@ public class InboxView extends VerticalLayout {
   private final Button deleteSelectedButton = new Button("Delete Selected");
   private final Set<InboxItem> selectedItems = new HashSet<>();
   private final SecurityUtils securityUtils;
+  private final DirectMessageService directMessageService;
 
   public InboxView(
       final InboxService inboxService,
@@ -94,7 +96,8 @@ public class InboxView extends VerticalLayout {
       final MatchFulfillmentService matchFulfillmentService,
       final SecurityUtils securityUtils,
       final ObjectMapper objectMapper,
-      final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster) {
+      final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster,
+      final DirectMessageService directMessageService) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
@@ -102,6 +105,7 @@ public class InboxView extends VerticalLayout {
     this.securityUtils = securityUtils;
     this.objectMapper = objectMapper;
     this.openProfileDrawerBroadcaster = openProfileDrawerBroadcaster;
+    this.directMessageService = directMessageService;
 
     addClassName("inbox-view");
     setSizeFull();
@@ -225,8 +229,13 @@ public class InboxView extends VerticalLayout {
         });
     // Hide clear target filter button if the target filter is read-only
     clearTargetFilter.setVisible(securityUtils.canEdit() && !targetFilter.isReadOnly());
+
+    Button composeBtn = new Button("✉ Compose", e -> openComposeDialog(null));
+    composeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+
     HorizontalLayout toolbar =
         new HorizontalLayout(
+            composeBtn,
             targetFilter,
             clearTargetFilter,
             readStatusFilter,
@@ -283,6 +292,7 @@ public class InboxView extends VerticalLayout {
     grid.setId("inbox-grid");
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
+    grid.addColumn(this::getSenderDisplay).setHeader("From").setId("from-column");
     grid.addColumn(InboxItem::getEventType).setHeader("Event Type").setId("event-type-column");
     grid.addComponentColumn(this::createUrgencyBadge)
         .setHeader("Priority")
@@ -319,6 +329,7 @@ public class InboxView extends VerticalLayout {
         case "MATCH_REPORT" -> layout.add(createMatchReportButton(item));
         case "NAVIGATE" -> createNavigateButton(item).ifPresent(layout::add);
         case "OPEN_DRAWER" -> layout.add(createOpenDrawerButton(item));
+        case "REPLY" -> layout.add(createReplyButton(item));
         default -> {
           // Unknown action type — no extra button rendered
         }
@@ -443,6 +454,40 @@ public class InboxView extends VerticalLayout {
         .collect(Collectors.joining(", "));
   }
 
+  private String getSenderDisplay(@NonNull final InboxItem item) {
+    if (item.getSenderAccountId() == null) {
+      return "System";
+    }
+    return inboxService
+        .getAccountRepository()
+        .findById(item.getSenderAccountId())
+        .map(com.github.javydreamercsw.base.domain.account.Account::getUsername)
+        .orElse("Unknown (" + item.getSenderAccountId() + ")");
+  }
+
+  private Button createReplyButton(@NonNull final InboxItem item) {
+    Button button =
+        new Button(
+            "Reply",
+            e ->
+                openComposeDialog(
+                    item.getSenderAccountId() != null ? item.getSenderAccountId() : null));
+    button.setId("reply-btn-" + item.getId());
+    button.addThemeVariants(ButtonVariant.LUMO_SMALL);
+    return button;
+  }
+
+  private void openComposeDialog(final Long prefilledRecipientId) {
+    Long senderId =
+        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    new ComposeMessageDialog(
+            inboxService.getAccountRepository(),
+            directMessageService,
+            senderId,
+            prefilledRecipientId)
+        .open();
+  }
+
   private void showEmptyDetail() {
     detailsView.removeAll();
     Paragraph empty = new Paragraph("Select a message to read it.");
@@ -475,6 +520,15 @@ public class InboxView extends VerticalLayout {
     detailsView.setPadding(true);
     detailsView.setSpacing(true);
     splitLayout.setSplitterPosition(45);
+
+    // From row — shown only for player-sent messages
+    if (item.getSenderAccountId() != null) {
+      String senderName = getSenderDisplay(item);
+      Span fromSpan = new Span("From: " + senderName);
+      fromSpan.getStyle().set("color", "var(--lumo-secondary-text-color)");
+      fromSpan.getStyle().set("font-size", "var(--lumo-font-size-s)");
+      detailsView.add(fromSpan);
+    }
 
     // Header row: event type badge + timestamp
     Span eventTypeBadge = new Span(item.getEventType().getFriendlyName());
