@@ -126,9 +126,10 @@ class InboxViewE2ETest extends AbstractE2ETest {
             ExpectedConditions.presenceOfAllElementsLocatedBy(
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
 
-    // 1 header row * 7 columns + 3 data rows * 7 columns = 28 cells
-    // (1 selection col + 6 data cols: eventType, urgency, subject, timestamp, targets, actions)
-    Assertions.assertEquals(28, cells.size());
+    // 1 header row * 8 columns + 3 data rows * 8 columns = 32 cells
+    // (1 selection col + 7 data cols: from, eventType, urgency, subject, timestamp, targets,
+    // actions)
+    Assertions.assertEquals(32, cells.size());
 
     // Explicitly set "Read Status" to "All" (this should already be the default, but we'll keep it
     // for robustness)
