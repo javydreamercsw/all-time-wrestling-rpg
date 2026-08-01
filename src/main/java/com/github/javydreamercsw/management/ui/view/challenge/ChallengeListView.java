@@ -92,7 +92,6 @@ public class ChallengeListView extends VerticalLayout {
 
   private FlexLayout cardsLayout;
   private Checkbox officialOnlyFilter;
-  private Checkbox myExpansionsFilter;
   private ComboBox<String> seasonFilter;
 
   @Autowired
@@ -119,11 +118,8 @@ public class ChallengeListView extends VerticalLayout {
     filters.setAlignItems(Alignment.CENTER);
     filters.setFlexGrow(0, filters);
 
-    officialOnlyFilter = new Checkbox("Official only", true);
+    officialOnlyFilter = new Checkbox("Official only", false);
     officialOnlyFilter.addValueChangeListener(e -> refreshCards());
-
-    myExpansionsFilter = new Checkbox("My expansions only", false);
-    myExpansionsFilter.addValueChangeListener(e -> refreshCards());
 
     List<String> seasons =
         challengeService.getAllChallenges().stream()
@@ -139,7 +135,7 @@ public class ChallengeListView extends VerticalLayout {
     seasonFilter.setClearButtonVisible(true);
     seasonFilter.addValueChangeListener(e -> refreshCards());
 
-    filters.add(officialOnlyFilter, myExpansionsFilter, seasonFilter);
+    filters.add(officialOnlyFilter, seasonFilter);
     add(filters);
 
     cardsLayout = new FlexLayout();
@@ -164,18 +160,17 @@ public class ChallengeListView extends VerticalLayout {
         .filter(c -> !officialOnlyFilter.getValue() || !"CUSTOM".equals(c.getExpansionCode()))
         .filter(
             c ->
-                !myExpansionsFilter.getValue()
-                    || c.getRequiredExpansions().isEmpty()
-                    || enabledCodes.containsAll(c.getRequiredExpansions()))
-        .filter(
-            c ->
                 selectedSeason == null
                     || selectedSeason.isBlank()
                     || selectedSeason.equals(c.getSeason()))
-        .forEach(c -> cardsLayout.add(buildCard(c)));
+        .forEach(c -> cardsLayout.add(buildCard(c, enabledCodes)));
   }
 
-  private Div buildCard(final ChallengeDTO challenge) {
+  private Div buildCard(final ChallengeDTO challenge, final Set<String> enabledCodes) {
+    boolean isLocked =
+        !challenge.getRequiredExpansions().isEmpty()
+            && !enabledCodes.containsAll(challenge.getRequiredExpansions());
+
     Div card = new Div();
     card.addClassNames(
         Display.FLEX,
@@ -189,6 +184,12 @@ public class ChallengeListView extends VerticalLayout {
 
     FlexLayout badges = new FlexLayout();
     badges.addClassNames(FlexWrap.WRAP, Gap.SMALL, Margin.Bottom.SMALL);
+
+    if (isLocked) {
+      Span lock = new Span("🔒 Locked");
+      lock.getElement().getThemeList().add("badge contrast");
+      badges.add(lock);
+    }
 
     if (challenge.getWeekNumber() != null) {
       Span week = new Span("Week " + challenge.getWeekNumber());
@@ -207,25 +208,30 @@ public class ChallengeListView extends VerticalLayout {
     sourceBadge.getElement().getThemeList().add(isCustom ? "badge" : "badge success");
     badges.add(sourceBadge);
 
-    if (!challenge.getRequiredExpansions().isEmpty()) {
+    if (!isLocked && !challenge.getRequiredExpansions().isEmpty()) {
       Span expBadge = new Span("Requires: " + String.join(", ", challenge.getRequiredExpansions()));
-      expBadge.getElement().getThemeList().add("badge error");
+      expBadge.getElement().getThemeList().add("badge success");
       badges.add(expBadge);
     }
 
-    currentAccount()
-        .filter(account -> completionService.isCompleted(account, challenge.getId()))
-        .ifPresent(
-            account -> {
-              Span done = new Span("Completed ✓");
-              done.getElement().getThemeList().add("badge success");
-              badges.add(done);
-            });
+    if (!isLocked) {
+      currentAccount()
+          .filter(account -> completionService.isCompleted(account, challenge.getId()))
+          .ifPresent(
+              account -> {
+                Span done = new Span("Completed ✓");
+                done.getElement().getThemeList().add("badge success");
+                badges.add(done);
+              });
+    }
 
     card.add(badges);
 
     H3 title = new H3(challenge.getTitle());
     title.addClassNames(Margin.Top.NONE, Margin.Bottom.XSMALL, FontSize.MEDIUM);
+    if (isLocked) {
+      title.addClassName(TextColor.SECONDARY);
+    }
     card.add(title);
 
     if (challenge.getProductLine() != null) {
@@ -236,11 +242,54 @@ public class ChallengeListView extends VerticalLayout {
 
     Paragraph objective = new Paragraph(challenge.getObjective());
     objective.addClassNames(FontSize.SMALL, Margin.Bottom.MEDIUM);
+    if (isLocked) {
+      objective.addClassName(TextColor.SECONDARY);
+    }
     card.add(objective);
 
-    Button viewBtn = new Button("View Challenge", e -> openDetailDialog(challenge));
-    viewBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
-    card.add(viewBtn);
+    if (isLocked) {
+      List<String> missing =
+          challenge.getRequiredExpansions().stream()
+              .filter(code -> !enabledCodes.contains(code))
+              .toList();
+      String expansionList =
+          String.join(", ", missing) + " expansion" + (missing.size() > 1 ? "s" : "");
+
+      Paragraph lockMsg = new Paragraph("Requires " + expansionList + ".");
+      lockMsg.addClassNames(FontSize.XSMALL, TextColor.SECONDARY, Margin.Bottom.SMALL);
+      card.add(lockMsg);
+
+      if (securityUtils.isAdmin()) {
+        HorizontalLayout enableButtons = new HorizontalLayout();
+        enableButtons.setSpacing(true);
+        enableButtons.addClassName(Margin.Bottom.SMALL);
+        for (String code : missing) {
+          Button enableBtn = new Button("Enable " + code, new Icon(VaadinIcon.UNLOCK));
+          enableBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
+          enableBtn.addClickListener(
+              e -> {
+                expansionService.setExpansionEnabled(code, true);
+                refreshCards();
+              });
+          enableButtons.add(enableBtn);
+        }
+        card.add(enableButtons);
+      } else {
+        String tooltip =
+            "Requires the "
+                + expansionList
+                + ". Contact your administrator to enable it for this universe.";
+        Button lockedBtn = new Button("🔒 Locked");
+        lockedBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        lockedBtn.setEnabled(false);
+        lockedBtn.setTooltipText(tooltip);
+        card.add(lockedBtn);
+      }
+    } else {
+      Button viewBtn = new Button("View Challenge", e -> openDetailDialog(challenge));
+      viewBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+      card.add(viewBtn);
+    }
 
     return card;
   }
