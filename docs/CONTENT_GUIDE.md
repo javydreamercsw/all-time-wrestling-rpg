@@ -254,9 +254,158 @@ Each variant is an object with any combination of the following optional text fi
 }
 ```
 
+## Challenges
+
+Challenges are scenario-based tasks that players complete outside of a normal show booking flow. They are loaded at startup from every `*.json` file found under `src/main/resources/challenges/**/*.json` — you can add as many files and subdirectories as needed.
+
+### File layout
+
+```
+src/main/resources/challenges/
+  season_1/
+    weekly_challenges.json    # Official weekly challenges
+    custom_challenges.json    # Custom (CUSTOM expansion code) challenges
+  season_2/
+    weekly_challenges.json
+```
+
+Each file is a JSON array of challenge objects.
+
+### Structure
+
+```json
+{
+  "id": "custom_s1_01_tap_out",
+  "weekNumber": null,
+  "season": "Season 1",
+  "title": "Tap Out or Go Home",
+  "flavorText": "The truest test of a technical wrestler...",
+  "productLine": "Base Game",
+  "expansionCode": "CUSTOM",
+  "requiredExpansions": [ "BASE_GAME" ],
+  "requiredWrestlerNames": [ ],
+  "difficulty": "ENTRY",
+  "objective": "Win a Submission match.",
+  "setupInstructions": "Standard setup. Apply the Submission segment rule.",
+  "matchType": "Submission",
+  "conditions": [ "No pinfalls — submission is the only victory condition." ],
+  "modifiers": [ ],
+  "achievementKey": "CHALLENGE_CUSTOM_S1_01",
+  "imageUrl": null,
+  "notes": null,
+  "active": true
+}
+```
+
+### Field reference
+
+|          Field          | Required |                                                                                          Description                                                                                           |
+|-------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`                    | Yes      | Unique kebab-case identifier across all challenge files.                                                                                                                                       |
+| `weekNumber`            | No       | Integer for official weekly challenges. Set to `null` for custom challenges so they don't collide with official week numbers.                                                                  |
+| `season`                | No       | Display label used for grouping (e.g. `"Season 1"`). Also drives the season-completion achievement — see [Achievements](#achievements).                                                        |
+| `title`                 | Yes      | Short display name.                                                                                                                                                                            |
+| `flavorText`            | No       | Narrative hook shown in the challenge card.                                                                                                                                                    |
+| `productLine`           | No       | Human-readable product label (display only).                                                                                                                                                   |
+| `expansionCode`         | Yes      | Use `"CUSTOM"` for custom/community challenges; any other code (e.g. `"BASE_GAME"`, `"EXTREME"`) marks the challenge as official. Mirrors the convention used by `SegmentRule` and `Wrestler`. |
+| `requiredExpansions`    | Yes      | Expansion codes that must all be enabled for this challenge to appear. Use `["BASE_GAME"]` for challenges that only need the base game.                                                        |
+| `requiredWrestlerNames` | Yes      | Specific wrestler names required; empty list means any wrestler is valid.                                                                                                                      |
+| `difficulty`            | Yes      | `ENTRY`, `MEDIUM`, or `HARD`.                                                                                                                                                                  |
+| `objective`             | Yes      | One-sentence win condition shown to the player.                                                                                                                                                |
+| `setupInstructions`     | No       | How to configure the game before starting.                                                                                                                                                     |
+| `matchType`             | No       | Must match a `SegmentRule.name` exactly — this links the challenge to the in-app match-info dialog. Leave null for standard matches with no special rule.                                      |
+| `conditions`            | Yes      | List of special rules or restrictions that apply.                                                                                                                                              |
+| `modifiers`             | Yes      | List of rule modifications or mechanical exceptions.                                                                                                                                           |
+| `achievementKey`        | No       | Achievement key awarded on first completion. Must match an entry in `achievements.json`.                                                                                                       |
+| `imageUrl`              | No       | Optional image path (relative to the resources root) shown in the challenge detail dialog.                                                                                                     |
+| `notes`                 | No       | Optional designer notes shown at the bottom of the dialog.                                                                                                                                     |
+| `active`                | Yes      | Set `false` to hide the challenge without deleting it.                                                                                                                                         |
+
+### Official vs custom challenges
+
+`ChallengeService` exposes two filtered views:
+
+- `getOfficialChallenges()` — challenges where `expansionCode != "CUSTOM"`.
+- `getCustomChallenges()` — challenges where `expansionCode == "CUSTOM"`.
+
+Official challenges are tied to specific weekly or seasonal content. Custom challenges use a separate numbering scheme (`custom_s1_01`, `custom_s1_02`, …) and `weekNumber: null` so they never conflict with future official weeks.
+
+### Season completion achievements
+
+When a player completes all active challenges whose `season` field equals a given label, `ChallengeCompletionService` automatically unlocks a season achievement. The key is derived as:
+
+```
+"Season 1"  →  CHALLENGE_SEASON_1_COMPLETE
+"Season 2"  →  CHALLENGE_SEASON_2_COMPLETE
+```
+
+Add a matching entry in `achievements.json` with `category: "CHALLENGE"` to make the achievement visible.
+
+---
+
+## Achievements
+
+Achievements are persistent player rewards with an XP value. They are loaded from `src/main/resources/achievements.json` — a flat JSON array that is the single source of truth for every achievement in the game.
+
+### Structure
+
+```json
+{
+  "key": "CHALLENGE_CUSTOM_S1_01",
+  "name": "Technical Mastery",
+  "description": "Completed \"Tap Out or Go Home\" without a single pinfall",
+  "xpValue": 75,
+  "category": "CHALLENGE"
+}
+```
+
+### Field reference
+
+|     Field     |                                                                         Description                                                                          |
+|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `key`         | Unique string identifier. Must match the key passed to `LegacyService.unlockAchievement()` exactly — a mismatch means the achievement silently never awards. |
+| `name`        | Short display name shown in the player profile.                                                                                                              |
+| `description` | One-sentence description of what the player did to earn it.                                                                                                  |
+| `xpValue`     | Prestige XP awarded on unlock.                                                                                                                               |
+| `category`    | One of `COLLECTION`, `FANS`, `CHAMPIONSHIP`, `MATCH_TYPE`, `BOOKING`, `SPECIAL_EVENT`, `CHALLENGE`.                                                          |
+
+### Categories
+
+|    Category     |                               Used for                                |
+|-----------------|-----------------------------------------------------------------------|
+| `COLLECTION`    | Roster-building milestones (first wrestler, roster size).             |
+| `FANS`          | Fan count milestones.                                                 |
+| `CHAMPIONSHIP`  | Title reign milestones.                                               |
+| `MATCH_TYPE`    | Participating in or winning a specific match stipulation.             |
+| `BOOKING`       | Show-booking milestones.                                              |
+| `SPECIAL_EVENT` | Rumble, tournament, and other special-event milestones.               |
+| `CHALLENGE`     | Challenge-specific achievements and cumulative completion milestones. |
+
+### How achievements are awarded
+
+`ChallengeCompletionService.checkAchievements()` handles all challenge-related unlocks automatically on first completion:
+
+1. **Per-challenge achievement** — if the challenge's `achievementKey` is non-null, that key is unlocked.
+2. **First HARD completion** — `CHALLENGE_FIRST_HARD` is unlocked when the player's first HARD-difficulty challenge completes.
+3. **Season completion** — the season key (e.g. `CHALLENGE_SEASON_1_COMPLETE`) is unlocked when every active challenge in that season is completed.
+4. **Cumulative milestones** — `CHALLENGE_5_COMPLETE` at 5 total, `CHALLENGE_10_COMPLETE` at 10 total.
+
+Non-challenge achievements (match-type, collection, etc.) are unlocked by calling `LegacyService.unlockAchievement(account, key)` from the relevant service layer. `unlockAchievement` is idempotent — calling it multiple times for the same account and key is safe.
+
+### Adding a new achievement
+
+1. Add an entry to `achievements.json` with a unique `key`.
+2. Call `legacyService.unlockAchievement(account, "YOUR_KEY")` from the service that should trigger it.
+3. If the achievement is paired with a new challenge, set `achievementKey` on the challenge entry.
+4. Add a test that verifies `unlockAchievement` is called with the correct key string (see `ChallengeCompletionServiceTest` for patterns to follow).
+
+---
+
 ## Best Practices
 
 1. **Validation**: Always run `DataInitializerTest` and `DataInitializerIntegrationTest` after modifying JSON files to ensure they are valid and all references (sets, card numbers) are correct.
 2. **Formatting**: Run `./mvnw spotless:apply` to keep the JSON files formatted according to the project style.
 3. **Modularity**: When adding a new wrestler with a dedicated set of moves, create a new JSON file in `src/main/resources/cards/` for those moves.
+4. **Challenges**: When adding new challenges, run `ChallengeServiceTest` to confirm counts and ID lookups. Every new `achievementKey` must have a corresponding entry in `achievements.json` and a test verifying the unlock fires.
+5. **Achievement keys**: The `key` field in `achievements.json` must be an exact string match for what the awarding code passes to `unlockAchievement()`. A mismatch is silent — add a test to guard against drift.
 

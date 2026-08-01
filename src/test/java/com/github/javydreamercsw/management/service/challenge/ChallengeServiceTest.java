@@ -20,9 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -38,8 +43,8 @@ class ChallengeServiceTest {
   }
 
   @Test
-  void loadsThreeShippedChallenges() {
-    assertEquals(3, service.getAllChallenges().size());
+  void loadsAllShippedChallenges() {
+    assertEquals(11, service.getAllChallenges().size());
   }
 
   @Test
@@ -48,15 +53,17 @@ class ChallengeServiceTest {
   }
 
   @Test
-  void shippedChallengesAreOfficial() {
+  void officialChallengesAreNonCustom() {
     List<ChallengeDTO> official = service.getOfficialChallenges();
     assertEquals(3, official.size());
     official.forEach(c -> assertFalse("CUSTOM".equals(c.getExpansionCode())));
   }
 
   @Test
-  void noCustomChallengesShipped() {
-    assertTrue(service.getCustomChallenges().isEmpty());
+  void customChallengesHaveCustomExpansionCode() {
+    List<ChallengeDTO> custom = service.getCustomChallenges();
+    assertEquals(8, custom.size());
+    custom.forEach(c -> assertEquals("CUSTOM", c.getExpansionCode()));
   }
 
   @Test
@@ -66,6 +73,23 @@ class ChallengeServiceTest {
     assertTrue(weeks.contains(1));
     assertTrue(weeks.contains(2));
     assertTrue(weeks.contains(3));
+  }
+
+  @Test
+  void customChallengesHaveNullWeekNumber() {
+    service
+        .getCustomChallenges()
+        .forEach(
+            c ->
+                assertFalse(
+                    c.getWeekNumber() != null,
+                    "Custom challenge should have null weekNumber: " + c.getId()));
+  }
+
+  @Test
+  void customChallengeIdsAreReachable() {
+    assertTrue(service.getChallenge("custom_s1_01_tap_out").isPresent());
+    assertTrue(service.getChallenge("custom_s1_08_war_games").isPresent());
   }
 
   @Test
@@ -86,5 +110,28 @@ class ChallengeServiceTest {
     ChallengeDTO c3 = service.getChallenge("week_02_broken_neck").orElseThrow();
     assertFalse(c3.getModifiers().isEmpty());
     assertTrue(c3.getNotes() != null && !c3.getNotes().isBlank());
+  }
+
+  @Test
+  void allChallengeAchievementKeysExistInAchievementsJson() throws Exception {
+    try (InputStream is = getClass().getResourceAsStream("/achievements.json")) {
+      Set<String> knownKeys =
+          new ObjectMapper()
+              .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
+                  .map(a -> (String) a.get("key"))
+                  .collect(Collectors.toSet());
+
+      service.getAllChallenges().stream()
+          .filter(c -> c.getAchievementKey() != null && !c.getAchievementKey().isBlank())
+          .forEach(
+              c ->
+                  assertTrue(
+                      knownKeys.contains(c.getAchievementKey()),
+                      "Challenge '"
+                          + c.getId()
+                          + "' has achievementKey '"
+                          + c.getAchievementKey()
+                          + "' not found in achievements.json"));
+    }
   }
 }

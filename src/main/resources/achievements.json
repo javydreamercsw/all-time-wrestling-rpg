@@ -329,7 +329,7 @@
   "xpValue": 150,
   "category": "CHALLENGE"
 }, {
-  "key": "CHALLENGE_S1_COMPLETE",
+  "key": "CHALLENGE_SEASON_1_COMPLETE",
   "name": "Season 1 Champion",
   "description": "Completed every Season 1 challenge",
   "xpValue": 250,
@@ -345,5 +345,53 @@
   "name": "Proving Ground",
   "description": "Completed 10 challenges in total",
   "xpValue": 200,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S1_01",
+  "name": "Technical Mastery",
+  "description": "Completed \"Tap Out or Go Home\" without a single pinfall",
+  "xpValue": 75,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S1_02",
+  "name": "Two Words",
+  "description": "Completed \"Say Those Two Words!\" without using Recovery",
+  "xpValue": 75,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S1_03",
+  "name": "High Climber",
+  "description": "Completed \"Climb Every Mountain\" on depleted Stamina",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S1_04",
+  "name": "From the Grave",
+  "description": "Completed \"Rest in Pieces\" after Health hit 5 or lower",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S1_05",
+  "name": "Master of Mayhem",
+  "description": "Completed \"Everything and the Kitchen Sink\" TLC challenge",
+  "xpValue": 125,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S1_06",
+  "name": "Untouchable",
+  "description": "Won \"Last One Left\" without being eliminated once",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S1_07",
+  "name": "Gauntlet Champion",
+  "description": "Survived \"Gauntlet of Legends\" on half Stamina",
+  "xpValue": 125,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S1_08",
+  "name": "Beyond the War",
+  "description": "Won \"The Match Beyond\" as the underdog team",
+  "xpValue": 150,
   "category": "CHALLENGE"
 } ]
