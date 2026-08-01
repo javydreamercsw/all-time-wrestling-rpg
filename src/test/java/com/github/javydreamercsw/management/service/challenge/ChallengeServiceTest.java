@@ -38,8 +38,8 @@ class ChallengeServiceTest {
   }
 
   @Test
-  void loadsThreeShippedChallenges() {
-    assertEquals(3, service.getAllChallenges().size());
+  void loadsAllShippedChallenges() {
+    assertEquals(11, service.getAllChallenges().size());
   }
 
   @Test
@@ -48,15 +48,17 @@ class ChallengeServiceTest {
   }
 
   @Test
-  void shippedChallengesAreOfficial() {
+  void officialChallengesAreNonCustom() {
     List<ChallengeDTO> official = service.getOfficialChallenges();
     assertEquals(3, official.size());
     official.forEach(c -> assertFalse("CUSTOM".equals(c.getExpansionCode())));
   }
 
   @Test
-  void noCustomChallengesShipped() {
-    assertTrue(service.getCustomChallenges().isEmpty());
+  void customChallengesHaveCustomExpansionCode() {
+    List<ChallengeDTO> custom = service.getCustomChallenges();
+    assertEquals(8, custom.size());
+    custom.forEach(c -> assertEquals("CUSTOM", c.getExpansionCode()));
   }
 
   @Test
@@ -66,6 +68,23 @@ class ChallengeServiceTest {
     assertTrue(weeks.contains(1));
     assertTrue(weeks.contains(2));
     assertTrue(weeks.contains(3));
+  }
+
+  @Test
+  void customChallengesHaveNullWeekNumber() {
+    service
+        .getCustomChallenges()
+        .forEach(
+            c ->
+                assertFalse(
+                    c.getWeekNumber() != null,
+                    "Custom challenge should have null weekNumber: " + c.getId()));
+  }
+
+  @Test
+  void customChallengeIdsAreReachable() {
+    assertTrue(service.getChallenge("custom_s1_01_tap_out").isPresent());
+    assertTrue(service.getChallenge("custom_s1_08_war_games").isPresent());
   }
 
   @Test
