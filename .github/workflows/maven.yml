@@ -12,7 +12,6 @@ on:
   push:
     branches:
       - 'main'
-      - 'release/**'
     tags:
       - 'v*.*.*'
 
@@ -108,8 +107,14 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: filter
         with:
-          # compare the current checkout against the detected base commit
-          base: ${{ steps.determine_base.outputs.base }}
+          # For pull_request events, omit base so dorny uses its native PR merge-base
+          # comparison — only the files the PR itself changed are flagged. Passing an
+          # explicit SHA (github.event.pull_request.base.sha) can cause false positives
+          # when the SHA is not in the shallow local checkout, which makes dorny fall back
+          # to treating everything as changed (triggering rewrite-check / build jobs that
+          # should be skipped for pom-only Dependabot bumps, for example).
+          # For push events, compare against the last successful run on the branch.
+          base: ${{ github.event_name != 'pull_request' && steps.determine_base.outputs.base || '' }}
           filters: |
             code_changed:
               - 'src/**'
@@ -161,14 +166,20 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
-          cache: maven
+      - name: Cache Maven packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - name: Clear OpenRewrite POM cache (prevents stale RocksDB deserialization errors)
         run: rm -rf ~/.rewrite-cache ~/.rewrite ~/.m2/repository/.rewrite
       - name: OpenRewrite dry-run (fail if changes needed)
         run: mvn -B rewrite:dryRun
 
   build-and-unit-test:
-    needs: [check-paths, rewrite-check]
+    needs: [check-paths]
     if: needs.check-paths.outputs.code_changed == 'true' || needs.check-paths.outputs.deps_changed == 'true'
     runs-on: ubuntu-latest
 
@@ -179,13 +190,18 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
 
-    - name: Run unit tests with coverage
-      run: mvn -B test -Pcoverage -DnvdApiKey=${{ secrets.NVD_API }}
-
-    - name: Verify WAR packaging
-      run: mvn -B package -Pwar -DskipTests
+    - name: Run unit tests with coverage and verify WAR packaging
+      # Single Maven invocation: compile once, run tests, then package WAR.
+      # Previously two separate invocations caused a full recompile in the WAR step (~3-5 min wasted).
+      run: mvn -B package -Pwar,coverage -DnvdApiKey=${{ secrets.NVD_API }}
 
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v7
@@ -205,7 +221,13 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
 
     - name: Run Integration Tests
       run: |
@@ -232,10 +254,45 @@ jobs:
         path: target/jacoco-it.exec
         if-no-files-found: error
 
+  # Build the Vaadin production frontend bundle once and share it with all E2E jobs.
+  # Running `mvn package -Pproduction` in each E2E job independently costs ~10-15 min
+  # per job (Vite/Node build). This job runs in parallel with build-and-unit-test so it
+  # does not extend the critical path.
+  build-frontend:
+    runs-on: ubuntu-latest
+    needs: [check-paths]
+    if: needs.check-paths.outputs.ui_changed == 'true' && github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up JDK 25
+      uses: actions/setup-java@v5
+      with:
+        java-version: '25'
+        distribution: 'temurin'
+    - name: Cache Maven packages
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    - name: Build production frontend bundle
+      run: mvn -B package -Pproduction -DskipTests
+    - name: Upload Vaadin bundle
+      uses: actions/upload-artifact@v7
+      with:
+        name: vaadin-frontend-bundle
+        path: target/classes/META-INF/VAADIN/
+        if-no-files-found: error
+
   e2e-tests:
     runs-on: ubuntu-latest
-    needs: [check-paths, build-and-unit-test]
+    needs: [check-paths, build-and-unit-test, build-frontend]
     if: needs.check-paths.outputs.ui_changed == 'true' && github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     env:
       HEADLESS: 'true'
       GITHUB_ACTIONS: 'true'
@@ -246,30 +303,46 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v2
-    - name: Build frontend bundle
-      run: mvn -B package -Pproduction -DskipTests
-    - name: Run E2E Tests
-      run: mvn -B verify -Pe2e,coverage,production -Dsurefire.skip=true
+    - name: Download Vaadin bundle
+      uses: actions/download-artifact@v8
+      with:
+        name: vaadin-frontend-bundle
+        path: target/classes/META-INF/VAADIN/
+    - name: Run E2E Tests (shard ${{ matrix.shard }} of 2)
+      run: >-
+        mvn -B verify -Pe2e,coverage,production -Dsurefire.skip=true
+        -De2e.shard.index=${{ matrix.shard }} -De2e.shard.total=2
+        -Djacoco.e2e.destFile=target/jacoco-e2e-${{ matrix.shard }}.exec
     - name: Upload E2E test failure artifacts
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: e2e-test-failures
+        name: e2e-test-failures-${{ matrix.shard }}
         path: target/test-failures
     - name: Upload E2E test coverage data
       uses: actions/upload-artifact@v7
       with:
-        name: jacoco-e2e-exec
-        path: target/jacoco-e2e.exec
+        name: jacoco-e2e-exec-${{ matrix.shard }}
+        path: target/jacoco-e2e-${{ matrix.shard }}.exec
         if-no-files-found: ignore
   
   docs-e2e-tests:
     runs-on: ubuntu-latest
-    needs: [check-paths, build-and-unit-test]
+    needs: [check-paths, build-and-unit-test, build-frontend]
     if: needs.check-paths.outputs.ui_changed == 'true' && github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     env:
       HEADLESS: 'true'
       GITHUB_ACTIONS: 'true'
@@ -280,30 +353,46 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v2
-    - name: Build frontend bundle
-      run: mvn -B package -Pproduction -DskipTests
-    - name: Run Docs E2E Tests
-      run: mvn -B verify -Pdocs-e2e,coverage,production -Dsurefire.skip=true
+    - name: Download Vaadin bundle
+      uses: actions/download-artifact@v8
+      with:
+        name: vaadin-frontend-bundle
+        path: target/classes/META-INF/VAADIN/
+    - name: Run Docs E2E Tests (shard ${{ matrix.shard }} of 2)
+      run: >-
+        mvn -B verify -Pdocs-e2e,coverage,production -Dsurefire.skip=true
+        -De2e.shard.index=${{ matrix.shard }} -De2e.shard.total=2
+        -Djacoco.docs-e2e.destFile=target/jacoco-docs-e2e-${{ matrix.shard }}.exec
     - name: Upload Docs E2E test failure artifacts
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: docs-e2e-test-failures
+        name: docs-e2e-test-failures-${{ matrix.shard }}
         path: target/test-failures
     - name: Upload Docs E2E test coverage data
       uses: actions/upload-artifact@v7
       with:
-        name: jacoco-docs-e2e-exec
-        path: target/jacoco-docs-e2e.exec
+        name: jacoco-docs-e2e-exec-${{ matrix.shard }}
+        path: target/jacoco-docs-e2e-${{ matrix.shard }}.exec
         if-no-files-found: ignore
 
   validate-video-tests:
     runs-on: ubuntu-latest
-    needs: [check-paths, build-and-unit-test]
+    needs: [check-paths, build-and-unit-test, build-frontend]
     if: needs.check-paths.outputs.ui_changed == 'true' && github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     env:
       HEADLESS: 'true'
       GITHUB_ACTIONS: 'true'
@@ -314,26 +403,38 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@v2
-    - name: Build frontend bundle
-      run: mvn -B package -Pproduction -DskipTests
-    - name: Validate video tests (dry run — no artifacts generated)
-      run: mvn -B verify -Pvalidate-videos,production -Dsurefire.skip=true -Dheadless=true
+    - name: Download Vaadin bundle
+      uses: actions/download-artifact@v8
+      with:
+        name: vaadin-frontend-bundle
+        path: target/classes/META-INF/VAADIN/
+    - name: Validate video tests (shard ${{ matrix.shard }} of 2, dry run)
+      run: >-
+        mvn -B verify -Pvalidate-videos,production -Dsurefire.skip=true -Dheadless=true
+        -De2e.shard.index=${{ matrix.shard }} -De2e.shard.total=2
     - name: Upload video test failure artifacts
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: validate-video-test-failures
+        name: validate-video-test-failures-${{ matrix.shard }}
         path: target/test-failures
 
   coverage-and-analysis:
     runs-on: ubuntu-latest
-    needs: [check-paths, build-and-unit-test, integration-tests, e2e-tests, docs-e2e-tests, validate-video-tests]
+    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, e2e-tests, docs-e2e-tests, validate-video-tests]
     if: >-
       always() &&
       needs.check-paths.outputs.code_changed == 'true' &&
+      (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
       needs.build-and-unit-test.result == 'success' &&
       (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
       (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') &&
@@ -346,7 +447,13 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
 
     - name: Download unit test coverage data
       uses: actions/download-artifact@v8
@@ -365,15 +472,17 @@ jobs:
       if: needs.e2e-tests.result == 'success'
       uses: actions/download-artifact@v8
       with:
-        name: jacoco-e2e-exec
+        pattern: jacoco-e2e-exec-*
         path: target/
+        merge-multiple: true
 
     - name: Download Docs E2E test coverage data
       continue-on-error: true
       uses: actions/download-artifact@v8
       with:
-        name: jacoco-docs-e2e-exec
+        pattern: jacoco-docs-e2e-exec-*
         path: target/
+        merge-multiple: true
 
     - name: Ensure classes are compiled
       run: mvn -B compile -Pcoverage
@@ -394,21 +503,55 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         skip_validation: true
 
+  # Verify the desktop installer builds cleanly on each supported OS.
+  # Only runs on release branches and main — not on every feature-branch PR,
+  # since installer creation (jpackage) is expensive and release-gate relevant.
+  desktop-build:
+    needs: [check-paths]
+    if: >-
+      needs.check-paths.outputs.code_changed == 'true' &&
+      (startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - name: Cache Maven packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Build desktop installer
+        run: mvn -B package -Pdesktop -DskipTests -Dsurefire.skip=true
+
   # Build and push Docker image (no release profile) on release/* branches
   docker-image-release-branch:
-    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it]
+    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it, e2e-tests, docs-e2e-tests, validate-video-tests]
     # rewrite-check/build-and-unit-test/integration-tests/docker-it "skip" both when their
     # path filter doesn't apply AND when an upstream dependency fails (GitHub cascades failures
     # as skips). rewrite-check shares build-and-unit-test's skip condition (code_changed), so
     # including it closes that gap: a real rewrite-check failure surfaces as result == 'failure',
-    # not 'skipped', and still blocks the image push.
+    # not 'skipped', and still blocks the image push. E2E jobs are included so the image is
+    # never pushed before all E2E tests have completed and passed.
     if: >-
       always() &&
-      startsWith(github.ref, 'refs/heads/release/') &&
+      (startsWith(github.ref, 'refs/heads/release/') || startsWith(github.head_ref, 'release/')) &&
       (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
       (needs.build-and-unit-test.result == 'success' || needs.build-and-unit-test.result == 'skipped') &&
       (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
-      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped')
+      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped') &&
+      (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') &&
+      (needs.docs-e2e-tests.result == 'success' || needs.docs-e2e-tests.result == 'skipped') &&
+      (needs.validate-video-tests.result == 'success' || needs.validate-video-tests.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -417,7 +560,13 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
-          cache: maven
+      - name: Cache Maven packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
         with:
@@ -439,14 +588,17 @@ jobs:
 
   # Build and push Docker image with release profile on version tag
   docker-image-main-release:
-    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it]
+    needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it, e2e-tests, docs-e2e-tests, validate-video-tests]
     if: >-
       always() &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
       (needs.build-and-unit-test.result == 'success' || needs.build-and-unit-test.result == 'skipped') &&
       (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') &&
-      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped')
+      (needs.docker-it.result == 'success' || needs.docker-it.result == 'skipped') &&
+      (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') &&
+      (needs.docs-e2e-tests.result == 'success' || needs.docs-e2e-tests.result == 'skipped') &&
+      (needs.validate-video-tests.result == 'success' || needs.validate-video-tests.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -455,7 +607,13 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
-          cache: maven
+      - name: Cache Maven packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
         with:
@@ -486,7 +644,13 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
-        cache: maven
+    - name: Cache Maven packages
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:

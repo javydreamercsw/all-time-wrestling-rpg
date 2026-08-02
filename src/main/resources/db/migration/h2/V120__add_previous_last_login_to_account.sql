@@ -1,0 +1,1 @@
+ALTER TABLE account ADD COLUMN IF NOT EXISTS previous_last_login TIMESTAMP;

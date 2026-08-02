@@ -171,6 +171,7 @@
   "description": "Last Man Standing: The match is won when one wrestler is unable to answer a 10-count from the referee. There are no pinfalls, submissions, or disqualifications.",
   "requiresHighHeat": true,
   "noDq": true,
+  "allowsRefereeStopage": false,
   "bumpAddition": "ALL",
   "expansion_code": "EXTREME",
   "guide": {
@@ -219,6 +220,7 @@
   "description": "I Quit Match: The only way to win is to force your opponent to say the words 'I Quit' into a microphone. There are no other ways to win.",
   "requiresHighHeat": true,
   "noDq": true,
+  "allowsRefereeStopage": false,
   "bumpAddition": "NONE",
   "expansion_code": "CUSTOM",
   "guide": {
@@ -243,6 +245,7 @@
   "description": "Ladder Match: A championship or other prize is suspended above the ring. The winner is the first person to climb a ladder and retrieve the prize.",
   "requiresHighHeat": true,
   "noDq": true,
+  "allowsRefereeStopage": false,
   "bumpAddition": "ALL",
   "expansion_code": "CUSTOM",
   "guide": {
@@ -267,6 +270,7 @@
   "description": "Casket Match: The only way to win is to force your opponent into a casket and close the lid.",
   "requiresHighHeat": true,
   "noDq": true,
+  "allowsRefereeStopage": false,
   "bumpAddition": "LOSERS",
   "expansion_code": "CUSTOM",
   "guide": {
@@ -291,6 +295,7 @@
   "description": "TLC Match: A variation of a Ladder Match where tables and chairs are also legal and expected to be used. Victory is achieved by retrieving the suspended prize.",
   "requiresHighHeat": true,
   "noDq": true,
+  "allowsRefereeStopage": false,
   "bumpAddition": "ALL",
   "expansion_code": "CUSTOM",
   "guide": {
@@ -315,6 +320,7 @@
   "description": "War Games: Two teams are locked inside a massive cage covering two rings. Participants enter at timed intervals. Once all participants are in, 'The Match Beyond' begins, and victory can only be achieved by pinfall or submission.",
   "requiresHighHeat": true,
   "noDq": true,
+  "allowsRefereeStopage": false,
   "bumpAddition": "ALL",
   "expansion_code": "CUSTOM",
   "guide": {
@@ -339,6 +345,7 @@
   "description": "An extreme and violent match where the ring ropes are replaced with barbed wire, and various objects in and around the ring are rigged to explode on impact.",
   "requiresHighHeat": true,
   "noDq": true,
+  "allowsRefereeStopage": false,
   "bumpAddition": "ALL",
   "expansion_code": "EXTREME",
   "guide": {

@@ -368,6 +368,9 @@ jobs:
           # so they work in all packaged artifacts without shipping the mp4 files.
           GITHUB_PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
+      - name: Copy challenge content into VitePress public dir
+        run: cp -r docs/challenges docs/site/public/challenges
+
       - name: Build documentation for GitHub Pages
         run: |
           cd docs/site
@@ -524,7 +527,7 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Xmx2g"
           MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
         run: |
-          mvn -B package -Pproduction,desktop \
+          mvn -B package -Pproduction,desktop,launcher \
             -Djpackage.type=${{ matrix.type }} \
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml

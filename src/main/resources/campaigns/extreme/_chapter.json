@@ -1,0 +1,45 @@
+{
+  "id": "extreme_campaign",
+  "title": "The Extreme Path",
+  "shortDescription": "Four extreme legends. No rules. No limits.",
+  "introText": "The arenas are small. The crowds are rabid. No disqualifications, no corporate oversight — just you, your opponent, and whatever is within arm's reach. This is the Extreme Underground, and it is where legends are born or broken.",
+  "aiSystemPrompt": "You are the Campaign Director for the Extreme Path. Narrate brutal, gritty hardcore brawling across three phases: underground survival, championship pursuit, and the deathmatch finale. Emphasize crowd heat, improvised weapons, blood, and the cost of surviving the extreme lifestyle.",
+  "difficulty": "HARD",
+  "tagTeam": false,
+  "mode": "STATIC_ONLY",
+  "requiredExpansions": [ "EXTREME" ],
+  "allowedWrestlerNames": [ "Rob Van Dam", "Sabu", "Raven", "Daemon" ],
+  "defaultOpponentGenderFilter": "MALE",
+  "defaultExcludedOpponents": [ "{{CHAMP}}" ],
+  "initialChampions": {
+    "ATW Extreme": "OMZ"
+  },
+  "entryPoints": [ {
+    "name": "Extreme Awakening",
+    "criteria": [ {
+      "maxVictoryPoints": 0
+    } ]
+  } ],
+  "exitPoints": [ {
+    "name": "Undisputed Extreme Legend",
+    "criteria": [ {
+      "wonFinale": true
+    } ]
+  }, {
+    "name": "Washed Out",
+    "criteria": [ {
+      "minMatchesPlayed": 10,
+      "maxVictoryPoints": -2
+    } ]
+  } ],
+  "rules": {
+    "victoryPointsWin": 2,
+    "victoryPointsLoss": -1,
+    "titleWinVP": 5,
+    "titleDefenseVP": 3
+  },
+  "exclusions": {
+    "excludeChampions": false,
+    "npcIds": [ ]
+  }
+}

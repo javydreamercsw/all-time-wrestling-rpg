@@ -107,15 +107,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 /** Detail view for displaying comprehensive information about a specific show. */
 @Route("show-detail")
@@ -1093,43 +1090,36 @@ public class ShowDetailView extends Main
       saveOrderButton.setEnabled(false);
     }
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = SecurityContextHolder.getContext();
     List<Segment> snapshot = new ArrayList<>(segmentOrder);
-    CompletableFuture.runAsync(
-            () ->
-                GeneralSecurityUtils.runWithContext(
-                    ctx,
-                    () -> {
-                      // Find the last non-Promo segment index
-                      int mainEventIdx = -1;
-                      for (int i = snapshot.size() - 1; i >= 0; i--) {
-                        Segment s = snapshot.get(i);
-                        if (s.getSegmentType() == null
-                            || !SegmentTypeNames.PROMO.equalsIgnoreCase(
-                                s.getSegmentType().getName())) {
-                          mainEventIdx = i;
-                          break;
-                        }
-                      }
-                      List<Segment> changed = new ArrayList<>();
-                      for (int i = 0; i < snapshot.size(); i++) {
-                        Segment s = snapshot.get(i);
-                        int newOrder = i + 1;
-                        boolean shouldBeMain = i == mainEventIdx;
-                        boolean orderChanged =
-                            !Integer.valueOf(newOrder).equals(s.getSegmentOrder());
-                        boolean mainChanged = s.isMainEvent() != shouldBeMain;
-                        if (orderChanged || mainChanged) {
-                          s.setSegmentOrder(newOrder);
-                          s.setMainEvent(shouldBeMain);
-                          changed.add(s);
-                        }
-                      }
-                      if (!changed.isEmpty()) {
-                        segmentRepository.saveAll(changed);
-                      }
-                      return null;
-                    }))
+    GeneralSecurityUtils.runAsAdminAsync(
+            () -> {
+              // Find the last non-Promo segment index
+              int mainEventIdx = -1;
+              for (int i = snapshot.size() - 1; i >= 0; i--) {
+                Segment s = snapshot.get(i);
+                if (s.getSegmentType() == null
+                    || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+                  mainEventIdx = i;
+                  break;
+                }
+              }
+              List<Segment> changed = new ArrayList<>();
+              for (int i = 0; i < snapshot.size(); i++) {
+                Segment s = snapshot.get(i);
+                int newOrder = i + 1;
+                boolean shouldBeMain = i == mainEventIdx;
+                boolean orderChanged = !Integer.valueOf(newOrder).equals(s.getSegmentOrder());
+                boolean mainChanged = s.isMainEvent() != shouldBeMain;
+                if (orderChanged || mainChanged) {
+                  s.setSegmentOrder(newOrder);
+                  s.setMainEvent(shouldBeMain);
+                  changed.add(s);
+                }
+              }
+              if (!changed.isEmpty()) {
+                segmentRepository.saveAll(changed);
+              }
+            })
         .thenRun(
             () -> {
               if (ui != null) {
@@ -1199,18 +1189,14 @@ public class ShowDetailView extends Main
     narrateButton.addClickListener(
         e -> {
           final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-          SecurityContext securityContext = SecurityContextHolder.getContext();
-          CompletableFuture.supplyAsync(
+          GeneralSecurityUtils.runAsAdminAsync(
                   () ->
-                      GeneralSecurityUtils.runWithContext(
-                          securityContext,
-                          () ->
-                              NarrationDialog.PreloadedData.load(
-                                  segmentService,
-                                  npcService,
-                                  wrestlerStatsService,
-                                  universeContextService,
-                                  segment)))
+                      NarrationDialog.PreloadedData.load(
+                          segmentService,
+                          npcService,
+                          wrestlerStatsService,
+                          universeContextService,
+                          segment))
               .thenAccept(
                   preloaded ->
                       ui.access(
@@ -1286,13 +1272,8 @@ public class ShowDetailView extends Main
     }
 
     final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext securityContext = SecurityContextHolder.getContext();
-    CompletableFuture.supplyAsync(
-            () ->
-                GeneralSecurityUtils.runWithContext(
-                    securityContext,
-                    () ->
-                        segmentNarrationServiceFactory.summarizeNarration(segment.getNarration())))
+    GeneralSecurityUtils.runAsAdminAsync(
+            () -> segmentNarrationServiceFactory.summarizeNarration(segment.getNarration()))
         .thenAccept(
             summary ->
                 ui.access(
@@ -1691,30 +1672,25 @@ public class ShowDetailView extends Main
 
   private void openEditSegmentDialog(@NonNull Segment segment) {
     final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext securityContext = SecurityContextHolder.getContext();
     Gender defaultGender =
         currentShow.getTemplate() != null ? currentShow.getTemplate().getGenderConstraint() : null;
     Long universeId = universeContextService.getCurrentUniverseId();
 
-    CompletableFuture.supplyAsync(
-            () ->
-                GeneralSecurityUtils.runWithContext(
-                    securityContext,
-                    () -> {
-                      Segment seg =
-                          segmentRepository.findByIdWithDetails(segment.getId()).orElse(segment);
-                      EditSegmentDialog.PreloadedData preloaded =
-                          EditSegmentDialog.PreloadedData.load(
-                              segmentTypeService,
-                              segmentRuleService,
-                              npcService,
-                              titleService,
-                              wrestlerService,
-                              expansionService,
-                              teamService,
-                              universeId);
-                      return new Object[] {seg, preloaded};
-                    }))
+    GeneralSecurityUtils.runAsAdminAsync(
+            () -> {
+              Segment seg = segmentRepository.findByIdWithDetails(segment.getId()).orElse(segment);
+              EditSegmentDialog.PreloadedData preloaded =
+                  EditSegmentDialog.PreloadedData.load(
+                      segmentTypeService,
+                      segmentRuleService,
+                      npcService,
+                      titleService,
+                      wrestlerService,
+                      expansionService,
+                      teamService,
+                      universeId);
+              return new Object[] {seg, preloaded};
+            })
         .thenAccept(
             result ->
                 ui.access(
@@ -1794,15 +1770,8 @@ public class ShowDetailView extends Main
                                 }
                                 // Async DB write
                                 dialogHolder[0].getSaveButton().setEnabled(false);
-                                SecurityContext saveCtx = SecurityContextHolder.getContext();
-                                CompletableFuture.supplyAsync(
-                                        () ->
-                                            GeneralSecurityUtils.runWithContext(
-                                                saveCtx,
-                                                () -> {
-                                                  segmentService.updateSegment(seg);
-                                                  return null;
-                                                }))
+                                GeneralSecurityUtils.runAsAdminAsync(
+                                        () -> segmentService.updateSegment(seg))
                                     .thenRun(
                                         () ->
                                             ui.access(
@@ -1963,15 +1932,7 @@ public class ShowDetailView extends Main
     adjudicateButton.setEnabled(false);
     addSegmentButton.setEnabled(false);
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = SecurityContextHolder.getContext();
-    CompletableFuture.runAsync(
-            () ->
-                GeneralSecurityUtils.runWithContext(
-                    ctx,
-                    () -> {
-                      showController.adjudicateShow(show.getId());
-                      return null;
-                    }))
+    GeneralSecurityUtils.runAsAdminAsync(() -> showController.adjudicateShow(show.getId()))
         .thenRun(
             () ->
                 ui.access(
@@ -2009,12 +1970,9 @@ public class ShowDetailView extends Main
     }
     showSegmentsProgress(true);
     com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
-    SecurityContext ctx = SecurityContextHolder.getContext();
     Show show = currentShow;
-    CompletableFuture.supplyAsync(
-            () ->
-                GeneralSecurityUtils.runWithContext(
-                    ctx, () -> segmentRepository.findByShowOrderBySegmentOrderAsc(show)))
+    GeneralSecurityUtils.runAsAdminAsync(
+            () -> segmentRepository.findByShowOrderBySegmentOrderAsc(show))
         .thenAccept(
             updatedSegments ->
                 ui.access(

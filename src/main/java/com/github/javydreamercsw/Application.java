@@ -19,6 +19,7 @@ package com.github.javydreamercsw;
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
 import com.github.javydreamercsw.base.AccountInitializer;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -51,6 +52,13 @@ public class Application extends SpringBootServletInitializer {
     // Enable InheritableThreadLocal to ensure background threads (like AI generation)
     // inherit the security context from the parent UI thread.
     SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
+    // Capture the strategy instance BEFORE Vaadin's SpringSecurityAutoConfiguration replaces
+    // it with VaadinAwareSecurityContextHolderStrategy. Spring Security's @PreAuthorize
+    // interceptors (AuthorizationManagerBeforeMethodInterceptor) capture the global strategy
+    // at bean-creation time, so they hold this InheritableThreadLocal instance. Without this
+    // capture, runAsAdmin() would write to VaadinAware while @PreAuthorize reads from here.
+    GeneralSecurityUtils.setMethodSecurityStrategy(
+        SecurityContextHolder.getContextHolderStrategy());
   }
 
   @Override

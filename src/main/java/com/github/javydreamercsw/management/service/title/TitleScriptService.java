@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.service.title;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import groovy.lang.Binding;
@@ -33,6 +35,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 public class TitleScriptService {
+
+  private final SegmentRuleRepository segmentRuleRepository;
 
   /**
    * Applies title-based effects to the segment narration context.
@@ -71,6 +75,38 @@ public class TitleScriptService {
     }
   }
 
+  /**
+   * Activates a title's effect script in the match-time context (player-triggered).
+   *
+   * @param title the title whose script to run
+   * @param segment the live segment to modify
+   * @param champion the wrestler activating the skill
+   * @return result indicating whether the script requests a weapon card prompt
+   */
+  public TitleActivationResult activateTitleSkill(
+      final Title title, final Segment segment, final WrestlerContext champion) {
+    if (title.getEffectScript() == null || title.getEffectScript().isBlank()) {
+      return new TitleActivationResult(false);
+    }
+    log.info("Activating title skill for {} (title: {})", champion.getName(), title.getName());
+    try {
+      Binding binding = new Binding();
+      TitleEffectContext effectContext =
+          new TitleEffectContext(noOpNarrationContext(), champion, segment, segmentRuleRepository);
+      binding.setProperty("context", effectContext);
+
+      GroovyShell shell = new GroovyShell(binding);
+      shell.evaluate("context.with { " + title.getEffectScript() + " }");
+      return new TitleActivationResult(effectContext.isWeaponCardSetupNeeded());
+    } catch (Exception e) {
+      log.error("Error activating title skill for {}: {}", title.getName(), e.getMessage(), e);
+      return new TitleActivationResult(false);
+    }
+  }
+
+  /** Result returned after a player-triggered title skill activation. */
+  public record TitleActivationResult(boolean weaponCardSetupNeeded) {}
+
   private void executeTitleScript(
       final String script, final SegmentNarrationContext context, final WrestlerContext champion) {
     log.info("Executing title script for {}: {}", champion.getName(), script);
@@ -86,5 +122,10 @@ public class TitleScriptService {
     } catch (Exception e) {
       log.error("Error executing title script: {}", script, e);
     }
+  }
+
+  /** Minimal narration context for match-time activation where no AI context is needed. */
+  private static SegmentNarrationContext noOpNarrationContext() {
+    return new SegmentNarrationContext();
   }
 }

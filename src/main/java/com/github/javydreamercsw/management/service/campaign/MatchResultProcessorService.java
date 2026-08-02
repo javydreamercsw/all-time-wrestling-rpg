@@ -51,6 +51,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
@@ -100,10 +101,16 @@ public class MatchResultProcessorService {
   private final WrestlerStatusService wrestlerStatusService;
   private final FeatureDataService featureDataService;
 
-  // Field-injected with @Lazy to break the circular dependency with CampaignService
+  // Field-injected with @Lazy to break circular dependency with CampaignService
   @org.springframework.beans.factory.annotation.Autowired
   @org.springframework.context.annotation.Lazy
   private CampaignService campaignService;
+
+  // Field-injected with @Lazy to break the cycle: MatchResultProcessorService →
+  // CampaignEncounterService → CampaignService → MatchResultProcessorService
+  @org.springframework.beans.factory.annotation.Autowired
+  @org.springframework.context.annotation.Lazy
+  private CampaignEncounterService campaignEncounterService;
 
   private final Random random = new Random();
 
@@ -324,6 +331,26 @@ public class MatchResultProcessorService {
           state.getVictoryPoints());
     }
 
+    // Bonus VP from encounter conditions (finisher, move-specific, etc.)
+    SegmentParticipant playerParticipant =
+        state.getCurrentMatch() != null
+            ? state.getCurrentMatch().getParticipants().stream()
+                .filter(p -> wrestler.getId().equals(p.getWrestler().getId()))
+                .findFirst()
+                .orElse(null)
+            : null;
+    List<BonusVpCondition> bonusConditions =
+        campaignEncounterService.getCurrentChoiceBonusConditions(state);
+    for (BonusVpCondition condition : bonusConditions) {
+      if (isBonusConditionMet(condition, won, playerParticipant)) {
+        state.setVictoryPoints(state.getVictoryPoints() + condition.getVpReward());
+        log.debug("Bonus VP awarded: {} — {}", condition.getVpReward(), condition.getDescription());
+      }
+    }
+    if (!bonusConditions.isEmpty()) {
+      campaignEncounterService.clearPendingBonusConditions(state);
+    }
+
     if (currentChapter.isTournament()) {
       boolean isFinalsPhase =
           featureDataService.getFeatureValue(state, KEY_FINALS_PHASE, Boolean.class, false);
@@ -405,17 +432,21 @@ public class MatchResultProcessorService {
     if (state.getMatchesPlayed() == 1 && state.getCompletedChapterIds().isEmpty()) {
       WrestlerAlignment alignment =
           wrestlerAlignmentRepository
-              .findByWrestler(wrestler)
-              .orElseThrow(() -> new IllegalStateException("Alignment not found"));
+              .findByWrestlerAndUniverse(wrestler, campaign.getUniverse())
+              .or(() -> wrestlerAlignmentRepository.findByWrestler(wrestler))
+              .orElse(null);
 
-      if (alignment.getAlignmentType() == AlignmentType.FACE) {
-        state.setPromoUnlocked(true);
-        log.debug("Wrestler {} unlocked Promo action (Face alignment).", wrestler.getName());
-      } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
-        state.setPromoUnlocked(true);
-        state.setAttackUnlocked(true);
-        log.debug(
-            "Wrestler {} unlocked Promo and Attack actions (Heel alignment).", wrestler.getName());
+      if (alignment != null) {
+        if (alignment.getAlignmentType() == AlignmentType.FACE) {
+          state.setPromoUnlocked(true);
+          log.debug("Wrestler {} unlocked Promo action (Face alignment).", wrestler.getName());
+        } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
+          state.setPromoUnlocked(true);
+          state.setAttackUnlocked(true);
+          log.debug(
+              "Wrestler {} unlocked Promo and Attack actions (Heel alignment).",
+              wrestler.getName());
+        }
       }
     }
 
@@ -548,6 +579,43 @@ public class MatchResultProcessorService {
       }
     }
     return free;
+  }
+
+  private boolean isBonusConditionMet(
+      final BonusVpCondition condition, final boolean won, final SegmentParticipant participant) {
+    if (condition.isRequireWin() && !won) {
+      return false;
+    }
+    if (participant == null) {
+      // No participant data — can only satisfy win-only conditions with no extra constraints
+      return condition.getFinishType() == null
+          && !condition.isRequireFinisherCard()
+          && (condition.getCardGroups() == null || condition.getCardGroups().isEmpty());
+    }
+    if (condition.getFinishType() != null
+        && !condition.getFinishType().equals(participant.getFinishType())) {
+      return false;
+    }
+    if (condition.isRequireFinisherCard()) {
+      String winCard = participant.getWinningCardName();
+      if (winCard == null || winCard.isBlank()) {
+        return false;
+      }
+    }
+    if (condition.getCardGroups() != null) {
+      java.util.Map<String, Integer> played =
+          participant.getCardsPlayed() != null ? participant.getCardsPlayed() : java.util.Map.of();
+      for (BonusVpCondition.CardExecutionGroup group : condition.getCardGroups()) {
+        int total =
+            group.getAnyOf() == null
+                ? 0
+                : group.getAnyOf().stream().mapToInt(name -> played.getOrDefault(name, 0)).sum();
+        if (total < group.getMinCount()) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   private void addParticipant(@NonNull final Segment segment, @NonNull final Wrestler wrestler) {

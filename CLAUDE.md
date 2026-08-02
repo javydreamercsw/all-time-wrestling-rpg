@@ -44,7 +44,13 @@ git status  # MUST show "up to date with origin"
 
 5. **Clean up** - Clear stashes, prune remote branches
 6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+7. **Update Repowise index** - Run after pushing so the index reflects the new commits:
+
+```bash
+repowise update
+```
+
+8. **Hand off** - Provide context for next session
 
 **CRITICAL RULES:**
 - Work is NOT complete until `git push` succeeds
@@ -61,7 +67,7 @@ Before committing any code change, you MUST:
 1. **Run affected tests** — if you changed production code, run the corresponding unit tests (`mvn test -Dtest=AffectedTest`) and confirm they pass. If you changed a method signature or renamed a call site, grep for all usages (including mocks in tests) and verify each one compiles and passes.
 2. **Apply formatting** — run `mvn spotless:apply` before every commit. The CI build fails without it.
 3. **No parallel Maven processes** — never run two `mvn` commands against the same `target/` concurrently. It corrupts class files. Run tests sequentially. If the IDE is open, use `mvn compile -Dmaven.compiler.useIncrementalCompilation=false` rather than `mvn clean` when a clean is needed.
-4. **E2E tests** — use `-DrerunFailingTestsCount=0` when debugging failures locally. Retries are for flaky CI runs, not diagnosis. Use `-Dit.test=ClassName` with `-Pdocs-e2e,production` for docs tests, `-Pe2e,production` for regular E2E tests.
+4. **E2E tests** — use `-DrerunFailingTestsCount=0` when debugging failures locally. Retries are for flaky CI runs, not diagnosis. Use `-Dit.test=ClassName` with `-Pdocs-e2e,production` for docs tests, `-Pe2e,production` for regular E2E tests. Add `-Dsurefire.skip=true` to skip unit tests and run only the E2E target — otherwise Maven runs the full unit suite first, which is unnecessary when diagnosing E2E failures.
 
 ## Build & Test
 

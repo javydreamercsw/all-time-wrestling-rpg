@@ -1,0 +1,234 @@
+[ {
+  "id": "contender_gauntlet",
+  "title": "The Contender's Gauntlet",
+  "narrativeText": "To earn a title shot, you must beat whoever they put in front of you. The booker grins. Easy enough for him to say.",
+  "choices": [ {
+    "id": "enter_gauntlet",
+    "label": "Accept the Challenge",
+    "text": "Win this, and the championship match is yours.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "setRivalFromMatchOpponent": true
+  } ]
+}, {
+  "id": "title_shot_earned",
+  "title": "The Championship Confrontation",
+  "narrativeText": "The Extreme Championship is on the line. The champion waits — {{CHAMP}}. Everything you've survived underground has led to this single, violent moment.",
+  "choices": [ {
+    "id": "challenge_for_title",
+    "label": "Demand the Title Match",
+    "text": "No more waiting. The championship changes hands tonight.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "forcedOpponentName": "{{CHAMP}}",
+    "onLossNextEncounterId": "comeback_betrayal"
+  } ]
+}, {
+  "id": "championship_defense",
+  "title": "First Defense",
+  "narrativeText": "You won the title and the challengers are already lining up. {{RIVAL}} has unfinished business — and a steel chair.",
+  "choices": [ {
+    "id": "defend_the_title",
+    "label": "Defend Your Championship",
+    "text": "No one takes this from you without a fight.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "extreme_rules_showdown",
+  "title": "Extreme Rules Showdown",
+  "narrativeText": "Another challenger. Another extreme stipulation. The title makes you a target every single night.",
+  "choices": [ {
+    "id": "another_defense",
+    "label": "Accept the Extreme Challenge",
+    "text": "It never stops. That's fine — neither do you.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ]
+  } ]
+}, {
+  "id": "championship_ladder_shot",
+  "title": "Contract on the Line",
+  "narrativeText": "The booker has a new idea: hang a briefcase containing a championship contract above the ring. Win it, and you secure your spot. A ladder match. The crowd is already buzzing.",
+  "choices": [ {
+    "id": "climb_the_ladder",
+    "label": "Climb for the Contract",
+    "text": "Every rung is a battle. The contract is yours.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Ladder Match" ]
+  } ]
+}, {
+  "id": "championship_dirty_politics",
+  "title": "Booker's Ultimatum",
+  "narrativeText": "The booker calls you into his office. He slides a paper across the desk. 'Sign this or I strip the title.' The paper would give him creative control of your character. The crowd outside is chanting your name, not his.",
+  "choices": [ {
+    "id": "comply_with_booker",
+    "label": "Sign It",
+    "text": "You need the belt. You swallow your pride and sign.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -2
+  }, {
+    "id": "call_his_bluff",
+    "label": "Call His Bluff",
+    "text": "You tear the paper in half. 'Try it. See what the crowd does.' He backs down.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": 2,
+    "featureFlags": {
+      "challenged_booker": true
+    }
+  } ]
+}, {
+  "id": "championship_hardcore_gauntlet",
+  "title": "Extreme Gauntlet",
+  "narrativeText": "The announcement comes with no warning: tonight, you defend against a gauntlet of challengers. They come one by one until you can no longer stand. The crowd is ecstatic. You are less so.",
+  "choices": [ {
+    "id": "run_the_gauntlet",
+    "label": "Run the Gauntlet",
+    "text": "Survive long enough and the championship stays yours.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Gauntlet" ]
+  } ]
+}, {
+  "id": "championship_press_war",
+  "title": "Promo War",
+  "narrativeText": "{{RIVAL}} cuts a promo on cable TV — calling you a paper champion, saying you got lucky, that the title never belonged to you. It airs. The calls start. The booker wants a response by midnight.",
+  "choices": [ {
+    "id": "respond_publicly",
+    "label": "Fire Back Publicly",
+    "text": "You call in to the show and say everything. The fans eat it up.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 1
+  }, {
+    "id": "no_comment",
+    "label": "No Comment",
+    "text": "You let actions speak louder than words. Next week in the ring.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -1,
+    "featureFlags": {
+      "stayed_silent": true
+    }
+  } ]
+}, {
+  "id": "championship_faction_offer",
+  "title": "The Faction",
+  "narrativeText": "Three wrestlers corner you after the show. Their leader slides you a card. 'Join us. We'll make sure no one touches that title without going through all of us first.' They seem sincere. They are also terrifying.",
+  "choices": [ {
+    "id": "join_faction",
+    "label": "Accept the Offer",
+    "text": "Numbers matter in the extreme world. You're in.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -3
+  }, {
+    "id": "refuse_faction",
+    "label": "Refuse",
+    "text": "You got here alone. You'll keep it that way.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 2,
+    "featureFlags": {
+      "refused_faction": true
+    }
+  } ]
+}, {
+  "id": "championship_injury_scare",
+  "title": "Grinding Through",
+  "narrativeText": "Your knee buckles in warmup. The trainer wraps it, says two words: 'Be careful.' You have a championship defense tonight. The crowd is already in their seats.",
+  "choices": [ {
+    "id": "push_through_injury",
+    "label": "Push Through",
+    "text": "Champions don't take nights off. You tape it tight and head to the ring.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ]
+  }, {
+    "id": "take_a_week",
+    "label": "Rest It",
+    "text": "You request a one-week postponement. The crowd boos, but the knee needs time.",
+    "vpReward": 2,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": -1
+  } ]
+}, {
+  "id": "championship_tlc_brawl",
+  "title": "Tables, Ladders and Chairs",
+  "narrativeText": "{{RIVAL}} drags a ladder down the aisle on their way to the ring. A ring crew member follows with a stack of tables. Someone has informed the crowd this is happening. They are already standing.",
+  "choices": [ {
+    "id": "embrace_the_tlc",
+    "label": "Embrace the Chaos",
+    "text": "Tables. Ladders. Chairs. You helped invent this match.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Tables, Ladders and Chairs (TLC)" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "comeback_betrayal",
+  "title": "Thrown Under the Bus",
+  "narrativeText": "The locker room clears out fast after your loss. Someone — a person you considered an ally — is on the house microphone, telling the crowd you were never good enough, that the belt was always above your reach. The words echo in the empty hallway.",
+  "choices": [ {
+    "id": "regroup_alone",
+    "label": "Face It Alone",
+    "text": "You say nothing. You find a quiet corner and start planning. This is not over.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 1,
+    "nextEncounterId": "comeback_fan_support"
+  }, {
+    "id": "demand_rematch_now",
+    "label": "Demand a Rematch Tonight",
+    "text": "You storm back to the ring. You are not done. Not even close.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": -1
+  } ]
+}, {
+  "id": "comeback_fan_support",
+  "title": "Standing Ovation",
+  "narrativeText": "One fan finds you in the parking lot. Then two. Then a dozen. They are still wearing your shirts. One holds a sign: 'WE BELIEVE.' They did not leave when you lost. You are not going to let them down.",
+  "choices": [ {
+    "id": "channel_the_support",
+    "label": "Channel the Support",
+    "text": "You shake every hand. You remember why you do this. The comeback starts now.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 1,
+    "nextEncounterId": "comeback_qualifier"
+  } ]
+}, {
+  "id": "comeback_qualifier",
+  "title": "Second Chance Qualifier",
+  "narrativeText": "The booker posts the bracket: an elimination qualifier. Win it and you re-earn the championship match. The crowd knows what is at stake. They are on their feet before the bell.",
+  "choices": [ {
+    "id": "win_the_qualifier",
+    "label": "Fight Your Way Back",
+    "text": "Elimination. One by one, you take them all down.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Elimination" ],
+    "onWinNextEncounterId": "title_shot_earned"
+  } ]
+} ]

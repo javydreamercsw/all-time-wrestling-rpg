@@ -33,6 +33,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 /**
  * Security configuration for E2E tests. Uses Vaadin's SpringSecurityAutoConfiguration to wire
@@ -84,6 +85,12 @@ public class TestE2ESecurityConfig {
 
     http.csrf(AbstractHttpConfigurer::disable);
     http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+
+    // Explicitly persist the SecurityContext to the HTTP session. Spring Security 7's
+    // requireExplicitSave=true default otherwise leaves auth unpersisted on this plain
+    // formLogin() chain, so @PreAuthorize on WebSocket/async threads sees a null context.
+    http.securityContext(
+        context -> context.securityContextRepository(new HttpSessionSecurityContextRepository()));
 
     http.formLogin(
         form ->

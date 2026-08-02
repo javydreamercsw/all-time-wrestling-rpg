@@ -35,6 +35,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,7 +144,13 @@ public class GmDashboardView extends VerticalLayout {
                             .map(WrestlerState::getFans)
                             .orElse(0L)))
         .setHeader("Fans")
-        .setSortable(true);
+        .setSortable(true)
+        .setComparator(
+            Comparator.comparingLong(
+                w ->
+                    Optional.ofNullable(statesByWrestlerId.get(w.getId()))
+                        .map(WrestlerState::getFans)
+                        .orElse(0L)));
 
     rosterGrid.addClassNames(LumoUtility.Border.ALL, LumoUtility.BorderRadius.MEDIUM);
 

@@ -112,7 +112,43 @@ public class CampaignService {
     featureDataService.setFeatureValue(state, key, value);
   }
 
-  public Campaign startCampaign(@NonNull final Wrestler wrestlerParam) {
+  public List<CampaignChapterDTO> findStartingChapters(@NonNull final Wrestler wrestlerParam) {
+    Wrestler wrestler =
+        wrestlerRepository
+            .findById(wrestlerParam.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Wrestler not found"));
+    wrestler.getReigns().size();
+    Campaign fakeCampaign =
+        Campaign.builder()
+            .wrestler(wrestler)
+            .status(CampaignStatus.ACTIVE)
+            .startedAt(LocalDateTime.now())
+            .build();
+    CampaignState blankState =
+        CampaignState.builder()
+            .campaign(fakeCampaign)
+            .victoryPoints(0)
+            .skillTokens(0)
+            .healthPenalty(0)
+            .handSizePenalty(0)
+            .staminaPenalty(0)
+            .pendingL1Picks(0)
+            .build();
+    List<CampaignChapterDTO> available =
+        chapterService.findAvailableChapters(blankState, wrestler.getName());
+    if (available.isEmpty()) {
+      available = chapterService.findAvailableChapters(blankState, null);
+    }
+    return available;
+  }
+
+  public Campaign startCampaign(@NonNull final Wrestler wrestler) {
+    List<CampaignChapterDTO> available = findStartingChapters(wrestler);
+    return startCampaign(wrestler, available.isEmpty() ? null : available.get(0).getId());
+  }
+
+  public Campaign startCampaign(
+      @NonNull final Wrestler wrestlerParam, final String startingChapterId) {
     // Re-fetch to ensure attached and initialize lazy collections
     Wrestler wrestler =
         wrestlerRepository
@@ -126,23 +162,25 @@ public class CampaignService {
       throw new IllegalStateException("Wrestler already has an active campaign.");
     }
 
+    Universe universe =
+        universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
+
     // Every new campaign starts at NEUTRAL regardless of the wrestler's previous alignment.
+    // Scoped to the current universe to avoid collisions when the wrestler has records in others.
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
-            .findByWrestler(wrestler)
+            .findByWrestlerAndUniverse(wrestler, universe)
             .orElseGet(
                 () ->
                     WrestlerAlignment.builder()
                         .wrestler(wrestler)
+                        .universe(universe)
                         .alignmentType(AlignmentType.NEUTRAL)
                         .level(0)
                         .build());
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
     alignment.setLevel(0);
     wrestlerAlignmentRepository.save(alignment);
-
-    Universe universe =
-        universeRepository.findById(universeContextService.getCurrentUniverseId()).orElse(null);
 
     Campaign campaign =
         Campaign.builder()
@@ -177,8 +215,16 @@ public class CampaignService {
     if (available.isEmpty()) {
       available = chapterService.findAvailableChapters(state, null);
     }
-    if (!available.isEmpty()) {
-      CampaignChapterDTO initialChapter = available.get(0);
+    // When an explicit chapter is requested, fetch it directly so wrestler-name filters on
+    // allowedWrestlerNames don't silently override an intentional chapter selection.
+    final List<CampaignChapterDTO> resolvedAvailable = available;
+    CampaignChapterDTO initialChapter =
+        startingChapterId != null
+            ? chapterService
+                .getChapter(startingChapterId)
+                .orElseGet(() -> resolvedAvailable.isEmpty() ? null : resolvedAvailable.get(0))
+            : available.isEmpty() ? null : available.get(0);
+    if (initialChapter != null) {
       state.setCurrentChapterId(initialChapter.getId());
       campaignProgressionService.applyInitialChampions(initialChapter);
     }
@@ -352,6 +398,7 @@ public class CampaignService {
 
   public void abandonCampaign(@NonNull final Campaign campaign) {
     campaignProgressionService.abandonCampaign(campaign);
+    wrestlerAlignmentRepository.deleteByWrestler(campaign.getWrestler());
   }
 
   public Optional<String> advanceChapter(@NonNull final Campaign campaignParam) {
@@ -384,7 +431,7 @@ public class CampaignService {
     Wrestler wrestler = campaign.getWrestler();
     WrestlerAlignment alignment =
         wrestlerAlignmentRepository
-            .findByWrestler(wrestler)
+            .findFirstByWrestler(wrestler)
             .orElseThrow(() -> new IllegalStateException("Alignment not found"));
 
     CampaignState state = campaign.getState();

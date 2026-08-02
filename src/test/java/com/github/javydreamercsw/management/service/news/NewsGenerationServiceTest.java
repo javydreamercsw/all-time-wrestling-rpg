@@ -38,10 +38,14 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -58,6 +62,7 @@ class NewsGenerationServiceTest {
   private EventAggregationService aggregationService;
   private WrestlerRepository wrestlerRepository;
   private NpcRepository npcRepository;
+  private TitleReignRepository titleReignRepository;
 
   @BeforeEach
   public void setUp() {
@@ -70,6 +75,7 @@ class NewsGenerationServiceTest {
     aggregationService = mock(EventAggregationService.class);
     wrestlerRepository = mock(WrestlerRepository.class);
     npcRepository = mock(NpcRepository.class);
+    titleReignRepository = mock(TitleReignRepository.class);
     objectMapper = new ObjectMapper();
     newsGenerationService =
         new NewsGenerationService(
@@ -81,7 +87,8 @@ class NewsGenerationServiceTest {
             segmentRepository,
             aggregationService,
             wrestlerRepository,
-            npcRepository);
+            npcRepository,
+            titleReignRepository);
 
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);
     when(aiService.isAvailable()).thenReturn(true);
@@ -321,6 +328,17 @@ class NewsGenerationServiceTest {
     segment.setIsTitleSegment(true);
     segment.getTitles().add(title);
 
+    // Simulate: a new reign was won at this segment (title changed hands)
+    TitleReign newReign = new TitleReign();
+    newReign.setTitle(title);
+    when(titleReignRepository.findByWonAtSegment(segment)).thenReturn(List.of(newReign));
+
+    // The previous reign held by the old champion
+    TitleReign prevReign = new TitleReign();
+    prevReign.setChampions(new LinkedHashSet<>(List.of(champion)));
+    when(titleReignRepository.findFirstByTitleAndEndDateIsNotNullOrderByEndDateDesc(title))
+        .thenReturn(Optional.of(prevReign));
+
     String aiResponse =
         """
         {"headline": "New Champ!", "content": "Won the belt.", "category": "BREAKING",\
@@ -337,6 +355,150 @@ class NewsGenerationServiceTest {
                     prompt.contains("TITLE CHANGE")
                         && prompt.contains("World Title")
                         && prompt.contains("Old Champion") // pre-match champ named
+                        && !prompt.contains("TITLE DEFENSE")));
+  }
+
+  @Test
+  void testTitleSegment_vacantTitleChangePromptShowsVacant() {
+    // Title was vacant before; no previous reign exists
+    Title title = new Title();
+    title.setName("Vacant Belt");
+
+    Show show = new Show();
+    show.setName("Big Show");
+    SegmentType type = new SegmentType();
+    type.setName("Battle Royal");
+
+    Wrestler newChamp = Wrestler.builder().name("First Champ").build();
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(newChamp);
+    segment.setWinners(List.of(newChamp));
+    segment.setIsTitleSegment(true);
+    segment.getTitles().add(title);
+
+    TitleReign newReign = new TitleReign();
+    newReign.setTitle(title);
+    when(titleReignRepository.findByWonAtSegment(segment)).thenReturn(List.of(newReign));
+    // No previous reign — title was vacant
+    when(titleReignRepository.findFirstByTitleAndEndDateIsNotNullOrderByEndDateDesc(title))
+        .thenReturn(Optional.empty());
+
+    String aiResponse =
+        """
+        {"headline": "New Champion!", "content": "Crowned.", "category": "BREAKING",\
+         "isRumor": false, "importance": 5}\
+        """;
+    when(aiService.generateText(anyString())).thenReturn(aiResponse);
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    verify(aiService)
+        .generateText(
+            org.mockito.ArgumentMatchers.argThat(
+                prompt ->
+                    prompt.contains("TITLE CHANGE")
+                        && prompt.contains("VACANT")
+                        && !prompt.contains("TITLE DEFENSE")));
+  }
+
+  @Test
+  void testGenerateNewsForShow_titleDefensePromptIsCorrect() {
+    Wrestler champion = Wrestler.builder().name("The Champ").build();
+
+    Title title = new Title();
+    title.setName("World Title");
+    title.awardTitleTo(List.of(champion), java.time.Instant.now(), null);
+
+    Show show = new Show();
+    show.setName("Monday Night");
+    SegmentType type = new SegmentType();
+    type.setName("One on One");
+
+    Wrestler challenger = Wrestler.builder().name("Contender").build();
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(champion);
+    segment.addParticipant(challenger);
+    segment.setWinners(List.of(champion)); // champion retains
+    segment.setIsTitleSegment(true);
+    segment.getTitles().add(title);
+
+    // No new reign won at this segment → defense
+    when(titleReignRepository.findByWonAtSegment(segment)).thenReturn(List.of());
+    when(segmentRepository.findByShow(show)).thenReturn(List.of(segment));
+
+    String aiResponse =
+        """
+        {"headline": "Defense!", "content": "Retained.", "category": "BREAKING",\
+         "isRumor": false, "importance": 3}\
+        """;
+    when(aiService.generateText(anyString())).thenReturn(aiResponse);
+
+    newsGenerationService.generateNewsForShow(show);
+
+    verify(aiService)
+        .generateText(
+            org.mockito.ArgumentMatchers.argThat(
+                prompt ->
+                    prompt.contains("TITLE DEFENSE")
+                        && prompt.contains("World Title")
+                        && prompt.contains("The Champ")
+                        && !prompt.contains("TITLE CHANGE")));
+  }
+
+  @Test
+  void testGenerateNewsForShow_titleChangePromptIsCorrect() {
+    Wrestler oldChamp = Wrestler.builder().name("Old Champ").build();
+
+    Title title = new Title();
+    title.setName("World Title");
+    title.awardTitleTo(List.of(oldChamp), java.time.Instant.now(), null);
+
+    Show show = new Show();
+    show.setName("Pay-Per-View");
+    SegmentType type = new SegmentType();
+    type.setName("One on One");
+
+    Wrestler newChamp = Wrestler.builder().name("New Champ").build();
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(oldChamp);
+    segment.addParticipant(newChamp);
+    segment.setWinners(List.of(newChamp)); // challenger wins
+    segment.setIsTitleSegment(true);
+    segment.getTitles().add(title);
+
+    TitleReign newReign = new TitleReign();
+    newReign.setTitle(title);
+    when(titleReignRepository.findByWonAtSegment(segment)).thenReturn(List.of(newReign));
+
+    TitleReign prevReign = new TitleReign();
+    prevReign.setChampions(new LinkedHashSet<>(List.of(oldChamp)));
+    when(titleReignRepository.findFirstByTitleAndEndDateIsNotNullOrderByEndDateDesc(title))
+        .thenReturn(Optional.of(prevReign));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of(segment));
+
+    String aiResponse =
+        """
+        {"headline": "New Champ!", "content": "Won it.", "category": "BREAKING",\
+         "isRumor": false, "importance": 5}\
+        """;
+    when(aiService.generateText(anyString())).thenReturn(aiResponse);
+
+    newsGenerationService.generateNewsForShow(show);
+
+    verify(aiService)
+        .generateText(
+            org.mockito.ArgumentMatchers.argThat(
+                prompt ->
+                    prompt.contains("TITLE CHANGE")
+                        && prompt.contains("World Title")
+                        && prompt.contains("Old Champ")
                         && !prompt.contains("TITLE DEFENSE")));
   }
 

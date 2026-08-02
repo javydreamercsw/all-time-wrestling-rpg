@@ -133,6 +133,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         .ifPresent(
             account -> {
               account.resetFailedAttempts();
+              account.setPreviousLastLogin(account.getLastLogin());
               account.setLastLogin(LocalDateTime.now());
               accountRepository.save(account);
               log.debug("Recorded successful login for user: {}", username);

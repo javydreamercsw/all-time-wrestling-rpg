@@ -1,0 +1,229 @@
+[ {
+  "id": "bb_intro_1",
+  "title": "The British Bulldog Has Arrived",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The British Bulldog — Davey Boy Smith — has come to All Time Wrestling, and he's brought his legendary power game with him. The Union Jack flies as he makes his entrance, his powerful frame drawing gasps from the crowd. Davey Boy flexes for the fans who cheer his arrival. \"I am the British Bulldog, and I am the strongest man in ANY ring today!\"",
+  "choices": [ {
+    "id": "bb_intro_1_continue",
+    "label": "Continue",
+    "text": "Begin your journey in ATW.",
+    "nextEncounterId": "bb_intro_2",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "bb_intro_2",
+  "title": "First Steps",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The British Bulldog learns the ropes of All Time Wrestling. He's been matched against Rey Jaguar — a lightning-fast luchador whose speed is the polar opposite of Davey Boy's power game. The contrast will make for an entertaining bout. Davey Boy cracks his knuckles. Speed means nothing if you can't escape the Running Powerslam.",
+  "choices": [ {
+    "id": "bb_intro_2_continue",
+    "label": "Head to the ring",
+    "text": "Face Rey Jaguar in your debut bout.",
+    "nextEncounterId": "bb_intro_3",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "bb_intro_3",
+  "title": "Part 1: Debut Against Rey Jaguar",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The Bulldog and Rey Jaguar circle each other. Rey's speed makes him difficult to pin down, but Davey Boy knows that one clean catch is all he needs. The crowd appreciates both athletes. This debut match will establish the British Bulldog's credentials in ATW.",
+  "choices": [ {
+    "id": "bb_intro_3_match",
+    "label": "Fight Rey Jaguar!",
+    "text": "Take on Rey Jaguar in your first ATW match.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Rey Jaguar",
+    "matchType": "One on One",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "bb_part_1",
+    "onLossNextEncounterId": "bb_part_1"
+  } ]
+}, {
+  "id": "bb_part_1",
+  "title": "Part 2: Gaining Ground",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "After the debut match, the British Bulldog has made his presence known. The locker room is taking notice. Word gets back to Davey Boy that Kurt Angle — the American Wrestling Machine — has been watching him closely. This doesn't sit right. Kurt is a gold medalist who sees Davey Boy as a threat to be neutralized. The tension is building.",
+  "choices": [ {
+    "id": "bb_part_1_continue",
+    "label": "Press on",
+    "text": "Continue building momentum in ATW.",
+    "nextEncounterId": "bb_part_2",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "bb_part_2",
+  "title": "Part 3: The Kurt Angle Confrontation",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "Kurt Angle confronts the British Bulldog backstage! \"You think you're strong? I'm an Olympic gold medalist. Everything you do, I can do better.\" Davey Boy squares up: \"Then prove it in the ring, mate.\" Kurt smirks and walks away. Management sees the heat between them and books a future match. But first — Rey Jaguar has demanded his rematch. Use one Backstage Action if you wish before heading to the ring.",
+  "choices": [ {
+    "id": "bb_part_2_continue",
+    "label": "Deal with the rematch first",
+    "text": "Face Rey Jaguar in the rematch — Kurt Angle can wait.",
+    "nextEncounterId": "bb_part_3",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "bb_part_3",
+  "title": "Part 4: Rey Jaguar Rematch",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "Rey Jaguar has clearly been studying the British Bulldog's tendencies since their first match. He's faster, more evasive, and lands more counters early on. But Davey Boy is the stronger man, and he doesn't tire easily. The Running Powerslam is always there — it's just a matter of getting his hands on the smaller man.",
+  "choices": [ {
+    "id": "bb_part_3_match",
+    "label": "Finish the rematch!",
+    "text": "Take on Rey Jaguar in the rematch.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Rey Jaguar",
+    "matchType": "One on One",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "bb_part_4",
+    "onLossNextEncounterId": "bb_part_4"
+  } ]
+}, {
+  "id": "bb_part_4",
+  "title": "Part 5: Kurt Angle — First Encounter",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The inevitable happens — the British Bulldog faces Kurt Angle in the ring! This is one of the toughest tests of the campaign so far. Kurt is technically superior and his Ankle Lock is a constant threat. BUT — if the British Bulldog wins this match by executing his Running Powerslam (his finisher) for a PINFALL victory, he gains an additional +2 VP bonus for demonstrating dominance over the Olympic Champion.",
+  "choices": [ {
+    "id": "bb_part_4_match",
+    "label": "Fight Kurt Angle!",
+    "text": "Face Kurt Angle. Win by Running Powerslam pinfall for a +2 VP bonus.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Kurt Angle",
+    "matchType": "One on One",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "bb_part_5",
+    "onLossNextEncounterId": "bb_part_5",
+    "bonusVpConditions": [ {
+      "vpReward": 2,
+      "description": "Won by pinfall with finisher (Running Powerslam)",
+      "requireWin": true,
+      "finishType": "PINFALL",
+      "requireFinisherCard": true
+    } ]
+  } ]
+}, {
+  "id": "bb_part_5",
+  "title": "Part 6: Choosing Your Character",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "After the intense match with Kurt Angle, the British Bulldog faces a critical choice about how he wants to be perceived in ATW. The fans are divided — some see him as a sympathetic underdog fighting for his country, others are drawn to the idea of a more ruthless Bulldog who doesn't let anything — or anyone — stand in his way.",
+  "choices": [ {
+    "id": "bb_part_5_face",
+    "label": "The People's Bulldog (Face)",
+    "text": "Fight for the Union Jack and the fans who believe in you.",
+    "alignmentShift": 1,
+    "unlockPromo": true,
+    "nextEncounterId": "bb_part_6a",
+    "vpReward": 0,
+    "intendedPath": true
+  }, {
+    "id": "bb_part_5_heel",
+    "label": "The Ruthless Bulldog (Heel)",
+    "text": "No more Mr. Nice Guy — do whatever it takes to win.",
+    "alignmentShift": -1,
+    "unlockPromo": true,
+    "unlockAttack": true,
+    "nextEncounterId": "bb_part_6b",
+    "vpReward": 0,
+    "intendedPath": false
+  } ]
+}, {
+  "id": "bb_part_6a",
+  "title": "Part 7A: An Injury and a Challenge (Face)",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The British Bulldog takes a hard fall during training and draws a Leg Injury card — apply its effects immediately. Despite the setback, Davey Boy refuses to back down. He takes a Backstage Action to receive medical treatment if available. Kurt Angle has been watching, waiting for weakness. Now he's ready to strike again. The British Bulldog must summon everything he has for this final encounter.",
+  "choices": [ {
+    "id": "bb_part_6a_continue",
+    "label": "Fight through the injury",
+    "text": "Head to the ring despite the leg injury.",
+    "nextEncounterId": "bb_part_7a",
+    "vpReward": 0,
+    "alignmentShift": 0,
+    "featureFlags": {
+      "injury_type": "leg",
+      "injury_draw": "leg"
+    }
+  } ]
+}, {
+  "id": "bb_part_7a",
+  "title": "Part 8A: The Rematch with Kurt Angle (Face)",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The British Bulldog faces Kurt Angle one more time to close out Chapter 1! The Leg Injury is a serious obstacle — Kurt will target it mercilessly. But Davey Boy has heart, and the fans are LOUD in his support. Win or lose, this is the defining moment of Chapter 1. The Running Powerslam awaits.",
+  "choices": [ {
+    "id": "bb_part_7a_match",
+    "label": "Final match vs Kurt Angle!",
+    "text": "Battle Kurt Angle in the Chapter 1 finale.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Kurt Angle",
+    "matchType": "One on One",
+    "vpReward": 2,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "bb_chapter_end_face",
+    "onLossNextEncounterId": "bb_chapter_end_face"
+  } ]
+}, {
+  "id": "bb_chapter_end_face",
+  "title": "Chapter 1 Complete: Bulldog Stands Tall! (Face)",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The British Bulldog has completed Chapter 1 of the All or Nothing campaign! Battered and perhaps nursing a leg injury, Davey Boy Smith proved his character in the face of adversity. The crowd gave him a standing ovation after the final bell. Kurt Angle watches, arms crossed — this rivalry is far from over. Your Chapter 2 awaits, and the feud with the Olympic Champion will be the central story.",
+  "choices": [ {
+    "id": "bb_chapter_end_face_done",
+    "label": "Advance to Chapter 2",
+    "text": "Chapter 1 complete. Proceed to the next chapter.",
+    "nextPhase": "BACKSTAGE",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "bb_part_6b",
+  "title": "Part 7B: The Ruthless Approach (Heel)",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The Ruthless Bulldog takes a backstage action to gain a strategic edge — he scouts Kurt Angle's weaknesses and sets a trap. Kurt finds out and ups the ante himself. \"You want to play dirty? Fine. I'm an Olympic gold medalist — I always find a way to win.\" Kurt Angle has been granted +6 starting momentum for the upcoming match as a result of his psychological preparation. This will be a brutal fight.",
+  "choices": [ {
+    "id": "bb_part_6b_continue",
+    "label": "Spring the trap",
+    "text": "Face Kurt Angle with your heel strategy in place.",
+    "nextEncounterId": "bb_part_7b",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+}, {
+  "id": "bb_part_7b",
+  "title": "Part 8B: Kurt Angle — Heel Finale",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "Kurt Angle enters with his head high — he has +6 starting momentum going into this match (opponent advantage, future feature). The British Bulldog's ruthless heel tactics got back to Kurt, and he's mentally prepared for every dirty trick. This is the hardest test of Chapter 1. Davey Boy must use every heel advantage he's unlocked to survive.",
+  "choices": [ {
+    "id": "bb_part_7b_match",
+    "label": "Finish this — Kurt Angle!",
+    "text": "Battle Kurt Angle in the Chapter 1 heel finale.",
+    "nextPhase": "MATCH",
+    "forcedOpponentName": "Kurt Angle",
+    "matchType": "One on One",
+    "vpReward": 2,
+    "alignmentShift": 0,
+    "onWinNextEncounterId": "bb_chapter_end_heel",
+    "onLossNextEncounterId": "bb_chapter_end_heel",
+    "featureFlags": {
+      "opponent_momentum_bonus": 6
+    }
+  } ]
+}, {
+  "id": "bb_chapter_end_heel",
+  "title": "Chapter 1 Complete: Ruthless Bulldog! (Heel)",
+  "requiredWrestlerName": "British Bulldog",
+  "narrativeText": "The British Bulldog has completed Chapter 1 by any means necessary! The crowd may boo, but the wins are on the record. Kurt Angle — even with his psychological edge — couldn't put the Bulldog down for good. Davey Boy stands over his fallen rival, sneering at the crowd. The rivalry with Kurt Angle is now personal. Chapter 2 will be even more intense.",
+  "choices": [ {
+    "id": "bb_chapter_end_heel_done",
+    "label": "Advance to Chapter 2",
+    "text": "Chapter 1 complete. Proceed to the next chapter.",
+    "nextPhase": "BACKSTAGE",
+    "vpReward": 0,
+    "alignmentShift": 0
+  } ]
+} ]

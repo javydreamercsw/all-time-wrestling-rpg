@@ -482,4 +482,24 @@ class SegmentRuleServiceTest {
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getDescription()).isEqualTo("Official");
   }
+
+  @Test
+  void createOrUpdateRule_withAllowsRefereeStopage_false_persistsField() {
+    when(segmentRuleRepository.findByName("Last Man Standing")).thenReturn(Optional.empty());
+    when(segmentRuleRepository.save(any(SegmentRule.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    SegmentRule result =
+        segmentRuleService.createOrUpdateRule(
+            "Last Man Standing",
+            "No referee stoppage allowed",
+            false,
+            false,
+            BumpAddition.NONE,
+            "BASE_GAME",
+            null,
+            false);
+
+    assertThat(result.isAllowsRefereeStopage()).isFalse();
+    verify(segmentRuleRepository).save(any(SegmentRule.class));
+  }
 }

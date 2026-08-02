@@ -40,7 +40,7 @@ const overrides = ensureObject(pkg, 'overrides');
 
 const pinnedNpmVersions = {
   // Independent versioning / not published for every Vaadin patch
-  '@vaadin/common-frontend': '0.0.22',
+  '@vaadin/common-frontend': '0.0.23',
   '@vaadin/vaadin-development-mode-detector': '2.0.7',
   '@vaadin/vaadin-usage-statistics': '2.1.3',
   '@vaadin/router': '2.0.1',

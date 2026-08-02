@@ -96,26 +96,54 @@ public class ShowPlanningPromptBuilder {
     }
 
     if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
-      prompt.append("Recent Segments (up to 10):\n");
+      prompt.append("Recent Segments (last 3 weeks, up to 20):\n");
       context.getRecentSegments().stream()
-          .limit(10)
+          .limit(20)
           .forEach(
-              segment ->
+              segment -> {
+                prompt
+                    .append("- Type: ")
+                    .append(
+                        segment.getSegmentType() != null
+                            ? sanitize(segment.getSegmentType())
+                            : "Unknown")
+                    .append(", Name: ")
+                    .append(sanitize(segment.getName()))
+                    .append(", Participants: ")
+                    .append(
+                        segment.getParticipants().stream()
+                            .map(ShowPlanningPromptBuilder::sanitize)
+                            .collect(Collectors.joining(", ")));
+                if (segment.getWinners() != null && !segment.getWinners().isEmpty()) {
                   prompt
-                      .append("- Name: ")
-                      .append(sanitize(segment.getName()))
-                      .append(", Summary: ")
-                      .append(sanitize(segment.getSummary()))
-                      .append(", Participants: ")
+                      .append(", Winners: ")
                       .append(
-                          segment.getParticipants().stream()
+                          segment.getWinners().stream()
                               .map(ShowPlanningPromptBuilder::sanitize)
-                              .collect(Collectors.joining(", ")))
-                      .append(", Show: ")
-                      .append(sanitize(segment.getShowName()))
-                      .append(", Date: ")
-                      .append(segment.getShowDate())
-                      .append("\n"));
+                              .collect(Collectors.joining(", ")));
+                }
+                prompt
+                    .append(", Show: ")
+                    .append(sanitize(segment.getShowName()))
+                    .append(", Date: ")
+                    .append(segment.getShowDate())
+                    .append("\n");
+              });
+      prompt.append(
+          """
+          **Anti-Repetition Rules (based on Recent Segments above):**
+          - For any rivalry or wrestler pairing that already appeared in Recent Segments, vary the\
+           segment format this show. If they competed in a Match last time, book a Promo or\
+           Backstage confrontation this time (unless heat ≥ 30, which requires a match with\
+           stipulation).
+          - Do NOT use the same match stipulation for the same rivalry two shows in a row.
+          - Every show must advance storylines: each segment for a recurring rivalry should\
+           escalate tension (new stakes, interference, title implications) or shift momentum\
+           (different winner, surprise turn). Repeating the same result or format is not\
+           acceptable.
+          - Wrestlers who won their last segment should be booked in stronger roles; wrestlers who\
+           lost should be rebuilding or seeking revenge.
+          """);
     }
 
     if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
@@ -205,19 +233,21 @@ public class ShowPlanningPromptBuilder {
       context
           .getFullRoster()
           .forEach(
-              wrestler ->
-                  prompt
-                      .append("- Id: ")
-                      .append(wrestler.getId())
-                      .append(", Name: ")
-                      .append(sanitize(wrestler.getName()))
-                      .append(", Gender: ")
-                      .append(wrestler.getGender())
-                      .append(", Tier: ")
-                      .append(wrestler.getTier())
-                      .append(", Injured: ")
-                      .append(wrestler.isInjured())
-                      .append("\n"));
+              wrestler -> {
+                prompt
+                    .append("- Id: ")
+                    .append(wrestler.getId())
+                    .append(", Name: ")
+                    .append(sanitize(wrestler.getName()))
+                    .append(", Gender: ")
+                    .append(wrestler.getGender())
+                    .append(", Tier: ")
+                    .append(wrestler.getTier());
+                if (wrestler.getAlignment() != null) {
+                  prompt.append(", Alignment: ").append(wrestler.getAlignment());
+                }
+                prompt.append(", Injured: ").append(wrestler.isInjured()).append("\n");
+              });
       prompt.append(
           "IMPORTANT: You MUST only book wrestlers listed in the Full Roster above."
               + " Do not use names from other sections (e.g. recent segments or rivalries)"

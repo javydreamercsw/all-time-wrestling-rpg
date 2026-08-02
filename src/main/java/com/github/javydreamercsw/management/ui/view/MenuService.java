@@ -41,6 +41,7 @@ public class MenuService {
 
     // Manually define the menu structure with role requirements
     MenuItem dashboards = new MenuItem("Dashboards", VaadinIcon.DASHBOARD, null);
+    dashboards.addChild(new MenuItem("Home", VaadinIcon.HOME, ""));
     dashboards.addChild(new MenuItem("Inbox", VaadinIcon.INBOX, "inbox"));
     dashboards.addChild(new MenuItem("Show Calendar", VaadinIcon.CALENDAR, "show-calendar"));
     dashboards.addChild(new MenuItem("Wrestler Rankings", VaadinIcon.STAR, "wrestler-rankings"));
@@ -49,6 +50,7 @@ public class MenuService {
     dashboards.addChild(new MenuItem("News & Rumors", VaadinIcon.NEWSPAPER, "news"));
     dashboards.addChild(new MenuItem("Wrestling World Feed", VaadinIcon.CHAT, "news/feed"));
     dashboards.addChild(new MenuItem("Hall of Fame", VaadinIcon.ACADEMY_CAP, "hall-of-fame"));
+    dashboards.addChild(new MenuItem("Weekly Challenges", VaadinIcon.TROPHY, "challenges"));
 
     // Booker Dashboard: Only BOOKER and ADMIN
     MenuItem bookerDashboard =
@@ -84,6 +86,8 @@ public class MenuService {
             "Campaign", VaadinIcon.GAMEPAD, null, RoleName.ADMIN, RoleName.BOOKER, RoleName.PLAYER);
     campaignMenu.addChild(
         new MenuItem("Campaigns", VaadinIcon.FILM, "campaign-list", RoleName.ADMIN));
+    campaignMenu.addChild(
+        new MenuItem("Card Export", VaadinIcon.PRINT, "campaign-card-export", RoleName.ADMIN));
     campaignMenu.addChild(
         new MenuItem(
             "Dashboard",

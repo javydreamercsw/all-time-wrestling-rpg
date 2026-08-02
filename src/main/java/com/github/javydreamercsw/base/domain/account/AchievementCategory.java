@@ -25,7 +25,8 @@ public enum AchievementCategory {
   CHAMPIONSHIP("Championship"),
   MATCH_TYPE("Match Type"),
   BOOKING("Booking"),
-  SPECIAL_EVENT("Special Event");
+  SPECIAL_EVENT("Special Event"),
+  CHALLENGE("Challenge");
 
   private final String displayName;
 

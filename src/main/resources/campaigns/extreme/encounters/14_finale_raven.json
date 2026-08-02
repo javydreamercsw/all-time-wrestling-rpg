@@ -1,0 +1,16 @@
+[ {
+  "id": "raven_clockwork_orange",
+  "requiredWrestlerName": "Raven",
+  "title": "Raven's Clockwork Orange",
+  "narrativeText": "Raven arrives with a shopping cart full of weapons. The crowd has seen extreme matches. They have not seen this. Every weapon has a purpose. Every wound is deliberate. This is not violence for the sake of violence — it is art. Dark, sadistic, perfect art.",
+  "choices": [ {
+    "id": "execute_the_art",
+    "label": "Execute the Masterpiece",
+    "text": "Every match is a canvas. Tonight, you paint in red.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "alignmentShift": -3
+  } ]
+} ]

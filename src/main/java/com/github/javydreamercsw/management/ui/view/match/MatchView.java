@@ -38,11 +38,14 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -131,13 +134,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final NotificationService notificationService;
   private final TitleScriptService titleScriptService;
   @Autowired private ArenaService arenaService;
+  @Autowired private CampaignEncounterService campaignEncounterService;
+  @Autowired private DeckService deckService;
 
   private Segment segment;
   private TextArea narrationArea;
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
   private Map<Long, IntegerField> momentumFields = new HashMap<>();
+  private Map<Long, IntegerField> staminaFields = new HashMap<>();
   private Map<Long, IntegerField> healthFields = new HashMap<>();
+  private com.vaadin.flow.component.radiobutton.RadioButtonGroup<String> finishTypeGroup;
+  private com.vaadin.flow.component.combobox.ComboBox<String> winningCardField;
+  private Map<String, IntegerField> cardPlayedFields = new HashMap<>();
   private CommentaryComponent commentaryComponent;
   private DashboardCard narrationCard;
   private Button aiGenerateButton;
@@ -584,6 +593,39 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             }
           });
     }
+
+    // Title skill button — visible to the champion of a contested title, once per match
+    if (!isPromo
+        && isPlayerInMatch
+        && playerWrestler != null
+        && segment.getIsTitleSegment()
+        && !segment.isTitleSkillUsed()
+        && titles != null) {
+      final Wrestler finalPlayer = playerWrestler;
+      titles.stream()
+          .filter(
+              t ->
+                  t != null
+                      && t.getEffectScript() != null
+                      && !t.getEffectScript().isBlank()
+                      && t.getCurrentChampions().stream()
+                          .anyMatch(c -> c.getId().equals(finalPlayer.getId())))
+          .findFirst()
+          .ifPresent(
+              championTitle -> {
+                Button skillBtn =
+                    new Button(
+                        "Activate Title Skill: " + championTitle.getName(),
+                        new Icon(VaadinIcon.STAR));
+                skillBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+                skillBtn.setId("activate-title-skill-button");
+                skillBtn.setWidthFull();
+                skillBtn.addClickListener(
+                    e -> onActivateTitleSkill(championTitle, finalPlayer, skillBtn));
+                infoCard.add(skillBtn);
+              });
+    }
+
     sideCol.add(infoCard);
 
     // Ringside Actions Section — only available in GLOBAL universe matches
@@ -720,6 +762,34 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       }
       winnersCard.add(momentumLayout);
 
+      VerticalLayout staminaLayout = new VerticalLayout();
+      staminaLayout.setPadding(false);
+      staminaLayout.setSpacing(false);
+      staminaLayout.add(new Span("Final Stamina per Wrestler"));
+      for (Wrestler w :
+          wrestlers.stream()
+              .filter(java.util.Objects::nonNull)
+              .filter(w -> w.getAccount() != null)
+              .toList()) {
+        IntegerField field = new IntegerField(w.getName());
+        field.setId("final-stamina-" + w.getId());
+        field.setPlaceholder("e.g. 3");
+        field.setWidthFull();
+        Integer existing =
+            segment.getParticipants().stream()
+                .filter(p -> w.getId().equals(p.getWrestler().getId()))
+                .map(
+                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
+                        ::getFinalStamina)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+        field.setValue(existing);
+        staminaFields.put(w.getId(), field);
+        staminaLayout.add(field);
+      }
+      winnersCard.add(staminaLayout);
+
       VerticalLayout healthLayout = new VerticalLayout();
       healthLayout.setPadding(false);
       healthLayout.setSpacing(false);
@@ -749,6 +819,85 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         healthLayout.add(field);
       }
       winnersCard.add(healthLayout);
+
+      // Bonus match data — shown for campaign matches to enable bonus VP evaluation
+      var activeCampaign =
+          wrestlers.stream()
+              .filter(java.util.Objects::nonNull)
+              .filter(w -> w.getAccount() != null)
+              .map(w -> campaignRepository.findActiveByWrestler(w).orElse(null))
+              .filter(java.util.Objects::nonNull)
+              .filter(
+                  c -> {
+                    var cm = c.getState().getCurrentMatch();
+                    return cm != null && cm.getId().equals(segment.getId());
+                  })
+              .findFirst()
+              .orElse(null);
+      if (activeCampaign != null) {
+        finishTypeGroup =
+            new com.vaadin.flow.component.radiobutton.RadioButtonGroup<>("Finish Type");
+        boolean refereeStoppageAllowed =
+            segment.getSegmentRules().isEmpty()
+                || segment.getSegmentRules().stream()
+                    .allMatch(
+                        com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
+                            ::isAllowsRefereeStopage);
+        java.util.List<String> finishTypes =
+            new java.util.ArrayList<>(java.util.List.of("PINFALL", "SUBMISSION", "COUNTOUT"));
+        if (refereeStoppageAllowed) {
+          finishTypes.add("REFEREE STOPPAGE");
+        }
+        finishTypes.add("OTHER");
+        finishTypeGroup.setItems(finishTypes);
+        finishTypeGroup.setWidthFull();
+        finishTypeGroup.setId("finish-type-group");
+
+        winningCardField = new com.vaadin.flow.component.combobox.ComboBox<>("Winning Card");
+        winningCardField.setPlaceholder("Select finishing card...");
+        winningCardField.setWidthFull();
+        winningCardField.setId("winning-card-field");
+        List<String> deckCardNames =
+            deckService.findByWrestlerWithCards(activeCampaign.getWrestler()).stream()
+                .flatMap(deck -> deck.getCards().stream())
+                .map(dc -> dc.getCard().getName())
+                .distinct()
+                .sorted()
+                .toList();
+        winningCardField.setItems(deckCardNames);
+
+        winnersCard.add(finishTypeGroup, winningCardField);
+
+        // Cards Played — one IntegerField per unique card name referenced in bonus conditions
+        var bonusConditions =
+            campaignEncounterService.getCurrentChoiceBonusConditions(activeCampaign.getState());
+        var cardNames = new java.util.LinkedHashSet<String>();
+        for (var cond : bonusConditions) {
+          if (cond.getCardGroups() != null) {
+            for (var group : cond.getCardGroups()) {
+              if (group.getAnyOf() != null) {
+                cardNames.addAll(group.getAnyOf());
+              }
+            }
+          }
+        }
+        if (!cardNames.isEmpty()) {
+          var cardsLayout = new VerticalLayout();
+          cardsLayout.setPadding(false);
+          cardsLayout.setSpacing(false);
+          cardsLayout.add(new Span("Cards Played"));
+          for (String cardName : cardNames) {
+            var cf = new IntegerField(cardName);
+            cf.setValue(0);
+            cf.setMin(0);
+            cf.setStepButtonsVisible(true);
+            cf.setWidthFull();
+            cardPlayedFields.put(cardName, cf);
+            cardsLayout.add(cf);
+          }
+          winnersCard.add(cardsLayout);
+        }
+      }
     }
 
     winnersCard.add(saveWinnersButton);
@@ -1202,6 +1351,28 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
   }
 
+  private void onActivateTitleSkill(
+      final Title title, final Wrestler playerWrestler, final Button skillBtn) {
+    WrestlerContext wc = new WrestlerContext();
+    wc.setName(playerWrestler.getName());
+    var result = titleScriptService.activateTitleSkill(title, segment, wc);
+    segment.setTitleSkillUsed(true);
+    GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
+    skillBtn.setEnabled(false);
+    skillBtn.setText("Title Skill Activated");
+    if (result.weaponCardSetupNeeded()) {
+      Notification n =
+          Notification.show(
+              "Title Skill: Draw the top card from the weapons deck and place it face-up in"
+                  + " the display.");
+      n.addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+      n.setDuration(0);
+    } else {
+      Notification.show("Title skill activated! Match rules updated.")
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+  }
+
   private void saveWinners() {
     List<Wrestler> winners = new ArrayList<>(winnersComboBox.getValue());
     log.debug(
@@ -1222,6 +1393,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       }
     }
 
+    // Persist final stamina values entered by the player/booker
+    if (!staminaFields.isEmpty()) {
+      for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
+          segment.getParticipants()) {
+        IntegerField field = staminaFields.get(p.getWrestler().getId());
+        if (field != null) {
+          p.setFinalStamina(field.getValue());
+        }
+      }
+    }
+
     // Persist final health values for player-controlled wrestlers (non-promo only)
     if (!healthFields.isEmpty()) {
       for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
@@ -1229,6 +1411,29 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         IntegerField field = healthFields.get(p.getWrestler().getId());
         if (field != null) {
           p.setFinalHealth(field.getValue());
+        }
+      }
+    }
+
+    // Persist bonus match data (finish type, winning card) for bonus VP evaluation
+    if (finishTypeGroup != null || winningCardField != null) {
+      String ft = finishTypeGroup != null ? finishTypeGroup.getValue() : null;
+      String wc = winningCardField != null ? winningCardField.getValue() : null;
+      for (com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant p :
+          segment.getParticipants()) {
+        if (p.getWrestler() != null && p.getWrestler().getAccount() != null) {
+          p.setFinishType(ft);
+          p.setWinningCardName(wc);
+          if (!cardPlayedFields.isEmpty()) {
+            java.util.Map<String, Integer> played = new java.util.HashMap<>();
+            cardPlayedFields.forEach(
+                (cardName, f) -> {
+                  if (f.getValue() != null && f.getValue() > 0) {
+                    played.put(cardName, f.getValue());
+                  }
+                });
+            p.setCardsPlayed(played);
+          }
         }
       }
     }

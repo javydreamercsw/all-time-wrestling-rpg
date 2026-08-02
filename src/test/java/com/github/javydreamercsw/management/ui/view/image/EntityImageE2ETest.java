@@ -109,7 +109,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
 
   @Test
   void testChampionshipImage() {
-    // ATW Women is selected by default (alphabetically first in championships.json)
+    // ATW Extreme is selected by default (alphabetically first in championships.json)
     navigateTo("championship-rankings");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
@@ -125,7 +125,7 @@ class EntityImageE2ETest extends AbstractE2ETest {
     String src = image.getAttribute("src");
     assertNotNull(src);
     assertTrue(
-        src.contains("images/championships/atw-women.png"),
-        "Should show specific image for ATW Women championship by default. Found: " + src);
+        src.contains("images/championships/atw-extreme.png"),
+        "Should show specific image for ATW Extreme championship by default. Found: " + src);
   }
 }

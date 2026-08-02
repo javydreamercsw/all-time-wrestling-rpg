@@ -72,16 +72,32 @@ import jakarta.annotation.security.PermitAll;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
 @NoArgsConstructor
 @PermitAll
 @AnonymousAllowed
+@Slf4j
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
+
+  private static final ScheduledExecutorService INBOX_NOTIF_SCHEDULER =
+      Executors.newSingleThreadScheduledExecutor(
+          r -> {
+            Thread t = new Thread(r, "inbox-notif-debounce");
+            t.setDaemon(true);
+            return t;
+          });
 
   private MenuService menuService;
   private BuildProperties buildProperties;
@@ -89,6 +105,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private Registration inboxUpdateBroadcasterRegistration;
   private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
   private Registration openProfileDrawerRegistration;
+  // package-private so MainLayoutTest can shorten it without reflection
+  long inboxNotifDebounceMs = 1_000L;
+  private volatile long lastKnownUnreadCount = 0;
+  private volatile ScheduledFuture<?> pendingInboxNotification;
   private @Nullable SecurityUtils securityUtils;
   private AccountService accountService;
   private PasswordEncoder passwordEncoder;
@@ -187,13 +207,29 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   }
 
   private List<Universe> resolveAccessibleUniverses() {
-    if (securityUtils.isAdmin()) {
-      return universeRepository.findAll();
+    if (securityUtils == null || !securityUtils.isAuthenticated()) {
+      return Collections.emptyList();
     }
-    return securityUtils
-        .getAuthenticatedUser()
-        .map(user -> universeMembershipService.getUniversesForAccount(user.getAccount()))
-        .orElseGet(Collections::emptyList);
+    // Guard against AuthenticationCredentialsNotFoundException propagating out of the MainLayout
+    // constructor. During error-recovery navigations (e.g. routing to the login view after session
+    // expiry) the VaadinSession HTTP session may be invalidated between the isAuthenticated() check
+    // and the @PreAuthorize-protected service call, producing a TOCTOU window where
+    // @PreAuthorize("isAuthenticated()") sees an empty SecurityContext and throws.
+    // Catching the exception here mirrors the same defensive pattern used by refreshInboxBadge().
+    try {
+      if (securityUtils.isAdmin()) {
+        return universeRepository.findAll();
+      }
+      return securityUtils
+          .getAuthenticatedUser()
+          .map(user -> universeMembershipService.getUniversesForAccount(user.getAccount()))
+          .orElseGet(Collections::emptyList);
+    } catch (AuthenticationCredentialsNotFoundException e) {
+      log.debug(
+          "resolveAccessibleUniverses: auth context lost between check and service call"
+              + " — returning empty universe list");
+      return Collections.emptyList();
+    }
   }
 
   private Div createHeader() {
@@ -319,18 +355,38 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     return navbar;
   }
 
-  private void refreshInboxBadge() {
-    if (inboxBadge == null || securityUtils == null || !securityUtils.isAuthenticated()) {
-      return;
+  private long refreshInboxBadge() {
+    if (inboxBadge == null || securityUtils == null) {
+      return 0L;
+    }
+    // Use the same direct check that @PreAuthorize("isAuthenticated()") interceptors perform.
+    // Vaadin push-handler threads do not run SecurityContextHolderFilter, so the ThreadLocal may
+    // be absent after rapid logout/login cycles; this guard matches the interceptor's own null
+    // check and prevents AuthenticationCredentialsNotFoundException from propagating.
+    var auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated() || !securityUtils.isAuthenticated()) {
+      inboxBadge.setVisible(false);
+      return 0L;
     }
     Long accountId =
         securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
-    long unread = inboxService != null ? inboxService.countUnread(accountId) : 0L;
-    if (unread > 0) {
-      inboxBadge.setText(String.valueOf(unread));
-      inboxBadge.setVisible(true);
-    } else {
+    if (accountId == null) {
       inboxBadge.setVisible(false);
+      return 0L;
+    }
+    try {
+      long unread = inboxService != null ? inboxService.countUnread(accountId) : 0L;
+      if (unread > 0) {
+        inboxBadge.setText(String.valueOf(unread));
+        inboxBadge.setVisible(true);
+      } else {
+        inboxBadge.setVisible(false);
+      }
+      return unread;
+    } catch (AuthenticationCredentialsNotFoundException e) {
+      log.debug("Skipping inbox badge refresh: auth context lost between check and service call");
+      inboxBadge.setVisible(false);
+      return 0L;
     }
   }
 
@@ -361,14 +417,34 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       inboxUpdateBroadcasterRegistration =
           inboxUpdateBroadcaster.register(
               event -> {
-                if (ui.isAttached()) {
-                  ui.access(
-                      () -> {
-                        Notification.show("New inbox item!", 3000, Notification.Position.BOTTOM_END)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                        refreshInboxBadge();
-                      });
+                if (!ui.isAttached()) {
+                  return;
                 }
+                ScheduledFuture<?> existing = pendingInboxNotification;
+                if (existing != null) {
+                  existing.cancel(false);
+                }
+                pendingInboxNotification =
+                    INBOX_NOTIF_SCHEDULER.schedule(
+                        () -> {
+                          if (!ui.isAttached()) {
+                            return;
+                          }
+                          ui.access(
+                              () -> {
+                                long newCount = refreshInboxBadge();
+                                long delta = newCount - lastKnownUnreadCount;
+                                lastKnownUnreadCount = newCount;
+                                if (delta > 0) {
+                                  String msg =
+                                      delta == 1 ? "New inbox item!" : delta + " new inbox items!";
+                                  Notification.show(msg, 3000, Notification.Position.BOTTOM_END)
+                                      .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                                }
+                              });
+                        },
+                        inboxNotifDebounceMs,
+                        TimeUnit.MILLISECONDS);
               });
     }
     if (openProfileDrawerBroadcaster != null) {
@@ -390,6 +466,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     }
     if (openProfileDrawerRegistration != null) {
       openProfileDrawerRegistration.remove();
+    }
+    ScheduledFuture<?> pending = pendingInboxNotification;
+    if (pending != null) {
+      pending.cancel(false);
     }
   }
 

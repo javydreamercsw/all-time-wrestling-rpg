@@ -1,0 +1,30 @@
+[ {
+  "id": "rvd_five_star_setup",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "Five-Star Setup",
+  "narrativeText": "R-V-D! R-V-D! The crowd chants your name before you even set foot in the ring. You climb to the top rope. The crowd holds its breath. Everything that makes you special comes down to this — the Five-Star Frog Splash.",
+  "choices": [ {
+    "id": "launch_five_star",
+    "label": "Launch From the Top",
+    "text": "Everything you have. The whole crowd on its feet.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ]
+  } ]
+}, {
+  "id": "rvd_rolling_thunder_extreme",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "Rolling Thunder",
+  "narrativeText": "The crowd is already chanting your initials. The opponent stands in the center of the ring trying to look unimpressed. You run the ropes — Rolling Thunder. The building erupts. No DQ means no limits on what comes next.",
+  "choices": [ {
+    "id": "rolling_thunder_attack",
+    "label": "Rolling Thunder Into the Brawl",
+    "text": "The signature move opens the door. Now finish what you started.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": 1
+  } ]
+} ]

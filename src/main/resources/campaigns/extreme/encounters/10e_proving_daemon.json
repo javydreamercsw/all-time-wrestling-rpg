@@ -1,0 +1,16 @@
+[ {
+  "id": "daemon_proving_pain",
+  "requiredWrestlerName": "Daemon",
+  "title": "Welcome the Pain",
+  "narrativeText": "Daemon does not warm up. Daemon does not stretch. Daemon stands in the corner of his side of the cage, watching both teams enter. When the door locks, the other team looks at their numbers advantage. Daemon looks at them the way someone surveys a buffet.",
+  "choices": [ {
+    "id": "daemon_war_games_choice",
+    "label": "Welcome the Pain",
+    "text": "The cage is where Daemon lives. They walked into your world.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "Free-for-All",
+    "segmentRules": [ "🪖 War Games" ],
+    "alignmentShift": -1
+  } ]
+} ]
