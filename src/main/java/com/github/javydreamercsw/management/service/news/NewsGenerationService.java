@@ -26,6 +26,8 @@ import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -55,6 +57,7 @@ public class NewsGenerationService {
   private final EventAggregationService aggregationService;
   private final WrestlerRepository wrestlerRepository;
   private final NpcRepository npcRepository;
+  private final TitleReignRepository titleReignRepository;
 
   private static final String SYSTEM_PROMPT =
       """
@@ -167,30 +170,14 @@ public class NewsGenerationService {
     if (segment.getIsTitleSegment()
         && segment.getTitles() != null
         && !segment.getTitles().isEmpty()) {
-      java.util.Set<String> winnerNames =
-          segment.getWinners().stream()
-              .map(Wrestler::getName)
-              .collect(java.util.stream.Collectors.toSet());
       for (com.github.javydreamercsw.management.domain.title.Title title : segment.getTitles()) {
-        String preMatchChampions =
-            title.isVacant()
-                ? "VACANT"
-                : title.getCurrentChampions().stream()
-                    .map(Wrestler::getName)
-                    .collect(Collectors.joining(" & "));
-        java.util.Set<String> champNames =
-            title.getCurrentChampions().stream()
-                .map(Wrestler::getName)
-                .collect(java.util.stream.Collectors.toSet());
-        boolean isDefense =
-            !champNames.isEmpty() && champNames.stream().anyMatch(winnerNames::contains);
-        String outcome = isDefense ? "TITLE DEFENSE" : "TITLE CHANGE";
+        TitleContext ctx = resolveTitleContext(title, segment);
         prompt
-            .append(outcome)
+            .append(ctx.outcome())
             .append(" — ")
             .append(title.getName())
             .append(", pre-match champion(s): ")
-            .append(preMatchChampions)
+            .append(ctx.preMatchChampions())
             .append("\n");
       }
     } else if (segment.getIsTitleSegment()) {
@@ -237,31 +224,14 @@ public class NewsGenerationService {
           .append(" won");
       if (s.getIsTitleSegment() && s.getTitles() != null && !s.getTitles().isEmpty()) {
         for (com.github.javydreamercsw.management.domain.title.Title title : s.getTitles()) {
-          String preMatchChampions =
-              title.isVacant()
-                  ? "VACANT"
-                  : title.getCurrentChampions().stream()
-                      .map(Wrestler::getName)
-                      .collect(Collectors.joining(" & "));
-          // Determine outcome: defense if winner(s) overlap with pre-match champions
-          java.util.Set<String> winnerNames =
-              s.getWinners().stream()
-                  .map(Wrestler::getName)
-                  .collect(java.util.stream.Collectors.toSet());
-          java.util.Set<String> champNames =
-              title.getCurrentChampions().stream()
-                  .map(Wrestler::getName)
-                  .collect(java.util.stream.Collectors.toSet());
-          boolean isDefense =
-              !champNames.isEmpty() && champNames.stream().anyMatch(winnerNames::contains);
-          String outcome = isDefense ? "TITLE DEFENSE" : "TITLE CHANGE";
+          TitleContext ctx = resolveTitleContext(title, s);
           context
               .append(" [")
-              .append(outcome)
+              .append(ctx.outcome())
               .append(" — ")
               .append(title.getName())
               .append(", pre-match champion(s): ")
-              .append(preMatchChampions)
+              .append(ctx.preMatchChampions())
               .append("]");
         }
       } else if (s.getIsTitleSegment()) {
@@ -311,6 +281,44 @@ public class NewsGenerationService {
         }
       }
     }
+  }
+
+  private record TitleContext(String preMatchChampions, String outcome) {}
+
+  /**
+   * Determines whether a title changed hands at {@code segment} by checking whether any {@link
+   * TitleReign} was won at that segment. This avoids the stale-read bug where {@code
+   * title.getCurrentChampions()} already reflects the post-match state.
+   */
+  private TitleContext resolveTitleContext(
+      com.github.javydreamercsw.management.domain.title.Title title, Segment segment) {
+    boolean changedHands =
+        titleReignRepository.findByWonAtSegment(segment).stream()
+            .anyMatch(
+                r ->
+                    r.getTitle() != null
+                        && java.util.Objects.equals(r.getTitle().getId(), title.getId()));
+
+    if (changedHands) {
+      String prevChamps =
+          titleReignRepository
+              .findFirstByTitleAndEndDateIsNotNullOrderByEndDateDesc(title)
+              .map(
+                  r ->
+                      r.getChampions().stream()
+                          .map(Wrestler::getName)
+                          .collect(Collectors.joining(" & ")))
+              .orElse("VACANT");
+      return new TitleContext(prevChamps, "TITLE CHANGE");
+    }
+
+    String currentChamps =
+        title.isVacant()
+            ? "VACANT"
+            : title.getCurrentChampions().stream()
+                .map(Wrestler::getName)
+                .collect(Collectors.joining(" & "));
+    return new TitleContext(currentChamps, "TITLE DEFENSE");
   }
 
   private void parseAndCreateNews(String response) throws Exception {

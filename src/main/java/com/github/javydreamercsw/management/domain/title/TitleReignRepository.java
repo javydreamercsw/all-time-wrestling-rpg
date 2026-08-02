@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.title;
 
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
@@ -46,4 +47,16 @@ public interface TitleReignRepository extends JpaRepository<TitleReign, Long> {
   List<TitleReign> findByChampionsContaining(Wrestler wrestler);
 
   List<TitleReign> findByStartDateBetween(Instant startDate, Instant endDate);
+
+  /**
+   * Returns reigns that were won at the given segment — used to detect title changes during news
+   * generation.
+   */
+  List<TitleReign> findByWonAtSegment(Segment segment);
+
+  /**
+   * Returns the most recently ended reign for a title — i.e. the pre-match champion when a title
+   * just changed hands.
+   */
+  Optional<TitleReign> findFirstByTitleAndEndDateIsNotNullOrderByEndDateDesc(Title title);
 }
