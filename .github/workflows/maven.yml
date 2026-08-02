@@ -107,8 +107,14 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: filter
         with:
-          # compare the current checkout against the detected base commit
-          base: ${{ steps.determine_base.outputs.base }}
+          # For pull_request events, omit base so dorny uses its native PR merge-base
+          # comparison — only the files the PR itself changed are flagged. Passing an
+          # explicit SHA (github.event.pull_request.base.sha) can cause false positives
+          # when the SHA is not in the shallow local checkout, which makes dorny fall back
+          # to treating everything as changed (triggering rewrite-check / build jobs that
+          # should be skipped for pom-only Dependabot bumps, for example).
+          # For push events, compare against the last successful run on the branch.
+          base: ${{ github.event_name != 'pull_request' && steps.determine_base.outputs.base || '' }}
           filters: |
             code_changed:
               - 'src/**'
@@ -503,7 +509,7 @@ jobs:
   desktop-build:
     needs: [check-paths]
     if: >-
-      (needs.check-paths.outputs.code_changed == 'true' || needs.check-paths.outputs.deps_changed == 'true') &&
+      needs.check-paths.outputs.code_changed == 'true' &&
       (startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     strategy:
       matrix:

@@ -20,6 +20,10 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
@@ -29,21 +33,28 @@ import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateEvent;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 class MainLayoutTest extends AbstractViewTest {
@@ -170,5 +181,76 @@ class MainLayoutTest extends AbstractViewTest {
     MainLayout layout = createLayout();
 
     assertThat(layout).isNotNull();
+  }
+
+  @Test
+  @DisplayName("Burst of broadcasts collapses to one notification when unread count increases")
+  void inboxBroadcast_burst_showsOneNotificationForActualDelta() throws Exception {
+    Account account = new Account();
+    account.setId(1L);
+    CustomUserDetails user = new CustomUserDetails(account);
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(user));
+    when(inboxService.countUnread(any())).thenReturn(3L);
+
+    MainLayout layout = createLayout();
+    layout.inboxNotifDebounceMs = 50;
+
+    ArgumentCaptor<Consumer<InboxUpdateEvent>> captor = ArgumentCaptor.forClass(Consumer.class);
+    verify(inboxUpdateBroadcaster).register(captor.capture());
+    Consumer<InboxUpdateEvent> consumer = captor.getValue();
+    InboxUpdateEvent event = new InboxUpdateEvent(this);
+
+    try (MockedStatic<Notification> mocked = Mockito.mockStatic(Notification.class)) {
+      Notification mockNotif = mock(Notification.class);
+      mocked
+          .when(() -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)))
+          .thenReturn(mockNotif);
+
+      for (int i = 0; i < 20; i++) {
+        consumer.accept(event);
+      }
+      Thread.sleep(200);
+      MockVaadin.clientRoundtrip();
+
+      mocked.verify(
+          () -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)),
+          Mockito.times(1));
+    }
+  }
+
+  @Test
+  @DisplayName("Burst of broadcasts shows no notification when unread count is unchanged")
+  void inboxBroadcast_noRelevantItems_showsNoNotification() throws Exception {
+    Account account = new Account();
+    account.setId(1L);
+    CustomUserDetails user = new CustomUserDetails(account);
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(user));
+    when(inboxService.countUnread(any())).thenReturn(0L);
+
+    MainLayout layout = createLayout();
+    layout.inboxNotifDebounceMs = 50;
+
+    ArgumentCaptor<Consumer<InboxUpdateEvent>> captor = ArgumentCaptor.forClass(Consumer.class);
+    verify(inboxUpdateBroadcaster).register(captor.capture());
+    Consumer<InboxUpdateEvent> consumer = captor.getValue();
+    InboxUpdateEvent event = new InboxUpdateEvent(this);
+
+    try (MockedStatic<Notification> mocked = Mockito.mockStatic(Notification.class)) {
+      mocked
+          .when(() -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)))
+          .thenReturn(mock(Notification.class));
+
+      for (int i = 0; i < 20; i++) {
+        consumer.accept(event);
+      }
+      Thread.sleep(200);
+      MockVaadin.clientRoundtrip();
+
+      mocked.verify(
+          () -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)),
+          Mockito.never());
+    }
   }
 }
