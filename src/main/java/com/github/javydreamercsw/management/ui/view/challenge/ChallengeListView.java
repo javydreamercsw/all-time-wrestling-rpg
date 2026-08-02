@@ -184,6 +184,15 @@ public class ChallengeListView extends VerticalLayout {
   }
 
   private void refreshCards() {
+    List<String> seasons =
+        challengeService.getAllChallenges().stream()
+            .map(ChallengeDTO::getSeason)
+            .filter(s -> s != null && !s.isBlank())
+            .distinct()
+            .sorted()
+            .toList();
+    seasonFilter.setItems(seasons);
+
     cardsLayout.removeAll();
 
     List<ChallengeDTO> all = challengeService.getActiveChallenges();
