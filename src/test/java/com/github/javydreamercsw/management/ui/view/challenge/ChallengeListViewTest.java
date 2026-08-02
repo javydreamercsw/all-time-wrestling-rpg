@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
 import com.github.javydreamercsw.management.service.challenge.ChallengeCompletionService;
 import com.github.javydreamercsw.management.service.challenge.ChallengeService;
+import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -47,6 +48,7 @@ import org.mockito.Mock;
 class ChallengeListViewTest extends AbstractViewTest {
 
   @Mock private ChallengeService challengeService;
+  @Mock private ChallengeUpdateService updateService;
   @Mock private ExpansionService expansionService;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private ChallengeCompletionService completionService;
@@ -102,6 +104,7 @@ class ChallengeListViewTest extends AbstractViewTest {
     ChallengeListView view =
         new ChallengeListView(
             challengeService,
+            updateService,
             expansionService,
             segmentRuleRepository,
             completionService,
@@ -182,6 +185,7 @@ class ChallengeListViewTest extends AbstractViewTest {
     ChallengeListView view =
         new ChallengeListView(
             challengeService,
+            updateService,
             expansionService,
             segmentRuleRepository,
             completionService,
@@ -206,6 +210,7 @@ class ChallengeListViewTest extends AbstractViewTest {
     ChallengeListView view =
         new ChallengeListView(
             challengeService,
+            updateService,
             expansionService,
             segmentRuleRepository,
             completionService,

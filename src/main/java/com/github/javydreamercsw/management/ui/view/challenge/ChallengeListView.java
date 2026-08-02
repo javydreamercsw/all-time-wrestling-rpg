@@ -26,9 +26,11 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
 import com.github.javydreamercsw.management.service.challenge.ChallengeCompletionService;
 import com.github.javydreamercsw.management.service.challenge.ChallengeService;
+import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.show.MatchInfoDialog;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -72,6 +74,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "challenges", layout = MainLayout.class)
@@ -84,6 +87,7 @@ public class ChallengeListView extends VerticalLayout {
       DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a");
 
   private final ChallengeService challengeService;
+  private final ChallengeUpdateService updateService;
   private final ExpansionService expansionService;
   private final SegmentRuleRepository segmentRuleRepository;
   private final ChallengeCompletionService completionService;
@@ -97,12 +101,14 @@ public class ChallengeListView extends VerticalLayout {
   @Autowired
   public ChallengeListView(
       final ChallengeService challengeService,
+      final ChallengeUpdateService updateService,
       final ExpansionService expansionService,
       final SegmentRuleRepository segmentRuleRepository,
       final ChallengeCompletionService completionService,
       final ImageStorageService imageStorageService,
       final SecurityUtils securityUtils) {
     this.challengeService = challengeService;
+    this.updateService = updateService;
     this.expansionService = expansionService;
     this.segmentRuleRepository = segmentRuleRepository;
     this.completionService = completionService;
@@ -136,6 +142,14 @@ public class ChallengeListView extends VerticalLayout {
     seasonFilter.addValueChangeListener(e -> refreshCards());
 
     filters.add(officialOnlyFilter, seasonFilter);
+
+    if (securityUtils.isAdmin()) {
+      Button updateBtn = new Button("Check for Updates", new Icon(VaadinIcon.REFRESH));
+      updateBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_CONTRAST);
+      updateBtn.addClickListener(e -> runUpdateCheck(updateBtn));
+      filters.add(updateBtn);
+    }
+
     add(filters);
 
     cardsLayout = new FlexLayout();
@@ -145,11 +159,40 @@ public class ChallengeListView extends VerticalLayout {
     refreshCards();
   }
 
+  private void runUpdateCheck(final Button btn) {
+    btn.setEnabled(false);
+    UI ui = UI.getCurrent();
+    CompletableFuture.supplyAsync(updateService::checkAndApply)
+        .thenAccept(
+            result ->
+                ui.access(
+                    () -> {
+                      Notification n = Notification.show(result.message());
+                      n.addThemeVariants(
+                          result.downloaded() > 0
+                              ? NotificationVariant.LUMO_SUCCESS
+                              : NotificationVariant.LUMO_PRIMARY);
+                      btn.setEnabled(true);
+                      if (result.downloaded() > 0) {
+                        refreshCards();
+                      }
+                    }));
+  }
+
   private Optional<Account> currentAccount() {
     return securityUtils.getAuthenticatedUser().map(CustomUserDetails::getAccount);
   }
 
   private void refreshCards() {
+    List<String> seasons =
+        challengeService.getAllChallenges().stream()
+            .map(ChallengeDTO::getSeason)
+            .filter(s -> s != null && !s.isBlank())
+            .distinct()
+            .sorted()
+            .toList();
+    seasonFilter.setItems(seasons);
+
     cardsLayout.removeAll();
 
     List<ChallengeDTO> all = challengeService.getActiveChallenges();

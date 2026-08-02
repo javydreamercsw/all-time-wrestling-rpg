@@ -341,6 +341,100 @@ When a player completes all active challenges whose `season` field equals a give
 
 Add a matching entry in `achievements.json` with `category: "CHALLENGE"` to make the achievement visible.
 
+### Publishing new challenges without a release
+
+Challenges are delivered through a two-tier system:
+
+|       Tier       |                 Location                  |                                                          When loaded                                                           |
+|------------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| **Bundled**      | `src/main/resources/challenges/**/*.json` | At startup, from the JAR. Always available offline.                                                                            |
+| **Live updates** | GitHub Pages (`docs/challenges/`)         | Downloaded on first startup (30-second delay), then checked every hour, or on demand via the Admin "Check for Updates" button. |
+
+If the same challenge `id` appears in both tiers, the downloaded (live) copy wins. This lets you ship a corrected version of a challenge without a release.
+
+#### Step 1 — Write the challenge JSON
+
+Add or update a JSON file under `docs/challenges/season_N/`:
+
+```
+docs/challenges/
+  season_1/
+    weekly_challenges.json    ← official weekly challenges
+    custom_challenges.json    ← custom/community challenges
+  season_2/
+    weekly_challenges.json    ← new season
+```
+
+Each file is a JSON array of challenge objects (see [Structure](#structure) above). Use a new file per season to keep things tidy; the manifest references individual files, not directories.
+
+#### Step 2 — Add optional images
+
+Drop any banner or card images into `docs/challenges/images/`:
+
+```
+docs/challenges/images/
+  week4.png
+  custom_s2_01.png
+```
+
+Then set `"imageUrl": "challenge-content/images/week4.png"` on the challenge. The `challenge-content/images/` prefix is the URL path served by `ChallengeContentResourceConfig` from the downloaded images directory.
+
+For bundled challenges shipped in the JAR, the path is `images/challenges/filename.png` (served from `META-INF/resources/`).
+
+#### Step 3 — Update the manifest
+
+`docs/challenges/manifest.json` is the index that tells the app what packages exist. Add or update an entry for every new or changed JSON file:
+
+```json
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-09-01",
+  "packages": [
+    {
+      "id": "season_2_weekly",
+      "jsonUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_2/weekly_challenges.json",
+      "images": [
+        { "name": "week4.png", "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week4.png" }
+      ]
+    }
+  ]
+}
+```
+
+- `id` — unique package identifier (used to avoid re-downloading the same content).
+- `jsonUrl` — full GitHub Pages URL to the challenge JSON file.
+- `images` — list of images to download alongside this package. Already-downloaded images are skipped on repeat checks.
+- `lastUpdated` — human-readable date (informational only; the app always re-downloads changed packages).
+
+#### Step 4 — Merge to `main`
+
+Open a PR that adds your files under `docs/challenges/`. Once it merges to `main`, GitHub Actions builds the VitePress site and copies `docs/challenges/` into the Pages output. The manifest is live at:
+
+```
+https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/manifest.json
+```
+
+No app release is needed. Existing installs pick up the new challenges within an hour (scheduled check) or immediately when an admin clicks **Check for Updates** in the Challenges view.
+
+#### Testing locally
+
+To test the full download flow before merging:
+
+1. Set the manifest URL override in `application-dev.properties`:
+
+   ```properties
+   atw.challenges.manifest-url=file://${user.home}/path/to/your/local/manifest.json
+   ```
+2. Run the app, navigate to **Challenges → Check for Updates**.
+3. Confirm the new challenges appear without restarting.
+
+To disable the scheduled background check during development:
+
+```properties
+atw.challenges.check-initial-delay=86400000   # delay first check by 24h
+atw.challenges.check-interval=86400000        # repeat every 24h
+```
+
 ---
 
 ## Achievements
