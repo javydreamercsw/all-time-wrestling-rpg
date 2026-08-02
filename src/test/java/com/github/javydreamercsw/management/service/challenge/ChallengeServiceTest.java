@@ -113,6 +113,23 @@ class ChallengeServiceTest {
   }
 
   @Test
+  void reloadRetainsLoadedChallenges() {
+    int before = service.getAllChallenges().size();
+    service.reload();
+    assertEquals(before, service.getAllChallenges().size());
+  }
+
+  @Test
+  void resolveContentDirEndsWithChallenges() {
+    assertEquals("challenges", ChallengeService.resolveContentDir().getFileName().toString());
+  }
+
+  @Test
+  void resolveContentDirIsAbsolute() {
+    assertTrue(ChallengeService.resolveContentDir().isAbsolute());
+  }
+
+  @Test
   void allChallengeAchievementKeysExistInAchievementsJson() throws Exception {
     try (InputStream is = getClass().getResourceAsStream("/achievements.json")) {
       Set<String> knownKeys =
