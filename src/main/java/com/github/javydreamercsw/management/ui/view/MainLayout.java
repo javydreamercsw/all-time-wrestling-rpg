@@ -72,6 +72,10 @@ import jakarta.annotation.security.PermitAll;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,12 +91,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Slf4j
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
+  private static final ScheduledExecutorService INBOX_NOTIF_SCHEDULER =
+      Executors.newSingleThreadScheduledExecutor(
+          r -> {
+            Thread t = new Thread(r, "inbox-notif-debounce");
+            t.setDaemon(true);
+            return t;
+          });
+
   private MenuService menuService;
   private BuildProperties buildProperties;
   private InboxUpdateBroadcaster inboxUpdateBroadcaster;
   private Registration inboxUpdateBroadcasterRegistration;
   private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
   private Registration openProfileDrawerRegistration;
+  // package-private so MainLayoutTest can shorten it without reflection
+  long inboxNotifDebounceMs = 1_000L;
+  private volatile long lastKnownUnreadCount = 0;
+  private volatile ScheduledFuture<?> pendingInboxNotification;
   private @Nullable SecurityUtils securityUtils;
   private AccountService accountService;
   private PasswordEncoder passwordEncoder;
@@ -339,9 +355,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     return navbar;
   }
 
-  private void refreshInboxBadge() {
+  private long refreshInboxBadge() {
     if (inboxBadge == null || securityUtils == null) {
-      return;
+      return 0L;
     }
     // Use the same direct check that @PreAuthorize("isAuthenticated()") interceptors perform.
     // Vaadin push-handler threads do not run SecurityContextHolderFilter, so the ThreadLocal may
@@ -350,13 +366,13 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     var auth = SecurityContextHolder.getContext().getAuthentication();
     if (auth == null || !auth.isAuthenticated() || !securityUtils.isAuthenticated()) {
       inboxBadge.setVisible(false);
-      return;
+      return 0L;
     }
     Long accountId =
         securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
     if (accountId == null) {
       inboxBadge.setVisible(false);
-      return;
+      return 0L;
     }
     try {
       long unread = inboxService != null ? inboxService.countUnread(accountId) : 0L;
@@ -366,9 +382,11 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       } else {
         inboxBadge.setVisible(false);
       }
+      return unread;
     } catch (AuthenticationCredentialsNotFoundException e) {
       log.debug("Skipping inbox badge refresh: auth context lost between check and service call");
       inboxBadge.setVisible(false);
+      return 0L;
     }
   }
 
@@ -399,14 +417,34 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       inboxUpdateBroadcasterRegistration =
           inboxUpdateBroadcaster.register(
               event -> {
-                if (ui.isAttached()) {
-                  ui.access(
-                      () -> {
-                        Notification.show("New inbox item!", 3000, Notification.Position.BOTTOM_END)
-                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                        refreshInboxBadge();
-                      });
+                if (!ui.isAttached()) {
+                  return;
                 }
+                ScheduledFuture<?> existing = pendingInboxNotification;
+                if (existing != null) {
+                  existing.cancel(false);
+                }
+                pendingInboxNotification =
+                    INBOX_NOTIF_SCHEDULER.schedule(
+                        () -> {
+                          if (!ui.isAttached()) {
+                            return;
+                          }
+                          ui.access(
+                              () -> {
+                                long newCount = refreshInboxBadge();
+                                long delta = newCount - lastKnownUnreadCount;
+                                lastKnownUnreadCount = newCount;
+                                if (delta > 0) {
+                                  String msg =
+                                      delta == 1 ? "New inbox item!" : delta + " new inbox items!";
+                                  Notification.show(msg, 3000, Notification.Position.BOTTOM_END)
+                                      .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                                }
+                              });
+                        },
+                        inboxNotifDebounceMs,
+                        TimeUnit.MILLISECONDS);
               });
     }
     if (openProfileDrawerBroadcaster != null) {
@@ -428,6 +466,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     }
     if (openProfileDrawerRegistration != null) {
       openProfileDrawerRegistration.remove();
+    }
+    ScheduledFuture<?> pending = pendingInboxNotification;
+    if (pending != null) {
+      pending.cancel(false);
     }
   }
 
