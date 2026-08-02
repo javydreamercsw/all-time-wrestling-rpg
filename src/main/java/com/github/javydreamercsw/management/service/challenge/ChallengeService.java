@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,7 @@ public class ChallengeService {
   private final ObjectMapper objectMapper;
   private final ResourcePatternResolver resourcePatternResolver;
 
-  private final Path contentDir = resolveContentDir();
+  @Getter private final Path contentDir = resolveContentDir();
   private List<ChallengeDTO> challenges = Collections.emptyList();
 
   @PostConstruct
@@ -55,10 +56,6 @@ public class ChallengeService {
 
   public synchronized void reload() {
     loadChallenges();
-  }
-
-  public Path getContentDir() {
-    return contentDir;
   }
 
   public void loadChallenges() {

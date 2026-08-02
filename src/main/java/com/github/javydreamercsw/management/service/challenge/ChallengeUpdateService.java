@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +46,7 @@ public class ChallengeUpdateService {
   private final ChallengeService challengeService;
   private final ObjectMapper objectMapper;
 
-  private Instant lastChecked;
+  @Getter private Instant lastChecked;
 
   public record UpdateResult(int downloaded, int skipped, String message) {}
 
@@ -106,10 +107,6 @@ public class ChallengeUpdateService {
 
     String msg = downloaded > 0 ? downloaded + " package(s) updated." : "Already up to date.";
     return new UpdateResult(downloaded, skipped, msg);
-  }
-
-  public Instant getLastChecked() {
-    return lastChecked;
   }
 
   private ChallengeContentManifest fetchManifest() {
