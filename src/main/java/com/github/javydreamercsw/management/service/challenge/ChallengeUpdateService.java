@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -49,6 +50,15 @@ public class ChallengeUpdateService {
   @Getter private Instant lastChecked;
 
   public record UpdateResult(int downloaded, int skipped, String message) {}
+
+  @Scheduled(
+      initialDelayString = "${atw.challenges.check-initial-delay:30000}",
+      fixedRateString = "${atw.challenges.check-interval:3600000}")
+  public void scheduledCheck() {
+    log.info("Scheduled challenge update check starting");
+    UpdateResult result = checkAndApply();
+    log.info("Scheduled challenge update check complete: {}", result.message());
+  }
 
   public UpdateResult checkAndApply() {
     Path contentDir = challengeService.getContentDir();

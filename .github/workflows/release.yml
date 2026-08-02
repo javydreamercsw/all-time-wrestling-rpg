@@ -368,6 +368,9 @@ jobs:
           # so they work in all packaged artifacts without shipping the mp4 files.
           GITHUB_PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
+      - name: Copy challenge content into VitePress public dir
+        run: cp -r docs/challenges docs/site/public/challenges
+
       - name: Build documentation for GitHub Pages
         run: |
           cd docs/site
