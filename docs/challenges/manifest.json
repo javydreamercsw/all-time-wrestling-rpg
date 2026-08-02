@@ -1,5 +1,29 @@
 {
   "schemaVersion": 1,
   "lastUpdated": "2026-08-01",
-  "packages": [ ]
+  "packages": [
+    {
+      "id": "season_1_weekly",
+      "jsonUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_1/weekly_challenges.json",
+      "images": [
+        {
+          "name": "week1.png",
+          "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week1.png"
+        },
+        {
+          "name": "week2.png",
+          "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week2.png"
+        },
+        {
+          "name": "week3.png",
+          "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week3.png"
+        }
+      ]
+    },
+    {
+      "id": "season_1_custom",
+      "jsonUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_1/custom_challenges.json",
+      "images": []
+    }
+  ]
 }
