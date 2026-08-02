@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.inbox;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
@@ -44,6 +46,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -62,6 +65,7 @@ class InboxViewTest extends AbstractViewTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
   @Mock private DirectMessageService directMessageService;
+  @Mock private AccountRepository accountRepository;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private InboxView view;
@@ -332,5 +336,123 @@ class InboxViewTest extends AbstractViewTest {
     GridKt._clickItem(grid, 0, 1, false, false, false, false);
 
     org.mockito.Mockito.verifyNoMoreInteractions(org.mockito.Mockito.ignoreStubs(inboxService));
+  }
+
+  @Test
+  @DisplayName("Compose button is present in the toolbar")
+  void composeButton_isPresentInToolbar() {
+    Button composeBtn = _get(view, Button.class, spec -> spec.withText("✉ Compose"));
+    assertTrue(composeBtn.isVisible());
+  }
+
+  @Test
+  @DisplayName("REPLY action type renders a reply button in the detail pane")
+  void createActionComponent_reply_rendersReplyButton() {
+    InboxEventType eventType = new InboxEventType("DIRECT_MESSAGE", "Direct Message");
+    InboxItem item = new InboxItem();
+    item.setId(50L);
+    item.setEventType(eventType);
+    item.setRead(true);
+    item.setDescription("A direct message");
+    item.setActionType("REPLY");
+
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(item));
+    when(inboxService.getAccountRepository()).thenReturn(accountRepository);
+    when(accountRepository.findById(any())).thenReturn(Optional.empty());
+
+    InboxView freshView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService);
+    UI.getCurrent().add(freshView);
+
+    Grid<InboxItem> grid = _get(freshView, Grid.class);
+    GridKt._clickItem(grid, 0, 1, false, false, false, false);
+
+    Button replyBtn = _get(freshView, Button.class, spec -> spec.withId("reply-btn-50"));
+    assertThat(replyBtn.getText()).isEqualTo("Reply");
+  }
+
+  @Test
+  @DisplayName("showDetails renders From: span when senderAccountId is set")
+  void showDetails_withSenderAccountId_rendersFromSpan() {
+    InboxEventType eventType = new InboxEventType("DIRECT_MESSAGE", "Direct Message");
+    InboxItem item = new InboxItem();
+    item.setId(60L);
+    item.setEventType(eventType);
+    item.setRead(true);
+    item.setDescription("Direct message body");
+    item.setSenderAccountId(5L);
+
+    Account sender = mock(Account.class);
+    when(sender.getUsername()).thenReturn("alice");
+    when(inboxService.getAccountRepository()).thenReturn(accountRepository);
+    when(accountRepository.findById(5L)).thenReturn(Optional.of(sender));
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(item));
+
+    InboxView freshView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService);
+    UI.getCurrent().add(freshView);
+
+    Grid<InboxItem> grid = _get(freshView, Grid.class);
+    GridKt._clickItem(grid, 0, 1, false, false, false, false);
+
+    List<Span> fromSpans =
+        _find(
+            freshView,
+            Span.class,
+            spec -> spec.withPredicate(s -> s.getText().startsWith("From:")));
+    assertThat(fromSpans).hasSize(1);
+    assertThat(fromSpans.get(0).getText()).isEqualTo("From: alice");
+  }
+
+  @Test
+  @DisplayName("showDetails omits From: span when senderAccountId is null")
+  void showDetails_withoutSenderAccountId_noFromSpan() {
+    InboxEventType eventType = new InboxEventType("MATCH_REQUEST", "Match Request");
+    InboxItem item = new InboxItem();
+    item.setId(70L);
+    item.setEventType(eventType);
+    item.setRead(true);
+    item.setDescription("System generated message");
+
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(item));
+    when(inboxService.getAccountRepository()).thenReturn(accountRepository);
+
+    InboxView freshView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService);
+    UI.getCurrent().add(freshView);
+
+    Grid<InboxItem> grid = _get(freshView, Grid.class);
+    GridKt._clickItem(grid, 0, 1, false, false, false, false);
+
+    List<Span> fromSpans =
+        _find(
+            freshView,
+            Span.class,
+            spec -> spec.withPredicate(s -> s.getText().startsWith("From:")));
+    assertThat(fromSpans).isEmpty();
   }
 }
