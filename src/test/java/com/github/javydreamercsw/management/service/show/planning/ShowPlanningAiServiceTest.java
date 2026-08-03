@@ -460,7 +460,7 @@ class ShowPlanningAiServiceTest {
   }
 
   @Test
-  void planShow_rivalryClassifiedAsStipulationRequired_whenHeatAtOrAbove30() {
+  void planShow_rivalryClassifiedAsPleResolutionRequired_whenHeatAtOrAbove30OnRegularShow() {
     // Given
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     ShowTemplate showTemplate = new ShowTemplate();
@@ -484,7 +484,38 @@ class ShowPlanningAiServiceTest {
 
     verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
     String prompt = promptCaptor.getValue();
+    assertTrue(prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"));
+    assertFalse(prompt.contains("Classification: STIPULATION_REQUIRED"));
+  }
+
+  @Test
+  void planShow_rivalryClassifiedAsStipulationRequired_whenHeatAtOrAbove30OnPle() {
+    // Given
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(
+        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+    context.setPremiumLiveEvent(true);
+
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(3L);
+    rivalry.setName("Blood Feud");
+    rivalry.setHeat(35);
+    rivalry.setParticipants(List.of("Epsilon", "Zeta"));
+    context.setCurrentRivalries(List.of(rivalry));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+    showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
+    String prompt = promptCaptor.getValue();
     assertTrue(prompt.contains("Classification: STIPULATION_REQUIRED"));
+    assertFalse(prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"));
   }
 
   @Test
