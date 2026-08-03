@@ -283,7 +283,7 @@
     "id": "admin-admin-show-templates",
     "category": "Admin",
     "title": "Show Templates",
-    "description": "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
+    "description": "Manage templates for your shows. You can define default match and promo counts, and now generate custom AI art for each template.",
     "imagePath": "screenshots/admin-show-templates.png",
     "order": 110
   }, {
@@ -756,6 +756,41 @@
     "title": "Match Rules Viewer",
     "description": "Every match type has a built-in rules reference. Tap the info button on any segment or the How to Play button during a match to view solo and multiplayer rule summaries without leaving the app.",
     "imagePath": "screenshots/mechanic-match-info.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-extreme-path",
+    "category": "Campaign",
+    "title": "The Extreme Path",
+    "description": "For the legends of extreme wrestling — Rob Van Dam, Sabu, Raven, and Daemon — this campaign puts you at the centre of the ATW Extreme division. No disqualifications, improvised weapons, and a rabid crowd. Survive the underground, claim the ATW Extreme championship, and cement your legacy.",
+    "imagePath": "screenshots/campaign-extreme-path.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-extreme-outsider-path",
+    "category": "Campaign",
+    "title": "The Outsider's Extreme Path",
+    "description": "You don't belong here — but you're going in anyway. Any wrestler can step into the extreme underground as an outsider, facing the four legends on their own turf. Survive the brutality, adapt your style, and prove an outsider can conquer the most violent division in All Time Wrestling.",
+    "imagePath": "screenshots/campaign-extreme-outsider-path.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-card-export",
+    "category": "Campaign",
+    "title": "Campaign Card Export",
+    "description": "Admins can print physical encounter cards for any campaign chapter directly from the browser. Cards are rendered at standard poker size (63.5 × 88.9 mm) and laid out ready to print on A4 paper — no external tools required.",
+    "imagePath": "screenshots/campaign-card-export.png",
+    "order": 0
+  }, {
+    "id": "dashboards-dashboard-home",
+    "category": "Dashboards",
+    "title": "Home Dashboard",
+    "description": "The home page shows a personalised welcome, a summary of what changed since your last login (inbox items, universe stats), and the latest wrestling news and rumours.",
+    "imagePath": "screenshots/dashboard-home.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-weekly-challenges",
+    "category": "Game Mechanics",
+    "title": "Weekly Challenges",
+    "description": "Browse official and custom weekly challenges. Filter by official status or required expansions and open any challenge for full setup instructions, conditions, and modifiers.",
+    "imagePath": "screenshots/mechanic-weekly-challenges.png",
     "order": 0
   } ]
 }
