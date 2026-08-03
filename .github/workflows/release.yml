@@ -47,12 +47,16 @@ jobs:
           POLL=30       # seconds between polls
           ELAPSED=0
 
+          # Job names that belong to this release workflow — excluded so that
+          # cancelled/failed jobs from a prior interrupted release run on the
+          # same SHA don't block a fresh attempt.
+          RELEASE_JOBS='["preflight_checks","setup_release","generate_screenshots","generate_videos","assemble_docs","build_and_release","build_desktop_installers","deploy_pages","approve_release","finalize_release","merge_to_main","build_and_publish_docker"]'
+
           while true; do
             RESULTS=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs" \
-                      --paginate --jq '
-                        .check_runs[]
-                        | select(.name != "${{ github.workflow }}" and .name != "preflight_checks")
-                        | {name: .name, status: .status, conclusion: .conclusion}')
+                      --paginate --jq '.check_runs[] | {name: .name, status: .status, conclusion: .conclusion}' \
+                      | jq -s --argjson release_jobs "$RELEASE_JOBS" \
+                          '[.[] | select(.name as $n | $release_jobs | index($n) | not)] | .[]')
 
             IN_PROGRESS=$(echo "$RESULTS" | jq -r 'select(.status != "completed") | .name')
 
@@ -241,7 +245,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Generate screenshots and manifest
-        run: mvn -B spotless:apply verify -Pgenerate-docs -Dheadless=true
+        run: mvn -B spotless:apply verify -Pgenerate-docs,production -Dheadless=true
 
       - name: Upload screenshots artifact
         uses: actions/upload-artifact@v7
@@ -293,7 +297,7 @@ jobs:
           sudo apt-get install -y ffmpeg
 
       - name: Generate videos
-        run: mvn -B spotless:apply verify -Pgenerate-videos -Dheadless=true
+        run: mvn -B spotless:apply verify -Pgenerate-videos,production -Dheadless=true
 
       - name: Upload videos artifact
         uses: actions/upload-artifact@v7

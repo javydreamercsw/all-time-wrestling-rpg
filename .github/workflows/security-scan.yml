@@ -46,13 +46,39 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-          
-      - name: 'Run OWASP Dependency Check'
+
+      - name: 'Cache NVD database'
+        uses: actions/cache@v5
+        with:
+          path: ~/.dependency-check/data
+          key: ${{ runner.os }}-nvd-${{ github.run_id }}
+          restore-keys: ${{ runner.os }}-nvd-
+
+      - name: 'Check NVD API key'
         run: |
+          if [ -z "$NVD_API_KEY" ]; then
+            echo "::warning::NVD_API secret is not configured. Add it under Settings → Secrets → Actions."
+            echo "::warning::Scans without an API key are heavily rate-limited and will take much longer."
+          else
+            echo "NVD API key is present."
+          fi
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API }}
+
+      - name: 'Run OWASP Dependency Check'
+        timeout-minutes: 20
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API }}
+        run: |
+          NVD_ARG=""
+          if [ -n "$NVD_API_KEY" ]; then
+            NVD_ARG="-DnvdApiKey=$NVD_API_KEY"
+          fi
           mvn org.owasp:dependency-check-maven:check \
             -DfailBuildOnCVSS=7 \
             -DskipTests \
-            -Dformats=HTML,JSON,SARIF
+            -Dformats=HTML,JSON,SARIF \
+            $NVD_ARG
         continue-on-error: true
         
       - name: 'Upload OWASP Dependency Check Report'

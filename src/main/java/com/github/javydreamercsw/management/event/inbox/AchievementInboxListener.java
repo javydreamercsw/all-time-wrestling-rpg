@@ -56,8 +56,9 @@ public class AchievementInboxListener implements ApplicationListener<Achievement
         event.getAchievementName());
 
     String message =
-        "New career achievement unlocked: %s! Awarded %d Prestige XP."
-            .formatted(event.getAchievementName(), event.getXpValue());
+        "New career achievement unlocked: %s! %s Awarded %d Prestige XP."
+            .formatted(
+                event.getAchievementName(), event.getAchievementDescription(), event.getXpValue());
 
     inboxService.createInboxItem(
         achievementUnlocked,
