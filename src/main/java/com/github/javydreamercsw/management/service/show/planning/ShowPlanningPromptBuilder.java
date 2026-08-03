@@ -134,8 +134,7 @@ public class ShowPlanningPromptBuilder {
           **Anti-Repetition Rules (based on Recent Segments above):**
           - For any rivalry or wrestler pairing that already appeared in Recent Segments, vary the\
            segment format this show. If they competed in a Match last time, book a Promo or\
-           Backstage confrontation this time (unless heat ≥ 30, which requires a match with\
-           stipulation).
+           Backstage confrontation this time.
           - Do NOT use the same match stipulation for the same rivalry two shows in a row.
           - Every show must advance storylines: each segment for a recurring rivalry should\
            escalate tension (new stakes, interference, title implications) or shift momentum\
@@ -154,7 +153,12 @@ public class ShowPlanningPromptBuilder {
               rivalry -> {
                 String classification;
                 if (rivalry.getHeat() >= 30) {
-                  classification = "STIPULATION_REQUIRED";
+                  // On a regular show, max-heat feuds are saved for the PLE — no stipulation
+                  // matches on weeklies. On a PLE they escalate to STIPULATION_REQUIRED.
+                  classification =
+                      context.isPremiumLiveEvent()
+                          ? "STIPULATION_REQUIRED"
+                          : "PLE_RESOLUTION_REQUIRED";
                 } else if (rivalry.getHeat() >= 20) {
                   classification = "PLE_RESOLUTION_ELIGIBLE";
                 } else {
@@ -186,8 +190,12 @@ public class ShowPlanningPromptBuilder {
           - PLE_RESOLUTION_ELIGIBLE (Heat 20-29): This rivalry is hot enough to headline a PLE. \
           On a regular show, build tension with a confrontation, brawl, or non-finish match. \
           On a PLE, give it a decisive match.
-          - STIPULATION_REQUIRED (Heat ≥ 30): This rivalry has reached maximum intensity. It MUST \
-          have a match with a stipulation from the Available Stipulation Matches list below. \
+          - PLE_RESOLUTION_REQUIRED (Heat ≥ 30, regular show): This rivalry has reached maximum \
+          intensity and MUST be saved for the next PLE. On this regular show, book a confrontation, \
+          brawl, or non-finish segment to build anticipation — do NOT book a decisive match or \
+          stipulation here. Reserve the stipulation for the upcoming PLE.
+          - STIPULATION_REQUIRED (Heat ≥ 30, PLE only): This rivalry has reached maximum intensity \
+          and MUST have a match with a stipulation from the Available Stipulation Matches list below. \
           Use a decisive, no-DQ finish — do not end with a count-out or disqualification.
           """);
       List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();

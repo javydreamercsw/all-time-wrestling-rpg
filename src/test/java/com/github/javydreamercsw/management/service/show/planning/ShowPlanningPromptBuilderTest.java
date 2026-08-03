@@ -248,6 +248,61 @@ class ShowPlanningPromptBuilderTest {
     assertTrue(prompt.contains("Alignment: HEEL"), "Wrestler alignment must appear in roster");
   }
 
+  @Test
+  void build_highHeatRivalry_regularShow_classifiedAsPleResolutionRequired() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setPremiumLiveEvent(false);
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(42)));
+    String prompt = builder.build(ctx);
+    // Check the rivalry assignment line specifically, not the legend (which lists both terms)
+    assertTrue(
+        prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
+        "Heat ≥ 30 on regular show must be assigned PLE_RESOLUTION_REQUIRED");
+    assertFalse(
+        prompt.contains("Classification: STIPULATION_REQUIRED"),
+        "Rivalry must not be assigned STIPULATION_REQUIRED on a regular show");
+  }
+
+  @Test
+  void build_highHeatRivalry_ple_classifiedAsStipulationRequired() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setPremiumLiveEvent(true);
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(42)));
+    String prompt = builder.build(ctx);
+    // Check the rivalry assignment line specifically, not the legend (which lists both terms)
+    assertTrue(
+        prompt.contains("Classification: STIPULATION_REQUIRED"),
+        "Heat ≥ 30 on PLE must be assigned STIPULATION_REQUIRED");
+    assertFalse(
+        prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
+        "Rivalry must not be assigned PLE_RESOLUTION_REQUIRED on a PLE");
+  }
+
+  @Test
+  void build_antiRepetitionRule_doesNotCarveOutHighHeatException() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowPlanningSegmentDTO seg = new ShowPlanningSegmentDTO();
+    seg.setSegmentType("Match");
+    seg.setName("Match");
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setShowName("Raw");
+    seg.setShowDate(Instant.now());
+    ctx.setRecentSegments(List.of(seg));
+    String prompt = builder.build(ctx);
+    assertFalse(
+        prompt.contains("unless heat"),
+        "Anti-repetition rule must not carve out a heat-based exception that forces matches");
+  }
+
+  private ShowPlanningRivalryDTO rivalryWithHeat(int heat) {
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(99L);
+    rivalry.setName("Alpha vs Beta");
+    rivalry.setHeat(heat);
+    rivalry.setParticipants(List.of("Alpha", "Beta"));
+    return rivalry;
+  }
+
   private ShowPlanningContextDTO contextWithTemplate(int matches, int promos) {
     ShowPlanningContextDTO ctx = new ShowPlanningContextDTO();
     ShowTemplate template = new ShowTemplate();
