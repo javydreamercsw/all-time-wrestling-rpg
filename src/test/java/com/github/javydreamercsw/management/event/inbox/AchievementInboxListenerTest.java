@@ -17,7 +17,7 @@
 package com.github.javydreamercsw.management.event.inbox;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -62,6 +62,7 @@ class AchievementInboxListenerTest {
 
     Achievement achievement = new Achievement();
     achievement.setName("Test Achievement");
+    achievement.setDescription("Win 10 matches in a row.");
     achievement.setXpValue(100);
 
     AchievementUnlockedEvent event = new AchievementUnlockedEvent(this, account, achievement);
@@ -71,8 +72,8 @@ class AchievementInboxListenerTest {
     verify(inboxService)
         .createInboxItem(
             eq(achievementUnlocked),
-            anyString(),
-            anyString(),
+            contains("Test Achievement"),
+            contains("Win 10 matches in a row."),
             any(InboxItem.Urgency.class),
             eq("1"),
             eq(InboxItemTarget.TargetType.ACCOUNT));
