@@ -377,5 +377,12 @@
     "description": "Step 5 — Enhance with AI",
     "videoPath": "videos/tutorial-global-walkthrough.mp4",
     "order": 0
+  }, {
+    "id": "campaign-campaign-extreme-chapter-picker",
+    "category": "Campaign",
+    "title": "Starting an Extreme Campaign",
+    "description": "Once a chapter is selected and confirmed, the Campaign Dashboard opens immediately — showing your chapter title, entry storyline, alignment track, and all available actions.",
+    "videoPath": "videos/campaign-extreme-chapter-picker.mp4",
+    "order": 0
   } ]
 }
