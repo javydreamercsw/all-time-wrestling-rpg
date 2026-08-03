@@ -509,13 +509,13 @@ jobs:
         skip_validation: true
 
   # Verify the desktop installer builds cleanly on each supported OS.
-  # Only runs on release branches and main — not on every feature-branch PR,
-  # since installer creation (jpackage) is expensive and release-gate relevant.
+  # Runs on release branches, release-branch PRs (head or base is release/*), and tags.
+  # Skipped on plain feature-branch PRs since jpackage is expensive and release-gate relevant.
   desktop-build:
     needs: [check-paths]
     if: >-
       needs.check-paths.outputs.code_changed == 'true' &&
-      (startsWith(github.ref, 'refs/heads/release/') || startsWith(github.base_ref, 'release/') || startsWith(github.ref, 'refs/tags/'))
+      (startsWith(github.ref, 'refs/heads/release/') || startsWith(github.head_ref, 'release/') || startsWith(github.base_ref, 'release/') || startsWith(github.ref, 'refs/tags/'))
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
