@@ -97,16 +97,14 @@ jobs:
           # when the SHA is not in the shallow local checkout, which makes dorny fall back
           # to treating everything as changed (triggering rewrite-check / build jobs that
           # should be skipped for pom-only Dependabot bumps, for example).
-          # For push events, compare against the last successful run on the branch.
+          # For push events, compare against github.event.before (set by determine_base).
           base: ${{ github.event_name != 'pull_request' && steps.determine_base.outputs.base || '' }}
           filters: |
             code_changed:
               - 'src/**'
-              - '!src/main/resources/META-INF/resources/docs/**'
               - 'tsconfig.json'
               - 'vite.config.ts'
               - 'scripts/sync-vaadin-overrides.cjs'
-              - '!docs/**'
             # Dependency/build-config bumps (e.g. Dependabot) — no Java/frontend source
             # changed, so build-and-unit-test still compiles/tests them, but
             # coverage-and-analysis (gated on code_changed only) is skipped since there's
