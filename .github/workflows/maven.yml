@@ -60,13 +60,8 @@ jobs:
           # need the history so we can diff against the base commit (PR base or previous run/commit)
           fetch-depth: 0
 
-      - name: Determine base commit for comparison (PR base / last successful run on branch / previous commit)
+      - name: Determine base commit for comparison (PR base / previous push commit)
         id: determine_base
-        env:
-          REPO: ${{ github.repository }}
-          BRANCH: ${{ github.ref_name }}
-          WORKFLOW_FILE: maven.yml
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -77,30 +72,19 @@ jobs:
             exit 0
           fi
 
-          # For push events: try to find the last successful run of this workflow on the same branch
-          # and use its head_sha as the base. This tends to make checks run only for changes since the last run.
-          echo "Push event → querying last successful workflow run on branch: ${BRANCH}"
-          API_URL="https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW_FILE}/runs?branch=${BRANCH}&status=success&per_page=1"
-
-          # Try to get last run head SHA (jq is available on GH runners)
-          LAST_SHA=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "$API_URL" | jq -r '.workflow_runs[0].head_sha // empty' || true)
-
-          if [ -n "$LAST_SHA" ]; then
-            echo "Found last successful run SHA: $LAST_SHA"
-            echo "base=$LAST_SHA" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # If no prior successful run was found, fall back to the previous commit in the push event.
+          # For push events: compare against the immediately preceding commit so the
+          # filter reflects only what THIS push changed. Using "last successful run" as
+          # the base caused spanning: a workflow-only push would diff against an older
+          # SHA that included source changes, making code_changed spuriously true and
+          # triggering expensive build/test jobs unnecessarily.
           PREV="${{ github.event.before }}"
           if [ -n "$PREV" ] && [ "$PREV" != "0000000000000000000000000000000000000000" ]; then
-            echo "No prior successful run; using github.event.before: $PREV"
             echo "base=$PREV" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # Final fallback: compare to origin/main
-          echo "No prior run and no previous commit available — falling back to origin/main"
+          # Final fallback: new branch / first push with no prior commit.
+          echo "No prior commit available — falling back to origin/main"
           git fetch origin main:refs/remotes/origin/main --depth=1 || true
           echo "base=origin/main" >> $GITHUB_OUTPUT
 
