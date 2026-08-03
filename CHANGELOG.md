@@ -1,11 +1,16 @@
 # Changelog
 
-## [v2.5.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.5.3) (2026-07-13)
+## [v2.6.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.6.0) (2026-08-03)
 
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.5.2...v2.5.3)
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.5.3...v2.6.0)
+
+**Implemented enhancements:**
+
+- Release 2.6.0 [\#413](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/413) ([javydreamercsw](https://github.com/javydreamercsw))
 
 **Merged pull requests:**
 
+- Build\(deps\): Bump the npm\_and\_yarn group across 2 directories with 3 updates [\#435](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/435) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump ch.qos.logback:logback-core from 1.5.37 to 1.5.38 [\#412](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/412) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump com.github.oshi:oshi-core from 7.3.2 to 7.4.0 [\#411](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/411) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump selenium.version from 4.45.0 to 4.46.0 [\#410](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/410) ([dependabot[bot]](https://github.com/apps/dependabot))
@@ -13,6 +18,13 @@
 - Build\(deps-dev\): Bump org.graalvm.buildtools:native-maven-plugin from 1.1.3 to 1.1.4 [\#408](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/408) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps\): Bump org.openrewrite.recipe:rewrite-migrate-java from 3.38.0 to 3.39.0 [\#406](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/406) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump com.github.mvysny.kaributesting:karibu-testing-v10-spring from 2.7.0 to 2.7.1 [\#405](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/405) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v2.5.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.5.3) (2026-07-06)
+
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.5.2...v2.5.3)
+
+**Merged pull requests:**
+
 - Build\(deps\): Bump org.vaadin.stefan:fullcalendar2 from 7.2.1 to 7.2.3 [\#404](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/404) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump com.diffplug.spotless:spotless-maven-plugin from 3.7.0 to 3.8.0 [\#403](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/403) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Build\(deps-dev\): Bump org.graalvm.buildtools:native-maven-plugin from 1.1.0 to 1.1.3 [\#402](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/402) ([dependabot[bot]](https://github.com/apps/dependabot))
@@ -200,7 +212,7 @@
 - fix\(show-planning\): advisory MUST\_BOOK warnings, hard-block on STIPULATION\_REQUIRED, rivalry helpers, and test/doc coverage [\#317](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/317) ([javydreamercsw](https://github.com/javydreamercsw))
 - feat: Flyway checksum safeguard, H2 migration integration test, and Vaadin 25.1.2 upgrade [\#316](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/316) ([javydreamercsw](https://github.com/javydreamercsw))
 - test\(ATW-8a4\): add unit tests for missing Notion sync outgoing services [\#315](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/315) ([javydreamercsw](https://github.com/javydreamercsw))
-- feat\(ATW-nkx\): rivalry heat escalation and feud resolution pipeline [\#314](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/314) ([javydreamercsw](https://github.com/javydreamercsw))
+-  feat\(ATW-nkx\): rivalry heat escalation and feud resolution pipeline [\#314](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/314) ([javydreamercsw](https://github.com/javydreamercsw))
 - feat\(ATW-asl\): add unit tests for image generation services [\#311](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/311) ([javydreamercsw](https://github.com/javydreamercsw))
 - test: add unit tests for AI narration provider services \(ATW-cyv\) [\#310](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/310) ([javydreamercsw](https://github.com/javydreamercsw))
 - feat\(ATW-xz4\): replace condition HP penalty with wear-and-tear bump roll [\#309](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/309) ([javydreamercsw](https://github.com/javydreamercsw))
@@ -484,7 +496,7 @@
 **Implemented enhancements:**
 
 - Prepare for release [\#67](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/67) ([javydreamercsw](https://github.com/javydreamercsw))
-- Bugfix: Handle incomplete AI responses and increase timeouts [\#66](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/66) ([javydreamercsw](https://github.com/javydreamercsw))
+-  Bugfix: Handle incomplete AI responses and increase timeouts [\#66](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/66) ([javydreamercsw](https://github.com/javydreamercsw))
 
 ## [v1.1.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v1.1.0) (2025-12-12)
 
@@ -511,5 +523,7 @@
 - Bump vaadin.version from 24.9.3 to 24.9.5 [\#31](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/31) ([dependabot[bot]](https://github.com/apps/dependabot))
 - Prepare for release [\#30](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/30) ([javydreamercsw](https://github.com/javydreamercsw))
 - Release version 1.0.0 [\#4](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/4) ([javydreamercsw](https://github.com/javydreamercsw))
+
+
 
 \* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*
