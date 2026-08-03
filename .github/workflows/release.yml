@@ -47,11 +47,19 @@ jobs:
           POLL=30       # seconds between polls
           ELAPSED=0
 
+          # Job names that belong to this release workflow — excluded so that
+          # cancelled/failed jobs from a prior interrupted release run on the
+          # same SHA don't block a fresh attempt.
+          RELEASE_JOBS='["preflight_checks","setup_release","generate_screenshots",
+            "generate_videos","assemble_docs","build_and_release",
+            "build_desktop_installers","deploy_pages","approve_release",
+            "finalize_release","merge_to_main","build_and_publish_docker"]'
+
           while true; do
             RESULTS=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs" \
-                      --paginate --jq '
+                      --paginate --jq --argjson release_jobs "$RELEASE_JOBS" '
                         .check_runs[]
-                        | select(.name != "${{ github.workflow }}" and .name != "preflight_checks")
+                        | select(.name as $n | $release_jobs | index($n) | not)
                         | {name: .name, status: .status, conclusion: .conclusion}')
 
             IN_PROGRESS=$(echo "$RESULTS" | jq -r 'select(.status != "completed") | .name')
