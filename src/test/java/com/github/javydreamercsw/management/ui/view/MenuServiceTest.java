@@ -50,6 +50,7 @@ class MenuServiceTest {
     when(routeRoleResolver.resolveRoles(null)).thenReturn(Optional.empty());
     when(routeRoleResolver.isDeniedAll(anyString())).thenReturn(false);
     when(routeRoleResolver.isDeniedAll(null)).thenReturn(false);
+    when(securityUtils.isAuthenticated()).thenReturn(false);
     menuService = new MenuService(securityUtils, routeRoleResolver);
   }
 
@@ -292,26 +293,41 @@ class MenuServiceTest {
   }
 
   @Test
-  void filterMenuItem_resolverPermitAll_showsItemToUnauthenticatedUser() {
-    // Resolver says "campaign" view is @PermitAll (empty set)
-    when(routeRoleResolver.resolveRoles("campaign")).thenReturn(Optional.of(Set.of()));
+  void filterMenuItem_resolverPermitAll_hidesItemFromUnauthenticatedUser() {
+    // Resolver says "card-list" is @PermitAll (empty set = any authenticated user)
+    when(routeRoleResolver.resolveRoles("card-list")).thenReturn(Optional.of(Set.of()));
 
-    // User has no roles
     when(securityUtils.hasRole(any(RoleName.class))).thenReturn(false);
+    when(securityUtils.isAuthenticated()).thenReturn(false);
 
     List<MenuItem> items = menuService.getMenuItems();
 
-    // Even with no roles, @PermitAll route must appear — but Campaign parent group
-    // still has explicit ADMIN/BOOKER/PLAYER roles on it, so the group header is filtered first.
-    // The test verifies resolver's empty-set is treated as "permit all" at the item level.
-    // We check by creating an isolated item directly:
-    MenuItem item =
-        new MenuItem("Test", com.vaadin.flow.component.icon.VaadinIcon.DASHBOARD, "campaign");
-    // The Campaign group header blocks it, so we verify the resolver logic by checking
-    // that resolveRoles("campaign") returning empty Optional.of(emptySet) doesn't deny access.
-    Optional<Set<RoleName>> resolved = routeRoleResolver.resolveRoles("campaign");
-    assertThat(resolved).isPresent();
-    assertThat(resolved.get()).isEmpty(); // empty set = @PermitAll
+    boolean cardListPresent =
+        items.stream()
+            .flatMap(i -> i.getChildren().stream())
+            .anyMatch(i -> "card-list".equals(i.getPath()));
+    assertThat(cardListPresent)
+        .as("@PermitAll route must not appear in the menu for unauthenticated users")
+        .isFalse();
+  }
+
+  @Test
+  void filterMenuItem_resolverPermitAll_showsItemToAuthenticatedUser() {
+    // Resolver says "card-list" is @PermitAll (any authenticated user)
+    when(routeRoleResolver.resolveRoles("card-list")).thenReturn(Optional.of(Set.of()));
+
+    when(securityUtils.hasRole(any(RoleName.class))).thenReturn(false);
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+
+    List<MenuItem> items = menuService.getMenuItems();
+
+    boolean cardListPresent =
+        items.stream()
+            .flatMap(i -> i.getChildren().stream())
+            .anyMatch(i -> "card-list".equals(i.getPath()));
+    assertThat(cardListPresent)
+        .as("@PermitAll route must be visible to any authenticated user")
+        .isTrue();
   }
 
   @Test

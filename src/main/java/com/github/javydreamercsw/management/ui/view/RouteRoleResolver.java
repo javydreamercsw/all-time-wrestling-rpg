@@ -52,9 +52,10 @@ public class RouteRoleResolver {
   private final ApplicationContext applicationContext;
 
   /**
-   * Paths with {@code @PermitAll} or no security annotation map to an empty set (visible to all).
-   * Paths with {@code @RolesAllowed} map to the set of required roles. Paths with {@code @DenyAll}
-   * are tracked in {@link #deniedPaths}.
+   * Paths with {@code @PermitAll} map to an empty set (any authenticated user). Paths with
+   * {@code @RolesAllowed} map to the set of required roles. Paths with {@code @DenyAll} are tracked
+   * in {@link #deniedPaths}. Unannotated paths are not added to the map — callers fall back to the
+   * {@link MenuItem}'s explicit role list.
    */
   private Map<String, Set<RoleName>> routeRoleCache = Map.of();
 
@@ -86,7 +87,7 @@ public class RouteRoleResolver {
 
       } else if (AnnotationUtils.findAnnotation(beanType, PermitAll.class) != null) {
         roleMap.put(path, Set.of());
-        log.debug("Route '{}' → @PermitAll (visible to all)", path);
+        log.debug("Route '{}' → @PermitAll (visible to authenticated users)", path);
 
       } else {
         RolesAllowed rolesAllowed = AnnotationUtils.findAnnotation(beanType, RolesAllowed.class);
@@ -126,7 +127,8 @@ public class RouteRoleResolver {
    * <ul>
    *   <li>{@code Optional.empty()} — no annotation found; caller should fall back to any explicit
    *       roles configured on the {@link MenuItem}.
-   *   <li>{@code Optional.of(emptySet)} — view is {@code @PermitAll}; visible to all.
+   *   <li>{@code Optional.of(emptySet)} — view is {@code @PermitAll}; visible to any authenticated
+   *       user (caller must check authentication separately).
    *   <li>{@code Optional.of(nonEmptySet)} — view is {@code @RolesAllowed}; user must hold at least
    *       one of the returned roles.
    * </ul>
