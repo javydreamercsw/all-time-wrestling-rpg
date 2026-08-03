@@ -101,6 +101,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Detect release type
         id: release_type
@@ -322,6 +323,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: release/${{ github.event.inputs.version }}
+          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Set up JDK 25
         uses: actions/setup-java@v5
@@ -641,6 +643,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Configure Git
         run: |
