@@ -1,0 +1,67 @@
+[ {
+  "id": "final_extreme_challenger",
+  "title": "The Icon Demands Their Title Back",
+  "narrativeText": "One of the four sends you a message: the Extreme Championship was never yours to keep. They're taking it back — in the most violent match either of you has ever had.",
+  "choices": [ {
+    "id": "defend_against_icon",
+    "label": "Stand Your Ground",
+    "text": "The title is yours. No extreme icon is taking it without a war.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "opponentPool": [ "Rob Van Dam", "Sabu", "Raven", "Daemon" ]
+  } ]
+}, {
+  "id": "pre_finale_promo",
+  "title": "The Outsider's Last Statement",
+  "narrativeText": "The Barbwire Exploding Deathmatch is signed. You have one moment before the most dangerous match of your career. The crowd knows who you are now.",
+  "choices": [ {
+    "id": "outsider_fires_up",
+    "label": "Rally the Crowd",
+    "text": "You may have started as an outsider. But this crowd is yours now.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 2,
+    "featureFlags": {
+      "finale_promo_done": true
+    }
+  }, {
+    "id": "outsider_threat",
+    "label": "Silent, Steely Resolve",
+    "text": "No words. Just the look of someone who has already decided they will not lose.",
+    "vpReward": 0,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 1,
+    "featureFlags": {
+      "finale_promo_done": true
+    }
+  } ]
+}, {
+  "id": "outsider_deathmatch",
+  "title": "The Outsider's Barbwire Deathmatch",
+  "narrativeText": "The ring is wrapped in barbwire. The crowd — your crowd now — is on its feet. This is the match that will define your entire extreme journey: an outsider who went further than anyone thought possible.",
+  "choices": [ {
+    "id": "enter_outsider_deathmatch",
+    "label": "Enter the Barbwire",
+    "text": "Outsider. Champion. Legend. You decide which one it ends on.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Barbwire Exploding Deathmatch" ],
+    "opponentPool": [ "Rob Van Dam", "Sabu", "Raven", "Daemon" ],
+    "featureFlags": {
+      "wonFinale": true
+    },
+    "onWinNextEncounterId": "outsider_legend",
+    "onLossNextEncounterId": "outsider_broken"
+  } ]
+}, {
+  "id": "outsider_legend",
+  "title": "The Outsider Legend",
+  "narrativeText": "The explosions fade. The barbwire is still. You stand, bleeding, holding the ATW Extreme Championship above your head. The crowd — extreme faithful who have seen every icon — chants your name. An outsider became the most extreme champion in ATW history."
+}, {
+  "id": "outsider_broken",
+  "title": "Reclaimed by the Extreme",
+  "narrativeText": "The barbwire has the last word. You fought with everything you had — further than any outsider has ever gone in the extreme underground. But the title returns to where they believe it belongs. The story isn't over. It's just not finished yet."
+} ]

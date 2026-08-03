@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,7 @@ class NewsGenerationServiceLazyInitTest {
   private EventAggregationService aggregationService;
   private WrestlerRepository wrestlerRepository;
   private NpcRepository npcRepository;
+  private TitleReignRepository titleReignRepository;
   private NewsGenerationService newsGenerationService;
 
   @BeforeEach
@@ -54,6 +56,7 @@ class NewsGenerationServiceLazyInitTest {
     aggregationService = mock(EventAggregationService.class);
     wrestlerRepository = mock(WrestlerRepository.class);
     npcRepository = mock(NpcRepository.class);
+    titleReignRepository = mock(TitleReignRepository.class);
 
     newsGenerationService =
         new NewsGenerationService(
@@ -65,7 +68,8 @@ class NewsGenerationServiceLazyInitTest {
             segmentRepository,
             aggregationService,
             wrestlerRepository,
-            npcRepository);
+            npcRepository,
+            titleReignRepository);
   }
 
   @Test

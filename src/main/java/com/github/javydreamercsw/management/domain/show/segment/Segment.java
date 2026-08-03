@@ -127,6 +127,9 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "is_main_event", nullable = false)
   private boolean isMainEvent;
 
+  @Column(name = "title_skill_used", nullable = false)
+  private boolean titleSkillUsed = false;
+
   @Column(name = "segment_rating")
   private Integer segmentRating;
 

@@ -87,7 +87,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     navigateTo("campaign");
 
     // 3. Verify & Capture
-    waitForText("Chapter: The Beginning");
+    waitForText("Chapter: All or Nothing Campaign");
     documentFeature(
         "Campaign",
         "The Beginning",
@@ -287,6 +287,79 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  @Order(13)
+  void testCaptureExtremeCampaignView() {
+    // Setup — must use a wrestler in the allowedWrestlerNames list for the extreme chapter.
+    // dataInitializer.init() loads Rob Van Dam from wrestlers JSON with account=null, so the
+    // orElseGet branch would never fire after init. Always link to admin after find-or-create.
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler rvd =
+        wrestlerRepository
+            .findByName("Rob Van Dam")
+            .orElseGet(
+                () -> {
+                  Wrestler w =
+                      Wrestler.builder()
+                          .name("Rob Van Dam")
+                          .startingHealth(100)
+                          .startingStamina(100)
+                          .account(admin)
+                          .isPlayer(true)
+                          .active(true)
+                          .gender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE)
+                          .build();
+                  return wrestlerRepository.saveAndFlush(w);
+                });
+    rvd.setAccount(admin);
+    rvd.setIsPlayer(true);
+    rvd.setActive(true);
+    rvd = wrestlerRepository.saveAndFlush(rvd);
+    createCampaignInChapter(rvd, "extreme_campaign");
+
+    // The dashboard uses activeWrestlerId to select which wrestler's campaign to show.
+    admin.setActiveWrestlerId(rvd.getId());
+    accountRepository.save(admin);
+
+    navigateTo("campaign");
+    waitForText("Chapter: The Extreme Path");
+    documentFeature(
+        "Campaign",
+        "The Extreme Path",
+        """
+        For the legends of extreme wrestling — Rob Van Dam, Sabu, Raven, and Daemon — this\
+         campaign puts you at the centre of the ATW Extreme division. No disqualifications,\
+         improvised weapons, and a rabid crowd. Survive the underground, claim the ATW Extreme\
+         championship, and cement your legacy.\
+        """,
+        "campaign-extreme-path");
+  }
+
+  @Test
+  @Order(14)
+  void testCaptureOutsiderExtremeCampaignView() {
+    // Setup — any wrestler can take the outsider path
+    Account admin = accountRepository.findByUsername("admin").get();
+    Wrestler player = getOrCreateWrestler(admin);
+    createCampaignInChapter(player, "extreme_campaign_outsider");
+
+    admin.setActiveWrestlerId(player.getId());
+    accountRepository.save(admin);
+
+    navigateTo("campaign");
+    waitForText("Chapter: The Outsider's Extreme Path");
+    documentFeature(
+        "Campaign",
+        "The Outsider's Extreme Path",
+        """
+        You don't belong here — but you're going in anyway. Any wrestler can step into the\
+         extreme underground as an outsider, facing the four legends on their own turf.\
+         Survive the brutality, adapt your style, and prove an outsider can conquer the most\
+         violent division in All Time Wrestling.\
+        """,
+        "campaign-extreme-outsider-path");
+  }
+
+  @Test
   @Order(12)
   void testCaptureCampaignListUniverseFilter() {
     // 1. Setup — ensure at least one campaign exists in the default universe
@@ -406,6 +479,28 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
         "campaign-promo-outcome");
   }
 
+  @Test
+  @Order(15)
+  void testCaptureCampaignCardExport() {
+    // Card export reads chapters from classpath — no DB data setup needed.
+    login("admin", "admin");
+    navigateTo("campaign-card-export");
+    waitForVaadinClientToLoad();
+
+    // Default selection is extreme_campaign; wait for at least one card to render.
+    waitForText("The Extreme Path");
+
+    documentFeature(
+        "Campaign",
+        "Campaign Card Export",
+        """
+        Admins can print physical encounter cards for any campaign chapter directly from the\
+         browser. Cards are rendered at standard poker size (63.5 × 88.9 mm) and laid out\
+         ready to print on A4 paper — no external tools required.\
+        """,
+        "campaign-card-export");
+  }
+
   private Wrestler getOrCreateWrestler(@NonNull final Account account) {
     java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
@@ -438,6 +533,10 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(@NonNull final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    String xpath =
+        text.contains("'")
+            ? "//*[contains(., \"" + text + "\")]"
+            : "//*[contains(., '" + text + "')]";
+    waitForVaadinElement(driver, org.openqa.selenium.By.xpath(xpath));
   }
 }

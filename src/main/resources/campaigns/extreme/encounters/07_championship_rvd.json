@@ -1,0 +1,37 @@
+[ {
+  "id": "rvd_mr_monday_night",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "Mr. Monday Night",
+  "narrativeText": "You won the Extreme Championship and the celebration was exactly thirty seconds long. Now a new challenger waits, claiming the title was a fluke. The crowd doesn't think so. Neither do you.",
+  "choices": [ {
+    "id": "prove_it_again",
+    "label": "Prove It Again",
+    "text": "Every night is Monday night for R-V-D.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ]
+  } ]
+}, {
+  "id": "rvd_champion_spotlight",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "Champion's Spotlight",
+  "narrativeText": "The production crew wants a photo op with the belt. The interviewer shoves a microphone in your face. The crowd is chanting R-V-D. This is the moment — you can be everything they want, or remind them why you are dangerous.",
+  "choices": [ {
+    "id": "fire_up_crowd_rvd",
+    "label": "Fire Up the Crowd",
+    "text": "You point to yourself, then the belt, then every corner of the arena. They explode.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 2
+  }, {
+    "id": "show_the_teeth",
+    "label": "Show the Teeth",
+    "text": "The championship has made you a target. Time to remind everyone why that is a mistake.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": -1
+  } ]
+} ]

@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.show.SegmentParticipantReposi
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -45,14 +46,20 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,14 +97,17 @@ class MatchResultProcessorServiceTest {
   @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private FeatureDataService featureDataService;
   @Mock private CampaignService campaignService;
+  @Mock private CampaignEncounterService campaignEncounterService;
 
   @InjectMocks private MatchResultProcessorService service;
 
   @BeforeEach
   void setUpFeatureDataMock() {
-    // campaignService is @Lazy field-injected in the real service; @InjectMocks won't set it
+    // @Lazy field-injected beans are not set by @InjectMocks; inject manually
     org.springframework.test.util.ReflectionTestUtils.setField(
         service, "campaignService", campaignService);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "campaignEncounterService", campaignEncounterService);
     org.mockito.Mockito.lenient()
         .when(
             featureDataService.getFeatureValue(
@@ -106,6 +116,9 @@ class MatchResultProcessorServiceTest {
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any()))
         .thenAnswer(inv -> inv.getArgument(3));
+    org.mockito.Mockito.lenient()
+        .when(campaignEncounterService.getCurrentChoiceBonusConditions(any()))
+        .thenReturn(Collections.emptyList());
   }
 
   @Test
@@ -163,9 +176,11 @@ class MatchResultProcessorServiceTest {
   @Test
   void testProcessMatchResult_Win() {
     Wrestler wrestler = new Wrestler();
+    Universe universe = Universe.builder().name("Test Universe").build();
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
     CampaignState state = new CampaignState();
     state.setWins(0);
     state.setLosses(0);
@@ -190,7 +205,8 @@ class MatchResultProcessorServiceTest {
     WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     service.processMatchResult(campaign, true); // Win 1
 
@@ -227,10 +243,12 @@ class MatchResultProcessorServiceTest {
   @Test
   void testProcessMatchResult_Tournament() {
     Wrestler wrestler = new Wrestler();
+    Universe universe = Universe.builder().name("Test Universe").build();
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     wrestler.setId(1L);
     campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
     CampaignState state = new CampaignState();
     state.setWins(0);
     state.setLosses(0);
@@ -262,10 +280,233 @@ class MatchResultProcessorServiceTest {
     WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setAlignmentType(AlignmentType.FACE);
     alignment.setLevel(1);
-    when(wrestlerAlignmentRepository.findByWrestler(wrestler)).thenReturn(Optional.of(alignment));
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
 
     service.processMatchResult(campaign, true);
 
     verify(tournamentService).advanceTournament(any(), any(Boolean.class), any());
+  }
+
+  // ── bonus VP tests ──────────────────────────────────────────────────────────
+
+  @Test
+  void bonusVp_awardedWhenFinishTypeAndCardMatch() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setReigns(new LinkedHashSet<>());
+    Campaign campaign = buildCampaignWithWrestler(wrestler, 0);
+
+    SegmentParticipant participant = new SegmentParticipant();
+    participant.setWrestler(wrestler);
+    participant.setFinishType("PINFALL");
+    participant.setWinningCardName("Running Powerslam");
+    Segment match = new Segment();
+    match.setShow(new Show());
+    match.getParticipants().add(participant);
+    campaign.getState().setCurrentMatch(match);
+
+    BonusVpCondition condition =
+        BonusVpCondition.builder()
+            .vpReward(2)
+            .description("Won by pinfall with finisher")
+            .requireWin(true)
+            .finishType("PINFALL")
+            .requireFinisherCard(true)
+            .build();
+    when(campaignEncounterService.getCurrentChoiceBonusConditions(campaign.getState()))
+        .thenReturn(List.of(condition));
+
+    service.processMatchResult(campaign, true);
+
+    // base 2 VP (win) + 2 bonus = 4
+    assertThat(campaign.getState().getVictoryPoints()).isEqualTo(4);
+  }
+
+  @Test
+  void bonusVp_notAwardedWhenWinRequiredAndLoss() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setReigns(new LinkedHashSet<>());
+    Campaign campaign = buildCampaignWithWrestler(wrestler, 0);
+
+    BonusVpCondition condition =
+        BonusVpCondition.builder()
+            .vpReward(2)
+            .description("Win-only bonus")
+            .requireWin(true)
+            .build();
+    when(campaignEncounterService.getCurrentChoiceBonusConditions(campaign.getState()))
+        .thenReturn(List.of(condition));
+
+    service.processMatchResult(campaign, false);
+
+    // base -1 VP (loss), no bonus
+    assertThat(campaign.getState().getVictoryPoints()).isEqualTo(-1);
+  }
+
+  @Test
+  void bonusVp_awardedWhenCardGroupsAllSatisfied() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setReigns(new LinkedHashSet<>());
+    Campaign campaign = buildCampaignWithWrestler(wrestler, 0);
+
+    Map<String, Integer> played = new HashMap<>();
+    played.put("German Suplex", 2);
+    played.put("Olympic Slam", 1);
+    SegmentParticipant participant = new SegmentParticipant();
+    participant.setWrestler(wrestler);
+    participant.setCardsPlayed(played);
+    Segment match = new Segment();
+    match.setShow(new Show());
+    match.getParticipants().add(participant);
+    campaign.getState().setCurrentMatch(match);
+
+    BonusVpCondition condition =
+        BonusVpCondition.builder()
+            .vpReward(2)
+            .description("2+ German Suplexes and the Olympic Slam")
+            .requireWin(false)
+            .cardGroups(
+                List.of(
+                    BonusVpCondition.CardExecutionGroup.builder()
+                        .anyOf(List.of("German Suplex", "Series of German Suplexes"))
+                        .minCount(2)
+                        .build(),
+                    BonusVpCondition.CardExecutionGroup.builder()
+                        .anyOf(List.of("Olympic Slam"))
+                        .minCount(1)
+                        .build()))
+            .build();
+    when(campaignEncounterService.getCurrentChoiceBonusConditions(campaign.getState()))
+        .thenReturn(List.of(condition));
+
+    service.processMatchResult(campaign, false);
+
+    // base -1 VP (loss) + 2 bonus = 1
+    assertThat(campaign.getState().getVictoryPoints()).isEqualTo(1);
+  }
+
+  @Test
+  void bonusVp_notAwardedWhenCardGroupPartiallyMet() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setReigns(new LinkedHashSet<>());
+    Campaign campaign = buildCampaignWithWrestler(wrestler, 0);
+
+    Map<String, Integer> played = new HashMap<>();
+    played.put("German Suplex", 1); // only 1, needs 2
+    played.put("Olympic Slam", 1);
+    SegmentParticipant participant = new SegmentParticipant();
+    participant.setWrestler(wrestler);
+    participant.setCardsPlayed(played);
+    Segment match = new Segment();
+    match.setShow(new Show());
+    match.getParticipants().add(participant);
+    campaign.getState().setCurrentMatch(match);
+
+    BonusVpCondition condition =
+        BonusVpCondition.builder()
+            .vpReward(2)
+            .description("2+ German Suplexes and the Olympic Slam")
+            .requireWin(false)
+            .cardGroups(
+                List.of(
+                    BonusVpCondition.CardExecutionGroup.builder()
+                        .anyOf(List.of("German Suplex", "Series of German Suplexes"))
+                        .minCount(2)
+                        .build(),
+                    BonusVpCondition.CardExecutionGroup.builder()
+                        .anyOf(List.of("Olympic Slam"))
+                        .minCount(1)
+                        .build()))
+            .build();
+    when(campaignEncounterService.getCurrentChoiceBonusConditions(campaign.getState()))
+        .thenReturn(List.of(condition));
+
+    service.processMatchResult(campaign, false);
+
+    // base -1 VP (loss), card group not fully met → no bonus
+    assertThat(campaign.getState().getVictoryPoints()).isEqualTo(-1);
+  }
+
+  @Test
+  void processMatchResult_alignmentFallback_whenUniverseScopedLookupReturnsEmpty() {
+    Wrestler wrestler = new Wrestler();
+    Universe universe = Universe.builder().name("Test Universe").build();
+    Campaign campaign = new Campaign();
+    campaign.setId(1L);
+    campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
+    CampaignState state = new CampaignState();
+    state.setWins(0);
+    state.setLosses(0);
+    state.setVictoryPoints(0);
+    state.setMatchesPlayed(0);
+    state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapterId("test-chapter");
+    campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(campaignService.getCurrentChapter(campaign))
+        .thenReturn(
+            Optional.of(
+                CampaignChapterDTO.builder()
+                    .rules(
+                        CampaignChapterDTO.ChapterRules.builder()
+                            .victoryPointsWin(2)
+                            .victoryPointsLoss(-1)
+                            .build())
+                    .build()));
+
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.empty());
+    WrestlerAlignment faceAlignment = new WrestlerAlignment();
+    faceAlignment.setAlignmentType(AlignmentType.FACE);
+    faceAlignment.setLevel(1);
+    when(wrestlerAlignmentRepository.findByWrestler(wrestler))
+        .thenReturn(Optional.of(faceAlignment));
+
+    service.processMatchResult(campaign, true);
+
+    assertThat(state.isPromoUnlocked())
+        .as("Face alignment found via fallback must unlock Promo action")
+        .isTrue();
+    assertThat(state.isAttackUnlocked()).isFalse();
+  }
+
+  private Campaign buildCampaignWithWrestler(final Wrestler wrestler, final int initialVp) {
+    Universe universe = Universe.builder().name("Test Universe").build();
+    Campaign campaign = new Campaign();
+    campaign.setId(1L);
+    campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
+    CampaignState state = new CampaignState();
+    state.setWins(0);
+    state.setLosses(0);
+    state.setVictoryPoints(initialVp);
+    state.setMatchesPlayed(0);
+    state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapterId("test-chapter");
+    campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(campaignService.getCurrentChapter(campaign))
+        .thenReturn(
+            Optional.of(
+                CampaignChapterDTO.builder()
+                    .rules(
+                        CampaignChapterDTO.ChapterRules.builder()
+                            .victoryPointsWin(2)
+                            .victoryPointsLoss(-1)
+                            .build())
+                    .build()));
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.FACE);
+    alignment.setLevel(1);
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
+    return campaign;
   }
 }

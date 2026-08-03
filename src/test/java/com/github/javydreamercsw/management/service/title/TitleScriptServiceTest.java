@@ -17,14 +17,23 @@
 package com.github.javydreamercsw.management.service.title;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +47,7 @@ class TitleScriptServiceTest {
 
   @BeforeEach
   public void setUp() {
-    titleScriptService = new TitleScriptService();
+    titleScriptService = new TitleScriptService(mock(SegmentRuleRepository.class));
     context = new SegmentNarrationContext();
     championContext = new WrestlerContext();
     championContext.setName("John Cena");
@@ -82,5 +91,71 @@ class TitleScriptServiceTest {
     assertTrue(
         context.getInstructions().contains("one-time bonus (+ 2)"),
         "Instructions should contain roll bonus info");
+  }
+
+  @Test
+  void testAddMatchRuleInjectsRuleIntoSegment() {
+    SegmentRule noDqRule = new SegmentRule();
+    noDqRule.setName("No DQ");
+
+    SegmentRuleRepository ruleRepo = mock(SegmentRuleRepository.class);
+    when(ruleRepo.findByName("No DQ")).thenReturn(Optional.of(noDqRule));
+    TitleScriptService service = new TitleScriptService(ruleRepo);
+
+    Segment segment = new Segment();
+    segment.setSegmentRules(new HashSet<>());
+
+    title.setEffectScript("addMatchRule('No DQ')");
+    title.getChampion().clear();
+    title.getChampion().add(champion);
+
+    WrestlerContext wc = new WrestlerContext();
+    wc.setName("John Cena");
+
+    service.activateTitleSkill(title, segment, wc);
+
+    verify(ruleRepo).findByName("No DQ");
+    assertTrue(
+        segment.getSegmentRules().contains(noDqRule), "No DQ rule should be added to segment");
+  }
+
+  @Test
+  void testSetupWeaponCardReturnsTrueInResult() {
+    SegmentRuleRepository ruleRepo = mock(SegmentRuleRepository.class);
+    TitleScriptService service = new TitleScriptService(ruleRepo);
+
+    Segment segment = new Segment();
+    segment.setSegmentRules(new HashSet<>());
+
+    title.setEffectScript("setupWeaponCard()");
+    title.getChampion().clear();
+    title.getChampion().add(champion);
+
+    WrestlerContext wc = new WrestlerContext();
+    wc.setName("John Cena");
+
+    var result = service.activateTitleSkill(title, segment, wc);
+
+    assertTrue(result.weaponCardSetupNeeded(), "Weapon card flag should be true");
+  }
+
+  @Test
+  void testAddMatchRuleOutsideMatchTimeContextLogsWarning() {
+    // When addMatchRule is called via applyTitleEffects (narration-time, no segment), it should
+    // not throw — the method logs a warning and returns silently.
+    SegmentRuleRepository ruleRepo = mock(SegmentRuleRepository.class);
+    TitleScriptService service = new TitleScriptService(ruleRepo);
+
+    title.setEffectScript("addMatchRule('No DQ')");
+    SegmentNarrationContext ctx = new SegmentNarrationContext();
+    WrestlerContext wc = new WrestlerContext();
+    wc.setName("John Cena");
+    ctx.setWrestlers(List.of(wc));
+
+    service.applyTitleEffects(ctx, Collections.singletonList(title));
+
+    assertFalse(
+        ruleRepo.findByName("No DQ").isPresent(),
+        "Repository should not be queried outside match-time path");
   }
 }

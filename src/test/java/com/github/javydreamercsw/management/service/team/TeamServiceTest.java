@@ -39,6 +39,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Integration tests for TeamService. Tests the complete service layer with real database
@@ -50,6 +51,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 @DisplayName("TeamService Integration Tests")
 @org.springframework.test.context.TestPropertySource(
     properties = {"data.initializer.enabled=false"})
+@Transactional
 class TeamServiceTest extends ManagementIntegrationTest {
 
   @MockitoSpyBean private ExpansionService expansionService;

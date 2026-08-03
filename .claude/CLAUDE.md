@@ -19,7 +19,7 @@ doing a simple exact-string sanity check after Repowise already pointed you at a
 
 ## Codebase Intelligence for all-time-wrestling-rpg (Repowise)
 
-Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-07-19 (commit 0d8b7b78b). Confidence: 100%.
+Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-08-03 (commit 16d934b3f). Confidence: 100%.
 The MCP tools below serve pre-verified docs, symbols, history, and health from that index. Every response carries `_meta` freshness fields; a `stale_warning` appears only when a file the response actually serves changed after indexing — silence means current.
 
 ### How to work in this repo
@@ -75,21 +75,21 @@ repo is a comprehensive wrestling promotion management platform that consumes us
 
 ### Hotspots (high churn — check `get_risk` before editing)
 
-- `package.json` — 71 commits/90d (100.0th %ile)
-- `package-lock.json` — 47 commits/90d (99.9th %ile)
+- `package.json` — 70 commits/90d (100.0th %ile)
+- `package-lock.json` — 49 commits/90d (99.9th %ile)
 - `src/test/resources/db/h2-snapshot-v112.sql` — 6 commits/90d (99.9th %ile)
 - `src/main/java/com/github/javydreamercsw/management/ui/view/show/ShowDetailView.java` — 27 commits/90d (99.8th %ile)
-- `src/test/java/com/github/javydreamercsw/AbstractE2ETest.java` — 18 commits/90d (99.8th %ile)
+- `src/main/resources/segment_rules.json` — 9 commits/90d (99.8th %ile)
 
 ### Code health
 
-Three co-equal signals: defect risk 8.07/10 avg, hotspot health 4.86/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` at 1.0/10 · maintainability 8.78/10 · performance risk 324 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
+Three co-equal signals: defect risk 8.1/10 avg, hotspot health 5.03/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` at 1.0/10 · maintainability 8.79/10 · performance risk 291 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
 
 Critical files:
 - `src/main/java/com/github/javydreamercsw/management/service/campaign/PlaceholderResolverService.java` — change entropy — impact −3.0
-- `src/main/java/com/github/javydreamercsw/management/ui/view/inbox/InboxView.java` — change entropy — impact −3.0
 - `src/main/java/com/github/javydreamercsw/management/ui/view/show/MatchInfoDialog.java` — change entropy — impact −3.0
 - `src/main/resources/segment_types.json` — change entropy — impact −3.0
 - `src/test/java/com/github/javydreamercsw/management/ui/view/MenuServiceTest.java` — change entropy — impact −3.0
+- `src/main/java/com/github/javydreamercsw/management/ui/view/universe/UniverseListView.java` — change entropy — impact −2.9
 
 <!-- REPOWISE:END -->

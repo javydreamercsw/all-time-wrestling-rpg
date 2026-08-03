@@ -1,0 +1,39 @@
+[ {
+  "id": "raven_nevermore",
+  "requiredWrestlerName": "Raven",
+  "title": "Nevermore",
+  "narrativeText": "Raven finds the champion before the match — in the parking lot, in the locker room, in their own mind. The psychological assault is meticulous. By the time the match starts, the champion is already broken. Raven simply finishes the work.",
+  "choices": [ {
+    "id": "psychological_dominance",
+    "label": "Break Them Before the Bell",
+    "text": "The match is won long before it begins.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": -1
+  } ]
+}, {
+  "id": "raven_mind_games",
+  "requiredWrestlerName": "Raven",
+  "title": "Mind Games",
+  "narrativeText": "Raven leaves a hand-written note on the champion's car windshield. The note lists, in precise detail, every mistake the champion has made over the last six months. Below the list, just one line: 'I know all of them.' It is not a threat. It is worse. It is a diagnosis.",
+  "choices": [ {
+    "id": "ignore_raven_note",
+    "label": "Ignore It",
+    "text": "You throw the note in the trash. Mind games only work if you play.",
+    "vpReward": 1,
+    "nextPhase": "BACKSTAGE",
+    "alignmentShift": 1
+  }, {
+    "id": "confront_raven",
+    "label": "Confront Him",
+    "text": "You find Raven backstage and tell him exactly where he can put his diagnosis.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "alignmentShift": -1,
+    "forcedOpponentName": "Raven"
+  } ]
+} ]

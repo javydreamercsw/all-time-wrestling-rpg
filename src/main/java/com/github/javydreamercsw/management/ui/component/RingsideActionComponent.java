@@ -27,6 +27,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
@@ -129,9 +130,7 @@ public class RingsideActionComponent extends VerticalLayout {
     actionsLayout
         .getChildren()
         .filter(
-            c ->
-                c instanceof HorizontalLayout
-                    || (c instanceof Span && !c.equals(targetWrestlerSelect)))
+            c -> c instanceof FlexLayout || (c instanceof Span && !c.equals(targetWrestlerSelect)))
         .forEach(actionsLayout::remove);
 
     Wrestler activeTarget =
@@ -142,8 +141,10 @@ public class RingsideActionComponent extends VerticalLayout {
       actionsTitle.addClassNames(FontSize.XSMALL, FontWeight.MEDIUM, Margin.Top.SMALL);
       actionsLayout.add(actionsTitle);
 
-      HorizontalLayout buttons = new HorizontalLayout();
-      buttons.setSpacing(true);
+      FlexLayout buttons = new FlexLayout();
+      buttons.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+      buttons.getStyle().set("gap", "var(--lumo-space-s)");
+      buttons.setWidthFull();
 
       List<RingsideAction> actions = ringsideActionDataService.findAllActions();
 

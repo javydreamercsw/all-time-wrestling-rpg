@@ -1,0 +1,72 @@
+[ {
+  "id": "outsider_arrival",
+  "title": "Walking Into Their World",
+  "narrativeText": "You've seen extreme matches on tape. Nothing prepares you for the real thing. The crowd barely acknowledges you as you enter — you're not one of them. Not yet.",
+  "choices": [ {
+    "id": "prove_yourself",
+    "label": "Step Into the Ring",
+    "text": "The only way to earn respect here is to bleed for it.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "opponentPool": [ "Rob Van Dam", "Sabu", "Raven", "Daemon" ],
+    "setRivalFromMatchOpponent": true
+  } ]
+}, {
+  "id": "respect_or_fear",
+  "title": "Respect or Fear",
+  "narrativeText": "{{RIVAL}} hasn't forgotten last time. They find you in the back and make it clear: this ends between you two, extreme rules, no excuses.",
+  "choices": [ {
+    "id": "face_your_rival",
+    "label": "Face Your Extreme Rival",
+    "text": "Running isn't an option. This is the world you chose.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "weapons_test",
+  "title": "Learning Their Language",
+  "narrativeText": "Steel chairs. Tables. Barbwire. In a normal match, these are disqualifications. Here, they're vocabulary. Tonight you learn to speak extreme fluently.",
+  "choices": [ {
+    "id": "speak_extreme",
+    "label": "Fight Their Way",
+    "text": "When in the extreme underground, do as the extreme fighters do.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "opponentPool": [ "Rob Van Dam", "Sabu", "Raven", "Daemon" ]
+  } ]
+}, {
+  "id": "outsider_proven",
+  "title": "One of Them Steps Up",
+  "narrativeText": "One of the four — the most skeptical — approaches you backstage. No ambush. A match. Clean... well, as clean as extreme gets. They want to know if you truly belong.",
+  "choices": [ {
+    "id": "answer_the_challenge",
+    "label": "Accept the Challenge",
+    "text": "If this is the test, you'll pass it.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "opponentPool": [ "Rob Van Dam", "Sabu", "Raven", "Daemon" ]
+  } ]
+}, {
+  "id": "extreme_gauntlet",
+  "title": "The Extreme Gauntlet",
+  "narrativeText": "All four of them are watching from ringside. Only one will fight, but all four are judging. Win this and you have earned the right to chase the Extreme Championship.",
+  "choices": [ {
+    "id": "run_the_gauntlet",
+    "label": "Run the Gauntlet",
+    "text": "One extreme legend at a time. You can do this.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "No DQ" ],
+    "opponentPool": [ "Rob Van Dam", "Sabu", "Raven", "Daemon" ]
+  } ]
+} ]

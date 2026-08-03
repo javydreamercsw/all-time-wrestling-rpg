@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -70,6 +71,8 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -220,6 +223,42 @@ public class CampaignDashboardView extends VerticalLayout {
             () -> log.warn("No authenticated user found during loadCampaign"));
   }
 
+  private void showCampaignStartPicker(@NonNull final Wrestler wrestler) {
+    List<CampaignChapterDTO> available = campaignService.findStartingChapters(wrestler);
+    if (available.size() <= 1) {
+      campaignService.startCampaign(
+          wrestler, available.isEmpty() ? null : available.get(0).getId());
+      refreshUI();
+      return;
+    }
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Choose Your Campaign");
+    RadioButtonGroup<CampaignChapterDTO> group = new RadioButtonGroup<>();
+    group.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
+    group.setItems(available);
+    group.setItemLabelGenerator(
+        c ->
+            c.getTitle()
+                + (c.getShortDescription() != null ? " — " + c.getShortDescription() : ""));
+    group.setValue(available.get(0));
+    Button confirmBtn =
+        new Button(
+            "Start",
+            e -> {
+              CampaignChapterDTO selected = group.getValue();
+              if (selected != null) {
+                campaignService.startCampaign(wrestler, selected.getId());
+                dialog.close();
+                refreshUI();
+              }
+            });
+    confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    Button cancelBtn = new Button("Cancel", e -> dialog.close());
+    dialog.add(new VerticalLayout(new Paragraph("Select a campaign to begin:"), group));
+    dialog.getFooter().add(cancelBtn, confirmBtn);
+    dialog.open();
+  }
+
   private void initUI() {
     if (currentCampaign == null) {
       add(new H2("Campaign Mode"));
@@ -250,8 +289,7 @@ public class CampaignDashboardView extends VerticalLayout {
                                     .orElse(wrestlers.isEmpty() ? null : wrestlers.getFirst());
 
                             if (active != null) {
-                              campaignService.startCampaign(active);
-                              refreshUI();
+                              showCampaignStartPicker(active);
                             } else {
                               List<Wrestler> all = wrestlerRepository.findAllByActiveTrue();
                               if (!all.isEmpty()) {
@@ -259,8 +297,7 @@ public class CampaignDashboardView extends VerticalLayout {
                                 first.setAccount(user.getAccount());
                                 first.setIsPlayer(true);
                                 wrestlerRepository.save(first);
-                                campaignService.startCampaign(first);
-                                refreshUI();
+                                showCampaignStartPicker(first);
                               }
                             }
                           },
@@ -280,12 +317,12 @@ public class CampaignDashboardView extends VerticalLayout {
     Wrestler wrestler = currentCampaign.getWrestler();
     WrestlerAlignment alignment = wrestler.getAlignment();
 
-    add(new H2("Campaign: All or Nothing (Season 1)"));
-    add(new H3("Wrestler: " + wrestler.getName()));
-
     Optional<CampaignChapterDTO> chapterOpt = campaignService.getCurrentChapter(currentCampaign);
     String chapterTitle = chapterOpt.map(CampaignChapterDTO::getTitle).orElse("Dynamic Story");
     boolean isTournament = chapterOpt.map(CampaignChapterDTO::isTournament).orElse(false);
+
+    add(new H2("Campaign: " + chapterTitle));
+    add(new H3("Wrestler: " + wrestler.getName()));
 
     Span chapterLabel = new Span("Chapter: " + chapterTitle);
     chapterLabel.addClassNames(
@@ -1032,7 +1069,7 @@ public class CampaignDashboardView extends VerticalLayout {
     debugContent.setPadding(true);
     debugContent.setSpacing(true);
 
-    // --- Chapter Jumper ---
+    // --- Chapter + Encounter Jumper ---
     HorizontalLayout chapterLayout = new HorizontalLayout();
     chapterLayout.setAlignItems(Alignment.BASELINE);
 
@@ -1042,6 +1079,24 @@ public class CampaignDashboardView extends VerticalLayout {
     chapterSelect.setPlaceholder("Select Chapter...");
     chapterSelect.setWidth("300px");
 
+    ComboBox<StaticEncounterDTO> encounterSelect = new ComboBox<>("Jump to Encounter");
+    encounterSelect.setItemLabelGenerator(e -> e.getId() + " — " + e.getTitle());
+    encounterSelect.setPlaceholder("Select Encounter (optional)...");
+    encounterSelect.setWidth("400px");
+    encounterSelect.setEnabled(false);
+
+    chapterSelect.addValueChangeListener(
+        ev -> {
+          if (ev.getValue() != null && ev.getValue().getStaticEncounters() != null) {
+            encounterSelect.setItems(ev.getValue().getStaticEncounters());
+            encounterSelect.setEnabled(true);
+          } else {
+            encounterSelect.setItems(new java.util.ArrayList<>());
+            encounterSelect.clear();
+            encounterSelect.setEnabled(false);
+          }
+        });
+
     Button jumpButton =
         new Button(
             "Jump",
@@ -1050,7 +1105,9 @@ public class CampaignDashboardView extends VerticalLayout {
               if (selected != null) {
                 CampaignState state = currentCampaign.getState();
                 state.setCurrentChapterId(selected.getId());
-                state.setCurrentEncounterId(null);
+                StaticEncounterDTO selectedEncounter = encounterSelect.getValue();
+                state.setCurrentEncounterId(
+                    selectedEncounter != null ? selectedEncounter.getId() : null);
                 // Reset Counters
                 state.setMatchesPlayed(0);
                 state.setWins(0);
@@ -1068,11 +1125,17 @@ public class CampaignDashboardView extends VerticalLayout {
                 }
 
                 campaignRepository.save(currentCampaign);
-                Notification.show("Jumped to chapter: " + selected.getTitle());
+                String msg =
+                    "Jumped to chapter: "
+                        + selected.getTitle()
+                        + (selectedEncounter != null
+                            ? " → encounter: " + selectedEncounter.getId()
+                            : "");
+                Notification.show(msg);
                 refreshUI();
               }
             });
-    chapterLayout.add(chapterSelect, jumpButton);
+    chapterLayout.add(chapterSelect, encounterSelect, jumpButton);
     debugContent.add(chapterLayout);
 
     // --- Storyline Export ---

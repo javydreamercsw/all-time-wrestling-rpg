@@ -359,6 +359,25 @@ public class SegmentRuleService {
       final BumpAddition bumpAddition,
       final String expansionCode,
       final SegmentRulePlayGuide guide) {
+    return createOrUpdateRule(
+        name, description, requiresHighHeat, noDq, bumpAddition, expansionCode, guide, true);
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+      allEntries = true)
+  public SegmentRule createOrUpdateRule(
+      @NonNull final String name,
+      final String description,
+      final boolean requiresHighHeat,
+      final boolean noDq,
+      final BumpAddition bumpAddition,
+      final String expansionCode,
+      final SegmentRulePlayGuide guide,
+      final boolean allowsRefereeStopage) {
     Optional<SegmentRule> existingOpt = segmentRuleRepository.findByName(name);
     String incomingHash = computeGuideHash(guide);
 
@@ -368,6 +387,7 @@ public class SegmentRuleService {
       if (java.util.Objects.equals(sr.getDescription(), description)
           && sr.getRequiresHighHeat() == requiresHighHeat
           && sr.getNoDq() == noDq
+          && sr.isAllowsRefereeStopage() == allowsRefereeStopage
           && sr.getBumpAddition() == bumpAddition
           && java.util.Objects.equals(sr.getExpansionCode(), expansionCode)
           && !guideChanged) {
@@ -376,6 +396,7 @@ public class SegmentRuleService {
       sr.setDescription(description);
       sr.setRequiresHighHeat(requiresHighHeat);
       sr.setNoDq(noDq);
+      sr.setAllowsRefereeStopage(allowsRefereeStopage);
       sr.setBumpAddition(bumpAddition);
       sr.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
       if (guideChanged) {
@@ -392,6 +413,7 @@ public class SegmentRuleService {
     segmentRule.setDescription(description);
     segmentRule.setRequiresHighHeat(requiresHighHeat);
     segmentRule.setNoDq(noDq);
+    segmentRule.setAllowsRefereeStopage(allowsRefereeStopage);
     segmentRule.setBumpAddition(bumpAddition);
     segmentRule.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
     segmentRule.setGuide(guide);

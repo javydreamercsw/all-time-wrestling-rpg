@@ -17,11 +17,16 @@
 package com.github.javydreamercsw.base.security;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.core.context.SecurityContextImpl;
 
 class GeneralSecurityUtilsTest {
 
@@ -117,6 +122,106 @@ class GeneralSecurityUtilsTest {
   }
 
   @Test
+  void testRunWithContextRestoresContextOnException() {
+    SecurityContext before = SecurityContextHolder.getContext();
+    SecurityContext context = new SecurityContextImpl();
+
+    Assertions.assertThrows(
+        RuntimeException.class,
+        () ->
+            GeneralSecurityUtils.runWithContext(
+                context,
+                () -> {
+                  throw new RuntimeException("test error");
+                }));
+
+    // Original context must be restored even after the supplier threw
+    Assertions.assertSame(before, SecurityContextHolder.getContext());
+  }
+
+  @Test
+  void testCaptureCurrentContext_whenAuthenticated() {
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          SecurityContext captured = GeneralSecurityUtils.captureCurrentContext();
+          Assertions.assertNotNull(captured.getAuthentication());
+          return null;
+        });
+  }
+
+  @Test
+  void testCaptureCurrentContext_whenNotAuthenticated_returnsEmptyContext() {
+    // No Vaadin context in unit tests → falls through to the log.warn path and returns empty ctx
+    SecurityContext captured = GeneralSecurityUtils.captureCurrentContext();
+    Assertions.assertNotNull(captured);
+    Assertions.assertNull(captured.getAuthentication());
+  }
+
+  @Test
+  void testRunAsAdminAsync_supplierRunsOnBackgroundThread() throws Exception {
+    AtomicReference<String> threadName = new AtomicReference<>();
+    String result =
+        GeneralSecurityUtils.runAsAdminAsync(
+                () -> {
+                  threadName.set(Thread.currentThread().getName());
+                  return "async-result";
+                })
+            .get();
+
+    Assertions.assertEquals("async-result", result);
+    Assertions.assertNotEquals(Thread.currentThread().getName(), threadName.get());
+  }
+
+  @Test
+  void testRunAsAdminAsync_runnableCompletesSuccessfully() throws Exception {
+    AtomicBoolean ran = new AtomicBoolean(false);
+    GeneralSecurityUtils.runAsAdminAsync((Runnable) () -> ran.set(true)).get();
+    Assertions.assertTrue(ran.get());
+  }
+
+  @Test
+  void testSetMethodSecurityStrategy_propagatesToSecondStrategy() {
+    SecurityContextHolderStrategy saved = GeneralSecurityUtils.methodSecurityStrategy;
+    SecurityContextHolderStrategy secondStrategy = simpleStrategy();
+    GeneralSecurityUtils.setMethodSecurityStrategy(secondStrategy);
+    try {
+      GeneralSecurityUtils.runAsAdmin(
+          () -> {
+            Authentication auth = secondStrategy.getContext().getAuthentication();
+            Assertions.assertNotNull(auth, "methodSecurityStrategy must see admin context");
+            Assertions.assertTrue(
+                auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
+            return null;
+          });
+      // After runAs the second strategy context is restored to its original (empty) state
+      Assertions.assertNull(secondStrategy.getContext().getAuthentication());
+    } finally {
+      GeneralSecurityUtils.methodSecurityStrategy = saved;
+    }
+  }
+
+  @Test
+  void testRunWithContext_propagatesToMethodSecurityStrategy() {
+    SecurityContextHolderStrategy saved = GeneralSecurityUtils.methodSecurityStrategy;
+    SecurityContextHolderStrategy secondStrategy = simpleStrategy();
+    GeneralSecurityUtils.setMethodSecurityStrategy(secondStrategy);
+    try {
+      SecurityContext ctx = SecurityContextHolder.createEmptyContext();
+      GeneralSecurityUtils.runWithContext(
+          ctx,
+          () -> {
+            Assertions.assertSame(ctx, secondStrategy.getContext());
+            return null;
+          });
+      // Restored after the call
+      Assertions.assertNotSame(ctx, secondStrategy.getContext());
+    } finally {
+      GeneralSecurityUtils.methodSecurityStrategy = saved;
+    }
+  }
+
+  @Test
   void testContextRestoration() {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
@@ -141,5 +246,53 @@ class GeneralSecurityUtilsTest {
           Assertions.assertSame(initialAuth, restoredAuth);
           return null;
         });
+  }
+
+  @Test
+  void testRunAs_reentrantCallRunsDirectlyWithoutReauth() {
+    AtomicBoolean innerRan = new AtomicBoolean(false);
+    GeneralSecurityUtils.runAsAdmin(
+        () -> {
+          Authentication outer = SecurityContextHolder.getContext().getAuthentication();
+          Assertions.assertNotNull(outer);
+          // Nested call with same username ("system") hits the re-entrancy guard —
+          // it skips creating a new token and runs the supplier with the existing context.
+          GeneralSecurityUtils.runAsAdmin(
+              () -> {
+                Authentication inner = SecurityContextHolder.getContext().getAuthentication();
+                Assertions.assertSame(outer, inner, "re-entrancy path must reuse outer auth");
+                innerRan.set(true);
+                return null;
+              });
+          return null;
+        });
+    Assertions.assertTrue(innerRan.get());
+  }
+
+  private static SecurityContextHolderStrategy simpleStrategy() {
+    java.util.concurrent.atomic.AtomicReference<SecurityContext> holder =
+        new java.util.concurrent.atomic.AtomicReference<>(
+            SecurityContextHolder.createEmptyContext());
+    return new SecurityContextHolderStrategy() {
+      @Override
+      public void clearContext() {
+        holder.set(SecurityContextHolder.createEmptyContext());
+      }
+
+      @Override
+      public SecurityContext getContext() {
+        return holder.get();
+      }
+
+      @Override
+      public void setContext(final SecurityContext context) {
+        holder.set(context);
+      }
+
+      @Override
+      public SecurityContext createEmptyContext() {
+        return SecurityContextHolder.createEmptyContext();
+      }
+    };
   }
 }

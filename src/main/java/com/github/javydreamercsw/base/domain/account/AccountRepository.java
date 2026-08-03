@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.domain.account;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -44,5 +45,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
   @Query(
       "SELECT a FROM Account a WHERE a.id NOT IN "
           + "(SELECT DISTINCT w.account.id FROM Wrestler w WHERE w.account IS NOT NULL)")
-  java.util.List<Account> findAccountsWithNoAssignedWrestler();
+  List<Account> findAccountsWithNoAssignedWrestler();
+
+  List<Account> findAllByRoles_Name(RoleName roleName);
 }

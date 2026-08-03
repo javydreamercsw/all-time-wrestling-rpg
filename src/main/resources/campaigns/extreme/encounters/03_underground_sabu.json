@@ -1,0 +1,30 @@
+[ {
+  "id": "sabu_table_apocalypse",
+  "requiredWrestlerName": "Sabu",
+  "title": "Table Apocalypse",
+  "narrativeText": "Sabu points at the stack of tables ringside. The crowd already knows what's coming. {{RIVAL}} stands in the ring, trying to look unafraid. They should be afraid. Sabu is homicidal, suicidal, genocidal.",
+  "choices": [ {
+    "id": "bring_the_tables",
+    "label": "Call for the Tables",
+    "text": "One is not enough. All of them. Right now.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Last Man Standing" ],
+    "forcedOpponentName": "{{RIVAL}}"
+  } ]
+}, {
+  "id": "sabu_chair_frenzy",
+  "requiredWrestlerName": "Sabu",
+  "title": "Chair Frenzy",
+  "narrativeText": "A folding steel chair is both a weapon and a launching pad for Sabu. He springboards off it, flies through the air, crashes into his opponent, stands up and does it again. The crowd loses their minds. Then three more wrestlers slide into the ring.",
+  "choices": [ {
+    "id": "use_chair_as_weapon",
+    "label": "Springboard Into Chaos",
+    "text": "Chair. Launch. Impact. Repeat. Homicidal, suicidal, genocidal.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "Free-for-All",
+    "segmentRules": [ "Free-For-All" ]
+  } ]
+} ]

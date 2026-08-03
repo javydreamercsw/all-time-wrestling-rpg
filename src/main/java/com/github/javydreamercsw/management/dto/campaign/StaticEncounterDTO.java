@@ -42,6 +42,9 @@ public class StaticEncounterDTO {
    */
   private String requiredExpansion;
 
+  /** Wrestler name required to show this encounter. Null = shown for all wrestlers. */
+  private String requiredWrestlerName;
+
   @Data
   @Builder
   @NoArgsConstructor
@@ -136,5 +139,53 @@ public class StaticEncounterDTO {
      * nextMilestoneOnFailure instead of nextMilestoneOnSuccess.
      */
     @Builder.Default private boolean intendedPath = true;
+
+    /**
+     * Per-match bonus VP conditions evaluated after the match result is recorded. Each condition is
+     * checked against the player's SegmentParticipant (finishType, winningCardName, cardsPlayed).
+     * All non-null constraints within a condition must be satisfied for the bonus to be awarded.
+     */
+    private List<BonusVpCondition> bonusVpConditions;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BonusVpCondition {
+      private int vpReward;
+
+      /** Human-readable description shown to the player in post-match summary. */
+      private String description;
+
+      /** If true (the default), the bonus is only awarded on a win. */
+      @Builder.Default private boolean requireWin = true;
+
+      /**
+       * If set, the player's recorded finish type (PINFALL / SUBMISSION / COUNTOUT / OTHER) must
+       * match this value exactly.
+       */
+      private String finishType;
+
+      /** If true, the player's winning card must be their designated finisher card. */
+      private boolean requireFinisherCard;
+
+      /**
+       * Each group in this list must be independently satisfied (all groups are ANDed). Within a
+       * group the player's cardsPlayed counts are summed across the anyOf names.
+       */
+      private List<CardExecutionGroup> cardGroups;
+
+      @Data
+      @Builder
+      @NoArgsConstructor
+      @AllArgsConstructor
+      public static class CardExecutionGroup {
+        /** Card names that are interchangeable for this group (any of them counts). */
+        private List<String> anyOf;
+
+        /** Minimum total executions of any card in anyOf required to satisfy this group. */
+        private int minCount;
+      }
+    }
   }
 }

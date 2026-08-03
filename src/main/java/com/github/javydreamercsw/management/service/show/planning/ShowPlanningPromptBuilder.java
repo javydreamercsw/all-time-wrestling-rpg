@@ -96,26 +96,53 @@ public class ShowPlanningPromptBuilder {
     }
 
     if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
-      prompt.append("Recent Segments (up to 10):\n");
+      prompt.append("Recent Segments (last 3 weeks, up to 20):\n");
       context.getRecentSegments().stream()
-          .limit(10)
+          .limit(20)
           .forEach(
-              segment ->
+              segment -> {
+                prompt
+                    .append("- Type: ")
+                    .append(
+                        segment.getSegmentType() != null
+                            ? sanitize(segment.getSegmentType())
+                            : "Unknown")
+                    .append(", Name: ")
+                    .append(sanitize(segment.getName()))
+                    .append(", Participants: ")
+                    .append(
+                        segment.getParticipants().stream()
+                            .map(ShowPlanningPromptBuilder::sanitize)
+                            .collect(Collectors.joining(", ")));
+                if (segment.getWinners() != null && !segment.getWinners().isEmpty()) {
                   prompt
-                      .append("- Name: ")
-                      .append(sanitize(segment.getName()))
-                      .append(", Summary: ")
-                      .append(sanitize(segment.getSummary()))
-                      .append(", Participants: ")
+                      .append(", Winners: ")
                       .append(
-                          segment.getParticipants().stream()
+                          segment.getWinners().stream()
                               .map(ShowPlanningPromptBuilder::sanitize)
-                              .collect(Collectors.joining(", ")))
-                      .append(", Show: ")
-                      .append(sanitize(segment.getShowName()))
-                      .append(", Date: ")
-                      .append(segment.getShowDate())
-                      .append("\n"));
+                              .collect(Collectors.joining(", ")));
+                }
+                prompt
+                    .append(", Show: ")
+                    .append(sanitize(segment.getShowName()))
+                    .append(", Date: ")
+                    .append(segment.getShowDate())
+                    .append("\n");
+              });
+      prompt.append(
+          """
+          **Anti-Repetition Rules (based on Recent Segments above):**
+          - For any rivalry or wrestler pairing that already appeared in Recent Segments, vary the\
+           segment format this show. If they competed in a Match last time, book a Promo or\
+           Backstage confrontation this time.
+          - Do NOT use the same match stipulation for the same rivalry two shows in a row.
+          - Every show must advance storylines: each segment for a recurring rivalry should\
+           escalate tension (new stakes, interference, title implications) or shift momentum\
+           (different winner, surprise turn). Repeating the same result or format is not\
+           acceptable.
+          - Wrestlers who won their last segment should be booked in stronger roles; wrestlers who\
+           lost should be rebuilding or seeking revenge.
+          """);
     }
 
     if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
@@ -126,7 +153,12 @@ public class ShowPlanningPromptBuilder {
               rivalry -> {
                 String classification;
                 if (rivalry.getHeat() >= 30) {
-                  classification = "STIPULATION_REQUIRED";
+                  // On a regular show, max-heat feuds are saved for the PLE — no stipulation
+                  // matches on weeklies. On a PLE they escalate to STIPULATION_REQUIRED.
+                  classification =
+                      context.isPremiumLiveEvent()
+                          ? "STIPULATION_REQUIRED"
+                          : "PLE_RESOLUTION_REQUIRED";
                 } else if (rivalry.getHeat() >= 20) {
                   classification = "PLE_RESOLUTION_ELIGIBLE";
                 } else {
@@ -158,8 +190,12 @@ public class ShowPlanningPromptBuilder {
           - PLE_RESOLUTION_ELIGIBLE (Heat 20-29): This rivalry is hot enough to headline a PLE. \
           On a regular show, build tension with a confrontation, brawl, or non-finish match. \
           On a PLE, give it a decisive match.
-          - STIPULATION_REQUIRED (Heat ≥ 30): This rivalry has reached maximum intensity. It MUST \
-          have a match with a stipulation from the Available Stipulation Matches list below. \
+          - PLE_RESOLUTION_REQUIRED (Heat ≥ 30, regular show): This rivalry has reached maximum \
+          intensity and MUST be saved for the next PLE. On this regular show, book a confrontation, \
+          brawl, or non-finish segment to build anticipation — do NOT book a decisive match or \
+          stipulation here. Reserve the stipulation for the upcoming PLE.
+          - STIPULATION_REQUIRED (Heat ≥ 30, PLE only): This rivalry has reached maximum intensity \
+          and MUST have a match with a stipulation from the Available Stipulation Matches list below. \
           Use a decisive, no-DQ finish — do not end with a count-out or disqualification.
           """);
       List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
@@ -205,19 +241,21 @@ public class ShowPlanningPromptBuilder {
       context
           .getFullRoster()
           .forEach(
-              wrestler ->
-                  prompt
-                      .append("- Id: ")
-                      .append(wrestler.getId())
-                      .append(", Name: ")
-                      .append(sanitize(wrestler.getName()))
-                      .append(", Gender: ")
-                      .append(wrestler.getGender())
-                      .append(", Tier: ")
-                      .append(wrestler.getTier())
-                      .append(", Injured: ")
-                      .append(wrestler.isInjured())
-                      .append("\n"));
+              wrestler -> {
+                prompt
+                    .append("- Id: ")
+                    .append(wrestler.getId())
+                    .append(", Name: ")
+                    .append(sanitize(wrestler.getName()))
+                    .append(", Gender: ")
+                    .append(wrestler.getGender())
+                    .append(", Tier: ")
+                    .append(wrestler.getTier());
+                if (wrestler.getAlignment() != null) {
+                  prompt.append(", Alignment: ").append(wrestler.getAlignment());
+                }
+                prompt.append(", Injured: ").append(wrestler.isInjured()).append("\n");
+              });
       prompt.append(
           "IMPORTANT: You MUST only book wrestlers listed in the Full Roster above."
               + " Do not use names from other sections (e.g. recent segments or rivalries)"

@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRosterEntryDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningSegmentDTO;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -192,6 +193,114 @@ class ShowPlanningPromptBuilderTest {
 
     assertTrue(prompt.contains("Roman Reigns"), "Healthy wrestler must appear in roster section");
     assertTrue(prompt.contains("Injured: false"), "Injured flag must be rendered as false");
+  }
+
+  @Test
+  void build_recentSegments_includesTypeAndWinnersAndAntiRepetitionRules() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowPlanningSegmentDTO seg = new ShowPlanningSegmentDTO();
+    seg.setSegmentType("Match");
+    seg.setName("Standard Match");
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setWinners(List.of("Alpha"));
+    seg.setShowName("Raw");
+    seg.setShowDate(Instant.now());
+    ctx.setRecentSegments(List.of(seg));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Type: Match"), "Recent segment type must appear");
+    assertTrue(prompt.contains("Winners: Alpha"), "Recent segment winners must appear");
+    assertTrue(prompt.contains("Anti-Repetition Rules"), "Anti-repetition block must appear");
+    assertTrue(
+        prompt.contains("vary the segment format"),
+        "Anti-repetition must instruct format variation");
+  }
+
+  @Test
+  void build_recentSegments_noWinners_omitsWinnersField() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowPlanningSegmentDTO seg = new ShowPlanningSegmentDTO();
+    seg.setSegmentType("Promo");
+    seg.setName("Confrontation");
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setShowName("Raw");
+    seg.setShowDate(Instant.now());
+    ctx.setRecentSegments(List.of(seg));
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(prompt.contains("Winners:"), "Winners field must be omitted when empty");
+  }
+
+  @Test
+  void build_rosterWithAlignment_includesAlignment() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();
+    wrestler.setId(10L);
+    wrestler.setName("The Heel");
+    wrestler.setAlignment("HEEL");
+    wrestler.setInjured(false);
+    ctx.setFullRoster(List.of(wrestler));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Alignment: HEEL"), "Wrestler alignment must appear in roster");
+  }
+
+  @Test
+  void build_highHeatRivalry_regularShow_classifiedAsPleResolutionRequired() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setPremiumLiveEvent(false);
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(42)));
+    String prompt = builder.build(ctx);
+    // Check the rivalry assignment line specifically, not the legend (which lists both terms)
+    assertTrue(
+        prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
+        "Heat ≥ 30 on regular show must be assigned PLE_RESOLUTION_REQUIRED");
+    assertFalse(
+        prompt.contains("Classification: STIPULATION_REQUIRED"),
+        "Rivalry must not be assigned STIPULATION_REQUIRED on a regular show");
+  }
+
+  @Test
+  void build_highHeatRivalry_ple_classifiedAsStipulationRequired() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setPremiumLiveEvent(true);
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(42)));
+    String prompt = builder.build(ctx);
+    // Check the rivalry assignment line specifically, not the legend (which lists both terms)
+    assertTrue(
+        prompt.contains("Classification: STIPULATION_REQUIRED"),
+        "Heat ≥ 30 on PLE must be assigned STIPULATION_REQUIRED");
+    assertFalse(
+        prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
+        "Rivalry must not be assigned PLE_RESOLUTION_REQUIRED on a PLE");
+  }
+
+  @Test
+  void build_antiRepetitionRule_doesNotCarveOutHighHeatException() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowPlanningSegmentDTO seg = new ShowPlanningSegmentDTO();
+    seg.setSegmentType("Match");
+    seg.setName("Match");
+    seg.setParticipants(List.of("Alpha", "Beta"));
+    seg.setShowName("Raw");
+    seg.setShowDate(Instant.now());
+    ctx.setRecentSegments(List.of(seg));
+    String prompt = builder.build(ctx);
+    assertFalse(
+        prompt.contains("unless heat"),
+        "Anti-repetition rule must not carve out a heat-based exception that forces matches");
+  }
+
+  private ShowPlanningRivalryDTO rivalryWithHeat(int heat) {
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(99L);
+    rivalry.setName("Alpha vs Beta");
+    rivalry.setHeat(heat);
+    rivalry.setParticipants(List.of("Alpha", "Beta"));
+    return rivalry;
   }
 
   private ShowPlanningContextDTO contextWithTemplate(int matches, int promos) {

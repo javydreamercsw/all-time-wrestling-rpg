@@ -1,0 +1,15 @@
+[ {
+  "id": "rvd_one_of_a_kind",
+  "requiredWrestlerName": "Rob Van Dam",
+  "title": "One of a Kind",
+  "narrativeText": "The ladder stands fifteen feet tall at ringside. R-V-D climbs it. The crowd holds its collective breath. A Five-Star Frog Splash from the top of the ladder through a table wrapped in barbwire — the most spectacular, dangerous move in extreme history.",
+  "choices": [ {
+    "id": "launch_from_ladder",
+    "label": "Take the Leap of a Legend",
+    "text": "One of a kind. Literally no one else would attempt this.",
+    "vpReward": 0,
+    "nextPhase": "MATCH",
+    "matchType": "One on One",
+    "segmentRules": [ "Barbwire Exploding Deathmatch" ]
+  } ]
+} ]

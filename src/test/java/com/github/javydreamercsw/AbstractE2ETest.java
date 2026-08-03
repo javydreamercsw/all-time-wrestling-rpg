@@ -75,7 +75,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Import(TestE2ESecurityConfig.class)
 @Slf4j
 @WithCustomMockUser(roles = {"ADMIN"})
-@ExtendWith(UITestWatcher.class)
+@ExtendWith({UITestWatcher.class, E2EShardCondition.class})
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @Autowired protected ObjectMapper objectMapper;
@@ -316,9 +316,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         if (!loginUrl.equals(driver.getCurrentUrl())) {
           driver.get(loginUrl);
         }
-        waitForVaadinClientToLoad();
-        takeSequencedScreenshot("on-login-page");
-
+        // Wait for the login form directly — the Vaadin client on the login page can
+        // remain "active" while initializing its push connection (Vaadin 25), causing
+        // waitForVaadinClientToLoad() to time out before we even reach the form.
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
         WebElement loginFormHost;
         try {
@@ -330,6 +330,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           log.error("Page source: {}", driver.getPageSource());
           throw e;
         }
+        takeSequencedScreenshot("on-login-page");
 
         WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
         WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
@@ -353,7 +354,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         clickElement(signInButton);
 
         // Wait for successful login (logout button appears)
-        WebDriverWait loginWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        WebDriverWait loginWait = new WebDriverWait(driver, getWaitTimeout());
         loginWait.until(ExpectedConditions.presenceOfElementLocated(By.id("logout-button")));
 
         takeSequencedScreenshot("after-successful-login");
@@ -425,6 +426,25 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return "true".equalsIgnoreCase(githubActions);
   }
 
+  /**
+   * The timeout used by general-purpose {@link WebDriverWait} calls throughout this class.
+   * Configurable via {@code -De2e.wait.timeoutSeconds=<N>} (or the {@code E2E_WAIT_TIMEOUT_SECONDS}
+   * env var) so individual CI jobs can be tuned independently to test whether flaky failures are
+   * caused by an overly aggressive default, without editing test code. Defaults to 30s, matching
+   * the previous hardcoded value.
+   */
+  protected Duration getWaitTimeout() {
+    String timeoutProp = System.getProperty("e2e.wait.timeoutSeconds");
+    String timeoutEnv = System.getenv("E2E_WAIT_TIMEOUT_SECONDS");
+    if (timeoutProp != null) {
+      return Duration.ofSeconds(Long.parseLong(timeoutProp));
+    }
+    if (timeoutEnv != null) {
+      return Duration.ofSeconds(Long.parseLong(timeoutEnv));
+    }
+    return Duration.ofSeconds(30);
+  }
+
   protected void waitForAppToBeReady() {
     int maxAttempts = 300; // Increased from 60 to handle slow production builds
     int attempt = 0;
@@ -460,22 +480,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected WebElement waitForVaadinElement(@NonNull WebDriver driver, @NonNull By selector) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     return wait.until(ExpectedConditions.presenceOfElementLocated(selector));
   }
 
   protected WebElement waitForVaadinElementVisible(@NonNull final By selector) {
     waitForVaadinClientToLoad();
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     return wait.until(ExpectedConditions.visibilityOfElementLocated(selector));
   }
 
   protected void waitForGridToPopulate(@NonNull final String gridId) {
     // Delegate to the more robust 'settled' wait.
-    waitForGridToSettle(gridId, Duration.ofSeconds(30));
+    waitForGridToSettle(gridId, getWaitTimeout());
 
     // Keep the previous semantics: we expect at least one row.
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     wait.until(
         d -> {
           try {
@@ -489,7 +509,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForVaadinClientToLoad() {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
     // Wait for document.readyState to be 'complete'
     wait.until(
@@ -498,7 +518,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 ((JavascriptExecutor) webDriver).executeScript("return document.readyState"),
                 "complete"));
 
-    // Wait for Vaadin to be present and idle
+    // Wait for Vaadin to be present and idle.
+    // Return true immediately when window.Vaadin.Flow.clients is absent — this covers
+    // non-Flow pages and Vaadin 25 login pages where the clients map is not yet registered.
     wait.until(
         webDriver -> {
           try {
@@ -506,10 +528,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 ((JavascriptExecutor) webDriver)
                     .executeScript(
                         """
-                        return !!(window.Vaadin && window.Vaadin.Flow &&\
-                         window.Vaadin.Flow.clients &&\
-                         Object.values(window.Vaadin.Flow.clients).every(client =>\
-                         !client.isActive()));\
+                        if (!window.Vaadin || !window.Vaadin.Flow
+                            || !window.Vaadin.Flow.clients) {
+                          return true;
+                        }
+                        return Object.values(window.Vaadin.Flow.clients)
+                            .every(function(c) { return !c.isActive(); });
                         """);
           } catch (Exception e) {
             return false;
@@ -573,7 +597,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     takeSequencedScreenshot("before-click");
     // Wait for the element to become visible (short window — elements inside vaadin-details or
     // animated containers may be present but hidden; fall through to JS click in that case).
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     boolean visible;
     try {
       new WebDriverWait(driver, Duration.ofSeconds(5))
@@ -680,7 +704,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
     // Wait for a visible combo-box item whose text matches.
     // If no items appear, retry opening (handles lazy data providers or slow Vaadin push).
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     WebElement item =
         wait.until(
             d -> {
@@ -723,7 +747,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     // Wait for an item that is both present AND visible (non-zero bounding box).
     // Checking visibility avoids matching items in previously-closed overlays
     // that are still in the DOM but hidden.
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     WebElement item =
         wait.until(
             d -> {
@@ -765,7 +789,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
     // After click, the open vaadin-menu-bar-submenu contains a DIV with a
     // vaadin-menu-bar-list-box whose children are the clickable menu items.
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     WebElement item =
         wait.until(
             d -> {
@@ -832,7 +856,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    */
   protected void waitForGridContains(@NonNull final String gridId, @NonNull final String text) {
     JavascriptExecutor js = (JavascriptExecutor) driver;
-    new WebDriverWait(driver, Duration.ofSeconds(30))
+    new WebDriverWait(driver, getWaitTimeout())
         .until(
             d -> {
               try {
@@ -860,7 +884,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
    */
   protected void waitForGridNotContains(@NonNull final String gridId, @NonNull final String text) {
     JavascriptExecutor js = (JavascriptExecutor) driver;
-    new WebDriverWait(driver, Duration.ofSeconds(30))
+    new WebDriverWait(driver, getWaitTimeout())
         .until(
             d -> {
               try {
@@ -999,7 +1023,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForNotification(@NonNull final String text) {
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     wait.until(
         ExpectedConditions.presenceOfElementLocated(
             By.xpath("//vaadin-notification-card[contains(text(), '" + text + "')]")));
@@ -1080,7 +1104,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void waitForPageSourceToContain(@NonNull final String text) {
-    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+    new WebDriverWait(driver, getWaitTimeout())
         .until(d -> Objects.requireNonNull(d.getPageSource()).contains(text));
   }
 

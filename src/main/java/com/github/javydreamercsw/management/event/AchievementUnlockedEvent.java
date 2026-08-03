@@ -26,6 +26,7 @@ public class AchievementUnlockedEvent extends ApplicationEvent {
 
   private final Long accountId;
   private final String achievementName;
+  private final String achievementDescription;
   private final int xpValue;
 
   public AchievementUnlockedEvent(
@@ -33,6 +34,7 @@ public class AchievementUnlockedEvent extends ApplicationEvent {
     super(source);
     this.accountId = account.getId();
     this.achievementName = achievement.getName();
+    this.achievementDescription = achievement.getDescription();
     this.xpValue = achievement.getXpValue();
   }
 }

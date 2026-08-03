@@ -73,6 +73,9 @@ public class InboxItem extends AbstractEntity<Long> {
   @Column(name = "action_payload", length = 512)
   private String actionPayload;
 
+  @Column(name = "sender_account_id")
+  private Long senderAccountId;
+
   @OneToMany(
       mappedBy = "inboxItem",
       cascade = CascadeType.ALL,

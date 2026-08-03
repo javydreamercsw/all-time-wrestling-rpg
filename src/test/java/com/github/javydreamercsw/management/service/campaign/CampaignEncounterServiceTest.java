@@ -508,6 +508,97 @@ class CampaignEncounterServiceTest {
     assertThat(promptCaptor.getValue()).doesNotContain("Jeff Hardy");
   }
 
+  // --- requiredWrestlerName filter ---
+
+  @Test
+  void testGenerateStaticEncounter_wrestlerNameNull_shownForAnyWrestler() {
+    // null requiredWrestlerName must be visible to any campaign wrestler
+    StaticEncounterDTO generic = encounter("generic", "Generic story", choice("Go"));
+    CampaignChapterDTO ch = staticChapterWith(generic);
+    campaign.getState().setCurrentEncounterId("generic");
+
+    CampaignEncounterResponseDTO response = encounterService.generateStaticEncounter(campaign, ch);
+
+    assertThat(response.getNarrative()).contains("Generic story");
+  }
+
+  @Test
+  void testGenerateStaticEncounter_matchingWrestlerName_shown() {
+    StaticEncounterDTO specific =
+        StaticEncounterDTO.builder()
+            .id("specific")
+            .title("Specific")
+            .narrativeText("Wrestler-specific story")
+            .requiredWrestlerName("Test Wrestler")
+            .choices(List.of(choice("Go")))
+            .build();
+    CampaignChapterDTO ch = staticChapterWith(specific);
+    campaign.getState().setCurrentEncounterId("specific");
+
+    CampaignEncounterResponseDTO response = encounterService.generateStaticEncounter(campaign, ch);
+
+    assertThat(response.getNarrative()).contains("Wrestler-specific story");
+  }
+
+  @Test
+  void testGenerateStaticEncounter_nonMatchingWrestlerName_filtered() {
+    // "Kurt Angle" card must not appear for campaign wrestler "Test Wrestler"
+    StaticEncounterDTO generic = encounter("generic", "Generic story", choice("Go"));
+    StaticEncounterDTO kuOnly =
+        StaticEncounterDTO.builder()
+            .id("ku-card")
+            .title("KA")
+            .narrativeText("Kurt Angle story")
+            .requiredWrestlerName("Kurt Angle")
+            .choices(List.of(choice("Go")))
+            .build();
+    CampaignChapterDTO ch = staticChapterWith(generic, kuOnly);
+    // sequential fallback: index 0 of filtered list is the generic card
+    when(encounterRepository.countByCampaignAndChapterId(campaign, "test-chapter")).thenReturn(0L);
+
+    CampaignEncounterResponseDTO response = encounterService.generateStaticEncounter(campaign, ch);
+
+    assertThat(response.getNarrative()).contains("Generic story");
+    assertThat(response.getNarrative()).doesNotContain("Kurt Angle");
+  }
+
+  @Test
+  void testGenerateStaticEncounter_allEncountersFilteredOut_throwsIllegalState() {
+    StaticEncounterDTO kuOnly =
+        StaticEncounterDTO.builder()
+            .id("ku-card")
+            .title("KA")
+            .narrativeText("Kurt Angle story")
+            .requiredWrestlerName("Kurt Angle")
+            .choices(List.of(choice("Go")))
+            .build();
+    CampaignChapterDTO ch = staticChapterWith(kuOnly);
+    // campaign wrestler is "Test Wrestler", so no card passes the filter
+
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalStateException.class, () -> encounterService.generateStaticEncounter(campaign, ch));
+  }
+
+  @Test
+  void testGenerateStaticEncounter_idLookupRespectsWrestlerFilter() {
+    // ID routing must not return a card that was filtered out for this wrestler
+    StaticEncounterDTO kuOnly =
+        StaticEncounterDTO.builder()
+            .id("ku-card")
+            .title("KA")
+            .narrativeText("Kurt Angle story")
+            .requiredWrestlerName("Kurt Angle")
+            .choices(List.of(choice("Go")))
+            .build();
+    StaticEncounterDTO generic = encounter("generic", "Generic story", choice("Go"));
+    CampaignChapterDTO ch = staticChapterWith(generic, kuOnly);
+    // Attempt to route directly to the filtered-out card
+    campaign.getState().setCurrentEncounterId("ku-card");
+
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalStateException.class, () -> encounterService.generateStaticEncounter(campaign, ch));
+  }
+
   @Test
   void staticChoice_intendedPath_defaultsToTrue() {
     StaticChoiceDTO sc = StaticChoiceDTO.builder().text("A choice").label("BTN").build();

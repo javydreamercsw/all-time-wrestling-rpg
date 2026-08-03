@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.vaadin.flow.server.VaadinSession;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -41,6 +42,30 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 public final class GeneralSecurityUtils {
 
   /**
+   * The strategy instance captured before Vaadin's SpringSecurityAutoConfiguration replaces the
+   * global with VaadinAwareSecurityContextHolderStrategy. Spring Security's
+   * AuthorizationManagerBeforeMethodInterceptor captures the global strategy at bean-creation time
+   * and holds that reference forever. After Vaadin replaces the global, runAsAdmin() sets context
+   * on the VaadinAware strategy but @PreAuthorize reads from this earlier instance — causing
+   * AuthenticationCredentialsNotFoundException on ForkJoinPool threads. We set context on BOTH
+   * strategies to close the gap.
+   *
+   * <p>Set by Application's static initializer immediately after setStrategyName().
+   */
+  static volatile SecurityContextHolderStrategy methodSecurityStrategy;
+
+  /**
+   * Called by Application's static initializer to record the strategy instance that Spring
+   * Security's method-security interceptors will capture at bean-creation time.
+   *
+   * @param strategy the active strategy immediately after setStrategyName(), before Vaadin replaces
+   *     it
+   */
+  public static void setMethodSecurityStrategy(final SecurityContextHolderStrategy strategy) {
+    methodSecurityStrategy = strategy;
+  }
+
+  /**
    * Run a task as an admin user.
    *
    * @param task The task to run.
@@ -58,6 +83,75 @@ public final class GeneralSecurityUtils {
    */
   public static <T> T runAsAdmin(@NonNull final Supplier<T> supplier) {
     return runAs(supplier, "system", "password", "ROLE_ADMIN", "ROLE_SYSTEM", "ROLE_BOOKER");
+  }
+
+  /**
+   * Runs a task as an admin user on a background thread (via {@code ForkJoinPool.commonPool()}),
+   * safely for {@code @PreAuthorize}-guarded calls.
+   *
+   * <p>{@code VaadinAwareSecurityContextHolderStrategy.getContext()} has two paths: (1) when {@code
+   * VaadinSession.getCurrent()} is non-null it reads the HTTP session attribute, (2) otherwise it
+   * reads the instance-field {@code ThreadLocal}. ForkJoinPool workers do not inherit {@code
+   * VaadinSession} (it is stored in a plain {@code ThreadLocal} via {@code CurrentInstance} rather
+   * than an {@code InheritableThreadLocal}), so the ThreadLocal path is used on workers — but
+   * calling {@code setContext()} on that ThreadLocal has proven unreliable across Vaadin versions
+   * (the context is visible right after {@code set()} but not when the {@code @PreAuthorize}
+   * interceptor later calls {@code getContext()} on the same thread).
+   *
+   * <p>This method instead captures the caller's {@code VaadinSession} on the originating (Vaadin
+   * UI) thread and propagates it to the worker. With a {@code VaadinSession} set on the worker,
+   * {@code VaadinAwareSecurityContextHolderStrategy} takes the HTTP session path — the same path
+   * Vaadin's own request handling uses and which is known to be reliable. {@link #runAs(Supplier,
+   * String, String, String...)} then writes the admin context into the HTTP session attribute
+   * before invoking the supplier and restores the original value afterwards.
+   *
+   * @param <T> The return type of the task.
+   * @param supplier The task to run.
+   * @return A {@link CompletableFuture} completing with the task's result.
+   */
+  public static <T> CompletableFuture<T> runAsAdminAsync(@NonNull final Supplier<T> supplier) {
+    // Capture VaadinSession on the calling (Vaadin UI) thread. CurrentInstance stores it in a
+    // plain ThreadLocal so ForkJoinPool workers would otherwise have no session reference.
+    VaadinSession capturedSession = null;
+    try {
+      capturedSession = VaadinSession.getCurrent();
+    } catch (Exception ignored) {
+      // No Vaadin context on calling thread — worker will use ThreadLocal path as fallback.
+    }
+    final VaadinSession sessionToPropagate = capturedSession;
+
+    return CompletableFuture.supplyAsync(
+        () -> {
+          if (sessionToPropagate != null) {
+            // Bind the caller's VaadinSession to this worker thread so that
+            // VaadinAwareSecurityContextHolderStrategy.getContext() uses its proven
+            // HTTP-session path. runAs() will update the HTTP session attribute to the admin
+            // context before calling the supplier and restore the original value afterwards.
+            VaadinSession.setCurrent(sessionToPropagate);
+          }
+          try {
+            return runAsAdmin(supplier);
+          } finally {
+            if (sessionToPropagate != null) {
+              VaadinSession.setCurrent(null);
+            }
+          }
+        });
+  }
+
+  /**
+   * Runs a task as an admin user on a background thread. See {@link #runAsAdminAsync(Supplier)} for
+   * why this is necessary instead of {@code CompletableFuture.runAsync(() -> runAsAdmin(...))}.
+   *
+   * @param task The task to run.
+   * @return A {@link CompletableFuture} completing when the task finishes.
+   */
+  public static CompletableFuture<Void> runAsAdminAsync(@NonNull final Runnable task) {
+    return runAsAdminAsync(
+        () -> {
+          task.run();
+          return null;
+        });
   }
 
   /**
@@ -101,7 +195,12 @@ public final class GeneralSecurityUtils {
             vaadinSession
                 .getSession()
                 .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
-      } catch (IllegalStateException ignored) {
+      } catch (IllegalStateException | AssertionError ignored) {
+        // IllegalStateException: session invalidated.
+        // AssertionError: Vaadin lock not held (e.g. ForkJoinPool worker). Clear the session
+        // ThreadLocal so VaadinAwareSecurityContextHolderStrategy.getContext() falls back to
+        // the instance ThreadLocal path rather than trying to call getSession() again.
+        VaadinSession.setCurrent(null);
         vaadinSession = null;
       }
     }
@@ -137,6 +236,12 @@ public final class GeneralSecurityUtils {
 
       // Establish the new context globally/thread-locally
       strategy.setContext(newContext);
+      // Also propagate to the strategy that @PreAuthorize interceptors captured at bean-creation
+      // time (before Vaadin replaced the global). Without this, interceptors on ForkJoinPool
+      // worker threads see an empty SecurityContext even though VaadinAware has admin context.
+      if (methodSecurityStrategy != null && methodSecurityStrategy != strategy) {
+        methodSecurityStrategy.setContext(newContext);
+      }
       setTestSecurityContext(newContext);
       if (vaadinSession != null) {
         try {
@@ -158,6 +263,9 @@ public final class GeneralSecurityUtils {
     } finally {
       // Restore the original context
       strategy.setContext(originalContext);
+      if (methodSecurityStrategy != null && methodSecurityStrategy != strategy) {
+        methodSecurityStrategy.setContext(originalContext);
+      }
       setTestSecurityContext(originalContext);
       if (vaadinSession != null) {
         try {
@@ -199,7 +307,57 @@ public final class GeneralSecurityUtils {
   }
 
   /**
+   * Captures the current authenticated {@link SecurityContext} for propagation onto a background
+   * thread.
+   *
+   * <p>When the application uses {@link
+   * com.vaadin.flow.spring.security.VaadinAwareSecurityContextHolderStrategy}, the context may live
+   * in the HTTP session rather than the thread-local. If the thread-local context has no
+   * authentication (e.g. during a WebSocket push event before the holder strategy is fully
+   * synchronised), this method falls back to reading the context directly from the current {@link
+   * VaadinSession}'s underlying HTTP session attribute so that callers can still propagate a valid
+   * context.
+   *
+   * @return The best available {@link SecurityContext}, never {@code null}.
+   */
+  public static SecurityContext captureCurrentContext() {
+    SecurityContext ctx = SecurityContextHolder.getContext();
+    if (ctx.getAuthentication() == null) {
+      VaadinSession vaadinSession = null;
+      try {
+        vaadinSession = VaadinSession.getCurrent();
+      } catch (Exception ignored) {
+        // No Vaadin context — fall through
+      }
+      if (vaadinSession != null) {
+        try {
+          Object sessionAttr =
+              vaadinSession
+                  .getSession()
+                  .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+          if (sessionAttr instanceof SecurityContext sc && sc.getAuthentication() != null) {
+            log.debug(
+                "captureCurrentContext: falling back to HTTP session attribute on thread={}",
+                Thread.currentThread().getName());
+            return sc;
+          }
+        } catch (IllegalStateException | AssertionError ignored) {
+          // Session invalidated or Vaadin lock not held — fall through
+        }
+      }
+      log.warn(
+          "captureCurrentContext: no authenticated context available — thread={}, strategy={}",
+          Thread.currentThread().getName(),
+          SecurityContextHolder.getContextHolderStrategy().getClass().getSimpleName());
+    }
+    return ctx;
+  }
+
+  /**
    * Run a task within a specific security context.
+   *
+   * <p>Intended for propagating an authenticated context captured on a Vaadin request/push thread
+   * onto a background thread (e.g. inside {@code CompletableFuture.runAsync}).
    *
    * @param <T> The return type.
    * @param context The security context.
@@ -209,13 +367,67 @@ public final class GeneralSecurityUtils {
   public static <T> T runWithContext(final SecurityContext context, final Supplier<T> supplier) {
     SecurityContextHolderStrategy strategy = SecurityContextHolder.getContextHolderStrategy();
     SecurityContext originalContext = strategy.getContext();
+
+    // VaadinAwareSecurityContextHolderStrategy reads from VaadinSession's HTTP session
+    // BEFORE the ThreadLocal, so we must update both — otherwise a stale/absent session
+    // attribute on this thread (e.g. a reused ForkJoinPool.commonPool worker) shadows the
+    // context we're propagating and @PreAuthorize sees no Authentication.
+    Object originalSessionCtx = null;
+    VaadinSession vaadinSession = null;
+    try {
+      vaadinSession = VaadinSession.getCurrent();
+    } catch (Exception ignored) {
+      // No Vaadin context available
+    }
+    if (vaadinSession != null) {
+      try {
+        originalSessionCtx =
+            vaadinSession
+                .getSession()
+                .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+      } catch (IllegalStateException | AssertionError ignored) {
+        // IllegalStateException: session invalidated.
+        // AssertionError: Vaadin lock not held (ForkJoinPool worker). Clear the session
+        // ThreadLocal so VaadinAware falls back to the instance ThreadLocal path.
+        VaadinSession.setCurrent(null);
+        vaadinSession = null;
+      }
+    }
+
     try {
       strategy.setContext(context);
+      if (methodSecurityStrategy != null && methodSecurityStrategy != strategy) {
+        methodSecurityStrategy.setContext(context);
+      }
       setTestSecurityContext(context);
+      if (vaadinSession != null) {
+        try {
+          vaadinSession
+              .getSession()
+              .setAttribute(
+                  HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+        } catch (IllegalStateException ignored) {
+          // Session invalidated between the check and here
+        }
+      }
       return supplier.get();
     } finally {
       strategy.setContext(originalContext);
+      if (methodSecurityStrategy != null && methodSecurityStrategy != strategy) {
+        methodSecurityStrategy.setContext(originalContext);
+      }
       setTestSecurityContext(originalContext);
+      if (vaadinSession != null) {
+        try {
+          vaadinSession
+              .getSession()
+              .setAttribute(
+                  HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                  originalSessionCtx);
+        } catch (IllegalStateException ignored) {
+          // Session invalidated
+        }
+      }
     }
   }
 
