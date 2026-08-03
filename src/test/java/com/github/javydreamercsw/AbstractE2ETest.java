@@ -316,9 +316,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         if (!loginUrl.equals(driver.getCurrentUrl())) {
           driver.get(loginUrl);
         }
-        waitForVaadinClientToLoad();
-        takeSequencedScreenshot("on-login-page");
-
+        // Wait for the login form directly — the Vaadin client on the login page can
+        // remain "active" while initializing its push connection (Vaadin 25), causing
+        // waitForVaadinClientToLoad() to time out before we even reach the form.
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofMinutes(2));
         WebElement loginFormHost;
         try {
@@ -330,6 +330,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
           log.error("Page source: {}", driver.getPageSource());
           throw e;
         }
+        takeSequencedScreenshot("on-login-page");
 
         WebElement usernameField = loginFormHost.findElement(By.id("vaadinLoginUsername"));
         WebElement passwordField = loginFormHost.findElement(By.id("vaadinLoginPassword"));
@@ -517,7 +518,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 ((JavascriptExecutor) webDriver).executeScript("return document.readyState"),
                 "complete"));
 
-    // Wait for Vaadin to be present and idle
+    // Wait for Vaadin to be present and idle.
+    // Return true immediately when window.Vaadin.Flow.clients is absent — this covers
+    // non-Flow pages and Vaadin 25 login pages where the clients map is not yet registered.
     wait.until(
         webDriver -> {
           try {
@@ -525,10 +528,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                 ((JavascriptExecutor) webDriver)
                     .executeScript(
                         """
-                        return !!(window.Vaadin && window.Vaadin.Flow &&\
-                         window.Vaadin.Flow.clients &&\
-                         Object.values(window.Vaadin.Flow.clients).every(client =>\
-                         !client.isActive()));\
+                        if (!window.Vaadin || !window.Vaadin.Flow
+                            || !window.Vaadin.Flow.clients) {
+                          return true;
+                        }
+                        return Object.values(window.Vaadin.Flow.clients)
+                            .every(function(c) { return !c.isActive(); });
                         """);
           } catch (Exception e) {
             return false;
