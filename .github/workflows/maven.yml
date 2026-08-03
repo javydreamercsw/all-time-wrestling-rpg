@@ -510,7 +510,7 @@ jobs:
     needs: [check-paths]
     if: >-
       needs.check-paths.outputs.code_changed == 'true' &&
-      (startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      (startsWith(github.ref, 'refs/heads/release/') || startsWith(github.base_ref, 'release/') || startsWith(github.ref, 'refs/tags/'))
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
