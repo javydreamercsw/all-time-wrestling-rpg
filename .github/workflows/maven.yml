@@ -131,7 +131,6 @@ jobs:
               - 'pom.xml'
               - 'package.json'
               - 'package-lock.json'
-              - '.github/workflows/**'
             mysql_migration_changed:
               - 'src/main/resources/db/migration/mysql/**'
             # UI/frontend changes — gates E2E jobs (Chrome + Spring Boot startup are expensive)
@@ -510,7 +509,7 @@ jobs:
     needs: [check-paths]
     if: >-
       needs.check-paths.outputs.code_changed == 'true' &&
-      (startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      (startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/'))
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -544,6 +543,7 @@ jobs:
     # never pushed before all E2E tests have completed and passed.
     if: >-
       always() &&
+      needs.check-paths.outputs.code_changed == 'true' &&
       (startsWith(github.ref, 'refs/heads/release/') || startsWith(github.head_ref, 'release/')) &&
       (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
       (needs.build-and-unit-test.result == 'success' || needs.build-and-unit-test.result == 'skipped') &&
@@ -591,6 +591,7 @@ jobs:
     needs: [check-paths, rewrite-check, build-and-unit-test, integration-tests, docker-it, e2e-tests, docs-e2e-tests, validate-video-tests]
     if: >-
       always() &&
+      needs.check-paths.outputs.code_changed == 'true' &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) &&
       (needs.rewrite-check.result == 'success' || needs.rewrite-check.result == 'skipped') &&
       (needs.build-and-unit-test.result == 'success' || needs.build-and-unit-test.result == 'skipped') &&
