@@ -55,9 +55,9 @@ public class ChallengeUpdateService {
       initialDelayString = "${atw.challenges.check-initial-delay:30000}",
       fixedRateString = "${atw.challenges.check-interval:3600000}")
   public void scheduledCheck() {
-    log.info("Scheduled challenge update check starting");
+    log.debug("Scheduled challenge update check starting");
     UpdateResult result = checkAndApply();
-    log.info("Scheduled challenge update check complete: {}", result.message());
+    log.debug("Scheduled challenge update check complete: {}", result.message());
   }
 
   public UpdateResult checkAndApply() {
@@ -133,8 +133,8 @@ public class ChallengeUpdateService {
   }
 
   private byte[] fetchBytes(final String url) {
-    try {
-      HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    try (HttpClient client =
+        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()) {
       HttpRequest req =
           HttpRequest.newBuilder()
               .uri(URI.create(url))
