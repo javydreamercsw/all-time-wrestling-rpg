@@ -75,7 +75,7 @@
   "conditions": [ "Must win specifically by putting your opponent through a table. Execute a Devastating Attack using a “Signature” Move or “Finisher” ONLY WITH A TABLE." ],
   "modifiers": [ "A table will always be available in the leftmost slot of the weapon display. If the weapons in the display are refreshed, the table in that slot remains.", "André the Giant starts with 2 reversal cubes available.", "Putting a wrestler through a table normally ends things immediately, but this is André The Giant... It’s not that easy! The first time André would be put through a table, he does a reversal. Use a cube if available and if there are no cubes available he does this reversal for free. This reversal is unavoidable. He can only be put through a table the second time it happens.", "The Kick-out rule from the Last Man Standing game-mode does not apply for this match." ],
   "achievementKey": "CHALLENGE_WEEK_04",
-  "imageUrl": "images/challenges/week4.png",
+  "imageUrl": "challenge-content/images/week4.png",
   "notes": null,
   "active": true
 } ]
