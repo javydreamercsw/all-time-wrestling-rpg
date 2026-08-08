@@ -23,13 +23,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 class ChallengeServiceTest {
@@ -44,7 +47,7 @@ class ChallengeServiceTest {
 
   @Test
   void loadsAllShippedChallenges() {
-    assertEquals(11, service.getAllChallenges().size());
+    assertEquals(countClasspathChallenges(c -> true), service.getAllChallenges().size());
   }
 
   @Test
@@ -55,15 +58,41 @@ class ChallengeServiceTest {
   @Test
   void officialChallengesAreNonCustom() {
     List<ChallengeDTO> official = service.getOfficialChallenges();
-    assertEquals(3, official.size());
+    assertEquals(
+        countClasspathChallenges(c -> c.isActive() && !"CUSTOM".equals(c.getExpansionCode())),
+        official.size());
     official.forEach(c -> assertFalse("CUSTOM".equals(c.getExpansionCode())));
   }
 
   @Test
   void customChallengesHaveCustomExpansionCode() {
     List<ChallengeDTO> custom = service.getCustomChallenges();
-    assertEquals(8, custom.size());
+    assertEquals(
+        countClasspathChallenges(c -> c.isActive() && "CUSTOM".equals(c.getExpansionCode())),
+        custom.size());
     custom.forEach(c -> assertEquals("CUSTOM", c.getExpansionCode()));
+  }
+
+  private int countClasspathChallenges(final Predicate<ChallengeDTO> filter) {
+    try {
+      PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+      Resource[] resources = resolver.getResources("classpath:challenges/**/*.json");
+      ObjectMapper mapper = new ObjectMapper();
+      int count = 0;
+      for (Resource r : resources) {
+        String name = r.getFilename();
+        if (name != null && name.contains("achievements")) {
+          continue;
+        }
+        try (InputStream is = r.getInputStream()) {
+          List<ChallengeDTO> batch = mapper.readValue(is, new TypeReference<>() {});
+          count += (int) batch.stream().filter(filter).count();
+        }
+      }
+      return count;
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to count classpath challenges", e);
+    }
   }
 
   @Test

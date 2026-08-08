@@ -323,6 +323,12 @@
   "xpValue": 100,
   "category": "CHALLENGE"
 }, {
+  "key": "CHALLENGE_WEEK_04",
+  "name": "Timber!!!",
+  "description": "Completed the \"Timber!!!\" challenge by putting André the Giant through a table as Randy Savage",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
   "key": "CHALLENGE_FIRST_HARD",
   "name": "Glutton for Punishment",
   "description": "Completed your first HARD-difficulty challenge",
