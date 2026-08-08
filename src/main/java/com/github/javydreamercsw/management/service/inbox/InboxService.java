@@ -27,6 +27,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -317,6 +319,18 @@ public class InboxService {
                     InboxItemTarget.TargetType.ACCOUNT));
     item.setActionType("OPEN_DRAWER");
     com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(() -> save(item));
+  }
+
+  /**
+   * Deletes all inbox items (and their targets) older than {@code retentionDays} days. Returns the
+   * number of items deleted.
+   */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public int purgeOldItems(final int retentionDays) {
+    Instant cutoff = Instant.now().minus(retentionDays, ChronoUnit.DAYS);
+    inboxRepository.deleteTargetsOlderThan(cutoff);
+    return inboxRepository.deleteItemsOlderThan(cutoff);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")

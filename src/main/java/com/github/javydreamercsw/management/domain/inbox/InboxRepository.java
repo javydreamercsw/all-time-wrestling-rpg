@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -54,4 +55,12 @@ public interface InboxRepository
       """)
   List<InboxItem> findUnreadForWrestlerSince(
       @Param("wrestlerId") String wrestlerId, @Param("since") Instant since);
+
+  @Modifying
+  @Query("DELETE FROM InboxItemTarget t WHERE t.inboxItem.eventTimestamp < :cutoff")
+  int deleteTargetsOlderThan(@Param("cutoff") Instant cutoff);
+
+  @Modifying
+  @Query("DELETE FROM InboxItem i WHERE i.eventTimestamp < :cutoff")
+  int deleteItemsOlderThan(@Param("cutoff") Instant cutoff);
 }

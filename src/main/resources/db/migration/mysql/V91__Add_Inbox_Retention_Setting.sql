@@ -1,0 +1,4 @@
+-- Default inbox retention: 90 days (global, applies to all universes unless overridden).
+-- Set to -1 to disable automatic purge.
+INSERT IGNORE INTO game_setting (setting_key, setting_value, universe_id)
+VALUES ('inbox.retention.days', '90', NULL);

@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.event.inbox;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.ArrayList;
@@ -61,6 +62,12 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
     }
     if (dramaEvent.getSecondaryWrestler() != null) {
       targets.addAll(InboxService.wrestlerTargets(dramaEvent.getSecondaryWrestler()));
+    }
+    boolean hasAccountTarget =
+        targets.stream().anyMatch(t -> t.type() == InboxItemTarget.TargetType.ACCOUNT);
+    if (!hasAccountTarget) {
+      log.debug("Skipping drama event inbox item — no player-owned wrestler involved");
+      return;
     }
 
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =

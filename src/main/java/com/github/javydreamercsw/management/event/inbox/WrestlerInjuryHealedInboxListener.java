@@ -52,6 +52,10 @@ public class WrestlerInjuryHealedInboxListener
   public void onApplicationEvent(@NonNull final WrestlerInjuryHealedEvent event) {
     log.debug(
         "Received WrestlerInjuryHealedEvent for wrestler: {}", event.getWrestlerState().getName());
+    if (event.getWrestlerState().getWrestler().getAccount() == null) {
+      log.debug("Skipping inbox item for NPC wrestler (no account)");
+      return;
+    }
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             wrestlerInjuryHealed,

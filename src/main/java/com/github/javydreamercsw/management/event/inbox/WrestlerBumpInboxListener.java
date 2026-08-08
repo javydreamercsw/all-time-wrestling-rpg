@@ -50,6 +50,10 @@ public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBu
   @Override
   public void onApplicationEvent(@NonNull final WrestlerBumpEvent event) {
     log.debug("Received WrestlerBumpEvent for wrestler: {}", event.getWrestlerState().getName());
+    if (event.getWrestlerState().getWrestler().getAccount() == null) {
+      log.debug("Skipping inbox item for NPC wrestler (no account)");
+      return;
+    }
     String sourceName =
         switch (event.getBumpSource()) {
           case WEAR_AND_TEAR -> "wear and tear";

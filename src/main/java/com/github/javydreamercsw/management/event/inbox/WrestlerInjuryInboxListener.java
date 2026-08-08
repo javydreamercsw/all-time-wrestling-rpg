@@ -50,6 +50,10 @@ public class WrestlerInjuryInboxListener implements ApplicationListener<Wrestler
   @Override
   public void onApplicationEvent(@NonNull final WrestlerInjuryEvent event) {
     log.debug("Received WrestlerInjuryEvent for wrestler: {}", event.getWrestlerState().getName());
+    if (event.getWrestlerState().getWrestler().getAccount() == null) {
+      log.debug("Skipping inbox item for NPC wrestler (no account)");
+      return;
+    }
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             wrestlerInjury,

@@ -52,6 +52,10 @@ public class WrestlerBumpHealedInboxListener
   public void onApplicationEvent(@NonNull final WrestlerBumpHealedEvent event) {
     log.debug(
         "Received WrestlerBumpHealedEvent for wrestler: {}", event.getWrestlerState().getName());
+    if (event.getWrestlerState().getWrestler().getAccount() == null) {
+      log.debug("Skipping inbox item for NPC wrestler (no account)");
+      return;
+    }
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(
             wrestlerBumpHealed,

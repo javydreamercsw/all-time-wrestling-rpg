@@ -49,6 +49,10 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
 
   @Override
   public void onApplicationEvent(@NonNull final FanAwardedEvent event) {
+    if (event.getWrestlerState().getWrestler().getAccount() == null) {
+      log.debug("Skipping inbox item for NPC wrestler (no account)");
+      return;
+    }
     String message =
         "Wrestler %s %s %d fans. New total: %d"
             .formatted(
