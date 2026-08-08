@@ -244,9 +244,13 @@ public class MenuService {
 
       Optional<Set<RoleName>> resolved = routeRoleResolver.resolveRoles(menuItem.getPath());
       if (resolved.isPresent()) {
-        // View annotation is authoritative: empty set = @PermitAll, non-empty = role check
+        // View annotation is authoritative: empty set = @PermitAll (any authenticated user),
+        // non-empty = specific role required.
         Set<RoleName> roles = resolved.get();
-        hasAccess = roles.isEmpty() || roles.stream().anyMatch(securityUtils::hasRole);
+        hasAccess =
+            roles.isEmpty()
+                ? securityUtils.isAuthenticated()
+                : roles.stream().anyMatch(securityUtils::hasRole);
       } else {
         // No annotation found — fall back to MenuItem's explicit roles
         hasAccess =

@@ -65,6 +65,9 @@ public class GameSettingService {
   public static final String RIVALRY_RESOLUTION_MIN_HEAT_KEY = "rivalry_resolution_min_heat";
   public static final String CONDITION_REST_THRESHOLD_KEY = "condition_rest_threshold";
 
+  /** Days to retain inbox items before automatic purge. -1 disables the purge. */
+  public static final String INBOX_RETENTION_DAYS_KEY = "inbox.retention.days";
+
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
    * defaults — each universe must configure its own. Reading without an active universe returns
@@ -348,6 +351,18 @@ public class GameSettingService {
   @Transactional
   public void setConditionRestThreshold(final int threshold) {
     saveInternal(CONDITION_REST_THRESHOLD_KEY, String.valueOf(threshold));
+  }
+
+  /** Returns the inbox retention period in days. -1 means purge is disabled. Default: 90. */
+  @PreAuthorize("permitAll()")
+  public int getInboxRetentionDays() {
+    return resolveValue(INBOX_RETENTION_DAYS_KEY).map(Integer::parseInt).orElse(90);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setInboxRetentionDays(final int days) {
+    saveInternal(INBOX_RETENTION_DAYS_KEY, String.valueOf(days));
   }
 
   // ── Generic access (used by AiSettingsService and other consumers) ────────

@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -57,6 +58,7 @@ class ShowPlanningPromptBuilderTest {
     when(segmentTypeService.findAll()).thenReturn(List.of(type));
     when(holidayService.getHolidayTheme(any(Instant.class))).thenReturn(Optional.empty());
     when(segmentRuleService.getHighHeatRules()).thenReturn(List.of());
+    when(segmentRuleService.getStandardRules()).thenReturn(List.of());
   }
 
   @Test
@@ -292,6 +294,45 @@ class ShowPlanningPromptBuilderTest {
     assertFalse(
         prompt.contains("unless heat"),
         "Anti-repetition rule must not carve out a heat-based exception that forces matches");
+  }
+
+  @Test
+  void build_containsStandardRulesSection() {
+    SegmentRule standardRule = new SegmentRule();
+    standardRule.setName("Iron Man");
+    standardRule.setDescription("60-minute time limit, most falls wins.");
+    when(segmentRuleService.getStandardRules()).thenReturn(List.of(standardRule));
+
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Available Standard Rules"), "Standard rules header must appear");
+    assertTrue(prompt.contains("Iron Man"), "Standard rule name must appear");
+  }
+
+  @Test
+  void build_containsRulesFieldInSchema() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("\"rules\""), "Schema must include a rules field");
+  }
+
+  @Test
+  void build_stipulationRequired_promptInstructsRulesMustContainHighHeatRule() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setPremiumLiveEvent(true);
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(35)));
+
+    SegmentRule cageRule = new SegmentRule();
+    cageRule.setName("Steel Cage");
+    cageRule.setDescription("A match fought within a steel cage.");
+    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cageRule));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("MUST contain at least one"),
+        "Prompt must instruct rules array to contain a stipulation match name");
   }
 
   private ShowPlanningRivalryDTO rivalryWithHeat(int heat) {

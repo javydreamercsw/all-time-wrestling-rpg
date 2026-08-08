@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
@@ -50,6 +49,10 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
 
   @Override
   public void onApplicationEvent(@NonNull final FanAwardedEvent event) {
+    if (event.getWrestlerState().getWrestler().getAccount() == null) {
+      log.debug("Skipping inbox item for NPC wrestler (no account)");
+      return;
+    }
     String message =
         "Wrestler %s %s %d fans. New total: %d"
             .formatted(
@@ -66,8 +69,7 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
             "Fan Reaction: " + event.getWrestlerState().getName(),
             message,
             InboxItem.Urgency.INFO,
-            event.getWrestlerState().getWrestler().getId().toString(),
-            InboxItemTarget.TargetType.WRESTLER);
+            InboxService.wrestlerTargets(event.getWrestlerState().getWrestler()));
     inboxItem.setActionType("NAVIGATE");
     inboxItem.setActionPayload(
         "{\"route\":\"wrestler-profile/" + event.getWrestlerState().getWrestler().getId() + "\"}");

@@ -208,6 +208,19 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                         .collect(java.util.stream.Collectors.joining(", ")))
         .setHeader("Participants");
 
+    proposedSegmentsGrid
+        .addComponentColumn(
+            s -> {
+              if (s.getRules() != null && !s.getRules().isEmpty()) {
+                return new Span(String.join(", ", s.getRules()));
+              }
+              Span badge = new Span("⚠ No rules");
+              badge.getElement().getThemeList().add("badge warning");
+              return badge;
+            })
+        .setHeader("Rules")
+        .setResizable(true);
+
     Binder<ProposedSegment> binder = new Binder<>(ProposedSegment.class);
     editor = proposedSegmentsGrid.getEditor();
     editor.setBinder(binder);

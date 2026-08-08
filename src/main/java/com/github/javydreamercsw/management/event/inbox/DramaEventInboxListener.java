@@ -58,16 +58,16 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
 
     List<InboxService.TargetInfo> targets = new ArrayList<>();
     if (dramaEvent.getPrimaryWrestler() != null) {
-      targets.add(
-          new InboxService.TargetInfo(
-              dramaEvent.getPrimaryWrestler().getId().toString(),
-              InboxItemTarget.TargetType.WRESTLER));
+      targets.addAll(InboxService.wrestlerTargets(dramaEvent.getPrimaryWrestler()));
     }
     if (dramaEvent.getSecondaryWrestler() != null) {
-      targets.add(
-          new InboxService.TargetInfo(
-              dramaEvent.getSecondaryWrestler().getId().toString(),
-              InboxItemTarget.TargetType.WRESTLER));
+      targets.addAll(InboxService.wrestlerTargets(dramaEvent.getSecondaryWrestler()));
+    }
+    boolean hasAccountTarget =
+        targets.stream().anyMatch(t -> t.type() == InboxItemTarget.TargetType.ACCOUNT);
+    if (!hasAccountTarget) {
+      log.debug("Skipping drama event inbox item — no player-owned wrestler involved");
+      return;
     }
 
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =

@@ -393,6 +393,49 @@ class ShowPlanningViewTest extends AbstractViewTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  void proposeSegments_segmentWithRules_gridItemHasRules() throws Exception {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+
+    ProposedSegment segment = new ProposedSegment();
+    segment.setType("One on One");
+    segment.setTeams(List.of(List.of("A"), List.of("B")));
+    segment.setRules(List.of("Steel Cage"));
+
+    ProposedShow proposedShow = new ProposedShow();
+    proposedShow.setSegments(List.of(segment));
+    when(showPlanningAiService.planShow(any())).thenReturn(proposedShow);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    when(aiFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(List.of(mock(SegmentNarrationService.class)));
+
+    ((CompletableFuture<Void>)
+            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments"))
+        .join();
+    MockVaadin.runUIQueue();
+
+    Grid<ProposedSegment> grid =
+        (Grid<ProposedSegment>)
+            ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
+    List<ProposedSegment> items = grid.getGenericDataView().getItems().toList();
+
+    assertEquals(1, items.size());
+    assertEquals(List.of("Steel Cage"), items.get(0).getRules());
+  }
+
+  @Test
   void testNavigateToShowDetails() {
     // Create a mock Show
     long showId = 1L;

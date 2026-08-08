@@ -71,20 +71,15 @@ public class ChampionshipDefendedInboxListener
     targets.add(
         new InboxService.TargetInfo(
             event.getTitleId().toString(), InboxItemTarget.TargetType.TITLE));
-    event
-        .getChampions()
-        .forEach(
-            w ->
-                targets.add(
-                    new InboxService.TargetInfo(
-                        w.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
-    event
-        .getChallengers()
-        .forEach(
-            w ->
-                targets.add(
-                    new InboxService.TargetInfo(
-                        w.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
+    event.getChampions().forEach(w -> targets.addAll(InboxService.wrestlerTargets(w)));
+    event.getChallengers().forEach(w -> targets.addAll(InboxService.wrestlerTargets(w)));
+
+    boolean hasAccountTarget =
+        targets.stream().anyMatch(t -> t.type() == InboxItemTarget.TargetType.ACCOUNT);
+    if (!hasAccountTarget) {
+      log.debug("Skipping championship-defended inbox item — no player-owned wrestler involved");
+      return;
+    }
 
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(

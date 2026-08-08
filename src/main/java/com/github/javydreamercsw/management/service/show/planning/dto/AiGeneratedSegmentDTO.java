@@ -34,4 +34,5 @@ public class AiGeneratedSegmentDTO {
   private java.util.List<Long> participantIds;
   private java.util.List<java.util.List<Long>> teamIds;
   private Long rivalryId;
+  private java.util.List<String> rules;
 }
