@@ -111,7 +111,7 @@ jobs:
           EOF
 
       - name: Copy challenge content into VitePress public dir
-        run: cp -r docs/challenges docs/site/public/challenges
+        run: cp -r docs/challenges/. docs/site/public/challenges/
 
       - name: Build documentation for GitHub Pages
         run: npm run docs:build
