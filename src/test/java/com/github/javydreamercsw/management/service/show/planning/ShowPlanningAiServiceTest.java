@@ -67,6 +67,7 @@ class ShowPlanningAiServiceTest {
         .thenAnswer(invocation -> segmentNarrationService.generateText(invocation.getArgument(0)));
     when(holidayService.getHolidayTheme(any(Instant.class)))
         .thenReturn(Optional.of("Christmas Day"));
+    when(segmentRuleService.getStandardRules()).thenReturn(java.util.List.of());
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("One on One");
@@ -158,6 +159,7 @@ class ShowPlanningAiServiceTest {
 
     String capturedPrompt = promptCaptor.getValue();
     assertTrue(capturedPrompt.contains("\"notes\": \"string\""));
+    assertTrue(capturedPrompt.contains("\"rules\""));
     assertTrue(
         capturedPrompt.contains(
             """
@@ -537,6 +539,75 @@ class ShowPlanningAiServiceTest {
     verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
     String prompt = promptCaptor.getValue();
     assertFalse(prompt.contains("Wrestler Heat:"));
+  }
+
+  @Test
+  void planShow_rulesFromAiResponseMappedToProposedSegment() {
+    // Given
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(
+        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Steel cage blowoff",
+            "outcome": "Wrestler A wins",
+            "teams": [["Wrestler A"], ["Wrestler B"]],
+            "teamIds": [[1], [2]],
+            "rules": ["Steel Cage"]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    // When
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Then
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(List.of("Steel Cage"), proposedShow.getSegments().get(0).getRules());
+  }
+
+  @Test
+  void planShow_nullRulesFromAiResponse_proposedSegmentRulesNotSet() {
+    // Given
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(
+        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Opening promo",
+            "outcome": "Heat generated",
+            "teams": [["Wrestler A"]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    // When
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Then
+    assertEquals(1, proposedShow.getSegments().size());
+    List<String> rules = proposedShow.getSegments().get(0).getRules();
+    assertTrue(rules == null || rules.isEmpty(), "Rules must be null or empty when AI omits them");
   }
 
   @Test

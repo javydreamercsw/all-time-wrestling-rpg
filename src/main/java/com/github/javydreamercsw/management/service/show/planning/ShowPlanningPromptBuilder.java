@@ -209,7 +209,25 @@ public class ShowPlanningPromptBuilder {
       prompt
           .append("Available Stipulation Matches: ")
           .append(String.join(", ", highHeatRuleDescriptions))
-          .append("\n\n");
+          .append("\n");
+      prompt.append(
+          "For STIPULATION_REQUIRED rivalries the segment's `rules` array MUST contain at"
+              + " least one name from Available Stipulation Matches above.\n\n");
+    }
+
+    List<SegmentRule> standardRules = segmentRuleService.getStandardRules();
+    if (!standardRules.isEmpty()) {
+      List<String> standardRuleDescriptions =
+          standardRules.stream()
+              .map(
+                  rule ->
+                      "%s (%s)"
+                          .formatted(sanitize(rule.getName()), sanitize(rule.getDescription())))
+              .collect(Collectors.toList());
+      prompt
+          .append("Available Standard Rules: ")
+          .append(String.join(", ", standardRuleDescriptions))
+          .append("\n");
     }
 
     if (context.getChampionships() != null && !context.getChampionships().isEmpty()) {
@@ -403,8 +421,13 @@ public class ShowPlanningPromptBuilder {
             + " from the Full Roster. Must match the teams array exactly."
             + " For a 1v1 match: [[101],[202]]. For a tag match: [[101,102],[203,204]].\n");
     prompt.append(
-        "  \"rivalryId\": number // Optional: the Id of the rivalry this match resolves; omit or"
+        "  \"rivalryId\": number, // Optional: the Id of the rivalry this match resolves; omit or"
             + " null if not rivalry-driven\n");
+    prompt.append(
+        "  \"rules\": [\"string\"] // Optional list of rule names. For STIPULATION_REQUIRED"
+            + " rivalries use a name from Available Stipulation Matches (required). For other match"
+            + " segments use names from Available Standard Rules where they add drama."
+            + " Promos and backstage segments should omit this or use an empty array.\n");
     prompt.append("}\n");
     prompt.append("```\n\n");
     prompt

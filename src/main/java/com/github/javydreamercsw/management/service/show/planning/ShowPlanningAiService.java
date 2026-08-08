@@ -105,6 +105,9 @@ public class ShowPlanningAiService {
                     segment.setSummary(dto.getOutcome());
                     segment.setNotes(dto.getNotes());
                     segment.setRivalryId(dto.getRivalryId());
+                    if (dto.getRules() != null && !dto.getRules().isEmpty()) {
+                      segment.setRules(dto.getRules());
+                    }
                     if (dto.getTeams() != null && !dto.getTeams().isEmpty()) {
                       segment.setTeams(dto.getTeams());
                     } else if (dto.getParticipants() != null && !dto.getParticipants().isEmpty()) {
