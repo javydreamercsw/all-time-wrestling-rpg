@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.event.inbox;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import java.util.ArrayList;
@@ -58,16 +57,10 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
 
     List<InboxService.TargetInfo> targets = new ArrayList<>();
     if (dramaEvent.getPrimaryWrestler() != null) {
-      targets.add(
-          new InboxService.TargetInfo(
-              dramaEvent.getPrimaryWrestler().getId().toString(),
-              InboxItemTarget.TargetType.WRESTLER));
+      targets.addAll(InboxService.wrestlerTargets(dramaEvent.getPrimaryWrestler()));
     }
     if (dramaEvent.getSecondaryWrestler() != null) {
-      targets.add(
-          new InboxService.TargetInfo(
-              dramaEvent.getSecondaryWrestler().getId().toString(),
-              InboxItemTarget.TargetType.WRESTLER));
+      targets.addAll(InboxService.wrestlerTargets(dramaEvent.getSecondaryWrestler()));
     }
 
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =

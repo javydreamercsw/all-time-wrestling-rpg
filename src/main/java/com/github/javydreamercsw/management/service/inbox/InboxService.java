@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -102,6 +103,20 @@ public class InboxService {
   }
 
   public record TargetInfo(String targetId, InboxItemTarget.TargetType type) {}
+
+  /**
+   * Returns WRESTLER + owning ACCOUNT targets for a wrestler, safe for NPC wrestlers (no account).
+   */
+  public static List<TargetInfo> wrestlerTargets(@NonNull Wrestler wrestler) {
+    List<TargetInfo> targets = new ArrayList<>();
+    targets.add(new TargetInfo(wrestler.getId().toString(), InboxItemTarget.TargetType.WRESTLER));
+    if (wrestler.getAccount() != null && wrestler.getAccount().getId() != null) {
+      targets.add(
+          new TargetInfo(
+              wrestler.getAccount().getId().toString(), InboxItemTarget.TargetType.ACCOUNT));
+    }
+    return targets;
+  }
 
   @PreAuthorize(
       """

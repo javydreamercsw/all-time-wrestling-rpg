@@ -71,20 +71,8 @@ public class ChampionshipDefendedInboxListener
     targets.add(
         new InboxService.TargetInfo(
             event.getTitleId().toString(), InboxItemTarget.TargetType.TITLE));
-    event
-        .getChampions()
-        .forEach(
-            w ->
-                targets.add(
-                    new InboxService.TargetInfo(
-                        w.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
-    event
-        .getChallengers()
-        .forEach(
-            w ->
-                targets.add(
-                    new InboxService.TargetInfo(
-                        w.getId().toString(), InboxItemTarget.TargetType.WRESTLER)));
+    event.getChampions().forEach(w -> targets.addAll(InboxService.wrestlerTargets(w)));
+    event.getChallengers().forEach(w -> targets.addAll(InboxService.wrestlerTargets(w)));
 
     com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
         inboxService.createInboxItem(

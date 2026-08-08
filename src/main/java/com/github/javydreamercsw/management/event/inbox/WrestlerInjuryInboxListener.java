@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.event.inbox;
 
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
-import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import lombok.NonNull;
@@ -58,8 +57,7 @@ public class WrestlerInjuryInboxListener implements ApplicationListener<Wrestler
             "Wrestler %s sustained a %s injury."
                 .formatted(event.getWrestlerState().getName(), event.getInjury().getDescription()),
             InboxItem.Urgency.WARNING,
-            event.getWrestlerState().getWrestler().getId().toString(),
-            InboxItemTarget.TargetType.WRESTLER);
+            InboxService.wrestlerTargets(event.getWrestlerState().getWrestler()));
     inboxItem.setActionType("NAVIGATE");
     inboxItem.setActionPayload(
         "{\"route\":\"wrestler-profile/" + event.getWrestlerState().getWrestler().getId() + "\"}");
