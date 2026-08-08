@@ -58,4 +58,24 @@
   "imageUrl": "images/challenges/week3.png",
   "notes": null,
   "active": true
+}, {
+  "id": "week_04_timber",
+  "weekNumber": 4,
+  "season": "Season 1",
+  "title": "Timber!!!",
+  "flavorText": "Macho Man Randy Savage has a score to settle with the biggest man in the business. How would one put The Eighth Wonder of the World away for good? Send him crashing through a table of course!!! OHHHH YEAAAAH!!!",
+  "productLine": "All or Nothing",
+  "expansionCode": "BASE_GAME",
+  "requiredExpansions": [ ],
+  "requiredWrestlerNames": [ "Randy Savage", "André the Giant" ],
+  "difficulty": "HARD",
+  "objective": "As Randy Savage, put André the Giant through a Table to win the match.",
+  "setupInstructions": "All Or Nothing, Last Man Standing Setup (With modifiers - explained in the modifier section of this challenge).\n(Check Double Trouble Rule Book for Last Man Standing Setup).\nFor the Weapon display place a table in the left most slot of the display. This is never removed. Shift it down when it is setup, and when it is used move it back up to the same slot of the display.\nRandy Savage & André the Giant Player boards and decks.\nPlay it solo on Hard difficulty (Advanced 1v1 Solo Rules)\nOR\nPlay it as a 2 Player game: (one player as Randy Savage, the other as André the Giant)",
+  "matchType": "Last Man Standing",
+  "conditions": [ "Must win specifically by putting your opponent through a table. Execute a Devastating Attack using a “Signature” Move or “Finisher” ONLY WITH A TABLE." ],
+  "modifiers": [ "A table will always be available in the leftmost slot of the weapon display. If the weapons in the display are refreshed, the table in that slot remains.", "André the Giant starts with 2 reversal cubes available.", "Putting a wrestler through a table normally ends things immediately, but this is André The Giant... It’s not that easy! The first time André would be put through a table, he does a reversal. Use a cube if available and if there are no cubes available he does this reversal for free. This reversal is unavoidable. He can only be put through a table the second time it happens.", "The Kick-out rule from the Last Man Standing game-mode does not apply for this match." ],
+  "achievementKey": "CHALLENGE_WEEK_04",
+  "imageUrl": "challenge-content/images/week4.png",
+  "notes": null,
+  "active": true
 } ]

@@ -91,8 +91,27 @@ jobs:
         env:
           GITHUB_PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
+      - name: Sync challenge content from src to docs
+        run: |
+          cp src/main/resources/challenges/season_1/*.json docs/challenges/season_1/
+          cp src/main/resources/META-INF/resources/images/challenges/*.png docs/challenges/images/
+          node - <<'EOF'
+          const fs = require('fs');
+          const BASE = 'https://javydreamercsw.github.io/all-time-wrestling-rpg';
+          const manifest = JSON.parse(fs.readFileSync('docs/challenges/manifest.json', 'utf8'));
+          manifest.lastUpdated = new Date().toISOString().slice(0, 10);
+          const images = fs.readdirSync('docs/challenges/images')
+            .filter(f => f.endsWith('.png'))
+            .sort()
+            .map(name => ({ name, url: `${BASE}/challenges/images/${name}` }));
+          const weekly = manifest.packages.find(p => p.id === 'season_1_weekly');
+          if (weekly) weekly.images = images;
+          fs.writeFileSync('docs/challenges/manifest.json', JSON.stringify(manifest, null, 2) + '\n');
+          console.log(`Manifest updated: ${images.length} image(s), lastUpdated=${manifest.lastUpdated}`);
+          EOF
+
       - name: Copy challenge content into VitePress public dir
-        run: cp -r docs/challenges docs/site/public/challenges
+        run: cp -r docs/challenges/. docs/site/public/challenges/
 
       - name: Build documentation for GitHub Pages
         run: npm run docs:build

@@ -82,6 +82,7 @@ public class SecurityConfig {
         auth ->
             auth.requestMatchers(
                     "/images/**",
+                    "/challenge-content/**",
                     "/icons/**",
                     "/public/**",
                     "/api/**",
