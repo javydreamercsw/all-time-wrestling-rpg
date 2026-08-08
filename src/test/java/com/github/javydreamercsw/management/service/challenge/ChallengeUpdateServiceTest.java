@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService.UpdateResult;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
@@ -46,6 +47,7 @@ class ChallengeUpdateServiceTest {
 
   @TempDir Path contentDir;
   @Mock ChallengeService challengeService;
+  @Mock AchievementRepository achievementRepository;
 
   private ChallengeUpdateService updateService;
 
@@ -59,7 +61,7 @@ class ChallengeUpdateServiceTest {
     lenient().when(challengeService.getContentDir()).thenReturn(contentDir);
     ObjectMapper mapper =
         new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    updateService = new ChallengeUpdateService(challengeService, mapper);
+    updateService = new ChallengeUpdateService(challengeService, achievementRepository, mapper);
   }
 
   @Test
