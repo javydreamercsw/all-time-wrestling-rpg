@@ -248,9 +248,9 @@ public class MenuService {
         // non-empty = specific role required.
         Set<RoleName> roles = resolved.get();
         hasAccess =
-            (roles.isEmpty()
+            roles.isEmpty()
                 ? securityUtils.isAuthenticated()
-                : roles.stream().anyMatch(securityUtils::hasRole));
+                : roles.stream().anyMatch(securityUtils::hasRole);
       } else {
         // No annotation found — fall back to MenuItem's explicit roles
         hasAccess =
