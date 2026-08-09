@@ -24,10 +24,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -256,6 +259,128 @@ class ShowQualityServiceTest {
 
     // Only 2 unique wrestlers, not 4
     verify(wrestlerService, times(2)).awardFans(anyLong(), anyLong(), anyLong());
+  }
+
+  // ---------- individual scoring factors ----------
+
+  @Test
+  void heatContributesToScore() {
+    Segment noHeat = makeSegment("One on One", false);
+    Segment withHeat = makeSegment("One on One", false);
+    withHeat.setRivalryId(99L);
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(100); // max heat → +20 pts
+
+    when(rivalryService.getRivalryById(99L)).thenReturn(Optional.of(rivalry));
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(noHeat));
+    int noHeatRating = noHeat.getSegmentRating();
+
+    show.setQualityScore(null);
+    service.computeAndPersist(show, List.of(withHeat));
+    int highHeatRating = withHeat.getSegmentRating();
+
+    assertThat(highHeatRating).isGreaterThan(noHeatRating);
+  }
+
+  @Test
+  void tierSpreadContributesToScore() {
+    Segment sameTier = makeSegment("One on One", false);
+    Segment bigSpread = makeSegment("One on One", false);
+
+    WrestlerState rookie = new WrestlerState();
+    rookie.setTier(WrestlerTier.ROOKIE); // ordinal 0
+
+    WrestlerState icon = new WrestlerState();
+    icon.setTier(WrestlerTier.ICON); // ordinal 5
+
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+
+    // Same tier: both wrestlers return ROOKIE state
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.of(rookie));
+    service.computeAndPersist(show, List.of(sameTier));
+    int sameTierRating = sameTier.getSegmentRating();
+
+    // Big spread: first wrestler ROOKIE, second ICON
+    List<SegmentParticipant> parts = List.copyOf(bigSpread.getParticipants());
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(
+            parts.get(0).getWrestler().getId(), universe.getId()))
+        .thenReturn(Optional.of(rookie));
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(
+            parts.get(1).getWrestler().getId(), universe.getId()))
+        .thenReturn(Optional.of(icon));
+
+    show.setQualityScore(null);
+    service.computeAndPersist(show, List.of(bigSpread));
+    int bigSpreadRating = bigSpread.getSegmentRating();
+
+    assertThat(bigSpreadRating).isGreaterThan(sameTierRating);
+  }
+
+  @Test
+  void stipulationContributesToScore() {
+    Segment plain = makeSegment("One on One", false);
+    Segment stip = makeSegment("One on One", false);
+
+    SegmentRule ladderMatch = new SegmentRule();
+    ladderMatch.setName("Ladder Match");
+    stip.setSegmentRules(new HashSet<>(Set.of(ladderMatch)));
+
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(plain));
+    int plainRating = plain.getSegmentRating();
+
+    show.setQualityScore(null);
+    service.computeAndPersist(show, List.of(stip));
+    int stipRating = stip.getSegmentRating();
+
+    // One stipulation = +5 pts
+    assertThat(stipRating).isEqualTo(plainRating + 5);
+  }
+
+  @Test
+  void npcOnlyMatchWithNoFactorsScoresZero() {
+    Segment segment = makeSegment("One on One", false);
+    // No rivalry, no title, not main event, no stipulation, no universe tier data
+    segment.setIsTitleSegment(false);
+    segment.setMainEvent(false);
+    segment.setSegmentRules(new HashSet<>());
+
+    when(promoBookingService.isPromoSegment(segment)).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(segment));
+
+    assertThat(segment.getSegmentRating()).isEqualTo(0);
+  }
+
+  @Test
+  void playerMatchScoresHigherThanEquivalentNpcMatch() {
+    Segment npcMatch = makeSegment("One on One", false);
+    Segment playerMatch = makeSegment("One on One", true);
+
+    // Wear-and-tear is set in makeParticipant: starting 100, final 80 = 20% burn
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(npcMatch));
+    int npcRating = npcMatch.getSegmentRating();
+
+    show.setQualityScore(null);
+    service.computeAndPersist(show, List.of(playerMatch));
+    int playerRating = playerMatch.getSegmentRating();
+
+    assertThat(playerRating).isGreaterThan(npcRating);
   }
 
   // ---------- helpers ----------
