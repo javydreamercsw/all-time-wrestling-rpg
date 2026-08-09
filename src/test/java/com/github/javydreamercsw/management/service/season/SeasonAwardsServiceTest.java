@@ -20,23 +20,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.news.NewsCategory;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonAward;
 import com.github.javydreamercsw.management.domain.season.SeasonAwardRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonAwardType;
+import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.event.dto.SeasonEndedEvent;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
@@ -72,6 +78,7 @@ class SeasonAwardsServiceTest {
   @BeforeEach
   void setUp() {
     season = new Season();
+    season.setId(1L);
     season.setName("Season 1");
     season.setStartDate(Instant.now().minus(30, ChronoUnit.DAYS));
     season.setEndDate(Instant.now());
@@ -194,5 +201,92 @@ class SeasonAwardsServiceTest {
     List<SeasonAward> result = service.getAwards(5L);
 
     assertThat(result).containsExactly(award);
+  }
+
+  @Test
+  @DisplayName("computeAwards — wrestler with highest fan growth wins MOST_IMPROVED")
+  void mostImproved_picksHighestFanGrowth() {
+    WrestlerSeasonSnapshot snapshotA = new WrestlerSeasonSnapshot();
+    snapshotA.setSeason(season);
+    snapshotA.setWrestler(wrestlerA);
+    snapshotA.setStartingFans(1_000L);
+
+    WrestlerSeasonSnapshot snapshotB = new WrestlerSeasonSnapshot();
+    snapshotB.setSeason(season);
+    snapshotB.setWrestler(wrestlerB);
+    snapshotB.setStartingFans(5_000L);
+
+    Wrestler wrestlerAWithState = mock(Wrestler.class);
+    WrestlerState stateA = WrestlerState.builder().fans(11_000L).build();
+    when(wrestlerAWithState.getDefaultState()).thenReturn(Optional.of(stateA));
+    when(wrestlerRepository.findByIdWithStates(1L)).thenReturn(Optional.of(wrestlerAWithState));
+
+    Wrestler wrestlerBWithState = mock(Wrestler.class);
+    WrestlerState stateB = WrestlerState.builder().fans(6_000L).build();
+    when(wrestlerBWithState.getDefaultState()).thenReturn(Optional.of(stateB));
+    when(wrestlerRepository.findByIdWithStates(2L)).thenReturn(Optional.of(wrestlerBWithState));
+
+    when(snapshotRepository.findAll()).thenReturn(List.of(snapshotA, snapshotB));
+    when(titleReignRepository.findByStartDateBetween(any(), any())).thenReturn(List.of());
+
+    List<SeasonAward> awards = service.computeAwards(season);
+
+    assertThat(awards)
+        .filteredOn(a -> a.getAwardType() == SeasonAwardType.MOST_IMPROVED)
+        .hasSize(1)
+        .first()
+        .satisfies(
+            a -> {
+              assertThat(a.getWrestler()).isEqualTo(wrestlerA);
+              assertThat(a.getAwardValue()).contains("10,000");
+            });
+  }
+
+  @Test
+  @DisplayName("computeAwards — no positive fan growth yields no MOST_IMPROVED award")
+  void mostImproved_noGrowth_noAward() {
+    WrestlerSeasonSnapshot snapshot = new WrestlerSeasonSnapshot();
+    snapshot.setSeason(season);
+    snapshot.setWrestler(wrestlerA);
+    snapshot.setStartingFans(5_000L);
+
+    Wrestler wrestlerAWithState = mock(Wrestler.class);
+    WrestlerState state = WrestlerState.builder().fans(5_000L).build();
+    when(wrestlerAWithState.getDefaultState()).thenReturn(Optional.of(state));
+    when(wrestlerRepository.findByIdWithStates(1L)).thenReturn(Optional.of(wrestlerAWithState));
+
+    when(snapshotRepository.findAll()).thenReturn(List.of(snapshot));
+    when(titleReignRepository.findByStartDateBetween(any(), any())).thenReturn(List.of());
+
+    List<SeasonAward> awards = service.computeAwards(season);
+
+    assertThat(awards).filteredOn(a -> a.getAwardType() == SeasonAwardType.MOST_IMPROVED).isEmpty();
+  }
+
+  @Test
+  @DisplayName("onSeasonEnded — applies fan bonuses and generates news when awards computed")
+  void onSeasonEnded_appliesFanBonusesAndGeneratesNews() {
+    Universe universe = new Universe();
+    universe.setId(7L);
+
+    Show show = new Show();
+    show.setSeason(season);
+    show.setUniverse(universe);
+    season.addShow(show);
+
+    Segment seg = mock(Segment.class);
+    when(seg.getWinners()).thenReturn(List.of(wrestlerA));
+
+    when(awardRepository.findBySeasonId(1L)).thenReturn(List.of());
+    when(segmentRepository.findByShow(show)).thenReturn(List.of(seg));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestlerA));
+    when(snapshotRepository.findAll()).thenReturn(List.of());
+    when(titleReignRepository.findByStartDateBetween(any(), any())).thenReturn(List.of());
+
+    service.onSeasonEnded(new SeasonEndedEvent(this, season));
+
+    verify(wrestlerService)
+        .awardFans(eq(1L), eq(7L), eq(SeasonAwardType.WRESTLER_OF_THE_YEAR.getFanBonus()));
+    verify(newsService).createNewsItem(any(), any(), eq(NewsCategory.ANALYSIS), eq(false), eq(4));
   }
 }
