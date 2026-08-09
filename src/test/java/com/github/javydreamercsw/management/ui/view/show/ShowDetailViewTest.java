@@ -329,6 +329,7 @@ class ShowDetailViewTest extends AbstractViewTest {
         new ShowContextFacade(
             showTypeService,
             seasonService,
+            mock(com.github.javydreamercsw.management.service.season.SeasonAwardsService.class),
             showTemplateService,
             showPlanningService,
             showPlanningAiService,
