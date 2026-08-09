@@ -120,7 +120,12 @@ class ShowPlanningViewTest extends AbstractViewTest {
             mock(
                 com.github.javydreamercsw.management.service.relationship
                     .WrestlerRelationshipService.class),
-            teamService);
+            teamService,
+            mock(com.github.javydreamercsw.management.service.injury.InjuryService.class),
+            mock(com.github.javydreamercsw.management.service.title.TitleService.class),
+            mock(
+                com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistoryService
+                    .class));
     ViewContext viewContext =
         new ViewContext(notificationService, null, universeContextService, expansionService);
 

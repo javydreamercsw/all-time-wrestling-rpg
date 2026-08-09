@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,22 +14,15 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.base.domain.wrestler;
+package com.github.javydreamercsw.management.domain.wrestler;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class WrestlerStats {
-  private long wins;
-  private long losses;
-  private long titlesHeld;
+@Repository
+public interface WrestlerStateHistoryRepository extends JpaRepository<WrestlerStateHistory, Long> {
 
-  public double getWinRate() {
-    long total = wins + losses;
-    return total == 0 ? 0.0 : (double) wins / total * 100.0;
-  }
+  List<WrestlerStateHistory> findByWrestlerIdAndUniverseIdOrderByRecordedAtAsc(
+      Long wrestlerId, Long universeId);
 }
