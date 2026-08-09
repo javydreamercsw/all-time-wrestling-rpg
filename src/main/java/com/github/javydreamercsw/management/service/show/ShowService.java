@@ -87,6 +87,7 @@ public class ShowService {
   private final SecurityUtils securityUtils;
   private final ArenaRepository arenaRepository;
   private final GmModeService gmModeService;
+  private final ShowQualityService showQualityService;
 
   ShowService(
       final CampaignRepository campaignRepository,
@@ -108,7 +109,8 @@ public class ShowService {
       final LegacyService legacyService,
       final SecurityUtils securityUtils,
       final ArenaRepository arenaRepository,
-      final GmModeService gmModeService) {
+      final GmModeService gmModeService,
+      final ShowQualityService showQualityService) {
     this.campaignRepository = campaignRepository;
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
@@ -129,6 +131,7 @@ public class ShowService {
     this.securityUtils = securityUtils;
     this.arenaRepository = arenaRepository;
     this.gmModeService = gmModeService;
+    this.showQualityService = showQualityService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -681,7 +684,9 @@ public class ShowService {
 
     show.setAttendance(finalAttendance);
     show.setGateRevenue(gateRevenue);
+    double qualityScore = showQualityService.computeAndPersist(show, segments);
     Show saved = showRepository.save(show);
+    showQualityService.awardFanBonusesIfEligible(saved, segments, qualityScore);
 
     // Credit gate revenue to league budget (GM mode only)
     if (show.getLeague() != null) {

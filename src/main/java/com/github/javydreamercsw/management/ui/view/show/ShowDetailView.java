@@ -379,6 +379,18 @@ public class ShowDetailView extends Main
     titleInfo.setSpacing(false);
     titleInfo.setPadding(false);
 
+    if (show.getQualityScore() != null) {
+      Span qualityBadge =
+          new Span(renderStars(show.getQualityScore()) + " " + show.getQualityScore() + "★");
+      qualityBadge.addClassNames(
+          LumoUtility.FontSize.MEDIUM,
+          LumoUtility.FontWeight.SEMIBOLD,
+          LumoUtility.Margin.Top.XSMALL);
+      qualityBadge.getStyle().set("color", "#d97706");
+      qualityBadge.setTitle("Show quality rating");
+      titleInfo.add(qualityBadge);
+    }
+
     HorizontalLayout titleLayout = new HorizontalLayout(showImage, titleInfo, editNameButton);
     titleLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
     titleLayout.setSpacing(true);
@@ -446,6 +458,12 @@ public class ShowDetailView extends Main
       if (show.getGateRevenue() != null) {
         detailsLayout.add(
             createDetailRow("Gate Revenue:", "$" + "%,.2f".formatted(show.getGateRevenue())));
+      }
+      if (show.getQualityScore() != null) {
+        detailsLayout.add(
+            createDetailRow(
+                "Show Quality:",
+                renderStars(show.getQualityScore()) + " " + show.getQualityScore() + "★"));
       }
     }
 
@@ -529,6 +547,14 @@ public class ShowDetailView extends Main
     HorizontalLayout layout = new HorizontalLayout(labelSpan, valueSpan);
     layout.setSpacing(true);
     return layout;
+  }
+
+  /** Converts a 1.0–5.0 star score to filled/half/empty star characters. */
+  private String renderStars(final double score) {
+    int full = (int) score;
+    boolean half = (score - full) >= 0.5;
+    int empty = 5 - full - (half ? 1 : 0);
+    return "★".repeat(full) + (half ? "½" : "") + "☆".repeat(empty);
   }
 
   private Div createDescriptionCard(@NonNull final Show show) {
@@ -901,6 +927,15 @@ public class ShowDetailView extends Main
         .setHeader("Segment Type")
         .setSortable(true)
         .setFlexGrow(1);
+
+    // Per-segment quality score column (populated after show finalization)
+    grid.addColumn(
+            segment ->
+                segment.getSegmentRating() != null ? segment.getSegmentRating().toString() : "-")
+        .setHeader("Score")
+        .setSortable(true)
+        .setFlexGrow(0)
+        .setWidth("5em");
 
     // Segment rules column
     grid.addColumn(

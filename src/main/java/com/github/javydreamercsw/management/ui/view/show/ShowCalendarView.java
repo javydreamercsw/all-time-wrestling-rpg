@@ -377,6 +377,14 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     }
   }
 
+  /** Converts a 1.0–5.0 star score to filled/empty star characters. */
+  private String renderStars(final double score) {
+    int full = (int) score;
+    boolean half = (score - full) >= 0.5;
+    int empty = 5 - full - (half ? 1 : 0);
+    return "★".repeat(full) + (half ? "½" : "") + "☆".repeat(empty);
+  }
+
   private Div createUpcomingShowItem(@NonNull final Show show) {
     Div showItem = new Div();
     showItem.addClassNames(
@@ -433,6 +441,13 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     VerticalLayout textLayout = new VerticalLayout(showName, showDate, showType);
     textLayout.setSpacing(false);
     textLayout.setPadding(false);
+
+    if (show.getQualityScore() != null) {
+      Span starBadge = new Span(renderStars(show.getQualityScore()) + " " + show.getQualityScore());
+      starBadge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+      starBadge.getStyle().set("color", "#d97706");
+      textLayout.add(starBadge);
+    }
 
     content.add(templateImage, textLayout);
 
