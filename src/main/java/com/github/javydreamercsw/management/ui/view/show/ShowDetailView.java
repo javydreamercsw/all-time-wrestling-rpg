@@ -925,14 +925,24 @@ public class ShowDetailView extends Main
         .setSortable(true)
         .setFlexGrow(1);
 
-    // Per-segment quality score column (populated after show finalization)
-    grid.addColumn(
-            segment ->
-                segment.getSegmentRating() != null ? segment.getSegmentRating().toString() : "-")
+    // Per-segment quality score column — shown as stars matching the show header
+    grid.addComponentColumn(
+            segment -> {
+              if (segment.getSegmentRating() == null) {
+                return new Span("-");
+              }
+              int raw = segment.getSegmentRating();
+              double stars = Math.round(Math.max(1.0, Math.min(5.0, raw / 20.0)) * 2.0) / 2.0;
+              Span badge = new Span(renderStars(stars));
+              badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+              badge.getStyle().set("color", "#d97706");
+              com.vaadin.flow.component.shared.Tooltip.forComponent(badge).setText(raw + "/100");
+              return badge;
+            })
         .setHeader("Score")
-        .setSortable(true)
-        .setFlexGrow(0)
-        .setWidth("5em");
+        .setSortable(false)
+        .setAutoWidth(true)
+        .setFlexGrow(0);
 
     // Segment rules column
     grid.addColumn(
