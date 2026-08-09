@@ -692,6 +692,9 @@ public class ShowService {
     double qualityScore = showQualityService.computeAndPersist(show, segments);
     Show saved = showRepository.save(show);
     showQualityService.awardFanBonusesIfEligible(saved, segments, qualityScore);
+    eventPublisher.publishEvent(
+        new com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent(
+            this, saved, segments));
 
     // Credit gate revenue to league budget (GM mode only)
     if (show.getLeague() != null) {
