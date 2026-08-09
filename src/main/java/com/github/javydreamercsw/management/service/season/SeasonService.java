@@ -143,6 +143,13 @@ public class SeasonService {
     return seasonRepository.findById(seasonId);
   }
 
+  /** Get season by ID with the shows collection pre-loaded (for detail views). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Season> getSeasonByIdWithShows(@NonNull final Long seasonId) {
+    return seasonRepository.findByIdWithShows(seasonId);
+  }
+
   /** Find season by name. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")

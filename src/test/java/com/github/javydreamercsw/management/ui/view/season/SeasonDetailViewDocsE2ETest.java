@@ -16,11 +16,33 @@
 */
 package com.github.javydreamercsw.management.ui.view.season;
 
+import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class SeasonDetailViewDocsE2ETest extends AbstractDocsE2ETest {
+
+  @Autowired private SeasonRepository seasonRepository;
+
+  private Long seasonId;
+
+  @BeforeEach
+  void seedSeason() {
+    Season season = new Season();
+    season.setName("Showcase Season");
+    season.setDescription("Season used for docs screenshots");
+    season.setShowsPerPpv(5);
+    season.setIsActive(false);
+    season.setStartDate(Instant.now().minus(60, ChronoUnit.DAYS));
+    season.setEndDate(Instant.now().minus(1, ChronoUnit.DAYS));
+    seasonId = seasonRepository.saveAndFlush(season).getId();
+  }
 
   @Test
   void captureSeasonListWithDetailsLink() {
@@ -37,21 +59,15 @@ class SeasonDetailViewDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void captureSeasonDetailView() {
-    navigateTo("season-list");
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
-
-    var detailLinks = driver.findElements(By.partialLinkText("Details"));
-    if (!detailLinks.isEmpty()) {
-      detailLinks.get(0).click();
-      waitForVaadinClientToLoad();
-      waitForVaadinElement(driver, By.xpath("//*[contains(., 'Season Overview')]"));
-      documentFeature(
-          "Booker",
-          "Season Detail",
-          "Full season breakdown showing key stats (status, show count, duration)"
-              + " and the Awards Ceremony section listing Wrestler of the Year,"
-              + " Most Improved, and Most Decorated winners.",
-          "booker-season-detail");
-    }
+    navigateTo("season-detail/" + seasonId);
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.xpath("//*[contains(., 'Season Overview')]"));
+    documentFeature(
+        "Booker",
+        "Season Detail",
+        "Full season breakdown showing key stats (status, show count, duration)"
+            + " and the Awards Ceremony section listing Wrestler of the Year,"
+            + " Most Improved, and Most Decorated winners.",
+        "booker-season-detail");
   }
 }

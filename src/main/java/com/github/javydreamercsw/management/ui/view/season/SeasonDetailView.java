@@ -69,7 +69,7 @@ public class SeasonDetailView extends Main implements BeforeEnterObserver {
     }
     try {
       long seasonId = Long.parseLong(idParam.get());
-      Optional<Season> opt = showContextFacade.getSeasonService().getSeasonById(seasonId);
+      Optional<Season> opt = showContextFacade.getSeasonService().getSeasonByIdWithShows(seasonId);
       if (opt.isEmpty()) {
         event.forwardTo(SeasonListView.class);
         return;

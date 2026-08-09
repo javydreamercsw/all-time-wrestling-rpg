@@ -93,7 +93,7 @@ class SeasonDetailViewTest extends AbstractViewTest {
   @Test
   @DisplayName("beforeEnter — season not found forwards to SeasonListView")
   void beforeEnter_seasonNotFound_redirectsToSeasonList() {
-    when(seasonService.getSeasonById(99L)).thenReturn(Optional.empty());
+    when(seasonService.getSeasonByIdWithShows(99L)).thenReturn(Optional.empty());
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("seasonId", "99"));
 
@@ -106,7 +106,7 @@ class SeasonDetailViewTest extends AbstractViewTest {
   @DisplayName("beforeEnter — active season with no awards shows placeholder paragraph")
   void beforeEnter_activeSeason_showsAwardsPlaceholder() {
     Season season = activeSeason();
-    when(seasonService.getSeasonById(1L)).thenReturn(Optional.of(season));
+    when(seasonService.getSeasonByIdWithShows(1L)).thenReturn(Optional.of(season));
     when(seasonAwardsService.getAwards(any())).thenReturn(List.of());
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
@@ -136,7 +136,7 @@ class SeasonDetailViewTest extends AbstractViewTest {
             .awardValue("5 wins")
             .build();
 
-    when(seasonService.getSeasonById(1L)).thenReturn(Optional.of(season));
+    when(seasonService.getSeasonByIdWithShows(1L)).thenReturn(Optional.of(season));
     when(seasonAwardsService.getAwards(any())).thenReturn(List.of(award));
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);

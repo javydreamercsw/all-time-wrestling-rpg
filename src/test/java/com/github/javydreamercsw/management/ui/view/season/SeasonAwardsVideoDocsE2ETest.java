@@ -16,13 +16,35 @@
 */
 package com.github.javydreamercsw.management.ui.view.season;
 
+import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Tag("video")
 class SeasonAwardsVideoDocsE2ETest extends AbstractDocsE2ETest {
+
+  @Autowired private SeasonRepository seasonRepository;
+
+  private Long seasonId;
+
+  @BeforeEach
+  void seedSeason() {
+    Season season = new Season();
+    season.setName("Showcase Season");
+    season.setDescription("Season used for video walkthrough");
+    season.setShowsPerPpv(5);
+    season.setIsActive(false);
+    season.setStartDate(Instant.now().minus(60, ChronoUnit.DAYS));
+    season.setEndDate(Instant.now().minus(1, ChronoUnit.DAYS));
+    seasonId = seasonRepository.saveAndFlush(season).getId();
+  }
 
   @Test
   void recordSeasonAwardsWorkflow() {
@@ -36,21 +58,18 @@ class SeasonAwardsVideoDocsE2ETest extends AbstractDocsE2ETest {
             + " Each row has a 'Details' link to open the full season dashboard.",
         2000);
 
-    var detailLinks = driver.findElements(By.partialLinkText("Details"));
-    if (!detailLinks.isEmpty()) {
-      detailLinks.get(0).click();
-      waitForVaadinClientToLoad();
-      waitForVaadinElement(driver, By.xpath("//*[contains(., 'Season Overview')]"));
-      captureCaption(
-          "The Season Detail view shows a stat card summary — status, total shows, start/end"
-              + " dates, and total duration at a glance.",
-          2500);
+    navigateTo("season-detail/" + seasonId);
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.xpath("//*[contains(., 'Season Overview')]"));
+    captureCaption(
+        "The Season Detail view shows a stat card summary — status, total shows, start/end"
+            + " dates, and total duration at a glance.",
+        2500);
 
-      captureCaption(
-          "The Awards Ceremony section lists each award winner: Wrestler of the Year (most wins),"
-              + " Most Improved (highest fan growth), and Most Decorated (most title reigns)."
-              + " Winners automatically receive fan bonuses when the season ends.",
-          3000);
-    }
+    captureCaption(
+        "The Awards Ceremony section lists each award winner: Wrestler of the Year (most wins),"
+            + " Most Improved (highest fan growth), and Most Decorated (most title reigns)."
+            + " Winners automatically receive fan bonuses when the season ends.",
+        3000);
   }
 }
