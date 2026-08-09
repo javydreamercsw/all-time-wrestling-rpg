@@ -548,6 +548,11 @@ public class ShowService {
               segmentRepository.save(segment);
             });
 
+    // All segments are now ADJUDICATED — compute attendance and quality score.
+    // finalizeShowIfComplete must be called here (not from inside adjudicateMatch) because
+    // the adjudicationStatus is set to ADJUDICATED after adjudicateMatch returns.
+    finalizeShowIfComplete(show);
+
     // Campaign universes handle healing exclusively through BackstageActionService (RECOVERY).
     boolean isCampaignUniverse =
         show.getUniverse() != null && campaignRepository.existsByUniverse(show.getUniverse());

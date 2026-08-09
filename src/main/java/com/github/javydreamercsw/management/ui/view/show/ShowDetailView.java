@@ -68,6 +68,7 @@ import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
+import com.github.javydreamercsw.management.util.StarRenderer;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -549,12 +550,8 @@ public class ShowDetailView extends Main
     return layout;
   }
 
-  /** Converts a 1.0–5.0 star score to filled/half/empty star characters. */
   private String renderStars(final double score) {
-    int full = (int) score;
-    boolean half = (score - full) >= 0.5;
-    int empty = 5 - full - (half ? 1 : 0);
-    return "★".repeat(full) + (half ? "½" : "") + "☆".repeat(empty);
+    return StarRenderer.renderStars(score);
   }
 
   private Div createDescriptionCard(@NonNull final Show show) {

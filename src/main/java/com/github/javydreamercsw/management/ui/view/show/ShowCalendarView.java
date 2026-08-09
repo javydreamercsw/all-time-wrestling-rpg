@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.util.StarRenderer;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
@@ -377,12 +378,8 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     }
   }
 
-  /** Converts a 1.0–5.0 star score to filled/empty star characters. */
   private String renderStars(final double score) {
-    int full = (int) score;
-    boolean half = (score - full) >= 0.5;
-    int empty = 5 - full - (half ? 1 : 0);
-    return "★".repeat(full) + (half ? "½" : "") + "☆".repeat(empty);
+    return StarRenderer.renderStars(score);
   }
 
   private Div createUpcomingShowItem(@NonNull final Show show) {
