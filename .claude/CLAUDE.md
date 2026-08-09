@@ -19,7 +19,7 @@ doing a simple exact-string sanity check after Repowise already pointed you at a
 
 ## Codebase Intelligence for all-time-wrestling-rpg (Repowise)
 
-Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-08-09 (commit d1977cc6e). Confidence: 100%.
+Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-08-09 (commit 1c54e6f49). Confidence: 100%.
 The MCP tools below serve pre-verified docs, symbols, history, and health from that index. Every response carries `_meta` freshness fields; a `stale_warning` appears only when a file the response actually serves changed after indexing — silence means current.
 
 ### How to work in this repo
@@ -83,7 +83,7 @@ repo is a comprehensive wrestling promotion management platform that consumes us
 
 ### Code health
 
-Three co-equal signals: defect risk 8.15/10 avg, hotspot health 5.38/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` at 1.0/10 · maintainability 8.83/10 · performance risk 287 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
+Three co-equal signals: defect risk 8.16/10 avg, hotspot health 5.41/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` at 1.0/10 · maintainability 8.83/10 · performance risk 266 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
 
 Critical files:
 - `src/main/java/com/github/javydreamercsw/management/service/campaign/PlaceholderResolverService.java` — change entropy — impact −3.0

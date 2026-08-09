@@ -100,6 +100,7 @@ class ShowServiceTest {
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private CampaignRepository campaignRepository;
   @Mock private Clock clock;
+  @Mock private ShowQualityService showQualityService;
 
   private ShowService showService;
 
@@ -135,7 +136,8 @@ class ShowServiceTest {
             legacyService,
             securityUtils,
             arenaRepository,
-            gmModeService);
+            gmModeService,
+            showQualityService);
 
     show = new Show();
     show.setId(1L);

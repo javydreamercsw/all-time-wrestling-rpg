@@ -68,6 +68,7 @@ import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
+import com.github.javydreamercsw.management.util.StarRenderer;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -379,6 +380,18 @@ public class ShowDetailView extends Main
     titleInfo.setSpacing(false);
     titleInfo.setPadding(false);
 
+    if (show.getQualityScore() != null) {
+      Span qualityBadge =
+          new Span(renderStars(show.getQualityScore()) + " " + show.getQualityScore() + "★");
+      qualityBadge.addClassNames(
+          LumoUtility.FontSize.MEDIUM,
+          LumoUtility.FontWeight.SEMIBOLD,
+          LumoUtility.Margin.Top.XSMALL);
+      qualityBadge.getStyle().set("color", "#d97706");
+      qualityBadge.setTitle("Show quality rating");
+      titleInfo.add(qualityBadge);
+    }
+
     HorizontalLayout titleLayout = new HorizontalLayout(showImage, titleInfo, editNameButton);
     titleLayout.setAlignItems(HorizontalLayout.Alignment.CENTER);
     titleLayout.setSpacing(true);
@@ -446,6 +459,12 @@ public class ShowDetailView extends Main
       if (show.getGateRevenue() != null) {
         detailsLayout.add(
             createDetailRow("Gate Revenue:", "$" + "%,.2f".formatted(show.getGateRevenue())));
+      }
+      if (show.getQualityScore() != null) {
+        detailsLayout.add(
+            createDetailRow(
+                "Show Quality:",
+                renderStars(show.getQualityScore()) + " " + show.getQualityScore() + "★"));
       }
     }
 
@@ -529,6 +548,10 @@ public class ShowDetailView extends Main
     HorizontalLayout layout = new HorizontalLayout(labelSpan, valueSpan);
     layout.setSpacing(true);
     return layout;
+  }
+
+  private String renderStars(final double score) {
+    return StarRenderer.renderStars(score);
   }
 
   private Div createDescriptionCard(@NonNull final Show show) {
@@ -901,6 +924,25 @@ public class ShowDetailView extends Main
         .setHeader("Segment Type")
         .setSortable(true)
         .setFlexGrow(1);
+
+    // Per-segment quality score column — shown as stars matching the show header
+    grid.addComponentColumn(
+            segment -> {
+              if (segment.getSegmentRating() == null) {
+                return new Span("-");
+              }
+              int raw = segment.getSegmentRating();
+              double stars = Math.round(Math.max(1.0, Math.min(5.0, raw / 20.0)) * 2.0) / 2.0;
+              Span badge = new Span(renderStars(stars));
+              badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+              badge.getStyle().set("color", "#d97706");
+              com.vaadin.flow.component.shared.Tooltip.forComponent(badge).setText(raw + "/100");
+              return badge;
+            })
+        .setHeader("Score")
+        .setSortable(false)
+        .setAutoWidth(true)
+        .setFlexGrow(0);
 
     // Segment rules column
     grid.addColumn(
