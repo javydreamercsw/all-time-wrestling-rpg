@@ -806,5 +806,26 @@
     "description": "Full season breakdown showing key stats (status, show count, duration) and the Awards Ceremony section listing Wrestler of the Year, Most Improved, and Most Decorated winners.",
     "imagePath": "screenshots/booker-season-detail.png",
     "order": 0
+  }, {
+    "id": "booker-booker-tournament-list",
+    "category": "Booker",
+    "title": "Tournament Bracket Generator",
+    "description": "Plan and run tournaments directly from the Booker dashboard. Choose from Single Elimination or Round Robin formats, auto-seed wrestlers by fan count or pick them manually, and book each round across your scheduled shows.",
+    "imagePath": "screenshots/booker-tournament-list.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-detail-scheduled",
+    "category": "Booker",
+    "title": "Tournament Detail — Scheduled",
+    "description": "A freshly created tournament shows all entrants seeded and ready. The 'Start Tournament' button generates the first-round bracket. Entrants are ranked by seed — 1 vs 8, 2 vs 7, and so on.",
+    "imagePath": "screenshots/booker-tournament-detail-scheduled.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-detail-in-progress",
+    "category": "Booker",
+    "title": "Tournament Detail — In Progress",
+    "description": "Live tournament view shows completed round results and the pending next round. The booker can book the upcoming round onto any scheduled show and record match winners as each event is completed.",
+    "imagePath": "screenshots/booker-tournament-detail-in-progress.png",
+    "order": 0
   } ]
 }

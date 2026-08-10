@@ -17,49 +17,59 @@
 package com.github.javydreamercsw.management.ui.component;
 
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
-import com.github.javydreamercsw.management.dto.campaign.TournamentDTO.TournamentMatch;
+import com.github.javydreamercsw.management.service.tournament.TournamentFormat.RenderMode;
+import com.github.javydreamercsw.management.ui.component.TournamentBracketModel.MatchModel;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TournamentBracketComponent extends HorizontalLayout {
 
+  /**
+   * Campaign convenience constructor — wraps {@link TournamentDTO} in a {@link
+   * TournamentDTOAdapter}.
+   */
   public TournamentBracketComponent(final TournamentDTO tournament) {
+    this(new TournamentDTOAdapter(tournament));
+  }
+
+  public TournamentBracketComponent(final TournamentBracketModel model) {
     addClassName("tournament-bracket");
     setSpacing(false);
     setAlignItems(Alignment.CENTER);
     setWidthFull();
     getStyle().set("overflow-x", "auto");
 
-    int totalRounds = tournament.getTotalRounds();
-    // Fallback if totalRounds not set (legacy)
+    if (model.getRenderMode() == RenderMode.ROUND_ROBIN_GRID) {
+      buildRoundRobinGrid(model);
+    } else {
+      buildTree(model);
+    }
+  }
+
+  // ── Tree (Single Elimination) ─────────────────────────────────────────────
+
+  private void buildTree(TournamentBracketModel model) {
+    int totalRounds = model.getTotalRounds();
     if (totalRounds <= 0) {
       totalRounds = 4;
     }
 
     for (int i = 1; i < totalRounds + 1; i++) {
-      String title;
-      if (i == totalRounds) {
-        title = "Finals";
-      } else if (i == totalRounds - 1) {
-        title = "Semi-Finals";
-      } else if (i == totalRounds - 2) {
-        title = "Quarter-Finals";
-      } else {
-        title = "Round " + i;
-      }
-
-      addRound(tournament, i, title, totalRounds);
+      addTreeRound(model, i, roundLabel(i, totalRounds), totalRounds);
     }
-
-    addWinner(tournament, totalRounds);
+    addWinner(model, totalRounds);
   }
 
-  private void addRound(TournamentDTO tournament, int round, String title, int totalRounds) {
+  private void addTreeRound(
+      TournamentBracketModel model, int round, String title, int totalRounds) {
     VerticalLayout roundCol = new VerticalLayout();
     roundCol.setPadding(false);
     roundCol.setSpacing(true);
@@ -75,19 +85,13 @@ public class TournamentBracketComponent extends HorizontalLayout {
         LumoUtility.Width.FULL);
     roundCol.add(roundTitle);
 
-    List<TournamentMatch> matches =
-        tournament.getMatches().stream()
-            .filter(m -> m.getRound() == round)
-            .collect(Collectors.toList());
+    List<MatchModel> matches =
+        model.getMatches().stream().filter(m -> m.getRound() == round).collect(Collectors.toList());
 
-    for (TournamentMatch match : matches) {
+    for (MatchModel match : matches) {
       roundCol.add(createMatchCard(match));
-      // Add spacer for visual tree structure (simplistic)
       if (round < totalRounds) {
         Div spacer = new Div();
-        // Dynamic spacer logic could be: 10 * 2^(round-1) ?
-        // R1: 10px. R2: 40px? No, spacing depends on previous matches.
-        // For dynamic bracket, this simplistic spacing is okay-ish.
         spacer.setHeight("10px");
         roundCol.add(spacer);
       }
@@ -96,9 +100,9 @@ public class TournamentBracketComponent extends HorizontalLayout {
     add(roundCol);
   }
 
-  private void addWinner(TournamentDTO tournament, int totalRounds) {
-    TournamentMatch finals =
-        tournament.getMatches().stream()
+  private void addWinner(TournamentBracketModel model, int totalRounds) {
+    MatchModel finals =
+        model.getMatches().stream()
             .filter(m -> m.getRound() == totalRounds)
             .findFirst()
             .orElse(null);
@@ -131,7 +135,43 @@ public class TournamentBracketComponent extends HorizontalLayout {
     }
   }
 
-  private Div createMatchCard(final TournamentMatch match) {
+  // ── Round Robin grid ──────────────────────────────────────────────────────
+
+  private void buildRoundRobinGrid(TournamentBracketModel model) {
+    VerticalLayout grid = new VerticalLayout();
+    grid.setPadding(false);
+    grid.setSpacing(true);
+    grid.setWidthFull();
+
+    // Group matches by round, preserving round order
+    Map<Integer, List<MatchModel>> byRound =
+        model.getMatches().stream()
+            .sorted(Comparator.comparingInt(MatchModel::getRound))
+            .collect(
+                Collectors.groupingBy(
+                    MatchModel::getRound, LinkedHashMap::new, Collectors.toList()));
+
+    for (Map.Entry<Integer, List<MatchModel>> entry : byRound.entrySet()) {
+      Span roundHeader = new Span("Round " + entry.getKey());
+      roundHeader.addClassNames(
+          LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+      grid.add(roundHeader);
+
+      HorizontalLayout row = new HorizontalLayout();
+      row.setSpacing(true);
+      row.setAlignItems(Alignment.CENTER);
+      for (MatchModel match : entry.getValue()) {
+        row.add(createMatchCard(match));
+      }
+      grid.add(row);
+    }
+
+    add(grid);
+  }
+
+  // ── Shared match card ─────────────────────────────────────────────────────
+
+  private Div createMatchCard(final MatchModel match) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Border.ALL,
@@ -139,14 +179,10 @@ public class TournamentBracketComponent extends HorizontalLayout {
         LumoUtility.Background.CONTRAST_5,
         LumoUtility.Padding.XSMALL,
         LumoUtility.FontSize.XSMALL);
-    card.setWidthFull();
+    card.setWidth("180px");
 
-    // Wrestler 1
-    Div w1 = createWrestlerLine(match.getWrestler1Name(), match.getWrestler1Id(), match);
-    // Wrestler 2
-    Div w2 = createWrestlerLine(match.getWrestler2Name(), match.getWrestler2Id(), match);
-
-    card.add(w1, w2);
+    card.add(createWrestlerLine(match.getWrestler1Name(), match.getWrestler1Id(), match));
+    card.add(createWrestlerLine(match.getWrestler2Name(), match.getWrestler2Id(), match));
 
     if (match.isPlayerMatch()) {
       card.getStyle().set("border-color", "var(--lumo-primary-color)");
@@ -156,7 +192,7 @@ public class TournamentBracketComponent extends HorizontalLayout {
     return card;
   }
 
-  private Div createWrestlerLine(final String name, final Long id, final TournamentMatch match) {
+  private Div createWrestlerLine(final String name, final Long id, final MatchModel match) {
     Div line = new Div();
     line.addClassNames(
         LumoUtility.Display.FLEX,
@@ -168,11 +204,21 @@ public class TournamentBracketComponent extends HorizontalLayout {
     if (id != null && match.getWinnerId() != null && id.equals(match.getWinnerId())) {
       nameSpan.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.SUCCESS);
     } else if (match.getWinnerId() != null && id != null) {
-      nameSpan.addClassNames(LumoUtility.TextColor.DISABLED, "strikethrough");
+      nameSpan.addClassNames(LumoUtility.TextColor.DISABLED);
       nameSpan.getStyle().set("text-decoration", "line-through");
     }
 
     line.add(nameSpan);
     return line;
+  }
+
+  private static String roundLabel(int round, int totalRounds) {
+    int remaining = totalRounds - round;
+    return switch (remaining) {
+      case 0 -> "Finals";
+      case 1 -> "Semi-Finals";
+      case 2 -> "Quarter-Finals";
+      default -> "Round " + round;
+    };
   }
 }

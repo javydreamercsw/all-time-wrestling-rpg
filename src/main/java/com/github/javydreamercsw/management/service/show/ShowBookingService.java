@@ -106,6 +106,7 @@ public class ShowBookingService {
   private final PromoBookingService promoBookingService;
   private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
+  private final ShowSegmentReservationService reservationService;
   private final Clock clock;
   private final Random random;
 
@@ -303,6 +304,21 @@ public class ShowBookingService {
             ? show.getUniverse().getId()
             : universeContextService.getCurrentUniverseId();
 
+    // Reduce auto-fill count by any pre-committed reserved slots
+    int pending = reservationService.countPendingReservations(show);
+    int effectiveCount = Math.max(0, segmentCount - pending);
+    if (pending > 0) {
+      log.info(
+          "Show '{}' has {} reserved slot(s); auto-booking {} segment(s)",
+          show.getName(),
+          pending,
+          effectiveCount);
+    }
+
+    if (effectiveCount == 0) {
+      return segments;
+    }
+
     List<Wrestler> availableWrestlers =
         new ArrayList<>(wrestlerService.findAllFiltered(null, null, universeId));
 
@@ -330,14 +346,36 @@ public class ShowBookingService {
     // 1. Book rivalry segments first (high priority)
     segments.addAll(
         bookRivalrySegments(
-            show, availableWrestlers, Math.min(2, segmentCount / 2), oneOnOneType.get()));
+            show, availableWrestlers, Math.min(2, effectiveCount / 2), oneOnOneType.get()));
 
     // 2. Book random segments to fill remaining slots
-    int remainingSegments = segmentCount - segments.size();
+    int remainingSegments = effectiveCount - segments.size();
     segments.addAll(
         bookRandomSegments(show, availableWrestlers, remainingSegments, oneOnOneType.get()));
 
     return segments;
+  }
+
+  /**
+   * Book a specific singles match onto an existing show. Used by the tournament system to fill
+   * reserved segment slots with predetermined match-ups.
+   */
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
+  public Optional<Segment> bookSpecificMatch(
+      @NonNull final Show show,
+      @NonNull final Wrestler wrestler1,
+      @NonNull final Wrestler wrestler2,
+      @NonNull final String label) {
+    Optional<SegmentType> oneOnOneType =
+        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+    if (oneOnOneType.isEmpty()) {
+      log.warn("One on One segment type not found — cannot book specific match");
+      return Optional.empty();
+    }
+    return bookSinglesSegment(show, wrestler1, wrestler2, label, oneOnOneType.get());
   }
 
   /** Generate enhanced segments for PPV shows with focus on major storylines. */
