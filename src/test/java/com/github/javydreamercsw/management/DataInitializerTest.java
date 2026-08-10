@@ -20,35 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.domain.account.AchievementRepository;
-import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.card.CardSet;
-import com.github.javydreamercsw.management.domain.card.CardSetRepository;
-import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.team.TeamRepository;
-import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
-import com.github.javydreamercsw.management.domain.world.ArenaRepository;
-import com.github.javydreamercsw.management.domain.world.LocationRepository;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.dto.ArenaImportDTO;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.dto.CardDTO;
@@ -63,31 +41,9 @@ import com.github.javydreamercsw.management.dto.StatusCardDTO;
 import com.github.javydreamercsw.management.dto.TeamImportDTO;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
-import com.github.javydreamercsw.management.service.GameSettingService;
-import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
-import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
-import com.github.javydreamercsw.management.service.campaign.StatusCardService;
-import com.github.javydreamercsw.management.service.card.CardService;
-import com.github.javydreamercsw.management.service.card.CardSetService;
-import com.github.javydreamercsw.management.service.commentator.CommentaryService;
-import com.github.javydreamercsw.management.service.deck.DeckService;
-import com.github.javydreamercsw.management.service.faction.FactionService;
-import com.github.javydreamercsw.management.service.npc.NpcService;
-import com.github.javydreamercsw.management.service.outcome.OutcomeMatrixService;
-import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
-import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
-import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
-import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
-import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
-import com.github.javydreamercsw.management.service.team.TeamService;
-import com.github.javydreamercsw.management.service.title.TitleReignRepairService;
-import com.github.javydreamercsw.management.service.title.TitleService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.sync.DataSyncContributor;
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,189 +51,35 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.ResourcePatternResolver;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class DataInitializerTest {
 
+  @Mock private DataSyncContributor contributor;
+
   private DataInitializer dataInitializer;
-
-  @Mock private CardSetRepository cardSetRepository;
-  @Mock private DeckService deckService;
-  @Mock private ShowTemplateService showTemplateService;
-  @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private WrestlerService wrestlerService;
-  @Mock private UniverseRepository universeRepository;
-  @Mock private WrestlerStateRepository wrestlerStateRepository;
-  @Mock private ShowTypeService showTypeService;
-  @Mock private SegmentRuleService segmentRuleService;
-  @Mock private SegmentTypeService segmentTypeService;
-  @Mock private CardSetService cardSetService;
-  @Mock private CardService cardService;
-  @Mock private TitleService titleService;
-  @Mock private GameSettingService gameSettingService;
-
-  @Mock
-  private com.github.javydreamercsw.management.domain.GameSettingRepository gameSettingRepository;
-
-  @Mock private NpcService npcService;
-  @Mock private FactionService factionService;
-  @Mock private TeamService teamService;
-  @Mock private TeamRepository teamRepository;
-  @Mock private TierRecalculationService tierRecalculationService;
-  @Mock private CampaignAbilityCardService campaignAbilityCardService;
-  @Mock private CommentaryService commentaryService;
-  @Mock private CampaignUpgradeService campaignUpgradeService;
-  @Mock private StatusCardService statusCardService;
-  @Mock private Environment env;
-  @Mock private AchievementRepository achievementRepository;
-  @Mock private RingsideActionDataService ringsideActionDataService;
-  @Mock private ResourcePatternResolver resourcePatternResolver;
-  @Mock private LocationRepository locationRepository;
-  @Mock private ArenaRepository arenaRepository;
-  @Mock private WrestlerRelationshipService relationshipService;
-  @Mock private OutcomeMatrixService outcomeMatrixService;
-  @Mock private TitleReignRepairService titleReignRepairService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
-  public void setUp() throws IOException {
-    // Manually instantiate DataInitializer with mocked dependencies
-    dataInitializer =
-        new DataInitializer(
-            true, // Enabled parameter
-            false, // skipIfNotEmpty
-            showTemplateService,
-            wrestlerRepository,
-            wrestlerService,
-            universeRepository,
-            wrestlerStateRepository,
-            showTypeService,
-            segmentRuleService,
-            segmentTypeService,
-            cardSetService,
-            cardSetRepository,
-            cardService,
-            titleService,
-            deckService,
-            gameSettingService,
-            gameSettingRepository,
-            npcService,
-            factionService,
-            teamService,
-            teamRepository,
-            tierRecalculationService,
-            campaignAbilityCardService,
-            commentaryService,
-            campaignUpgradeService,
-            statusCardService,
-            env,
-            achievementRepository,
-            ringsideActionDataService,
-            resourcePatternResolver,
-            locationRepository,
-            arenaRepository,
-            relationshipService,
-            objectMapper,
-            outcomeMatrixService,
-            titleReignRepairService);
-
-    // Common setup for many tests: ensure resources are found
-    Resource mockResource = mock(Resource.class);
-    when(resourcePatternResolver.getResources(anyString()))
-        .thenReturn(new Resource[] {mockResource});
-    when(mockResource.getInputStream())
-        .thenReturn(new java.io.ByteArrayInputStream("[]".getBytes()));
-
-    // Mock segmentTypeService to return a non-null SegmentType to avoid NPE in
-    // loadSegmentTypesFromFile
-    com.github.javydreamercsw.management.domain.show.segment.type.SegmentType mockSegmentType =
-        mock(com.github.javydreamercsw.management.domain.show.segment.type.SegmentType.class);
-    when(mockSegmentType.getName()).thenReturn("Mock Type");
-    when(segmentTypeService.createOrUpdateSegmentType(anyString(), anyString(), anyString(), any()))
-        .thenReturn(mockSegmentType);
-
-    // Mock universeRepository to return a non-null Universe to avoid IllegalStateException in
-    // syncWrestlersFromFile
-    Universe mockUniverse = mock(Universe.class);
-    when(mockUniverse.getId()).thenReturn(1L);
-    when(universeRepository.findAll()).thenReturn(List.of(mockUniverse));
-
-    com.github.javydreamercsw.management.domain.title.Title mockTitle =
-        mock(com.github.javydreamercsw.management.domain.title.Title.class);
-    when(titleService.createTitle(anyString(), anyString(), any(), any(), any(), any()))
-        .thenReturn(mockTitle);
+  void setUp() {
+    dataInitializer = new DataInitializer(true, List.of(contributor));
   }
 
   @Test
   void testInitialize_Disabled() {
-    DataInitializer disabledInitializer =
-        new DataInitializer(
-            false,
-            false,
-            showTemplateService,
-            wrestlerRepository,
-            wrestlerService,
-            universeRepository,
-            wrestlerStateRepository,
-            showTypeService,
-            segmentRuleService,
-            segmentTypeService,
-            cardSetService,
-            cardSetRepository,
-            cardService,
-            titleService,
-            deckService,
-            gameSettingService,
-            gameSettingRepository,
-            npcService,
-            factionService,
-            teamService,
-            teamRepository,
-            tierRecalculationService,
-            campaignAbilityCardService,
-            commentaryService,
-            campaignUpgradeService,
-            statusCardService,
-            env,
-            achievementRepository,
-            ringsideActionDataService,
-            resourcePatternResolver,
-            locationRepository,
-            arenaRepository,
-            relationshipService,
-            objectMapper,
-            outcomeMatrixService,
-            titleReignRepairService);
-
-    disabledInitializer.init();
-    verify(gameSettingService, never()).findById(anyString());
+    DataInitializer disabled = new DataInitializer(false, List.of(contributor));
+    disabled.init();
+    verify(contributor, never()).sync();
   }
 
   @Test
-  void testSyncWrestlersFromFile_NewWrestler() {
-    WrestlerImportDTO dto = new WrestlerImportDTO();
-    dto.setName("New Wrestler");
-    dto.setFans(1000L);
-
-    when(wrestlerRepository.findByName(anyString())).thenReturn(Optional.empty());
-    when(wrestlerRepository.saveAll(any())).thenAnswer(i -> i.getArguments()[0]);
-
-    // Mock Universe and State for new wrestler
-    Universe mockUniverse = mock(Universe.class);
-    when(universeRepository.findAll()).thenReturn(List.of(mockUniverse));
-    when(wrestlerService.getOrCreateState(any(), eq(1L))).thenReturn(new WrestlerState());
-
-    // We test the entry point
-    dataInitializer.syncWrestlersFromFile();
-    // Since it's protected and we are in same package, it's accessible
+  void init_delegatesToAllContributors() {
+    dataInitializer.init();
+    verify(contributor).sync();
   }
+
+  // ── JSON validation tests ─────────────────────────────────────────────────
 
   @Test
   void validateCardsJson() {
@@ -427,56 +229,6 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncWrestlersFromFile_existingWrestler() throws IOException {
-    // Given
-    Wrestler existingWrestler = new Wrestler();
-    existingWrestler.setName("Rob Van Dam");
-
-    Universe mockUniverse = mock(Universe.class);
-    when(universeRepository.findAll()).thenReturn(List.of(mockUniverse));
-
-    lenient().when(wrestlerRepository.count()).thenReturn(1L);
-    lenient()
-        .when(wrestlerRepository.findByName("Rob Van Dam"))
-        .thenReturn(Optional.of(existingWrestler));
-    lenient().when(wrestlerRepository.findAll()).thenReturn(List.of(existingWrestler));
-
-    // Mock wrestler state to avoid NPE in syncWrestlersFromFile
-    WrestlerState mockState = new WrestlerState();
-    mockState.setFans(0L);
-    mockState.setBumps(0);
-    lenient().when(wrestlerService.getOrCreateState(any(), any())).thenReturn(mockState);
-
-    Resource wrestlersResource = new ClassPathResource("wrestlers.json");
-    when(resourcePatternResolver.getResources("classpath*:wrestlers*.json"))
-        .thenReturn(new Resource[] {wrestlersResource});
-
-    // When
-    dataInitializer.syncWrestlersFromFile();
-
-    // Then
-    verify(wrestlerRepository, atLeastOnce()).saveAll(any());
-  }
-
-  @Test
-  void syncAiSettingsFromEnvironment_doesNotOverwriteExistingDbValueByDefault() {
-    // Simulate an environment variable being set
-    when(env.getProperty("AI_OPENAI_ENABLED")).thenReturn("true");
-
-    // But the DB already has a value (e.g., user explicitly disabled it).
-    // Code now pre-loads via gameSettingRepository.findAll() — seed it there.
-    GameSetting existingSetting = new GameSetting();
-    existingSetting.setSettingKey("AI_OPENAI_ENABLED");
-    existingSetting.setValue("false");
-    when(gameSettingRepository.findAll()).thenReturn(List.of(existingSetting));
-
-    dataInitializer.init();
-
-    // Should NOT overwrite existing DB value unless forceOverride is enabled
-    verify(gameSettingService, never()).save("AI_OPENAI_ENABLED", "true");
-  }
-
-  @Test
   void validateRelationshipsJson() {
     assertDoesNotThrow(
         () -> {
@@ -486,35 +238,6 @@ class DataInitializerTest {
                   new TypeReference<
                       List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
         });
-  }
-
-  @Test
-  void testSyncRelationshipsFromFile() {
-    // Given
-    Wrestler w1 = new Wrestler();
-    w1.setId(1L);
-    w1.setName("Johnny All Time");
-
-    Wrestler w2 = new Wrestler();
-    w2.setId(2L);
-    w2.setName("Taya Valkyrie");
-
-    // Code now pre-loads all wrestlers via findAll; findByName is no longer called
-    when(wrestlerRepository.findAll()).thenReturn(List.of(w1, w2));
-
-    // syncDecksFromFile also uses findAll — guard against NPE when createDeck returns null
-    com.github.javydreamercsw.management.domain.deck.Deck mockDeck =
-        mock(com.github.javydreamercsw.management.domain.deck.Deck.class);
-    when(mockDeck.getCards()).thenReturn(new java.util.HashSet<>());
-    lenient().when(deckService.findByWrestlerWithCards(any())).thenReturn(List.of());
-    lenient().when(deckService.createDeck(any())).thenReturn(mockDeck);
-
-    // When
-    dataInitializer.init();
-
-    // Then
-    verify(relationshipService, atLeastOnce())
-        .createOrUpdateRelationship(eq(1L), eq(2L), any(), anyInt(), anyBoolean(), anyString());
   }
 
   @Test
@@ -567,16 +290,18 @@ class DataInitializerTest {
   }
 
   @Test
-  void testSyncNpcsFromFile() {
-    // Given
-    Npc npc = new Npc();
-    npc.setName("Mock NPC");
-    when(npcService.findByName(anyString())).thenReturn(null);
-
-    // When
-    dataInitializer.syncNpcsFromFile();
-
-    // Then
-    verify(npcService, atLeastOnce()).saveAll(any());
+  void validateWrestlersJson() {
+    assertDoesNotThrow(
+        () -> {
+          org.springframework.core.io.support.PathMatchingResourcePatternResolver resolver =
+              new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
+          org.springframework.core.io.Resource[] resources =
+              resolver.getResources("classpath*:wrestlers*.json");
+          for (org.springframework.core.io.Resource resource : resources) {
+            new ObjectMapper()
+                .readValue(
+                    resource.getInputStream(), new TypeReference<List<WrestlerImportDTO>>() {});
+          }
+        });
   }
 }
