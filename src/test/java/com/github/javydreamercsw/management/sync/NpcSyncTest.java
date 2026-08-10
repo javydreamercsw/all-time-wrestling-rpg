@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -67,16 +68,30 @@ class NpcSyncTest {
 
   @Test
   void sync_doesNotSaveExistingUnchangedNpc() {
-    // Build an existing NPC that matches the file data — should not trigger saveAll
+    // Charles is in npcs.json with no awareness field — unchanged NPC must not be re-saved
     Npc existing = new Npc();
-    existing.setName("Paul Bearer");
-    existing.setDescription("The manager of The Undertaker");
+    existing.setName("Charles");
+    existing.setDescription("The mysterious owner of ATW.");
     when(npcService.findAllUnfiltered()).thenReturn(List.of(existing));
 
     sync.sync();
 
-    // Verify setAwareness was never called for the pre-existing Paul Bearer — dirty-check path
     verify(npcService, never())
-        .setAwareness(argThat(npc -> "Paul Bearer".equals(npc.getName())), anyInt());
+        .setAwareness(argThat(npc -> "Charles".equals(npc.getName())), anyInt());
+  }
+
+  @Test
+  void sync_savesExistingNpcWhenDescriptionChanged() {
+    Npc existing = new Npc();
+    existing.setName("Charles"); // Charles is in npcs.json
+    existing.setDescription("stale description"); // differs from file → triggers dirty-check save
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(existing));
+
+    sync.sync();
+
+    // saveAll must have been called (dirty-check path was taken)
+    verify(npcService, atLeastOnce()).saveAll(any());
+    // the existing object's description was overwritten by the sync with the file value
+    assertEquals("The mysterious owner of ATW.", existing.getDescription());
   }
 }
