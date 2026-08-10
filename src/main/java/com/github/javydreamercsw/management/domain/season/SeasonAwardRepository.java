@@ -17,9 +17,11 @@
 package com.github.javydreamercsw.management.domain.season;
 
 import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SeasonAwardRepository extends JpaRepository<SeasonAward, Long> {
 
+  @EntityGraph(attributePaths = {"wrestler"})
   List<SeasonAward> findBySeasonId(Long seasonId);
 }
