@@ -114,8 +114,12 @@ public class TournamentService {
                         m -> {
                           m.getEntrant1().getWrestler().getName();
                           m.getEntrant2().getWrestler().getName();
-                          if (m.getWinner() != null) m.getWinner().getWrestler().getName();
-                          if (r.getShow() != null) r.getShow().getName();
+                          if (m.getWinner() != null) {
+                            m.getWinner().getWrestler().getName();
+                          }
+                          if (r.getShow() != null) {
+                            r.getShow().getName();
+                          }
                         }));
     return t;
   }
