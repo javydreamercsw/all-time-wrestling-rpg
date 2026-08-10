@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -34,11 +33,6 @@ public interface SeasonRepository
   Page<Season> findAllBy(Pageable pageable);
 
   Optional<Season> findByName(String name);
-
-  /** Find a season by ID with its shows pre-loaded (avoids LazyInitializationException). */
-  @EntityGraph(attributePaths = "shows")
-  @Query("SELECT s FROM Season s WHERE s.id = :id")
-  Optional<Season> findByIdWithShows(@Param("id") Long id);
 
   /** Find the currently active season. There should only be one active season at a time. */
   @Query("SELECT s FROM Season s WHERE s.isActive = true")

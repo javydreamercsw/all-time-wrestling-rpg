@@ -45,8 +45,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,37 +53,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Automated show-booking engine for ATW RPG. Generates a coherent segment card from active
- * rivalries, wrestler availability, and storyline heat — without requiring the booker to hand-place
- * every match.
- *
- * <p><b>Segment count constraint:</b> {@link #bookShow} enforces 3–10 segments. Requests outside
- * that range return {@link java.util.Optional#empty()}; the caller must handle this case.
- *
- * <p><b>Booking priority order within a show (highest priority fills slots first):</b>
- *
- * <ol>
- *   <li>High-heat rivalry segments ({@link #bookHighHeatRivalrySegments}) — heat ≥ 30 triggers
- *       extreme stipulations (Hell in a Cell, Buried Alive); heat ≥ 20 uses intense stipulations
- *       (Steel Cage, Iron Man); below 20 uses standard enhanced rules.
- *   <li>Standard rivalry segments ({@link #bookRivalrySegments}).
- *   <li>Multi-person segments ({@link #bookMultiPersonSegments}) — requires ≥ 3 available wrestlers
- *       not already booked.
- *   <li>Random singles segments ({@link #bookRandomSegments}) — filler when rivalries are
- *       exhausted.
- *   <li>Promos — injected by {@link PromoBookingService} to pad remaining slots.
- * </ol>
- *
- * <p>PPV booking ({@link #bookPPV}) skips the random-filler phase and concentrates on high-heat
- * rivalries and multi-person spectacle matches.
- *
- * <p><b>Known cross-function N+1:</b> each per-rivalry loop iteration in {@link
- * #bookHighHeatRivalrySegments}, {@link #bookRivalrySegments}, {@link #bookMultiPersonSegments},
- * and {@link #bookRandomSegments} delegates to {@link #bookSinglesSegment} or {@link
- * #bookMultiPersonSegment}, which each fire DB reads. Acceptable because the segment count is
- * bounded (3–10) and the whole operation runs inside a single {@code @Transactional} write. If
- * shows grow to 20+ segments, pre-fetch the needed {@code SegmentType} and {@code SegmentRule}
- * entities before the loop.
+ * Service for automated show booking in the ATW RPG system. Handles intelligent segment creation
+ * based on storylines, rivalries, and wrestler availability.
  */
 @Service
 @RequiredArgsConstructor
@@ -319,23 +288,12 @@ public class ShowBookingService {
     // Shuffle wrestlers for variety
     Collections.shuffle(availableWrestlers, random);
 
-    // Pre-fetch segment type once to avoid per-segment DB reads in the booking loops
-    Optional<SegmentType> oneOnOneType =
-        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
-    if (oneOnOneType.isEmpty()) {
-      log.warn("One on One segment type not found — show booking skipped");
-      return segments;
-    }
-
     // 1. Book rivalry segments first (high priority)
-    segments.addAll(
-        bookRivalrySegments(
-            show, availableWrestlers, Math.min(2, segmentCount / 2), oneOnOneType.get()));
+    segments.addAll(bookRivalrySegments(show, availableWrestlers, Math.min(2, segmentCount / 2)));
 
     // 2. Book random segments to fill remaining slots
     int remainingSegments = segmentCount - segments.size();
-    segments.addAll(
-        bookRandomSegments(show, availableWrestlers, remainingSegments, oneOnOneType.get()));
+    segments.addAll(bookRandomSegments(show, availableWrestlers, remainingSegments));
 
     return segments;
   }
@@ -358,43 +316,24 @@ public class ShowBookingService {
 
     Collections.shuffle(availableWrestlers, random);
 
-    // Pre-fetch segment types and rule names once to avoid per-segment and per-rivalry DB reads
-    Optional<SegmentType> oneOnOneType =
-        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
-    if (oneOnOneType.isEmpty()) {
-      log.warn("One on One segment type not found — PPV booking skipped");
-      return segments;
-    }
-    Optional<SegmentType> freeForAllType = segmentTypeRepository.findByName("Free-for-All");
-    Set<String> existingRuleNames =
-        segmentRuleService.findAll().stream().map(SegmentRule::getName).collect(Collectors.toSet());
-
     // 1. Book high-heat rivalry segments (60% of PPV segments)
     int rivalrySegments = Math.max(3, (segmentCount * 6) / 10);
-    segments.addAll(
-        bookHighHeatRivalrySegments(
-            show, availableWrestlers, rivalrySegments, oneOnOneType.get(), existingRuleNames));
+    segments.addAll(bookHighHeatRivalrySegments(show, availableWrestlers, rivalrySegments));
 
     // 2. Book multi-person segments for variety (20% of PPV segments)
     int multiPersonSegments = Math.max(1, segmentCount / 5);
-    segments.addAll(
-        bookMultiPersonSegments(
-            show, availableWrestlers, multiPersonSegments, freeForAllType, oneOnOneType.get()));
+    segments.addAll(bookMultiPersonSegments(show, availableWrestlers, multiPersonSegments));
 
     // 3. Fill remaining slots with singles segments
     int remainingSegments = segmentCount - segments.size();
-    segments.addAll(
-        bookRandomSegments(show, availableWrestlers, remainingSegments, oneOnOneType.get()));
+    segments.addAll(bookRandomSegments(show, availableWrestlers, remainingSegments));
 
     return segments;
   }
 
   /** Book segments based on active rivalries. */
   private List<Segment> bookRivalrySegments(
-      final Show show,
-      final List<Wrestler> availableWrestlers,
-      final int maxSegments,
-      final SegmentType oneOnOneType) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     List<Segment> segments = new ArrayList<>();
     List<Rivalry> activeRivalries = rivalryService.getActiveRivalries();
 
@@ -410,7 +349,7 @@ public class ShowBookingService {
       // Check if both wrestlers are available
       if (availableWrestlers.contains(wrestler1) && availableWrestlers.contains(wrestler2)) {
         Optional<Segment> segment =
-            bookSinglesSegment(show, wrestler1, wrestler2, "Rivalry Segment", oneOnOneType);
+            bookSinglesSegment(show, wrestler1, wrestler2, "Rivalry Segment");
         if (segment.isPresent()) {
           segments.add(segment.get());
           availableWrestlers.remove(wrestler1);
@@ -431,11 +370,7 @@ public class ShowBookingService {
 
   /** Book high-heat rivalry segments for PPVs. */
   private List<Segment> bookHighHeatRivalrySegments(
-      final Show show,
-      final List<Wrestler> availableWrestlers,
-      final int maxSegments,
-      final SegmentType oneOnOneType,
-      final Set<String> existingRuleNames) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     List<Segment> segments = new ArrayList<>();
     List<Rivalry> highHeatRivalries =
         rivalryService.getActiveRivalries().stream()
@@ -453,9 +388,8 @@ public class ShowBookingService {
 
       if (availableWrestlers.contains(wrestler1) && availableWrestlers.contains(wrestler2)) {
         // Use special stipulations for high-heat segments
-        String stipulation = getHighHeatStipulation(rivalry.getHeat(), existingRuleNames);
-        Optional<Segment> segment =
-            bookSinglesSegment(show, wrestler1, wrestler2, stipulation, oneOnOneType);
+        String stipulation = getHighHeatStipulation(rivalry.getHeat());
+        Optional<Segment> segment = bookSinglesSegment(show, wrestler1, wrestler2, stipulation);
         if (segment.isPresent()) {
           segments.add(segment.get());
           availableWrestlers.remove(wrestler1);
@@ -477,11 +411,7 @@ public class ShowBookingService {
 
   /** Book multi-person segments for variety. */
   private List<Segment> bookMultiPersonSegments(
-      final Show show,
-      final List<Wrestler> availableWrestlers,
-      final int maxSegments,
-      final Optional<SegmentType> freeForAllType,
-      final SegmentType oneOnOneType) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     List<Segment> segments = new ArrayList<>();
 
     for (int i = 0; i < maxSegments && availableWrestlers.size() >= 3; i++) {
@@ -496,8 +426,7 @@ public class ShowBookingService {
         participants.add(availableWrestlers.remove(0));
       }
 
-      Optional<Segment> segment =
-          bookMultiPersonSegment(show, participants, freeForAllType, oneOnOneType);
+      Optional<Segment> segment = bookMultiPersonSegment(show, participants);
       if (segment.isPresent()) {
         segments.add(segment.get());
         log.info("Booked multi-person segment with {} wrestlers", participantCount);
@@ -509,18 +438,14 @@ public class ShowBookingService {
 
   /** Book random segments to fill show slots. */
   private List<Segment> bookRandomSegments(
-      final Show show,
-      final List<Wrestler> availableWrestlers,
-      final int maxSegments,
-      final SegmentType oneOnOneType) {
+      final Show show, final List<Wrestler> availableWrestlers, final int maxSegments) {
     List<Segment> segments = new ArrayList<>();
 
     for (int i = 0; i < maxSegments && availableWrestlers.size() >= 2; i++) {
       Wrestler wrestler1 = availableWrestlers.remove(0);
       Wrestler wrestler2 = availableWrestlers.remove(0);
 
-      Optional<Segment> segment =
-          bookSinglesSegment(show, wrestler1, wrestler2, "Standard Match", oneOnOneType);
+      Optional<Segment> segment = bookSinglesSegment(show, wrestler1, wrestler2, "Standard Match");
       if (segment.isPresent()) {
         segments.add(segment.get());
         log.debug("Booked random segment: {} vs {}", wrestler1.getName(), wrestler2.getName());
@@ -571,9 +496,16 @@ public class ShowBookingService {
       final Show show,
       final Wrestler wrestler1,
       final Wrestler wrestler2,
-      final String stipulation,
-      final SegmentType oneOnOneType) {
+      final String stipulation) {
     try {
+      // Get one-on-one segment type from database
+      Optional<SegmentType> segmentTypeOpt =
+          segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+      if (segmentTypeOpt.isEmpty()) {
+        log.debug("One on One segment type not found in database");
+        return Optional.empty();
+      }
+
       // Create teams
       SegmentTeam team1 = new SegmentTeam(wrestler1);
       SegmentTeam team2 = new SegmentTeam(wrestler2);
@@ -581,7 +513,7 @@ public class ShowBookingService {
       // Resolve the segment
       Segment result =
           npcSegmentResolutionService.resolveTeamSegment(
-              team1, team2, oneOnOneType, show, stipulation);
+              team1, team2, segmentTypeOpt.get(), show, stipulation);
 
       return Optional.of(result);
 
@@ -593,16 +525,22 @@ public class ShowBookingService {
 
   /** Book a multi-person segment. */
   private Optional<Segment> bookMultiPersonSegment(
-      final Show show,
-      final List<Wrestler> participants,
-      final Optional<SegmentType> freeForAllType,
-      final SegmentType oneOnOneType) {
+      final Show show, final List<Wrestler> participants) {
     try {
       if (participants.size() < 3) {
         return Optional.empty();
       }
 
-      SegmentType resolved = freeForAllType.orElse(oneOnOneType);
+      // Get appropriate segment type from database
+      Optional<SegmentType> segmentTypeOpt = segmentTypeRepository.findByName("Free-for-All");
+      if (segmentTypeOpt.isEmpty()) {
+        // Fallback to One on One if specific type not found
+        segmentTypeOpt = segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+        if (segmentTypeOpt.isEmpty()) {
+          log.debug("No suitable segment type found for multi-person segment");
+          return Optional.empty();
+        }
+      }
 
       // Create teams (each wrestler is their own team)
       List<SegmentTeam> teams = participants.stream().map(SegmentTeam::new).toList();
@@ -610,7 +548,7 @@ public class ShowBookingService {
       // Resolve the segment
       Segment result =
           npcSegmentResolutionService.resolveMultiTeamSegment(
-              teams, resolved, show, "Free-for-All Segment");
+              teams, segmentTypeOpt.get(), show, "Free-for-All Segment");
 
       return Optional.of(result);
 
@@ -621,7 +559,7 @@ public class ShowBookingService {
   }
 
   /** Get appropriate rule for high-heat rivalries using database-driven rule selection. */
-  private String getHighHeatStipulation(final int heat, final Set<String> existingRuleNames) {
+  private String getHighHeatStipulation(final int heat) {
     List<String> availableStipulations = new ArrayList<>();
 
     if (heat >= 30) {
@@ -635,8 +573,7 @@ public class ShowBookingService {
                   "I Quit Segment",
                   "Hardcore Segment",
                   "Buried Alive Segment",
-                  "Inferno Segment"),
-              existingRuleNames));
+                  "Inferno Segment")));
     } else if (heat >= 20) {
       // High heat - get intense stipulations from database
       availableStipulations.addAll(
@@ -648,15 +585,13 @@ public class ShowBookingService {
                   "Submission Segment",
                   "Iron Man Segment",
                   "Ladder Segment",
-                  "Tables Segment"),
-              existingRuleNames));
+                  "Tables Segment")));
     } else {
       // Medium heat - get standard enhanced segments from database
       availableStipulations.addAll(
           getStipulationsByNames(
               List.of(
-                  "No Count Out", "No Disqualification", "Submission Segment", "Chairs Segment"),
-              existingRuleNames));
+                  "No Count Out", "No Disqualification", "Submission Segment", "Chairs Segment")));
     }
 
     // If no specific stipulations found, fall back to high heat rules from database
@@ -674,9 +609,8 @@ public class ShowBookingService {
   }
 
   /** Get rule names from database, filtering out non-existent ones. */
-  private List<String> getStipulationsByNames(
-      final List<String> requestedNames, final Set<String> existingRuleNames) {
-    return requestedNames.stream().filter(existingRuleNames::contains).toList();
+  private List<String> getStipulationsByNames(final List<String> requestedNames) {
+    return requestedNames.stream().filter(name -> segmentRuleService.existsByName(name)).toList();
   }
 
   /** Get all segments for a specific show. */

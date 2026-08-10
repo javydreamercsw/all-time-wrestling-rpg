@@ -150,7 +150,4 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
 
   @Query("SELECT COUNT(DISTINCT s) FROM Show s JOIN s.segments seg")
   long countShowsWithAtLeastOneSegment();
-
-  List<Show> findByUniverseAndQualityScoreIsNotNullOrderByShowDateDesc(
-      Universe universe, Pageable pageable);
 }

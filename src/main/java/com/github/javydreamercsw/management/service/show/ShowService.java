@@ -87,7 +87,6 @@ public class ShowService {
   private final SecurityUtils securityUtils;
   private final ArenaRepository arenaRepository;
   private final GmModeService gmModeService;
-  private final ShowQualityService showQualityService;
 
   ShowService(
       final CampaignRepository campaignRepository,
@@ -109,8 +108,7 @@ public class ShowService {
       final LegacyService legacyService,
       final SecurityUtils securityUtils,
       final ArenaRepository arenaRepository,
-      final GmModeService gmModeService,
-      final ShowQualityService showQualityService) {
+      final GmModeService gmModeService) {
     this.campaignRepository = campaignRepository;
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
@@ -131,7 +129,6 @@ public class ShowService {
     this.securityUtils = securityUtils;
     this.arenaRepository = arenaRepository;
     this.gmModeService = gmModeService;
-    this.showQualityService = showQualityService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -548,11 +545,6 @@ public class ShowService {
               segmentRepository.save(segment);
             });
 
-    // All segments are now ADJUDICATED — compute attendance and quality score.
-    // finalizeShowIfComplete must be called here (not from inside adjudicateMatch) because
-    // the adjudicationStatus is set to ADJUDICATED after adjudicateMatch returns.
-    finalizeShowIfComplete(show);
-
     // Campaign universes handle healing exclusively through BackstageActionService (RECOVERY).
     boolean isCampaignUniverse =
         show.getUniverse() != null && campaignRepository.existsByUniverse(show.getUniverse());
@@ -689,12 +681,7 @@ public class ShowService {
 
     show.setAttendance(finalAttendance);
     show.setGateRevenue(gateRevenue);
-    double qualityScore = showQualityService.computeAndPersist(show, segments);
     Show saved = showRepository.save(show);
-    showQualityService.awardFanBonusesIfEligible(saved, segments, qualityScore);
-    eventPublisher.publishEvent(
-        new com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent(
-            this, saved, segments));
 
     // Credit gate revenue to league budget (GM mode only)
     if (show.getLeague() != null) {

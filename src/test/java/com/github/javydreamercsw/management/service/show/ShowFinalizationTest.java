@@ -91,7 +91,6 @@ class ShowFinalizationTest {
   @Mock private GmModeService gmModeService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private CampaignRepository campaignRepository;
-  @Mock private ShowQualityService showQualityService;
 
   private ShowService showService;
 
@@ -118,8 +117,7 @@ class ShowFinalizationTest {
             legacyService,
             securityUtils,
             arenaRepository,
-            gmModeService,
-            showQualityService);
+            gmModeService);
 
     when(showRepository.save(any(Show.class))).thenAnswer(inv -> inv.getArgument(0));
   }

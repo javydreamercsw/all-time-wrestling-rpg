@@ -33,7 +33,6 @@ public class ChallengeContentManifest {
   public static class ChallengePackage {
     private String id;
     private String jsonUrl;
-    private String achievementsUrl;
     private List<ImageEntry> images = List.of();
   }
 

@@ -792,19 +792,5 @@
     "description": "Browse official and custom weekly challenges. Filter by official status or required expansions and open any challenge for full setup instructions, conditions, and modifiers.",
     "imagePath": "screenshots/mechanic-weekly-challenges.png",
     "order": 0
-  }, {
-    "id": "booker-booker-season-list",
-    "category": "Booker",
-    "title": "Season List",
-    "description": "Browse all seasons with their status, show count, and date range. Click 'Details' on any season to open its full detail page, including the awards ceremony results.",
-    "imagePath": "screenshots/booker-season-list.png",
-    "order": 0
-  }, {
-    "id": "booker-booker-season-detail",
-    "category": "Booker",
-    "title": "Season Detail",
-    "description": "Full season breakdown showing key stats (status, show count, duration) and the Awards Ceremony section listing Wrestler of the Year, Most Improved, and Most Decorated winners.",
-    "imagePath": "screenshots/booker-season-detail.png",
-    "order": 0
   } ]
 }

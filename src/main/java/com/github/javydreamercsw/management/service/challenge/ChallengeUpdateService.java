@@ -16,10 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.challenge;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.base.domain.account.Achievement;
-import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -29,8 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +45,6 @@ public class ChallengeUpdateService {
   private String manifestUrl;
 
   private final ChallengeService challengeService;
-  private final AchievementRepository achievementRepository;
   private final ObjectMapper objectMapper;
 
   @Getter private Instant lastChecked;
@@ -114,10 +108,6 @@ public class ChallengeUpdateService {
           }
         }
       }
-
-      if (pkg.getAchievementsUrl() != null && !pkg.getAchievementsUrl().isBlank()) {
-        applyAchievements(pkg.getAchievementsUrl());
-      }
     }
 
     lastChecked = Instant.now();
@@ -127,35 +117,6 @@ public class ChallengeUpdateService {
 
     String msg = downloaded > 0 ? downloaded + " package(s) updated." : "Already up to date.";
     return new UpdateResult(downloaded, skipped, msg);
-  }
-
-  private void applyAchievements(final String url) {
-    byte[] bytes = fetchBytes(url);
-    if (bytes == null) {
-      log.warn("Could not download achievements from {}", url);
-      return;
-    }
-    try {
-      List<Achievement> incoming = objectMapper.readValue(bytes, new TypeReference<>() {});
-      List<Achievement> toSave = new ArrayList<>();
-      for (Achievement a : incoming) {
-        achievementRepository
-            .findByKey(a.getKey())
-            .ifPresentOrElse(
-                existing -> {
-                  existing.setName(a.getName());
-                  existing.setDescription(a.getDescription());
-                  existing.setXpValue(a.getXpValue());
-                  existing.setCategory(a.getCategory());
-                  toSave.add(existing);
-                },
-                () -> toSave.add(a));
-      }
-      achievementRepository.saveAll(toSave);
-      log.debug("Applied {} achievement(s) from {}", toSave.size(), url);
-    } catch (Exception e) {
-      log.error("Error applying achievements from {}", url, e);
-    }
   }
 
   private ChallengeContentManifest fetchManifest() {

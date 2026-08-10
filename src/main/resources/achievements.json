@@ -55,7 +55,7 @@
 }, {
   "key": "FIVE_STAR_CLASSIC",
   "name": "5-Star Classic",
-  "description": "Book a match with a perfect segment score of 100",
+  "description": "Book a match with a perfect 5-star rating",
   "xpValue": 1000,
   "category": "BOOKING"
 }, {
@@ -69,84 +69,6 @@
   "name": "Brightest Lights",
   "description": "Main event a Premium Live Event",
   "xpValue": 500,
-  "category": "BOOKING"
-}, {
-  "key": "SEGMENT_QUALITY_GOOD",
-  "name": "Match of the Night",
-  "description": "Book a segment with a quality score of 70 or higher",
-  "xpValue": 200,
-  "category": "BOOKING"
-}, {
-  "key": "SEGMENT_QUALITY_GREAT",
-  "name": "Showstopper",
-  "description": "Book a segment with a quality score of 85 or higher",
-  "xpValue": 500,
-  "category": "BOOKING"
-}, {
-  "key": "SEGMENT_QUALITY_TITLE_CLASSIC",
-  "name": "Championship Classic",
-  "description": "Book a title match with a quality score of 80 or higher",
-  "xpValue": 400,
-  "category": "BOOKING"
-}, {
-  "key": "SHOW_QUALITY_SOLID",
-  "name": "Solid Card",
-  "description": "Book a show rated 2.5 stars or higher",
-  "xpValue": 100,
-  "category": "BOOKING"
-}, {
-  "key": "SHOW_QUALITY_GOOD",
-  "name": "Worth the Price of Admission",
-  "description": "Book a show rated 3.5 stars or higher",
-  "xpValue": 300,
-  "category": "BOOKING"
-}, {
-  "key": "SHOW_QUALITY_GREAT",
-  "name": "Standing Ovation",
-  "description": "Book a show rated 4.0 stars or higher",
-  "xpValue": 750,
-  "category": "BOOKING"
-}, {
-  "key": "SHOW_QUALITY_ELITE",
-  "name": "Masterpiece",
-  "description": "Book a perfect 5-star show",
-  "xpValue": 2000,
-  "category": "BOOKING"
-}, {
-  "key": "TV_GOLD",
-  "name": "TV Gold",
-  "description": "Book a segment rated 75 or higher on a weekly show",
-  "xpValue": 250,
-  "category": "BOOKING"
-}, {
-  "key": "PLE_SHOWSTOPPER",
-  "name": "Event of the Year Candidate",
-  "description": "Book a segment rated 90 or higher on a Premium Live Event",
-  "xpValue": 750,
-  "category": "BOOKING"
-}, {
-  "key": "STIPULATION_SPECIALIST",
-  "name": "Rules of Engagement",
-  "description": "Book a match with a stipulation rated 75 or higher",
-  "xpValue": 300,
-  "category": "BOOKING"
-}, {
-  "key": "MAIN_EVENT_CLASSIC",
-  "name": "Saved the Best for Last",
-  "description": "Book a main event segment rated 85 or higher",
-  "xpValue": 600,
-  "category": "BOOKING"
-}, {
-  "key": "QUALITY_STREAK_3",
-  "name": "On a Roll",
-  "description": "Book three consecutive shows rated 3.5 stars or higher",
-  "xpValue": 500,
-  "category": "BOOKING"
-}, {
-  "key": "QUALITY_STREAK_5",
-  "name": "Consistent Excellence",
-  "description": "Book five consecutive shows rated 3.5 stars or higher",
-  "xpValue": 1500,
   "category": "BOOKING"
 }, {
   "key": "RUMBLE_WINNER",
@@ -398,12 +320,6 @@
   "key": "CHALLENGE_WEEK_03",
   "name": "Deathmatch King",
   "description": "Completed the \"All Time King!!!\" Barbwire Exploding Gauntlet as Matt Cardona",
-  "xpValue": 100,
-  "category": "CHALLENGE"
-}, {
-  "key": "CHALLENGE_WEEK_04",
-  "name": "Timber!!!",
-  "description": "Completed the \"Timber!!!\" challenge by putting André the Giant through a table as Randy Savage",
   "xpValue": 100,
   "category": "CHALLENGE"
 }, {

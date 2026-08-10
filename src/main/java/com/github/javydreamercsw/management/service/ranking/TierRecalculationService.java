@@ -37,29 +37,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Recalculates wrestler tier boundaries and individual tiers based on the live fan distribution.
- *
- * <p><b>Why percentile-based, not fixed fan thresholds:</b> {@link WrestlerTier} defines absolute
- * fan ranges as a fallback, but active universes use relative percentile boundaries stored in
- * {@link com.github.javydreamercsw.base.domain.wrestler.TierBoundary}. This keeps tiers meaningful
- * regardless of whether a universe has 5 wrestlers or 500. Percentiles are configured via {@code
- * atw.ranking.tier-distribution.*}; defaults target roughly 5% ICON, 10% MAIN_EVENTER, 20%
- * MIDCARDER, 25% CONTENDER, 25% RISER, remainder ROOKIE.
- *
- * <p><b>Per-gender calculation:</b> tiers are computed independently for each {@link
- * com.github.javydreamercsw.base.domain.wrestler.Gender}. A small-roster universe always gets at
- * least one ICON and one MAIN_EVENTER per gender (see guard logic in {@link #recalculateRanking}).
- *
- * <p><b>Fallback:</b> when no calculated {@code TierBoundary} exists for a wrestler's fan count,
- * {@link #calculateTier} falls back to the absolute ranges in {@code WrestlerTier.fromFanCount()}.
- *
- * <p><b>Known N+1 in {@link #recalculateRanking}:</b> {@code tierBoundaryService.save()} fires once
- * per tier per gender (≤12 writes per recalculation — 6 tiers × 2 genders), and {@code
- * wrestlerStateRepository.save()} fires once per wrestler whose tier changed. Both loops are
- * bounded and recalculation runs infrequently (scheduler-driven). If wrestler counts grow into the
- * thousands, batch the state saves with {@code saveAll}.
- */
 @Service
 @Transactional
 @Slf4j

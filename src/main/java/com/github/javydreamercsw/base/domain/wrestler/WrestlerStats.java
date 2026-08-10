@@ -27,9 +27,4 @@ public class WrestlerStats {
   private long wins;
   private long losses;
   private long titlesHeld;
-
-  public double getWinRate() {
-    long total = wins + losses;
-    return total == 0 ? 0.0 : (double) wins / total * 100.0;
-  }
 }

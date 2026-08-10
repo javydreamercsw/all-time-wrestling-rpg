@@ -699,9 +699,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
                 By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
     Assertions.assertNotNull(cells);
     Assertions.assertEquals(
-        27,
-        cells.size()); // 13 headers, 1 row (drag handle col has empty header; icon in data cell);
-    // +Score column added
+        25,
+        cells.size()); // 12 headers, 1 row (drag handle col has empty header; icon in data cell)
   }
 
   @Test
