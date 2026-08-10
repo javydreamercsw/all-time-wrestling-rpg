@@ -19,7 +19,7 @@ doing a simple exact-string sanity check after Repowise already pointed you at a
 
 ## Codebase Intelligence for all-time-wrestling-rpg (Repowise)
 
-Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-08-09 (commit 1a719e568). Confidence: 100%.
+Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-08-10 (commit 85f97a24e). Confidence: 100%.
 The MCP tools below serve pre-verified docs, symbols, history, and health from that index. Every response carries `_meta` freshness fields; a `stale_warning` appears only when a file the response actually serves changed after indexing — silence means current.
 
 ### How to work in this repo
@@ -83,9 +83,7 @@ repo is a comprehensive wrestling promotion management platform that consumes us
 
 ### Code health
 
-Three co-equal signals: defect risk 8.18/10 avg, hotspot health 5.44/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` at 1.0/10 · maintainability 8.83/10 · performance risk 267 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
-
-Three co-equal signals: defect risk 8.19/10 avg, hotspot health 5.45/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/DataInitializer.java` at 1.0/10 · maintainability 8.83/10 · performance risk 267 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
+Three co-equal signals: defect risk 8.25/10 avg, hotspot health 5.59/10 (stable), worst `src/main/java/com/github/javydreamercsw/management/service/campaign/CampaignChapterService.java` at 1.0/10 · maintainability 8.86/10 · performance risk 272 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
 
 Critical files:
 - `src/main/java/com/github/javydreamercsw/management/service/campaign/PlaceholderResolverService.java` — change entropy — impact −3.0
