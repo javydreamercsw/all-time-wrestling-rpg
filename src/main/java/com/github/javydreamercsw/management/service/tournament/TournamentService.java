@@ -97,6 +97,29 @@ public class TournamentService {
     return tournamentRepository.findById(id);
   }
 
+  /** Like {@link #findById} but initializes all lazy collections for use outside a transaction. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Tournament> findByIdWithDetails(Long id) {
+    return tournamentRepository.findById(id).map(this::initializeGraph);
+  }
+
+  private Tournament initializeGraph(Tournament t) {
+    t.getEntries().forEach(e -> e.getWrestler().getName());
+    t.getRounds()
+        .forEach(
+            r ->
+                r.getMatches()
+                    .forEach(
+                        m -> {
+                          m.getEntrant1().getWrestler().getName();
+                          m.getEntrant2().getWrestler().getName();
+                          if (m.getWinner() != null) m.getWinner().getWrestler().getName();
+                          if (r.getShow() != null) r.getShow().getName();
+                        }));
+    return t;
+  }
+
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Tournament createTournament(

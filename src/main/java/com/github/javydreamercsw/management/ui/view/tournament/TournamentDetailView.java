@@ -88,7 +88,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     }
     try {
       long id = Long.parseLong(idStr);
-      tournament = tournamentService.findById(id).orElse(null);
+      tournament = tournamentService.findByIdWithDetails(id).orElse(null);
       if (tournament == null) {
         event.forwardTo("tournament-list");
         return;
@@ -240,7 +240,8 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
                 }
                 try {
                   tournamentService.recordMatchResult(match, selected);
-                  tournament = tournamentService.findById(tournament.getId()).orElse(tournament);
+                  tournament =
+                      tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
                   buildContent();
                 } catch (Exception ex) {
                   log.error("Error recording match result", ex);
@@ -256,6 +257,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   private void startTournament() {
     try {
       tournament = tournamentService.startTournament(tournament);
+      tournament = tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
       buildContent();
       Notification.show("Tournament started!", 3000, Notification.Position.BOTTOM_CENTER)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -269,7 +271,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   private void advanceRound() {
     try {
       tournamentService.advanceToNextRound(tournament);
-      tournament = tournamentService.findById(tournament.getId()).orElse(tournament);
+      tournament = tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
       buildContent();
       Notification.show("Next round generated!", 3000, Notification.Position.BOTTOM_CENTER)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -312,7 +314,8 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
               try {
                 tournamentService.bookRoundOnShow(tournament, round, selected);
                 dialog.close();
-                tournament = tournamentService.findById(tournament.getId()).orElse(tournament);
+                tournament =
+                    tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
                 buildContent();
                 Notification.show(
                         "Round booked on " + selected.getName() + "!",
