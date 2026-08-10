@@ -28,6 +28,8 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.component.TournamentBracketComponent;
+import com.github.javydreamercsw.management.ui.component.TournamentEntityAdapter;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -104,8 +106,12 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     content.add(buildToolbar());
     content.add(buildInfo());
     content.add(buildEntrantsGrid());
-    for (TournamentRound round : tournament.getRounds()) {
-      content.add(buildRoundSection(round));
+
+    if (!tournament.getRounds().isEmpty()) {
+      content.add(buildBracketSection());
+      if (tournament.getStatus() == TournamentStatus.IN_PROGRESS) {
+        buildActiveMatchControls().ifPresent(content::add);
+      }
     }
   }
 
@@ -189,68 +195,83 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     return section;
   }
 
-  private VerticalLayout buildRoundSection(TournamentRound round) {
+  private VerticalLayout buildBracketSection() {
     VerticalLayout section = new VerticalLayout();
     section.setPadding(false);
+    section.add(new H4("Bracket"));
 
-    Span header =
-        new Span(
-            round.getRoundName()
-                + " ["
-                + round.getStatus().name()
-                + "]"
-                + (round.getShow() != null ? " — " + round.getShow().getName() : ""));
-    header.getStyle().set("font-weight", "bold");
-    section.add(header);
-
-    for (TournamentMatch match : round.getMatches()) {
-      section.add(buildMatchRow(match, round));
-    }
+    TournamentEntityAdapter model =
+        new TournamentEntityAdapter(tournament, tournamentService.getAvailableFormats());
+    section.add(new TournamentBracketComponent(model));
     return section;
   }
 
-  private HorizontalLayout buildMatchRow(TournamentMatch match, TournamentRound round) {
+  /**
+   * Returns the winner-recording controls for any in-progress round that has unresolved matches.
+   * Returns empty when there is nothing for the booker to act on.
+   */
+  private Optional<VerticalLayout> buildActiveMatchControls() {
+    Optional<TournamentRound> inProgressRound =
+        tournament.getRounds().stream()
+            .filter(r -> r.getStatus() == TournamentRoundStatus.IN_PROGRESS)
+            .findFirst();
+
+    if (inProgressRound.isEmpty()) {
+      return Optional.empty();
+    }
+
+    TournamentRound round = inProgressRound.get();
+    List<TournamentMatch> pending =
+        round.getMatches().stream().filter(m -> m.getWinner() == null).toList();
+
+    if (pending.isEmpty()) {
+      return Optional.empty();
+    }
+
+    VerticalLayout section = new VerticalLayout();
+    section.setPadding(false);
+    section.add(new H4("Record Results — " + round.getRoundName()));
+
+    for (TournamentMatch match : pending) {
+      section.add(buildRecordMatchRow(match));
+    }
+    return Optional.of(section);
+  }
+
+  private HorizontalLayout buildRecordMatchRow(TournamentMatch match) {
     HorizontalLayout row = new HorizontalLayout();
     row.setAlignItems(Alignment.CENTER);
 
     String e1 = match.getEntrant1().getWrestler().getName();
     String e2 = match.getEntrant2().getWrestler().getName();
+    row.add(new Span(e1 + " vs " + e2));
 
-    Span matchLabel = new Span(e1 + " vs " + e2);
-    row.add(matchLabel);
+    ComboBox<TournamentEntry> winnerPicker = new ComboBox<>("Pick winner");
+    winnerPicker.setItems(match.getEntrant1(), match.getEntrant2());
+    winnerPicker.setItemLabelGenerator(e -> e.getWrestler().getName());
 
-    if (match.getWinner() != null) {
-      Span winner = new Span("Winner: " + match.getWinner().getWrestler().getName());
-      winner.getStyle().set("color", "var(--lumo-success-color)");
-      row.add(winner);
-    } else if (round.getStatus() == TournamentRoundStatus.IN_PROGRESS
-        && tournament.getStatus() == TournamentStatus.IN_PROGRESS) {
-      ComboBox<TournamentEntry> winnerPicker = new ComboBox<>("Pick winner");
-      winnerPicker.setItems(match.getEntrant1(), match.getEntrant2());
-      winnerPicker.setItemLabelGenerator(e -> e.getWrestler().getName());
+    Button recordBtn =
+        new Button(
+            "Record",
+            e -> {
+              TournamentEntry selected = winnerPicker.getValue();
+              if (selected == null) {
+                Notification.show("Select a winner first.", 2000, Notification.Position.MIDDLE);
+                return;
+              }
+              try {
+                tournamentService.recordMatchResult(match, selected);
+                tournament =
+                    tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
+                buildContent();
+              } catch (Exception ex) {
+                log.error("Error recording match result", ex);
+                Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
 
-      Button recordBtn =
-          new Button(
-              "Record",
-              e -> {
-                TournamentEntry selected = winnerPicker.getValue();
-                if (selected == null) {
-                  Notification.show("Select a winner first.", 2000, Notification.Position.MIDDLE);
-                  return;
-                }
-                try {
-                  tournamentService.recordMatchResult(match, selected);
-                  tournament =
-                      tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
-                  buildContent();
-                } catch (Exception ex) {
-                  log.error("Error recording match result", ex);
-                  Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE)
-                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                }
-              });
-      row.add(winnerPicker, recordBtn);
-    }
+    row.add(winnerPicker, recordBtn);
     return row;
   }
 
@@ -296,7 +317,6 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
         s -> s.getName() + (s.getShowDate() != null ? " (" + s.getShowDate() + ")" : ""));
     showCombo.setWidthFull();
 
-    // Pre-select the next show
     if (!upcoming.isEmpty()) {
       showCombo.setValue(upcoming.get(0));
     }

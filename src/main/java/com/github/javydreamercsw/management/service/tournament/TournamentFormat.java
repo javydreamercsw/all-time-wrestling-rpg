@@ -56,4 +56,20 @@ public interface TournamentFormat {
 
   /** Returns true when all matches have a winner and the tournament champion is determined. */
   boolean isComplete(Tournament tournament);
+
+  /**
+   * How the bracket should be rendered in the UI. Defaults to {@link RenderMode#TREE} (single
+   * elimination bracket). Override for formats that display differently.
+   */
+  default RenderMode renderMode() {
+    return RenderMode.TREE;
+  }
+
+  /** Controls which visual layout {@code TournamentBracketComponent} uses. */
+  enum RenderMode {
+    /** Column-per-round bracket tree — suited for single elimination. */
+    TREE,
+    /** Round-robin results grid — all matchups visible at once. */
+    ROUND_ROBIN_GRID
+  }
 }

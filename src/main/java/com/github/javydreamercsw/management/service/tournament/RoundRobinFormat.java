@@ -106,4 +106,9 @@ public class RoundRobinFormat implements TournamentFormat {
     return tournament.getRounds().stream()
         .allMatch(r -> r.getStatus() == TournamentRoundStatus.COMPLETE);
   }
+
+  @Override
+  public RenderMode renderMode() {
+    return RenderMode.ROUND_ROBIN_GRID;
+  }
 }
