@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -300,11 +301,12 @@ public class ShowBookingService {
       @NonNull final String ppvName, @NonNull final String ppvDescription) {
     try {
       // Get PPV show type
-      Optional<ShowType> ppvTypeOpt = showTypeRepository.findByName("PPV");
+      Optional<ShowType> ppvTypeOpt = showTypeRepository.findFirstByCategory(ShowCategory.PLE);
       if (ppvTypeOpt.isEmpty()) {
         // Create PPV show type if it doesn't exist
         ShowType ppvType = new ShowType();
         ppvType.setName("PPV");
+        ppvType.setCategory(ShowCategory.PLE);
         ppvType.setDescription("Pay-Per-View special event");
         ppvType = showTypeRepository.saveAndFlush(ppvType);
         ppvTypeOpt = Optional.of(ppvType);

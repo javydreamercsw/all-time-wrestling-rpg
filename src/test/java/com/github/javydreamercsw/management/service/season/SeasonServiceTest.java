@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -84,10 +85,12 @@ class SeasonServiceTest {
     weeklyShowType = new ShowType();
     weeklyShowType.setName("Weekly");
     weeklyShowType.setDescription("Weekly show type");
+    weeklyShowType.setCategory(ShowCategory.WEEKLY);
 
     pleShowType = new ShowType();
     pleShowType.setName("Premium Live Event (PLE)");
     pleShowType.setDescription("Premium Live Event show type");
+    pleShowType.setCategory(ShowCategory.PLE);
   }
 
   @Test

@@ -397,6 +397,7 @@ class ShowQualityAchievementServiceTest {
   private com.github.javydreamercsw.management.domain.show.template.ShowTemplate makePleTemplate() {
     var showType = new com.github.javydreamercsw.management.domain.show.type.ShowType();
     showType.setName("Premium Live Event (PLE)");
+    showType.setCategory(com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE);
     var template = new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
     template.setShowType(showType);
     return template;

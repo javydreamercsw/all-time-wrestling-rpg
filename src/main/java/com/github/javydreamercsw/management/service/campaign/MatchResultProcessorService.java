@@ -40,6 +40,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -520,7 +521,7 @@ public class MatchResultProcessorService {
             () -> {
               ShowType weekly =
                   showTypeRepository
-                      .findByName("Weekly")
+                      .findFirstByCategory(ShowCategory.WEEKLY)
                       .orElseGet(
                           () -> {
                             var all = showTypeRepository.findAll();
@@ -529,6 +530,7 @@ public class MatchResultProcessorService {
                             }
                             ShowType st = new ShowType();
                             st.setName("Weekly");
+                            st.setCategory(ShowCategory.WEEKLY);
                             st.setDescription("Default Weekly Show");
                             return showTypeRepository.save(st);
                           });

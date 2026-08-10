@@ -60,7 +60,11 @@ public class ShowTypeSync implements DataSyncContributor {
         List<ShowType> dtos = objectMapper.readValue(is, new TypeReference<>() {});
         for (ShowType st : dtos) {
           showTypeService.createOrUpdateShowType(
-              st.getName(), st.getDescription(), st.getExpectedMatches(), st.getExpectedPromos());
+              st.getName(),
+              st.getDescription(),
+              st.getExpectedMatches(),
+              st.getExpectedPromos(),
+              st.getCategory());
         }
         log.debug("Show type loading completed - {} types loaded", dtos.size());
       } catch (IOException e) {

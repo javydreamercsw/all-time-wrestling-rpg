@@ -21,6 +21,8 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -61,6 +63,10 @@ public class ShowType extends AbstractEntity<Long> {
 
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "category", nullable = false)
+  private ShowCategory category = ShowCategory.OTHER;
 
   /** Ensure default values before persisting. */
   @PrePersist

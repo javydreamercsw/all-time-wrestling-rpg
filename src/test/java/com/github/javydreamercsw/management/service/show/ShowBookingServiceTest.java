@@ -154,7 +154,8 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
     Show ppv = result.get();
     assertThat(ppv.getName()).isEqualTo(ppvName);
     assertThat(ppv.getDescription()).isEqualTo(ppvDescription);
-    assertThat(ppv.getType().getName()).isEqualTo("PPV");
+    assertThat(ppv.getType().getCategory())
+        .isEqualTo(com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE);
 
     // Check segments and promos were created (PPVs should have multiple segments, may be fewer due
     // to wrestler availability)

@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.dto.SeasonEndedEvent;
@@ -312,11 +313,11 @@ public class SeasonService {
               int expectedPpvs = season.getExpectedPpvCount();
               long regularShows =
                   season.getShows().stream()
-                      .filter(show -> !show.getType().getName().toLowerCase().contains("ple"))
+                      .filter(show -> show.getType().getCategory() != ShowCategory.PLE)
                       .count();
               long ppvShows =
                   season.getShows().stream()
-                      .filter(show -> show.getType().getName().toLowerCase().contains("ple"))
+                      .filter(show -> show.getType().getCategory() == ShowCategory.PLE)
                       .count();
 
               return new SeasonStats(
