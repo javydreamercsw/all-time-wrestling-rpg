@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.show.BookingMode;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -107,6 +108,7 @@ public class ShowBookingService {
   private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
   private final ShowSegmentReservationService reservationService;
+  private final FactionWarBookingService factionWarBookingService;
   private final Clock clock;
   private final Random random;
 
@@ -133,7 +135,13 @@ public class ShowBookingService {
       final String templateName,
       final LocalDate showDate) {
     return bookShowInternal(
-        showName, showDescription, showTypeName, segmentCount, templateName, showDate);
+        showName,
+        showDescription,
+        showTypeName,
+        segmentCount,
+        templateName,
+        showDate,
+        BookingMode.STANDARD);
   }
 
   /**
@@ -154,7 +162,42 @@ public class ShowBookingService {
       @NonNull final String showDescription,
       @NonNull final String showTypeName,
       final int segmentCount) {
-    return bookShowInternal(showName, showDescription, showTypeName, segmentCount, null, null);
+    return bookShowInternal(
+        showName, showDescription, showTypeName, segmentCount, null, null, BookingMode.STANDARD);
+  }
+
+  /**
+   * Book a Faction War show. Segments are generated from active faction-vs-faction rivalries and
+   * feuds instead of the standard individual-rivalry pipeline. The show type can be any valid type
+   * (e.g. "Premium Live Event (PLE)"); {@link BookingMode#FACTION_WAR} is recorded on the show.
+   *
+   * @param showName Name of the show
+   * @param showDescription Description of the show
+   * @param showTypeName Type of show (e.g., "Premium Live Event (PLE)")
+   * @param segmentCount Number of segments to book (3–10)
+   * @param templateName Optional show template name
+   * @param showDate Optional show date
+   * @return The booked show with faction-war segments
+   */
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
+  public Optional<Show> bookFactionWarShow(
+      @NonNull final String showName,
+      @NonNull final String showDescription,
+      @NonNull final String showTypeName,
+      final int segmentCount,
+      final String templateName,
+      final LocalDate showDate) {
+    return bookShowInternal(
+        showName,
+        showDescription,
+        showTypeName,
+        segmentCount,
+        templateName,
+        showDate,
+        BookingMode.FACTION_WAR);
   }
 
   /** Internal method to book a show with all parameters. */
@@ -164,7 +207,8 @@ public class ShowBookingService {
       @NonNull final String showTypeName,
       final int segmentCount,
       final String templateName,
-      final LocalDate showDate) {
+      final LocalDate showDate,
+      @NonNull final BookingMode bookingMode) {
     try {
       // Validate inputs
       if (segmentCount < 3 || segmentCount > 10) {
@@ -202,6 +246,7 @@ public class ShowBookingService {
       Show show = new Show();
       show.setName(showName);
       show.setDescription(showDescription);
+      show.setBookingMode(bookingMode);
       show.setType(showTypeOpt.get());
       show.setTemplate(template);
       show.setShowDate(showDate);
@@ -217,7 +262,10 @@ public class ShowBookingService {
       seasonService.addShowToActiveSeason(savedShow);
 
       // Generate segments and promos for the show
-      List<Segment> segments = generateSegmentsForShow(savedShow, segmentCount);
+      List<Segment> segments =
+          bookingMode == BookingMode.FACTION_WAR
+              ? factionWarBookingService.generateFactionWarSegments(savedShow, segmentCount)
+              : generateSegmentsForShow(savedShow, segmentCount);
       List<Segment> promos = generatePromosForShow(savedShow, segmentCount);
 
       // Manually add to collection since they were saved in different transactions

@@ -1,0 +1,2 @@
+ALTER TABLE wrestling_show
+    ADD COLUMN booking_mode VARCHAR(50) NOT NULL DEFAULT 'STANDARD';
