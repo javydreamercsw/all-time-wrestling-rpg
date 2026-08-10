@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
+import com.github.javydreamercsw.management.domain.feud.FeudParticipant;
+import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -167,6 +169,89 @@ class FactionWarBookingServiceTest {
     List<Segment> result = service.generateFactionWarSegments(show, 5);
 
     assertThat(result).contains(resolved);
+  }
+
+  @Test
+  void generateFactionWarSegments_booksFromInterFactionFeud() {
+    Wrestler w1 = wrestler(1L, "Feud W1");
+    Wrestler w2 = wrestler(2L, "Feud W2");
+
+    FeudParticipant p1 = new FeudParticipant();
+    p1.setWrestler(w1);
+    p1.setIsActive(true);
+    FeudParticipant p2 = new FeudParticipant();
+    p2.setWrestler(w2);
+    p2.setIsActive(true);
+
+    MultiWrestlerFeud feud = new MultiWrestlerFeud();
+    feud.setName("Alpha vs Beta Feud");
+    feud.setParticipants(List.of(p1, p2));
+
+    when(multiWrestlerFeudService.getInterFactionFeuds()).thenReturn(List.of(feud));
+    Segment resolved = new Segment();
+    when(npcSegmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(oneOnOne), eq(show), any()))
+        .thenReturn(resolved);
+
+    List<Segment> result = service.generateFactionWarSegments(show, 5);
+
+    assertThat(result).contains(resolved);
+  }
+
+  @Test
+  void generateFactionWarSegments_skipsRivalryWithInactiveFaction() {
+    Wrestler leader1 = wrestler(1L, "Leader A");
+    Faction f1 = faction(1L, "Active", leader1, Set.of(state(leader1)));
+    Faction f2 =
+        Faction.builder()
+            .id(2L)
+            .name("Inactive")
+            .isActive(false)
+            .formedDate(Instant.now())
+            .members(new HashSet<>())
+            .build();
+    FactionRivalry rivalry = rivalry(f1, f2, 10);
+
+    when(factionRivalryService.getActiveFactionRivalries()).thenReturn(List.of(rivalry));
+
+    List<Segment> result = service.generateFactionWarSegments(show, 5);
+
+    assertThat(result).isEmpty();
+    verify(npcSegmentResolutionService, never())
+        .resolveTeamSegment(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void generateFactionWarSegments_skipsRivalryWhenFactionHasNoBookableMembers() {
+    Faction emptyFaction = faction(1L, "Empty", null, Set.of());
+    Wrestler leader2 = wrestler(2L, "Leader B");
+    Faction f2 = faction(2L, "Beta", leader2, Set.of(state(leader2)));
+    FactionRivalry rivalry = rivalry(emptyFaction, f2, 10);
+
+    when(factionRivalryService.getActiveFactionRivalries()).thenReturn(List.of(rivalry));
+
+    List<Segment> result = service.generateFactionWarSegments(show, 5);
+
+    assertThat(result).isEmpty();
+    verify(npcSegmentResolutionService, never())
+        .resolveTeamSegment(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void generateFactionWarSegments_handlesExceptionInSegmentResolution() {
+    Wrestler leader1 = wrestler(1L, "Leader Alpha");
+    Wrestler leader2 = wrestler(2L, "Leader Beta");
+    Faction f1 = faction(1L, "Alpha", leader1, Set.of(state(leader1)));
+    Faction f2 = faction(2L, "Beta", leader2, Set.of(state(leader2)));
+    FactionRivalry rivalry = rivalry(f1, f2, 10);
+
+    when(factionRivalryService.getActiveFactionRivalries()).thenReturn(List.of(rivalry));
+    when(npcSegmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), any()))
+        .thenThrow(new RuntimeException("Segment resolution failed"));
+
+    List<Segment> result = service.generateFactionWarSegments(show, 5);
+
+    assertThat(result).isEmpty();
   }
 
   // ==================== BUILDER HELPERS ====================
