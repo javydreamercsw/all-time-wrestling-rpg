@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show;
 
+import com.github.javydreamercsw.management.service.season.SeasonAwardsService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
@@ -34,6 +35,7 @@ public class ShowContextFacade {
 
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
+  private final SeasonAwardsService seasonAwardsService;
   private final ShowTemplateService showTemplateService;
   private final ShowPlanningService showPlanningService;
   private final ShowPlanningAiService showPlanningAiService;
