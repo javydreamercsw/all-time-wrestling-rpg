@@ -122,7 +122,7 @@ class RoundRobinFormatTest {
     Tournament t = new Tournament();
     t.setFormatId("ROUND_ROBIN");
     List<TournamentEntry> entries = new ArrayList<>();
-    for (int i = 1; i <= count; i++) {
+    for (int i = 1; i < count + 1; i++) {
       Wrestler w = new Wrestler();
       w.setName("W" + i);
       entries.add(TournamentEntry.builder().wrestler(w).seed(i).build());

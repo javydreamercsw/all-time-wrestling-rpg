@@ -168,7 +168,7 @@ class SingleEliminationFormatTest {
     Tournament t = new Tournament();
     t.setFormatId("SINGLE_ELIMINATION");
     List<TournamentEntry> entries = new ArrayList<>();
-    for (int i = 1; i <= 8; i++) {
+    for (int i = 1; i < 8 + 1; i++) {
       entries.add(entry(i));
     }
     t.setEntries(entries);
