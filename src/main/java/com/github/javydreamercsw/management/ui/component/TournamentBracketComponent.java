@@ -62,7 +62,7 @@ public class TournamentBracketComponent extends HorizontalLayout {
       totalRounds = 4;
     }
 
-    for (int i = 1; i <= totalRounds; i++) {
+    for (int i = 1; i < totalRounds + 1; i++) {
       addTreeRound(model, i, roundLabel(i, totalRounds), totalRounds);
     }
     addWinner(model, totalRounds);

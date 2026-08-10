@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat.RenderMode;
 import java.util.List;
 import java.util.Optional;
+import lombok.Getter;
 
 /**
  * Bridges the domain {@link Tournament} entity (already graph-initialized via {@code
@@ -31,7 +32,7 @@ import java.util.Optional;
 public class TournamentEntityAdapter implements TournamentBracketModel {
 
   private final Tournament tournament;
-  private final RenderMode renderMode;
+  @Getter private final RenderMode renderMode;
 
   public TournamentEntityAdapter(Tournament tournament, List<TournamentFormat> formats) {
     this.tournament = tournament;
@@ -62,11 +63,6 @@ public class TournamentEntityAdapter implements TournamentBracketModel {
                 .mapToInt(r -> r.getRoundNumber())
                 .max()
                 .orElse(1));
-  }
-
-  @Override
-  public RenderMode getRenderMode() {
-    return renderMode;
   }
 
   @Override
