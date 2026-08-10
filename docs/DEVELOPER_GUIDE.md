@@ -119,3 +119,92 @@ Always use these `SecurityUtils` methods to control the visibility of UI compone
 
 The solo campaign uses dynamic scripting for ability cards (Ally, Valet, Face/Heel cards). For a detailed guide on available methods and script syntax, refer to the [Campaign Scripting Guide](CAMPAIGN_SCRIPTING.md).
 
+## Tournament Format System
+
+The tournament engine is built around the **Strategy + Adapter** pattern. This section explains how it works and how to add a new format.
+
+### Architecture
+
+```
+TournamentFormat (interface)          ← strategy: one @Component per format
+  ├── SingleEliminationFormat         ← TREE render mode (default)
+  └── RoundRobinFormat                ← ROUND_ROBIN_GRID render mode
+
+TournamentBracketModel (interface)    ← view-layer contract
+  ├── TournamentDTOAdapter            ← wraps campaign TournamentDTO
+  └── TournamentEntityAdapter         ← wraps domain Tournament entity
+
+TournamentBracketComponent            ← renders from TournamentBracketModel,
+                                         dispatches on renderMode()
+```
+
+`TournamentService` autowires `List<TournamentFormat>` — any `@Component` that implements the interface is auto-registered with no additional wiring.
+
+### Adding a New Format
+
+1. **Create the class** in `management.service.tournament`:
+
+```java
+@Component
+public class DoubleEliminationFormat implements TournamentFormat {
+
+    public static final String FORMAT_ID = "DOUBLE_ELIMINATION";
+
+    @Override public String getFormatId()    { return FORMAT_ID; }
+    @Override public String getDisplayName() { return "Double Elimination"; }
+    @Override public int getMinEntrants()    { return 4; }
+    @Override public int getMaxEntrants()    { return 32; }
+
+    @Override
+    public List<TournamentRound> generateBracket(Tournament t, TournamentFormatContext ctx) {
+        // persist rounds and matches via ctx.getRoundRepository() / ctx.getMatchRepository()
+    }
+
+    @Override
+    public List<TournamentMatch> advanceRound(Tournament t, TournamentFormatContext ctx) {
+        // called after each round completes; return new matches or empty list when done
+    }
+
+    @Override
+    public boolean isComplete(Tournament t) {
+        // return true when a champion is determined
+    }
+
+    // Optional: override renderMode() if TREE doesn't fit your format
+    // @Override public RenderMode renderMode() { return RenderMode.ROUND_ROBIN_GRID; }
+}
+```
+
+2. **No other wiring needed.** Spring picks up the `@Component`, `TournamentService` includes it in `getAvailableFormats()`, and the creation wizard offers it automatically.
+
+3. **If your format needs a new visual layout**, add a new `RenderMode` constant to `TournamentFormat.RenderMode` and add the corresponding `build*` method to `TournamentBracketComponent`.
+
+### Render Modes
+
+|        Mode        |               Used by               |                                Layout                                 |
+|--------------------|-------------------------------------|-----------------------------------------------------------------------|
+| `TREE`             | `SingleEliminationFormat` (default) | Column per round; matches narrow toward the Final                     |
+| `ROUND_ROBIN_GRID` | `RoundRobinFormat`                  | Rounds listed vertically; each round's matches displayed horizontally |
+
+### Campaign vs Booker Context
+
+`TournamentBracketComponent` accepts any `TournamentBracketModel`:
+
+```java
+// Campaign (TournamentDTO from CampaignTournamentService)
+new TournamentBracketComponent(dto)                        // convenience overload
+new TournamentBracketComponent(new TournamentDTOAdapter(dto))
+
+// Booker detail view (domain entity, must be graph-initialized)
+Tournament t = tournamentService.findByIdWithDetails(id).orElseThrow();
+new TournamentBracketComponent(new TournamentEntityAdapter(t, tournamentService.getAvailableFormats()))
+```
+
+`TournamentEntityAdapter` resolves `renderMode()` at construction time by looking up the format by ID from the provided list. `TournamentDTOAdapter` always returns `TREE` because the campaign subsystem currently only generates single-elimination brackets.
+
+### Lazy Loading
+
+All `Tournament` associations (`entries`, `rounds`, rounds' `matches`, matches' `entrant1`/`entrant2`/`winner`, entries' `wrestler`) are `FetchType.LAZY`. The application sets `spring.jpa.open-in-view=false`.
+
+**Always use `TournamentService.findByIdWithDetails(id)`** when loading a tournament for display outside a transaction (views, tests). This method initializes the full object graph within a `@Transactional` boundary. Using `findById` for display will throw `LazyInitializationException`.
+
