@@ -43,6 +43,8 @@ import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
+import com.vaadin.flow.router.RouterLink;
 import jakarta.annotation.security.PermitAll;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -188,7 +190,14 @@ public class SeasonListView extends Main {
               deleteBtn.addClickListener(e -> deleteSeason(season));
               deleteBtn.setVisible(securityUtils.canDelete());
 
-              return new HorizontalLayout(editBtn, toggleBtn, deleteBtn);
+              RouterLink detailLink =
+                  new RouterLink(
+                      "Details",
+                      SeasonDetailView.class,
+                      new RouteParameters("seasonId", String.valueOf(season.getId())));
+              detailLink.addClassNames("lumo-small");
+
+              return new HorizontalLayout(detailLink, editBtn, toggleBtn, deleteBtn);
             })
         .setHeader("Actions")
         .setFlexGrow(0);

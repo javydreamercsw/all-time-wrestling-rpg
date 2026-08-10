@@ -460,6 +460,12 @@ public class TitleService {
     return titleRepository.findTitlesHeldByWrestler(wrestler);
   }
 
+  @PreAuthorize("isAuthenticated()")
+  public List<com.github.javydreamercsw.management.domain.title.TitleReign> findReignsByChampion(
+      @NonNull final Wrestler wrestler) {
+    return titleReignRepository.findByChampionsContaining(wrestler);
+  }
+
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @org.springframework.cache.annotation.CacheEvict(

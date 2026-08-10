@@ -384,5 +384,12 @@
     "description": "Once a chapter is selected and confirmed, the Campaign Dashboard opens immediately — showing your chapter title, entry storyline, alignment track, and all available actions.",
     "videoPath": "videos/campaign-extreme-chapter-picker.mp4",
     "order": 0
+  }, {
+    "id": "booker-booker-season-awards-workflow",
+    "category": "Booker",
+    "title": "Season Awards Ceremony",
+    "description": "The Awards Ceremony section lists each award winner: Wrestler of the Year (most wins), Most Improved (highest fan growth), and Most Decorated (most title reigns). Winners automatically receive fan bonuses when the season ends.",
+    "videoPath": "videos/booker-season-awards-workflow.mp4",
+    "order": 0
   } ]
 }

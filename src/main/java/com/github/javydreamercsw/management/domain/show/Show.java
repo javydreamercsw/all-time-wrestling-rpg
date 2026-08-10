@@ -110,6 +110,9 @@ public class Show extends AbstractEntity<Long> {
   @Column(name = "gate_revenue")
   private BigDecimal gateRevenue = BigDecimal.ZERO;
 
+  @Column(name = "quality_score")
+  private Double qualityScore;
+
   /**
    * Check if this show is based on a Premium Live Event template.
    *

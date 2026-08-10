@@ -19,20 +19,26 @@ package com.github.javydreamercsw.management.service.challenge;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.account.Achievement;
+import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService.UpdateResult;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +52,7 @@ class ChallengeUpdateServiceTest {
 
   @TempDir Path contentDir;
   @Mock ChallengeService challengeService;
+  @Mock AchievementRepository achievementRepository;
 
   private ChallengeUpdateService updateService;
 
@@ -59,7 +66,7 @@ class ChallengeUpdateServiceTest {
     lenient().when(challengeService.getContentDir()).thenReturn(contentDir);
     ObjectMapper mapper =
         new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    updateService = new ChallengeUpdateService(challengeService, mapper);
+    updateService = new ChallengeUpdateService(challengeService, achievementRepository, mapper);
   }
 
   @Test
@@ -179,6 +186,118 @@ class ChallengeUpdateServiceTest {
       updateService.checkAndApply();
       assertEquals(3, Files.readAllBytes(imagesDir.resolve("existing.png")).length);
       assertEquals("PNG", new String(Files.readAllBytes(imagesDir.resolve("new.png"))));
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void checkAndApply_withAchievementsUrl_insertsNewAchievement() throws Exception {
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    int port = server.getAddress().getPort();
+
+    String achievementsJson =
+        "[{\"key\":\"TEST_ACH\",\"name\":\"Test\",\"description\":\"Desc\","
+            + "\"xpValue\":50,\"category\":\"CHALLENGE\"}]";
+    String manifest =
+        "{\"schemaVersion\":1,\"lastUpdated\":\"2026-08-01\",\"packages\":["
+            + "{\"id\":\"pkg1\",\"jsonUrl\":\"http://localhost:"
+            + port
+            + "/pkg1.json\","
+            + "\"achievementsUrl\":\"http://localhost:"
+            + port
+            + "/achievements.json\","
+            + "\"images\":[]}"
+            + "]}";
+
+    serve(server, "/manifest.json", 200, manifest);
+    serve(server, "/pkg1.json", 200, MINIMAL_CHALLENGE_JSON);
+    serve(server, "/achievements.json", 200, achievementsJson);
+    server.start();
+
+    when(achievementRepository.findByKey("TEST_ACH")).thenReturn(Optional.empty());
+    when(achievementRepository.saveAll(any())).thenAnswer(i -> i.getArgument(0));
+
+    try {
+      setManifestUrl(server, "/manifest.json");
+      updateService.checkAndApply();
+      verify(achievementRepository).saveAll(any(List.class));
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void checkAndApply_withAchievementsUrl_updatesExistingAchievement() throws Exception {
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    int port = server.getAddress().getPort();
+
+    String achievementsJson =
+        "[{\"key\":\"EXISTING_ACH\",\"name\":\"Updated Name\",\"description\":\"New Desc\","
+            + "\"xpValue\":75,\"category\":\"CHALLENGE\"}]";
+    String manifest =
+        "{\"schemaVersion\":1,\"lastUpdated\":\"2026-08-01\",\"packages\":["
+            + "{\"id\":\"pkg1\",\"jsonUrl\":\"http://localhost:"
+            + port
+            + "/pkg1.json\","
+            + "\"achievementsUrl\":\"http://localhost:"
+            + port
+            + "/achievements.json\","
+            + "\"images\":[]}"
+            + "]}";
+
+    serve(server, "/manifest.json", 200, manifest);
+    serve(server, "/pkg1.json", 200, MINIMAL_CHALLENGE_JSON);
+    serve(server, "/achievements.json", 200, achievementsJson);
+    server.start();
+
+    Achievement existing = new Achievement();
+    existing.setKey("EXISTING_ACH");
+    existing.setName("Old Name");
+    existing.setDescription("Old Desc");
+    existing.setXpValue(50);
+    when(achievementRepository.findByKey("EXISTING_ACH")).thenReturn(Optional.of(existing));
+    when(achievementRepository.saveAll(any())).thenAnswer(i -> i.getArgument(0));
+
+    try {
+      setManifestUrl(server, "/manifest.json");
+      updateService.checkAndApply();
+      assertEquals("Updated Name", existing.getName());
+      assertEquals("New Desc", existing.getDescription());
+      assertEquals(75, existing.getXpValue());
+      verify(achievementRepository).saveAll(any(List.class));
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void checkAndApply_withAchievementsUrl_handlesUnreachableAchievementsGracefully()
+      throws Exception {
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    int port = server.getAddress().getPort();
+
+    String manifest =
+        "{\"schemaVersion\":1,\"lastUpdated\":\"2026-08-01\",\"packages\":["
+            + "{\"id\":\"pkg1\",\"jsonUrl\":\"http://localhost:"
+            + port
+            + "/pkg1.json\","
+            + "\"achievementsUrl\":\"http://localhost:"
+            + port
+            + "/achievements.json\","
+            + "\"images\":[]}"
+            + "]}";
+
+    serve(server, "/manifest.json", 200, manifest);
+    serve(server, "/pkg1.json", 200, MINIMAL_CHALLENGE_JSON);
+    serve(server, "/achievements.json", 404, "");
+    server.start();
+
+    try {
+      setManifestUrl(server, "/manifest.json");
+      UpdateResult result = updateService.checkAndApply();
+      assertEquals(1, result.downloaded());
+      verify(achievementRepository, never()).saveAll(any());
     } finally {
       server.stop(0);
     }

@@ -1,0 +1,12 @@
+CREATE TABLE wrestler_state_history
+(
+    id          BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    wrestler_id BIGINT       NOT NULL,
+    universe_id BIGINT       NOT NULL,
+    recorded_at DATETIME(6)  NOT NULL,
+    fans        BIGINT       NOT NULL DEFAULT 0,
+    tier        VARCHAR(50)  NOT NULL,
+    CONSTRAINT fk_wsh_wrestler FOREIGN KEY (wrestler_id) REFERENCES wrestler (wrestler_id),
+    CONSTRAINT fk_wsh_universe FOREIGN KEY (universe_id) REFERENCES universe (id),
+    INDEX idx_wsh_lookup (wrestler_id, universe_id, recorded_at)
+);
