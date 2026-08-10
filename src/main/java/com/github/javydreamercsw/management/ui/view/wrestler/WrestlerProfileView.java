@@ -395,14 +395,6 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         statsLayout.add(new Paragraph("Stats not available."));
       }
 
-      RouterLink careerLink =
-          new RouterLink(
-              "View Career Dashboard →",
-              WrestlerCareerView.class,
-              new RouteParameters("wrestlerId", wrestler.getId().toString()));
-      careerLink.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.FontWeight.SEMIBOLD);
-      statsLayout.add(careerLink);
-
       universeContextService
           .getCurrentUniverse()
           .ifPresent(

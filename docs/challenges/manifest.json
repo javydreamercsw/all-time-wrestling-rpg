@@ -4,7 +4,6 @@
   "packages": [ {
     "id": "season_1_weekly",
     "jsonUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_1/weekly_challenges.json",
-    "achievementsUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_1/weekly_achievements.json",
     "images": [ {
       "name": "week1.png",
       "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week1.png"

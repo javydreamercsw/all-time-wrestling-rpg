@@ -16,10 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.wrestler;
 
-import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.team.TeamService;
-import com.github.javydreamercsw.management.service.title.TitleService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +32,4 @@ public class WrestlerFacade {
   private final WrestlerStatsService wrestlerStatsService;
   private final WrestlerRelationshipService wrestlerRelationshipService;
   private final TeamService teamService;
-  private final InjuryService injuryService;
-  private final TitleService titleService;
-  private final WrestlerStateHistoryService wrestlerStateHistoryService;
 }

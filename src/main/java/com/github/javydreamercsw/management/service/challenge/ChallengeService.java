@@ -65,10 +65,6 @@ public class ChallengeService {
     try {
       Resource[] files = resourcePatternResolver.getResources("classpath*:challenges/**/*.json");
       for (Resource resource : files) {
-        String filename = resource.getFilename();
-        if (filename != null && filename.contains("achievements")) {
-          continue;
-        }
         log.debug("Loading challenges from classpath: {}", resource.getFilename());
         try (InputStream is = resource.getInputStream()) {
           List<ChallengeDTO> batch =
@@ -88,7 +84,6 @@ public class ChallengeService {
         Files.walk(contentDir)
             .filter(p -> p.toString().endsWith(".json"))
             .filter(p -> !p.startsWith(contentDir.resolve("images")))
-            .filter(p -> !p.getFileName().toString().contains("achievements"))
             .forEach(
                 p -> {
                   log.debug("Loading challenges from filesystem: {}", p);

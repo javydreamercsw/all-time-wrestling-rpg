@@ -29,8 +29,6 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -69,7 +67,6 @@ class TitleServiceTest {
 
   @Mock private TierBoundaryService tierBoundaryService;
   @Mock private TitleRepository titleRepository;
-  @Mock private TitleReignRepository titleReignRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private UniverseRepository universeRepository;
@@ -1008,30 +1005,6 @@ class TitleServiceTest {
 
     assertThat(result).containsExactly(universeTitle);
     verify(universeSettingsService).getEnabledExpansionCodesForUniverse(universe);
-  }
-
-  // =====================================================================
-  // findReignsByChampion
-  // =====================================================================
-
-  @Test
-  void findReignsByChampion_delegatesToRepository() {
-    TitleReign reign = new TitleReign();
-    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(List.of(reign));
-
-    List<TitleReign> result = titleService.findReignsByChampion(wrestler);
-
-    assertThat(result).containsExactly(reign);
-    verify(titleReignRepository).findByChampionsContaining(wrestler);
-  }
-
-  @Test
-  void findReignsByChampion_returnsEmptyListWhenNoReigns() {
-    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(List.of());
-
-    List<TitleReign> result = titleService.findReignsByChampion(wrestler);
-
-    assertThat(result).isEmpty();
   }
 
   // =====================================================================

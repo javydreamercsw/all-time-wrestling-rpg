@@ -911,6 +911,15 @@ public class SegmentAdjudicationService {
       bonus += 5_000;
     } else if (roll == 20) {
       bonus += 10_000;
+      // Trigger 5-Star Classic achievement for all participants
+      segment
+          .getWrestlers()
+          .forEach(
+              w -> {
+                if (w.getAccount() != null) {
+                  legacyService.unlockAchievement(w.getAccount(), "FIVE_STAR_CLASSIC");
+                }
+              });
     }
     return bonus;
   }

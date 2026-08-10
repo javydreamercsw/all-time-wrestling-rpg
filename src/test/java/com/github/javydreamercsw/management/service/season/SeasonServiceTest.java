@@ -45,7 +45,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 /** Unit tests for SeasonService. Tests the ATW RPG season management functionality. */
 @ExtendWith(MockitoExtension.class)
@@ -64,7 +63,6 @@ class SeasonServiceTest {
 
   @Mock private Clock clock;
   @Mock private GameSettingService gameSettingService;
-  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private SeasonService seasonService;
 
