@@ -143,6 +143,9 @@ public interface RivalryRepository
       """)
   List<Rivalry> findAllForWrestler(@Param("wrestler") Wrestler wrestler);
 
+  /** Find closed rivalries whose ended_date is before the given cutoff. */
+  List<Rivalry> findByIsActiveFalseAndEndedDateBefore(Instant cutoff);
+
   @Transactional
   @Modifying(clearAutomatically = true)
   @Query("DELETE FROM Rivalry r WHERE r.universe = :universe")
