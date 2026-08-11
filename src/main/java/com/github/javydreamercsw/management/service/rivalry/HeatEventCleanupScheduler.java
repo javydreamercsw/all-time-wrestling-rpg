@@ -48,8 +48,7 @@ public class HeatEventCleanupScheduler {
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {
-            log.info(
-                "Starting HeatEvent cleanup (closed rivalries older than {}d)", retentionDays);
+            log.info("Starting HeatEvent cleanup (closed rivalries older than {}d)", retentionDays);
             HeatEventCleanupResult result =
                 rivalryService.purgeClosedRivalryHeatEvents(retentionDays);
             log.info(

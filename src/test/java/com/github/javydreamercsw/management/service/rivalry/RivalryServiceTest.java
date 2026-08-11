@@ -459,8 +459,7 @@ class RivalryServiceTest {
         .thenReturn(List.of(stale));
     when(heatEventRepository.deleteByRivalryIn(List.of(stale))).thenReturn(5);
 
-    RivalryService.HeatEventCleanupResult result =
-        rivalryService.purgeClosedRivalryHeatEvents(30);
+    RivalryService.HeatEventCleanupResult result = rivalryService.purgeClosedRivalryHeatEvents(30);
 
     assertThat(result.rivalriesProcessed()).isEqualTo(1);
     assertThat(result.eventsDeleted()).isEqualTo(5);
@@ -476,8 +475,7 @@ class RivalryServiceTest {
     when(rivalryRepository.findByIsActiveFalseAndEndedDateBefore(any(Instant.class)))
         .thenReturn(List.of());
 
-    RivalryService.HeatEventCleanupResult result =
-        rivalryService.purgeClosedRivalryHeatEvents(30);
+    RivalryService.HeatEventCleanupResult result = rivalryService.purgeClosedRivalryHeatEvents(30);
 
     assertThat(result.rivalriesProcessed()).isZero();
     assertThat(result.eventsDeleted()).isZero();
