@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.rivalry.heatevent.HeatEventRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -32,10 +33,12 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -50,9 +53,11 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Transactional
+@Slf4j
 public class RivalryService {
 
   @Autowired private RivalryRepository rivalryRepository;
+  @Autowired private HeatEventRepository heatEventRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private UniverseRepository universeRepository;
   @Autowired @Getter private RivalryMapper rivalryMapper;
@@ -471,6 +476,29 @@ public class RivalryService {
 
     return rivalryRepository.hasRivalryHistory(wrestler1Opt.get(), wrestler2Opt.get());
   }
+
+  /**
+   * Delete all heat events belonging to closed rivalries that ended more than {@code retentionDays}
+   * days ago. Returns how many rivalries were processed and how many events were deleted.
+   */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  public HeatEventCleanupResult purgeClosedRivalryHeatEvents(final int retentionDays) {
+    Instant cutoff = Instant.now(clock).minus(retentionDays, ChronoUnit.DAYS);
+    List<Rivalry> stale = rivalryRepository.findByIsActiveFalseAndEndedDateBefore(cutoff);
+    if (stale.isEmpty()) {
+      return new HeatEventCleanupResult(0, 0);
+    }
+    int deleted = heatEventRepository.deleteByRivalryIn(stale);
+    log.info(
+        "HeatEvent cleanup: deleted {} events from {} closed rivalries (ended before {})",
+        deleted,
+        stale.size(),
+        cutoff);
+    return new HeatEventCleanupResult(stale.size(), deleted);
+  }
+
+  /** Result of a heat-event cleanup run. */
+  public record HeatEventCleanupResult(int rivalriesProcessed, int eventsDeleted) {}
 
   /** Rivalry statistics data class. */
   public record RivalryStats(
