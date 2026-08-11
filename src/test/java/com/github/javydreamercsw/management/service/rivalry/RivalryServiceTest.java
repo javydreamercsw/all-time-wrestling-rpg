@@ -34,7 +34,6 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
@@ -448,7 +447,6 @@ class RivalryServiceTest {
   void purgeClosedRivalryHeatEvents_deletesEventsForStaleRivalries() {
     Instant now = Instant.parse("2026-08-10T10:00:00Z");
     when(clock.instant()).thenReturn(now);
-    when(clock.getZone()).thenReturn(ZoneOffset.UTC);
 
     Rivalry stale = createRivalry(createWrestler("A", 1L), createWrestler("B", 2L), 0);
     stale.setIsActive(false);
@@ -470,7 +468,6 @@ class RivalryServiceTest {
   void purgeClosedRivalryHeatEvents_returnsZeroWhenNothingToClean() {
     Instant now = Instant.parse("2026-08-10T10:00:00Z");
     when(clock.instant()).thenReturn(now);
-    when(clock.getZone()).thenReturn(ZoneOffset.UTC);
 
     when(rivalryRepository.findByIsActiveFalseAndEndedDateBefore(any(Instant.class)))
         .thenReturn(List.of());
