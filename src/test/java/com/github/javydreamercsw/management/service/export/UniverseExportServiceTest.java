@@ -242,6 +242,37 @@ class UniverseExportServiceTest {
   }
 
   @Test
+  void rivalriesCategory_skipsClosedRivalryWithZeroHeat() {
+    Rivalry closedZeroHeat = mock(Rivalry.class);
+    when(closedZeroHeat.getId()).thenReturn(100L);
+    when(closedZeroHeat.getWrestler1()).thenReturn(activeWrestler);
+    when(closedZeroHeat.getWrestler2()).thenReturn(inactiveWrestler);
+    when(closedZeroHeat.getHeat()).thenReturn(0);
+    when(closedZeroHeat.getIsActive()).thenReturn(false);
+
+    Rivalry closedWithHeat = mock(Rivalry.class);
+    when(closedWithHeat.getId()).thenReturn(101L);
+    when(closedWithHeat.getWrestler1()).thenReturn(activeWrestler);
+    when(closedWithHeat.getWrestler2()).thenReturn(inactiveWrestler);
+    when(closedWithHeat.getHeat()).thenReturn(8);
+    when(closedWithHeat.getHeatEvents()).thenReturn(List.of());
+    when(closedWithHeat.getIsActive()).thenReturn(false);
+    when(closedWithHeat.getStartedDate()).thenReturn(Instant.EPOCH);
+    when(closedWithHeat.getEndedDate()).thenReturn(Instant.EPOCH);
+    when(closedWithHeat.getStorylineNotes()).thenReturn(null);
+
+    when(rivalryRepository.findByUniverseWithWrestlers(universe))
+        .thenReturn(List.of(closedZeroHeat, closedWithHeat));
+
+    ExportPayload payload =
+        service.collect(universe, Set.of(ExportCategory.RIVALRIES), WrestlerFilter.all());
+
+    List<Map<String, Object>> rows = payload.data().get(ExportCategory.RIVALRIES);
+    assertThat(rows).hasSize(1);
+    assertThat(rows.get(0)).containsEntry("heat", 8);
+  }
+
+  @Test
   void titleReignsCategory_deduplicatesSharedReigns() {
     Title title = mock(Title.class);
     when(title.getName()).thenReturn("World Title");
