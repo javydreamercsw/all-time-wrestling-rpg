@@ -27,6 +27,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
@@ -62,6 +63,12 @@ public class SeasonAward {
   private String awardValue;
 
   @Column(name = "awarded_at", nullable = false)
-  @Builder.Default
-  private Instant awardedAt = Instant.now();
+  private Instant awardedAt;
+
+  @PrePersist
+  private void ensureAwardedAt() {
+    if (awardedAt == null) {
+      awardedAt = Instant.now();
+    }
+  }
 }

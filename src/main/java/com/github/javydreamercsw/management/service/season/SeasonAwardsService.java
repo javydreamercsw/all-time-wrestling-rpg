@@ -33,6 +33,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.SeasonEndedEvent;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -58,6 +60,7 @@ public class SeasonAwardsService {
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
   private final NewsService newsService;
+  private final Clock clock;
 
   @EventListener
   @Transactional
@@ -117,6 +120,7 @@ public class SeasonAwardsService {
                                 .wrestler(w)
                                 .awardType(SeasonAwardType.WRESTLER_OF_THE_YEAR)
                                 .awardValue(entry.getValue() + " wins")
+                                .awardedAt(Instant.now(clock))
                                 .build()));
   }
 
@@ -155,6 +159,7 @@ public class SeasonAwardsService {
             .wrestler(winner)
             .awardType(SeasonAwardType.MOST_IMPROVED)
             .awardValue(String.format("%,d new fans", fanGrowth))
+            .awardedAt(Instant.now(clock))
             .build());
   }
 
@@ -162,8 +167,7 @@ public class SeasonAwardsService {
     if (season.getStartDate() == null) {
       return Optional.empty();
     }
-    java.time.Instant end =
-        season.getEndDate() != null ? season.getEndDate() : java.time.Instant.now();
+    Instant end = season.getEndDate() != null ? season.getEndDate() : Instant.now(clock);
 
     List<TitleReign> reigns =
         titleReignRepository.findByStartDateBetween(season.getStartDate(), end);
@@ -189,6 +193,7 @@ public class SeasonAwardsService {
                     .wrestler(wrestlerMap.get(entry.getKey()))
                     .awardType(SeasonAwardType.MOST_DECORATED)
                     .awardValue(entry.getValue() + " title reign(s)")
+                    .awardedAt(Instant.now(clock))
                     .build());
   }
 

@@ -8,5 +8,6 @@ CREATE TABLE show_segment_reservation (
     segment_id BIGINT,
     CONSTRAINT fk_ssr_show FOREIGN KEY (show_id) REFERENCES wrestling_show(show_id),
     CONSTRAINT fk_ssr_segment FOREIGN KEY (segment_id) REFERENCES segment(segment_id),
-    CONSTRAINT uq_ssr_segment UNIQUE (segment_id)
+    CONSTRAINT uq_ssr_segment UNIQUE (segment_id),
+    CONSTRAINT uq_ssr_source UNIQUE (show_id, purpose, source_id)
 );

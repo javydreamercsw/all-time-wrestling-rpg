@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.dto.SeasonEndedEvent;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -61,6 +62,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SeasonAwardsServiceTest {
 
+  @Mock private Clock clock;
   @Mock private SeasonAwardRepository awardRepository;
   @Mock private WrestlerSeasonSnapshotRepository snapshotRepository;
   @Mock private SegmentRepository segmentRepository;
