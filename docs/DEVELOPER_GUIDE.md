@@ -9,7 +9,7 @@ This guide provides instructions for developers on how to work with the security
 - [Securing Service Methods](#securing-service-methods)
 - [Ownership-Based Security for Players](#ownership-based-security-for-players)
 - [Role-Based UI Components](#role-based-ui-components)
-- [Campaign System Scripting](#campaign-system-scripting)
+- [Dynamic Scripting (Campaign & Achievements)](#dynamic-scripting-campaign--achievements)
 
 ## Security Architecture Overview
 
@@ -115,9 +115,11 @@ The `SecurityUtils` class provides the following convenient methods:
 
 Always use these `SecurityUtils` methods to control the visibility of UI components based on the current user's permissions. This ensures that the UI accurately reflects what the user is allowed to do, as enforced by the backend's method-level security.
 
-## Campaign System Scripting
+## Dynamic Scripting (Campaign & Achievements)
 
-The solo campaign uses dynamic scripting for ability cards (Ally, Valet, Face/Heel cards). For a detailed guide on available methods and script syntax, refer to the [Campaign Scripting Guide](CAMPAIGN_SCRIPTING.md).
+The solo campaign uses dynamic scripting for ability cards (Ally, Valet, Face/Heel cards), chapter progression criteria, and status card trigger conditions. For a detailed guide on available methods and script syntax, refer to the [Campaign Scripting Guide](CAMPAIGN_SCRIPTING.md).
+
+Achievement unlock conditions use the same trusted-content-only Groovy pattern: an optional `unlockCondition` script on each `achievements.json` entry, evaluated by `AchievementScriptService` (fail-closed — a broken script is logged and treated as "not unlocked", never propagated). As with campaign scripts, this executes arbitrary Groovy against shipped JSON content, not user-supplied input — treat new script sources the same way when reviewing for security implications. See [Content Management Guide § Scripted unlock conditions](CONTENT_GUIDE.md#scripted-unlock-conditions) for the field reference and available variables.
 
 ## Tournament Format System
 
