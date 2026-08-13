@@ -59,4 +59,12 @@ public class Achievement extends AbstractEntity<Long> {
 
   @Column(name = "icon_url")
   @Size(max = 512) private String iconUrl;
+
+  /**
+   * Optional Groovy boolean expression evaluated against a context map at the relevant unlock check
+   * site. Null means no scripted condition — the achievement relies solely on hardcoded Java checks
+   * (if any). See AchievementScriptService for evaluation semantics.
+   */
+  @Column(name = "unlock_condition", length = 2000)
+  @Size(max = 2000) private String unlockCondition;
 }

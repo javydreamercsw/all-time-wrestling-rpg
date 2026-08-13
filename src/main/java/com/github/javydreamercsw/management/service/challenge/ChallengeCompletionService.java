@@ -21,9 +21,12 @@ import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletion;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletionRepository;
 import com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus;
+import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,6 +44,7 @@ public class ChallengeCompletionService {
   private final AccountChallengeCompletionRepository repository;
   private final ChallengeService challengeService;
   private final LegacyService legacyService;
+  private final ScriptedAchievementEvaluator scriptedAchievementEvaluator;
 
   @Transactional(readOnly = true)
   public Optional<AccountChallengeCompletion> find(
@@ -99,6 +103,17 @@ public class ChallengeCompletionService {
         .getChallenge(challengeId)
         .ifPresent(
             challenge -> {
+              Set<String> completedIds = completedChallengeIds(account);
+              long total =
+                  repository.findByAccount(account).stream()
+                      .filter(c -> ChallengeCompletionStatus.COMPLETED == c.getStatus())
+                      .count();
+              long hardCompletedCount =
+                  challengeService.getAllChallenges().stream()
+                      .filter(c -> Difficulty.HARD == c.getDifficulty())
+                      .filter(c -> completedIds.contains(c.getId()))
+                      .count();
+
               // Per-challenge achievement
               if (challenge.getAchievementKey() != null
                   && !challenge.getAchievementKey().isBlank()) {
@@ -106,22 +121,13 @@ public class ChallengeCompletionService {
               }
 
               // First HARD difficulty completion
-              if (Difficulty.HARD == challenge.getDifficulty()) {
-                Set<String> completedIds = completedChallengeIds(account);
-                long hardCount =
-                    challengeService.getAllChallenges().stream()
-                        .filter(c -> Difficulty.HARD == c.getDifficulty())
-                        .filter(c -> completedIds.contains(c.getId()))
-                        .count();
-                if (hardCount == 1) {
-                  legacyService.unlockAchievement(account, "CHALLENGE_FIRST_HARD");
-                }
+              if (Difficulty.HARD == challenge.getDifficulty() && hardCompletedCount == 1) {
+                legacyService.unlockAchievement(account, "CHALLENGE_FIRST_HARD");
               }
 
               // Season completion
               String season = challenge.getSeason();
               if (season != null && !season.isBlank()) {
-                Set<String> completedIds = completedChallengeIds(account);
                 boolean seasonDone =
                     challengeService.getActiveChallenges().stream()
                         .filter(c -> season.equals(c.getSeason()))
@@ -133,16 +139,25 @@ public class ChallengeCompletionService {
               }
 
               // Cumulative count milestones
-              long total =
-                  repository.findByAccount(account).stream()
-                      .filter(c -> ChallengeCompletionStatus.COMPLETED == c.getStatus())
-                      .count();
               if (total >= 10) {
                 legacyService.unlockAchievement(account, "CHALLENGE_10_COMPLETE");
               }
               if (total >= 5) {
                 legacyService.unlockAchievement(account, "CHALLENGE_5_COMPLETE");
               }
+
+              Map<String, Object> context = new HashMap<>();
+              context.put("account", account);
+              context.put("challenge", challenge);
+              context.put("challengeId", challengeId);
+              context.put("difficulty", challenge.getDifficulty());
+              context.put("season", season);
+              context.put("totalCompleted", total);
+              context.put("hardCompletedCount", hardCompletedCount);
+              context.put("completedChallengeIds", completedIds);
+              scriptedAchievementEvaluator
+                  .resolveNewlyUnlockedKeys(account, context)
+                  .forEach(key -> legacyService.unlockAchievement(account, key));
             });
   }
 

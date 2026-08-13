@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -111,6 +112,11 @@ public class SegmentAdjudicationService {
 
   @Setter(onMethod_ = {@Autowired})
   private OutcomeMatrixService outcomeMatrixService;
+
+  // Field-injected for the same reason — null-safe, scripted achievement evaluation is skipped
+  // when null (unit tests).
+  @Setter(onMethod_ = {@Autowired})
+  private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -696,6 +702,23 @@ public class SegmentAdjudicationService {
           if (segment.getShow().isPremiumLiveEvent()) {
             legacyService.unlockAchievement(participant.getAccount(), "MAIN_EVENT_PLE");
           }
+        }
+
+        if (scriptedAchievementEvaluator != null) {
+          Map<String, Object> context = new HashMap<>();
+          context.put("segment", segment);
+          context.put("winners", winners);
+          context.put("participant", participant);
+          context.put("isWinner", winners.contains(participant));
+          context.put("isMainEvent", segment.isMainEvent());
+          context.put("isPremiumLiveEvent", segment.getShow().isPremiumLiveEvent());
+          context.put("segmentTypeName", segment.getSegmentType().getName());
+          context.put(
+              "segmentRuleNames",
+              segment.getSegmentRules().stream().map(SegmentRule::getName).toList());
+          scriptedAchievementEvaluator
+              .resolveNewlyUnlockedKeys(participant.getAccount(), context)
+              .forEach(key -> legacyService.unlockAchievement(participant.getAccount(), key));
         }
       }
     }

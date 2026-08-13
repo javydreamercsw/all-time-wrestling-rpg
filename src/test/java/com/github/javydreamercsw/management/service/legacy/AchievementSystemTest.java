@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
@@ -79,6 +80,7 @@ class AchievementSystemTest {
   @Mock private LeagueRosterRepository leagueRosterRepository;
   @Mock private TitleRepository titleRepository;
   @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
 
   private LegacyService legacyService;
   private SegmentAdjudicationService segmentAdjudicationService;
@@ -106,7 +108,8 @@ class AchievementSystemTest {
             wrestlerRepository,
             achievementRepository,
             titleRepository,
-            eventPublisher);
+            eventPublisher,
+            scriptedAchievementEvaluator);
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             new SegmentAdjudicationService.Dependencies(

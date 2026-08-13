@@ -3,7 +3,22 @@
   "name": "Rookie Manager",
   "description": "Manage your first wrestler",
   "xpValue": 50,
-  "category": "COLLECTION"
+  "category": "COLLECTION",
+  "unlockCondition": "!wrestlers.isEmpty()"
+}, {
+  "key": "ELITE_SCOUT",
+  "name": "Elite Scout",
+  "description": "Build a roster of 20 wrestlers while holding at least 3 titles",
+  "xpValue": 750,
+  "category": "COLLECTION",
+  "unlockCondition": "wrestlers.size() >= 20 && currentTitlesHeld >= 3"
+}, {
+  "key": "PLE_MAIN_EVENT_WINNER",
+  "name": "Unstoppable Force",
+  "description": "Win a main event at a Premium Live Event",
+  "xpValue": 1500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "isWinner && isMainEvent && isPremiumLiveEvent"
 }, {
   "key": "ROSTER_BUILDER",
   "name": "Talent Scout",
