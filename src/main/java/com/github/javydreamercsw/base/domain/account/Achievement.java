@@ -22,6 +22,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Entity
@@ -67,4 +68,19 @@ public class Achievement extends AbstractEntity<Long> {
    */
   @Column(name = "unlock_condition", length = 2000)
   @Size(max = 2000) private String unlockCondition;
+
+  /**
+   * Copies the content-authored fields from {@code source} onto this achievement — used when
+   * upserting an existing achievement from achievements.json or a remote content pack. Identity
+   * fields ({@code id}, {@code key}) are left untouched. Single source of truth for which fields a
+   * content update is allowed to change, so the two independent upsert call sites (AchievementSync,
+   * ChallengeUpdateService) can't drift out of sync with each other.
+   */
+  public void copyContentFrom(@NonNull final Achievement source) {
+    this.name = source.name;
+    this.description = source.description;
+    this.xpValue = source.xpValue;
+    this.category = source.category;
+    this.unlockCondition = source.unlockCondition;
+  }
 }

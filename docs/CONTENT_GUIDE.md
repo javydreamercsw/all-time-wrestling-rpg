@@ -393,6 +393,7 @@ For bundled challenges shipped in the JAR, the path is `images/challenges/filena
     {
       "id": "season_2_weekly",
       "jsonUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_2/weekly_challenges.json",
+      "achievementsUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_2/achievements.json",
       "images": [
         { "name": "week4.png", "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week4.png" }
       ]
@@ -403,6 +404,7 @@ For bundled challenges shipped in the JAR, the path is `images/challenges/filena
 
 - `id` — unique package identifier (used to avoid re-downloading the same content).
 - `jsonUrl` — full GitHub Pages URL to the challenge JSON file.
+- `achievementsUrl` — optional. Full URL to an `achievements.json`-shaped file (same schema as [Achievements](#achievements), including `unlockCondition`). Applied via the same upsert logic as the bundled `achievements.json` — existing keys are updated in place, new keys are inserted. Omit if the package doesn't ship achievements.
 - `images` — list of images to download alongside this package. Already-downloaded images are skipped on repeat checks.
 - `lastUpdated` — human-readable date (informational only; the app always re-downloads changed packages).
 
@@ -544,6 +546,8 @@ Example — a script-only achievement with no corresponding Java, added purely v
 ```
 
 **Limitation:** a condition that needs data not available at any of the three sites above (e.g. "wrestler retires") still requires a new Java call site invoking `ScriptedAchievementEvaluator.resolveNewlyUnlockedKeys(...)` — this mechanism only covers the three existing choke points, not arbitrary new game events.
+
+Scripted achievements distributed via a remote content pack's `achievementsUrl` (see [Publishing new challenges without a release](#publishing-new-challenges-without-a-release)) work identically — `unlockCondition` is preserved whether an achievement is inserted or updated, and the in-memory cache of scripted achievements is refreshed immediately so an update takes effect without an app restart.
 
 ### Adding a new achievement
 

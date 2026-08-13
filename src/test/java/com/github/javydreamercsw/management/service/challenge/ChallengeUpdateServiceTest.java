@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService.UpdateResult;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
@@ -45,6 +46,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +56,8 @@ class ChallengeUpdateServiceTest {
   @TempDir Path contentDir;
   @Mock ChallengeService challengeService;
   @Mock AchievementRepository achievementRepository;
+  @Mock CacheManager cacheManager;
+  @Mock Cache scriptedAchievementsCache;
 
   private ChallengeUpdateService updateService;
 
@@ -64,9 +69,13 @@ class ChallengeUpdateServiceTest {
   @BeforeEach
   void setUp() {
     lenient().when(challengeService.getContentDir()).thenReturn(contentDir);
+    lenient()
+        .when(cacheManager.getCache(CacheConfig.SCRIPTED_ACHIEVEMENTS_CACHE))
+        .thenReturn(scriptedAchievementsCache);
     ObjectMapper mapper =
         new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    updateService = new ChallengeUpdateService(challengeService, achievementRepository, mapper);
+    updateService =
+        new ChallengeUpdateService(challengeService, achievementRepository, mapper, cacheManager);
   }
 
   @Test
@@ -198,7 +207,7 @@ class ChallengeUpdateServiceTest {
 
     String achievementsJson =
         "[{\"key\":\"TEST_ACH\",\"name\":\"Test\",\"description\":\"Desc\","
-            + "\"xpValue\":50,\"category\":\"CHALLENGE\"}]";
+            + "\"xpValue\":50,\"category\":\"CHALLENGE\",\"unlockCondition\":\"true\"}]";
     String manifest =
         "{\"schemaVersion\":1,\"lastUpdated\":\"2026-08-01\",\"packages\":["
             + "{\"id\":\"pkg1\",\"jsonUrl\":\"http://localhost:"
@@ -221,7 +230,12 @@ class ChallengeUpdateServiceTest {
     try {
       setManifestUrl(server, "/manifest.json");
       updateService.checkAndApply();
-      verify(achievementRepository).saveAll(any(List.class));
+      @SuppressWarnings("unchecked")
+      var captor = org.mockito.ArgumentCaptor.forClass(List.class);
+      verify(achievementRepository).saveAll(captor.capture());
+      Achievement saved = (Achievement) captor.getValue().get(0);
+      assertEquals("true", saved.getUnlockCondition());
+      verify(scriptedAchievementsCache).clear();
     } finally {
       server.stop(0);
     }
@@ -233,8 +247,9 @@ class ChallengeUpdateServiceTest {
     int port = server.getAddress().getPort();
 
     String achievementsJson =
-        "[{\"key\":\"EXISTING_ACH\",\"name\":\"Updated Name\",\"description\":\"New Desc\","
-            + "\"xpValue\":75,\"category\":\"CHALLENGE\"}]";
+        "[{\"key\":\"EXISTING_ACH\",\"name\":\"Updated Name\",\"description\":\"New"
+            + " Desc\",\"xpValue\":75,\"category\":\"CHALLENGE\",\"unlockCondition\":\"wrestlers.size()"
+            + " >= 5\"}]";
     String manifest =
         "{\"schemaVersion\":1,\"lastUpdated\":\"2026-08-01\",\"packages\":["
             + "{\"id\":\"pkg1\",\"jsonUrl\":\"http://localhost:"
@@ -256,6 +271,7 @@ class ChallengeUpdateServiceTest {
     existing.setName("Old Name");
     existing.setDescription("Old Desc");
     existing.setXpValue(50);
+    existing.setUnlockCondition(null);
     when(achievementRepository.findByKey("EXISTING_ACH")).thenReturn(Optional.of(existing));
     when(achievementRepository.saveAll(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -265,7 +281,9 @@ class ChallengeUpdateServiceTest {
       assertEquals("Updated Name", existing.getName());
       assertEquals("New Desc", existing.getDescription());
       assertEquals(75, existing.getXpValue());
+      assertEquals("wrestlers.size() >= 5", existing.getUnlockCondition());
       verify(achievementRepository).saveAll(any(List.class));
+      verify(scriptedAchievementsCache).clear();
     } finally {
       server.stop(0);
     }
@@ -298,6 +316,7 @@ class ChallengeUpdateServiceTest {
       UpdateResult result = updateService.checkAndApply();
       assertEquals(1, result.downloaded());
       verify(achievementRepository, never()).saveAll(any());
+      verify(scriptedAchievementsCache, never()).clear();
     } finally {
       server.stop(0);
     }

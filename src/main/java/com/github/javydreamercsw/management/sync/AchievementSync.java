@@ -68,11 +68,7 @@ public class AchievementSync implements DataSyncContributor {
           Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
           if (existingOpt.isPresent()) {
             Achievement existing = existingOpt.get();
-            existing.setName(a.getName());
-            existing.setDescription(a.getDescription());
-            existing.setXpValue(a.getXpValue());
-            existing.setCategory(a.getCategory());
-            existing.setUnlockCondition(a.getUnlockCondition());
+            existing.copyContentFrom(a);
             toSave.add(existing);
           } else {
             toSave.add(a);
