@@ -1,0 +1,1 @@
+ALTER TABLE achievement ADD COLUMN IF NOT EXISTS unlock_condition VARCHAR(2000);

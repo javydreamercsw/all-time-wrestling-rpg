@@ -58,6 +58,7 @@ public class CacheConfig {
   public static final String LOCATIONS_CACHE = "locations";
   public static final String UNIVERSES_CACHE = "universes";
   public static final String TIER_BOUNDARIES_CACHE = "tierBoundaries";
+  public static final String SCRIPTED_ACHIEVEMENTS_CACHE = "scriptedAchievements";
 
   /**
    * Configures the cache manager with optimized cache settings. Uses Caffeine for thread-safe
@@ -86,7 +87,8 @@ public class CacheConfig {
             ARENAS_CACHE,
             LOCATIONS_CACHE,
             UNIVERSES_CACHE,
-            TIER_BOUNDARIES_CACHE));
+            TIER_BOUNDARIES_CACHE,
+            SCRIPTED_ACHIEVEMENTS_CACHE));
 
     // Default spec for all caches
     cacheManager.setCaffeine(

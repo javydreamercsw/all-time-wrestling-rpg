@@ -455,13 +455,14 @@ Achievements are persistent player rewards with an XP value. They are loaded fro
 
 ### Field reference
 
-|     Field     |                                                                         Description                                                                          |
-|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `key`         | Unique string identifier. Must match the key passed to `LegacyService.unlockAchievement()` exactly — a mismatch means the achievement silently never awards. |
-| `name`        | Short display name shown in the player profile.                                                                                                              |
-| `description` | One-sentence description of what the player did to earn it.                                                                                                  |
-| `xpValue`     | Prestige XP awarded on unlock.                                                                                                                               |
-| `category`    | One of `COLLECTION`, `FANS`, `CHAMPIONSHIP`, `MATCH_TYPE`, `BOOKING`, `SPECIAL_EVENT`, `CHALLENGE`.                                                          |
+|       Field       |                                                                         Description                                                                          |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `key`             | Unique string identifier. Must match the key passed to `LegacyService.unlockAchievement()` exactly — a mismatch means the achievement silently never awards. |
+| `name`            | Short display name shown in the player profile.                                                                                                              |
+| `description`     | One-sentence description of what the player did to earn it.                                                                                                  |
+| `xpValue`         | Prestige XP awarded on unlock.                                                                                                                               |
+| `category`        | One of `COLLECTION`, `FANS`, `CHAMPIONSHIP`, `MATCH_TYPE`, `BOOKING`, `SPECIAL_EVENT`, `CHALLENGE`.                                                          |
+| `unlockCondition` | Optional. A Groovy boolean expression — see [Scripted unlock conditions](#scripted-unlock-conditions). Omit for achievements unlocked only from Java code.   |
 
 ### Categories
 
@@ -486,9 +487,71 @@ Achievements are persistent player rewards with an XP value. They are loaded fro
 
 Non-challenge achievements (match-type, collection, etc.) are unlocked by calling `LegacyService.unlockAchievement(account, key)` from the relevant service layer. `unlockAchievement` is idempotent — calling it multiple times for the same account and key is safe.
 
+### Scripted unlock conditions
+
+Achievement *metadata* has always lived in `achievements.json`, but until the `unlockCondition` field existed, the *unlock logic itself* was 100% hardcoded Java spread across three services. `unlockCondition` lets you add a new achievement — including its trigger condition — by editing `achievements.json` alone, as long as the condition can be expressed against the variables already available at one of the three existing check sites below. No Java change, no recompile.
+
+`unlockCondition` is a Groovy expression that must evaluate to `true`/`false`. It is evaluated by `AchievementScriptService` (`management/service/achievement/`), which fails **closed**: a syntax error, a runtime exception, or a non-boolean result is logged and treated as "not unlocked" — a broken script can never crash gameplay or block an achievement check for every other player. Compiled scripts are cached by snippet text, and an achievement the account already holds is skipped before its script is even compiled, so scripted achievements add negligible overhead.
+
+`unlockCondition` is evaluated once per relevant event, at each of the three sites that already check achievements. Each site binds a different set of variables:
+
+**`LegacyService.checkAchievements`** (runs on every legacy score recalculation — roster/fan/title changes):
+
+|      Variable       |       Type       |                         Meaning                         |
+|---------------------|------------------|---------------------------------------------------------|
+| `account`           | `Account`        | The account being evaluated.                            |
+| `wrestlers`         | `List<Wrestler>` | All wrestlers managed by the account.                   |
+| `totalFans`         | `long`           | Sum of fans across all managed wrestlers.               |
+| `currentTitlesHeld` | `long`           | Count of titles currently held by any managed wrestler. |
+
+**`ChallengeCompletionService.checkAchievements`** (runs on first completion of a challenge):
+
+|        Variable         |        Type         |                     Meaning                      |
+|-------------------------|---------------------|--------------------------------------------------|
+| `account`               | `Account`           | The account completing the challenge.            |
+| `challenge`             | `ChallengeDTO`      | The challenge just completed.                    |
+| `challengeId`           | `String`            | The completed challenge's ID.                    |
+| `difficulty`            | `Difficulty`        | The completed challenge's difficulty.            |
+| `season`                | `String` (nullable) | The completed challenge's season label, if any.  |
+| `totalCompleted`        | `long`              | Total completed-challenge count for the account. |
+| `hardCompletedCount`    | `long`              | Count of completed HARD-difficulty challenges.   |
+| `completedChallengeIds` | `Set<String>`       | IDs of all challenges the account has completed. |
+
+**`SegmentAdjudicationService.triggerAchievements`** (runs per participant after every match adjudication):
+
+|       Variable       |       Type       |                      Meaning                       |
+|----------------------|------------------|----------------------------------------------------|
+| `segment`            | `Segment`        | The adjudicated segment.                           |
+| `winners`            | `List<Wrestler>` | The segment's winners.                             |
+| `participant`        | `Wrestler`       | The wrestler this evaluation is for.               |
+| `isWinner`           | `boolean`        | Whether `participant` is a winner.                 |
+| `isMainEvent`        | `boolean`        | Whether the segment was the show's main event.     |
+| `isPremiumLiveEvent` | `boolean`        | Whether the show is a Premium Live Event.          |
+| `segmentTypeName`    | `String`         | The segment type's display name.                   |
+| `segmentRuleNames`   | `List<String>`   | Display names of the segment's rules/stipulations. |
+
+Example — a script-only achievement with no corresponding Java, added purely via `achievements.json`:
+
+```json
+{
+  "key": "ELITE_SCOUT",
+  "name": "Elite Scout",
+  "description": "Build a roster of 20 wrestlers while holding at least 3 titles",
+  "xpValue": 750,
+  "category": "COLLECTION",
+  "unlockCondition": "wrestlers.size() >= 20 && currentTitlesHeld >= 3"
+}
+```
+
+**Limitation:** a condition that needs data not available at any of the three sites above (e.g. "wrestler retires") still requires a new Java call site invoking `ScriptedAchievementEvaluator.resolveNewlyUnlockedKeys(...)` — this mechanism only covers the three existing choke points, not arbitrary new game events.
+
 ### Adding a new achievement
 
-1. Add an entry to `achievements.json` with a unique `key`.
+**Preferred path — no Java change:** if the trigger condition can be expressed against the variables available at one of the three sites in [Scripted unlock conditions](#scripted-unlock-conditions), add an entry to `achievements.json` with a unique `key` and an `unlockCondition` script. Nothing else is required.
+
+**Java-triggered path** — needed only for a genuinely new trigger point:
+
+1. Add an entry to `achievements.json` with a unique `key` (omit `unlockCondition`).
 2. Call `legacyService.unlockAchievement(account, "YOUR_KEY")` from the service that should trigger it.
 3. If the achievement is paired with a new challenge, set `achievementKey` on the challenge entry.
 4. Add a test that verifies `unlockAchievement` is called with the correct key string (see `ChallengeCompletionServiceTest` for patterns to follow).

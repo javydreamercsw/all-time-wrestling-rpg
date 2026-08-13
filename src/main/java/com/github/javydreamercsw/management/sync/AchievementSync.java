@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -51,6 +53,7 @@ public class AchievementSync implements DataSyncContributor {
   }
 
   @Override
+  @CacheEvict(value = CacheConfig.SCRIPTED_ACHIEVEMENTS_CACHE, allEntries = true)
   public void sync() {
     if (skipIfNotEmpty && achievementRepository.count() > 0) {
       return;
@@ -69,6 +72,7 @@ public class AchievementSync implements DataSyncContributor {
             existing.setDescription(a.getDescription());
             existing.setXpValue(a.getXpValue());
             existing.setCategory(a.getCategory());
+            existing.setUnlockCondition(a.getUnlockCondition());
             toSave.add(existing);
           } else {
             toSave.add(a);
