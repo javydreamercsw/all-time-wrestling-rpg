@@ -105,3 +105,35 @@ Status Cards can influence various wrestler attributes:
 
 Wrestlers can hold an unlimited number of **different** Status Cards, but never more than one of the same type.
 
+## Legacy Score, Prestige & Achievements
+
+While the mechanics above track a single wrestler's in-ring performance, your **Legacy Score** tracks your career as a manager — persisting across every wrestler you've ever booked and every season you've played.
+
+### How it Works
+
+Legacy Score is recalculated automatically whenever your roster changes, combining three factors:
+- **Fans:** 1 point per 1,000 total fans across all wrestlers you manage.
+- **Titles:** 50 points per championship currently held by any of your wrestlers.
+- **Prestige:** The sum of XP from every Achievement you've unlocked.
+
+**Prestige XP** is permanent — once an Achievement is unlocked, its XP keeps contributing to your Legacy Score for as long as your account exists, even if the wrestler who earned it retires or is released.
+
+### Achievements
+
+Achievements are milestone rewards that unlock automatically as you play — winning matches, building your roster, capturing titles, and completing Challenges are all monitored in the background, with no manual claiming required. Each spans one of several categories:
+
+| Category          | Examples                                                                                       |
+|:------------------|:-----------------------------------------------------------------------------------------------|
+| **Collection**    | Roster-building milestones (managing your first wrestler, reaching 10 or 50 wrestlers).        |
+| **Fans**          | Total fan-count thresholds across your roster.                                                 |
+| **Championship**  | Title reign milestones, including holding every active title at once.                          |
+| **Match Type**    | Participating in or winning a specific match stipulation (Cage, Ladder, Battle Royal, etc.).   |
+| **Booking**       | Show-quality and match-quality milestones as a booker.                                         |
+| **Special Event** | One-off feats like winning an Abu Dhabi Rumble.                                                |
+| **Challenge**     | Weekly and season Challenge completions, including cumulative and difficulty-based milestones. |
+
+### Management
+
+- **View Progress:** Your Legacy Score, Prestige, and unlocked Achievement badges are visible on the **Player Dashboard**, under the Career Legacy and Achievements tabs.
+- **Compare Rankings:** The **Hall of Fame** dashboard ranks every player across the ecosystem, primarily by Legacy Score.
+
