@@ -114,37 +114,19 @@
     "timing": "DEFENSE",
     "effectScript": "wrestler.gainInitiative()"
   }, {
-    "name": "Immovable",
-    "description": "Discard 2 cards (except kicks) to block an attack, then gain the initiative.",
-    "type": "ALWAYS_ON",
-    "category": "PASSIVE",
-    "default": true,
-    "unlockCondition": "event == 'ATTACK_INCOMING'",
-    "costScript": "wrestler.discardCards(2, 'NON_KICK')",
-    "effectScript": "blockAttack(); wrestler.gainInitiative()"
-  }, {
-    "name": "Iron Giant",
-    "description": "Spend -2 stamina to block a 3rd consecutive attack of -1 or -2 damage, then gain the initiative.",
-    "type": "ALWAYS_ON",
-    "category": "PASSIVE",
-    "default": true,
-    "unlockCondition": "event == 'ATTACK_INCOMING' && match.consecutiveAttackCount >= 3",
-    "costScript": "wrestler.stamina -= 2",
-    "effectScript": "blockAttack(); wrestler.gainInitiative()"
-  }, {
     "name": "Recover",
     "description": "Gain +3 stamina and draw 1 card. Opponent also gains +1 stamina, draws a card and +1 health.",
     "type": "ALWAYS_ON",
     "category": "ACTION",
     "default": true,
-    "effectScript": "wrestler.stamina += 3; wrestler.health += 1; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+    "effectScript": "wrestler.stamina += 3; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
   }, {
     "name": "Taunt",
-    "description": "Gain +1 stamina and +1 health. Opponent also gains +1 stamina and +1 health but loses 1 card.",
+    "description": "Gain +1 stamina +1 momentum and +1 health. Opponent also gains +1 stamina and +1 health but loses 1 card.",
     "type": "ALWAYS_ON",
     "category": "ACTION",
     "default": true,
-    "effectScript": "wrestler.stamina += 1; wrestler.health += 1; opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+    "effectScript": "wrestler.stamina += 1; wrestler.momentum += 1; wrestler.health += 1; opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
   } ]
 }, {
   "name": "Randy Savage",
