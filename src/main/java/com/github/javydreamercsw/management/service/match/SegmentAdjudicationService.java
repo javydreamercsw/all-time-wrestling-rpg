@@ -57,6 +57,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -768,6 +769,9 @@ public class SegmentAdjudicationService {
           context.put("winningCardName", winnerWinningCardName);
           context.put("participantMomentum", momentumById.get(participant.getId()));
           context.put("winnerMomentum", winnerMomentum);
+          context.put(
+              "gameDate",
+              gameSettingService.getCurrentGameDate().atStartOfDay(ZoneOffset.UTC).toInstant());
           scriptedAchievementEvaluator
               .resolveNewlyUnlockedKeys(participant.getAccount(), context)
               .forEach(key -> legacyService.unlockAchievement(participant.getAccount(), key));

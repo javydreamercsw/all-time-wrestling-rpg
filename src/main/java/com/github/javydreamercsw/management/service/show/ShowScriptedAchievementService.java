@@ -21,8 +21,10 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +62,7 @@ public class ShowScriptedAchievementService {
 
   private final ScriptedAchievementEvaluator scriptedAchievementEvaluator;
   private final LegacyService legacyService;
+  private final GameSettingService gameSettingService;
 
   @EventListener
   @Transactional
@@ -100,6 +103,9 @@ public class ShowScriptedAchievementService {
     context.put("mainEventParticipants", mainEvent.getWrestlers());
     context.put("promoSegments", promoSegments);
     context.put("promoParticipants", promoParticipants);
+    context.put(
+        "gameDate",
+        gameSettingService.getCurrentGameDate().atStartOfDay(ZoneOffset.UTC).toInstant());
 
     for (Account account : accounts) {
       scriptedAchievementEvaluator

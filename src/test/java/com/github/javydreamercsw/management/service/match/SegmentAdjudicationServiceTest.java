@@ -128,6 +128,7 @@ class SegmentAdjudicationServiceTest {
     lenient().when(gameSettingService.isRivalryResolutionOnRegularShowsEnabled()).thenReturn(false);
     lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
     lenient().when(gameSettingService.getRivalryResolutionThresholdRegular()).thenReturn(35);
+    lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(java.time.LocalDate.now());
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             new SegmentAdjudicationService.Dependencies(

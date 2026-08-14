@@ -102,6 +102,7 @@ class AchievementSystemTest {
   public void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(java.time.LocalDate.now());
     legacyService =
         new LegacyService(
             accountRepository,
@@ -109,7 +110,8 @@ class AchievementSystemTest {
             achievementRepository,
             titleRepository,
             eventPublisher,
-            scriptedAchievementEvaluator);
+            scriptedAchievementEvaluator,
+            gameSettingService);
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             new SegmentAdjudicationService.Dependencies(

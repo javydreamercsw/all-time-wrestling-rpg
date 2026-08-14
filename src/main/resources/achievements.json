@@ -716,7 +716,7 @@
   "description": "Have Gail Kim hold a championship for 90 or more days",
   "xpValue": 1000,
   "category": "CHAMPIONSHIP",
-  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, java.time.Instant.now()).toDays() >= 90 } }"
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 90 } }"
 }, {
   "key": "DYNAMITE_THE_BLUEPRINT",
   "name": "The Blueprint",
@@ -877,5 +877,5 @@
   "description": "Have Abilene Maverick hold a championship for 90 or more days",
   "xpValue": 1000,
   "category": "CHAMPIONSHIP",
-  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('abilene') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, java.time.Instant.now()).toDays() >= 90 } }"
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('abilene') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 90 } }"
 } ]

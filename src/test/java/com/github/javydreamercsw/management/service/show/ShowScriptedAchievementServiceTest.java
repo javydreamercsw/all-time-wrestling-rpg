@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import java.util.List;
@@ -50,6 +51,7 @@ class ShowScriptedAchievementServiceTest {
 
   @Mock private ScriptedAchievementEvaluator evaluator;
   @Mock private LegacyService legacyService;
+  @Mock private GameSettingService gameSettingService;
 
   private ShowScriptedAchievementService service;
 
@@ -59,7 +61,8 @@ class ShowScriptedAchievementServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new ShowScriptedAchievementService(evaluator, legacyService);
+    when(gameSettingService.getCurrentGameDate()).thenReturn(java.time.LocalDate.now());
+    service = new ShowScriptedAchievementService(evaluator, legacyService, gameSettingService);
 
     account = new Account();
     account.setId(1L);
