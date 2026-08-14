@@ -1046,4 +1046,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gilgamesh') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "KAMALA_UGANDAN_SPLASH",
+  "name": "Ugandan Splash",
+  "description": "Have Kamala win a match with his Ugandan Splash finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('kamala') && winningCardName?.toLowerCase()?.contains('ugandan splash')"
+}, {
+  "key": "KAMALA_PATH_OF_DESTRUCTION",
+  "name": "Path of Destruction",
+  "description": "Have Kamala win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('kamala') && (participant?.consecutiveWins ?: 0) >= 3"
+}, {
+  "key": "KAMALA_DECADES_OF_DESTRUCTION",
+  "name": "Decades of Destruction",
+  "description": "Have Kamala hold a championship for 60 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('kamala') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "KAMALA_FEAR_INCARNATE",
+  "name": "Fear Incarnate",
+  "description": "Have Kamala reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('kamala') && w.tier?.name() == 'ICON' }"
 } ]
