@@ -250,7 +250,45 @@
   "heritageTag": "New York",
   "description": "A former World Champion and a hardcore legend, Raven is a great brawler and a vicious individual. Yet his greatest strength is his combination of unrivalled genius and charisma. Together, this combination made him one of the most dangerous individuals in wrestling.\n\nA master manipulator, he would use psychological warfare to guarantee his victory against his rivals before the match even started!\n\nAdditionally, his charisma and power of persuasion allowed him to create a following in every promotion he has been. This flock of followers that resembles nothing short of a cult, would do anything to protect him, helping him win countless matches.\n\nNow, awoken 200 years into the future, Raven asks “What about me? What about Raven? How was I not included in the initial tournament to crown the All Time Champion?”. To address this perceived insult, Raven has his eyes set on a prize that he wants more than anything. It is his destiny to become the Champion of All Time, and he will fulfill it. Quote the Raven, nevermore.",
   "gender": "MALE",
-  "expansion_code": "EXTREME"
+  "expansion_code": "EXTREME",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -1 stamina to gain the initiative, deal -1 health to opponent, and gain +1 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 1"
+  }, {
+    "name": "Psychological Warfare",
+    "description": "Opponent's attack target roll increases by +1 (maximum roll cap applies). If the attack still succeeds, you suffer an additional 2 damage.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 2,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING'",
+    "effectScript": "opponent.targetRollModifier += 1; match.ifAttackSucceeds.extraDamageToDefender += 2"
+  }, {
+    "name": "Raven's Rules",
+    "description": "Spend -2 stamina. Draw a random card from the Weapons Deck and deal the damage listed on the card.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "match.drawWeaponsCard(wrestler)"
+  }, {
+    "name": "The Flock",
+    "description": "Play 1 card from The Flock deck and resolve its effects.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "match.drawFlockCard(wrestler)"
+  } ]
 }, {
   "name": "Brian Pillman",
   "alignment": "HEEL",
