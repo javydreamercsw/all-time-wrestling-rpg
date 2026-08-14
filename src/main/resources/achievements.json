@@ -1438,4 +1438,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('shelton') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "SGT_COBRA_CLUTCH",
+  "name": "Cobra Clutch",
+  "description": "Have Sgt. Slaughter win a match with his Cobra Clutch finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('slaughter') && winningCardName?.toLowerCase()?.contains('cobra clutch')"
+}, {
+  "key": "SGT_AMERICAN_HERO",
+  "name": "American Hero",
+  "description": "Have Sgt. Slaughter hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('slaughter') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "SGT_LISTEN_UP_MAGGOTS",
+  "name": "Listen Up Maggots",
+  "description": "Have Sgt. Slaughter win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('slaughter') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "SGT_HALL_OF_FAMER",
+  "name": "Hall of Famer",
+  "description": "Have Sgt. Slaughter reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('slaughter') && w.tier?.name() == 'ICON' }"
 } ]
