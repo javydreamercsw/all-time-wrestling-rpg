@@ -1515,4 +1515,25 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('angle') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "RS_THE_BIG_ELBOW",
+  "name": "The Big Elbow",
+  "description": "Have Randy Savage win a match with his Diving Elbow Drop finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('savage') && winningCardName?.toLowerCase()?.contains('elbow drop')"
+}, {
+  "key": "RS_CREAM_OF_THE_CROP",
+  "name": "Cream of the Crop",
+  "description": "Have Randy Savage win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('savage') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "RS_MOUNT_RUSHMORE",
+  "name": "Mount Rushmore",
+  "description": "Have Randy Savage reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('savage') && w.tier?.name() == 'ICON' }"
 } ]
