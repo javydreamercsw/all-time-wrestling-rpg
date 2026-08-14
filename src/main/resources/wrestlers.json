@@ -740,14 +740,14 @@
   "expansion_code": "ATW_VS_WOW",
   "abilities": [ {
     "name": "Grab The Tights",
-    "description": "After triggering a PIN, spend -2 stamina. Your opponent adds 1 to each of their kickout roll totals, making it harder to kick out.",
+    "description": "After triggering a PIN, spend -2 stamina. Your opponent adds 1 to the total of each kickout roll (2 dice must beat current HP — higher total makes it harder to kick out).",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
     "timing": "PINNED",
     "unlockCondition": "event == 'PIN_TRIGGERED'",
     "costScript": "wrestler.stamina -= 2",
-    "effectScript": "opponent.kickoutRollThreshold += 1"
+    "effectScript": "opponent.kickoutRollBonus += 1"
   }, {
     "name": "Eye Poke",
     "description": "Gain the initiative. Your opponent cannot defend against your next attack.",
