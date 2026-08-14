@@ -633,4 +633,32 @@
   "xpValue": 750,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers.any { w -> w.name?.toLowerCase()?.contains('savage') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "RVD_WHOLE_DAMN_SHOW",
+  "name": "Whole Damn Show",
+  "description": "Have Rob Van Dam appear in both a promo and the main event of the same weekly show",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('mainEventParticipants') && mainEventParticipants?.any { w -> w.name?.toLowerCase()?.contains('van dam') } && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('van dam') }"
+}, {
+  "key": "RVD_FIVE_STAR_FROG_SPLASH",
+  "name": "Five Star Frog Splash",
+  "description": "Have Rob Van Dam win a five-star match with his signature Frog Splash",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('van dam') && winningCardName?.toLowerCase()?.contains('frog splash') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "RVD_MR_MONDAY_NIGHT",
+  "name": "Mr. Monday Night",
+  "description": "Have Rob Van Dam successfully defend a championship four weeks in a row",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('van dam') && w.reigns?.any { r -> r.currentReign && (r.consecutiveWeeklyDefenses ?: 0) >= 4 } }"
+}, {
+  "key": "RVD_ROB_VAN_DAM",
+  "name": "Rob... Van... Dam",
+  "description": "Have Rob Van Dam reach Icon tier",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('van dam') && w.defaultState?.map { s -> s.tier?.name() == 'ICON' }?.orElse(false) }"
 } ]

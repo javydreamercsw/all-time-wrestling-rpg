@@ -457,6 +457,9 @@ public class SegmentAdjudicationService {
                   && !currentChampions.isEmpty()
                   && currentChampions.stream().anyMatch(winnerSet::contains);
           if (championsDefended || winnerSet.isEmpty()) {
+            if (championsDefended) {
+              titleService.recordSuccessfulDefense(title);
+            }
             eventPublisher.publishEvent(
                 new ChampionshipDefendedEvent(this, title, currentChampions, losers));
           } else {
@@ -681,6 +684,36 @@ public class SegmentAdjudicationService {
     achievementKeys.add(segment.getSegmentType().getName());
     segment.getSegmentRules().forEach(rule -> achievementKeys.add(rule.getName()));
 
+    // Build per-participant maps once for scripted achievement context variables.
+    Map<Long, Integer> momentumById =
+        segment.getParticipants().stream()
+            .filter(p -> p.getFinalMomentum() != null)
+            .collect(
+                Collectors.toMap(
+                    p -> p.getWrestler().getId(),
+                    SegmentParticipant::getFinalMomentum,
+                    (a, b) -> a));
+    Map<Long, String> winningCardById =
+        segment.getParticipants().stream()
+            .filter(p -> p.getWinningCardName() != null)
+            .collect(
+                Collectors.toMap(
+                    p -> p.getWrestler().getId(),
+                    SegmentParticipant::getWinningCardName,
+                    (a, b) -> a));
+    String winnerWinningCardName =
+        winners.stream()
+            .filter(w -> winningCardById.containsKey(w.getId()))
+            .map(w -> winningCardById.get(w.getId()))
+            .findFirst()
+            .orElse(null);
+    Integer winnerMomentum =
+        winners.stream()
+            .filter(w -> momentumById.containsKey(w.getId()))
+            .map(w -> momentumById.get(w.getId()))
+            .findFirst()
+            .orElse(null);
+
     for (Wrestler participant : segment.getWrestlers()) {
       if (participant.getAccount() != null) {
         for (String baseKey : achievementKeys) {
@@ -716,6 +749,11 @@ public class SegmentAdjudicationService {
           context.put(
               "segmentRuleNames",
               segment.getSegmentRules().stream().map(SegmentRule::getName).toList());
+          context.put("segmentRating", segment.getSegmentRating());
+          context.put("isChampionshipMatch", Boolean.TRUE.equals(segment.getIsTitleSegment()));
+          context.put("winningCardName", winnerWinningCardName);
+          context.put("participantMomentum", momentumById.get(participant.getId()));
+          context.put("winnerMomentum", winnerMomentum);
           scriptedAchievementEvaluator
               .resolveNewlyUnlockedKeys(participant.getAccount(), context)
               .forEach(key -> legacyService.unlockAchievement(participant.getAccount(), key));

@@ -55,7 +55,7 @@ public class AchievementScriptService {
       Object result = InvokerHelper.createScript(scriptClass, binding).run();
       return Boolean.TRUE.equals(result);
     } catch (Exception e) {
-      log.warn("Achievement unlock script failed — treating as not-unlocked: {}", e.getMessage());
+      log.debug("Achievement unlock script failed — treating as not-unlocked: {}", e.getMessage());
       return false;
     }
   }
