@@ -822,4 +822,32 @@
   "xpValue": 500,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('pillman') && (w.consecutiveWins ?: 0) >= 3 }"
+}, {
+  "key": "DAEMON_PAIN_MAKES_ME_FEEL_ALIVE",
+  "name": "Pain Makes Me Feel Alive",
+  "description": "Have Daemon win a match with very low momentum",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winnerMomentum') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('daemon') && (winnerMomentum ?: 10) <= 3"
+}, {
+  "key": "DAEMON_TOUCH_OF_MADNESS",
+  "name": "Touch of Madness",
+  "description": "Have Daemon put on a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('daemon') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "DAEMON_BURN_IT_DOWN",
+  "name": "Burn It Down",
+  "description": "Have Daemon win a championship match",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "binding.hasVariable('isChampionshipMatch') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('daemon') && (isChampionshipMatch ?: false)"
+}, {
+  "key": "DAEMON_HARDCORE_DEVOTION",
+  "name": "Hardcore Devotion",
+  "description": "Have Daemon win a Barbwire Exploding Deathmatch",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('daemon') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('barbwire') }"
 } ]
