@@ -962,4 +962,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jordynne') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "JOHNNY_ALL_TIME_STARSHIP_PAIN",
+  "name": "Starship Pain",
+  "description": "Have Johnny All Time win a match with his Starship Pain finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('johnny') && winningCardName?.toLowerCase()?.contains('starship')"
+}, {
+  "key": "JOHNNY_ALL_TIME_MOONLIGHT_DRIVE",
+  "name": "Moonlight Drive",
+  "description": "Have Johnny All Time win a match with his Moonlight Drive signature",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('johnny') && winningCardName?.toLowerCase()?.contains('moonlight')"
+}, {
+  "key": "JOHNNY_ALL_TIME_MAYOR_OF_SLAMTOWN",
+  "name": "Mayor of Slamtown",
+  "description": "Have Johnny All Time cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('johnny') }"
+}, {
+  "key": "JOHNNY_ALL_TIME_ALL_TIME",
+  "name": "All Time",
+  "description": "Have Johnny All Time reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('johnny') && w.tier?.name() == 'ICON' }"
 } ]
