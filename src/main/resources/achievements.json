@@ -1326,4 +1326,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('sabu') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "BST_THE_BEAST_BOMB",
+  "name": "The Beast Bomb",
+  "description": "Have The Beast win a match with her Beast Bomb finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('the beast') && winningCardName?.toLowerCase()?.contains('beast bomb')"
+}, {
+  "key": "BST_YOU_DONT_BEAT_THE_BEAST",
+  "name": "You Don't Beat The Beast",
+  "description": "Have The Beast win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('the beast') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "BST_END_OF_HOPE",
+  "name": "End of Hope",
+  "description": "Have The Beast win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('the beast') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "BST_FROM_PARTS_UNKNOWN",
+  "name": "From Parts Unknown",
+  "description": "Have The Beast reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('the beast') && w.tier?.name() == 'ICON' }"
 } ]
