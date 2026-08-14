@@ -493,4 +493,144 @@
   "description": "Won \"The Match Beyond\" as the underdog team",
   "xpValue": 150,
   "category": "CHALLENGE"
+}, {
+  "key": "RISING_TIDE",
+  "name": "Rising Tide",
+  "description": "Accumulate 50,000 total fans across your roster",
+  "xpValue": 250,
+  "category": "FANS",
+  "unlockCondition": "totalFans >= 50000"
+}, {
+  "key": "ARENA_FILLER",
+  "name": "Arena Filler",
+  "description": "Accumulate 500,000 total fans across your roster",
+  "xpValue": 2000,
+  "category": "FANS",
+  "unlockCondition": "totalFans >= 500000"
+}, {
+  "key": "LOADED_ROSTER_25",
+  "name": "Full Locker Room",
+  "description": "Sign your 25th wrestler",
+  "xpValue": 500,
+  "category": "COLLECTION",
+  "unlockCondition": "wrestlers.size() >= 25"
+}, {
+  "key": "DOUBLE_GOLD",
+  "name": "Double Gold",
+  "description": "Have two championships held simultaneously across your roster",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "currentTitlesHeld >= 2"
+}, {
+  "key": "TRIPLE_CROWN",
+  "name": "Triple Crown",
+  "description": "Hold three championships at once across your roster",
+  "xpValue": 1500,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "currentTitlesHeld >= 3"
+}, {
+  "key": "SILVER_TONGUE_CHAMPION",
+  "name": "Silver Tongue",
+  "description": "A wrestler with elite Charisma (5+) holds a championship",
+  "xpValue": 500,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.charisma >= 5 && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "BRAWLER_KING",
+  "name": "Brawler King",
+  "description": "A wrestler with elite Brawl (5+) holds a championship",
+  "xpValue": 500,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.brawl >= 5 && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "DRIVEN_TO_THE_TOP",
+  "name": "Driven to the Top",
+  "description": "A wrestler with elite Drive (5+) holds a championship",
+  "xpValue": 600,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.drive >= 5 && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "UNBREAKABLE",
+  "name": "Unbreakable",
+  "description": "A wrestler with elite Resilience (5+) holds a championship",
+  "xpValue": 500,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.resilience >= 5 && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "COMPLETE_PACKAGE",
+  "name": "The Complete Package",
+  "description": "Have a wrestler with Drive, Resilience, Charisma, and Brawl all at 4 or higher",
+  "xpValue": 750,
+  "category": "COLLECTION",
+  "unlockCondition": "wrestlers.any { w -> w.drive >= 4 && w.resilience >= 4 && w.charisma >= 4 && w.brawl >= 4 }"
+}, {
+  "key": "GLASS_CANNON_CHAMPION",
+  "name": "Glass Cannon Champion",
+  "description": "A low-health wrestler (starting health 8 or below) holds a championship",
+  "xpValue": 600,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.startingHealth <= 8 && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "IRON_LUNGS_CHAMPION",
+  "name": "Iron Lungs",
+  "description": "A high-stamina wrestler (starting stamina 16 or above) holds a championship",
+  "xpValue": 500,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.startingStamina >= 16 && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "DEEP_TALENT",
+  "name": "Bag of Tricks",
+  "description": "A wrestler with a near-full deck (17+ cards) holds a championship",
+  "xpValue": 400,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.deckSize >= 17 && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "GLOBAL_ROSTER",
+  "name": "Global Scouting Report",
+  "description": "Have active wrestlers from three or more different heritage regions",
+  "xpValue": 400,
+  "category": "COLLECTION",
+  "unlockCondition": "wrestlers.findAll { it.heritageTag && it.active }.collect { it.heritageTag }.unique().size() >= 3"
+}, {
+  "key": "HOMETOWN_PRIDE",
+  "name": "Hometown Pride",
+  "description": "Have two or more current champions all from the same heritage region",
+  "xpValue": 800,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "def champs = wrestlers.findAll { w -> w.reigns?.any { r -> r.currentReign } }; champs.size() >= 2 && champs.every { it.heritageTag } && champs.collect { it.heritageTag }.unique().size() == 1"
+}, {
+  "key": "HOMEGROWN_CHAMPION",
+  "name": "Homegrown Champion",
+  "description": "A custom-expansion wrestler holds a championship",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.expansionCode == 'CUSTOM' && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "WOMEN_RULE",
+  "name": "The Glass Ceiling, Shattered",
+  "description": "A female wrestler holds a championship",
+  "xpValue": 500,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers.any { w -> w.gender?.name() == 'FEMALE' && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "OLYMPIC_GOLD",
+  "name": "Olympic Gold",
+  "description": "Have Kurt Angle win a championship",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers.any { w -> w.name?.toLowerCase()?.contains('angle') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "GIANT_AMONG_CHAMPIONS",
+  "name": "A Giant Among Champions",
+  "description": "Have André the Giant hold a championship",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers.any { w -> w.name?.toLowerCase()?.contains('andr') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "MACHO_MADNESS",
+  "name": "Macho Madness",
+  "description": "Have Randy Savage hold a championship",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers.any { w -> w.name?.toLowerCase()?.contains('savage') && w.reigns?.any { r -> r.currentReign } }"
 } ]
