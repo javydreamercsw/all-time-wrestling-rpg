@@ -1494,4 +1494,25 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('bulldog') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "KA_ANKLE_LOCK",
+  "name": "Ankle Lock",
+  "description": "Have Kurt Angle win a match with his Ankle Lock finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('angle') && winningCardName?.toLowerCase()?.contains('ankle lock')"
+}, {
+  "key": "KA_ITS_DAMN_REAL",
+  "name": "It's Damn Real",
+  "description": "Have Kurt Angle win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('angle') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "KA_THE_BEST_EVER",
+  "name": "The Best Ever",
+  "description": "Have Kurt Angle reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('angle') && w.tier?.name() == 'ICON' }"
 } ]
