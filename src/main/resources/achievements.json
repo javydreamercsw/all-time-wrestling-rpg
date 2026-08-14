@@ -1382,4 +1382,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tormenta') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "TYV_ROAD_TO_VALHALLA",
+  "name": "Road to Valhalla",
+  "description": "Have Taya Valkyrie win a match with her Road to Valhalla finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('valkyrie') && winningCardName?.toLowerCase()?.contains('valhala')"
+}, {
+  "key": "TYV_LA_WERA_LOCA",
+  "name": "La Wera Loca",
+  "description": "Have Taya Valkyrie win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('valkyrie') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "TYV_LONGEST_REIGNING_QUEEN",
+  "name": "Longest-Reigning Queen",
+  "description": "Have Taya Valkyrie hold a championship for 60 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('valkyrie') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "TYV_BOW_DOWN_OR_BE_BROKEN",
+  "name": "Bow Down or Be Broken",
+  "description": "Have Taya Valkyrie reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('valkyrie') && w.tier?.name() == 'ICON' }"
 } ]
