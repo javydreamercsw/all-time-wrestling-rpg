@@ -704,12 +704,12 @@
   "category": "CHAMPIONSHIP",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && w.reigns?.any { r -> r.currentReign && (r.reignNumber ?: 1) == 1 } }"
 }, {
-  "key": "GAIL_KIM_SUBMISSION_ARTIST",
-  "name": "Submission Artist",
-  "description": "Have Gail Kim win a match with her signature Koji Clutch submission",
+  "key": "GAIL_KIM_EAT_DEFEAT",
+  "name": "Eat Defeat",
+  "description": "Have Gail Kim win a match with her finishing Eat Defeat",
   "xpValue": 500,
   "category": "SPECIAL_EVENT",
-  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('gail') && winningCardName?.toLowerCase()?.contains('koji')"
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('gail') && winningCardName?.toLowerCase()?.contains('eat defeat')"
 }, {
   "key": "GAIL_KIM_THE_STANDARD",
   "name": "The Standard",
@@ -906,4 +906,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> (w.name?.toLowerCase()?.contains('junkyard') || w.name?.toLowerCase()?.contains('jyd')) && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "JESSIE_MCKAY_BIG_BOOT",
+  "name": "Big Boot",
+  "description": "Have Jessie McKay win a match with her Running Boot finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jessie') && winningCardName?.toLowerCase()?.contains('boot')"
+}, {
+  "key": "JESSIE_MCKAY_LIGHTS_CAMERA_KICK",
+  "name": "Lights. Camera. Kick!",
+  "description": "Have Jessie McKay cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('jessie') }"
+}, {
+  "key": "JESSIE_MCKAY_STYLE_AND_SUBSTANCE",
+  "name": "Style and Substance",
+  "description": "Have Jessie McKay hold a championship for 30 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jessie') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "JESSIE_MCKAY_AUSSIE_EXPORT",
+  "name": "Aussie Export",
+  "description": "Have Jessie McKay reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jessie') && w.tier?.name() == 'ICON' }"
 } ]
