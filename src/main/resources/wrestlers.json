@@ -21,7 +21,7 @@
     "category": "PASSIVE",
     "default": false,
     "unlockCondition": "event == 'AERIAL_ATTACK_SUCCESS'",
-    "effectScript": "wrestler.wholeDamnShowTokens = (wrestler.wholeDamnShowTokens ?: 0) + 1; if (wrestler.wholeDamnShowTokens >= 3) { match.globalAttackBonus += 1; match.aerialAttackBonus += 1; }"
+    "effectScript": "wrestler.abilityTokens['The Whole Damn Show'] = (wrestler.abilityTokens['The Whole Damn Show'] ?: 0) + 1; if (wrestler.abilityTokens['The Whole Damn Show'] >= 3) { match.globalAttackBonus += 1; match.aerialAttackBonus += 1; }"
   }, {
     "name": "Spinning Kick",
     "description": "Block any STRIKE and gain the initiative. Deal -2 health to opponent and gain +1 stamina.",
