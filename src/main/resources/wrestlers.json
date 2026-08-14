@@ -134,7 +134,7 @@
     "category": "PASSIVE",
     "default": true,
     "timing": "PINNED",
-    "effectScript": "wrestler.extraKickoutRolls += 1"
+    "effectScript": "wrestler.kickoutRolls += 1"
   }, {
     "name": "Macho Madness",
     "description": "Gain +1 stamina and +1 momentum.",
@@ -298,7 +298,31 @@
   "heritageTag": "UK",
   "description": "Across the ages, only a handful of wrestlers can claim to have significantly changed the world of pro-wrestling. Thomas Billington, formerly known as the Dynamite Kid, was one of them.\n\nBorn on December 5th 1958, Thomas did not have the traditional build of a pro-wrestler. Despite his thick muscles, he was relatively short and considered small. Yet what Dynamite lacked in size, he made up for in incredible athleticism, technique, and speed. This new style of high-octane offense blending technical wrestling, high flying, and smash mouth brawling took the world by sensation. Eventually, many of the world's greatest wrestlers were inspired by it, adopting his style into their own work.\n\nDespite never winning a major single's world title, his incredible matches with the likes of Tiger Mask, and his tag team partnership with The British Bulldog have solidified his legacy as one of the best in-ring performers in history. Now, he awaits his chance to revolutionize the art of pro-wrestling once more, this time, in front of the world's largest wrestling audience. Can anyone keep up with Dynamite?",
   "gender": "MALE",
-  "expansion_code": "TRAILBLAZERS"
+  "expansion_code": "TRAILBLAZERS",
+  "abilities": [ {
+    "name": "Relentless",
+    "description": "Your opponent cannot gain stamina as Defender's Compensation. If your stamina is low, you do not spend stamina when playing an attack card.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "effectScript": "opponent.defenderCompensationStamina = 0; if (wrestler.stamina <= wrestler.lowStamina) { match.attackCardStaminaCost = 0; }"
+  }, {
+    "name": "Catch-As-Catch-Can",
+    "description": "Draw 5 cards, keep all THROW and GRAPPLE cards, return the rest to your draw pile without exceeding your hand limit.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "effectScript": "wrestler.drawAndFilter(5, ['THROW', 'GRAPPLE'])"
+  }, {
+    "name": "Grappler",
+    "description": "Spend -5 stamina to gain the initiative. Can be used repeatedly.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "costScript": "wrestler.stamina -= 5",
+    "effectScript": "wrestler.gainInitiative()"
+  } ]
 }, {
   "name": "Gilgamesh",
   "alignment": "HEEL",
