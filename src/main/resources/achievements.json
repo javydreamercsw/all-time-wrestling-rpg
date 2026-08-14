@@ -990,4 +990,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('johnny') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "JAX_FELIX_FALL_FROM_GRACE",
+  "name": "Fall From Grace",
+  "description": "Have Jax Felix win a match with his Fall From Grace finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jax') && winningCardName?.toLowerCase()?.contains('fall from grace')"
+}, {
+  "key": "JAX_FELIX_MIRACLE_SEE",
+  "name": "Miracle See",
+  "description": "Have Jax Felix cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('jax') }"
+}, {
+  "key": "JAX_FELIX_THE_LONGEST_REIGN",
+  "name": "The Longest Reign",
+  "description": "Have Jax Felix hold a championship for 180 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jax') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 180 } }"
+}, {
+  "key": "JAX_FELIX_FOREGONE_CONCLUSION",
+  "name": "Foregone Conclusion",
+  "description": "Have Jax Felix reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jax') && w.tier?.name() == 'ICON' }"
 } ]
