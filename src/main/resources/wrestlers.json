@@ -349,12 +349,12 @@
   "expansion_code": "EXTREME",
   "abilities": [ {
     "name": "Homicidal, Suicidal",
-    "description": "After a successful AERIAL attack, suffer 1 damage and deal -4 health to opponent.",
+    "description": "After a successful AERIAL attack, suffer 1 damage and deal -2 health to opponent.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
     "unlockCondition": "event == 'AERIAL_ATTACK_SUCCESS'",
-    "effectScript": "wrestler.health -= 1; opponent.health -= 4"
+    "effectScript": "wrestler.health -= 1; opponent.health -= 2"
   }, {
     "name": "Unpredictable",
     "description": "Trigger immediately after your opponent's defensive ability window. Switch the attack card played with an attack card from your hand. Your opponent cannot defend against the new attack card.",
