@@ -1410,4 +1410,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('valkyrie') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "SHB_T_BONE_SUPLEX",
+  "name": "T-Bone Suplex",
+  "description": "Have Shelton Benjamin win a match with his T-Bone Suplex finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('shelton') && winningCardName?.toLowerCase()?.contains('t-bone')"
+}, {
+  "key": "SHB_GOLD_STANDARD",
+  "name": "Gold Standard",
+  "description": "Have Shelton Benjamin hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('shelton') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "SHB_QUIET_STORM",
+  "name": "Quiet Storm",
+  "description": "Have Shelton Benjamin win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('shelton') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "SHB_THE_HURT_COLLECTIVE",
+  "name": "The Hurt Collective",
+  "description": "Have Shelton Benjamin reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('shelton') && w.tier?.name() == 'ICON' }"
 } ]
