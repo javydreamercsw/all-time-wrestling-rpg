@@ -76,6 +76,7 @@
   "momentum": 3,
   "signature": false,
   "finisher": true,
+  "pin": true,
   "number": 7,
   "set": "RVD"
 }, {

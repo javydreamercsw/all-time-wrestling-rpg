@@ -73,7 +73,7 @@
   "signature": true,
   "finisher": true,
   "taunt": false,
-  "pin": false,
+  "pin": true,
   "number": 2,
   "set": "EDDIE"
 }, {

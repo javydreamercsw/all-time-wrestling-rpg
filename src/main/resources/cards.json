@@ -98,6 +98,7 @@
   "momentum": 3,
   "signature": false,
   "finisher": true,
+  "pin": true,
   "number": 7,
   "set": "RVD"
 }, {
@@ -202,7 +203,7 @@
   "momentum": 3,
   "signature": false,
   "finisher": true,
-  "pin": false,
+  "pin": true,
   "number": 15,
   "set": "OT"
 }, {
@@ -694,7 +695,7 @@
   "signature": true,
   "finisher": true,
   "taunt": false,
-  "pin": false,
+  "pin": true,
   "number": 2,
   "set": "EDDIE"
 }, {
