@@ -364,7 +364,7 @@
   "gender": "MALE",
   "expansion_code": "EDDIE",
   "abilities": [ {
-    "name": "Eddie Reversal",
+    "name": "Reversal",
     "description": "Spend -2 stamina to gain the initiative, deal -1 health to your opponent, then gain +2 stamina and 1 scheme token.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
@@ -395,20 +395,6 @@
     "maxUses": 1,
     "default": true,
     "effectScript": "wrestler.stamina += 2; opponent.mustChoose('DISCARD_CARD', 'LOSE_3_STAMINA')"
-  }, {
-    "name": "Recover",
-    "description": "You gain +2 stamina and +1 health. Opponent gains +1 stamina and +1 health.",
-    "type": "ALWAYS_ON",
-    "category": "ACTION",
-    "default": true,
-    "effectScript": "wrestler.stamina += 2; wrestler.health += 1; opponent.stamina += 1; opponent.health += 1"
-  }, {
-    "name": "Taunt",
-    "description": "You gain +1 stamina, +1 health, and +2 stamina. Opponent gains +1 stamina, +1 health, and +1.",
-    "type": "ALWAYS_ON",
-    "category": "ACTION",
-    "default": true,
-    "effectScript": "wrestler.stamina += 3; wrestler.health += 1; opponent.stamina += 1; opponent.health += 1"
   } ]
 }, {
   "name": "Matt Cardona",
@@ -441,56 +427,7 @@
   "heritageTag": "Siberia",
   "description": "OMZ \"The Knockout Artist\"\nBorn on July 7th, 2005, OMZ could only be described as a prodigy. Growing up, he excelled at mathematics and music, and mastered the art of combat, winning multiple championships in grappling and striking combat sports. He was also fascinated with technology. He loved spending his time competing in E-sports competitions and testing his hacking skills online.\n\nBut his encounters with technology would soon get him into serious trouble. After hacking a Russian company website, he soon discovered a massive conspiracy to cover-up illicit activities that significantly harm the environment and its inhabitants. Before he could alert the authorities, he was kidnapped and jailed in a Siberian prison. It is there that \"OMZ\", the \"Knock-out Artist\", was born.\n\nForged in this dangerous and inhospitable environment, OMZ’s skillsets were sharpened to help him reach his full fighting potential. After knocking-out or submitting a few rowdy inmates, he was invited to take part in the covert tournament named \"Deadly Combat\" that brought together the world’s most notorious criminals and fighters. He won the tournament, and proceeded to do so for 5 consecutive years, winning his freedom in the process.\n\nNow, battle hardened and unleashed on the world of pro-wrestling and MMA, this dual-combat sport athlete is ready to test the mettle of all those who are unfortunate enough to stand in his way. Make no mistake about it, he will make you scream before knocking you out and painting the ring mat with your blood. For what is art without violence?",
   "gender": "MALE",
-  "expansion_code": "BASE_GAME",
-  "abilities": [ {
-    "name": "OMZ Reversal",
-    "description": "Spend -2 stamina to gain the initiative and deal -1 health to your opponent.",
-    "type": "USES_LIMITED",
-    "category": "SIGNATURE",
-    "maxUses": 1,
-    "default": true,
-    "costScript": "wrestler.stamina -= 2",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1"
-  }, {
-    "name": "Knockout Artist",
-    "description": "Once per match, after winning a pinfall or submission, gain +2 stamina and +1 momentum.",
-    "type": "USES_LIMITED",
-    "category": "SIGNATURE",
-    "maxUses": 1,
-    "default": true,
-    "unlockCondition": "event == ‘MATCH_WIN’",
-    "effectScript": "wrestler.stamina += 2; wrestler.momentum += 1"
-  }, {
-    "name": "Siberian Conditioning",
-    "description": "When your health drops to the low-health threshold, gain +2 stamina from sheer conditioning.",
-    "type": "CONDITIONAL",
-    "category": "PASSIVE",
-    "unlockCondition": "wrestler.health <= wrestler.lowHealth",
-    "default": true,
-    "effectScript": "wrestler.stamina += 2"
-  }, {
-    "name": "Art Without Violence",
-    "description": "After winning a Deadly Combat-rules match, gain +1 health and +2 stamina.",
-    "type": "CONDITIONAL",
-    "category": "PASSIVE",
-    "unlockCondition": "event == ‘DEADLY_COMBAT_WIN’",
-    "default": true,
-    "effectScript": "wrestler.health += 1; wrestler.stamina += 2"
-  }, {
-    "name": "Recover",
-    "description": "You gain +2 stamina and +1 health. Opponent gains +1 stamina and +1 health.",
-    "type": "ALWAYS_ON",
-    "category": "ACTION",
-    "default": true,
-    "effectScript": "wrestler.stamina += 2; wrestler.health += 1; opponent.stamina += 1; opponent.health += 1"
-  }, {
-    "name": "Taunt",
-    "description": "You gain +1 stamina, +1 health, and +2 stamina. Opponent gains +1 stamina, +1 health, and +1.",
-    "type": "ALWAYS_ON",
-    "category": "ACTION",
-    "default": true,
-    "effectScript": "wrestler.stamina += 3; wrestler.health += 1; opponent.stamina += 1; opponent.health += 1"
-  } ]
+  "expansion_code": "BASE_GAME"
 }, {
   "name": "Kamala",
   "alignment": "HEEL",
