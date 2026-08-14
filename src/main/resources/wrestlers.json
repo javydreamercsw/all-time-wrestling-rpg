@@ -737,7 +737,36 @@
   "heritageTag": "Texas, USA",
   "description": "Abilene Maverick is sugar, spice, and nothing nice. Don’t let the Southern drawl and designer boots fool you – the “Governor’s Daughter” is as ruthless as they come. With a dazzling smile and a dangerous streak, Abilene has charmed, cheated, and clawed her way to the top of the WOW Women of Wrestling scene – and she plans to do the same here, no matter what century it is.\n\nThe former WOW Champion was raised to believe she was born for greatness. Abilene carries herself with an air of entitlement – and backs it up with a vicious streak a mile wide. Her wrestling style is deceptively elegant: smooth chain wrestling, sharp kicks, and most importantly, filled with underhanded tactics that always seem to go unnoticed by the ref. She doesn’t play fair – she plays to win.\n\nWhether she’s cutting a promo or cutting corners, Abilene is always in control. And if things don’t go her way? Well, just ask her former friends and tag partners what happens when you cross her – but maybe don’t do it in front of her. She’s got a reputation to uphold, after all.\n\nNow, in a future far from the luxury she’s used to, Abilene Maverick finds herself surrounded by chaos. But don’t worry – she’s here to bring class back to combat… and leave everyone else crying in the dust.\n\n“Bless your heart… if you think you belong in the same ring as me.”\n",
   "gender": "FEMALE",
-  "expansion_code": "ATW_VS_WOW"
+  "expansion_code": "ATW_VS_WOW",
+  "abilities": [ {
+    "name": "Grab The Tights",
+    "description": "After triggering a PIN, spend -1 stamina. Your opponent adds 1 to each of their kickout roll totals, making it harder to kick out.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "timing": "PINNED",
+    "unlockCondition": "event == 'PIN_TRIGGERED'",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "opponent.kickoutRollThreshold += 1"
+  }, {
+    "name": "Eye Poke",
+    "description": "Gain the initiative. Your opponent cannot defend against your next attack.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.gainInitiative(); match.nextAttackIsUndefendable = true"
+  }, {
+    "name": "Behind The Ref",
+    "description": "After a successful GRAPPLE, spend -1 stamina to deal -1 health to opponent and gain +1 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "unlockCondition": "event == 'GRAPPLE_SUCCESS'",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "opponent.health -= 1; wrestler.stamina += 1"
+  } ]
 }, {
   "name": "The Beast",
   "alignment": "FACE",
