@@ -18,4 +18,28 @@
   "unlockCondition": "event == 'ATTACK_INCOMING' && match.consecutiveAttackCount >= 3",
   "costScript": "wrestler.stamina -= 2",
   "effectScript": "blockAttack(); wrestler.gainInitiative()"
+}, {
+  "name": "Reversal",
+  "description": "Spend -2 stamina to gain the initiative, deal -2 health to opponent, and gain +2 stamina.",
+  "type": "USES_LIMITED",
+  "category": "SIGNATURE",
+  "maxUses": 1,
+  "default": true,
+  "timing": "DEFENSE",
+  "costScript": "wrestler.stamina -= 2",
+  "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
+}, {
+  "name": "Recover",
+  "description": "Gain +2 stamina and draw 1 card. Opponent also gains +1 stamina, +1 health, and draws 1 card.",
+  "type": "ALWAYS_ON",
+  "category": "ACTION",
+  "default": true,
+  "effectScript": "wrestler.stamina += 2; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+}, {
+  "name": "Taunt",
+  "description": "Gain +1 stamina, +1 momentum, and draw 2 cards. Opponent also gains +1 stamina, +1 health, and draws 1 card.",
+  "type": "ALWAYS_ON",
+  "category": "ACTION",
+  "default": true,
+  "effectScript": "wrestler.stamina += 1; wrestler.momentum += 1; wrestler.drawCard(2); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
 } ]

@@ -79,16 +79,6 @@
   "gender": "MALE",
   "expansion_code": "BASE_GAME",
   "abilities": [ {
-    "name": "Andre Reversal",
-    "description": "Spend -2 stamina to gain the initiative, deal -2 health to opponent, and gain +2 stamina.",
-    "type": "USES_LIMITED",
-    "category": "SIGNATURE",
-    "maxUses": 1,
-    "default": true,
-    "timing": "DEFENSE",
-    "costScript": "wrestler.stamina -= 2",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
-  }, {
     "name": "The 8th Wonder of the World",
     "description": "Opponent's THROW target roll is +2 higher (harder to hit). A successful opponent THROW still deals 1 additional damage.",
     "type": "ALWAYS_ON",
@@ -120,13 +110,6 @@
     "category": "ACTION",
     "default": true,
     "effectScript": "wrestler.stamina += 3; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
-  }, {
-    "name": "Taunt",
-    "description": "Gain +1 stamina +1 momentum and +1 health. Opponent also gains +1 stamina and +1 health but loses 1 card.",
-    "type": "ALWAYS_ON",
-    "category": "ACTION",
-    "default": true,
-    "effectScript": "wrestler.stamina += 1; wrestler.momentum += 1; wrestler.health += 1; opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
   } ]
 }, {
   "name": "Randy Savage",
@@ -145,16 +128,6 @@
   "gender": "MALE",
   "expansion_code": "BASE_GAME",
   "abilities": [ {
-    "name": "Randy Reversal",
-    "description": "Spend -2 stamina to gain the initiative, deal -2 health to opponent, and gain +2 stamina.",
-    "type": "USES_LIMITED",
-    "category": "SIGNATURE",
-    "maxUses": 1,
-    "default": true,
-    "timing": "DEFENSE",
-    "costScript": "wrestler.stamina -= 2",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
-  }, {
     "name": "Valet Distraction",
     "description": "Always has one extra kick-out roll when pinned.",
     "type": "ALWAYS_ON",
@@ -180,20 +153,6 @@
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); if (!opponent.countersWithCard() && opponent.roll() < 5) { opponent.health -= 3; wrestler.stamina += 2; } else { opponent.gainInitiative(); }"
-  }, {
-    "name": "Recover",
-    "description": "Gain +2 stamina and draw 1 card. Opponent also gains +1 stamina, +1 health, and draws 1 card.",
-    "type": "ALWAYS_ON",
-    "category": "ACTION",
-    "default": true,
-    "effectScript": "wrestler.stamina += 2; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
-  }, {
-    "name": "Taunt",
-    "description": "Gain +1 stamina, +1 momentum, and draw 2 cards. Opponent also gains +1 stamina, +1 health, and draws 1 card.",
-    "type": "ALWAYS_ON",
-    "category": "ACTION",
-    "default": true,
-    "effectScript": "wrestler.stamina += 1; wrestler.momentum += 1; wrestler.drawCard(2); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
   } ]
 }, {
   "name": "Jax Felix",
