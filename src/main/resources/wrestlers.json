@@ -227,7 +227,35 @@
   "heritageTag": "UK",
   "description": "“The British Bulldog is gonna win whether he likes it or not”\n\nDavey Boy Smith, “The British Bulldog”, is undoubtedly the most popular and loved British professional wrestler of all time. He was the first-ever European Champion, a former Intercontinental Champion, and a multi-time tag team champion as part of one the greatest tag teams in history, “The British Bulldogs”. He was also a key member of the Hart Foundation.\n\nThe Bulldog was an incredible athlete that mixed power, speed, and intelligence. Pound-for-pound, he was the strongest wrestler of all time, able to lift superheavyweights with ease. In addition to his raw strength, he could move quickly, executing an array of technical and aerial maneuvers that shocked his opponents. On his best day, The Bulldog was an impossible man to beat.\n\nHowever, despite his popularity, some critics have questioned whether the Bulldog can be crowned as the best British Heavyweight of all time. The one blemish on his record was that he was never able to capture a major world title. Now, awoken over 200 years after the untimely end to his career, the Bulldog has one more chance to fulfill his destiny of becoming a world champion. Better yet, he has a chance to become the “Champion of All Time”, the most prestigious title that has ever existed. The time for barking is over… The Bulldog is ready to bite and take his rightful place as the greatest of all time.",
   "gender": "MALE",
-  "expansion_code": "BASE_GAME"
+  "expansion_code": "BASE_GAME",
+  "abilities": [ {
+    "name": "Pure Power",
+    "description": "After a successful attack of 2 or more damage, spend -1 stamina to deal -1 additional health to opponent.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && match.damageAmount >= 2",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "opponent.health -= 1"
+  }, {
+    "name": "Whether He Wants To Or Not",
+    "description": "Trigger on offense after an attack roll. Gain -1 to the target roll for signature and finisher moves.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_ROLL' && (match.attackType == 'GRAPPLE' || match.attackType == 'THROW')",
+    "effectScript": "wrestler.signatureFinisherTargetModifier -= 1"
+  }, {
+    "name": "Shades of Wembley",
+    "description": "Spend -1 stamina and gain the initiative. Opponent may counter by playing a GRAPPLE card or rolling 4+. If opponent fails: gain +1 health, +1 momentum, and trigger a pin.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); match.opponentCounterChallenge('GRAPPLE_OR_ROLL_4', 'wrestler.health += 1; wrestler.momentum += 1; match.triggerPin(wrestler)')"
+  } ]
 }, {
   "name": "Sgt. Slaughter",
   "alignment": "HEEL",
