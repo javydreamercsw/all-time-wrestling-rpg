@@ -620,7 +620,52 @@
   "description": "From decorated amateur wrestler to dominant MMA superstar to world champion across multiple promotions, Bobby Lashley has always been regarded as one of the most dangerous forces to ever step foot into a wrestling ring — but today, he is something more. He is a man of strategy, precision, and control.\n\nAs one of the masterminds behind the Hurt Collective, Lashley doesn’t just fight for titles anymore. He fights to build an empire. And he is smart enough to know that with an army surrounding him, dressed in suits, driven by purpose, and fueled by profit, he is reshaping wrestling in his image.\n\nLashley still destroys in the ring — with raw strength, relentless ground-and-pound, and the kind of physical dominance few have ever matched. But there’s also the boss. He’s the brand. Every win is an investment. Every championship is leverage. Every broken opponent is just another deal closed.\n\nNow, transported into the future, Lashley sees a world ripe for the taking. The goal is clear: it is not just about becoming world champion. That was always a given. No, no — he wants something more. He wants to build the most dominant collective in history and rule the wrestling world for eons to come.\n\nLashley and his collective will humble every legend in All Time Wrestling. The carnage they leave behind will be the foundation of their new empire. For business is booming… and pain… well, let’s just say it’s going to be very profitable.\n\n---\n\nIf you want, I can also align this with Shelton’s bio into a shared “Hurt Collective” faction sheet.\n",
   "gender": "MALE",
   "expansion_code": "HURT_BUSINESS",
-  "manager": "MVP"
+  "manager": "MVP",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -1 stamina to gain the initiative, deal -2 health to opponent, and gain +2 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
+  }, {
+    "name": "All Mighty",
+    "description": "Spend -3 stamina to add 2 All Mighty tokens. Whenever any player plays an attack card, spend 1 token: on offense your target roll is -1 (easier) and you deal +1 damage; on defense your opponent's target roll is +1 (harder).",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "costScript": "wrestler.allMightyTokens += 2; wrestler.stamina -= 3",
+    "effectScript": "if (event == 'ATTACK_PLAYED' && wrestler.allMightyTokens > 0) { wrestler.allMightyTokens -= 1; if (isAttacking) { match.targetRollModifier -= 1; match.extraDamage += 1; } else { opponent.targetRollModifier += 1; } }"
+  }, {
+    "name": "All-American",
+    "description": "Discard 1 card to block any THROW or GRAPPLE, then gain the initiative and +2 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.discardCard(1)",
+    "effectScript": "blockThrowOrGrapple(); wrestler.gainInitiative(); wrestler.stamina += 2"
+  }, {
+    "name": "He Hurts People",
+    "description": "Trigger after a successful Hurt Lock or Spear. Hurt Lock: opponent gets one fewer kick-out roll attempt. Spear: deal an additional -3 health.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "unlockCondition": "event == 'HURT_LOCK_SUCCESS' || event == 'SPEAR_SUCCESS'",
+    "effectScript": "if (event == 'HURT_LOCK_SUCCESS') { opponent.kickoutRolls -= 1; } else { opponent.health -= 3; }"
+  }, {
+    "name": "Recover",
+    "description": "Gain +3 stamina and draw 1 card. Opponent also gains +1 stamina, +1 health, and draws 1 card.",
+    "type": "ALWAYS_ON",
+    "category": "ACTION",
+    "default": true,
+    "effectScript": "wrestler.stamina += 3; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+  } ]
 }, {
   "name": "Shelton Benjamin",
   "alignment": "HEEL",
