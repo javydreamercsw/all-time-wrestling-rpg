@@ -745,4 +745,32 @@
   "xpValue": 500,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "binding.hasVariable('winnerMomentum') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('dynamite') && (winnerMomentum ?: 0) >= 7"
+}, {
+  "key": "CASSIE_LEE_ABSOLUTELY_ICONIC",
+  "name": "Absolutely Iconic",
+  "description": "Have Cassie Lee reach Icon tier",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cassie') && w.defaultState?.map { s -> s.tier?.name() == 'ICON' }?.orElse(false) }"
+}, {
+  "key": "CASSIE_LEE_THE_IICONICS",
+  "name": "The IIconics",
+  "description": "Have Cassie Lee and Jessie McKay hold titles at the same time",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cassie') && w.reigns?.any { r -> r.currentReign } } && wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jessie') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "CASSIE_LEE_IT_CAME_FROM_NOWHERE",
+  "name": "It Came From Nowhere",
+  "description": "Have Cassie Lee win a match with her spinning heel kick",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('cassie') && winningCardName?.toLowerCase()?.contains('heel kick')"
+}, {
+  "key": "CASSIE_LEE_STEALING_THE_SHOW",
+  "name": "Stealing the Show",
+  "description": "Have Cassie Lee appear in a promo and win the main event of the same show",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('mainEventParticipants') && mainEventParticipants?.any { w -> w.name?.toLowerCase()?.contains('cassie') } && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('cassie') }"
 } ]
