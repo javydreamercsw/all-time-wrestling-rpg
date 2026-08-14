@@ -26,7 +26,9 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.AchievementUnlockedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,7 @@ public class LegacyService {
   private final TitleRepository titleRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final ScriptedAchievementEvaluator scriptedAchievementEvaluator;
+  private final GameSettingService gameSettingService;
 
   /**
    * Recalculates the legacy score for an account based on their managed wrestlers. Formula: - 1
@@ -147,6 +150,9 @@ public class LegacyService {
     context.put("wrestlers", wrestlers);
     context.put("totalFans", totalFans);
     context.put("currentTitlesHeld", currentTitlesHeld);
+    context.put(
+        "gameDate",
+        gameSettingService.getCurrentGameDate().atStartOfDay(ZoneOffset.UTC).toInstant());
     scriptedAchievementEvaluator
         .resolveNewlyUnlockedKeys(account, context)
         .forEach(key -> unlockAchievement(account, key));

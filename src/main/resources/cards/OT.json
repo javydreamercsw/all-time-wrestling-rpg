@@ -7,7 +7,7 @@
   "momentum": 3,
   "signature": false,
   "finisher": true,
-  "pin": false,
+  "pin": true,
   "number": 15,
   "set": "OT"
 }, {

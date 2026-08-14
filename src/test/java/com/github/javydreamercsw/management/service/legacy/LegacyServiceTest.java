@@ -25,7 +25,9 @@ import com.github.javydreamercsw.base.domain.account.AchievementCategory;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,12 +45,14 @@ class LegacyServiceTest {
   @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
+  @Mock private GameSettingService gameSettingService;
 
   @InjectMocks private LegacyService legacyService;
 
   @BeforeEach
   public void setUp() {
     MockitoAnnotations.openMocks(this);
+    when(gameSettingService.getCurrentGameDate()).thenReturn(LocalDate.now());
   }
 
   @Test

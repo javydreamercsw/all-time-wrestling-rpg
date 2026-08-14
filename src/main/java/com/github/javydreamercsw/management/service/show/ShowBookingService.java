@@ -428,6 +428,25 @@ public class ShowBookingService {
     return bookSinglesSegment(show, wrestler1, wrestler2, label, oneOnOneType.get());
   }
 
+  /**
+   * Like {@link #bookSpecificMatch(Show, Wrestler, Wrestler, String)} but applies a named
+   * stipulation.
+   */
+  public Optional<Segment> bookSpecificMatch(
+      @NonNull final Show show,
+      @NonNull final Wrestler wrestler1,
+      @NonNull final Wrestler wrestler2,
+      @NonNull final String label,
+      @NonNull final String stipulation) {
+    Optional<SegmentType> oneOnOneType =
+        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+    if (oneOnOneType.isEmpty()) {
+      log.warn("One on One segment type not found — cannot book specific match");
+      return Optional.empty();
+    }
+    return bookSinglesSegment(show, wrestler1, wrestler2, stipulation, oneOnOneType.get());
+  }
+
   /** Generate enhanced segments for PPV shows with focus on major storylines. */
   private List<Segment> generatePPVSegments(final Show show, final int segmentCount) {
     List<Segment> segments = new ArrayList<>();

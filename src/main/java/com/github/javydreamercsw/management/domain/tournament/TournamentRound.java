@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.tournament;
 
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -73,6 +74,11 @@ public class TournamentRound {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "show_id")
   @Nullable private Show show;
+
+  /** Fixed segment rule for this round. Overrides the tournament's allowedRules pool. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "segment_rule_id")
+  @Nullable private SegmentRule fixedRule;
 
   @OneToMany(
       mappedBy = "round",

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.tournament;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import jakarta.persistence.CascadeType;
@@ -29,6 +30,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
@@ -93,4 +96,12 @@ public class Tournament extends AbstractEntity<Long> {
       fetch = FetchType.LAZY)
   @OrderBy("roundNumber ASC")
   private List<TournamentRound> rounds = new ArrayList<>();
+
+  /** Segment rules the engine may randomly pick from when booking tournament matches. */
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "tournament_segment_rule",
+      joinColumns = @JoinColumn(name = "tournament_id"),
+      inverseJoinColumns = @JoinColumn(name = "segment_rule_id"))
+  private List<SegmentRule> allowedRules = new ArrayList<>();
 }

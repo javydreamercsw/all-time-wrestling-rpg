@@ -633,4 +633,928 @@
   "xpValue": 750,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers.any { w -> w.name?.toLowerCase()?.contains('savage') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "RVD_WHOLE_DAMN_SHOW",
+  "name": "Whole Damn Show",
+  "description": "Have Rob Van Dam appear in both a promo and the main event of the same weekly show",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('mainEventParticipants') && mainEventParticipants?.any { w -> w.name?.toLowerCase()?.contains('van dam') } && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('van dam') }"
+}, {
+  "key": "RVD_FIVE_STAR_FROG_SPLASH",
+  "name": "Five Star Frog Splash",
+  "description": "Have Rob Van Dam win a five-star match with his signature Frog Splash",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('van dam') && winningCardName?.toLowerCase()?.contains('frogsplash') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "RVD_MR_MONDAY_NIGHT",
+  "name": "Mr. Monday Night",
+  "description": "Have Rob Van Dam successfully defend a championship four weeks in a row",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('van dam') && w.reigns?.any { r -> r.currentReign && (r.consecutiveWeeklyDefenses ?: 0) >= 4 } }"
+}, {
+  "key": "RVD_ROB_VAN_DAM",
+  "name": "Rob... Van... Dam",
+  "description": "Have Rob Van Dam reach Icon tier",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('van dam') && w.defaultState?.map { s -> s.tier?.name() == 'ICON' }?.orElse(false) }"
+}, {
+  "key": "LASHLEY_THE_ALMIGHTY",
+  "name": "The Almighty",
+  "description": "Have Bobby Lashley win a world championship",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "LASHLEY_HURT_LOCK",
+  "name": "Hurt Lock",
+  "description": "Have Bobby Lashley win a match with his signature Hurt Lock submission",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('lashley') && winningCardName?.toLowerCase()?.contains('hurt lock')"
+}, {
+  "key": "LASHLEY_PAIN_IS_PROFITABLE",
+  "name": "Pain Is Profitable",
+  "description": "Have Bobby Lashley win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && (w.consecutiveWins ?: 0) >= 5 }"
+}, {
+  "key": "LASHLEY_THE_COLLECTIVE_RISES",
+  "name": "The Collective Rises",
+  "description": "Have both Bobby Lashley and Shelton Benjamin hold titles at the same time",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && w.reigns?.any { r -> r.currentReign } } && wrestlers?.any { w -> w.name?.toLowerCase()?.contains('benjamin') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "GAIL_KIM_EAT_DEFEAT_REPEAT",
+  "name": "Eat. Defeat. Repeat.",
+  "description": "Have Gail Kim win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && (w.consecutiveWins ?: 0) >= 3 }"
+}, {
+  "key": "GAIL_KIM_TNA_ORIGINAL",
+  "name": "TNA Original",
+  "description": "Have Gail Kim win a championship for the first time",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && w.reigns?.any { r -> r.currentReign && (r.reignNumber ?: 1) == 1 } }"
+}, {
+  "key": "GAIL_KIM_EAT_DEFEAT",
+  "name": "Eat Defeat",
+  "description": "Have Gail Kim win a match with her finishing Eat Defeat",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('gail') && winningCardName?.toLowerCase()?.contains('eat defeat')"
+}, {
+  "key": "GAIL_KIM_THE_STANDARD",
+  "name": "The Standard",
+  "description": "Have Gail Kim hold a championship for 90 or more days",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 90 } }"
+}, {
+  "key": "DYNAMITE_THE_BLUEPRINT",
+  "name": "The Blueprint",
+  "description": "Have Dynamite Kid put on a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('dynamite') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "DYNAMITE_GOLD_AT_LAST",
+  "name": "Gold at Last",
+  "description": "Have Dynamite Kid win a world championship",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('dynamite') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "DYNAMITE_AND_BULLDOG",
+  "name": "Dynamite & Bulldog",
+  "description": "Have Dynamite Kid and The British Bulldog hold titles at the same time",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('dynamite') && w.reigns?.any { r -> r.currentReign } } && wrestlers?.any { w -> w.name?.toLowerCase()?.contains('bulldog') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "DYNAMITE_CAN_ANYONE_KEEP_UP",
+  "name": "Can Anyone Keep Up?",
+  "description": "Have Dynamite Kid win a match with dominant momentum",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winnerMomentum') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('dynamite') && (winnerMomentum ?: 0) >= 7"
+}, {
+  "key": "CASSIE_LEE_ABSOLUTELY_ICONIC",
+  "name": "Absolutely Iconic",
+  "description": "Have Cassie Lee reach Icon tier",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cassie') && w.defaultState?.map { s -> s.tier?.name() == 'ICON' }?.orElse(false) }"
+}, {
+  "key": "CASSIE_LEE_THE_IICONICS",
+  "name": "The IIconics",
+  "description": "Have Cassie Lee and Jessie McKay hold titles at the same time",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cassie') && w.reigns?.any { r -> r.currentReign } } && wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jessie') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "CASSIE_LEE_IT_CAME_FROM_NOWHERE",
+  "name": "It Came From Nowhere",
+  "description": "Have Cassie Lee win a match with her spinning heel kick",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('cassie') && winningCardName?.toLowerCase()?.contains('heel kick')"
+}, {
+  "key": "CASSIE_LEE_STEALING_THE_SHOW",
+  "name": "Stealing the Show",
+  "description": "Have Cassie Lee appear in a promo and win the main event of the same show",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('mainEventParticipants') && mainEventParticipants?.any { w -> w.name?.toLowerCase()?.contains('cassie') } && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('cassie') }"
+}, {
+  "key": "EDDIE_GUERRERO_LATINO_HEAT",
+  "name": "Latino Heat",
+  "description": "Have Eddie Guerrero reach Icon tier",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('eddie') && w.defaultState?.map { s -> s.tier?.name() == 'ICON' }?.orElse(false) }"
+}, {
+  "key": "EDDIE_GUERRERO_FROG_SPLASH",
+  "name": "Frog Splash",
+  "description": "Have Eddie Guerrero win a five-star match with his signature Frog Splash",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('eddie') && winningCardName?.toLowerCase()?.contains('frog splash') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "EDDIE_GUERRERO_VIVA_LA_RAZA",
+  "name": "¡Viva la Raza!",
+  "description": "Have Eddie Guerrero win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('eddie') && (w.consecutiveWins ?: 0) >= 5 }"
+}, {
+  "key": "PILLMAN_LOOSE_CANNON",
+  "name": "Loose Cannon",
+  "description": "Have Brian Pillman win a championship match with dominant momentum",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "binding.hasVariable('winnerMomentum') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('pillman') && (isChampionshipMatch ?: false) && (winnerMomentum ?: 0) >= 7"
+}, {
+  "key": "PILLMAN_SECOND_CHANCE",
+  "name": "Second Chance",
+  "description": "Have Brian Pillman win a championship for the first time",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('pillman') && w.reigns?.any { r -> r.currentReign && (r.reignNumber ?: 1) == 1 } }"
+}, {
+  "key": "PILLMAN_FLYIN_BRIAN",
+  "name": "Flyin' Brian",
+  "description": "Have Brian Pillman put on a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('pillman') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "PILLMAN_ON_THE_LOOSE",
+  "name": "On the Loose",
+  "description": "Have Brian Pillman win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('pillman') && (w.consecutiveWins ?: 0) >= 3 }"
+}, {
+  "key": "DAEMON_PAIN_MAKES_ME_FEEL_ALIVE",
+  "name": "Pain Makes Me Feel Alive",
+  "description": "Have Daemon win a match with very low momentum",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winnerMomentum') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('daemon') && (winnerMomentum ?: 10) <= 3"
+}, {
+  "key": "DAEMON_TOUCH_OF_MADNESS",
+  "name": "Touch of Madness",
+  "description": "Have Daemon put on a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('daemon') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "DAEMON_BURN_IT_DOWN",
+  "name": "Burn It Down",
+  "description": "Have Daemon win a championship match",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "binding.hasVariable('isChampionshipMatch') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('daemon') && (isChampionshipMatch ?: false)"
+}, {
+  "key": "DAEMON_HARDCORE_DEVOTION",
+  "name": "Hardcore Devotion",
+  "description": "Have Daemon win a Barbwire Exploding Deathmatch",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('daemon') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('barbwire') }"
+}, {
+  "key": "ABILENE_BORN_FOR_GREATNESS",
+  "name": "Born for Greatness",
+  "description": "Have Abilene Maverick win a championship for the first time",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('abilene') && w.reigns?.any { r -> r.currentReign && (r.reignNumber ?: 1) == 1 } }"
+}, {
+  "key": "ABILENE_BLESS_YOUR_HEART",
+  "name": "Bless Your Heart",
+  "description": "Have Abilene Maverick appear in a promo and win the main event of the same show",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('mainEventParticipants') && mainEventParticipants?.any { w -> w.name?.toLowerCase()?.contains('abilene') } && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('abilene') }"
+}, {
+  "key": "ABILENE_CLASS_ACT",
+  "name": "Class Act",
+  "description": "Have Abilene Maverick win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('abilene') && (w.consecutiveWins ?: 0) >= 3 }"
+}, {
+  "key": "ABILENE_THE_GOVERNORS_DAUGHTER",
+  "name": "The Governor's Daughter",
+  "description": "Have Abilene Maverick hold a championship for 90 or more days",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('abilene') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 90 } }"
+}, {
+  "key": "JYD_BARK",
+  "name": "Bark!",
+  "description": "Have Junkyard Dog cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('junkyard') || w.name?.toLowerCase()?.contains('jyd') }"
+}, {
+  "key": "JYD_THE_THUMP",
+  "name": "The Thump",
+  "description": "Have Junkyard Dog win a match by landing The Thump",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && (participant?.name?.toLowerCase()?.contains('junkyard') || participant?.name?.toLowerCase()?.contains('jyd')) && winningCardName?.toLowerCase()?.contains('thump')"
+}, {
+  "key": "JYD_UNSTOPPABLE",
+  "name": "Unstoppable",
+  "description": "Have Junkyard Dog win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && (participant?.name?.toLowerCase()?.contains('junkyard') || participant?.name?.toLowerCase()?.contains('jyd')) && (participant?.consecutiveWins ?: 0) >= 3"
+}, {
+  "key": "JYD_HALL_OF_FAMER",
+  "name": "Hall of Famer",
+  "description": "Have Junkyard Dog reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> (w.name?.toLowerCase()?.contains('junkyard') || w.name?.toLowerCase()?.contains('jyd')) && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "JESSIE_MCKAY_BIG_BOOT",
+  "name": "Big Boot",
+  "description": "Have Jessie McKay win a match with her Running Boot finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jessie') && winningCardName?.toLowerCase()?.contains('boot')"
+}, {
+  "key": "JESSIE_MCKAY_LIGHTS_CAMERA_KICK",
+  "name": "Lights. Camera. Kick!",
+  "description": "Have Jessie McKay cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('jessie') }"
+}, {
+  "key": "JESSIE_MCKAY_STYLE_AND_SUBSTANCE",
+  "name": "Style and Substance",
+  "description": "Have Jessie McKay hold a championship for 30 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jessie') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "JESSIE_MCKAY_AUSSIE_EXPORT",
+  "name": "Aussie Export",
+  "description": "Have Jessie McKay reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jessie') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "JORDYNNE_GRACE_JUGGERNAUT_DRIVER",
+  "name": "Juggernaut Driver",
+  "description": "Have Jordynne Grace win a match with her Juggernaut Driver finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jordynne') && winningCardName?.toLowerCase()?.contains('juggernaut')"
+}, {
+  "key": "JORDYNNE_GRACE_THE_JUGGERNAUT",
+  "name": "The Juggernaut",
+  "description": "Have Jordynne Grace win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jordynne') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "JORDYNNE_GRACE_KNOCKOUTS_CHAMPION",
+  "name": "Knockouts Champion",
+  "description": "Have Jordynne Grace hold a championship for 60 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jordynne') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "JORDYNNE_GRACE_LIFT_THIS_WORLD",
+  "name": "Lift This World",
+  "description": "Have Jordynne Grace reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jordynne') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "JOHNNY_ALL_TIME_STARSHIP_PAIN",
+  "name": "Starship Pain",
+  "description": "Have Johnny All Time win a match with his Starship Pain finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('johnny') && winningCardName?.toLowerCase()?.contains('starship')"
+}, {
+  "key": "JOHNNY_ALL_TIME_MOONLIGHT_DRIVE",
+  "name": "Moonlight Drive",
+  "description": "Have Johnny All Time win a match with his Moonlight Drive signature",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('johnny') && winningCardName?.toLowerCase()?.contains('moonlight')"
+}, {
+  "key": "JOHNNY_ALL_TIME_MAYOR_OF_SLAMTOWN",
+  "name": "Mayor of Slamtown",
+  "description": "Have Johnny All Time cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('johnny') }"
+}, {
+  "key": "JOHNNY_ALL_TIME_ALL_TIME",
+  "name": "All Time",
+  "description": "Have Johnny All Time reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('johnny') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "JAX_FELIX_FALL_FROM_GRACE",
+  "name": "Fall From Grace",
+  "description": "Have Jax Felix win a match with his Fall From Grace finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jax') && winningCardName?.toLowerCase()?.contains('fall from grace')"
+}, {
+  "key": "JAX_FELIX_MIRACLE_SEE",
+  "name": "Miracle See",
+  "description": "Have Jax Felix cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('jax') }"
+}, {
+  "key": "JAX_FELIX_THE_LONGEST_REIGN",
+  "name": "The Longest Reign",
+  "description": "Have Jax Felix hold a championship for 180 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jax') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 180 } }"
+}, {
+  "key": "JAX_FELIX_FOREGONE_CONCLUSION",
+  "name": "Foregone Conclusion",
+  "description": "Have Jax Felix reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jax') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "GILGAMESH_IMMORTALITY",
+  "name": "Immortality",
+  "description": "Have Gilgamesh win a match with his Immortality finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('gilgamesh') && winningCardName?.toLowerCase()?.contains('immortality')"
+}, {
+  "key": "GILGAMESH_THE_EPIC",
+  "name": "The Epic of Gilgamesh",
+  "description": "Have Gilgamesh win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('gilgamesh') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "GILGAMESH_REDEEMED_KING",
+  "name": "Redeemed King",
+  "description": "Have Gilgamesh hold a championship for 30 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gilgamesh') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "GILGAMESH_TWO_THIRDS_DIVINE",
+  "name": "Two-Thirds Divine",
+  "description": "Have Gilgamesh reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gilgamesh') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "KAMALA_UGANDAN_SPLASH",
+  "name": "Ugandan Splash",
+  "description": "Have Kamala win a match with his Ugandan Splash finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('kamala') && winningCardName?.toLowerCase()?.contains('ugandan splash')"
+}, {
+  "key": "KAMALA_PATH_OF_DESTRUCTION",
+  "name": "Path of Destruction",
+  "description": "Have Kamala win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('kamala') && (participant?.consecutiveWins ?: 0) >= 3"
+}, {
+  "key": "KAMALA_DECADES_OF_DESTRUCTION",
+  "name": "Decades of Destruction",
+  "description": "Have Kamala hold a championship for 60 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('kamala') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "KAMALA_FEAR_INCARNATE",
+  "name": "Fear Incarnate",
+  "description": "Have Kamala reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('kamala') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "MATT_CARDONA_RADIO_SILENCE",
+  "name": "Radio Silence",
+  "description": "Have Matt Cardona win a match with his Radio Silence finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('cardona') && winningCardName?.toLowerCase()?.contains('radio silence')"
+}, {
+  "key": "MATT_CARDONA_DEATHMATCH_KING",
+  "name": "Deathmatch King",
+  "description": "Have Matt Cardona win a match under a deathmatch, hardcore, or extreme rule set",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('cardona') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('deathmatch') || r?.toLowerCase()?.contains('hardcore') || r?.toLowerCase()?.contains('barbwire') || r?.toLowerCase()?.contains('extreme') }"
+}, {
+  "key": "MATT_CARDONA_BELT_COLLECTOR",
+  "name": "Belt Collector",
+  "description": "Have Matt Cardona hold a championship for 30 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cardona') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "MATT_CARDONA_REBOOT",
+  "name": "Reboot",
+  "description": "Have Matt Cardona reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cardona') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "REY_JAGUAR_SIN_MIEDO",
+  "name": "Sin Miedo",
+  "description": "Have Rey Jaguar win a match with his Sin Miedo finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jaguar') && winningCardName?.toLowerCase()?.contains('sin miedo')"
+}, {
+  "key": "REY_JAGUAR_EL_INTREPIDO",
+  "name": "El Intrépido",
+  "description": "Have Rey Jaguar win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jaguar') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "REY_JAGUAR_KING_OF_ALL",
+  "name": "King of All",
+  "description": "Have Rey Jaguar hold a championship for 60 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jaguar') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "REY_JAGUAR_FEAR_THE_FEARLESS",
+  "name": "Fear the Fearless",
+  "description": "Have Rey Jaguar reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jaguar') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "RAVEN_RAVEN_EFFECT",
+  "name": "Raven Effect",
+  "description": "Have Raven win a match with his Raven Effect finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('raven') && winningCardName?.toLowerCase()?.contains('raven effect')"
+}, {
+  "key": "RAVEN_DROP_TOE_HOLD",
+  "name": "Drop Toe-hold onto a Chair",
+  "description": "Have Raven win a match by dropping an opponent onto a chair",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('raven') && winningCardName?.toLowerCase()?.contains('chair')"
+}, {
+  "key": "RAVEN_QUOTE_THE_RAVEN",
+  "name": "Quote the Raven",
+  "description": "Have Raven win a match under a No DQ, deathmatch, or barbwire rule set",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('raven') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('no dq') || r?.toLowerCase()?.contains('deathmatch') || r?.toLowerCase()?.contains('barbwire') }"
+}, {
+  "key": "RAVEN_WHAT_ABOUT_ME",
+  "name": "What About Me?",
+  "description": "Have Raven cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('raven') }"
+}, {
+  "key": "PRINCESS_AUSSIE_CUTTER_FROM_DOWN_UNDER",
+  "name": "Cutter From Down Under",
+  "description": "Have Princess Aussie win a match with her Cutter signature",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('aussie') && winningCardName?.toLowerCase()?.contains('cutter')"
+}, {
+  "key": "PRINCESS_AUSSIE_I_NEVER_STAY_DOWN",
+  "name": "I Never Stay Down",
+  "description": "Have Princess Aussie win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('aussie') && (participant?.consecutiveWins ?: 0) >= 3"
+}, {
+  "key": "PRINCESS_AUSSIE_PEOPLES_CHAMPION",
+  "name": "People's Champion",
+  "description": "Have Princess Aussie hold a championship for 60 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('aussie') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "PRINCESS_AUSSIE_RISE_WITH_PURPOSE",
+  "name": "Rise With Purpose",
+  "description": "Have Princess Aussie reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('aussie') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "OMZ_GO_TO_SLEEP",
+  "name": "Go to Sleep",
+  "description": "Have OMZ win a match with his Go to Sleep finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('omz') && winningCardName?.toLowerCase()?.contains('go to sleep')"
+}, {
+  "key": "OMZ_KNOCKOUT_ARTIST",
+  "name": "Knockout Artist",
+  "description": "Have OMZ win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('omz') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "OMZ_ART_WITHOUT_VIOLENCE",
+  "name": "Art Without Violence",
+  "description": "Have OMZ win a match in an extreme environment (No DQ, Cage, Deathmatch, or Last Man Standing)",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('omz') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('no dq') || r?.toLowerCase()?.contains('cage') || r?.toLowerCase()?.contains('deathmatch') || r?.toLowerCase()?.contains('last man standing') }"
+}, {
+  "key": "OMZ_FORGED_IN_SIBERIA",
+  "name": "Forged in Siberia",
+  "description": "Have OMZ reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('omz') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "NAD_KINGS_LYNN_CLOVERLEAF",
+  "name": "King's Lynn Cloverleaf",
+  "description": "Have Nick Aldis win a match with his King's Lynn Cloverleaf finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('aldis') && winningCardName?.toLowerCase()?.contains('cloverleaf')"
+}, {
+  "key": "NAD_NATIONAL_TREASURE",
+  "name": "The National Treasure",
+  "description": "Have Nick Aldis hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('aldis') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "NAD_RING_GENERAL",
+  "name": "Ring General",
+  "description": "Have Nick Aldis win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('aldis') && (participant?.consecutiveWins ?: 0) >= 3"
+}, {
+  "key": "NAD_TOTAL_PACKAGE",
+  "name": "The Total Package",
+  "description": "Have Nick Aldis reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('aldis') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "OT_GOTCH_PILEDRIVER",
+  "name": "Gotch Piledriver",
+  "description": "Have Oda Tsurugi win a match with his Gotch Piledriver finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('tsurugi') && winningCardName?.toLowerCase()?.contains('gotch')"
+}, {
+  "key": "OT_SEVEN_TIME_CHAMPION",
+  "name": "Seven-Time Champion",
+  "description": "Have Oda Tsurugi accumulate 7 or more total championship reigns",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tsurugi') && (w.reigns?.size() ?: 0) >= 7 }"
+}, {
+  "key": "OT_PATH_OF_REDEMPTION",
+  "name": "Path of Redemption",
+  "description": "Have Oda Tsurugi hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tsurugi') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "OT_WHAT_IS_A_GOD",
+  "name": "What is a God?",
+  "description": "Have Oda Tsurugi reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tsurugi') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "MKS_THE_BEARHUG",
+  "name": "The Bearhug",
+  "description": "Have Mukundi Shumba win a match with his Bearhug finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('shumba') && winningCardName?.toLowerCase()?.contains('bearhug')"
+}, {
+  "key": "MKS_NEVER_DEFEATED",
+  "name": "Never Defeated",
+  "description": "Have Mukundi Shumba win 7 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('shumba') && (participant?.consecutiveWins ?: 0) >= 7"
+}, {
+  "key": "MKS_LIONS_ROAR",
+  "name": "The Lion's Roar",
+  "description": "Have Mukundi Shumba win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('shumba') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "MKS_FOR_THE_ZAMBEZI",
+  "name": "For the Zambezi",
+  "description": "Have Mukundi Shumba reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('shumba') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "SBU_ARABIAN_FACEBUSTER",
+  "name": "Arabian Facebuster",
+  "description": "Have Sabu win a match with his Arabian Facebuster finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('sabu') && winningCardName?.toLowerCase()?.contains('arabian facebuster')"
+}, {
+  "key": "SBU_TAPE_IT_UP",
+  "name": "Tape It Up",
+  "description": "Have Sabu win a Barbwire Exploding Deathmatch",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('sabu') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('barbwire') }"
+}, {
+  "key": "SBU_THROUGH_TABLES_OVER_LADDERS",
+  "name": "Through Tables, Over Ladders",
+  "description": "Have Sabu win a Tables, Ladders and Chairs (TLC) match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('sabu') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('tlc') || r?.toLowerCase()?.contains('tables, ladders') }"
+}, {
+  "key": "SBU_GREATEST_HARDCORE_WRESTLER",
+  "name": "Greatest Hardcore Wrestler",
+  "description": "Have Sabu reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('sabu') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "BST_THE_BEAST_BOMB",
+  "name": "The Beast Bomb",
+  "description": "Have The Beast win a match with her Beast Bomb finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('the beast') && winningCardName?.toLowerCase()?.contains('beast bomb')"
+}, {
+  "key": "BST_YOU_DONT_BEAT_THE_BEAST",
+  "name": "You Don't Beat The Beast",
+  "description": "Have The Beast win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('the beast') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "BST_END_OF_HOPE",
+  "name": "End of Hope",
+  "description": "Have The Beast win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('the beast') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "BST_FROM_PARTS_UNKNOWN",
+  "name": "From Parts Unknown",
+  "description": "Have The Beast reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('the beast') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "TOR_METEORA",
+  "name": "Meteora",
+  "description": "Have Tormenta win a match with her Meteora finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('tormenta') && winningCardName?.toLowerCase()?.contains('meteora')"
+}, {
+  "key": "TOR_LA_PRIMERA",
+  "name": "La Primera",
+  "description": "Have Tormenta hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tormenta') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "TOR_THE_STORM_NEVER_DIES",
+  "name": "The Storm Never Dies",
+  "description": "Have Tormenta win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('tormenta') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "TOR_EYE_OF_THE_STORM",
+  "name": "Eye of the Storm",
+  "description": "Have Tormenta reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tormenta') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "TYV_ROAD_TO_VALHALLA",
+  "name": "Road to Valhalla",
+  "description": "Have Taya Valkyrie win a match with her Road to Valhalla finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('valkyrie') && winningCardName?.toLowerCase()?.contains('valhala')"
+}, {
+  "key": "TYV_LA_WERA_LOCA",
+  "name": "La Wera Loca",
+  "description": "Have Taya Valkyrie win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('valkyrie') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "TYV_LONGEST_REIGNING_QUEEN",
+  "name": "Longest-Reigning Queen",
+  "description": "Have Taya Valkyrie hold a championship for 60 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('valkyrie') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "TYV_BOW_DOWN_OR_BE_BROKEN",
+  "name": "Bow Down or Be Broken",
+  "description": "Have Taya Valkyrie reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('valkyrie') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "SHB_T_BONE_SUPLEX",
+  "name": "T-Bone Suplex",
+  "description": "Have Shelton Benjamin win a match with his T-Bone Suplex finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('shelton') && winningCardName?.toLowerCase()?.contains('t-bone')"
+}, {
+  "key": "SHB_GOLD_STANDARD",
+  "name": "Gold Standard",
+  "description": "Have Shelton Benjamin hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('shelton') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "SHB_QUIET_STORM",
+  "name": "Quiet Storm",
+  "description": "Have Shelton Benjamin win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('shelton') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "SHB_THE_HURT_COLLECTIVE",
+  "name": "The Hurt Collective",
+  "description": "Have Shelton Benjamin reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('shelton') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "SGT_COBRA_CLUTCH",
+  "name": "Cobra Clutch",
+  "description": "Have Sgt. Slaughter win a match with his Cobra Clutch finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('slaughter') && winningCardName?.toLowerCase()?.contains('cobra clutch')"
+}, {
+  "key": "SGT_AMERICAN_HERO",
+  "name": "American Hero",
+  "description": "Have Sgt. Slaughter hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('slaughter') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "SGT_LISTEN_UP_MAGGOTS",
+  "name": "Listen Up Maggots",
+  "description": "Have Sgt. Slaughter win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('slaughter') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "SGT_HALL_OF_FAMER",
+  "name": "Hall of Famer",
+  "description": "Have Sgt. Slaughter reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('slaughter') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "BB_RUNNING_POWERSLAM",
+  "name": "Running Powerslam",
+  "description": "Have The British Bulldog win a match with his Running Powerslam finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('bulldog') && winningCardName?.toLowerCase()?.contains('running powerslam')"
+}, {
+  "key": "BB_THE_EUROPEAN_CHAMPION",
+  "name": "The European Champion",
+  "description": "Have The British Bulldog hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('bulldog') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "BB_WEMBLEY",
+  "name": "Wembley",
+  "description": "Have The British Bulldog win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('bulldog') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "BB_CHAMPION_OF_ALL_TIME",
+  "name": "Champion of All Time",
+  "description": "Have The British Bulldog reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('bulldog') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "KA_ANKLE_LOCK",
+  "name": "Ankle Lock",
+  "description": "Have Kurt Angle win a match with his Ankle Lock finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('angle') && winningCardName?.toLowerCase()?.contains('ankle lock')"
+}, {
+  "key": "KA_ITS_DAMN_REAL",
+  "name": "It's Damn Real",
+  "description": "Have Kurt Angle win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('angle') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "KA_THE_BEST_EVER",
+  "name": "The Best Ever",
+  "description": "Have Kurt Angle reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('angle') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "RS_THE_BIG_ELBOW",
+  "name": "The Big Elbow",
+  "description": "Have Randy Savage win a match with his Diving Elbow Drop finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('savage') && winningCardName?.toLowerCase()?.contains('elbow drop')"
+}, {
+  "key": "RS_CREAM_OF_THE_CROP",
+  "name": "Cream of the Crop",
+  "description": "Have Randy Savage win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('savage') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "RS_MOUNT_RUSHMORE",
+  "name": "Mount Rushmore",
+  "description": "Have Randy Savage reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('savage') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "ATG_EIGHTH_WONDER",
+  "name": "8th Wonder of the World",
+  "description": "Have André the Giant win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('andr') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "ATG_FIFTEEN_YEARS_UNDEFEATED",
+  "name": "15 Years Undefeated",
+  "description": "Have André the Giant win 10 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('andr') && (participant?.consecutiveWins ?: 0) >= 10"
+}, {
+  "key": "ATG_THE_GENTLE_GIANT",
+  "name": "The Gentle Giant",
+  "description": "Have André the Giant hold a championship for 60 or more consecutive days",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('andr') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
 } ]

@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
@@ -56,6 +57,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -117,6 +119,11 @@ public class SegmentAdjudicationService {
   // when null (unit tests).
   @Setter(onMethod_ = {@Autowired})
   private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
+
+  // Field-injected for the same reason — null-safe, consecutive-wins tracking is skipped
+  // when null (unit tests).
+  @Setter(onMethod_ = {@Autowired})
+  private WrestlerRepository wrestlerRepository;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -342,6 +349,7 @@ public class SegmentAdjudicationService {
               .collect(Collectors.toMap(r -> r.getWrestler().getId(), r -> r));
 
       List<LeagueRoster> toSave = new ArrayList<>();
+      List<Wrestler> wrestlersToSave = new ArrayList<>();
       if (winners.isEmpty()) {
         for (Wrestler w : segment.getWrestlers()) {
           LeagueRoster roster = rosterByWrestlerId.get(w.getId());
@@ -357,6 +365,8 @@ public class SegmentAdjudicationService {
             roster.setWins(roster.getWins() + 1);
             toSave.add(roster);
           }
+          w.setConsecutiveWins(w.getConsecutiveWins() == null ? 1 : w.getConsecutiveWins() + 1);
+          wrestlersToSave.add(w);
         }
         for (Wrestler w : losers) {
           LeagueRoster roster = rosterByWrestlerId.get(w.getId());
@@ -364,9 +374,14 @@ public class SegmentAdjudicationService {
             roster.setLosses(roster.getLosses() + 1);
             toSave.add(roster);
           }
+          w.setConsecutiveWins(0);
+          wrestlersToSave.add(w);
         }
       }
       leagueRosterRepository.saveAll(toSave);
+      if (wrestlerRepository != null && !wrestlersToSave.isEmpty()) {
+        wrestlerRepository.saveAll(wrestlersToSave);
+      }
     }
   }
 
@@ -457,6 +472,9 @@ public class SegmentAdjudicationService {
                   && !currentChampions.isEmpty()
                   && currentChampions.stream().anyMatch(winnerSet::contains);
           if (championsDefended || winnerSet.isEmpty()) {
+            if (championsDefended) {
+              titleService.recordSuccessfulDefense(title);
+            }
             eventPublisher.publishEvent(
                 new ChampionshipDefendedEvent(this, title, currentChampions, losers));
           } else {
@@ -681,6 +699,36 @@ public class SegmentAdjudicationService {
     achievementKeys.add(segment.getSegmentType().getName());
     segment.getSegmentRules().forEach(rule -> achievementKeys.add(rule.getName()));
 
+    // Build per-participant maps once for scripted achievement context variables.
+    Map<Long, Integer> momentumById =
+        segment.getParticipants().stream()
+            .filter(p -> p.getFinalMomentum() != null)
+            .collect(
+                Collectors.toMap(
+                    p -> p.getWrestler().getId(),
+                    SegmentParticipant::getFinalMomentum,
+                    (a, b) -> a));
+    Map<Long, String> winningCardById =
+        segment.getParticipants().stream()
+            .filter(p -> p.getWinningCardName() != null)
+            .collect(
+                Collectors.toMap(
+                    p -> p.getWrestler().getId(),
+                    SegmentParticipant::getWinningCardName,
+                    (a, b) -> a));
+    String winnerWinningCardName =
+        winners.stream()
+            .filter(w -> winningCardById.containsKey(w.getId()))
+            .map(w -> winningCardById.get(w.getId()))
+            .findFirst()
+            .orElse(null);
+    Integer winnerMomentum =
+        winners.stream()
+            .filter(w -> momentumById.containsKey(w.getId()))
+            .map(w -> momentumById.get(w.getId()))
+            .findFirst()
+            .orElse(null);
+
     for (Wrestler participant : segment.getWrestlers()) {
       if (participant.getAccount() != null) {
         for (String baseKey : achievementKeys) {
@@ -716,6 +764,14 @@ public class SegmentAdjudicationService {
           context.put(
               "segmentRuleNames",
               segment.getSegmentRules().stream().map(SegmentRule::getName).toList());
+          context.put("segmentRating", segment.getSegmentRating());
+          context.put("isChampionshipMatch", Boolean.TRUE.equals(segment.getIsTitleSegment()));
+          context.put("winningCardName", winnerWinningCardName);
+          context.put("participantMomentum", momentumById.get(participant.getId()));
+          context.put("winnerMomentum", winnerMomentum);
+          context.put(
+              "gameDate",
+              gameSettingService.getCurrentGameDate().atStartOfDay(ZoneOffset.UTC).toInstant());
           scriptedAchievementEvaluator
               .resolveNewlyUnlockedKeys(participant.getAccount(), context)
               .forEach(key -> legacyService.unlockAchievement(participant.getAccount(), key));

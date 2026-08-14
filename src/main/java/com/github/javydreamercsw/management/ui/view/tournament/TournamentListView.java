@@ -17,10 +17,13 @@
 package com.github.javydreamercsw.management.ui.view.tournament;
 
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -60,15 +63,20 @@ public class TournamentListView extends VerticalLayout {
 
   private final TournamentService tournamentService;
   private final WrestlerFacade wrestlerFacade;
+  private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
 
   private Grid<Tournament> grid;
 
   @Autowired
   public TournamentListView(
-      TournamentService tournamentService, WrestlerFacade wrestlerFacade, ViewContext viewContext) {
+      TournamentService tournamentService,
+      WrestlerFacade wrestlerFacade,
+      ShowFacade showFacade,
+      ViewContext viewContext) {
     this.tournamentService = tournamentService;
     this.wrestlerFacade = wrestlerFacade;
+    this.segmentRuleService = showFacade.getSegmentRuleService();
     this.universeContextService = viewContext.getUniverseContextService();
 
     setSizeFull();
@@ -138,7 +146,16 @@ public class TournamentListView extends VerticalLayout {
     startDate.setValue(LocalDate.now());
     startDate.setWidthFull();
 
-    VerticalLayout tab1Content = new VerticalLayout(nameField, formatCombo, titleCombo, startDate);
+    MultiSelectComboBox<SegmentRule> rulesPicker =
+        new MultiSelectComboBox<>("Allowed Segment Rules (optional)");
+    rulesPicker.setItems(segmentRuleService.findAll());
+    rulesPicker.setItemLabelGenerator(SegmentRule::getName);
+    rulesPicker.setWidthFull();
+    rulesPicker.setHelperText(
+        "Rules randomly applied to matches. A fixed rule can be set per round later.");
+
+    VerticalLayout tab1Content =
+        new VerticalLayout(nameField, formatCombo, titleCombo, startDate, rulesPicker);
     tab1Content.setPadding(false);
 
     // Tab 2: Seeding
@@ -192,7 +209,8 @@ public class TournamentListView extends VerticalLayout {
                         formatCombo.getValue().getFormatId(),
                         universe.orElse(null),
                         titleCombo.getValue(),
-                        startDate.getValue());
+                        startDate.getValue(),
+                        new ArrayList<>(rulesPicker.getSelectedItems()));
 
                 boolean auto = !"Manual (pick wrestlers)".equals(seedingMode.getValue());
                 if (auto) {
