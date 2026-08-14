@@ -1466,4 +1466,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('slaughter') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "BB_RUNNING_POWERSLAM",
+  "name": "Running Powerslam",
+  "description": "Have The British Bulldog win a match with his Running Powerslam finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('bulldog') && winningCardName?.toLowerCase()?.contains('running powerslam')"
+}, {
+  "key": "BB_THE_EUROPEAN_CHAMPION",
+  "name": "The European Champion",
+  "description": "Have The British Bulldog hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('bulldog') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "BB_WEMBLEY",
+  "name": "Wembley",
+  "description": "Have The British Bulldog win a five-star match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRating') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('bulldog') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "BB_CHAMPION_OF_ALL_TIME",
+  "name": "Champion of All Time",
+  "description": "Have The British Bulldog reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('bulldog') && w.tier?.name() == 'ICON' }"
 } ]
