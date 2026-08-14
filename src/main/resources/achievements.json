@@ -1102,4 +1102,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cardona') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "REY_JAGUAR_SIN_MIEDO",
+  "name": "Sin Miedo",
+  "description": "Have Rey Jaguar win a match with his Sin Miedo finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jaguar') && winningCardName?.toLowerCase()?.contains('sin miedo')"
+}, {
+  "key": "REY_JAGUAR_EL_INTREPIDO",
+  "name": "El Intrépido",
+  "description": "Have Rey Jaguar win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('jaguar') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "REY_JAGUAR_KING_OF_ALL",
+  "name": "King of All",
+  "description": "Have Rey Jaguar hold a championship for 60 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jaguar') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "REY_JAGUAR_FEAR_THE_FEARLESS",
+  "name": "Fear the Fearless",
+  "description": "Have Rey Jaguar reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('jaguar') && w.tier?.name() == 'ICON' }"
 } ]
