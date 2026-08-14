@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.tournament;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -106,28 +108,38 @@ public class TournamentService {
 
   private Tournament initializeGraph(Tournament t) {
     t.getEntries().forEach(e -> e.getWrestler().getName());
+    t.getAllowedRules().forEach(SegmentRule::getName);
     t.getRounds()
         .forEach(
-            r ->
-                r.getMatches()
-                    .forEach(
-                        m -> {
-                          m.getEntrant1().getWrestler().getName();
-                          m.getEntrant2().getWrestler().getName();
-                          if (m.getWinner() != null) {
-                            m.getWinner().getWrestler().getName();
-                          }
-                          if (r.getShow() != null) {
-                            r.getShow().getName();
-                          }
-                        }));
+            r -> {
+              if (r.getFixedRule() != null) {
+                r.getFixedRule().getName();
+              }
+              r.getMatches()
+                  .forEach(
+                      m -> {
+                        m.getEntrant1().getWrestler().getName();
+                        m.getEntrant2().getWrestler().getName();
+                        if (m.getWinner() != null) {
+                          m.getWinner().getWrestler().getName();
+                        }
+                        if (r.getShow() != null) {
+                          r.getShow().getName();
+                        }
+                      });
+            });
     return t;
   }
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Tournament createTournament(
-      String name, String formatId, Universe universe, Title linkedTitle, LocalDate startDate) {
+      String name,
+      String formatId,
+      Universe universe,
+      Title linkedTitle,
+      LocalDate startDate,
+      List<SegmentRule> allowedRules) {
     findFormat(formatId)
         .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
     Tournament t = new Tournament();
@@ -139,6 +151,7 @@ public class TournamentService {
     t.setStatus(TournamentStatus.SCHEDULED);
     t.setEntries(new ArrayList<>());
     t.setRounds(new ArrayList<>());
+    t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
     return tournamentRepository.save(t);
   }
 
@@ -223,14 +236,20 @@ public class TournamentService {
               + " vs "
               + match.getEntrant2().getWrestler().getName();
 
+      String stipulation = resolveStipulation(tournament, round, label);
+
       // Reserve a slot on the show
       reservationService.reserveSlot(
           show, ShowSegmentReservationPurpose.TOURNAMENT_ROUND, match.getId(), label);
 
-      // Book the actual segment
+      // Book the actual segment with the resolved stipulation
       showBookingService
           .bookSpecificMatch(
-              show, match.getEntrant1().getWrestler(), match.getEntrant2().getWrestler(), label)
+              show,
+              match.getEntrant1().getWrestler(),
+              match.getEntrant2().getWrestler(),
+              label,
+              stipulation)
           .ifPresent(
               segment -> {
                 match.setSegment(segment);
@@ -241,6 +260,37 @@ public class TournamentService {
     round.setShow(show);
     round.setStatus(TournamentRoundStatus.IN_PROGRESS);
     roundRepository.save(round);
+  }
+
+  /**
+   * Assign a fixed segment rule to a round. Set {@code null} to clear and revert to the
+   * tournament's allowed-rules pool.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TournamentRound setRoundFixedRule(TournamentRound round, SegmentRule rule) {
+    round.setFixedRule(rule);
+    return roundRepository.save(round);
+  }
+
+  /**
+   * Resolve the segment rule stipulation for a match:
+   *
+   * <ol>
+   *   <li>Round's fixedRule (if set)
+   *   <li>Random pick from tournament's allowedRules pool (if non-empty)
+   *   <li>Fallback string (preserves legacy behaviour)
+   * </ol>
+   */
+  private String resolveStipulation(Tournament tournament, TournamentRound round, String fallback) {
+    if (round.getFixedRule() != null) {
+      return round.getFixedRule().getName();
+    }
+    List<SegmentRule> pool = tournament.getAllowedRules();
+    if (!pool.isEmpty()) {
+      return pool.get(ThreadLocalRandom.current().nextInt(pool.size())).getName();
+    }
+    return fallback;
   }
 
   /** Record the winner of a match and, if the round is now fully decided, mark it complete. */

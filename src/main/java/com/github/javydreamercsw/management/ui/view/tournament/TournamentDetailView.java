@@ -19,12 +19,15 @@ package com.github.javydreamercsw.management.ui.view.tournament;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.ui.ViewContext;
@@ -40,6 +43,7 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -61,6 +65,7 @@ import org.springframework.data.domain.PageRequest;
 public class TournamentDetailView extends VerticalLayout implements BeforeEnterObserver {
 
   private final TournamentService tournamentService;
+  private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
   private final ShowRepository showRepository;
 
@@ -70,8 +75,12 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
   @Autowired
   public TournamentDetailView(
-      TournamentService tournamentService, ShowRepository showRepository, ViewContext viewContext) {
+      TournamentService tournamentService,
+      ShowRepository showRepository,
+      ShowFacade showFacade,
+      ViewContext viewContext) {
     this.tournamentService = tournamentService;
+    this.segmentRuleService = showFacade.getSegmentRuleService();
     this.showRepository = showRepository;
     this.universeContextService = viewContext.getUniverseContextService();
 
@@ -109,6 +118,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
     if (!tournament.getRounds().isEmpty()) {
       content.add(buildBracketSection());
+      content.add(buildRoundRulesSection());
       if (tournament.getStatus() == TournamentStatus.IN_PROGRESS) {
         buildActiveMatchControls().ifPresent(content::add);
       }
@@ -176,6 +186,24 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     if (tournament.getLinkedTitle() != null) {
       info.add(new Span("Championship: " + tournament.getLinkedTitle().getName()));
     }
+
+    List<SegmentRule> rules = tournament.getAllowedRules();
+    if (!rules.isEmpty()) {
+      FlexLayout chips = new FlexLayout();
+      chips.getStyle().set("flex-wrap", "wrap").set("gap", "4px").set("margin-top", "4px");
+      rules.forEach(
+          r -> {
+            Span chip = new Span(r.getName());
+            chip.getElement()
+                .setAttribute(
+                    "style",
+                    "background:var(--lumo-contrast-10pct);border-radius:var(--lumo-border-radius-m);padding:2px"
+                        + " 8px;font-size:var(--lumo-font-size-s)");
+            chips.add(chip);
+          });
+      info.add(new Span("Allowed Rules:"));
+      info.add(chips);
+    }
     return info;
   }
 
@@ -203,6 +231,53 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     TournamentEntityAdapter model =
         new TournamentEntityAdapter(tournament, tournamentService.getAvailableFormats());
     section.add(new TournamentBracketComponent(model));
+    return section;
+  }
+
+  /** Per-round fixed-rule assignment panel. Visible to ADMIN/BOOKER only via role check. */
+  private VerticalLayout buildRoundRulesSection() {
+    VerticalLayout section = new VerticalLayout();
+    section.setPadding(false);
+    section.add(new H4("Round Rules"));
+
+    List<SegmentRule> allRules = segmentRuleService.findAll();
+
+    for (TournamentRound round : tournament.getRounds()) {
+      HorizontalLayout row = new HorizontalLayout();
+      row.setAlignItems(Alignment.CENTER);
+
+      Span label = new Span(round.getRoundName() + ":");
+      label.getStyle().set("min-width", "120px");
+
+      ComboBox<SegmentRule> ruleCombo = new ComboBox<>();
+      ruleCombo.setItems(allRules);
+      ruleCombo.setItemLabelGenerator(SegmentRule::getName);
+      ruleCombo.setPlaceholder("From pool (random)");
+      ruleCombo.setClearButtonVisible(true);
+      ruleCombo.setValue(round.getFixedRule());
+      ruleCombo.setWidth("260px");
+
+      ruleCombo.addValueChangeListener(
+          e -> {
+            try {
+              tournamentService.setRoundFixedRule(round, e.getValue());
+              Notification.show(
+                      round.getRoundName()
+                          + " rule set to: "
+                          + (e.getValue() != null ? e.getValue().getName() : "pool random"),
+                      2000,
+                      Notification.Position.BOTTOM_CENTER)
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } catch (Exception ex) {
+              log.error("Error setting round rule", ex);
+              Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE)
+                  .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+          });
+
+      row.add(label, ruleCombo);
+      section.add(row);
+    }
     return section;
   }
 

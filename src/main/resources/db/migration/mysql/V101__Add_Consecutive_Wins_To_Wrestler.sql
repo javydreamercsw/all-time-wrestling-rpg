@@ -1,1 +1,1 @@
-ALTER TABLE wrestler ADD COLUMN IF NOT EXISTS consecutive_wins INT NOT NULL DEFAULT 0;
+ALTER TABLE wrestler ADD COLUMN consecutive_wins INT NOT NULL DEFAULT 0;
