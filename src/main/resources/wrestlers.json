@@ -717,7 +717,34 @@
   "heritageTag": "Australia",
   "description": "Cassie Lee is the embodiment of confidence, beauty and chaos – a magnetic force who danced her way into the spotlight and owned it like she was born there. With a killer instinct and deadly strikes masked by a dazzling smile, Cassie is a one-woman highlight reel, equal parts glam and grit, and a master of mind games and in-ring mayhem.\n\nHailing from Sydney, Australia, Cassie climbed the ranks with charm, wit, and a spinning heel kick that came from nowhere and landed everywhere. As one half of one of the most entertaining and decorated women’s tag teams of the modern era, she became known for stealing scenes, starting trends, and snatching titles. But don’t let the flawless fashion and iconic poses distract you – when the bell rings, Cassie Lee is all business.\n\nHer style is fast, fierce, and unpredictable – a mix of technical precision and pure Aussie fire. She’s not just a performer; she’s a presence. From comedy gold to championship gold, she’s done it all – and looked amazing doing it.\n\nNow, centuries beyond her time, Cassie Lee returns to a new era of combat – and she’s still stealing the show, breaking hearts, and kicking heads.\n\n“Darling, I didn’t come back to play fair. I came to win, pose, and be absolutely iconic – in that order.”\n",
   "gender": "FEMALE",
-  "expansion_code": "ATW_VS_WOW"
+  "expansion_code": "ATW_VS_WOW",
+  "abilities": [ {
+    "name": "Inspirational",
+    "description": "When Taunting, gain an additional +1 momentum. If your momentum is 5 or higher, you may instead gain -1 target roll on your next attack.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'TAUNT'",
+    "effectScript": "if (wrestler.momentum >= 5) { match.playerChoice('wrestler.momentum += 1', 'wrestler.nextAttack.targetModifier -= 1') } else { wrestler.momentum += 1 }"
+  }, {
+    "name": "Inspirational Cheat",
+    "description": "Spend -1 stamina. Gain the initiative. Deal -1 damage to the opponent.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1"
+  }, {
+    "name": "Nose Job",
+    "description": "After any successful KICK or KNEE attack, roll 1 die and deal damage equal to half the roll rounded down.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && (match.attackCardType == 'KICK' || match.attackCardType == 'KNEE')",
+    "effectScript": "opponent.health -= Math.floor(match.rollDie(1) / 2)"
+  } ]
 }, {
   "name": "Jessie McKay",
   "alignment": "HEEL",
@@ -811,7 +838,7 @@
   "description": "The Beast isn’t just a wrestler — she’s a living, breathing nightmare. An unstoppable force from the WOW Women of Wrestling universe, The Beast dominates with terrifying presence, brute strength, and an aura so intense it sends chills down the spines of even the bravest competitors. When she steps into the ring, there’s no music. No smile. No games. Just destruction.\n\nCrowned the WOW World Champion after plowing through the roster like a wrecking ball, The Beast earned her title with sheer dominance — overpowering, outlasting, and outright obliterating anyone who dared stand across from her. Her physique is carved from powerlifting steel, her stare is ice cold, and her moves hit like a freight train. There are no wasted motions — only pain. Her powerbomb? It doesn’t just end matches. It ends hope.\n\nShe doesn’t talk much. She doesn’t need to. Her silence speaks louder than most rosters combined. She doesn’t care about fame or adoration — only the fight. And if you want to survive against The Beast, you better be faster, smarter, and stronger than you’ve ever been in your life. Spoiler alert: you’re not.\n\nNow, centuries into a future ravaged by chaos, The Beast walks again — from the darkest depths of your mind. She’s not here to entertain. She’s here to destroy.\n\nYou don’t beat The Beast. You survive her… if you’re lucky.",
   "gender": "FEMALE",
   "expansion_code": "ATW_VS_WOW",
-  "abilities": [{
+  "abilities": [ {
     "name": "Beast Rage",
     "description": "Whenever you deal or suffer 2 or more damage in a single hit, gain 1 Rage Token.",
     "type": "ALWAYS_ON",
