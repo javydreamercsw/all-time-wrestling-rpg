@@ -878,4 +878,32 @@
   "xpValue": 1000,
   "category": "CHAMPIONSHIP",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('abilene') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 90 } }"
+}, {
+  "key": "JYD_BARK",
+  "name": "Bark!",
+  "description": "Have Junkyard Dog cut a promo on a weekly show",
+  "xpValue": 250,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('junkyard') || w.name?.toLowerCase()?.contains('jyd') }"
+}, {
+  "key": "JYD_THE_THUMP",
+  "name": "The Thump",
+  "description": "Have Junkyard Dog win a match by landing The Thump",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && (participant?.name?.toLowerCase()?.contains('junkyard') || participant?.name?.toLowerCase()?.contains('jyd')) && winningCardName?.toLowerCase()?.contains('thump')"
+}, {
+  "key": "JYD_UNSTOPPABLE",
+  "name": "Unstoppable",
+  "description": "Have Junkyard Dog win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && (participant?.name?.toLowerCase()?.contains('junkyard') || participant?.name?.toLowerCase()?.contains('jyd')) && (participant?.consecutiveWins ?: 0) >= 3"
+}, {
+  "key": "JYD_HALL_OF_FAMER",
+  "name": "Hall of Famer",
+  "description": "Have Junkyard Dog reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> (w.name?.toLowerCase()?.contains('junkyard') || w.name?.toLowerCase()?.contains('jyd')) && w.tier?.name() == 'ICON' }"
 } ]
