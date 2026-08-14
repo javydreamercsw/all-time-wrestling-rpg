@@ -773,4 +773,25 @@
   "xpValue": 750,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "binding.hasVariable('mainEventParticipants') && mainEventParticipants?.any { w -> w.name?.toLowerCase()?.contains('cassie') } && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('cassie') }"
+}, {
+  "key": "EDDIE_GUERRERO_LATINO_HEAT",
+  "name": "Latino Heat",
+  "description": "Have Eddie Guerrero reach Icon tier",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('eddie') && w.defaultState?.map { s -> s.tier?.name() == 'ICON' }?.orElse(false) }"
+}, {
+  "key": "EDDIE_GUERRERO_FROG_SPLASH",
+  "name": "Frog Splash",
+  "description": "Have Eddie Guerrero win a five-star match with his signature Frog Splash",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('eddie') && winningCardName?.toLowerCase()?.contains('frog splash') && (segmentRating ?: 0) >= 100"
+}, {
+  "key": "EDDIE_GUERRERO_VIVA_LA_RAZA",
+  "name": "¡Viva la Raza!",
+  "description": "Have Eddie Guerrero win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('eddie') && (w.consecutiveWins ?: 0) >= 5 }"
 } ]
