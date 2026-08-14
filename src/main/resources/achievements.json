@@ -1242,4 +1242,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('aldis') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "OT_GOTCH_PILEDRIVER",
+  "name": "Gotch Piledriver",
+  "description": "Have Oda Tsurugi win a match with his Gotch Piledriver finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('tsurugi') && winningCardName?.toLowerCase()?.contains('gotch')"
+}, {
+  "key": "OT_SEVEN_TIME_CHAMPION",
+  "name": "Seven-Time Champion",
+  "description": "Have Oda Tsurugi accumulate 7 or more total championship reigns",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tsurugi') && (w.reigns?.size() ?: 0) >= 7 }"
+}, {
+  "key": "OT_PATH_OF_REDEMPTION",
+  "name": "Path of Redemption",
+  "description": "Have Oda Tsurugi hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tsurugi') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "OT_WHAT_IS_A_GOD",
+  "name": "What is a God?",
+  "description": "Have Oda Tsurugi reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tsurugi') && w.tier?.name() == 'ICON' }"
 } ]
