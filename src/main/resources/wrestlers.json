@@ -13,7 +13,33 @@
   "heritageTag": "Michigan",
   "description": "There are many ways to describe Rob Van Dam. He is a multi-time World Champion, a freak athlete, and one of the most popular stars to ever grace this great sport. But all these descriptions pale in comparison to what he is known for best; a trailblazer, a show stealer, and undoubtedly the Whole Damn Show.\n\nDespite weighing 235 Pounds, he has the agility of a Gazelle, the speed of a Cobra, and the lethal kicks of an action movie star. He will wow anyone with his moves, and a few minutes into any match, he will have the entire stadium stand on their feet, pointing towards themselves with their thumbs while shouting “Rob… Van… Dam”. He can also be brutal, using a combination of chairs and kicks in dazzling ways that would knock his opponents out cold.\n\nNow, brought to the future to compete for the crown of the All Time Hardcore Champion, RVD has the opportunity to captivate a new audience. And while doing so, he not only plans to win the Hardcore Title, but the All Time Wrestling Championship.",
   "gender": "MALE",
-  "expansion_code": "EXTREME"
+  "expansion_code": "EXTREME",
+  "abilities": [ {
+    "name": "The Whole Damn Show",
+    "description": "After each successful AERIAL attack, gain +1 token on this ability. At 3 tokens: all attack cards gain +1 damage, AERIAL attacks deal +1 additional damage, and the Five Star Frog Splash gains a bonus effect.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'AERIAL_ATTACK_SUCCESS'",
+    "effectScript": "wrestler.wholeDamnShowTokens = (wrestler.wholeDamnShowTokens ?: 0) + 1; if (wrestler.wholeDamnShowTokens >= 3) { match.globalAttackBonus += 1; match.aerialAttackBonus += 1; }"
+  }, {
+    "name": "Spinning Kick",
+    "description": "Block any STRIKE and gain the initiative. Deal -2 health to opponent and gain +1 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackType == 'STRIKE'",
+    "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 1"
+  }, {
+    "name": "Rob... Van... Dam...",
+    "description": "You may trigger and resolve ability effects before rolling an attack die without forfeiting your offensive ability window.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "effectScript": "match.preRollAbilityKeepsOffensiveWindow = true"
+  } ]
 }, {
   "name": "Rey Jaguar",
   "alignment": "FACE",
@@ -263,14 +289,14 @@
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 1"
   }, {
     "name": "Psychological Warfare",
-    "description": "Opponent's attack target roll increases by +1 (maximum roll cap applies). If the attack still succeeds, you suffer an additional 2 damage.",
+    "description": "Opponent's attack target roll increases by +2 (maximum roll cap applies). If the attack still succeeds, you suffer an additional 2 damage.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 2,
     "default": false,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING'",
-    "effectScript": "opponent.targetRollModifier += 1; match.ifAttackSucceeds.extraDamageToDefender += 2"
+    "effectScript": "opponent.targetRollModifier += 2; match.ifAttackSucceeds.extraDamageToDefender += 2"
   }, {
     "name": "Raven's Rules",
     "description": "Spend -2 stamina. Draw a random card from the Weapons Deck and deal the damage listed on the card.",
