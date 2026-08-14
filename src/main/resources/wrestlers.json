@@ -143,7 +143,58 @@
   "heritageTag": "Ohio",
   "description": "“The Macho Man” Randy Savage does not need an introduction. He is one of the most charismatic and popular wrestlers of all time. Known for his raspy voice, flamboyant and colorful outfits, and unmatched intensity, Savage was a showman who captured the world’s imagination like no other.\n\nBut that is not all. He was also one of the greatest wrestlers with a combined 29 championship reigns and 6 world titles to his record. His success was driven by his very aggressive in-ring style that pushed wrestlers to their limit, his never-say-die attitude, and his in-ring intelligence that allowed him to outwit all his opponents.\n\nNow, awoken almost 200 years into the future, The Macho Man sees new possibilities to grow his legacy. With over 20 Billion people watching, this is his chance to remind the entire world of who he is. This is his chance to ensure he is featured prominently on the Mount Rushmore of professional wrestling, forever.\n\nMake no mistake about it; the Macho Man will walk to the ring with his valet, outwork his opponent, dazzle the audience, drop the big elbow, and walk out of this tournament as the Champion of All Time. Step into his ring - “Ohhhh Yeeaaaaaaa!”",
   "gender": "MALE",
-  "expansion_code": "BASE_GAME"
+  "expansion_code": "BASE_GAME",
+  "abilities": [ {
+    "name": "Randy Reversal",
+    "description": "Spend -2 stamina to gain the initiative, deal -2 health to opponent, and gain +2 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
+  }, {
+    "name": "Valet Distraction",
+    "description": "Always has one extra kick-out roll when pinned.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "timing": "PINNED",
+    "effectScript": "wrestler.extraKickoutRolls += 1"
+  }, {
+    "name": "Macho Madness",
+    "description": "Gain +1 stamina and +1 momentum.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "effectScript": "wrestler.stamina += 1; wrestler.momentum += 1"
+  }, {
+    "name": "Brass Knuckles",
+    "description": "Spend -1 stamina and gain the initiative. Opponent can regain the initiative by using a card or rolling 5+. If the opponent fails, deal -3 health and gain +2 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); if (!opponent.countersWithCard() && opponent.roll() < 5) { opponent.health -= 3; wrestler.stamina += 2; } else { opponent.gainInitiative(); }"
+  }, {
+    "name": "Recover",
+    "description": "Gain +2 stamina and draw 1 card. Opponent also gains +1 stamina, +1 health, and draws 1 card.",
+    "type": "ALWAYS_ON",
+    "category": "ACTION",
+    "default": true,
+    "effectScript": "wrestler.stamina += 2; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+  }, {
+    "name": "Taunt",
+    "description": "Gain +1 stamina, +1 momentum, and draw 2 cards. Opponent also gains +1 stamina, +1 health, and draws 1 card.",
+    "type": "ALWAYS_ON",
+    "category": "ACTION",
+    "default": true,
+    "effectScript": "wrestler.stamina += 1; wrestler.momentum += 1; wrestler.drawCard(2); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+  } ]
 }, {
   "name": "Jax Felix",
   "alignment": "FACE",
