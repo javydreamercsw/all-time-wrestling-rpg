@@ -1158,4 +1158,32 @@
   "xpValue": 250,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "binding.hasVariable('promoParticipants') && promoParticipants?.any { w -> w.name?.toLowerCase()?.contains('raven') }"
+}, {
+  "key": "PRINCESS_AUSSIE_CUTTER_FROM_DOWN_UNDER",
+  "name": "Cutter From Down Under",
+  "description": "Have Princess Aussie win a match with her Cutter signature",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('aussie') && winningCardName?.toLowerCase()?.contains('cutter')"
+}, {
+  "key": "PRINCESS_AUSSIE_I_NEVER_STAY_DOWN",
+  "name": "I Never Stay Down",
+  "description": "Have Princess Aussie win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('aussie') && (participant?.consecutiveWins ?: 0) >= 3"
+}, {
+  "key": "PRINCESS_AUSSIE_PEOPLES_CHAMPION",
+  "name": "People's Champion",
+  "description": "Have Princess Aussie hold a championship for 60 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('aussie') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "PRINCESS_AUSSIE_RISE_WITH_PURPOSE",
+  "name": "Rise With Purpose",
+  "description": "Have Princess Aussie reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('aussie') && w.tier?.name() == 'ICON' }"
 } ]
