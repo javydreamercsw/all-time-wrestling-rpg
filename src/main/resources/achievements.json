@@ -689,4 +689,32 @@
   "xpValue": 1000,
   "category": "CHAMPIONSHIP",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && w.reigns?.any { r -> r.currentReign } } && wrestlers?.any { w -> w.name?.toLowerCase()?.contains('benjamin') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "GAIL_KIM_EAT_DEFEAT_REPEAT",
+  "name": "Eat. Defeat. Repeat.",
+  "description": "Have Gail Kim win 3 consecutive matches",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && (w.consecutiveWins ?: 0) >= 3 }"
+}, {
+  "key": "GAIL_KIM_TNA_ORIGINAL",
+  "name": "TNA Original",
+  "description": "Have Gail Kim win a championship for the first time",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && w.reigns?.any { r -> r.currentReign && (r.reignNumber ?: 1) == 1 } }"
+}, {
+  "key": "GAIL_KIM_SUBMISSION_ARTIST",
+  "name": "Submission Artist",
+  "description": "Have Gail Kim win a match with her signature Koji Clutch submission",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('gail') && winningCardName?.toLowerCase()?.contains('koji')"
+}, {
+  "key": "GAIL_KIM_THE_STANDARD",
+  "name": "The Standard",
+  "description": "Have Gail Kim hold a championship for 90 or more days",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('gail') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, java.time.Instant.now()).toDays() >= 90 } }"
 } ]
