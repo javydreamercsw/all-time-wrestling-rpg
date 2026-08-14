@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
@@ -117,6 +118,11 @@ public class SegmentAdjudicationService {
   // when null (unit tests).
   @Setter(onMethod_ = {@Autowired})
   private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
+
+  // Field-injected for the same reason — null-safe, consecutive-wins tracking is skipped
+  // when null (unit tests).
+  @Setter(onMethod_ = {@Autowired})
+  private WrestlerRepository wrestlerRepository;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -342,6 +348,7 @@ public class SegmentAdjudicationService {
               .collect(Collectors.toMap(r -> r.getWrestler().getId(), r -> r));
 
       List<LeagueRoster> toSave = new ArrayList<>();
+      List<Wrestler> wrestlersToSave = new ArrayList<>();
       if (winners.isEmpty()) {
         for (Wrestler w : segment.getWrestlers()) {
           LeagueRoster roster = rosterByWrestlerId.get(w.getId());
@@ -357,6 +364,8 @@ public class SegmentAdjudicationService {
             roster.setWins(roster.getWins() + 1);
             toSave.add(roster);
           }
+          w.setConsecutiveWins(w.getConsecutiveWins() == null ? 1 : w.getConsecutiveWins() + 1);
+          wrestlersToSave.add(w);
         }
         for (Wrestler w : losers) {
           LeagueRoster roster = rosterByWrestlerId.get(w.getId());
@@ -364,9 +373,14 @@ public class SegmentAdjudicationService {
             roster.setLosses(roster.getLosses() + 1);
             toSave.add(roster);
           }
+          w.setConsecutiveWins(0);
+          wrestlersToSave.add(w);
         }
       }
       leagueRosterRepository.saveAll(toSave);
+      if (wrestlerRepository != null && !wrestlersToSave.isEmpty()) {
+        wrestlerRepository.saveAll(wrestlersToSave);
+      }
     }
   }
 

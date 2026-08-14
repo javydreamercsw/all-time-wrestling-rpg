@@ -137,6 +137,10 @@ public class Wrestler extends AbstractEntity<Long> {
   @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
   private Integer brawl = 1;
 
+  @Column(name = "consecutive_wins", nullable = false)
+  @Builder.Default
+  private Integer consecutiveWins = 0;
+
   // ==================== ATW RPG RELATIONSHIPS ====================
   @ManyToOne
   @JoinColumn(name = "account_id")

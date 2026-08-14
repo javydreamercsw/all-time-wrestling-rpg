@@ -661,4 +661,32 @@
   "xpValue": 750,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('van dam') && w.defaultState?.map { s -> s.tier?.name() == 'ICON' }?.orElse(false) }"
+}, {
+  "key": "LASHLEY_THE_ALMIGHTY",
+  "name": "The Almighty",
+  "description": "Have Bobby Lashley win a world championship",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && w.reigns?.any { r -> r.currentReign } }"
+}, {
+  "key": "LASHLEY_HURT_LOCK",
+  "name": "Hurt Lock",
+  "description": "Have Bobby Lashley win a match with his signature Hurt Lock submission",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('lashley') && winningCardName?.toLowerCase()?.contains('hurt lock')"
+}, {
+  "key": "LASHLEY_PAIN_IS_PROFITABLE",
+  "name": "Pain Is Profitable",
+  "description": "Have Bobby Lashley win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && (w.consecutiveWins ?: 0) >= 5 }"
+}, {
+  "key": "LASHLEY_THE_COLLECTIVE_RISES",
+  "name": "The Collective Rises",
+  "description": "Have both Bobby Lashley and Shelton Benjamin hold titles at the same time",
+  "xpValue": 1000,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && w.reigns?.any { r -> r.currentReign } } && wrestlers?.any { w -> w.name?.toLowerCase()?.contains('benjamin') && w.reigns?.any { r -> r.currentReign } }"
 } ]
