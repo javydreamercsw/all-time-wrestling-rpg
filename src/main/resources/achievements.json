@@ -1298,4 +1298,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('shumba') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "SBU_ARABIAN_FACEBUSTER",
+  "name": "Arabian Facebuster",
+  "description": "Have Sabu win a match with his Arabian Facebuster finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('sabu') && winningCardName?.toLowerCase()?.contains('arabian facebuster')"
+}, {
+  "key": "SBU_TAPE_IT_UP",
+  "name": "Tape It Up",
+  "description": "Have Sabu win a Barbwire Exploding Deathmatch",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('sabu') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('barbwire') }"
+}, {
+  "key": "SBU_THROUGH_TABLES_OVER_LADDERS",
+  "name": "Through Tables, Over Ladders",
+  "description": "Have Sabu win a Tables, Ladders and Chairs (TLC) match",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('sabu') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('tlc') || r?.toLowerCase()?.contains('tables, ladders') }"
+}, {
+  "key": "SBU_GREATEST_HARDCORE_WRESTLER",
+  "name": "Greatest Hardcore Wrestler",
+  "description": "Have Sabu reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('sabu') && w.tier?.name() == 'ICON' }"
 } ]
