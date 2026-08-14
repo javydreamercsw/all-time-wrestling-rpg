@@ -1074,4 +1074,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('kamala') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "MATT_CARDONA_RADIO_SILENCE",
+  "name": "Radio Silence",
+  "description": "Have Matt Cardona win a match with his Radio Silence finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('cardona') && winningCardName?.toLowerCase()?.contains('radio silence')"
+}, {
+  "key": "MATT_CARDONA_DEATHMATCH_KING",
+  "name": "Deathmatch King",
+  "description": "Have Matt Cardona win a match under a deathmatch, hardcore, or extreme rule set",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('segmentRuleNames') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('cardona') && segmentRuleNames?.any { r -> r?.toLowerCase()?.contains('deathmatch') || r?.toLowerCase()?.contains('hardcore') || r?.toLowerCase()?.contains('barbwire') || r?.toLowerCase()?.contains('extreme') }"
+}, {
+  "key": "MATT_CARDONA_BELT_COLLECTOR",
+  "name": "Belt Collector",
+  "description": "Have Matt Cardona hold a championship for 30 or more days",
+  "xpValue": 750,
+  "category": "CHAMPIONSHIP",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cardona') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "MATT_CARDONA_REBOOT",
+  "name": "Reboot",
+  "description": "Have Matt Cardona reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('cardona') && w.tier?.name() == 'ICON' }"
 } ]
