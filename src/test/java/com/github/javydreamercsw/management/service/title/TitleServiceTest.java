@@ -1035,6 +1035,59 @@ class TitleServiceTest {
   }
 
   // =====================================================================
+  // recordSuccessfulDefense
+  // =====================================================================
+
+  @Test
+  void recordSuccessfulDefense_incrementsExistingCounter() {
+    TitleReign reign = new TitleReign();
+    reign.setConsecutiveWeeklyDefenses(2);
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title)).thenReturn(List.of(reign));
+    when(titleReignRepository.save(any(TitleReign.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    titleService.recordSuccessfulDefense(title);
+
+    assertThat(reign.getConsecutiveWeeklyDefenses()).isEqualTo(3);
+  }
+
+  @Test
+  void recordSuccessfulDefense_handlesNullCounter() {
+    TitleReign reign = new TitleReign();
+    reign.setConsecutiveWeeklyDefenses(null);
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title)).thenReturn(List.of(reign));
+    when(titleReignRepository.save(any(TitleReign.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    titleService.recordSuccessfulDefense(title);
+
+    assertThat(reign.getConsecutiveWeeklyDefenses()).isEqualTo(1);
+  }
+
+  @Test
+  void recordSuccessfulDefense_withNoActiveReign_doesNothing() {
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title)).thenReturn(List.of());
+
+    titleService.recordSuccessfulDefense(title);
+
+    verify(titleReignRepository, never()).save(any());
+  }
+
+  @Test
+  void recordSuccessfulDefense_withMultipleActiveReigns_incrementsAll() {
+    TitleReign reign1 = new TitleReign();
+    reign1.setConsecutiveWeeklyDefenses(1);
+    TitleReign reign2 = new TitleReign();
+    reign2.setConsecutiveWeeklyDefenses(3);
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title))
+        .thenReturn(List.of(reign1, reign2));
+    when(titleReignRepository.save(any(TitleReign.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    titleService.recordSuccessfulDefense(title);
+
+    assertThat(reign1.getConsecutiveWeeklyDefenses()).isEqualTo(2);
+    assertThat(reign2.getConsecutiveWeeklyDefenses()).isEqualTo(4);
+  }
+
+  // =====================================================================
   // helpers
   // =====================================================================
 

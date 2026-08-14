@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.match;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -48,6 +49,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudResolutionService;
@@ -65,17 +67,20 @@ import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -657,5 +662,76 @@ class SegmentAdjudicationServiceTest {
     verify(eventPublisher)
         .publishEvent(
             any(com.github.javydreamercsw.management.event.ChampionshipChangeEvent.class));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void triggerAchievements_enrichesScriptedContextWithSegmentVariables() {
+    ScriptedAchievementEvaluator evaluator = mock(ScriptedAchievementEvaluator.class);
+    when(evaluator.resolveNewlyUnlockedKeys(any(), any())).thenReturn(List.of());
+    ReflectionTestUtils.setField(
+        segmentAdjudicationService, "scriptedAchievementEvaluator", evaluator);
+
+    Account account = new Account();
+    account.setId(99L);
+    account.setAchievements(Set.of());
+    when(winner.getAccount()).thenReturn(account);
+
+    SegmentParticipant winnerParticipant = mock(SegmentParticipant.class);
+    when(winnerParticipant.getWrestler()).thenReturn(winner);
+    when(winnerParticipant.getFinalMomentum()).thenReturn(8);
+    when(winnerParticipant.getWinningCardName()).thenReturn("Frog Splash");
+    when(segment.getParticipants()).thenReturn(Set.of(winnerParticipant));
+    when(segment.getSegmentRating()).thenReturn(95);
+    when(segment.getIsTitleSegment()).thenReturn(false);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    ArgumentCaptor<Map<String, Object>> contextCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(evaluator).resolveNewlyUnlockedKeys(eq(account), contextCaptor.capture());
+    Map<String, Object> ctx = contextCaptor.getValue();
+    assertThat(ctx).containsEntry("segmentRating", 95);
+    assertThat(ctx).containsEntry("winningCardName", "Frog Splash");
+    assertThat(ctx).containsEntry("winnerMomentum", 8);
+    assertThat(ctx).containsEntry("participantMomentum", 8);
+    assertThat(ctx).containsEntry("isChampionshipMatch", false);
+  }
+
+  @Test
+  void applyTitleChange_onSuccessfulDefense_recordsDefense() {
+    Title title = mock(Title.class);
+    Wrestler champion = mock(Wrestler.class);
+    when(champion.getId()).thenReturn(5L);
+    when(title.getCurrentChampions()).thenReturn(List.of(champion));
+    when(wrestlerService.getOrCreateState(eq(5L), anyLong())).thenReturn(mock(WrestlerState.class));
+    when(champion.getState(anyLong())).thenReturn(Optional.empty());
+
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    when(segment.getWinners()).thenReturn(List.of(champion));
+    when(segment.getWrestlers()).thenReturn(List.of(champion, loser));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleService).recordSuccessfulDefense(title);
+  }
+
+  @Test
+  void applyTitleChange_onDraw_doesNotRecordDefense() {
+    Title title = mock(Title.class);
+    Wrestler champion = mock(Wrestler.class);
+    when(champion.getId()).thenReturn(5L);
+    when(title.getCurrentChampions()).thenReturn(List.of(champion));
+    when(wrestlerService.getOrCreateState(eq(5L), anyLong())).thenReturn(mock(WrestlerState.class));
+    when(champion.getState(anyLong())).thenReturn(Optional.empty());
+
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    when(segment.getWinners()).thenReturn(List.of());
+    when(segment.getWrestlers()).thenReturn(List.of(champion, loser));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleService, never()).recordSuccessfulDefense(any());
   }
 }
