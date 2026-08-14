@@ -346,7 +346,33 @@
   "heritageTag": "Bombay",
   "description": "Homicidal, Suicidal, Genocidal, Death-Defying Maniac. There aren't many men that can live up to this moniker. Sabu not only does, but exceeds expectations. A man of mystery who does not talk much, this icon is undoubtedly one of, if not the greatest hardcore wrestler of all time. He legitimately revolutionized professional wrestling in the 90s with his unique style of innovative and unpredictable aerial attacks mixed with hardcore brutality.\n\nMore importantly, he was legitimately one of the toughest human beings on Earth. As a testament to that toughness, during a barbwire match, Sabu was entangled in barbwire, ripping his bicep off completely, and suffering a ~12-inch gash with his own flesh hanging from his body. Sabu simply responded by taping his arm and continuing the match.\n\nNow, 200 years into the future, Sabu is back in his prime and ready to show the world what hardcore wrestling is about. He will maim his own body to hurt his opponents and prove once and for all that he is the greatest hardcore wrestler of all time.",
   "gender": "MALE",
-  "expansion_code": "EXTREME"
+  "expansion_code": "EXTREME",
+  "abilities": [ {
+    "name": "Homicidal, Suicidal",
+    "description": "After a successful AERIAL attack, suffer 1 damage and deal -4 health to opponent.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'AERIAL_ATTACK_SUCCESS'",
+    "effectScript": "wrestler.health -= 1; opponent.health -= 4"
+  }, {
+    "name": "Unpredictable",
+    "description": "Trigger immediately after your opponent's defensive ability window. Switch the attack card played with an attack card from your hand. Your opponent cannot defend against the new attack card.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "unlockCondition": "event == 'OPPONENT_DEFENSIVE_WINDOW_ENDED'",
+    "effectScript": "match.swapAttackCardFromHand(wrestler); match.currentAttackIsUndefendable = true"
+  }, {
+    "name": "Death-Defying Maniac",
+    "description": "Gain +3 health. You may only trigger 1 token at a time.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 2,
+    "default": false,
+    "effectScript": "wrestler.health += 3"
+  } ]
 }, {
   "name": "Dynamite Kid",
   "alignment": "FACE",
