@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto;
 
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,31 +24,27 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class WrestlerImportDTO {
+public class WrestlerAbilityDTO {
   private String name;
-  private Integer deckSize;
-  private Integer startingHealth;
-  private Integer lowHealth;
-  private Integer startingStamina;
-  private Integer lowStamina;
-  private Long fans;
-  private Boolean isPlayer;
-  private Integer bumps;
   private String description;
-  private Gender gender;
-  private String manager;
-  private String alignment;
-  private String externalId;
-  private String imageUrl;
-  private String heritageTag;
 
-  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
-  private String expansionCode;
+  /** AbilityType enum value as a string: ALWAYS_ON, USES_LIMITED, or CONDITIONAL. */
+  private String type;
 
-  private Integer drive;
-  private Integer resilience;
-  private Integer charisma;
-  private Integer brawl;
+  /** AbilityCategory enum value as a string: SIGNATURE, PASSIVE, or ACTION. */
+  private String category;
 
-  private java.util.List<WrestlerAbilityDTO> abilities = new java.util.ArrayList<>();
+  @JsonProperty("maxUses")
+  private Integer maxUses;
+
+  /** AbilityTiming enum value as a string: OFFENSE, DEFENSE, PINNED, or BACKSTAGE. */
+  private String timing;
+
+  @JsonProperty("default")
+  private boolean isDefault = true;
+
+  private String unlockCondition;
+  private String swapCondition;
+  private String costScript;
+  private String effectScript;
 }

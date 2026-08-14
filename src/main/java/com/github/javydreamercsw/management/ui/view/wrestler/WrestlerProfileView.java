@@ -29,7 +29,11 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.wrestler.AbilityCategory;
+import com.github.javydreamercsw.management.domain.wrestler.AbilityType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -123,6 +127,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final com.github.javydreamercsw.management.service.campaign.StatusCardService
       statusCardService;
   private final WrestlerStateRepository wrestlerStateRepository;
+  private final WrestlerAbilityRepository wrestlerAbilityRepository;
   private final AlignmentService alignmentService;
 
   private Wrestler wrestler;
@@ -144,6 +149,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
+  private final VerticalLayout abilitiesLayout = new VerticalLayout();
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
 
   @Autowired private SecurityUtils securityUtils;
@@ -173,6 +179,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final com.github.javydreamercsw.management.service.campaign.StatusCardService
           statusCardService,
       final WrestlerStateRepository wrestlerStateRepository,
+      final WrestlerAbilityRepository wrestlerAbilityRepository,
       final AlignmentService alignmentService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
@@ -194,6 +201,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.wrestlerStatusService = wrestlerStatusService;
     this.statusCardService = statusCardService;
     this.wrestlerStateRepository = wrestlerStateRepository;
+    this.wrestlerAbilityRepository = wrestlerAbilityRepository;
     this.alignmentService = alignmentService;
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setAlt("Wrestler Image");
@@ -272,6 +280,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     recentMatchesLayout.add(seasonFilter, recentMatchesGrid);
     secondaryInfoAccordion.add("Match Logs", recentMatchesLayout);
     secondaryInfoAccordion.add("Rivalry History", feudHistoryLayout);
+    secondaryInfoAccordion.add("Abilities", abilitiesLayout);
 
     // Configure Grid
     recentMatchesGrid.removeAllColumns();
@@ -573,7 +582,110 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       }
 
       updateMatchAndFeudHistory(); // Initial call to populate match and feud history
+
+      abilitiesLayout.removeAll();
+      List<WrestlerAbility> abilities =
+          wrestlerAbilityRepository.findByWrestlerId(wrestler.getId());
+      buildAbilitiesLayout(abilities);
     }
+  }
+
+  private void buildAbilitiesLayout(final List<WrestlerAbility> abilities) {
+    if (abilities.isEmpty()) {
+      abilitiesLayout.add(new Paragraph("No abilities defined for this wrestler."));
+      return;
+    }
+
+    List<WrestlerAbility> signatures =
+        abilities.stream()
+            .filter(a -> AbilityCategory.SIGNATURE == a.getCategory())
+            .sorted(java.util.Comparator.comparing(WrestlerAbility::getName))
+            .collect(Collectors.toList());
+    List<WrestlerAbility> passives =
+        abilities.stream()
+            .filter(a -> AbilityCategory.PASSIVE == a.getCategory())
+            .sorted(java.util.Comparator.comparing(WrestlerAbility::getName))
+            .collect(Collectors.toList());
+    List<WrestlerAbility> actions =
+        abilities.stream()
+            .filter(a -> AbilityCategory.ACTION == a.getCategory())
+            .sorted(java.util.Comparator.comparing(WrestlerAbility::getName))
+            .collect(Collectors.toList());
+    List<WrestlerAbility> optional =
+        abilities.stream()
+            .filter(a -> !a.isDefault())
+            .sorted(java.util.Comparator.comparing(WrestlerAbility::getName))
+            .collect(Collectors.toList());
+
+    if (!signatures.isEmpty()) {
+      abilitiesLayout.add(new H3("Signature Abilities"));
+      signatures.forEach(a -> abilitiesLayout.add(buildAbilityEntry(a)));
+    }
+    if (!passives.isEmpty()) {
+      abilitiesLayout.add(new H3("Passive / Triggered"));
+      passives.forEach(a -> abilitiesLayout.add(buildAbilityEntry(a)));
+    }
+    if (!actions.isEmpty()) {
+      abilitiesLayout.add(new H3("Actions"));
+      actions.forEach(a -> abilitiesLayout.add(buildAbilityEntry(a)));
+    }
+    if (!optional.isEmpty()) {
+      abilitiesLayout.add(new H3("Optional (Swappable)"));
+      optional.forEach(a -> abilitiesLayout.add(buildAbilityEntry(a)));
+    }
+  }
+
+  private Div buildAbilityEntry(final WrestlerAbility ability) {
+    Div card = new Div();
+    card.addClassNames(
+        LumoUtility.Padding.SMALL,
+        LumoUtility.Margin.Bottom.XSMALL,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Background.CONTRAST_5);
+
+    HorizontalLayout header = new HorizontalLayout();
+    header.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+    header.setSpacing(true);
+
+    Span nameSpan = new Span(ability.getName());
+    nameSpan.getStyle().set("font-weight", "bold");
+
+    Span badge = buildAbilityBadge(ability);
+
+    if (!ability.isDefault() && ability.getSwapCondition() != null) {
+      Span swappable = new Span("swappable");
+      swappable.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.XSMALL);
+      header.add(nameSpan, badge, swappable);
+    } else {
+      header.add(nameSpan, badge);
+    }
+    card.add(header);
+
+    if (ability.getDescription() != null && !ability.getDescription().isBlank()) {
+      Paragraph desc = new Paragraph(ability.getDescription());
+      desc.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.Margin.NONE);
+      card.add(desc);
+    }
+
+    return card;
+  }
+
+  private Span buildAbilityBadge(final WrestlerAbility ability) {
+    Span badge;
+    if (ability.getAbilityType() == AbilityType.USES_LIMITED && ability.getMaxUses() != null) {
+      badge = new Span("×" + ability.getMaxUses());
+    } else if (ability.getAbilityType() == AbilityType.CONDITIONAL) {
+      badge = new Span("conditional");
+    } else {
+      badge = new Span("∞");
+    }
+    badge.addClassNames(
+        LumoUtility.FontSize.XSMALL,
+        LumoUtility.TextColor.SECONDARY,
+        LumoUtility.Padding.Horizontal.XSMALL);
+    badge.getStyle().set("border", "1px solid var(--lumo-contrast-20pct)");
+    badge.getStyle().set("border-radius", "var(--lumo-border-radius-s)");
+    return badge;
   }
 
   private void showManageStatusesDialog() {
