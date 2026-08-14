@@ -1354,4 +1354,32 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('the beast') && w.tier?.name() == 'ICON' }"
+}, {
+  "key": "TOR_METEORA",
+  "name": "Meteora",
+  "description": "Have Tormenta win a match with her Meteora finisher",
+  "xpValue": 500,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('winningCardName') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('tormenta') && winningCardName?.toLowerCase()?.contains('meteora')"
+}, {
+  "key": "TOR_LA_PRIMERA",
+  "name": "La Primera",
+  "description": "Have Tormenta hold a championship for 30 or more consecutive days",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tormenta') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 30 } }"
+}, {
+  "key": "TOR_THE_STORM_NEVER_DIES",
+  "name": "The Storm Never Dies",
+  "description": "Have Tormenta win 5 consecutive matches",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('participant') && (isWinner ?: false) && participant?.name?.toLowerCase()?.contains('tormenta') && (participant?.consecutiveWins ?: 0) >= 5"
+}, {
+  "key": "TOR_EYE_OF_THE_STORM",
+  "name": "Eye of the Storm",
+  "description": "Have Tormenta reach ICON tier",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('tormenta') && w.tier?.name() == 'ICON' }"
 } ]
