@@ -77,7 +77,75 @@
   "heritageTag": "France",
   "description": "There is no one and nothing bigger than the “8th Wonder of the World”, Andre the Giant. Standing at 7 feet 4 inches, and weighing in at 500 pounds, Andre was massive. No other man or wrestler could stand toe to toe with Andre, and none could beat him during his prime, where he didn't suffer a single pinfall loss for over 15 years. But it wasn't just his humongous size that made him stand out, it was also the size of his heart.\n\nAndre was known as the friendly giant, who had a gentle soul and a generous spirit that cannot be matched. That is perhaps why he was so loved by the world. That is perhaps what made him special. He was immensely strong, resilient, and more surprisingly, quick, agile and technical. Andre could not only hit or slam you hard, he would stretch you in multiple ways and surprise you with his shocking explosiveness.\n\nNow, awoken 200 years after his retirement, Andre finds himself in his prime once more, ready to make his mark on the new world. Perhaps this time he will win the championship and keep it for 15 years. Perhaps this time he can prove that stories about him losing to others during his prime are just myths. One thing is for certain: nothing is bigger than Andre the Giant and nothing can stand in his way.",
   "gender": "MALE",
-  "expansion_code": "BASE_GAME"
+  "expansion_code": "BASE_GAME",
+  "abilities": [ {
+    "name": "Andre Reversal",
+    "description": "Spend -2 stamina to gain the initiative, deal -2 health to opponent, and gain +2 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
+  }, {
+    "name": "The 8th Wonder of the World",
+    "description": "Opponent's THROW target roll is +2 higher (harder to hit). A successful opponent THROW still deals 1 additional damage.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "unlockCondition": "event == 'OPPONENT_THROW_ATTEMPT'",
+    "effectScript": "opponent.targetRollModifier += 2"
+  }, {
+    "name": "Smother",
+    "description": "Opponent suffers -2 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "effectScript": "opponent.stamina -= 2"
+  }, {
+    "name": "Fear",
+    "description": "Gain the initiative.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "effectScript": "wrestler.gainInitiative()"
+  }, {
+    "name": "Immovable",
+    "description": "Discard 2 cards (except kicks) to block an attack, then gain the initiative.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "unlockCondition": "event == 'ATTACK_INCOMING'",
+    "costScript": "wrestler.discardCards(2, 'NON_KICK')",
+    "effectScript": "blockAttack(); wrestler.gainInitiative()"
+  }, {
+    "name": "Iron Giant",
+    "description": "Spend -2 stamina to block a 3rd consecutive attack of -1 or -2 damage, then gain the initiative.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.consecutiveAttackCount >= 3",
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "blockAttack(); wrestler.gainInitiative()"
+  }, {
+    "name": "Recover",
+    "description": "Gain +3 stamina and draw 1 card. Opponent also gains +1 stamina, draws a card and +1 health.",
+    "type": "ALWAYS_ON",
+    "category": "ACTION",
+    "default": true,
+    "effectScript": "wrestler.stamina += 3; wrestler.health += 1; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+  }, {
+    "name": "Taunt",
+    "description": "Gain +1 stamina and +1 health. Opponent also gains +1 stamina and +1 health but loses 1 card.",
+    "type": "ALWAYS_ON",
+    "category": "ACTION",
+    "default": true,
+    "effectScript": "wrestler.stamina += 1; wrestler.health += 1; opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+  } ]
 }, {
   "name": "Randy Savage",
   "alignment": "FACE",

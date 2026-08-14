@@ -1,0 +1,21 @@
+[ {
+  "name": "Discard Block",
+  "description": "Discard 2 cards (except Finishers) to block an attack, then gain the initiative.",
+  "type": "ALWAYS_ON",
+  "category": "PASSIVE",
+  "default": true,
+  "timing": "DEFENSE",
+  "unlockCondition": "event == 'ATTACK_INCOMING'",
+  "costScript": "wrestler.discardCards(2, 'NON_FINISHER')",
+  "effectScript": "blockAttack(); wrestler.gainInitiative()"
+}, {
+  "name": "Stamina Block",
+  "description": "Spend -2 stamina to block a 3rd consecutive attack of -1 or -2 damage, then gain the initiative.",
+  "type": "ALWAYS_ON",
+  "category": "PASSIVE",
+  "default": true,
+  "timing": "DEFENSE",
+  "unlockCondition": "event == 'ATTACK_INCOMING' && match.consecutiveAttackCount >= 3",
+  "costScript": "wrestler.stamina -= 2",
+  "effectScript": "blockAttack(); wrestler.gainInitiative()"
+} ]

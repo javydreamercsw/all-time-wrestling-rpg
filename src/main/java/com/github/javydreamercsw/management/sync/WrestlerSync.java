@@ -306,6 +306,7 @@ public class WrestlerSync implements DataSyncContributor {
 
           toSaveBulk.forEach(saved -> wrestlersByName.put(saved.getName(), saved));
 
+          List<WrestlerAbilityDTO> universalAbilities = loadUniversalAbilities();
           for (Wrestler wrestler : allWrestlers) {
             WrestlerImportDTO w = dtoMap.get(wrestler.getName());
             WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
@@ -338,8 +339,10 @@ public class WrestlerSync implements DataSyncContributor {
               wrestlerStateRepository.save(state);
             }
 
-            if (!w.getAbilities().isEmpty()) {
-              syncAbilities(wrestler, w.getAbilities());
+            List<WrestlerAbilityDTO> allAbilities = new ArrayList<>(universalAbilities);
+            allAbilities.addAll(w.getAbilities());
+            if (!allAbilities.isEmpty()) {
+              syncAbilities(wrestler, allAbilities);
             }
           }
         } catch (IOException e) {
@@ -350,6 +353,21 @@ public class WrestlerSync implements DataSyncContributor {
       log.error("Error resolving wrestler resources", e);
     }
     wrestlerService.evictWrestlerCache();
+  }
+
+  private List<WrestlerAbilityDTO> loadUniversalAbilities() {
+    try {
+      Resource[] resources =
+          resourcePatternResolver.getResources("classpath*:wrestler_abilities_universal.json");
+      for (Resource r : resources) {
+        if (r.exists()) {
+          return objectMapper.readValue(r.getInputStream(), new TypeReference<>() {});
+        }
+      }
+    } catch (IOException e) {
+      log.warn("Could not load universal wrestler abilities", e);
+    }
+    return List.of();
   }
 
   private void syncAbilities(final Wrestler wrestler, final List<WrestlerAbilityDTO> dtoAbilities) {
