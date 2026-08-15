@@ -51,6 +51,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.CampaignAbilityCardComponent;
+import com.github.javydreamercsw.management.ui.component.GuideTextRenderer;
 import com.github.javydreamercsw.management.ui.component.PlayerCampaignCard;
 import com.github.javydreamercsw.management.ui.component.TournamentBracketComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -63,6 +64,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
@@ -427,9 +429,20 @@ public class CampaignDashboardView extends VerticalLayout {
           .getUpgrades()
           .forEach(
               upgrade -> {
-                Span skill = new Span("✅ " + upgrade.getName() + ": " + upgrade.getDescription());
-                skill.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.FontWeight.BOLD);
-                skillsLayout.add(skill);
+                Div skillRow = new Div();
+                skillRow
+                    .getStyle()
+                    .set("display", "flex")
+                    .set("align-items", "baseline")
+                    .set("flex-wrap", "wrap")
+                    .set("gap", "0.25em");
+                Span label = new Span("✅ " + upgrade.getName() + ": ");
+                label.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.FontWeight.BOLD);
+                Div descDiv = (Div) GuideTextRenderer.render(upgrade.getDescription());
+                descDiv.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.FontWeight.BOLD);
+                descDiv.getStyle().set("margin", "0");
+                skillRow.add(label, descDiv);
+                skillsLayout.add(skillRow);
               });
     }
     rightColumn.add(skillsLayout);
