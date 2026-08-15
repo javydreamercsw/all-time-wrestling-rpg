@@ -631,16 +631,22 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     sideCol.add(infoCard);
 
-    // Abilities panel — shown only to the player, collapsed by default
-    if (!isPromo && isPlayerInMatch && playerWrestler != null) {
-      var abilities = wrestlerAbilityRepository.findByWrestlerId(playerWrestler.getId());
-      if (!abilities.isEmpty()) {
-        com.vaadin.flow.component.details.Details abilitiesSection =
-            new com.vaadin.flow.component.details.Details(
-                "Your Abilities", new WrestlerAbilityPanel(abilities));
-        abilitiesSection.setOpened(false);
-        sideCol.add(abilitiesSection);
-      }
+    // Abilities panel — shown to the player, using the account-matched wrestler from the segment.
+    if (!isPromo && isPlayerInMatch) {
+      wrestlers.stream()
+          .filter(w -> w != null && playerWrestlerIds.contains(w.getId()))
+          .findFirst()
+          .ifPresent(
+              matchPlayer -> {
+                var abilities = wrestlerAbilityRepository.findByWrestlerId(matchPlayer.getId());
+                if (!abilities.isEmpty()) {
+                  com.vaadin.flow.component.details.Details abilitiesSection =
+                      new com.vaadin.flow.component.details.Details(
+                          "Your Abilities", new WrestlerAbilityPanel(abilities));
+                  abilitiesSection.setOpened(false);
+                  sideCol.add(abilitiesSection);
+                }
+              });
     }
 
     // Ringside Actions Section — only available in GLOBAL universe matches

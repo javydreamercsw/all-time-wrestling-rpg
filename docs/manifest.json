@@ -834,5 +834,12 @@
     "description": "The Abilities panel groups each wrestler's moves into Core Abilities (shared by all wrestlers) and Wrestler Abilities (superstar-specific). Limited-use abilities show a colored chip with their use count. Unlockable abilities are collapsed by default.",
     "imagePath": "screenshots/wrestler-profile-abilities.png",
     "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-match-abilities",
+    "category": "Game Mechanics",
+    "title": "Wrestler Abilities in Match",
+    "description": "Your wrestler's ability board is always a tap away during a match. The collapsed 'Your Abilities' panel in the match sidebar shows your core, wrestler-specific, and unlockable abilities with their type badges and [[token]] icon descriptions — no need to leave the match to look something up.",
+    "imagePath": "screenshots/mechanic-match-abilities.png",
+    "order": 0
   } ]
 }
