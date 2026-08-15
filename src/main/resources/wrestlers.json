@@ -195,7 +195,34 @@
   "heritageTag": "Canada",
   "description": "Born in 2122 AD, the self-proclaimed “Miracle See” Jax Felix is a 5th Generation wrestling prodigy from Winnipeg, Canada. He is a former world champion and the founder of “Alpha Pack” Faction, a group that dominated the world of professional wrestling for the better half of a century. He fancies himself as a wrestling miracle and believes he is the very best to have ever lived. He may be right.\n\nGrowing up, Jax was always the ultimate showman, excelling in theatre, musicals and sports. He fed of admiration, had a burning desire to entertain people, and had an insatiable hunger to stand out as the star of the show.\n\nAt the age of 17, he followed in his father’s footsteps, a world champion in his own right, and made his pro-wrestling debut. He immediately proved that he was special, beating veterans with ease and captivating the audience with his innovative and explosive style.\n\nAt the age of 25, he won the world title and reigned champion for a historic 8 years before retiring young and becoming a successful movie star.\n\nJax is a high flyer, a good technician, and a lethal striker. He is explosive, building momentum quickly and finishing his opponents with a blink of an eye. More importantly, he is a showman, always looking to outdo his peers and put on the best match of the night.\n\nThe ultimate showman, Jax is now ready to steal the biggest show the wrestling world has ever seen, win the title, and retire once more. And when he does, the world will not see this as a miracle, but simply a foregone conclusion.",
   "gender": "MALE",
-  "expansion_code": "BASE_GAME"
+  "expansion_code": "BASE_GAME",
+  "abilities": [ {
+    "name": "The Miracle Seed",
+    "description": "Your starting and maximum hand size is 6 cards.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'MATCH_START'",
+    "effectScript": "wrestler.maxHandSize = 6"
+  }, {
+    "name": "I Can Do This All Night",
+    "description": "Take 1 card of your choice from the discard pile back into your hand.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "match.retrieveFromDiscard(wrestler, 1, 'ANY')"
+  }, {
+    "name": "Land On Feet",
+    "description": "Trigger if opponent deals a successful THROW of 3 damage or less: take no damage, gain the initiative and +2 momentum.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackType == 'THROW' && match.damageAmount <= 3",
+    "effectScript": "match.cancelDamage(); wrestler.gainInitiative(); wrestler.momentum += 2"
+  } ]
 }, {
   "name": "Mukundi Shumba",
   "alignment": "FACE",
