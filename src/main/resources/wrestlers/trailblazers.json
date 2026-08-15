@@ -1,0 +1,110 @@
+[ {
+  "name": "Brian Pillman",
+  "alignment": "HEEL",
+  "deckSize": 15,
+  "startingHealth": 15,
+  "lowHealth": 4,
+  "startingStamina": 15,
+  "lowStamina": 4,
+  "drive": 2,
+  "resilience": 1,
+  "charisma": 3,
+  "brawl": 2,
+  "heritageTag": "Stampede",
+  "description": "Brian Pillman was born on May 22nd, 1962. An incredible athlete, Brian was an All-American who also played in the NFL as part of the Cincinnati Bengals before transitioning into wrestling and becoming one of the most controversial trail blazers of the 1990s.\n\nBrian began his wrestling career in Stampede wrestling Calgary, learning his craft from the legendary Stu Hart. He then moved to WCW where he was known as Flyin' Brian; an athletic young man who displayed incredible agility and high-flying skills that captured the audience and turned him into a superstar and two-time light heavyweight champion. He would later form an iconic tag team with Steve Austin as part of the Hollywood Blonds, that saw them capture the tag team titles.\n\nBut it was his \"loose cannon\" personality in the mid-1990s that set him apart from other wrestlers. During that time, Brian became increasingly erratic, uncontrollable, unpredictable, and capable of anything. His words and actions shocked fans and wrestlers alike, turning him into one of the hottest wrestlers of the decade, and a member of the 4 horsemen.\n\nBrian’s career would unfortunately be hampered with a serious injury shortly after and a much too early death. Now awoken to a second chance, Pillman is on the loose, looking to upheave, looking for trouble, and no body can even predict what he is going to do next.",
+  "gender": "MALE",
+  "expansion_code": "TRAILBLAZERS",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -2 stamina to gain the initiative, deal -1 health to opponent, and gain +2 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 2"
+  }, {
+    "name": "Anti-Air",
+    "description": "Trigger when defending against an AERIAL attack. Gain the initiative, deal -2 health to opponent, and gain +2 momentum.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackType == 'AERIAL'",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2"
+  }, {
+    "name": "Heart",
+    "description": "Trigger at anytime. Gain +3 health.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.health += 3"
+  }, {
+    "name": "Roll Up",
+    "description": "Gain the initiative and trigger a PIN attempt. If the PIN is unsuccessful, opponent gains the initiative.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.gainInitiative(); match.triggerPin(wrestler, 'IF_FAIL: opponent.gainInitiative()')"
+  } ]
+}, {
+  "name": "Dynamite Kid",
+  "alignment": "FACE",
+  "deckSize": 16,
+  "startingHealth": 14,
+  "lowHealth": 4,
+  "startingStamina": 17,
+  "lowStamina": 2,
+  "drive": 3,
+  "resilience": 1,
+  "charisma": 1,
+  "brawl": 3,
+  "heritageTag": "UK",
+  "description": "Across the ages, only a handful of wrestlers can claim to have significantly changed the world of pro-wrestling. Thomas Billington, formerly known as the Dynamite Kid, was one of them.\n\nBorn on December 5th 1958, Thomas did not have the traditional build of a pro-wrestler. Despite his thick muscles, he was relatively short and considered small. Yet what Dynamite lacked in size, he made up for in incredible athleticism, technique, and speed. This new style of high-octane offense blending technical wrestling, high flying, and smash mouth brawling took the world by sensation. Eventually, many of the world's greatest wrestlers were inspired by it, adopting his style into their own work.\n\nDespite never winning a major single's world title, his incredible matches with the likes of Tiger Mask, and his tag team partnership with The British Bulldog have solidified his legacy as one of the best in-ring performers in history. Now, he awaits his chance to revolutionize the art of pro-wrestling once more, this time, in front of the world's largest wrestling audience. Can anyone keep up with Dynamite?",
+  "gender": "MALE",
+  "expansion_code": "TRAILBLAZERS",
+  "abilities": [ {
+    "name": "Relentless",
+    "description": "Your opponent cannot gain stamina as Defender's Compensation. If your stamina is low, you do not spend stamina when playing an attack card.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "effectScript": "opponent.defenderCompensationStamina = 0; if (wrestler.stamina <= wrestler.lowStamina) { match.attackCardStaminaCost = 0; }"
+  }, {
+    "name": "Catch-As-Catch-Can",
+    "description": "Draw 5 cards, keep all THROW and GRAPPLE cards, return the rest to your draw pile without exceeding your hand limit.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "effectScript": "wrestler.drawAndFilter(5, ['THROW', 'GRAPPLE'])"
+  }, {
+    "name": "Grappler",
+    "description": "Spend -5 stamina to gain the initiative. Can be used repeatedly.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": true,
+    "costScript": "wrestler.stamina -= 5",
+    "effectScript": "wrestler.gainInitiative()"
+  } ]
+}, {
+  "name": "Johnny All Time",
+  "alignment": "FACE",
+  "deckSize": 16,
+  "startingHealth": 14,
+  "lowHealth": 4,
+  "startingStamina": 17,
+  "lowStamina": 2,
+  "drive": 2,
+  "resilience": 2,
+  "charisma": 3,
+  "brawl": 1,
+  "heritageTag": "Slamtown",
+  "description": "John Hennigan, fka John Morrison, has more names than one can count. So are the number of titles he held, including single and tag team world titles in almost every major promotion across the world.\n\nHis popularity was magnified by his incredible look and oozing charisma, a fact that turned him into a movie star. But what makes John Hennigan stand out above all else is his incredible athleticism and flair. Using his parkour background and creative mind, Johnny’s career can be viewed as a set of highlight reels, each one more astonishing than the next.\n\nNow, the Mayor of Slamtown is ready to create a new highlight reel of awesomeness. More importantly, he is looking to add one more name and one more title to his belt. Here is Johnny All Time.",
+  "gender": "MALE",
+  "expansion_code": "TRAILBLAZERS"
+} ]

@@ -1,0 +1,56 @@
+[ {
+  "name": "Matt Cardona",
+  "alignment": "HEEL",
+  "deckSize": 15,
+  "startingHealth": 15,
+  "lowHealth": 4,
+  "startingStamina": 14,
+  "lowStamina": 4,
+  "drive": 2,
+  "resilience": 2,
+  "charisma": 2,
+  "brawl": 2,
+  "heritageTag": "New York",
+  "description": "Matt Cardona\nMany wrestlers have laid claim to the moniker of the greatest of all time, but only one wrestler can crown himself as the undisputed king of the indies.\n\nAfter capturing multiple single and tag team championships in the world's largest wrestling promotion, Matt Cardona left in 2020, reinventing himself and instantly conquering the indie scene. He wrestled in almost every indie promotion, winning titles wherever he went, including several hardcore championships that solidified his reputation as \"The Deathmatch King\". It is difficult to keep track of the number of championships he has won since then. At any given moment, the belt collector held no less than 8 titles at the same time.\n\nNow, having conquered the indies, Matt Cardona has set his eyes on the most prized possession. One belt he hasn't captured yet. One title to rule them all. Can Matt Cardona become the All Time Wrestling Champion?",
+  "gender": "MALE",
+  "expansion_code": "MATT_CARDONA",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -1 stamina to gain the initiative, deal -1 health to opponent, and gain +1 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 1"
+  }, {
+    "name": "Most Hated",
+    "description": "When you taunt or recover, gain an additional +1 momentum.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'TAUNT' || event == 'RECOVER'",
+    "effectScript": "wrestler.momentum += 1"
+  }, {
+    "name": "Referee Shield",
+    "description": "Trigger when defending against a throw or grapple attack. Gain the initiative. On your next attack, gain +1 roll modifier and +1 stamina.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && (match.attackType == 'THROW' || match.attackType == 'GRAPPLE')",
+    "effectScript": "wrestler.gainInitiative(); wrestler.nextAttack.rollModifier += 1; wrestler.nextAttack.staminaBonus += 1"
+  }, {
+    "name": "Knees Up",
+    "description": "Trigger when defending against a strike. Gain the initiative. Deal -1 health, gain +1 momentum and +1 stamina. On your next attack, draw 1 card.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackType == 'STRIKE'",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1; wrestler.stamina += 1; wrestler.nextAttack.drawCard(1)"
+  } ]
+} ]

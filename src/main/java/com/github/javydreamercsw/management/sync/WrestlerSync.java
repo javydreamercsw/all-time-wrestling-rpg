@@ -102,7 +102,7 @@ public class WrestlerSync implements DataSyncContributor {
       return;
     }
     try {
-      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers*.json");
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers/*.json");
       Universe universe =
           universeRepository.findAll().stream()
               .findFirst()
