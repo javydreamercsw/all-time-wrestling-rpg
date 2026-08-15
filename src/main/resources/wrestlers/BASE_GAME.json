@@ -102,7 +102,34 @@
   "heritageTag": "Japan",
   "description": "From criminal to hero to villain to he-who-must not be named, Oda Tsuguri is one of the most controversial wrestlers to have ever lived. Born in 2361 AD in Osaka Japan as a member of the legendary Oda clan, he grew up as a street criminal before joining the Yakuza, rising rapidly through their ranks. By the age of 24, he was already anointed as their next leader.\n\nBut something strange happened a year later. Oda came across a burning building and rushed into danger, saving 18 souls. Amid the fire, he saw a vision of his ancestors and vowed he would bring honor to them. Leaving his criminal life behind, he began training in jujitsu, earning a black belt and winning several world titles. He then set his sights on pro-wrestling and became fixated with creating a legacy that would crown him as the best ever. Fans quickly took to him, inspired by his redemption story. But despite his enormous popularity and incredible success as a 7-time world champion, Oda was not able to establish his legacy as the best wrestler of his generation, let alone the best wrestler of all time. For he was unlucky enough to wrestle during the reign of the “Great Okada”. For years he worked day and night to outperform his rival, but he was never able to transcend his shadow.\n\nYears of frustration pushed him to the edge. One night, he snapped, piledriving Okada on a concrete slab and retiring him forever, and thus becoming the most hated man in wrestling. But it was a little too late for Oda; he just turned 44 and his prime years were behind him. He was slowly overshadowed by a new generation of young and hungry wrestlers. Determined to fulfill his destiny as the all-time best, he sought to reverse his aging and found a mad scientist who promised to make him whole once more. The scientist used banned technology that turned Oda into a genetically modified cyborg with immense strength, speed and resilience.\n\nNow fully enhanced, he spent a year on a rampage, destroying every promotion in the world, until he was finally stopped and banned for life.\n\nBrought to the future by the All Time Wrestling Promotion, Oda is now ready to prove once and for all that he is the best wrestler of all time. He will destroy anyone who stands in his way, and he will do so with a smile on his face. After all, what is a god to a non-believer?",
   "gender": "MALE",
-  "expansion_code": "BASE_GAME"
+  "expansion_code": "BASE_GAME",
+  "abilities": [ {
+    "name": "Ju-Jitsu Black Belt",
+    "description": "After each successful Grapple attack, opponent suffers -1 [[stamina]].",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'GRAPPLE'",
+    "effectScript": "opponent.stamina -= 1"
+  }, {
+    "name": "Nano-Bots",
+    "description": "Gain +3 [[health]] and +1 [[stamina]]. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.health += 3; wrestler.stamina += 1"
+  }, {
+    "name": "Cyborg",
+    "description": "Trigger after a successful Strike attack. Deal an additional -2 [[health]] to your opponent. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "OFFENSE",
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'STRIKE'",
+    "effectScript": "opponent.health -= 2"
+  } ]
 }, {
   "name": "André the Giant",
   "alignment": "FACE",
