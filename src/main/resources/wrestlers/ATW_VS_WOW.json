@@ -21,7 +21,7 @@
     "category": "SIGNATURE",
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
-    "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2",
     "description": ""
   }, {
     "name": "Recover",
