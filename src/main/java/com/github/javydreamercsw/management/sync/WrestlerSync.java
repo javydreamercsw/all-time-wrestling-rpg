@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -339,8 +340,11 @@ public class WrestlerSync implements DataSyncContributor {
               wrestlerStateRepository.save(state);
             }
 
-            List<WrestlerAbilityDTO> allAbilities = new ArrayList<>(universalAbilities);
-            allAbilities.addAll(w.getAbilities());
+            // Merge: universal first, wrestler-specific overrides by name
+            Map<String, WrestlerAbilityDTO> merged = new LinkedHashMap<>();
+            universalAbilities.forEach(a -> merged.put(a.getName(), a));
+            w.getAbilities().forEach(a -> merged.put(a.getName(), a));
+            List<WrestlerAbilityDTO> allAbilities = new ArrayList<>(merged.values());
             if (!allAbilities.isEmpty()) {
               syncAbilities(wrestler, allAbilities);
             }

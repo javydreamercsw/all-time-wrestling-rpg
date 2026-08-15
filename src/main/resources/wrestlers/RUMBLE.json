@@ -30,7 +30,27 @@
   "heritageTag": "Mesopotamia",
   "description": "Of all the kings that ruled Mesopotamia, the world’s oldest civilization, no King can compare to Gilgamesh. Born in the great city of Uruk in roughly 2500 BC, Gilgamesh was gifted with unnatural strength, size, and speed, making him peerless among his contemporaries. He tested himself among the ancient world’s best fighters in the earliest recorded wrestling matches in human history, slaying and defeating all that stood before him.\n\nThese physical attributes and immense power ensured he ruled Uruk unopposed. Yet this power also corrupted Gilgamesh early on, turning him into the world’s most vilified tyrant. He ruled with a ruthless iron fist, paid no heed to justice, and imposed his malicious will on all his subjects.\n\nBut then, as legend would have it, Gilgamesh was finally challenged by “Enkidu”, a man of animalistic power. During their wrestling match, Enkidu stood toe-to-toe with Gilgamesh, not yielding an inch. And though Gilgamesh would eventually suplex Enkidu to win the battle, Enkidu earned his respect, so much so that this friendship would blossom and inspire Gilgamesh to seek redemption.\n\nThe King would abandon his tyrannical ways, supporting the needy, and using his strength to fight injustice. This redemption story would cement his legacy as a great king and ensure his story passed on through the ages, eventually codified in a series of poems that are the oldest recorded literature in history.\n\nNow, awoken more than 3,500 years in the future, Gilgamesh, The Redeemed King, is pleasantly surprised to find that though he had died a long time ago, he was immortalized through the legacy he built. What better way to solidify his status and grow that legacy than beating all pretenders to his throne and crowning himself the Champion of All Time? Perhaps it is time for a new Epic; “the second coming of Gilgamesh”, Ruler of Uruk, Ruler of All Time.",
   "gender": "MALE",
-  "expansion_code": "RUMBLE"
+  "expansion_code": "RUMBLE",
+  "abilities": [ {
+    "name": "Tyrant",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'ATTACK_PLAY'",
+    "effectScript": "match.attackDamageBonus += 1; wrestler.momentum -= 1"
+  }, {
+    "name": "Brick Wall",
+    "type": "USES_LIMITED",
+    "maxUses": 1,
+    "category": "SIGNATURE",
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'AERIAL'",
+    "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 2"
+  }, {
+    "name": "Redeemed",
+    "type": "USES_LIMITED",
+    "maxUses": 1,
+    "effectScript": "match.disableAbility(wrestler, 'Tyrant'); wrestler.momentum += 5"
+  } ]
 }, {
   "name": "Nick Aldis",
   "alignment": "HEEL",
