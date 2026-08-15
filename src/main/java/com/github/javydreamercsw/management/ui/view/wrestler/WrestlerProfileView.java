@@ -29,7 +29,6 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.wrestler.AbilityType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
@@ -52,15 +51,14 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
-import com.github.javydreamercsw.management.ui.component.GuideTextRenderer;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
+import com.github.javydreamercsw.management.ui.component.WrestlerAbilityPanel;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -89,7 +87,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -104,9 +101,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   private record FeudHistoryItem(String name, int heat) {}
-
-  private static final Set<String> CORE_ABILITY_NAMES =
-      Set.of("Discard Block", "Stamina Block", "Recover", "Taunt");
 
   private final WrestlerService wrestlerService;
   private final WrestlerStatsService wrestlerStatsService;
@@ -591,108 +585,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       abilitiesLayout.removeAll();
       List<WrestlerAbility> abilities =
           wrestlerAbilityRepository.findByWrestlerId(wrestler.getId());
-      buildAbilitiesLayout(abilities);
+      abilitiesLayout.add(new WrestlerAbilityPanel(abilities));
     }
-  }
-
-  private void buildAbilitiesLayout(final List<WrestlerAbility> abilities) {
-    if (abilities.isEmpty()) {
-      abilitiesLayout.add(new Paragraph("No abilities defined for this wrestler."));
-      return;
-    }
-
-    List<WrestlerAbility> core =
-        abilities.stream()
-            .filter(a -> a.isDefault() && CORE_ABILITY_NAMES.contains(a.getName()))
-            .sorted(Comparator.comparing(WrestlerAbility::getName))
-            .collect(Collectors.toList());
-    List<WrestlerAbility> specific =
-        abilities.stream()
-            .filter(a -> a.isDefault() && !CORE_ABILITY_NAMES.contains(a.getName()))
-            .sorted(Comparator.comparing(WrestlerAbility::getName))
-            .collect(Collectors.toList());
-    List<WrestlerAbility> unlockable =
-        abilities.stream()
-            .filter(a -> !a.isDefault())
-            .sorted(Comparator.comparing(WrestlerAbility::getName))
-            .collect(Collectors.toList());
-
-    if (!core.isEmpty()) {
-      abilitiesLayout.add(new H3("Core Abilities"));
-      core.forEach(a -> abilitiesLayout.add(buildAbilityEntry(a)));
-    }
-    if (!specific.isEmpty()) {
-      abilitiesLayout.add(new H3("Wrestler Abilities"));
-      specific.forEach(a -> abilitiesLayout.add(buildAbilityEntry(a)));
-    }
-    if (!unlockable.isEmpty()) {
-      VerticalLayout unlockableContent = new VerticalLayout();
-      unlockableContent.setPadding(false);
-      unlockableContent.setSpacing(false);
-      unlockable.forEach(a -> unlockableContent.add(buildAbilityEntry(a)));
-      Details unlockableSection = new Details("Unlockable Abilities", unlockableContent);
-      unlockableSection.setOpened(false);
-      abilitiesLayout.add(unlockableSection);
-    }
-  }
-
-  private Div buildAbilityEntry(final WrestlerAbility ability) {
-    Div card = new Div();
-    card.addClassNames(
-        LumoUtility.Padding.SMALL,
-        LumoUtility.Margin.Bottom.XSMALL,
-        LumoUtility.BorderRadius.MEDIUM,
-        LumoUtility.Background.CONTRAST_5);
-
-    HorizontalLayout header = new HorizontalLayout();
-    header.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
-    header.setSpacing(true);
-
-    Span nameSpan = new Span(ability.getName());
-    nameSpan.getStyle().set("font-weight", "bold");
-
-    Span badge = buildAbilityBadge(ability);
-
-    if (!ability.isDefault() && ability.getSwapCondition() != null) {
-      Span swappable = new Span("swappable");
-      swappable.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.XSMALL);
-      header.add(nameSpan, badge, swappable);
-    } else {
-      header.add(nameSpan, badge);
-    }
-    card.add(header);
-
-    if (ability.getDescription() != null && !ability.getDescription().isBlank()) {
-      Div desc = (Div) GuideTextRenderer.render(ability.getDescription());
-      desc.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.Margin.NONE);
-      card.add(desc);
-    }
-
-    return card;
-  }
-
-  private Span buildAbilityBadge(final WrestlerAbility ability) {
-    Span badge;
-    if (ability.getAbilityType() == AbilityType.USES_LIMITED && ability.getMaxUses() != null) {
-      int uses = ability.getMaxUses();
-      badge = new Span(uses + (uses == 1 ? " use" : " uses"));
-      badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.Padding.Horizontal.SMALL);
-      badge.getStyle().set("background", "var(--lumo-primary-color-10pct)");
-      badge.getStyle().set("color", "var(--lumo-primary-text-color)");
-      badge.getStyle().set("border-radius", "var(--lumo-border-radius-l)");
-      badge.getStyle().set("font-weight", "600");
-    } else if (ability.getAbilityType() == AbilityType.CONDITIONAL) {
-      badge = new Span("triggered");
-      badge.addClassNames(
-          LumoUtility.FontSize.XSMALL,
-          LumoUtility.TextColor.SECONDARY,
-          LumoUtility.Padding.Horizontal.XSMALL);
-      badge.getStyle().set("border", "1px solid var(--lumo-contrast-20pct)");
-      badge.getStyle().set("border-radius", "var(--lumo-border-radius-s)");
-    } else {
-      badge = new Span();
-    }
-    return badge;
   }
 
   private void showManageStatusesDialog() {
