@@ -113,14 +113,6 @@
   "gender": "MALE",
   "expansion_code": "RUMBLE",
   "abilities": [ {
-    "name": "Reversal",
-    "type": "ALWAYS_ON",
-    "category": "PASSIVE",
-    "timing": "DEFENSE",
-    "unlockCondition": "event == 'ATTACK_INCOMING'",
-    "costScript": "wrestler.stamina -= 2",
-    "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2"
-  }, {
     "name": "Headbutts",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
@@ -155,5 +147,37 @@
   "heritageTag": "Uganda",
   "description": "Not much is known about the Ugandan Giant, Kamala. Nothing more than a few hints, collected over 2 decades covering his path of destruction.\n\nRumored to be a bodyguard of General Idi Amin, Kamala was a large man, standing at 6’7 and weighing more than 350 pounds. Clothed with nothing more than lionskin, a spear and a mask, and armed with a reputation of utter savagery, he struck fear into the hearts of his opponents. No wrestler dared to challenge Kamala. Those who did lived to regret it. Others luckily escaped him.\n\nNow, awoken centuries later, Kamala seeks to brutalize his opponents, knocking dozens out with his devastating chops, and winning the greatest rumble of all time. Nothing will deny him. No one will escape him. It is that simple.\n\nWould you like me to compile these into a formatted table comparing their heights, weights, and eras of origin?",
   "gender": "MALE",
-  "expansion_code": "RUMBLE"
+  "expansion_code": "RUMBLE",
+  "abilities": [ {
+    "name": "Recover",
+    "type": "ALWAYS_ON",
+    "category": "ACTION",
+    "effectScript": "wrestler.stamina += 3; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+  }, {
+    "name": "Reverse with Brutality",
+    "type": "USES_LIMITED",
+    "maxUses": 2,
+    "category": "SIGNATURE",
+    "timing": "DEFENSE",
+    "effectScript": "wrestler.gainInitiative(); discardCards(2, 'MATCHING'); match.resolveCardBonus(wrestler, 'stamina_cost', 'damage', 'momentum')"
+  }, {
+    "name": "Savagery",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'ATTACK_SUCCESS'",
+    "effectScript": "discardCards(match.handMatchingAttackCard, 'MATCHING_ATTACK'); opponent.health -= match.cardsDiscarded; wrestler.momentum += match.cardsDiscarded"
+  }, {
+    "name": "Ugandan Giant",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'MATCH_START'",
+    "effectScript": "opponent.attackRollModifier -= 1"
+  }, {
+    "name": "Ugandan Warrior",
+    "type": "USES_LIMITED",
+    "maxUses": 3,
+    "category": "SIGNATURE",
+    "unlockCondition": "event == 'TAUNT'",
+    "effectScript": "retrieveFromDiscard(1)"
+  } ]
 } ]

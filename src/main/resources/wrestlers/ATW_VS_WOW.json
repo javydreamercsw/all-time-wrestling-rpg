@@ -13,7 +13,42 @@
   "heritageTag": "Texas",
   "description": "Jordynne Grace is a modern-day juggernaut – a walking combination of brute strength, unmatched conditioning, and unshakable confidence. She didn’t ask for respect in the wrestling world – she took it. With a body sculpted like a tank and a mind as sharp as a tack, Jordynne has bulldozed her way through some of the toughest competition on the planet, becoming a multi-time Knockouts Champion and one of the most dominant forces in wrestling today.\n\nNicknamed the “Juggernaut,” Jordynne exploded onto the scene with feats of power rarely seen in women’s wrestling – tossing opponents across the ring, deadlifting them into the sky, and still having the cardio to go the distance. Her matches aren’t just contests – they’re battles. Her reigns aren’t just titles – they’re statements. She made history by stepping into intergender matches and proving, time and time again, that gender is no barrier when you’re that good.\n\nBut Jordynne Grace is more than just muscle. She’s discipline. She’s drive. She’s evolution. Outside the ring, she’s a symbol of self-made greatness – redefining body image in wrestling and inspiring countless others to embrace their strength and forge their own path.\n\nNow, in a time far beyond the one she ruled, the Juggernaut awakens once more. The stage is bigger, the opponents are tougher, but so is she.\n\n“I didn’t come here to play nice. I came here to lift this entire world on my shoulders – and slam it down.”\n",
   "gender": "FEMALE",
-  "expansion_code": "ATW_VS_WOW"
+  "expansion_code": "ATW_VS_WOW",
+  "abilities": [ {
+    "name": "Reversal",
+    "type": "USES_LIMITED",
+    "maxUses": 1,
+    "category": "SIGNATURE",
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
+  }, {
+    "name": "Recover",
+    "type": "ALWAYS_ON",
+    "category": "ACTION",
+    "effectScript": "wrestler.stamina += 3; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+  }, {
+    "name": "Mama Pump",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'ATTACK_PLAY' && (match.attackCardType == 'STRIKE' || match.attackCardType == 'THROW')",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "rollDie('POWER')"
+  }, {
+    "name": "Get Off Me!",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING'",
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "rollDie('POWER'); if (result == 'HEART' || result == 'MOMENTUM') { wrestler.gainInitiative() }"
+  }, {
+    "name": "Power Kickout",
+    "type": "USES_LIMITED",
+    "maxUses": 1,
+    "unlockCondition": "event == 'KICKOUT_ATTEMPT'",
+    "effectScript": "rollDie('POWER'); if (result == 'HEART') { match.setKickoutDie(1) }"
+  } ]
 }, {
   "name": "Taya Valkyrie",
   "alignment": "FACE",
@@ -88,7 +123,27 @@
   "heritageTag": "Australia",
   "description": "Jessie McKay is charisma in overdrive — a bold, brash, and beautiful Aussie export who took the wrestling world by storm with her wit, her kicks, and her undeniable star power. Whether she was dazzling in tag team gold or lighting up arenas with her infectious energy, Jessie McKay proved one thing every time she stepped through the ropes: she belongs on center stage.\n\nBreaking out of Australia and making her name across the globe, Jessie was hated at first, then became a fan favorite for her larger-than-life personality and her sharp in-ring skills. But don't let the charm fool you — beneath the glamour and the poses is a deadly striker with picture-perfect precision. Her signature big boot comes out of nowhere and shuts the lights out fast. She didn't just look the part — she kicked it into reality.\n\nNow, revived in a future where style and substance reign supreme, Jessie McKay is back — shinier, sharper, and more dangerous than ever.\n\n\"Lights. Camera. Kick to the face. That's how I roll. And sweetie, I always hit my mark.\"",
   "gender": "FEMALE",
-  "expansion_code": "ATW_VS_WOW"
+  "expansion_code": "ATW_VS_WOW",
+  "abilities": [ {
+    "name": "Inspirational",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'TAUNT'",
+    "effectScript": "if (wrestler.momentum >= 5) { playerChoice('wrestler.momentum += 1', 'wrestler.nextAttack.rollModifier += 1') } else { wrestler.momentum += 1 }"
+  }, {
+    "name": "Inspirational Cheat",
+    "type": "USES_LIMITED",
+    "maxUses": 1,
+    "category": "SIGNATURE",
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1"
+  }, {
+    "name": "All Out",
+    "type": "USES_LIMITED",
+    "maxUses": 1,
+    "effectScript": "discardCards(1, 'ATTACK'); opponent.health -= 2"
+  } ]
 }, {
   "name": "Abilene Maverick",
   "alignment": "HEEL",

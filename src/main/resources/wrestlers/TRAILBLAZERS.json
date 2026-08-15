@@ -106,5 +106,27 @@
   "heritageTag": "Slamtown",
   "description": "John Hennigan, fka John Morrison, has more names than one can count. So are the number of titles he held, including single and tag team world titles in almost every major promotion across the world.\n\nHis popularity was magnified by his incredible look and oozing charisma, a fact that turned him into a movie star. But what makes John Hennigan stand out above all else is his incredible athleticism and flair. Using his parkour background and creative mind, Johnny’s career can be viewed as a set of highlight reels, each one more astonishing than the next.\n\nNow, the Mayor of Slamtown is ready to create a new highlight reel of awesomeness. More importantly, he is looking to add one more name and one more title to his belt. Here is Johnny All Time.",
   "gender": "MALE",
-  "expansion_code": "TRAILBLAZERS"
+  "expansion_code": "TRAILBLAZERS",
+  "abilities": [ {
+    "name": "Johnny Amazing",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'TAUNT' && wrestler.momentum >= 3",
+    "effectScript": "match.disableAbility(opponent, 'Taunt')"
+  }, {
+    "name": "Johnny Parkour",
+    "type": "USES_LIMITED",
+    "maxUses": 2,
+    "category": "SIGNATURE",
+    "unlockCondition": "wrestler.momentum >= 3",
+    "costScript": "discardCards(1, 'ANY')",
+    "effectScript": "wrestler.gainInitiative(); wrestler.momentum += 1"
+  }, {
+    "name": "Johnny Combo",
+    "type": "USES_LIMITED",
+    "maxUses": 2,
+    "category": "SIGNATURE",
+    "unlockCondition": "event == 'COMBO_SUCCESS'",
+    "effectScript": "wrestler.momentum += 2"
+  } ]
 } ]
