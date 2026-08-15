@@ -17,7 +17,7 @@
   "manager": "MVP",
   "abilities": [ {
     "name": "Reversal",
-    "description": "Spend -1 stamina to gain the initiative, deal -2 health to opponent, and gain +2 stamina.",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -2 [[health]] to opponent, and gain +2 [[stamina]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -27,7 +27,7 @@
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
   }, {
     "name": "All Mighty",
-    "description": "Spend -3 stamina to add 2 All Mighty tokens. Whenever any player plays an attack card, spend 1 token: on offense your target roll is -1 (easier) and you deal +1 damage; on defense your opponent's target roll is +1 (harder).",
+    "description": "Spend -3 [[stamina]] to add 2 All Mighty tokens. Whenever any player plays an attack [[card]], spend 1 token: on offense your target roll is -1 (easier) and you deal +1 damage; on defense your opponent's target roll is +1 (harder).",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": true,
@@ -35,7 +35,7 @@
     "effectScript": "if (event == 'ATTACK_PLAYED' && wrestler.allMightyTokens > 0) { wrestler.allMightyTokens -= 1; if (isAttacking) { match.targetRollModifier -= 1; match.extraDamage += 1; } else { opponent.targetRollModifier += 1; } }"
   }, {
     "name": "All-American",
-    "description": "Discard 1 card to block any THROW or GRAPPLE, then gain the initiative and +2 stamina.",
+    "description": "Discard 1 [[card]] to block any THROW or GRAPPLE, then gain the initiative and +2 [[stamina]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -45,7 +45,7 @@
     "effectScript": "blockThrowOrGrapple(); wrestler.gainInitiative(); wrestler.stamina += 2"
   }, {
     "name": "He Hurts People",
-    "description": "Trigger after a successful Hurt Lock or Spear. Hurt Lock: opponent gets one fewer kick-out roll attempt. Spear: deal an additional -3 health.",
+    "description": "Trigger after a successful Hurt Lock or Spear. Hurt Lock: opponent gets one fewer kick-out roll attempt. Spear: deal an additional -3 [[health]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -54,7 +54,7 @@
     "effectScript": "if (event == 'HURT_LOCK_SUCCESS') { opponent.kickoutRolls -= 1; } else { opponent.health -= 3; }"
   }, {
     "name": "Recover",
-    "description": "Gain +3 stamina and draw 1 card. Opponent also gains +1 stamina, +1 health, and draws 1 card.",
+    "description": "Gain +3 [[stamina]] and draw 1 [[card]]. Opponent also gains +1 [[stamina]], +1 [[health]], and draws 1 [[card]].",
     "type": "ALWAYS_ON",
     "category": "ACTION",
     "default": true,

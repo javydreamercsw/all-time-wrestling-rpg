@@ -16,7 +16,7 @@
   "expansion_code": "EXTREME",
   "abilities": [ {
     "name": "The Whole Damn Show",
-    "description": "After each successful AERIAL attack, gain +1 token on this ability. At 3 tokens: all attack cards gain +1 damage, AERIAL attacks deal +1 additional damage, and the Five Star Frog Splash gains a bonus effect.",
+    "description": "After each successful AERIAL attack, gain +1 token on this ability. At 3 tokens: all attack [[card]]s gain +1 damage, AERIAL attacks deal +1 additional damage, and the Five Star Frog Splash gains a bonus effect.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -24,7 +24,7 @@
     "effectScript": "wrestler.abilityTokens['The Whole Damn Show'] = (wrestler.abilityTokens['The Whole Damn Show'] ?: 0) + 1; if (wrestler.abilityTokens['The Whole Damn Show'] >= 3) { match.globalAttackBonus += 1; match.aerialAttackBonus += 1; }"
   }, {
     "name": "Spinning Kick",
-    "description": "Block any STRIKE and gain the initiative. Deal -2 health to opponent and gain +1 stamina.",
+    "description": "Block any STRIKE and gain the initiative. Deal -2 [[health]] to opponent and gain +1 [[stamina]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -58,7 +58,7 @@
   "expansion_code": "EXTREME",
   "abilities": [ {
     "name": "Pain Is Pleasure",
-    "description": "Whenever you suffer 3 or more damage in a single hit, gain +1 stamina, +1 momentum, and draw 1 card.",
+    "description": "Whenever you suffer 3 or more damage in a single hit, gain +1 [[stamina]], +1 [[momentum]], and draw 1 [[card]].",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -66,7 +66,7 @@
     "effectScript": "wrestler.stamina += 1; wrestler.momentum += 1; wrestler.drawCard(1)"
   }, {
     "name": "Psychotic Episode",
-    "description": "Draw 1 card. The next time you attack, the opponent skips their defensive ability window.",
+    "description": "Draw 1 [[card]]. The next time you attack, the opponent skips their defensive ability window.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -74,7 +74,7 @@
     "effectScript": "wrestler.drawCard(1); match.nextAttackIsUndefendable = true"
   }, {
     "name": "Broken",
-    "description": "Gain the initiative. Opponent must shuffle 1 attack card from their hand back into the draw pile. No replacement draw.",
+    "description": "Gain the initiative. Opponent must shuffle 1 attack [[card]] from their hand back into the draw pile. No replacement draw.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -99,7 +99,7 @@
   "expansion_code": "EXTREME",
   "abilities": [ {
     "name": "Reversal",
-    "description": "Spend -1 stamina to gain the initiative, deal -1 health to opponent, and gain +1 stamina.",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[stamina]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -119,7 +119,7 @@
     "effectScript": "opponent.targetRollModifier += 2; match.ifAttackSucceeds.extraDamageToDefender += 2"
   }, {
     "name": "Raven's Rules",
-    "description": "Spend -2 stamina. Draw a random card from the Weapons Deck and deal the damage listed on the card.",
+    "description": "Spend -2 [[stamina]]. Draw a random [[card]] from the Weapons Deck and deal the damage listed on the [[card]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -128,7 +128,7 @@
     "effectScript": "match.drawWeaponsCard(wrestler)"
   }, {
     "name": "The Flock",
-    "description": "Play 1 card from The Flock deck and resolve its effects.",
+    "description": "Play 1 [[card]] from The Flock deck and resolve its effects.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -153,7 +153,7 @@
   "expansion_code": "EXTREME",
   "abilities": [ {
     "name": "Homicidal, Suicidal",
-    "description": "After a successful AERIAL attack, suffer 1 damage and deal -2 health to opponent.",
+    "description": "After a successful AERIAL attack, suffer 1 damage and deal -2 [[health]] to opponent.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -161,7 +161,7 @@
     "effectScript": "wrestler.health -= 1; opponent.health -= 2"
   }, {
     "name": "Unpredictable",
-    "description": "Trigger immediately after your opponent's defensive ability window. Switch the attack card played with an attack card from your hand. Your opponent cannot defend against the new attack card.",
+    "description": "Trigger immediately after your opponent's defensive ability window. Switch the attack [[card]] played with an attack [[card]] from your hand. Your opponent cannot defend against the new attack [[card]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -170,7 +170,7 @@
     "effectScript": "match.swapAttackCardFromHand(wrestler); match.currentAttackIsUndefendable = true"
   }, {
     "name": "Death-Defying Maniac",
-    "description": "Gain +3 health. You may only trigger 1 token at a time.",
+    "description": "Gain +3 [[health]]. You may only trigger 1 token at a time.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 2,

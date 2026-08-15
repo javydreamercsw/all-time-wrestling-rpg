@@ -16,7 +16,7 @@
   "expansion_code": "GAIL_KIM",
   "abilities": [ {
     "name": "Top Rope",
-    "description": "When playing an AERIAL attack card with base damage of 2, you may spend -1 additional stamina. If successful: deal +1 extra damage and gain +1 momentum. If unsuccessful: suffer -1 health.",
+    "description": "When playing an AERIAL attack [[card]] with base damage of 2, you may spend -1 additional [[stamina]]. If successful: deal +1 extra damage and gain +1 [[momentum]]. If unsuccessful: suffer -1 [[health]].",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -24,7 +24,7 @@
     "effectScript": "match.optionalExtraStaminaCost(wrestler, 1, 'match.attackDamageBonus += 1; wrestler.momentum += 1', 'wrestler.health -= 1')"
   }, {
     "name": "Dodge",
-    "description": "Trigger to block a STRIKE attack. Gain the initiative, deal -1 health to opponent, and gain +1 health.",
+    "description": "Trigger to block a STRIKE attack. Gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[health]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -34,7 +34,7 @@
     "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 1; wrestler.health += 1"
   }, {
     "name": "Speed",
-    "description": "After successfully playing a STRIKE or HURRICANRANA attack card, spend -1 extra stamina to add +2 to the card's listed damage.",
+    "description": "After successfully playing a STRIKE or HURRICANRANA attack [[card]], spend -1 extra [[stamina]] to add +2 to the [[card]]'s listed damage.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,

@@ -69,7 +69,7 @@
   "expansion_code": "RUMBLE",
   "abilities": [ {
     "name": "Ring General",
-    "description": "When receiving attacks, the opponent draws a Ring General Card instead of rolling a die. The attack succeeds only if the card's 'D' value is equal to or higher than the target number.",
+    "description": "When receiving attacks, the opponent draws a Ring General [[card]] instead of rolling a die. The attack succeeds only if the [[card]]'s 'D' value is equal to or higher than the target number.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -78,7 +78,7 @@
     "effectScript": "match.replaceAttackRollWithRingGeneralCard()"
   }, {
     "name": "The Champ",
-    "description": "Draw a Ring General Card instead of rolling the kickout die. The card's 'K' value is your kickout result.",
+    "description": "Draw a Ring General [[card]] instead of rolling the kickout die. The [[card]]'s 'K' value is your kickout result.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 2,
@@ -88,7 +88,7 @@
     "effectScript": "match.replaceKickoutRollWithRingGeneralCard(wrestler)"
   }, {
     "name": "By Any Means",
-    "description": "Spend -1 stamina. Gain the initiative. Deal -3 health to opponent.",
+    "description": "Spend -1 [[stamina]]. Gain the initiative. Deal -3 [[health]] to opponent.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,

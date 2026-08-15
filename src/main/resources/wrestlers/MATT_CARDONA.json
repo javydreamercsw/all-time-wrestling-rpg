@@ -16,7 +16,7 @@
   "expansion_code": "MATT_CARDONA",
   "abilities": [ {
     "name": "Reversal",
-    "description": "Spend -1 stamina to gain the initiative, deal -1 health to opponent, and gain +1 stamina.",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[stamina]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -26,7 +26,7 @@
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 1"
   }, {
     "name": "Most Hated",
-    "description": "When you taunt or recover, gain an additional +1 momentum.",
+    "description": "When you taunt or recover, gain an additional +1 [[momentum]].",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -34,7 +34,7 @@
     "effectScript": "wrestler.momentum += 1"
   }, {
     "name": "Referee Shield",
-    "description": "Trigger when defending against a throw or grapple attack. Gain the initiative. On your next attack, gain +1 roll modifier and +1 stamina.",
+    "description": "Trigger when defending against a throw or grapple attack. Gain the initiative. On your next attack, gain +1 roll modifier and +1 [[stamina]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -44,7 +44,7 @@
     "effectScript": "wrestler.gainInitiative(); wrestler.nextAttack.rollModifier += 1; wrestler.nextAttack.staminaBonus += 1"
   }, {
     "name": "Knees Up",
-    "description": "Trigger when defending against a strike. Gain the initiative. Deal -1 health, gain +1 momentum and +1 stamina. On your next attack, draw 1 card.",
+    "description": "Trigger when defending against a strike. Gain the initiative. Deal -1 [[health]], gain +1 [[momentum]] and +1 [[stamina]]. On your next attack, draw 1 [[card]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,

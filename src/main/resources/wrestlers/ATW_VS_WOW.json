@@ -83,7 +83,7 @@
   "expansion_code": "ATW_VS_WOW",
   "abilities": [ {
     "name": "Inspirational",
-    "description": "When Taunting, gain an additional +1 momentum. If your momentum is 5 or higher, you may instead gain -1 target roll on your next attack.",
+    "description": "When Taunting, gain an additional +1 [[momentum]]. If your [[momentum]] is 5 or higher, you may instead gain -1 target roll on your next attack.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -91,7 +91,7 @@
     "effectScript": "if (wrestler.momentum >= 5) { match.playerChoice('wrestler.momentum += 1', 'wrestler.nextAttack.targetModifier -= 1') } else { wrestler.momentum += 1 }"
   }, {
     "name": "Inspirational Cheat",
-    "description": "Spend -1 stamina. Gain the initiative. Deal -1 damage to the opponent.",
+    "description": "Spend -1 [[stamina]]. Gain the initiative. Deal -1 damage to the opponent.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -162,7 +162,7 @@
   "expansion_code": "ATW_VS_WOW",
   "abilities": [ {
     "name": "Grab The Tights",
-    "description": "After triggering a PIN, spend -2 stamina. Your opponent adds 1 to the total of each kickout roll (2 dice must beat current HP — higher total makes it harder to kick out).",
+    "description": "After triggering a [[pin]], spend -2 [[stamina]]. Your opponent adds 1 to the total of each kickout roll (2 dice must beat current HP — higher total makes it harder to kick out).",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -180,7 +180,7 @@
     "effectScript": "wrestler.gainInitiative(); match.nextAttackIsUndefendable = true"
   }, {
     "name": "Behind The Ref",
-    "description": "After a successful GRAPPLE, spend -1 stamina to deal -1 health to opponent and gain +1 stamina.",
+    "description": "After a successful GRAPPLE, spend -1 [[stamina]] to deal -1 [[health]] to opponent and gain +1 [[stamina]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -215,7 +215,7 @@
     "effectScript": "wrestler.abilityTokens['Beast Rage'] = (wrestler.abilityTokens['Beast Rage'] ?: 0) + 1"
   }, {
     "name": "Beast Power",
-    "description": "After a successful STRIKE or THROW, spend Rage Tokens for bonus damage and momentum. 2 tokens: deal -1, gain +1 momentum. 4 tokens: deal -2, gain +2 momentum. 6 tokens: deal -4, gain +2 momentum. Player chooses tier.",
+    "description": "After a successful STRIKE or THROW, spend Rage Tokens for bonus damage and [[momentum]]. 2 tokens: deal -1, gain +1 [[momentum]]. 4 tokens: deal -2, gain +2 [[momentum]]. 6 tokens: deal -4, gain +2 [[momentum]]. Player chooses tier.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": false,
@@ -223,7 +223,7 @@
     "effectScript": "match.spendAbilityTokensTiered(wrestler, 'Beast Rage', [[2, 'opponent.health -= 1; wrestler.momentum += 1'], [4, 'opponent.health -= 2; wrestler.momentum += 2'], [6, 'opponent.health -= 4; wrestler.momentum += 2']])"
   }, {
     "name": "Unbeatable",
-    "description": "Spend 4 Rage Tokens. Gain +2 health and +1 kickout roll.",
+    "description": "Spend 4 Rage Tokens. Gain +2 [[health]] and +1 kickout roll.",
     "type": "ALWAYS_ON",
     "category": "SIGNATURE",
     "default": false,

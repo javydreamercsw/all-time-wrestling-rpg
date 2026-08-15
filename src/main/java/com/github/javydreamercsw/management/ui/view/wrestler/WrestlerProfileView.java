@@ -52,6 +52,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
+import com.github.javydreamercsw.management.ui.component.GuideTextRenderer;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
@@ -662,7 +663,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     card.add(header);
 
     if (ability.getDescription() != null && !ability.getDescription().isBlank()) {
-      Paragraph desc = new Paragraph(ability.getDescription());
+      Div desc = (Div) GuideTextRenderer.render(ability.getDescription());
       desc.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.Margin.NONE);
       card.add(desc);
     }
