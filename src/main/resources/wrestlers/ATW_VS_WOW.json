@@ -278,7 +278,35 @@
   "heritageTag": "Mexico",
   "description": "Tormenta is the storm that can’t be stopped – a high-flying, hard-hitting luchadora who brings the fury of the skies with every move she makes. Born from the traditions of Mexican wrestling and forged through a relentless drive to rise, Tormenta is a force of speed, spirit, and strength.\n\nMasked and mysterious, Tormenta struck the WOW Women of Wrestling scene like a bolt of lightning – electrifying fans with her aerial offense and brutal power. Whether she’s soaring from the top rope or trading blows with bigger opponents, she is a force to be reckoned with, a face that allowed her to become the first ever Latina WOW Champion.\n\nNow, far beyond her own time, Tormenta has entered a world where only the best survive. Lucky for her… the storm never dies.\n\n“They called me a storm. Now they’ll call me champion again.”\n",
   "gender": "FEMALE",
-  "expansion_code": "ATW_VS_WOW"
+  "expansion_code": "ATW_VS_WOW",
+  "abilities": [ {
+    "name": "Lucha Champion",
+    "description": "After each successful Aerial attack, gain 1 Lucha Token.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'AERIAL'",
+    "effectScript": "wrestler.abilityTokens['Lucha'] = (wrestler.abilityTokens['Lucha'] || 0) + 1"
+  }, {
+    "name": "Lucha Power",
+    "description": "Discard a Strike or Throw [[card]] to deal an additional -2 [[health]] after a successful Strike. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "OFFENSE",
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'STRIKE'",
+    "costScript": "wrestler.discardCards(1, 'STRIKE_OR_THROW')",
+    "effectScript": "opponent.health -= 2"
+  }, {
+    "name": "Lucha Legend",
+    "description": "After a successful attack, spend 1 Lucha Token to gain +1 [[momentum]]. When defending, spend 3 Lucha Tokens to block attacks dealing -3 [[health]] or less and gain the initiative.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_SUCCESS' || (event == 'ATTACK_INCOMING' && match.incomingDamage <= 3)",
+    "effectScript": "if (event == 'ATTACK_SUCCESS' && wrestler.abilityTokens['Lucha'] >= 1) { wrestler.abilityTokens['Lucha'] -= 1; wrestler.momentum += 1 } if (event == 'ATTACK_INCOMING' && match.incomingDamage <= 3 && wrestler.abilityTokens['Lucha'] >= 3) { wrestler.abilityTokens['Lucha'] -= 3; blockAttack(); wrestler.gainInitiative() }"
+  } ]
 }, {
   "name": "Princess Aussie",
   "alignment": "FACE",
