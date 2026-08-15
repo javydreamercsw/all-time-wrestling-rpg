@@ -111,7 +111,35 @@
   "heritageTag": "USA",
   "description": "The Junkyard Dog (JYD) was one of the most electrifying and charismatic wrestlers of the 1980s. His unique persona, dancing skills and incredible promos made him undoubtedly the top star in his promotion. At times, one may argue he was the most popular wrestler in the world. A fact that led to his induction into the hall of fame in 2004.\n\nBut the adoration of his fans, adults and children alike, were not the only things that made JYD special. He was a great athlete and wrestler too. He was also a two-time All-American football player in college. In the ring, JYD was most known for his headbutts. He constantly rocked his opponents to their body and heads. One would lose count of the amount of headbutts he would land in one match! Whether they were standing, resting, or crawling, no one was safe.\n\nEqually important to his headbutts, JYD had incredible strength that allowed him to spar with the largest of heavyweights and slam his opponents into oblivion with a massive “thump\".\n\nNow, JYD has an opportunity to electrify the masses and headbutt his way to winning the first All Time Wrestling Rumble. He will bark, he will batter, and he will thump his way to victory.",
   "gender": "MALE",
-  "expansion_code": "RUMBLE"
+  "expansion_code": "RUMBLE",
+  "abilities": [ {
+    "name": "Reversal",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING'",
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2"
+  }, {
+    "name": "Headbutts",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'HEADBUTT'",
+    "effectScript": "wrestler.abilityTokens['Headbutts'] += 1"
+  }, {
+    "name": "Bad Dog",
+    "type": "USES_LIMITED",
+    "maxUses": 1,
+    "category": "SIGNATURE",
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'STRIKE' && match.attackCardBaseDamage <= 2",
+    "effectScript": "cancelDamage(); wrestler.gainInitiative(); wrestler.momentum += 1"
+  }, {
+    "name": "Dance",
+    "type": "USES_LIMITED",
+    "maxUses": 1,
+    "effectScript": "wrestler.momentum += 2; retrieveFromDiscard('HEADBUTT')"
+  } ]
 }, {
   "name": "Kamala",
   "alignment": "HEEL",
