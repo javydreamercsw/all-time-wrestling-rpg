@@ -708,6 +708,14 @@ public class SegmentAdjudicationService {
                     p -> p.getWrestler().getId(),
                     SegmentParticipant::getFinalMomentum,
                     (a, b) -> a));
+    Map<Long, Map<String, Integer>> abilitiesUsedById =
+        segment.getParticipants().stream()
+            .filter(p -> p.getAbilitiesUsed() != null && !p.getAbilitiesUsed().isEmpty())
+            .collect(
+                Collectors.toMap(
+                    p -> p.getWrestler().getId(),
+                    SegmentParticipant::getAbilitiesUsed,
+                    (a, b) -> a));
     Map<Long, String> winningCardById =
         segment.getParticipants().stream()
             .filter(p -> p.getWinningCardName() != null)
@@ -767,6 +775,8 @@ public class SegmentAdjudicationService {
           context.put("segmentRating", segment.getSegmentRating());
           context.put("isChampionshipMatch", Boolean.TRUE.equals(segment.getIsTitleSegment()));
           context.put("winningCardName", winnerWinningCardName);
+          context.put(
+              "abilitiesUsed", abilitiesUsedById.getOrDefault(participant.getId(), Map.of()));
           context.put("participantMomentum", momentumById.get(participant.getId()));
           context.put("winnerMomentum", winnerMomentum);
           context.put(
