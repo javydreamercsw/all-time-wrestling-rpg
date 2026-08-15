@@ -46,7 +46,47 @@
   "heritageTag": "Pennsylvania",
   "description": "Hailing from Pittsburgh, Pennsylvania, Kurt Angle is arguably the most decorated wrestler to ever step into a squared circle. He is a 13-time World Champion, a wrestling machine, and a man who won an Olympic Gold Medal with a broken neck. But perhaps his most incredible legacy is how well he excelled at everything he did.\n\nKurt can outwrestle anyone. Outperform anyone. Endure more than anyone. He can fly off cages, knock out his opponents, and counter any move into an Ankle Lock, making all of his opponents tap. His conditioning and intensity cannot be matched. He delivers an array of strikes, suplexes, and submissions that guarantee his victory.\n\nHe is simply the best of his generation. Perhaps he is the best ever. Yet, the legacy of Kurt Angle as the G.O.A.T is questioned by some. Maybe it’s the injuries or the career choices, but some still claim 200 years later that he never reached his full potential. A scary thought, given how great he was. But Kurt, in his typical fashion, relishes the challenge.\n\nFinally, with the best wrestlers of all time gathered in one place, at one time, and in one promotion, this is his chance to put his legacy to the test. He will fight, he will break ankles, and he will make sure each one of them taps to his will. Oh, it’s real. It’s damn real!",
   "gender": "MALE",
-  "expansion_code": "BASE_GAME"
+  "expansion_code": "BASE_GAME",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[momentum]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1"
+  }, {
+    "name": "The King of Counters",
+    "description": "Spend -1 [[stamina]] and roll one die. On a 6, gain the initiative.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "if (match.rollDie(6) >= 6) { wrestler.gainInitiative(); }"
+  }, {
+    "name": "Reversal Into Anklelock",
+    "description": "Spend -2 [[stamina]] to gain the initiative. Opponent may break free by using their [[reversal]] or rolling 5+. If opponent fails: deal -2 [[health]], gain +2 [[momentum]], and trigger a [[pin]] attempt. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "wrestler.gainInitiative(); match.opponentCounterChallenge('REVERSAL', 5, 'opponent.health -= 2; wrestler.momentum += 2; match.triggerPin(wrestler)')"
+  }, {
+    "name": "Straps Off",
+    "description": "Trigger after a successful attack of 2 or more damage. Gain +1 [[stamina]], +2 [[health]], and +1 [[momentum]]. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "OFFENSE",
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardBaseDamage >= 2",
+    "effectScript": "wrestler.stamina += 1; wrestler.health += 2; wrestler.momentum += 1"
+  } ]
 }, {
   "name": "Oda Tsurugi",
   "alignment": "HEEL",

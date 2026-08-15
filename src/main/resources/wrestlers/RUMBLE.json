@@ -117,7 +117,9 @@
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'HEADBUTT'",
-    "effectScript": "wrestler.abilityTokens['Headbutts'] += 1"
+    "effectScript": "wrestler.abilityTokens['Headbutts'] += 1; match.spendAbilityTokensTiered(wrestler, 'Headbutts', [{min:2, max:3, damage:1}, {min:4, max:4, damage:3}, {min:5, max:5, damage:4}])",
+    "description": "Each successful Headbutt attack earns 1 Headbutt token. During your offensive window, spend tokens for bonus damage: 2–3 tokens → -1, 4 tokens → -3, 5 tokens → -4.",
+    "default": false
   }, {
     "name": "Bad Dog",
     "type": "USES_LIMITED",
@@ -125,12 +127,17 @@
     "category": "SIGNATURE",
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'STRIKE' && match.attackCardBaseDamage <= 2",
-    "effectScript": "cancelDamage(); wrestler.gainInitiative(); wrestler.momentum += 1"
+    "effectScript": "cancelDamage(); wrestler.gainInitiative(); wrestler.momentum += 1",
+    "description": "Trigger when defending against a Strike of -1 or -2 damage. Cancel the damage, gain the initiative, and +1 [[momentum]]. Can be used once.",
+    "default": false
   }, {
     "name": "Dance",
     "type": "USES_LIMITED",
     "maxUses": 1,
-    "effectScript": "wrestler.momentum += 2; retrieveFromDiscard('HEADBUTT')"
+    "effectScript": "wrestler.momentum += 2; retrieveFromDiscard('HEADBUTT')",
+    "description": "Gain +2 [[momentum]] and retrieve a Headbutt [[card]] from your discard pile. Can be used once.",
+    "default": false,
+    "category": "SIGNATURE"
   } ]
 }, {
   "name": "Kamala",
