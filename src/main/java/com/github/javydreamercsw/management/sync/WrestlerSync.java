@@ -223,7 +223,7 @@ public class WrestlerSync implements DataSyncContributor {
               }
 
               if (existing.getActive() == null) {
-                existing.setActive(true);
+                existing.setActive(!Boolean.FALSE.equals(w.getActive()));
                 changed = true;
               }
               if (existing.getIsPlayer() == null) {
@@ -251,7 +251,7 @@ public class WrestlerSync implements DataSyncContributor {
               newWrestler.setLowStamina(w.getLowStamina());
               newWrestler.setDescription(w.getDescription());
               newWrestler.setGender(w.getGender());
-              newWrestler.setActive(true);
+              newWrestler.setActive(!Boolean.FALSE.equals(w.getActive()));
               newWrestler.setIsPlayer(false);
               newWrestler.setImageUrl(w.getImageUrl());
               newWrestler.setHeritageTag(w.getHeritageTag());

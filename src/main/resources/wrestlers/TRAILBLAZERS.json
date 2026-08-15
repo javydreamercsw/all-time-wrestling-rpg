@@ -132,4 +132,22 @@
     "effectScript": "wrestler.momentum += 2",
     "description": "After a successful combo, gain +2 [[momentum]]. Can be used twice."
   } ]
+}, {
+  "name": "Flying Brian",
+  "active": false,
+  "alignment": "FACE",
+  "deckSize": 15,
+  "startingHealth": 15,
+  "lowHealth": 4,
+  "startingStamina": 15,
+  "lowStamina": 4,
+  "drive": 2,
+  "resilience": 1,
+  "charisma": 3,
+  "brawl": 2,
+  "heritageTag": "Stampede",
+  "gender": "MALE",
+  "expansion_code": "TRAILBLAZERS",
+  "description": "Before the \"Loose Cannon\" persona, Brian Pillman soared as Flying Brian — a high-flying babyface beloved for his aerial athleticism and electrifying speed. This alternate persona shares Pillman's card pool but features a different ability board emphasizing aerial offense and crowd momentum.",
+  "abilities": [ ]
 } ]

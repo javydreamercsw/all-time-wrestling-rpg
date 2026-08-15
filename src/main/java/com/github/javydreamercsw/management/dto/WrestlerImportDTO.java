@@ -50,5 +50,10 @@ public class WrestlerImportDTO {
   private Integer charisma;
   private Integer brawl;
 
+  /**
+   * When false, the wrestler is seeded as inactive (e.g. alternate personas disabled by default).
+   */
+  private Boolean active;
+
   private java.util.List<WrestlerAbilityDTO> abilities = new java.util.ArrayList<>();
 }
