@@ -739,16 +739,22 @@ class CampaignChapterSimulationTest {
         .isEmpty();
   }
 
-  /** Loads all wrestler names from wrestlers.json as a Set for O(1) lookup. */
+  /** Loads all wrestler names from wrestlers/*.json as a Set for O(1) lookup. */
   private java.util.Set<String> loadWrestlerNames() throws Exception {
     com.fasterxml.jackson.databind.ObjectMapper om =
         new com.fasterxml.jackson.databind.ObjectMapper();
-    java.io.InputStream is = getClass().getResourceAsStream("/wrestlers.json");
-    java.util.List<java.util.Map<String, Object>> raw =
-        om.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
-    return raw.stream()
-        .map(m -> (String) m.get("name"))
-        .collect(java.util.stream.Collectors.toSet());
+    java.util.Set<String> names = new java.util.HashSet<>();
+    org.springframework.core.io.support.PathMatchingResourcePatternResolver resolver =
+        new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
+    org.springframework.core.io.Resource[] resources =
+        resolver.getResources("classpath*:wrestlers/*.json");
+    for (org.springframework.core.io.Resource r : resources) {
+      java.util.List<java.util.Map<String, Object>> raw =
+          om.readValue(
+              r.getInputStream(), new com.fasterxml.jackson.core.type.TypeReference<>() {});
+      raw.stream().map(m -> (String) m.get("name")).forEach(names::add);
+    }
+    return names;
   }
 
   /** Loads all title names from championships.json as a Set for O(1) lookup. */
