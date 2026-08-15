@@ -148,6 +148,43 @@
   "heritageTag": "Stampede",
   "gender": "MALE",
   "expansion_code": "TRAILBLAZERS",
-  "description": "Before the \"Loose Cannon\" persona, Brian Pillman soared as Flying Brian — a high-flying babyface beloved for his aerial athleticism and electrifying speed. This alternate persona shares Pillman's card pool but features a different ability board emphasizing aerial offense and crowd momentum.",
-  "abilities": [ ]
+  "description": "Brian Pillman was born on May 22nd, 1962. An incredible athlete, Brian was an All-American who also played in the NFL as part of the Cincinnati Bengals before transitioning into wrestling and becoming one of the most controversial trail blazers of the 1990s.\n\nBrian began his wrestling career in Stampede wrestling Calgary, learning his craft from the legendary Stu Hart. He then moved to WCW where he was known as Flyin' Brian; an athletic young man who displayed incredible agility and high-flying skills that captured the audience and turned him into a superstar and two-time light heavyweight champion. He would later form an iconic tag team with Steve Austin as part of the Hollywood Blonds, that saw them capture the tag team titles.\n\nBut it was his \"loose cannon\" personality in the mid-1990s that set him apart from other wrestlers. During that time, Brian became increasingly erratic, uncontrollable, unpredictable, and capable of anything. His words and actions shocked fans and wrestlers alike, turning him into one of the hottest wrestlers of the decade, and a member of the 4 horsemen.\n\nBrian’s career would unfortunately be hampered with a serious injury shortly after and a much too early death. Now awoken to a second chance, Pillman is on the loose, looking to upheave, looking for trouble, and no body can even predict what he is going to do next.",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -2 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +2 [[stamina]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 2"
+  }, {
+    "name": "Anti-Air",
+    "description": "Trigger when defending against an Aerial attack. Gain the initiative, deal -2 [[health]], and gain +2 [[momentum]]. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'AERIAL'",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2"
+  }, {
+    "name": "Heart",
+    "description": "Trigger at any time. Gain +3 [[health]]. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.health += 3"
+  }, {
+    "name": "Roll Up",
+    "description": "Gain the initiative and trigger a [[pin]] attempt. Opponent gains +1 to their kick-out roll. If the [[pin]] is unsuccessful, your opponent gains the initiative. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "OFFENSE",
+    "effectScript": "wrestler.gainInitiative(); match.triggerPin(wrestler, {opponentKickoutBonus: 1, onFailure: 'opponent.gainInitiative()'})"
+  } ]
 } ]
