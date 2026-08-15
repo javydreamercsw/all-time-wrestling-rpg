@@ -827,5 +827,12 @@
     "description": "Live tournament view shows completed round results and the pending next round. The booker can book the upcoming round onto any scheduled show and record match winners as each event is completed.",
     "imagePath": "screenshots/booker-tournament-detail-in-progress.png",
     "order": 0
+  }, {
+    "id": "wrestler-profile-wrestler-profile-abilities",
+    "category": "Wrestler Profile",
+    "title": "Wrestler Abilities Panel",
+    "description": "The Abilities panel groups each wrestler's moves into Core Abilities (shared by all wrestlers) and Wrestler Abilities (superstar-specific). Limited-use abilities show a colored chip with their use count. Unlockable abilities are collapsed by default.",
+    "imagePath": "screenshots/wrestler-profile-abilities.png",
+    "order": 0
   } ]
 }

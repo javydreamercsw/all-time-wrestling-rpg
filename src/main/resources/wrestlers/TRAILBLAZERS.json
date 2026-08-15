@@ -112,7 +112,8 @@
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "unlockCondition": "event == 'TAUNT' && wrestler.momentum >= 3",
-    "effectScript": "match.disableAbility(opponent, 'Taunt')"
+    "effectScript": "match.disableAbility(opponent, 'Taunt')",
+    "description": "When you TAUNT with 3 or more momentum, prevent your opponent from using their Taunt ability for the rest of the match."
   }, {
     "name": "Johnny Parkour",
     "type": "USES_LIMITED",
@@ -120,13 +121,15 @@
     "category": "SIGNATURE",
     "unlockCondition": "wrestler.momentum >= 3",
     "costScript": "discardCards(1, 'ANY')",
-    "effectScript": "wrestler.gainInitiative(); wrestler.momentum += 1"
+    "effectScript": "wrestler.gainInitiative(); wrestler.momentum += 1",
+    "description": "Discard 1 card to gain the initiative and +1 momentum. Requires 3 or more momentum. Can be used twice."
   }, {
     "name": "Johnny Combo",
     "type": "USES_LIMITED",
     "maxUses": 2,
     "category": "SIGNATURE",
     "unlockCondition": "event == 'COMBO_SUCCESS'",
-    "effectScript": "wrestler.momentum += 2"
+    "effectScript": "wrestler.momentum += 2",
+    "description": "After a successful combo, gain +2 momentum. Can be used twice."
   } ]
 } ]
