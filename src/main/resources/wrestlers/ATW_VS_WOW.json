@@ -293,5 +293,46 @@
   "heritageTag": "Australia",
   "description": "Princess Aussie is more than just a competitor – she’s a symbol of fire, resilience, and charisma. A former WOW World Champion, she was also the People’s Champion – fierce in combat, fearless in adversity, and impossible to keep down.\n\nArmed with athleticism, technique, agility, and raw emotion, Princess Aussie made an immediate impact with her dynamic style and underdog heart. She can throw, grapple, counter, or fly across the ring, a fact that makes her difficult to beat. Her offense is sharp, fast, and explosive – and she can counter almost any move with her Cutter From Down Under.\n\nNow, reborn in a future where only the bold survive, Princess Aussie carries the hopes of a new generation. She’s not here to dominate with fear – she’s here to inspire through battle.\n\n“I fight with pride, I rise with purpose – and I never stay down.”\n",
   "gender": "FEMALE",
-  "expansion_code": "ATW_VS_WOW"
+  "expansion_code": "ATW_VS_WOW",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[momentum]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1"
+  }, {
+    "name": "Fan Favorite",
+    "description": "Aerial attacks gain +1 [[momentum]] when you or your opponent are on a winning streak. Signature and [[finisher]] attacks always gain +2 [[momentum]].",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_SUCCESS'",
+    "effectScript": "if (match.attackCardType == 'AERIAL' && (wrestler.onAWinningStreak || opponent.onAWinningStreak)) { wrestler.momentum += 1 } if (match.attackCardType == 'SIGNATURE' || match.attackCardType == 'FINISHER') { wrestler.momentum += 2 }"
+  }, {
+    "name": "Aussie Wrestling",
+    "description": "Discard a Grapple [[card]] to block a Grapple attack of 3 or less damage. Gain the initiative. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'GRAPPLE' && match.incomingDamage <= 3",
+    "costScript": "wrestler.discardCards(1, 'GRAPPLE')",
+    "effectScript": "blockAttack(); wrestler.gainInitiative()"
+  }, {
+    "name": "Cutter From Down Under",
+    "description": "Discard a Cutter [[card]] to block any attack and gain the initiative. Resolve the discarded card with -1 to the opponent's next attack roll target. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING'",
+    "costScript": "wrestler.discardCards(1, 'CUTTER')",
+    "effectScript": "blockAttack(); wrestler.gainInitiative(); match.resolveDiscardedCard(); opponent.nextAttackRollTargetModifier -= 1"
+  } ]
 } ]
