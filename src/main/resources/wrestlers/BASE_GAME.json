@@ -253,7 +253,34 @@
   "heritageTag": "Zambezi",
   "description": "Legend has it that when “The Lion” known as Mukundi Shumba was born by the Zambezi River in 992 AD, he did not cry. Instead, he let out a roar that made the ground tremble in fear. How could it not?\n\nStanding at 6’6 and 290 pounds of raw power, Shumba is probably the strongest man who has ever lived. He can break his opponents in half and absorb an incredible amount of punishment, a fact that allowed him to best 2321 opponents during his lifetime without ever suffering defeat.\n\nBut what made Shumba stand out above all else was his pride and dedication to his people. His life’s mission was to ensure his tribe remained independent and prosperous, and he was willing to sacrifice anything to achieve this goal. Under his leadership, he formed a kingdom that became a center of prosperity, art and human advancement.\n\nNow, awoken millenniums later, Shumba is horrified to learn about his nation’s demise. His people were conquered and enslaved by colonial powers. To make matters worse, his legend, the man who was never bested, has been forgotten and lost to the annals of history.\n\nShumba now has a new mission. He will roar again, but this time the entire world will break. He will set things right. He will conquer all. He will ensure he and his people are remembered forever. Does anyone dare stand in his way?",
   "gender": "MALE",
-  "expansion_code": "BASE_GAME"
+  "expansion_code": "BASE_GAME",
+  "abilities": [ {
+    "name": "Tank",
+    "description": "Opponent's [[finisher]] and Signature attacks deal 1 less [[health]] damage to you.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_INCOMING' && (match.attackCardType == 'FINISHER' || match.attackCardType == 'SIGNATURE')",
+    "effectScript": "match.reduceDamage(1)"
+  }, {
+    "name": "Unbreakable Will",
+    "description": "Trigger before your final kick-out roll. Automatically kick out of a [[pin]]. In a Last Man Standing or Cage match, gain +1 to your kick-out roll instead. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'KICKOUT_ROLL'",
+    "effectScript": "if (match.matchType == 'LAST_MAN_STANDING' || match.matchType == 'CAGE') { wrestler.kickoutRollBonus += 1 } else { match.autoKickout() }"
+  }, {
+    "name": "War Cry",
+    "description": "Gain +2 [[stamina]] and draw 1 [[card]]. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.stamina += 2; wrestler.drawCard(1)"
+  } ]
 }, {
   "name": "The British Bulldog",
   "alignment": "FACE",
