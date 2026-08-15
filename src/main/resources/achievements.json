@@ -1557,4 +1557,11 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('andr') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "OMZ_DEADLY_COMBAT_CHAMPION",
+  "name": "Deadly Combat Champion",
+  "description": "Win the Deadly Combat tournament 5 times with OMZ",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('deadlyCombatWins') && deadlyCombatWins >= 5"
 } ]

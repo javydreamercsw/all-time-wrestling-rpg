@@ -54,6 +54,8 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
+import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -62,6 +64,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -101,6 +104,8 @@ public class MatchResultProcessorService {
   private final StorylineDirectorService storylineDirectorService;
   private final WrestlerStatusService wrestlerStatusService;
   private final FeatureDataService featureDataService;
+  private final ScriptedAchievementEvaluator scriptedAchievementEvaluator;
+  private final LegacyService legacyService;
 
   // Field-injected with @Lazy to break circular dependency with CampaignService
   @org.springframework.beans.factory.annotation.Autowired
@@ -120,6 +125,7 @@ public class MatchResultProcessorService {
 
   private static final String KEY_FINALS_PHASE = "finalsPhase";
   private static final String KEY_TOURNAMENT_WINNER = "tournamentWinner";
+  private static final String KEY_DEADLY_COMBAT_WINS = "deadlyCombatWins";
   private static final String KEY_WON_FINALE = "wonFinale";
   private static final String KEY_PARTNER_ID = "partnerId";
   private static final String KEY_RECRUITING_PARTNER = "recruitingPartner";
@@ -389,6 +395,16 @@ public class MatchResultProcessorService {
       if (tournamentService.isPlayerChampion(campaign)) {
         log.info("Wrestler {} WON the tournament finals!", wrestler.getName());
         featureDataService.setFeatureValue(state, KEY_TOURNAMENT_WINNER, true);
+        int wins =
+            featureDataService.getFeatureValue(state, KEY_DEADLY_COMBAT_WINS, Integer.class, 0);
+        featureDataService.setFeatureValue(state, KEY_DEADLY_COMBAT_WINS, wins + 1);
+        if (campaign.getWrestler().getAccount() != null) {
+          Map<String, Object> ctx = Map.of(KEY_DEADLY_COMBAT_WINS, wins + 1);
+          scriptedAchievementEvaluator
+              .resolveNewlyUnlockedKeys(campaign.getWrestler().getAccount(), ctx)
+              .forEach(
+                  key -> legacyService.unlockAchievement(campaign.getWrestler().getAccount(), key));
+        }
         awardTitleToWinner(wrestler.getId(), finalShow);
       } else {
         TournamentDTO tournament = tournamentService.getTournamentState(campaign);
