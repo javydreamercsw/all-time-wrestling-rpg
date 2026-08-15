@@ -17,14 +17,14 @@
   "manager": "MVP",
   "abilities": [ {
     "name": "Reversal",
-    "description": "Spend -1 [[stamina]] to gain the initiative, deal -2 [[health]] to opponent, and gain +2 [[stamina]].",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -2 [[health]] to opponent, and gain +2 [[momentum]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
     "default": true,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2"
   }, {
     "name": "All Mighty",
     "description": "Spend -3 [[stamina]] to add 2 All Mighty tokens. Whenever any player plays an attack [[card]], spend 1 token: on offense your target roll is -1 (easier) and you deal +1 damage; on defense your opponent's target roll is +1 (harder).",
@@ -79,14 +79,14 @@
   "manager": "MVP",
   "abilities": [ {
     "name": "Reversal",
-    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +2 [[stamina]].",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +2 [[momentum]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
     "default": false,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 2"
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 2"
   }, {
     "name": "Suplex of Hurt",
     "description": "After each successful Suplex attack, gain 1 Suplex token. Spend 1 token to reduce the opponent's target roll by 1, or spend 1 token to deal -1 [[health]] after a successful roll.",

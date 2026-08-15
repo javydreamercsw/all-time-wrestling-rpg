@@ -20,14 +20,14 @@
   "effectScript": "blockAttack(); wrestler.gainInitiative()"
 }, {
   "name": "Reversal",
-  "description": "Spend -2 [[stamina]] to gain the initiative, deal -2 [[health]] to opponent, and gain +2 [[stamina]].",
+  "description": "Spend -2 [[stamina]] to gain the initiative, deal -2 [[health]] to opponent, and gain +2 [[momentum]].",
   "type": "USES_LIMITED",
   "category": "SIGNATURE",
   "maxUses": 1,
   "default": true,
   "timing": "DEFENSE",
   "costScript": "wrestler.stamina -= 2",
-  "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 2"
+  "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2"
 }, {
   "name": "Recover",
   "description": "Gain +2 [[stamina]] and draw 1 [[card]]. Opponent also gains +1 [[stamina]], +1 [[health]], and draws 1 [[card]].",

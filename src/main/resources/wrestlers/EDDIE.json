@@ -16,13 +16,13 @@
   "expansion_code": "EDDIE",
   "abilities": [ {
     "name": "Reversal",
-    "description": "Spend -2 [[stamina]] to gain the initiative, deal -1 [[health]] to your opponent, then gain +2 [[stamina]] and 1 scheme token.",
+    "description": "Spend -2 [[stamina]] to gain the initiative, deal -1 [[health]] to your opponent, then gain +2 [[momentum]] and 1 scheme token.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
     "default": true,
     "costScript": "wrestler.stamina -= 2",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 2; wrestler.schemeTokens += 1"
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 2; wrestler.schemeTokens += 1"
   }, {
     "name": "Scheme",
     "description": "Add a scheme token (cube) anytime you take damage or lose the initiative, gaining 3 [[stamina]] or drawing 1 [[card]]. You may trigger any of the 3 Eddie scheme [[card]]s; perform a Referee Check when you do.",

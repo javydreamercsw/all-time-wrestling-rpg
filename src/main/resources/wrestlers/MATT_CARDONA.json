@@ -16,14 +16,14 @@
   "expansion_code": "MATT_CARDONA",
   "abilities": [ {
     "name": "Reversal",
-    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[stamina]].",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[momentum]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
     "default": true,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 1"
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1"
   }, {
     "name": "Most Hated",
     "description": "When you taunt or recover, gain an additional +1 [[momentum]].",

@@ -17,14 +17,14 @@
   "expansion_code": "RUMBLE",
   "abilities": [ {
     "name": "Reversal",
-    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[stamina]].",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[momentum]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
     "default": false,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.stamina += 1"
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1"
   }, {
     "name": "Onslaught",
     "description": "Triggers when attacking. Play and resolve any number of cards totaling 5 or less damage as if they were a Rampaging Attack. Gain +4 [[momentum]]. Cannot attempt a [[pin]] this turn.",
