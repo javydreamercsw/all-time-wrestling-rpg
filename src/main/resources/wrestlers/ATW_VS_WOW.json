@@ -64,7 +64,38 @@
   "heritageTag": "Canada",
   "description": "Taya Valkyrie is wrestling royalty — the self-proclaimed “La Wera Loca,” the longest-reigning Knockouts Champion in history, and a globe-trotting queen who has conquered every kingdom she’s entered. With a background in lucha libre and a flair for the dramatic, Taya blends ruthless aggression with elegant execution like no one else in the game.\n\nTrained in the heart of Mexico, she earned her stripes in the trenches of AAA, becoming the first foreign-born Reina de Reinas Champion. From there, she stormed the North American scene, collecting championships and breaking records wherever she went — including a legendary run in Impact Wrestling that solidified her as one of the most decorated women's wrestlers of her era.\n\nBut make no mistake — behind the fur coats, diamonds, and crowns is a fighter who’s paid her dues in blood, sweat, and shattered bones. Taya’s offense is as vicious as her attitude — suplexes with snap, knees with venom, and a Road to Valhalla that leaves no one standing. She's as cunning as she is dangerous, and once she smells weakness, it's already too late.\n\nNow, centuries into the future, the Queen has returned — not to reclaim her throne, but to build a new empire… on top of the ashes of her rivals.\n\n“Bow down — or be broken. Those are your only two options when you're in my ring.”",
   "gender": "FEMALE",
-  "expansion_code": "ATW_VS_WOW"
+  "expansion_code": "ATW_VS_WOW",
+  "abilities": [ {
+    "name": "Loca",
+    "description": "Whenever you successfully execute a combo using two different ATTACK categories, you may either deal -2 [[health]] extra or gain +2 [[momentum]] extra.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'COMBO_SUCCESS' && match.comboCategoriesUsed >= 2",
+    "effectScript": "match.offerChoice(wrestler, [{effect: 'opponent.health -= 2'}, {effect: 'wrestler.momentum += 2'}])"
+  }, {
+    "name": "All Rounder",
+    "description": "Trigger when defending against a 3+ damage attack. Discard 1 [[card]] matching the opponent's ATTACK category to gain the initiative. Can be used twice.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 2,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.incomingDamage >= 3",
+    "costScript": "wrestler.discardCards(1, match.attackCardType)",
+    "effectScript": "wrestler.gainInitiative()"
+  }, {
+    "name": "Vicious",
+    "description": "After a successful Strike or Throw attack, spend -1 [[stamina]] to deal an additional -2 [[health]]. Can be used once.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "OFFENSE",
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && (match.attackCardType == 'STRIKE' || match.attackCardType == 'THROW')",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "opponent.health -= 2"
+  } ]
 }, {
   "name": "Cassie Lee",
   "alignment": "HEEL",
