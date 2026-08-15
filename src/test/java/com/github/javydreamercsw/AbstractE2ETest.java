@@ -116,6 +116,14 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
+    accountRepository.findAll().stream()
+        .filter(a -> a.getFailedLoginAttempts() > 0)
+        .forEach(
+            a -> {
+              a.resetFailedAttempts();
+              accountRepository.save(a);
+            });
+
     if (!appReady) {
       WebDriverManager.chromedriver().setup();
       log.info("Waiting for application to be ready on port {}", serverPort);

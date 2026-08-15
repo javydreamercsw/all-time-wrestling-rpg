@@ -484,6 +484,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .account(playerAccount)
             .build();
     wrestler = wrestlerService.save(wrestler);
+    accountService.setActiveWrestlerId(playerAccount.getId(), wrestler.getId());
     WrestlerState state =
         wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
     state.setTier(WrestlerTier.MIDCARDER);
