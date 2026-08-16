@@ -526,6 +526,11 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     segment.setWinners(List.of(wrestler));
     segmentService.updateSegment(segment);
 
+    // Explicitly log out the active admin session before logging in as player.
+    // After cleanupLeagues() recreates accounts with the same IDs, Spring Security may
+    // consider the existing admin session still valid and redirect /login to /, preventing
+    // the player from authenticating.
+    logout();
     login("player", "player123");
 
     // Navigate to the PlayerView
