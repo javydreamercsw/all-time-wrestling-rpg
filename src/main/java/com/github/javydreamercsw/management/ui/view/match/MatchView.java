@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -64,6 +65,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.RingsideActionComponent;
+import com.github.javydreamercsw.management.ui.component.WrestlerAbilityPanel;
 import com.github.javydreamercsw.management.ui.component.WrestlerSummaryCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.show.MatchInfoDialog;
@@ -136,6 +138,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   @Autowired private ArenaService arenaService;
   @Autowired private CampaignEncounterService campaignEncounterService;
   @Autowired private DeckService deckService;
+  @Autowired private WrestlerAbilityRepository wrestlerAbilityRepository;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -627,6 +630,24 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
 
     sideCol.add(infoCard);
+
+    // Abilities panel — shown to the player, using the account-matched wrestler from the segment.
+    if (!isPromo && isPlayerInMatch) {
+      wrestlers.stream()
+          .filter(w -> w != null && playerWrestlerIds.contains(w.getId()))
+          .findFirst()
+          .ifPresent(
+              matchPlayer -> {
+                var abilities = wrestlerAbilityRepository.findByWrestlerId(matchPlayer.getId());
+                if (!abilities.isEmpty()) {
+                  com.vaadin.flow.component.details.Details abilitiesSection =
+                      new com.vaadin.flow.component.details.Details(
+                          "Your Abilities", new WrestlerAbilityPanel(abilities));
+                  abilitiesSection.setOpened(false);
+                  sideCol.add(abilitiesSection);
+                }
+              });
+    }
 
     // Ringside Actions Section — only available in GLOBAL universe matches
     boolean isGlobalUniverse =

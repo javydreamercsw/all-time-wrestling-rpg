@@ -1,0 +1,45 @@
+[ {
+  "name": "Gail Kim",
+  "alignment": "FACE",
+  "deckSize": 16,
+  "startingHealth": 13,
+  "lowHealth": 2,
+  "startingStamina": 17,
+  "lowStamina": 3,
+  "drive": 3,
+  "resilience": 3,
+  "charisma": 2,
+  "brawl": 2,
+  "heritageTag": "Canada",
+  "description": "Gail Kim is not only a pioneer of women’s wrestling, but one of the greatest of all time – someone who shattered every glass ceiling ever placed above her. A former multi-time Women’s and Knockouts Champion, Gail Kim didn’t just compete in the ring – she redefined it. With unmatched athleticism, technical precision, and a heart that never backed down, she became the standard by which all future generations of female wrestlers would be judged.\n\nHer journey began in WWE, where she shocked the world by winning the Women’s Championship in her debut match – an unheard-of feat at the time. But it was in TNA (Impact Wrestling) where she truly built her legacy. There, Gail Kim became the cornerstone of the Knockouts Division, delivering classic match after classic match. Her rivalry with Awesome Kong is still considered one of the greatest women’s feuds in wrestling history – a brutal, emotional saga that pushed the entire industry to take women’s wrestling seriously.\n\nOutside the ring, Gail Kim has been a vocal advocate for respect, equality, and true athleticism in women’s wrestling. She walked away from the biggest company in the world on principle – because she believed women deserved more. And she was right. Her impact can still be felt every time a young wrestler steps through the ropes believing they belong.\n\nNow, centuries into the future, Gail Kim is back – faster, smarter, more determined than ever. In a world where respect is earned in blood and sweat, she’s ready to prove once again why she’s in a class of her own.\n\n“I’ve beaten giants, I’ve made history, and I’ve changed the game. Now, I’m here to win it all – again.”\n",
+  "gender": "FEMALE",
+  "expansion_code": "GAIL_KIM",
+  "abilities": [ {
+    "name": "Top Rope",
+    "description": "When playing an AERIAL attack [[card]] with base damage of 2, you may spend -1 additional [[stamina]]. If successful: deal +1 extra damage and gain +1 [[momentum]]. If unsuccessful: suffer -1 [[health]].",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_PLAY' && match.attackCardType == 'AERIAL' && match.attackCardBaseDamage == 2",
+    "effectScript": "match.optionalExtraStaminaCost(wrestler, 1, 'match.attackDamageBonus += 1; wrestler.momentum += 1', 'wrestler.health -= 1')"
+  }, {
+    "name": "Dodge",
+    "description": "Trigger to block a STRIKE attack. Gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[health]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackType == 'STRIKE'",
+    "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 1; wrestler.health += 1"
+  }, {
+    "name": "Speed",
+    "description": "After successfully playing a STRIKE or HURRICANRANA attack [[card]], spend -1 extra [[stamina]] to add +2 to the [[card]]'s listed damage.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "unlockCondition": "event == 'ATTACK_SUCCESS' && (match.attackCardType == 'STRIKE' || match.attackCardType == 'HURRICANRANA')",
+    "effectScript": "match.optionalExtraStaminaCost(wrestler, 1, 'match.attackDamageBonus += 2', null)"
+  } ]
+} ]

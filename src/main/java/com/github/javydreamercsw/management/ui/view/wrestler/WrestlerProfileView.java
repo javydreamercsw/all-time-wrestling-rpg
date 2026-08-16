@@ -30,6 +30,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -51,6 +53,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
+import com.github.javydreamercsw.management.ui.component.WrestlerAbilityPanel;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
@@ -123,6 +126,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final com.github.javydreamercsw.management.service.campaign.StatusCardService
       statusCardService;
   private final WrestlerStateRepository wrestlerStateRepository;
+  private final WrestlerAbilityRepository wrestlerAbilityRepository;
   private final AlignmentService alignmentService;
 
   private Wrestler wrestler;
@@ -144,6 +148,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
+  private final VerticalLayout abilitiesLayout = new VerticalLayout();
   private final Grid<Segment> recentMatchesGrid = new Grid<>(Segment.class);
 
   @Autowired private SecurityUtils securityUtils;
@@ -173,6 +178,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final com.github.javydreamercsw.management.service.campaign.StatusCardService
           statusCardService,
       final WrestlerStateRepository wrestlerStateRepository,
+      final WrestlerAbilityRepository wrestlerAbilityRepository,
       final AlignmentService alignmentService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
@@ -194,6 +200,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.wrestlerStatusService = wrestlerStatusService;
     this.statusCardService = statusCardService;
     this.wrestlerStateRepository = wrestlerStateRepository;
+    this.wrestlerAbilityRepository = wrestlerAbilityRepository;
     this.alignmentService = alignmentService;
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setAlt("Wrestler Image");
@@ -272,6 +279,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     recentMatchesLayout.add(seasonFilter, recentMatchesGrid);
     secondaryInfoAccordion.add("Match Logs", recentMatchesLayout);
     secondaryInfoAccordion.add("Rivalry History", feudHistoryLayout);
+    secondaryInfoAccordion.add("Abilities", abilitiesLayout);
 
     // Configure Grid
     recentMatchesGrid.removeAllColumns();
@@ -573,6 +581,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       }
 
       updateMatchAndFeudHistory(); // Initial call to populate match and feud history
+
+      abilitiesLayout.removeAll();
+      List<WrestlerAbility> abilities =
+          wrestlerAbilityRepository.findByWrestlerId(wrestler.getId());
+      abilitiesLayout.add(new WrestlerAbilityPanel(abilities));
     }
   }
 

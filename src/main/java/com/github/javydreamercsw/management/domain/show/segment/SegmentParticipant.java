@@ -93,4 +93,9 @@ public class SegmentParticipant extends AbstractEntity<Long> {
   @Column(name = "cards_played", columnDefinition = "TEXT")
   @Convert(converter = StringToStringIntegerMapConverter.class)
   private Map<String, Integer> cardsPlayed = new HashMap<>();
+
+  /** Ability name → activation count for this match (USES_LIMITED abilities). */
+  @Column(name = "abilities_used", length = 2000)
+  @Convert(converter = StringToStringIntegerMapConverter.class)
+  private Map<String, Integer> abilitiesUsed = new HashMap<>();
 }

@@ -74,6 +74,11 @@ class WrestlerProfileViewTest extends AbstractViewTest {
   @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private StatusCardService statusCardService;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository
+      wrestlerAbilityRepository;
+
   @Mock private AlignmentService alignmentService;
   @Mock private SecurityUtils securityUtils;
 
@@ -106,6 +111,7 @@ class WrestlerProfileViewTest extends AbstractViewTest {
             wrestlerStatusService,
             statusCardService,
             wrestlerStateRepository,
+            wrestlerAbilityRepository,
             alignmentService);
     UI.getCurrent().add(view);
   }

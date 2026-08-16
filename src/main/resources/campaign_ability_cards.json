@@ -8,7 +8,7 @@
   "effectScript": "gainInitiative()"
 }, {
   "name": "Feigned Retreat",
-  "description": "Spend 1 Stamina to gain Initiative and 2 Momentum.",
+  "description": "Spend 1 [[stamina]] to gain Initiative and 2 [[momentum]].",
   "alignmentType": "HEEL",
   "level": 2,
   "oneTimeUse": false,
@@ -24,7 +24,7 @@
   "effectScript": "modifyOpponentRoll(-1)"
 }, {
   "name": "Exposed Turnbuckle",
-  "description": "Deal 3 damage and gain 2 momentum.",
+  "description": "Deal 3 damage and gain 2 [[momentum]].",
   "alignmentType": "HEEL",
   "level": 2,
   "oneTimeUse": false,
@@ -75,7 +75,7 @@
   "effectScript": "gainMomentum(2); gainHitPoints(1)"
 }, {
   "name": "Ten Punches",
-  "description": "Gain momentum and draw a card.",
+  "description": "Gain [[momentum]] and draw a [[card]].",
   "alignmentType": "FACE",
   "level": 1,
   "oneTimeUse": false,
@@ -91,7 +91,7 @@
   "effectScript": "spendStamina(1); gainMomentum(2)"
 }, {
   "name": "Flash Pinfall",
-  "description": "Surprise your opponent with a quick pin.",
+  "description": "Surprise your opponent with a quick [[pin]].",
   "alignmentType": "FACE",
   "level": 2,
   "oneTimeUse": false,
@@ -99,7 +99,7 @@
   "effectScript": "spendStamina(2); gainMomentum(1); pin()"
 }, {
   "name": "Crowd Pleaser",
-  "description": "Gain momentum and draw a card.",
+  "description": "Gain [[momentum]] and draw a [[card]].",
   "alignmentType": "FACE",
   "level": 2,
   "oneTimeUse": false,
@@ -107,7 +107,7 @@
   "effectScript": "gainMomentum(1); drawCard(1)"
 }, {
   "name": "Comeback",
-  "description": "Gain momentum and draw a card.",
+  "description": "Gain [[momentum]] and draw a [[card]].",
   "alignmentType": "FACE",
   "level": 3,
   "oneTimeUse": false,

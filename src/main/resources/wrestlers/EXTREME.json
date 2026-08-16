@@ -1,0 +1,180 @@
+[ {
+  "name": "Rob Van Dam",
+  "alignment": "FACE",
+  "deckSize": 16,
+  "startingHealth": 15,
+  "lowHealth": 4,
+  "startingStamina": 16,
+  "lowStamina": 2,
+  "drive": 1,
+  "resilience": 2,
+  "charisma": 3,
+  "brawl": 2,
+  "heritageTag": "Michigan",
+  "description": "There are many ways to describe Rob Van Dam. He is a multi-time World Champion, a freak athlete, and one of the most popular stars to ever grace this great sport. But all these descriptions pale in comparison to what he is known for best; a trailblazer, a show stealer, and undoubtedly the Whole Damn Show.\n\nDespite weighing 235 Pounds, he has the agility of a Gazelle, the speed of a Cobra, and the lethal kicks of an action movie star. He will wow anyone with his moves, and a few minutes into any match, he will have the entire stadium stand on their feet, pointing towards themselves with their thumbs while shouting “Rob… Van… Dam”. He can also be brutal, using a combination of chairs and kicks in dazzling ways that would knock his opponents out cold.\n\nNow, brought to the future to compete for the crown of the All Time Hardcore Champion, RVD has the opportunity to captivate a new audience. And while doing so, he not only plans to win the Hardcore Title, but the All Time Wrestling Championship.",
+  "gender": "MALE",
+  "expansion_code": "EXTREME",
+  "abilities": [ {
+    "name": "The Whole Damn Show",
+    "description": "After each successful AERIAL attack, gain +1 token on this ability. At 3 tokens: all attack [[card]]s gain +1 damage, AERIAL attacks deal +1 additional damage, and the Five Star Frog Splash gains a bonus effect.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'AERIAL_ATTACK_SUCCESS'",
+    "effectScript": "wrestler.abilityTokens['The Whole Damn Show'] = (wrestler.abilityTokens['The Whole Damn Show'] ?: 0) + 1; if (wrestler.abilityTokens['The Whole Damn Show'] >= 3) { match.globalAttackBonus += 1; match.aerialAttackBonus += 1; }"
+  }, {
+    "name": "Spinning Kick",
+    "description": "Block any STRIKE and gain the initiative. Deal -2 [[health]] to opponent and gain +1 [[stamina]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackType == 'STRIKE'",
+    "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 2; wrestler.stamina += 1"
+  }, {
+    "name": "Rob... Van... Dam...",
+    "description": "You may trigger and resolve ability effects before rolling an attack die without forfeiting your offensive ability window.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "effectScript": "match.preRollAbilityKeepsOffensiveWindow = true"
+  } ]
+}, {
+  "name": "Daemon",
+  "alignment": "HEEL",
+  "deckSize": 15,
+  "startingHealth": 13,
+  "lowHealth": 1,
+  "startingStamina": 13,
+  "lowStamina": 3,
+  "drive": 2,
+  "resilience": 3,
+  "charisma": 3,
+  "brawl": 2,
+  "heritageTag": "Unknown",
+  "description": "Not much is known about this masked “demonic creature” who made his debut in the independent scenes sometime in the 23rd century. He is dubbed as a demonic creature because he may have the biology of a human being, but he certainly does not look or act like one. Chronically disturbed, he has a passion for dealing and receiving pain, for his pain and pain of others makes him feel ALIVE!\n\nHe is usually found in basements and boiler rooms, dwelling in dark thoughts, spreading his ideas among the lost, and more alarmingly, plotting on how to spread anarchy across the promotion and city as a whole. He loves fire and feels elation when things burn down.\n\nHe is not interested in championships or pay. He is not even interested in winning matches. Daemon’s sole purpose is to break his opponents physically and mentally, and by doing so, adding one more disciple to his anarchy movement. What better recruiting grounds than a hardcore tournament? After all, all the world needs is just a touch of madness, and Daemon is here to give it.",
+  "gender": "MALE",
+  "expansion_code": "EXTREME",
+  "abilities": [ {
+    "name": "Pain Is Pleasure",
+    "description": "Whenever you suffer 3 or more damage in a single hit, gain +1 [[stamina]], +1 [[momentum]], and draw 1 [[card]].",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'DAMAGE_TAKEN' && match.damageAmount >= 3",
+    "effectScript": "wrestler.stamina += 1; wrestler.momentum += 1; wrestler.drawCard(1)"
+  }, {
+    "name": "Psychotic Episode",
+    "description": "Draw 1 [[card]]. The next time you attack, the opponent skips their defensive ability window.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.drawCard(1); match.nextAttackIsUndefendable = true"
+  }, {
+    "name": "Broken",
+    "description": "Gain the initiative. Opponent must shuffle 1 attack [[card]] from their hand back into the draw pile. No replacement draw.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.gainInitiative(); match.forceOpponentDiscard('ATTACK_CARD_TO_DECK', opponent)"
+  } ]
+}, {
+  "name": "Raven",
+  "alignment": "HEEL",
+  "deckSize": 15,
+  "startingHealth": 14,
+  "lowHealth": 4,
+  "startingStamina": 14,
+  "lowStamina": 4,
+  "drive": 2,
+  "resilience": 1,
+  "charisma": 4,
+  "brawl": 2,
+  "heritageTag": "New York",
+  "description": "A former World Champion and a hardcore legend, Raven is a great brawler and a vicious individual. Yet his greatest strength is his combination of unrivalled genius and charisma. Together, this combination made him one of the most dangerous individuals in wrestling.\n\nA master manipulator, he would use psychological warfare to guarantee his victory against his rivals before the match even started!\n\nAdditionally, his charisma and power of persuasion allowed him to create a following in every promotion he has been. This flock of followers that resembles nothing short of a cult, would do anything to protect him, helping him win countless matches.\n\nNow, awoken 200 years into the future, Raven asks “What about me? What about Raven? How was I not included in the initial tournament to crown the All Time Champion?”. To address this perceived insult, Raven has his eyes set on a prize that he wants more than anything. It is his destiny to become the Champion of All Time, and he will fulfill it. Quote the Raven, nevermore.",
+  "gender": "MALE",
+  "expansion_code": "EXTREME",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -1 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +1 [[momentum]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "timing": "DEFENSE",
+    "costScript": "wrestler.stamina -= 1",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1"
+  }, {
+    "name": "Psychological Warfare",
+    "description": "Opponent's attack target roll increases by +2 (maximum roll cap applies). If the attack still succeeds, you suffer an additional 2 damage.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 2,
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'ATTACK_INCOMING'",
+    "effectScript": "opponent.targetRollModifier += 2; match.ifAttackSucceeds.extraDamageToDefender += 2"
+  }, {
+    "name": "Raven's Rules",
+    "description": "Spend -2 [[stamina]]. Draw a random [[card]] from the Weapons Deck and deal the damage listed on the [[card]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "match.drawWeaponsCard(wrestler)"
+  }, {
+    "name": "The Flock",
+    "description": "Play 1 [[card]] from The Flock deck and resolve its effects.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "match.drawFlockCard(wrestler)"
+  } ]
+}, {
+  "name": "Sabu",
+  "alignment": "NEUTRAL",
+  "deckSize": 15,
+  "startingHealth": 16,
+  "lowHealth": 3,
+  "startingStamina": 14,
+  "lowStamina": 4,
+  "drive": 2,
+  "resilience": 4,
+  "charisma": 1,
+  "brawl": 3,
+  "heritageTag": "Bombay",
+  "description": "Homicidal, Suicidal, Genocidal, Death-Defying Maniac. There aren't many men that can live up to this moniker. Sabu not only does, but exceeds expectations. A man of mystery who does not talk much, this icon is undoubtedly one of, if not the greatest hardcore wrestler of all time. He legitimately revolutionized professional wrestling in the 90s with his unique style of innovative and unpredictable aerial attacks mixed with hardcore brutality.\n\nMore importantly, he was legitimately one of the toughest human beings on Earth. As a testament to that toughness, during a barbwire match, Sabu was entangled in barbwire, ripping his bicep off completely, and suffering a ~12-inch gash with his own flesh hanging from his body. Sabu simply responded by taping his arm and continuing the match.\n\nNow, 200 years into the future, Sabu is back in his prime and ready to show the world what hardcore wrestling is about. He will maim his own body to hurt his opponents and prove once and for all that he is the greatest hardcore wrestler of all time.",
+  "gender": "MALE",
+  "expansion_code": "EXTREME",
+  "abilities": [ {
+    "name": "Homicidal, Suicidal",
+    "description": "After a successful AERIAL attack, suffer 1 damage and deal -2 [[health]] to opponent.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "unlockCondition": "event == 'AERIAL_ATTACK_SUCCESS'",
+    "effectScript": "wrestler.health -= 1; opponent.health -= 2"
+  }, {
+    "name": "Unpredictable",
+    "description": "Trigger immediately after your opponent's defensive ability window. Switch the attack [[card]] played with an attack [[card]] from your hand. Your opponent cannot defend against the new attack [[card]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "unlockCondition": "event == 'OPPONENT_DEFENSIVE_WINDOW_ENDED'",
+    "effectScript": "match.swapAttackCardFromHand(wrestler); match.currentAttackIsUndefendable = true"
+  }, {
+    "name": "Death-Defying Maniac",
+    "description": "Gain +3 [[health]]. You may only trigger 1 token at a time.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 2,
+    "default": false,
+    "effectScript": "wrestler.health += 3"
+  } ]
+} ]

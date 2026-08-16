@@ -20,15 +20,21 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.util.LogSanitizer;
+import com.github.javydreamercsw.management.domain.campaign.AbilityTiming;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
+import com.github.javydreamercsw.management.domain.wrestler.AbilityCategory;
+import com.github.javydreamercsw.management.domain.wrestler.AbilityType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.dto.WrestlerAbilityDTO;
 import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
@@ -36,9 +42,12 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +64,7 @@ public class WrestlerSync implements DataSyncContributor {
 
   private final boolean skipIfNotEmpty;
   private final WrestlerRepository wrestlerRepository;
+  private final WrestlerAbilityRepository wrestlerAbilityRepository;
   private final WrestlerService wrestlerService;
   private final UniverseRepository universeRepository;
   private final WrestlerStateRepository wrestlerStateRepository;
@@ -67,6 +77,7 @@ public class WrestlerSync implements DataSyncContributor {
   public WrestlerSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
       final WrestlerRepository wrestlerRepository,
+      final WrestlerAbilityRepository wrestlerAbilityRepository,
       final WrestlerService wrestlerService,
       final UniverseRepository universeRepository,
       final WrestlerStateRepository wrestlerStateRepository,
@@ -76,6 +87,7 @@ public class WrestlerSync implements DataSyncContributor {
       final ObjectMapper objectMapper) {
     this.skipIfNotEmpty = skipIfNotEmpty;
     this.wrestlerRepository = wrestlerRepository;
+    this.wrestlerAbilityRepository = wrestlerAbilityRepository;
     this.wrestlerService = wrestlerService;
     this.universeRepository = universeRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
@@ -91,7 +103,7 @@ public class WrestlerSync implements DataSyncContributor {
       return;
     }
     try {
-      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers*.json");
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers/*.json");
       Universe universe =
           universeRepository.findAll().stream()
               .findFirst()
@@ -211,7 +223,7 @@ public class WrestlerSync implements DataSyncContributor {
               }
 
               if (existing.getActive() == null) {
-                existing.setActive(true);
+                existing.setActive(!Boolean.FALSE.equals(w.getActive()));
                 changed = true;
               }
               if (existing.getIsPlayer() == null) {
@@ -239,7 +251,7 @@ public class WrestlerSync implements DataSyncContributor {
               newWrestler.setLowStamina(w.getLowStamina());
               newWrestler.setDescription(w.getDescription());
               newWrestler.setGender(w.getGender());
-              newWrestler.setActive(true);
+              newWrestler.setActive(!Boolean.FALSE.equals(w.getActive()));
               newWrestler.setIsPlayer(false);
               newWrestler.setImageUrl(w.getImageUrl());
               newWrestler.setHeritageTag(w.getHeritageTag());
@@ -295,6 +307,7 @@ public class WrestlerSync implements DataSyncContributor {
 
           toSaveBulk.forEach(saved -> wrestlersByName.put(saved.getName(), saved));
 
+          List<WrestlerAbilityDTO> universalAbilities = loadUniversalAbilities();
           for (Wrestler wrestler : allWrestlers) {
             WrestlerImportDTO w = dtoMap.get(wrestler.getName());
             WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
@@ -326,6 +339,15 @@ public class WrestlerSync implements DataSyncContributor {
             if (stateChanged) {
               wrestlerStateRepository.save(state);
             }
+
+            // Merge: universal first, wrestler-specific overrides by name
+            Map<String, WrestlerAbilityDTO> merged = new LinkedHashMap<>();
+            universalAbilities.forEach(a -> merged.put(a.getName(), a));
+            w.getAbilities().forEach(a -> merged.put(a.getName(), a));
+            List<WrestlerAbilityDTO> allAbilities = new ArrayList<>(merged.values());
+            if (!allAbilities.isEmpty()) {
+              syncAbilities(wrestler, allAbilities);
+            }
           }
         } catch (IOException e) {
           log.error("Error loading wrestlers from file", e);
@@ -335,5 +357,86 @@ public class WrestlerSync implements DataSyncContributor {
       log.error("Error resolving wrestler resources", e);
     }
     wrestlerService.evictWrestlerCache();
+  }
+
+  private List<WrestlerAbilityDTO> loadUniversalAbilities() {
+    try {
+      Resource[] resources =
+          resourcePatternResolver.getResources("classpath*:wrestler_abilities_universal.json");
+      for (Resource r : resources) {
+        if (r.exists()) {
+          return objectMapper.readValue(r.getInputStream(), new TypeReference<>() {});
+        }
+      }
+    } catch (IOException e) {
+      log.warn("Could not load universal wrestler abilities", e);
+    }
+    return List.of();
+  }
+
+  private void syncAbilities(final Wrestler wrestler, final List<WrestlerAbilityDTO> dtoAbilities) {
+    Map<String, WrestlerAbility> existingByName =
+        wrestlerAbilityRepository.findByWrestler(wrestler).stream()
+            .collect(Collectors.toMap(WrestlerAbility::getName, a -> a, (a, b) -> a));
+
+    Set<String> dtoNames = new HashSet<>();
+    for (WrestlerAbilityDTO dto : dtoAbilities) {
+      dtoNames.add(dto.getName());
+      WrestlerAbility ability = existingByName.getOrDefault(dto.getName(), new WrestlerAbility());
+      boolean isNew = ability.getId() == null;
+
+      ability.setWrestler(wrestler);
+      ability.setName(dto.getName());
+      ability.setDescription(dto.getDescription());
+      ability.setDefault(dto.isDefault());
+      ability.setUnlockCondition(dto.getUnlockCondition());
+      ability.setSwapCondition(dto.getSwapCondition());
+      ability.setCostScript(dto.getCostScript());
+      ability.setEffectScript(dto.getEffectScript());
+      ability.setMaxUses(dto.getMaxUses());
+
+      if (dto.getType() != null) {
+        try {
+          ability.setAbilityType(AbilityType.valueOf(dto.getType().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+          log.warn(
+              "Unknown ability type '{}' for wrestler '{}'", dto.getType(), wrestler.getName());
+          ability.setAbilityType(AbilityType.ALWAYS_ON);
+        }
+      }
+
+      if (dto.getCategory() != null) {
+        try {
+          ability.setCategory(AbilityCategory.valueOf(dto.getCategory().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+          log.warn(
+              "Unknown ability category '{}' for wrestler '{}'",
+              dto.getCategory(),
+              wrestler.getName());
+        }
+      }
+
+      if (dto.getTiming() != null) {
+        try {
+          ability.setTiming(AbilityTiming.valueOf(dto.getTiming().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+          log.warn(
+              "Unknown ability timing '{}' for wrestler '{}'", dto.getTiming(), wrestler.getName());
+        }
+      }
+
+      if (isNew) {
+        log.debug("Adding ability '{}' to wrestler '{}'", dto.getName(), wrestler.getName());
+      }
+      wrestlerAbilityRepository.save(ability);
+    }
+
+    for (Map.Entry<String, WrestlerAbility> entry : existingByName.entrySet()) {
+      if (!dtoNames.contains(entry.getKey())) {
+        log.debug(
+            "Removing stale ability '{}' from wrestler '{}'", entry.getKey(), wrestler.getName());
+        wrestlerAbilityRepository.delete(entry.getValue());
+      }
+    }
   }
 }

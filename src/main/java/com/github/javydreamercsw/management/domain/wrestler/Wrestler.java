@@ -211,6 +211,15 @@ public class Wrestler extends AbstractEntity<Long> {
   @Builder.Default
   private Set<WrestlerState> wrestlerStates = new LinkedHashSet<>();
 
+  @OneToMany(
+      mappedBy = "wrestler",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Builder.Default
+  private List<WrestlerAbility> abilities = new ArrayList<>();
+
   @JsonIgnore
   public java.util.Optional<WrestlerState> getState(final Long universeId) {
     if (universeId == null) {

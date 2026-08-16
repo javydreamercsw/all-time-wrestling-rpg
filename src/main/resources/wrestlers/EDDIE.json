@@ -1,0 +1,50 @@
+[ {
+  "name": "Eddie Guerrero",
+  "alignment": "FACE",
+  "deckSize": 16,
+  "startingHealth": 15,
+  "lowHealth": 4,
+  "startingStamina": 16,
+  "lowStamina": 3,
+  "drive": 2,
+  "resilience": 2,
+  "charisma": 3,
+  "brawl": 1,
+  "heritageTag": "Mexico",
+  "description": "Eddie Guerrero is one of the most beloved wrestlers in history. His name is synonymous with passion, charisma, and great wrestling, a fact that made him a world champion and one of the biggest superstars of his generation. But his legacy went beyond titles; he was a pioneer, an innovator, and a trailblazer who left an indelible mark on professional wrestling.\n\nHailing from the legendary Guerrero family, Eddie was always destined for greatness. Throughout his 20-year career, he worked hard to overcome stereotypes and carve out an incredible legacy that spanned the world. In the ring, Eddie was highly versatile. He could fly like a luchador or match the technical abilities of the very best technicians of his age. But what made him a fan favorite was his talent to outthink his opponent, bend a few rules, and win at all costs in the most entertaining and endearing fashion. No body could cheat or lie like Guerrero, who won his matches in the most ingenious and illegal ways.\n\nNow, resurrected 200+ years into the future and with the crowd firmly behind him, Eddie plans to lie, cheat, scheme and steal his way to winning the All-Time Championships and cementing himself as the greatest Mexican wrestler of all time.",
+  "gender": "MALE",
+  "expansion_code": "EDDIE",
+  "abilities": [ {
+    "name": "Reversal",
+    "description": "Spend -2 [[stamina]] to gain the initiative, deal -1 [[health]] to your opponent, then gain +2 [[momentum]] and 1 scheme token.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "costScript": "wrestler.stamina -= 2",
+    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 2; wrestler.schemeTokens += 1"
+  }, {
+    "name": "Scheme",
+    "description": "Add a scheme token (cube) anytime you take damage or lose the initiative, gaining 3 [[stamina]] or drawing 1 [[card]]. You may trigger any of the 3 Eddie scheme [[card]]s; perform a Referee Check when you do.",
+    "type": "CONDITIONAL",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'DAMAGE_TAKEN' || event == 'INITIATIVE_LOST'",
+    "default": true,
+    "effectScript": "wrestler.schemeTokens += 1"
+  }, {
+    "name": "Amigo",
+    "description": "After a successful Suplex, your opponent rolls 2 dice. If no 6s are rolled, you may play another Suplex from hand at 0 [[stamina]] cost — it cannot be defended against. If it succeeds: +2 [[stamina]], +1 [[health]], and 1 scheme token.",
+    "type": "CONDITIONAL",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'SUPLEX_SUCCESS'",
+    "default": true
+  }, {
+    "name": "Latino Fire",
+    "description": "Gain +2 [[stamina]]. Your opponent must discard 1 [[card]] or lose 3 [[stamina]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": true,
+    "effectScript": "wrestler.stamina += 2; opponent.mustChoose('DISCARD_CARD', 'LOSE_3_STAMINA')"
+  } ]
+} ]

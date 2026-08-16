@@ -795,6 +795,13 @@
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('eddie') && (w.consecutiveWins ?: 0) >= 5 }"
 }, {
+  "key": "EDDIE_GUERRERO_LIE_CHEAT_STEAL",
+  "name": "Lie, Cheat, Steal",
+  "description": "Have Eddie Guerrero win a match after activating his Scheme ability",
+  "xpValue": 750,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "(isWinner ?: false) && participant?.name?.toLowerCase()?.contains('eddie') && ((abilitiesUsed?.get('Scheme') ?: 0) > 0)"
+}, {
   "key": "PILLMAN_LOOSE_CANNON",
   "name": "Loose Cannon",
   "description": "Have Brian Pillman win a championship match with dominant momentum",
@@ -1557,4 +1564,11 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('andr') && w.reigns?.any { r -> r.currentReign && java.time.Duration.between(r.startDate, gameDate).toDays() >= 60 } }"
+}, {
+  "key": "OMZ_DEADLY_COMBAT_CHAMPION",
+  "name": "Deadly Combat Champion",
+  "description": "Win the Deadly Combat tournament 5 times with OMZ",
+  "xpValue": 1000,
+  "category": "SPECIAL_EVENT",
+  "unlockCondition": "binding.hasVariable('deadlyCombatWins') && deadlyCombatWins >= 5"
 } ]

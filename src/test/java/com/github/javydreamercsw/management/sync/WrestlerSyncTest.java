@@ -51,6 +51,11 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 class WrestlerSyncTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository
+      wrestlerAbilityRepository;
+
   @Mock private WrestlerService wrestlerService;
   @Mock private UniverseRepository universeRepository;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
@@ -75,6 +80,7 @@ class WrestlerSyncTest {
         new WrestlerSync(
             false,
             wrestlerRepository,
+            wrestlerAbilityRepository,
             wrestlerService,
             universeRepository,
             wrestlerStateRepository,
@@ -101,6 +107,7 @@ class WrestlerSyncTest {
         new WrestlerSync(
             true,
             wrestlerRepository,
+            wrestlerAbilityRepository,
             wrestlerService,
             universeRepository,
             wrestlerStateRepository,
