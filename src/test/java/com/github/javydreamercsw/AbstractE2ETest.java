@@ -125,11 +125,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
               accountRepository.save(a);
             });
 
-    if (accountRepository.findAll().stream()
-        .noneMatch(a -> getUsername().equals(a.getUsername()))) {
-      log.warn("Test user '{}' not found — re-creating account", getUsername());
-      createTestAccount(getUsername(), getPassword(), RoleName.ADMIN);
-    }
+    RoleName testRole = getTestRole();
+    accountRepository
+        .findByUsername(getUsername())
+        .ifPresentOrElse(
+            account -> {
+              // Cleanup can leave a default account with a stale password, lockout state, or role.
+              // Repair all login state before the browser session is established.
+              account.setPassword(passwordEncoder.encode(getPassword()));
+              account.setRoles(java.util.Set.of(roleRepository.findByName(testRole).orElseThrow()));
+              account.resetFailedAttempts();
+              accountRepository.saveAndFlush(account);
+            },
+            () -> {
+              log.warn("Test user '{}' not found — re-creating account", getUsername());
+              createTestAccount(getUsername(), getPassword(), testRole);
+            });
 
     if (!appReady) {
       WebDriverManager.chromedriver().setup();
@@ -582,6 +593,15 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   protected String getPassword() {
     return "admin123";
+  }
+
+  protected RoleName getTestRole() {
+    return switch (getUsername()) {
+      case "player" -> RoleName.PLAYER;
+      case "booker" -> RoleName.BOOKER;
+      case "viewer" -> RoleName.VIEWER;
+      default -> RoleName.ADMIN;
+    };
   }
 
   protected void click(@NonNull final String tagName, @NonNull final String text) {
