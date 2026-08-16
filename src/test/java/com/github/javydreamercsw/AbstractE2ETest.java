@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.github.javydreamercsw.base.AccountInitializer;
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
@@ -79,6 +80,7 @@ import org.springframework.test.context.ActiveProfiles;
 public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @Autowired protected ObjectMapper objectMapper;
+  @Autowired private AccountInitializer accountInitializer;
 
   protected static WebDriver driver;
   private static boolean appReady = false;
@@ -123,6 +125,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
               a.resetFailedAttempts();
               accountRepository.save(a);
             });
+
+    if (accountRepository.findAll().stream()
+        .noneMatch(a -> getUsername().equals(a.getUsername()))) {
+      log.warn("Test user '{}' not found — re-initializing accounts", getUsername());
+      accountInitializer.init();
+    }
 
     if (!appReady) {
       WebDriverManager.chromedriver().setup();

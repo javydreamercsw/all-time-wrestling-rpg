@@ -51,6 +51,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testNavigateToDataTransferView() {
     navigateTo("data-transfer");
+    waitForVaadinClientToLoad();
     WebElement dataTransferWizard = waitForVaadinElement(driver, By.id("data-transfer-wizard"));
     assertNotNull(dataTransferWizard);
   }
@@ -111,6 +112,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
     System.setProperty("simulateFailure", "false");
     navigateTo("data-transfer");
+    waitForVaadinClientToLoad();
     waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
@@ -303,6 +305,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testBackButton() {
     navigateTo("data-transfer"); // Wait for page to fully load
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton); // To Connection Config
@@ -324,6 +327,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testDataTransferWithNonBlankPassword() {
     navigateTo("data-transfer"); // Wait for page to fully load
+    waitForVaadinClientToLoad();
     waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
