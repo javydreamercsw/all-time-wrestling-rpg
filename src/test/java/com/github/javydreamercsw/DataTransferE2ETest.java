@@ -324,6 +324,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testDataTransferWithNonBlankPassword() {
     navigateTo("data-transfer"); // Wait for page to fully load
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);

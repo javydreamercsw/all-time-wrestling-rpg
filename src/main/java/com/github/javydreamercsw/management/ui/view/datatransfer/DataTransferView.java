@@ -36,6 +36,8 @@ import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -53,7 +55,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RolesAllowed(ADMIN_ROLE)
 @UIScope
 @Slf4j
-public class DataTransferView extends Main {
+public class DataTransferView extends Main implements BeforeEnterObserver {
 
   private final DataMigrationService migrationService;
   private ComboBox<String> sourceDbType;
@@ -84,6 +86,12 @@ public class DataTransferView extends Main {
     this.migrationService = migrationService;
     setId("data-transfer-wizard");
     initializeUI();
+    updateStep();
+  }
+
+  @Override
+  public void beforeEnter(BeforeEnterEvent event) {
+    currentStep = 0;
     updateStep();
   }
 
