@@ -117,7 +117,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     accountRepository.findAll().stream()
-        .filter(a -> a.getFailedLoginAttempts() > 0)
+        .filter(a -> a.getFailedLoginAttempts() > 0 || !a.isAccountNonLocked())
         .forEach(
             a -> {
               a.resetFailedAttempts();
@@ -419,6 +419,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     System.clearProperty("simulateFailure");
+    System.clearProperty("simulateRollbackFailure");
   }
 
   protected boolean isHeadless() {

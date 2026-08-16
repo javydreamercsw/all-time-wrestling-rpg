@@ -195,6 +195,7 @@ public class DatabaseCleaner implements DatabaseCleanup {
   private void breakCircularDependencies() {
     // Order matters here to handle foreign key constraints correctly
     String[] manualTables = {
+      "season_award",
       "draft_pick",
       "match_fulfillment",
       "campaign_state",

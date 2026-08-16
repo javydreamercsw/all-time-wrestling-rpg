@@ -111,6 +111,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
     System.setProperty("simulateFailure", "false");
     navigateTo("data-transfer");
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     captureCaption(
@@ -200,6 +201,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testRollbackMechanism() {
     System.setProperty("simulateFailure", "true");
     navigateTo("data-transfer");
+    waitForVaadinClientToLoad();
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
@@ -286,6 +288,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testCancelButton() {
     navigateTo("data-transfer");
+    waitForVaadinClientToLoad();
 
     WebElement cancelButton = waitForVaadinElement(driver, By.id("cancel-button"));
     clickElement(cancelButton);
