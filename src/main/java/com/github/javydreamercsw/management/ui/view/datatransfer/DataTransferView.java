@@ -39,6 +39,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.annotation.UIScope;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.sql.SQLException;
@@ -50,6 +51,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @PageTitle("Data Transfer")
 @Menu(order = 11, icon = "vaadin:exchange", title = "Data Transfer")
 @RolesAllowed(ADMIN_ROLE)
+@UIScope
 @Slf4j
 public class DataTransferView extends Main {
 
