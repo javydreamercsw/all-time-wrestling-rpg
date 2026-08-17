@@ -19,7 +19,7 @@
     "description": "When playing an AERIAL attack [[card]] with base damage of 2, you may spend -1 additional [[stamina]]. If successful: deal +1 extra damage and gain +1 [[momentum]]. If unsuccessful: suffer -1 [[health]].",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_PLAY' && match.attackCardType == 'AERIAL' && match.attackCardBaseDamage == 2",
     "effectScript": "match.optionalExtraStaminaCost(wrestler, 1, 'match.attackDamageBonus += 1; wrestler.momentum += 1', 'wrestler.health -= 1')"
   }, {
@@ -28,7 +28,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackType == 'STRIKE'",
     "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 1; wrestler.health += 1"
@@ -38,7 +38,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' && (match.attackCardType == 'STRIKE' || match.attackCardType == 'HURRICANRANA')",
     "effectScript": "match.optionalExtraStaminaCost(wrestler, 1, 'match.attackDamageBonus += 2', null)"
   } ]

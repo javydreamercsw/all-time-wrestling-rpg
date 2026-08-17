@@ -29,7 +29,7 @@
     "description": "When you taunt or recover, gain an additional +1 [[momentum]].",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'TAUNT' || event == 'RECOVER'",
     "effectScript": "wrestler.momentum += 1"
   }, {
@@ -38,7 +38,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && (match.attackType == 'THROW' || match.attackType == 'GRAPPLE')",
     "effectScript": "wrestler.gainInitiative(); wrestler.nextAttack.rollModifier += 1; wrestler.nextAttack.staminaBonus += 1"
@@ -48,9 +48,17 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackType == 'STRIKE'",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1; wrestler.stamina += 1; wrestler.nextAttack.drawCard(1)"
+  }, {
+    "name": "Deathmatch King",
+    "description": "Trigger at anytime. Gain +5 [[health]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.health += 5"
   } ]
 } ]

@@ -62,7 +62,7 @@
     "description": "Spend -1 [[stamina]] and roll one die. On a 6, gain the initiative.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "if (match.rollDie(6) >= 6) { wrestler.gainInitiative(); }"
@@ -72,7 +72,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 2",
     "effectScript": "wrestler.gainInitiative(); match.opponentCounterChallenge('REVERSAL', 5, 'opponent.health -= 2; wrestler.momentum += 2; match.triggerPin(wrestler)')"
@@ -82,10 +82,34 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "OFFENSE",
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardBaseDamage >= 2",
     "effectScript": "wrestler.stamina += 1; wrestler.health += 2; wrestler.momentum += 1"
+  }, {
+    "name": "2.99999",
+    "description": "Trigger while being pinned, before your final kickout roll. Gain +1 [[health]]. Use 1 die (instead of 2) during your final kickout attempt.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.health += 1; match.setKickoutDie(1)"
+  }, {
+    "name": "Quick as a Cat",
+    "description": "Trigger when defending against an AERIAL attack, before an attack roll. Gain the initiative. You may choose to play a THROW card. If successful, deal an additional -2 [[health]] and gain an additional +2 [[momentum]]",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "blockAttack(); wrestler.gainInitiative(); match.forceAttackCardType('THROW'); match.onAttackOutcome('opponent.health -= 2; wrestler.momentum += 2', '')"
+  }, {
+    "name": "Locked In",
+    "description": "Trigger while pinning your oponent using 'Ankle Lock' or 'Reversal into Ankle lock'. +1 [[card]] -2 [[health]] +2 [[momentum]]. Opponent suffers -1 [[kick-out]]",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.drawCard(1); opponent.health -= 2; wrestler.momentum += 2; opponent.kickoutRollBonus -= 1"
   } ]
 }, {
   "name": "Oda Tsurugi",
@@ -108,7 +132,7 @@
     "description": "After each successful Grapple attack, opponent suffers -1 [[stamina]].",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'GRAPPLE'",
     "effectScript": "opponent.stamina -= 1"
   }, {
@@ -117,7 +141,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "effectScript": "wrestler.health += 3; wrestler.stamina += 1"
   }, {
     "name": "Cyborg",
@@ -125,7 +149,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "OFFENSE",
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'STRIKE'",
     "effectScript": "opponent.health -= 2"
@@ -178,6 +202,29 @@
     "category": "ACTION",
     "default": true,
     "effectScript": "wrestler.stamina += 3; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
+  }, {
+    "name": "Angry Giant",
+    "description": "Activate at any time by placing a token on ability. All your future attacks gain -1 [[health]] but suffer -1 [[stamina]]. To deactivate ability at any time, discard 2 cards from your hand and remove te token.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "effectScript": "wrestler.abilityTokens['Angry Giant'] = (wrestler.abilityTokens['Angry Giant'] ?: 0) + 1; match.futureAttackDamageBonus += 1; match.futureAttackStaminaCost += 1"
+  }, {
+    "name": "500+ Pounds",
+    "description": "Trigger when pinning an opponent. -1 [[stamina]]: opponent suffers -1 [[roll]]. If opponent kicks out, he gains +2 [[momentum]].",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "unlockCondition": "event == 'KICKOUT_ROLL'",
+    "default": false,
+    "effectScript": "opponent.targetRollModifier -= 1; match.onPinFailure('opponent.momentum += 2')"
+  }, {
+    "name": "Immovable Object",
+    "description": "Trigger after your opponent successfully executes AERIAL or STRIKE attack. Reduce damage suffered by 3.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "match.reduceDamage(3)"
   } ]
 }, {
   "name": "Randy Savage",
@@ -197,7 +244,7 @@
   "expansion_code": "BASE_GAME",
   "abilities": [ {
     "name": "Valet Distraction",
-    "description": "Always has one extra kick-out roll when pinned.",
+    "description": "Always has one extra [[kick-out]] roll when pinned.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "default": true,
@@ -221,6 +268,20 @@
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); if (!opponent.countersWithCard() && opponent.roll() < 5) { opponent.health -= 3; wrestler.stamina += 2; } else { opponent.gainInitiative(); }"
+  }, {
+    "name": "Piledriver the Referee",
+    "description": "Trigger during the offensive or defensive ability window by placing a token on this ability. The next time your opponent triggers [[pin]], ignore the [[pin]]. Then, discard this token. If you attempta [[pin]], discard the token and continue with your pinfall attempt.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "default": false,
+    "effectScript": "wrestler.abilityTokens['Piledriver the Referee'] = (wrestler.abilityTokens['Piledriver the Referee'] ?: 0) + 1; match.ignoreNextPin(wrestler)"
+  }, {
+    "name": "Injure",
+    "description": "Trigger during the offensive ability window after a successful [[signature]] AERIAL attack. Opponent suffers: -2 [[card]] -3 [[health]] -2 [[stamina]]",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "default": false,
+    "effectScript": "opponent.discardCards(2, 'ANY'); opponent.health -= 3; opponent.stamina -= 2"
   } ]
 }, {
   "name": "Jax Felix",
@@ -243,7 +304,7 @@
     "description": "Your starting and maximum hand size is 6 [[card]]s.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'MATCH_START'",
     "effectScript": "wrestler.maxHandSize = 6"
   }, {
@@ -252,7 +313,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "effectScript": "match.retrieveFromDiscard(wrestler, 1, 'ANY')"
   }, {
     "name": "Land On Feet",
@@ -260,7 +321,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackType == 'THROW' && match.damageAmount <= 3",
     "effectScript": "match.cancelDamage(); wrestler.gainInitiative(); wrestler.momentum += 2"
@@ -283,19 +344,19 @@
   "expansion_code": "BASE_GAME",
   "abilities": [ {
     "name": "Tank",
-    "description": "Opponent's [[finisher]] and Signature attacks deal 1 less [[health]] damage to you.",
+    "description": "Opponent's [[finisher]] and [[signature]] attacks deal 1 less [[health]] damage to you.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_INCOMING' && (match.attackCardType == 'FINISHER' || match.attackCardType == 'SIGNATURE')",
     "effectScript": "match.reduceDamage(1)"
   }, {
     "name": "Unbreakable Will",
-    "description": "Trigger before your final kick-out roll. Automatically kick out of a [[pin]]. In a Last Man Standing or Cage match, gain +1 to your kick-out roll instead. Can be used once.",
+    "description": "Trigger before your final [[kick-out]] roll. Automatically kick out of a [[pin]]. In a Last Man Standing or Cage match, gain +1 to your [[kick-out]] roll instead. Can be used once.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'KICKOUT_ROLL'",
     "effectScript": "if (match.matchType == 'LAST_MAN_STANDING' || match.matchType == 'CAGE') { wrestler.kickoutRollBonus += 1 } else { match.autoKickout() }"
@@ -305,7 +366,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "effectScript": "wrestler.stamina += 2; wrestler.drawCard(1)"
   } ]
 }, {
@@ -329,7 +390,7 @@
     "description": "After a successful attack of 2 or more damage, spend -1 [[stamina]] to deal -1 additional [[health]] to opponent.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.damageAmount >= 2",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "opponent.health -= 1"
@@ -339,7 +400,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_ROLL' && (match.attackType == 'GRAPPLE' || match.attackType == 'THROW')",
     "effectScript": "wrestler.signatureFinisherTargetModifier -= 1"
   }, {
@@ -348,9 +409,25 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); match.opponentCounterChallenge('GRAPPLE_OR_ROLL_4', 'wrestler.health += 1; wrestler.momentum += 1; match.triggerPin(wrestler)')"
+  }, {
+    "name": "Dazed",
+    "description": "Trigger after playing an attack card. Your opponent cannot defend against this attack.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "match.nextAttackIsUndefendable = true"
+  }, {
+    "name": "Nothing Beats Power",
+    "description": "Increase or reduce the result of any die roll by 2.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "match.nextRollModifier += 2"
   } ]
 }, {
   "name": "OMZ",
@@ -373,7 +450,7 @@
     "description": "Every successful Kick or Knee attack reduces the opponent's [[stamina]] by 1.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' && (match.attackCardType == 'KICK' || match.attackCardType == 'KNEE')",
     "effectScript": "opponent.stamina -= 1"
   }, {
@@ -382,7 +459,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'AERIAL'",
     "costScript": "wrestler.discardCards(1, 'KICK_OR_KNEE')",
@@ -393,8 +470,15 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'KICKOUT' && match.lastMove == 'Siberian Winter'",
     "effectScript": "match.triggerPin(wrestler)"
+  }, {
+    "name": "Shine",
+    "description": "Trigger after dealing 2 or more damage. Spend -1 [[stamina]] to deal -1 [[health]]",
+    "type": "ALWAYS_ON",
+    "category": "SIGNATURE",
+    "default": false,
+    "effectScript": "wrestler.stamina -= 1; opponent.health -= 1"
   } ]
 } ]

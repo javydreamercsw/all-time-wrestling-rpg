@@ -71,7 +71,7 @@
     "description": "Whenever you successfully execute a combo using two different ATTACK categories, you may either deal -2 [[health]] extra or gain +2 [[momentum]] extra.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'COMBO_SUCCESS' && match.comboCategoriesUsed >= 2",
     "effectScript": "match.offerChoice(wrestler, [{effect: 'opponent.health -= 2'}, {effect: 'wrestler.momentum += 2'}])"
   }, {
@@ -80,7 +80,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 2,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.incomingDamage >= 3",
     "costScript": "wrestler.discardCards(1, match.attackCardType)",
@@ -91,7 +91,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "OFFENSE",
     "unlockCondition": "event == 'ATTACK_SUCCESS' && (match.attackCardType == 'STRIKE' || match.attackCardType == 'THROW')",
     "costScript": "wrestler.stamina -= 1",
@@ -118,7 +118,7 @@
     "description": "When Taunting, gain an additional +1 [[momentum]]. If your [[momentum]] is 5 or higher, you may instead gain -1 target roll on your next attack.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'TAUNT'",
     "effectScript": "if (wrestler.momentum >= 5) { match.playerChoice('wrestler.momentum += 1', 'wrestler.nextAttack.targetModifier -= 1') } else { wrestler.momentum += 1 }"
   }, {
@@ -127,7 +127,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1"
   }, {
@@ -136,7 +136,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' && (match.attackCardType == 'KICK' || match.attackCardType == 'KNEE')",
     "effectScript": "opponent.health -= Math.floor(match.rollDie(1) / 2)"
   } ]
@@ -197,7 +197,7 @@
     "description": "After triggering a [[pin]], spend -2 [[stamina]]. Your opponent adds 1 to the total of each kickout roll (2 dice must beat current HP — higher total makes it harder to kick out).",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "timing": "PINNED",
     "unlockCondition": "event == 'PIN_TRIGGERED'",
     "costScript": "wrestler.stamina -= 2",
@@ -208,7 +208,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "effectScript": "wrestler.gainInitiative(); match.nextAttackIsUndefendable = true"
   }, {
     "name": "Behind The Ref",
@@ -216,7 +216,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'GRAPPLE_SUCCESS'",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "opponent.health -= 1; wrestler.stamina += 1"
@@ -242,7 +242,7 @@
     "description": "Whenever you deal or suffer 2 or more damage in a single hit, gain 1 Rage Token.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'DAMAGE_DEALT' && match.damageAmount >= 2 || event == 'DAMAGE_TAKEN' && match.damageAmount >= 2",
     "effectScript": "wrestler.abilityTokens['Beast Rage'] = (wrestler.abilityTokens['Beast Rage'] ?: 0) + 1"
   }, {
@@ -250,7 +250,7 @@
     "description": "After a successful STRIKE or THROW, spend Rage Tokens for bonus damage and [[momentum]]. 2 tokens: deal -1, gain +1 [[momentum]]. 4 tokens: deal -2, gain +2 [[momentum]]. 6 tokens: deal -4, gain +2 [[momentum]]. Player chooses tier.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'STRIKE_SUCCESS' || event == 'THROW_SUCCESS'",
     "effectScript": "match.spendAbilityTokensTiered(wrestler, 'Beast Rage', [[2, 'opponent.health -= 1; wrestler.momentum += 1'], [4, 'opponent.health -= 2; wrestler.momentum += 2'], [6, 'opponent.health -= 4; wrestler.momentum += 2']])"
   }, {
@@ -258,7 +258,7 @@
     "description": "Spend 4 Rage Tokens. Gain +2 [[health]] and +1 kickout roll.",
     "type": "ALWAYS_ON",
     "category": "SIGNATURE",
-    "default": false,
+    "default": true,
     "costScript": "wrestler.abilityTokens['Beast Rage'] -= 4",
     "unlockCondition": "wrestler.abilityTokens['Beast Rage'] >= 4",
     "effectScript": "wrestler.health += 2; wrestler.kickoutRolls += 1"
@@ -284,7 +284,7 @@
     "description": "After each successful Aerial attack, gain 1 Lucha Token.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'AERIAL'",
     "effectScript": "wrestler.abilityTokens['Lucha'] = (wrestler.abilityTokens['Lucha'] || 0) + 1"
   }, {
@@ -293,7 +293,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "OFFENSE",
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'STRIKE'",
     "costScript": "wrestler.discardCards(1, 'STRIKE_OR_THROW')",
@@ -303,7 +303,7 @@
     "description": "After a successful attack, spend 1 Lucha Token to gain +1 [[momentum]]. When defending, spend 3 Lucha Tokens to block attacks dealing -3 [[health]] or less and gain the initiative.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' || (event == 'ATTACK_INCOMING' && match.incomingDamage <= 3)",
     "effectScript": "if (event == 'ATTACK_SUCCESS' && wrestler.abilityTokens['Lucha'] >= 1) { wrestler.abilityTokens['Lucha'] -= 1; wrestler.momentum += 1 } if (event == 'ATTACK_INCOMING' && match.incomingDamage <= 3 && wrestler.abilityTokens['Lucha'] >= 3) { wrestler.abilityTokens['Lucha'] -= 3; blockAttack(); wrestler.gainInitiative() }"
   } ]
@@ -329,16 +329,16 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1"
   }, {
     "name": "Fan Favorite",
-    "description": "Aerial attacks gain +1 [[momentum]] when you or your opponent are on a winning streak. Signature and [[finisher]] attacks always gain +2 [[momentum]].",
+    "description": "Aerial attacks gain +1 [[momentum]] when you or your opponent are on a winning streak. [[signature]] and [[finisher]] attacks always gain +2 [[momentum]].",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS'",
     "effectScript": "if (match.attackCardType == 'AERIAL' && (wrestler.onAWinningStreak || opponent.onAWinningStreak)) { wrestler.momentum += 1 } if (match.attackCardType == 'SIGNATURE' || match.attackCardType == 'FINISHER') { wrestler.momentum += 2 }"
   }, {
@@ -347,7 +347,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'GRAPPLE' && match.incomingDamage <= 3",
     "costScript": "wrestler.discardCards(1, 'GRAPPLE')",
@@ -358,7 +358,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING'",
     "costScript": "wrestler.discardCards(1, 'CUTTER')",

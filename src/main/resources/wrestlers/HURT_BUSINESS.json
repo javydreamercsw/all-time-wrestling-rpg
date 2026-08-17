@@ -45,7 +45,7 @@
     "effectScript": "blockThrowOrGrapple(); wrestler.gainInitiative(); wrestler.stamina += 2"
   }, {
     "name": "He Hurts People",
-    "description": "Trigger after a successful Hurt Lock or Spear. Hurt Lock: opponent gets one fewer kick-out roll attempt. Spear: deal an additional -3 [[health]].",
+    "description": "Trigger after a successful Hurt Lock or Spear. Hurt Lock: opponent gets one fewer [[kick-out]] roll attempt. Spear: deal an additional -3 [[health]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
@@ -83,7 +83,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 2"
@@ -92,7 +92,7 @@
     "description": "After each successful Suplex attack, gain 1 Suplex token. Spend 1 token to reduce the opponent's target roll by 1, or spend 1 token to deal -1 [[health]] after a successful roll.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'SUPLEX'",
     "effectScript": "wrestler.abilityTokens['Suplex of Hurt'] += 1; match.spendAbilityToken(wrestler, 'Suplex of Hurt', 1, 'opponent.targetRoll -= 1', 'BEFORE_ROLL'); match.spendAbilityToken(wrestler, 'Suplex of Hurt', 1, 'opponent.health -= 1', 'AFTER_SUCCESS')"
   }, {
@@ -101,7 +101,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'AERIAL'",
     "costScript": "wrestler.stamina -= 2; wrestler.discardCards(1, 'THROW')",
@@ -112,7 +112,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "OFFENSE",
     "costScript": "wrestler.stamina -= 2",
     "effectScript": "opponent.health -= 2; wrestler.momentum += 2"

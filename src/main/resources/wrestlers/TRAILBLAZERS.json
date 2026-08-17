@@ -15,41 +15,35 @@
   "gender": "MALE",
   "expansion_code": "TRAILBLAZERS",
   "abilities": [ {
-    "name": "Reversal",
-    "description": "Spend -2 [[stamina]] to gain the initiative, deal -1 [[health]] to opponent, and gain +2 [[momentum]].",
+    "name": "Loose Cannon",
+    "description": "Roll 2 dice. If sum >= 9 -> deal -1 [[health]] & gain +1 [[momentum]] and +1 Loose Cannon",
+    "type": "ALWAYS_ON",
+    "category": "SIGNATURE",
+    "default": true,
+    "effectScript": "if (match.rollDie(6) + match.rollDie(6) >= 9) { opponent.health -= 1; wrestler.momentum += 1; wrestler.abilityTokens['Loose Cannon'] = (wrestler.abilityTokens['Loose Cannon'] ?: 0) + 1 }"
+  }, {
+    "name": "Fake Injury",
+    "description": "Gain the initiative and -1 [[roll]] on your next attack.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
     "default": true,
-    "timing": "DEFENSE",
-    "costScript": "wrestler.stamina -= 2",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 2"
+    "effectScript": "wrestler.gainInitiative(); wrestler.nextAttack.rollModifier -= 1"
   }, {
-    "name": "Anti-Air",
-    "description": "Trigger when defending against an AERIAL attack. Gain the initiative, deal -2 [[health]] to opponent, and gain +2 [[momentum]].",
+    "name": "Unpredictable",
+    "description": "Add 1 token every time you trigger Loose Cannon. If you have 3 tokens: Opponents [[signature]] and [[finisher]] suffer +1 [[roll]].",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
-    "timing": "DEFENSE",
-    "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackType == 'AERIAL'",
-    "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2"
+    "default": true,
+    "effectScript": "wrestler.abilityTokens['Loose Cannon'] = (wrestler.abilityTokens['Loose Cannon'] ?: 0) + 1; if (wrestler.abilityTokens['Loose Cannon'] >= 3) { opponent.signatureRollModifier += 1; opponent.finisherRollModifier += 1 }"
   }, {
-    "name": "Heart",
-    "description": "Trigger at anytime. Gain +3 [[health]].",
+    "name": "Slap",
+    "description": "The opponent suffer -1 [[roll]]. If the opponent attack roll fails, gain a Loose Cannon.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
-    "maxUses": 1,
     "default": false,
-    "effectScript": "wrestler.health += 3"
-  }, {
-    "name": "Roll Up",
-    "description": "Gain the initiative and trigger a [[pin]] attempt. If the [[pin]] is unsuccessful, opponent gains the initiative.",
-    "type": "USES_LIMITED",
-    "category": "SIGNATURE",
-    "maxUses": 1,
-    "default": false,
-    "effectScript": "wrestler.gainInitiative(); match.triggerPin(wrestler, 'IF_FAIL: opponent.gainInitiative()')"
+    "effectScript": "opponent.targetRollModifier -= 1; match.onAttackFailure(\"wrestler.abilityTokens['Loose Cannon'] = (wrestler.abilityTokens['Loose Cannon'] ?: 0) + 1\")"
   } ]
 }, {
   "name": "Dynamite Kid",
@@ -90,6 +84,13 @@
     "default": true,
     "costScript": "wrestler.stamina -= 5",
     "effectScript": "wrestler.gainInitiative()"
+  }, {
+    "name": "Hard Hitting",
+    "description": "Trigger after dealing 2 or more damage. Deal -2 [[health]] & gain +1 [[momentum]]. Opponent returns 2 cards from their hand to their draw pile.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "default": false,
+    "effectScript": "opponent.health -= 2; wrestler.momentum += 1; opponent.returnCardsToDrawPile(2)"
   } ]
 }, {
   "name": "Johnny All Time",
@@ -155,7 +156,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 2",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 2"
@@ -165,7 +166,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'AERIAL'",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2"
@@ -175,16 +176,23 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "effectScript": "wrestler.health += 3"
   }, {
     "name": "Roll Up",
-    "description": "Gain the initiative and trigger a [[pin]] attempt. Opponent gains +1 to their kick-out roll. If the [[pin]] is unsuccessful, your opponent gains the initiative. Can be used once.",
+    "description": "Gain the initiative and trigger a [[pin]] attempt. Opponent gains +1 to their [[kick-out]] roll. If the [[pin]] is unsuccessful, your opponent gains the initiative. Can be used once.",
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "OFFENSE",
     "effectScript": "wrestler.gainInitiative(); match.triggerPin(wrestler, {opponentKickoutBonus: 1, onFailure: 'opponent.gainInitiative()'})"
+  }, {
+    "name": "Shine",
+    "description": "Gain the initiative.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "default": false,
+    "effectScript": "wrestler.gainInitiative"
   } ]
 } ]

@@ -39,6 +39,13 @@
     "category": "PASSIVE",
     "default": false,
     "effectScript": "match.preRollAbilityKeepsOffensiveWindow = true"
+  }, {
+    "name": "On a Roll",
+    "description": "If your momentum is 5 or higher, all STRIKES and AERIAL attacks deal an additional -1 [[health]].",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "effectScript": "if (wrestler.momentum >= 5 && (match.attackCardType == 'STRIKE' || match.attackCardType == 'AERIAL')) { match.attackDamageBonus += 1 }"
   } ]
 }, {
   "name": "Daemon",
@@ -80,6 +87,14 @@
     "maxUses": 1,
     "default": false,
     "effectScript": "wrestler.gainInitiative(); match.forceOpponentDiscard('ATTACK_CARD_TO_DECK', opponent)"
+  }, {
+    "name": "Arson (Weapon of Fire)",
+    "description": "Trigger when attackingusing any weapon card. The defender cannot block it (it can still be countered). If your attack is successful, deal an additional -3 [[health]] and gains an extra +3 [[momentum]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "match.currentAttackIsUndefendable = true; match.onAttackOutcome('opponent.health -= 3; wrestler.momentum += 3', '')"
   } ]
 }, {
   "name": "Raven",
@@ -134,6 +149,14 @@
     "maxUses": 1,
     "default": false,
     "effectScript": "match.drawFlockCard(wrestler)"
+  }, {
+    "name": "Mind Games",
+    "description": "Trigger after an opponent rolls an attack die. Reduce the result of the die roll by 1.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "match.opponentRollModifier -= 1"
   } ]
 }, {
   "name": "Sabu",
@@ -176,5 +199,13 @@
     "maxUses": 2,
     "default": false,
     "effectScript": "wrestler.health += 3"
+  }, {
+    "name": "Genocidal",
+    "description": "When attempting a devastating attack, trigger ability after your die roll. Target roll -1. If successful, deal an additional -2 [[health]].",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.nextAttack.targetModifier -= 1; match.onAttackOutcome('opponent.health -= 2', '')"
   } ]
 } ]

@@ -21,7 +21,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 1"
@@ -30,7 +30,7 @@
     "description": "Triggers when attacking. Play and resolve any number of cards totaling 5 or less damage as if they were a Rampaging Attack. Gain +4 [[momentum]]. Cannot attempt a [[pin]] this turn.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "timing": "OFFENSE",
     "unlockCondition": "event == 'ATTACK_START'",
     "effectScript": "match.playAsRampaging(5); wrestler.momentum += 4; match.noPinAllowed = true"
@@ -40,16 +40,23 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "effectScript": "wrestler.addAlly('Colonel Mustafa'); wrestler.addCardToDeck('Camel Clutch'); wrestler.replaceAbility('Onslaught', 'Patriot')"
   }, {
     "name": "G.I. Slaughter",
     "description": "Successful attacks with 3+ listed damage deal 1 additional [[health]] damage. Does not count towards the offensive ability window. Not triggered by Rampaging attacks.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardBaseDamage >= 3 && !match.isRampaging",
     "effectScript": "opponent.health -= 1; match.skipOffensiveAbilityWindow = true"
+  }, {
+    "name": "Patriot",
+    "description": "Gain +3 [[health]] and +2 [[momentum]]. Discard Colonel Mustafa.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "default": false,
+    "effectScript": "wrestler.health += 3; wrestler.momentum += 2; wrestler.removeAlly('Colonel Mustafa')"
   } ]
 }, {
   "name": "Gilgamesh",
@@ -108,7 +115,7 @@
     "description": "When receiving attacks, the opponent draws a Ring General [[card]] instead of rolling a die. The attack succeeds only if the [[card]]'s 'D' value is equal to or higher than the target number.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
-    "default": false,
+    "default": true,
     "timing": "DEFENSE",
     "unlockCondition": "event == 'ATTACK_INCOMING'",
     "effectScript": "match.replaceAttackRollWithRingGeneralCard()"
@@ -118,7 +125,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 2,
-    "default": false,
+    "default": true,
     "timing": "PINNED",
     "unlockCondition": "event == 'KICKOUT_ROLL'",
     "effectScript": "match.replaceKickoutRollWithRingGeneralCard(wrestler)"
@@ -128,7 +135,7 @@
     "type": "USES_LIMITED",
     "category": "SIGNATURE",
     "maxUses": 1,
-    "default": false,
+    "default": true,
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 3"
   } ]
@@ -155,7 +162,7 @@
     "unlockCondition": "event == 'ATTACK_SUCCESS' && match.attackCardType == 'HEADBUTT'",
     "effectScript": "wrestler.abilityTokens['Headbutts'] += 1; match.spendAbilityTokensTiered(wrestler, 'Headbutts', [{min:2, max:3, damage:1}, {min:4, max:4, damage:3}, {min:5, max:5, damage:4}])",
     "description": "Each successful Headbutt attack earns 1 Headbutt token. During your offensive window, spend tokens for bonus damage: 2–3 tokens → -1, 4 tokens → -3, 5 tokens → -4.",
-    "default": false
+    "default": true
   }, {
     "name": "Bad Dog",
     "type": "USES_LIMITED",
@@ -165,15 +172,22 @@
     "unlockCondition": "event == 'ATTACK_INCOMING' && match.attackCardType == 'STRIKE' && match.attackCardBaseDamage <= 2",
     "effectScript": "cancelDamage(); wrestler.gainInitiative(); wrestler.momentum += 1",
     "description": "Trigger when defending against a Strike of -1 or -2 damage. Cancel the damage, gain the initiative, and +1 [[momentum]]. Can be used once.",
-    "default": false
+    "default": true
   }, {
     "name": "Dance",
     "type": "USES_LIMITED",
     "maxUses": 1,
     "effectScript": "wrestler.momentum += 2; retrieveFromDiscard('HEADBUTT')",
     "description": "Gain +2 [[momentum]] and retrieve a Headbutt [[card]] from your discard pile. Can be used once.",
-    "default": false,
+    "default": true,
     "category": "SIGNATURE"
+  }, {
+    "name": "Thump",
+    "description": "The opponent suffer -1 [[roll]]. If the opponent attack roll fails, gain a Loose Cannon.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "default": false,
+    "effectScript": "opponent.targetRollModifier -= 1; match.onAttackFailure(\"wrestler.abilityTokens['Loose Cannon'] = (wrestler.abilityTokens['Loose Cannon'] ?: 0) + 1\")"
   } ]
 }, {
   "name": "Kamala",

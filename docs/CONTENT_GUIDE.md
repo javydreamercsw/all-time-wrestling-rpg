@@ -96,6 +96,138 @@ The `DataInitializer` automatically scans all `*.json` files in this directory.
 
 ## Wrestlers
 
+### Wrestler abilities and forward-compatible effect scripts
+
+Wrestler-specific abilities are defined in the expansion JSON files under
+`src/main/resources/wrestlers/`. Each ability may include an `effectScript`
+field. These scripts are currently **content metadata for display and future
+use**; wrestler abilities are not executed by the match engine yet.
+
+Use the match-oriented context names consistently when describing a future
+effect:
+
+- `wrestler` — the ability owner
+- `opponent` — the opposing wrestler
+- `match` — match-level state and future helper methods
+- `event` — the lifecycle event that triggers the ability
+
+Use the existing style, for example:
+
+```json
+{
+  "name": "Example Reversal",
+  "description": "Gain the initiative and deal -1 [[health]].",
+  "type": "USES_LIMITED",
+  "category": "SIGNATURE",
+  "timing": "DEFENSE",
+  "maxUses": 1,
+  "effectScript": "wrestler.gainInitiative(); opponent.health -= 1"
+}
+```
+
+### Defined future execution semantics
+
+The scripts are display-only today, but their behavior is defined now so a
+future match engine can implement them without changing the content contract.
+The engine must evaluate an ability in a match-scoped context containing
+`wrestler`, `opponent`, `match`, and `event`. Resource changes are clamped by
+the normal match rules; an ability cannot create negative health or stamina,
+and a spent use is consumed only after its script completes successfully.
+
+#### Lifecycle events
+
+The engine should expose these event names to `unlockCondition` and script
+execution:
+
+|          Event           |                        When it fires                        |
+|--------------------------|-------------------------------------------------------------|
+| `ABILITY_WINDOW_OFFENSE` | The wrestler's offensive ability window opens.              |
+| `ABILITY_WINDOW_DEFENSE` | The wrestler's defensive ability window opens.              |
+| `ATTACK_PLAYED`          | An attack card is committed, before its roll.               |
+| `ATTACK_ROLL_RESOLVED`   | The attack die result is available, before success effects. |
+| `ATTACK_SUCCESS`         | The attack succeeds and damage is known.                    |
+| `ATTACK_FAILURE`         | The attack fails.                                           |
+| `DAMAGE_RECEIVED`        | Damage is applied to the defending wrestler.                |
+| `PIN_ATTEMPT`            | A pin attempt is declared.                                  |
+| `KICKOUT_ATTEMPT`        | One kick-out roll is about to be made.                      |
+| `KICKOUT_SUCCESS`        | The defender successfully kicks out.                        |
+| `KICKOUT_FAILURE`        | The defender fails a kick-out roll.                         |
+| `COMBO_SUCCESS`          | A combo resolves successfully.                              |
+| `MATCH_END`              | The match reaches a terminal outcome.                       |
+
+An event is emitted once per occurrence. In particular, `KICKOUT_ATTEMPT` and
+`KICKOUT_SUCCESS` are per roll, not once per pin sequence.
+
+#### Persistent ability state
+
+`wrestler.abilityTokens` is a match-scoped map keyed by ability name. The map
+starts empty for every match and is discarded at match end. It is suitable for
+counters and activation flags, not permanent wrestler progression.
+
+- **Angry Giant:** an activation adds one `Angry Giant` token. While the token
+  is present, each future attack by that wrestler gets +1 damage and +1 stamina
+  cost. Activating it again has no additional effect. A deactivation operation
+  removes the token and both modifiers; deactivation costs two cards from the
+  wrestler's hand. If the wrestler cannot pay, the ability remains active.
+- **Piledriver the Referee:** activation adds one token. The next pin attempt
+  initiated by the opponent is cancelled, the token is consumed, and no
+  kick-out sequence begins. If the wrestler initiates a pin first, the token is
+  consumed after that pin is declared and the wrestler's own pin proceeds.
+- **Loose Cannon:** Loose Cannon is an ability token, not a dynamically created
+  `WrestlerAbility` row. Each awarded token increments
+  `wrestler.abilityTokens['Loose Cannon']`. “Trigger Loose Cannon” consumes one
+  token only when the ability text says to spend one; otherwise it awards one.
+  Token state resets at match end.
+
+#### Rolls and dice
+
+`match.modifyCurrentRoll(amount)` changes the result of the roll currently
+being resolved and is valid only during `ATTACK_ROLL_RESOLVED` or
+`KICKOUT_ATTEMPT`. Results are clamped to the roll's legal range. It does not
+reroll the die and cannot modify a completed roll. A future `rollDie(sides)`
+helper returns a value without changing the active attack or kick-out roll.
+
+`match.modifyNextRoll(amount)` applies once to the next eligible roll and is
+then cleared. `match.modifyOpponentNextRoll(amount)` does the same for the
+opponent. These are distinct from current-roll modification.
+
+#### Cards and allies
+
+`wrestler.returnCardsToDrawPile(count, filter)` removes up to `count` matching
+cards from the wrestler's hand and shuffles them into that wrestler's draw
+pile. If fewer cards match, all matching cards are returned and no error is
+raised. `filter` may be `ANY`, a card type, or a card name.
+
+`wrestler.addAlly(name)` adds the named ally to the match only if that ally is
+available and not already present. `wrestler.removeAlly(name)` removes that
+ally and any match-scoped effects it supplied. Removing a missing ally is a
+no-op. Ally changes never modify the persistent roster or database.
+
+#### Conditional triggers
+
+The engine evaluates conditions only after the relevant facts are known:
+
+- `ATTACK_SUCCESS` exposes `match.attackCardType`,
+  `match.attackDamage`, `match.attackWasWeapon`,
+  `match.attackWasDevastating`, and `match.comboCategoriesUsed`.
+- `DAMAGE_RECEIVED` exposes `match.incomingDamage`.
+- `KICKOUT_SUCCESS` and `KICKOUT_FAILURE` expose the pin attempt and current
+  roll number, allowing effects such as “when the opponent kicks out.”
+- A condition saying “after dealing 2+ damage” evaluates against the final
+  damage after all modifiers, not the card's printed damage.
+- AERIAL, STRIKE, SIGNATURE, FINISHER, and weapon checks use the normalized
+  card flags, not display-name string matching.
+
+These semantics are a specification only. No current service is required to
+execute wrestler ability `effectScript` values until the match ability engine
+is implemented.
+
+Guide-text placeholders use inline SVG icons. Registered names currently
+include `pin`, `stamina`, `health`, `card`, `momentum`, `reversal`, `tag`,
+`signature`, `finisher`, `roll`, and `kick-out`. Add a matching SVG under
+`src/main/resources/static/icons/` and register its name in `manifest.json`
+before using a new `[[icon-name]]` placeholder.
+
 Wrestlers are defined in `src/main/resources/wrestlers.json` (and optionally `wrestlers-extra.json`).
 
 **Structure:**
