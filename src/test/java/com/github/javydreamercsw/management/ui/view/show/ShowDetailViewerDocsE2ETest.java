@@ -103,8 +103,7 @@ class ShowDetailViewerDocsE2ETest extends AbstractE2ETest {
 
     String expectedUrl = "/show-detail/" + testShow.getId();
 
-    driver.get(
-        "http://localhost:" + serverPort + getContextPath() + expectedUrl);
+    driver.get("http://localhost:" + serverPort + getContextPath() + expectedUrl);
 
     new WebDriverWait(driver, getWaitTimeout()).until(ExpectedConditions.urlContains(expectedUrl));
 
