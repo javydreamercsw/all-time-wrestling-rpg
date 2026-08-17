@@ -27,10 +27,8 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Main;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.router.Menu;
@@ -97,22 +95,6 @@ public class HallOfFameView extends Main {
 
     grid.addComponentColumn(
             account -> {
-              HorizontalLayout layout = new HorizontalLayout();
-              account
-                  .getAchievements()
-                  .forEach(
-                      achievement -> {
-                        Span badge = new Span(achievement.getName());
-                        badge.getElement().getThemeList().add("badge success");
-                        Tooltip.forComponent(badge).setText(achievement.getDescription());
-                        layout.add(badge);
-                      });
-              return layout;
-            })
-        .setHeader("Achievements");
-
-    grid.addComponentColumn(
-            account -> {
               Button trophyBtn = new Button(new Icon(VaadinIcon.TROPHY));
               trophyBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
               Tooltip.forComponent(trophyBtn)
@@ -149,7 +131,7 @@ public class HallOfFameView extends Main {
         .addColumn(aa -> aa.getAchievement().getXpValue())
         .setHeader("XP")
         .setSortable(true)
-        .setWidth("60px")
+        .setWidth("100px")
         .setFlexGrow(0);
     achievementGrid
         .addColumn(
