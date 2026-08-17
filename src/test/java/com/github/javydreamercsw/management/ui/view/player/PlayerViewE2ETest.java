@@ -441,7 +441,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     WrestlerStatus status =
         WrestlerStatus.builder().wrestler(wrestler).statusCard(drawCard).level(1).build();
-    wrestlerStatusRepository.save(status);
+    wrestlerStatusRepository.saveAndFlush(status);
 
     login("player", "player123");
     navigateTo("player");

@@ -32,6 +32,7 @@ class NewsDocsE2ETest extends AbstractE2ETest {
 
   @Test
   void testCaptureNewsFeature() {
+    login();
     // 1. Setup - Ensure some news exists
     newsService.createNewsItem(
         "Breaking: Major Championship Change!",
@@ -69,6 +70,7 @@ class NewsDocsE2ETest extends AbstractE2ETest {
 
   @Test
   void testRecordNewsWalkthrough() {
+    login();
     setVideoInfo("Dashboards", "News & Rumors Walkthrough", "news-walkthrough");
 
     newsService.createNewsItem(
