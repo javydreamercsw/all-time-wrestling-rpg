@@ -653,8 +653,13 @@ public class SegmentAdjudicationService {
       // If the AI tagged a specific rivalry, attempt resolution on it directly.
       if (segment.getRivalryId() != null) {
         DiceBag diceBag = new DiceBag(20);
-        rivalryService.attemptResolution(
-            segment.getRivalryId(), diceBag.roll(), diceBag.roll(), threshold);
+        if (isPle) {
+          rivalryService.resolveAtPle(
+              segment.getRivalryId(), diceBag.roll(), diceBag.roll(), segment.getShow().getId());
+        } else {
+          rivalryService.attemptResolution(
+              segment.getRivalryId(), diceBag.roll(), diceBag.roll(), threshold);
+        }
         log.info(
             "Attempted resolution of AI-tagged rivalry {} after {} segment {}",
             segment.getRivalryId(),
@@ -665,13 +670,29 @@ public class SegmentAdjudicationService {
         switch (segment.getSegmentType().getName()) {
           case SegmentTypeNames.TAG_TEAM:
             attemptRivalryResolution(
-                segment.getWrestlers().get(0), segment.getWrestlers().get(2), threshold);
+                segment.getWrestlers().get(0),
+                segment.getWrestlers().get(2),
+                threshold,
+                isPle,
+                segment.getShow().getId());
             attemptRivalryResolution(
-                segment.getWrestlers().get(0), segment.getWrestlers().get(3), threshold);
+                segment.getWrestlers().get(0),
+                segment.getWrestlers().get(3),
+                threshold,
+                isPle,
+                segment.getShow().getId());
             attemptRivalryResolution(
-                segment.getWrestlers().get(1), segment.getWrestlers().get(2), threshold);
+                segment.getWrestlers().get(1),
+                segment.getWrestlers().get(2),
+                threshold,
+                isPle,
+                segment.getShow().getId());
             attemptRivalryResolution(
-                segment.getWrestlers().get(1), segment.getWrestlers().get(3), threshold);
+                segment.getWrestlers().get(1),
+                segment.getWrestlers().get(3),
+                threshold,
+                isPle,
+                segment.getShow().getId());
             break;
           case SegmentTypeNames.ABU_DHABI_RUMBLE:
           case SegmentTypeNames.ONE_ON_ONE:
@@ -682,7 +703,8 @@ public class SegmentAdjudicationService {
               Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
               for (Wrestler other : wrestlers) {
                 if (!baseWrestler.equals(other)) {
-                  attemptRivalryResolution(baseWrestler, other, threshold);
+                  attemptRivalryResolution(
+                      baseWrestler, other, threshold, isPle, segment.getShow().getId());
                 }
               }
             }
@@ -1106,14 +1128,23 @@ public class SegmentAdjudicationService {
   }
 
   private void attemptRivalryResolution(
-      @NonNull final Wrestler w1, @NonNull final Wrestler w2, final int threshold) {
+      @NonNull final Wrestler w1,
+      @NonNull final Wrestler w2,
+      final int threshold,
+      final boolean isPle,
+      @NonNull final Long showId) {
     DiceBag diceBag = new DiceBag(20);
     Optional<Rivalry> rivalryBetweenWrestlers =
         rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
     rivalryBetweenWrestlers.ifPresent(
-        rivalry ->
+        rivalry -> {
+          if (isPle) {
+            rivalryService.resolveAtPle(rivalry.getId(), diceBag.roll(), diceBag.roll(), showId);
+          } else {
             rivalryService.attemptResolution(
-                rivalry.getId(), diceBag.roll(), diceBag.roll(), threshold));
+                rivalry.getId(), diceBag.roll(), diceBag.roll(), threshold);
+          }
+        });
   }
 
   private Set<Long> applyWearAndTear(@NonNull final Segment segment) {

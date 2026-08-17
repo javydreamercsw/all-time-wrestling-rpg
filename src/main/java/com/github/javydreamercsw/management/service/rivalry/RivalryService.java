@@ -246,14 +246,79 @@ public class RivalryService {
     boolean resolved = rivalry.attemptResolution(roll1, roll2, threshold, minHeat);
 
     if (resolved) {
-      rivalry.endRivalry("Rivalry resolved successfully");
-      rivalry.setIsActive(false);
+      // Rivalry.attemptResolution() already ends the rivalry and records the
+      // resolution event. Do not end it a second time here.
       rivalryRepository.saveAndFlush(rivalry);
       eventPublisher.publishEvent(new RivalryCompletedEvent(this, rivalry));
     } else {
       eventPublisher.publishEvent(new RivalryContinuesEvent(this, rivalry));
     }
 
+    return new ResolutionResult<>(
+        resolved,
+        resolved ? "Rivalry resolved successfully" : "Resolution attempt failed",
+        rivalry,
+        roll1,
+        roll2,
+        total);
+  }
+
+  /**
+   * Attempt to resolve an eligible rivalry at a PLE. The third PLE attempt is a hard stop, so an
+   * active rivalry cannot survive beyond three qualifying PLE matches.
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
+      allEntries = true)
+  public ResolutionResult<Rivalry> resolveAtPle(
+      @NonNull final Long rivalryId,
+      @NonNull final Integer wrestler1Roll,
+      @NonNull final Integer wrestler2Roll,
+      @NonNull final Long showId) {
+    Optional<Rivalry> rivalryOpt = rivalryRepository.findById(rivalryId);
+    if (rivalryOpt.isEmpty()) {
+      return new ResolutionResult<>(false, "Rivalry not found", null, 0, 0, 0);
+    }
+
+    Rivalry rivalry = rivalryOpt.get();
+    int minHeat = gameSettingService.getRivalryResolutionMinHeat();
+    if (!rivalry.canAttemptResolution(minHeat)) {
+      return new ResolutionResult<>(
+          false,
+          "Rivalry needs at least %d heat to resolve at a PLE (current: %d)"
+              .formatted(minHeat, rivalry.getHeat()),
+          rivalry,
+          0,
+          0,
+          0);
+    }
+
+    if (showId.equals(rivalry.getLastPleResolutionShowId())) {
+      return new ResolutionResult<>(
+          false, "PLE resolution already attempted for this show", rivalry, 0, 0, 0);
+    }
+
+    int roll1 = wrestler1Roll;
+    int roll2 = wrestler2Roll;
+    int total = roll1 + roll2;
+    int attempt = rivalry.getPleResolutionAttempts() + 1;
+    rivalry.setPleResolutionAttempts(attempt);
+    rivalry.setLastPleResolutionShowId(showId);
+    boolean resolved =
+        total > gameSettingService.getRivalryResolutionThresholdPle() || attempt >= 3;
+    if (resolved) {
+      rivalry.endRivalry(
+          attempt >= 3 && total <= gameSettingService.getRivalryResolutionThresholdPle()
+              ? "Resolved after third PLE match"
+              : "Resolved by PLE resolution roll");
+      rivalryRepository.saveAndFlush(rivalry);
+      eventPublisher.publishEvent(new RivalryCompletedEvent(this, rivalry));
+    } else {
+      rivalryRepository.saveAndFlush(rivalry);
+      eventPublisher.publishEvent(new RivalryContinuesEvent(this, rivalry));
+    }
     return new ResolutionResult<>(
         resolved,
         resolved ? "Rivalry resolved successfully" : "Resolution attempt failed",

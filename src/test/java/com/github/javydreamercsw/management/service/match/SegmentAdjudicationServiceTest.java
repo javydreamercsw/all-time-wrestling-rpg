@@ -346,6 +346,7 @@ class SegmentAdjudicationServiceTest {
     Rivalry rivalry = mock(Rivalry.class);
     when(rivalry.getId()).thenReturn(99L);
     when(show.isPremiumLiveEvent()).thenReturn(true);
+    when(show.getId()).thenReturn(1L);
     // Triple Threat — not in the explicit switch cases
     when(segmentType.getName()).thenReturn("Triple Threat");
 
@@ -414,6 +415,7 @@ class SegmentAdjudicationServiceTest {
   void adjudicateMatch_aiTaggedRivalry_addsHigherHeatOnPle() {
     when(segment.getRivalryId()).thenReturn(42L);
     when(show.isPremiumLiveEvent()).thenReturn(true);
+    when(show.getId()).thenReturn(1L);
     when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
 
     segmentAdjudicationService.adjudicateMatch(segment);
@@ -427,15 +429,17 @@ class SegmentAdjudicationServiceTest {
         mock(com.github.javydreamercsw.management.domain.rivalry.Rivalry.class);
     when(segment.getRivalryId()).thenReturn(42L);
     when(show.isPremiumLiveEvent()).thenReturn(true);
+    when(show.getId()).thenReturn(1L);
     when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
-    when(rivalryService.attemptResolution(anyLong(), anyInt(), anyInt(), anyInt()))
+    when(rivalryService.resolveAtPle(anyLong(), anyInt(), anyInt(), anyLong()))
         .thenReturn(
             new com.github.javydreamercsw.management.service.resolution.ResolutionResult<>(
-                false, "not resolved", rivalry, 5, 6, 11));
+                true, "resolved", rivalry, 0, 0, 0));
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(rivalryService).attemptResolution(eq(42L), anyInt(), anyInt(), anyInt());
+    verify(rivalryService).resolveAtPle(eq(42L), anyInt(), anyInt(), anyLong());
+    verify(rivalryService, never()).attemptResolution(anyLong(), anyInt(), anyInt(), anyInt());
     // Generic pair-scan should NOT run when rivalryId is set
     verify(rivalryService, never()).getRivalryBetweenWrestlers(anyLong(), anyLong());
   }
@@ -444,6 +448,7 @@ class SegmentAdjudicationServiceTest {
   void adjudicateMatch_noRivalryId_usesGenericPairScanOnPle() {
     when(segment.getRivalryId()).thenReturn(null);
     when(show.isPremiumLiveEvent()).thenReturn(true);
+    when(show.getId()).thenReturn(1L);
     when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
     when(rivalryService.getRivalryBetweenWrestlers(anyLong(), anyLong()))
         .thenReturn(Optional.empty());

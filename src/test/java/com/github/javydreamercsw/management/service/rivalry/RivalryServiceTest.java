@@ -199,6 +199,7 @@ class RivalryServiceTest {
     assertThat(result.totalRoll()).isEqualTo(31);
     assertThat(rivalry.getIsActive()).isFalse();
     verify(rivalryRepository).saveAndFlush(rivalry);
+    assertThat(rivalry.getHeatEvents()).hasSize(2);
   }
 
   @Test
@@ -256,6 +257,97 @@ class RivalryServiceTest {
     // Then
     assertThat(result.resolved()).isTrue();
     assertThat(rivalry.getIsActive()).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should resolve an eligible rivalry at a PLE when the roll succeeds")
+  void shouldResolveEligibleRivalryAtPle() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    ResolutionResult<Rivalry> result = rivalryService.resolveAtPle(1L, 16, 15, 1L);
+
+    assertThat(result.resolved()).isTrue();
+    assertThat(rivalry.getIsActive()).isFalse();
+    assertThat(rivalry.getHeatEvents()).hasSize(1);
+    verify(rivalryRepository).saveAndFlush(rivalry);
+  }
+
+  @Test
+  @DisplayName("Should keep an eligible rivalry active after an unsuccessful PLE attempt")
+  void shouldKeepRivalryActiveAfterUnsuccessfulPleAttempt() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    ResolutionResult<Rivalry> result = rivalryService.resolveAtPle(1L, 5, 6, 1L);
+
+    assertThat(result.resolved()).isFalse();
+    assertThat(rivalry.getIsActive()).isTrue();
+    assertThat(rivalry.getPleResolutionAttempts()).isEqualTo(1);
+    assertThat(rivalry.getLastPleResolutionShowId()).isEqualTo(1L);
+    assertThat(rivalry.getHeatEvents()).hasSize(0);
+    verify(rivalryRepository).saveAndFlush(rivalry);
+  }
+
+  @Test
+  @DisplayName("Should not count the same PLE more than once")
+  void shouldNotCountSamePleMoreThanOnce() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    rivalryService.resolveAtPle(1L, 5, 6, 1L);
+    ResolutionResult<Rivalry> duplicate = rivalryService.resolveAtPle(1L, 20, 20, 1L);
+
+    assertThat(duplicate.resolved()).isFalse();
+    assertThat(rivalry.getIsActive()).isTrue();
+    assertThat(rivalry.getPleResolutionAttempts()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("Should force-close a rivalry on its third unsuccessful PLE attempt")
+  void shouldForceCloseRivalryOnThirdPleAttempt() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+    rivalry.setPleResolutionAttempts(2);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    ResolutionResult<Rivalry> result = rivalryService.resolveAtPle(1L, 5, 6, 1L);
+
+    assertThat(result.resolved()).isTrue();
+    assertThat(rivalry.getIsActive()).isFalse();
+    assertThat(rivalry.getPleResolutionAttempts()).isEqualTo(3);
+    assertThat(rivalry.getHeatEvents()).hasSize(1);
+  }
+
+  @Test
+  @DisplayName("Should not resolve an ineligible rivalry at a PLE")
+  void shouldNotResolveIneligibleRivalryAtPle() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 5);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+
+    ResolutionResult<Rivalry> result = rivalryService.resolveAtPle(1L, 10, 10, 1L);
+
+    assertThat(result.resolved()).isFalse();
+    assertThat(rivalry.getIsActive()).isTrue();
+    assertThat(rivalry.getHeatEvents()).isEmpty();
   }
 
   @Test
