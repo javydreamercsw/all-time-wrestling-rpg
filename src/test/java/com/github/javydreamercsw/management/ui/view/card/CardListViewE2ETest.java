@@ -61,6 +61,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   public void testCreateCard() {
     setVideoInfo("Game Mechanics", "Creating a Card", "create-card");
     navigateTo("card-list");
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.pollingEvery(Duration.ofMillis(500));
 
@@ -96,6 +97,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     setVideoInfo("Game Mechanics", "Managing Cards", "card-list-manage");
     String cardName = "Card to Update";
     navigateTo("card-list");
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.pollingEvery(Duration.ofMillis(500));
 
@@ -158,6 +160,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     String cardName = "Card to Delete";
 
     navigateTo("card-list");
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     wait.pollingEvery(Duration.ofMillis(500));
 

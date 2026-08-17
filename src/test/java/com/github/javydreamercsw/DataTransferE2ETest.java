@@ -204,6 +204,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     System.setProperty("simulateFailure", "true");
     navigateTo("data-transfer");
     waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.id("data-transfer-wizard"));
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
@@ -246,8 +247,9 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     System.setProperty("simulateRollbackFailure", "true");
     navigateTo("data-transfer");
     // This may run as the first test in the job (no other test has warmed up Vaadin yet).
-    // Wait for Vaadin to finish its initial bundle load before looking for elements.
+    // Wait for the wizard host as well as the client so server-rendered children are available.
     waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.id("data-transfer-wizard"));
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
@@ -328,7 +330,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testDataTransferWithNonBlankPassword() {
     navigateTo("data-transfer"); // Wait for page to fully load
     waitForVaadinClientToLoad();
-    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.id("data-transfer-wizard"));
 
     WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     clickElement(nextButton);
