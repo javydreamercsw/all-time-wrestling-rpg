@@ -60,9 +60,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   @Test
   public void testCreateCard() {
     setVideoInfo("Game Mechanics", "Creating a Card", "create-card");
-    navigateTo("card-list");
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = navigateToCardList();
     wait.pollingEvery(Duration.ofMillis(500));
 
     captureCaption(
@@ -96,9 +94,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   public void testUpdateCard() {
     setVideoInfo("Game Mechanics", "Managing Cards", "card-list-manage");
     String cardName = "Card to Update";
-    navigateTo("card-list");
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = navigateToCardList();
     wait.pollingEvery(Duration.ofMillis(500));
 
     captureCaption(
@@ -159,9 +155,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   public void testDeleteCard() {
     String cardName = "Card to Delete";
 
-    navigateTo("card-list");
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebDriverWait wait = navigateToCardList();
     wait.pollingEvery(Duration.ofMillis(500));
 
     // Find the input field and create button
@@ -203,6 +197,23 @@ public class CardListViewE2ETest extends AbstractE2ETest {
     assertTrue(notFound);
   }
 
+  private WebDriverWait navigateToCardList() {
+    navigateTo("card-list");
+    waitForVaadinClientToLoad();
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    wait.pollingEvery(Duration.ofMillis(500));
+    wait.until(
+        d -> {
+          try {
+            return d.getCurrentUrl().contains("/card-list")
+                && d.findElement(By.tagName("vaadin-grid")).isDisplayed();
+          } catch (org.openqa.selenium.NoSuchElementException e) {
+            return false;
+          }
+        });
+    return wait;
+  }
+
   private WebElement findCardInGridWithScrolling(final WebDriverWait wait, final String cardName) {
     return wait.until(
         d -> {
@@ -222,8 +233,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testSortByName() {
-    navigateTo("card-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+    WebDriverWait wait = navigateToCardList();
 
     // Wait for the grid to be present and populated
     WebElement grid =
