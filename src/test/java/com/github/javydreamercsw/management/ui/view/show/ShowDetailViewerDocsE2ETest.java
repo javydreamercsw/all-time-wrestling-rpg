@@ -35,6 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -99,8 +101,14 @@ class ShowDetailViewerDocsE2ETest extends AbstractE2ETest {
   void viewerSeesReadOnlyShowDetail() {
     login("viewer", "viewer123");
 
+    String expectedUrl = "/show-detail/" + testShow.getId();
+
     driver.get(
-        "http://localhost:" + serverPort + getContextPath() + "/show-detail/" + testShow.getId());
+        "http://localhost:" + serverPort + getContextPath() + expectedUrl);
+
+    new WebDriverWait(driver, getWaitTimeout()).until(ExpectedConditions.urlContains(expectedUrl));
+
+    // The first idle signal can arrive before the router finishes pushing the view contents.
     waitForVaadinClientToLoad();
     waitForVaadinElement(driver, By.id("show-info-details"));
 
