@@ -1,11 +1,13 @@
 ---
+
 applyTo: '**'
 description: >-
-  Use code-review-graph MCP tools for token-efficient
-  codebase exploration and code review.
----
+Use code-review-graph MCP tools for token-efficient
+codebase exploration and code review.
+-------------------------------------
 
 <!-- code-review-graph MCP tools -->
+
 ## MCP Tools: code-review-graph
 
 **IMPORTANT: This project has a knowledge graph. ALWAYS use the
@@ -27,16 +29,16 @@ cover what you need.
 
 ### Key Tools
 
-| Tool | Use when |
-| ------ | ---------- |
-| `detect_changes_tool` | Risk-scored change analysis |
-| `get_review_context_tool` | Token-efficient source snippets |
-| `get_impact_radius_tool` | Blast radius of a change |
-| `get_affected_flows_tool` | Impacted execution paths |
-| `query_graph_tool` | Trace callers, callees, imports, tests |
-| `semantic_search_nodes_tool` | Find functions/classes by keyword |
-| `get_architecture_overview_tool` | High-level structure |
-| `refactor_tool` | Rename planning, dead code |
+|               Tool               |                Use when                |
+|----------------------------------|----------------------------------------|
+| `detect_changes_tool`            | Risk-scored change analysis            |
+| `get_review_context_tool`        | Token-efficient source snippets        |
+| `get_impact_radius_tool`         | Blast radius of a change               |
+| `get_affected_flows_tool`        | Impacted execution paths               |
+| `query_graph_tool`               | Trace callers, callees, imports, tests |
+| `semantic_search_nodes_tool`     | Find functions/classes by keyword      |
+| `get_architecture_overview_tool` | High-level structure                   |
+| `refactor_tool`                  | Rename planning, dead code             |
 
 ### Workflow
 
@@ -44,3 +46,4 @@ cover what you need.
 2. Use `detect_changes_tool` for code review.
 3. Use `get_affected_flows_tool` to understand impact.
 4. Use `query_graph_tool` pattern="tests_for" to check coverage.
+

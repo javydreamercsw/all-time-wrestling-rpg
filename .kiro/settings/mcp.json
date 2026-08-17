@@ -2,10 +2,7 @@
   "mcpServers": {
     "code-review-graph": {
       "command": "uvx",
-      "args": [
-        "code-review-graph",
-        "serve"
-      ],
+      "args": [ "code-review-graph", "serve" ],
       "cwd": "/Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg",
       "type": "stdio"
     }
