@@ -17,10 +17,12 @@
 package com.github.javydreamercsw.management.service.deck;
 
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
 import org.springframework.data.domain.Pageable;
@@ -63,6 +65,15 @@ public class DeckService {
     return deckRepository
         .findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Deck with id " + id + " not found"));
+  }
+
+  public List<DeckCard> getCards(@NonNull final Long deckId) {
+    Deck deck =
+        deckRepository
+            .findById(deckId)
+            .orElseThrow(
+                () -> new EntityNotFoundException("Deck with id " + deckId + " not found"));
+    return new ArrayList<>(deck.getCards());
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
