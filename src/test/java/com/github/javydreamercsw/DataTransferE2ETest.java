@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.util.Objects;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -48,20 +49,26 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     MYSQL_CONTAINER.start();
   }
 
-  @Test
-  public void testNavigateToDataTransferView() {
+  @BeforeEach
+  public void setUp() {
     navigateTo("data-transfer");
     waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.id("data-transfer-wizard"));
+  }
+
+  private void clickNextButton() {
+    clickElement(By.id("next-button"));
+  }
+
+  @Test
+  public void testNavigateToDataTransferView() {
     WebElement dataTransferWizard = waitForVaadinElement(driver, By.id("data-transfer-wizard"));
     assertNotNull(dataTransferWizard);
   }
 
   @Test
   public void testConnectionConfigurationView() {
-    navigateTo("data-transfer");
-
-    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    clickElement(nextButton);
+    clickNextButton();
 
     waitForVaadinClientToLoad();
 
@@ -79,10 +86,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
   @Test
   public void testConnectionParametersValidation() {
-    navigateTo("data-transfer");
-
-    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    clickElement(nextButton);
+    clickNextButton();
 
     // Wait for the config step to become visible
     waitForVaadinClientToLoad();
@@ -93,7 +97,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     clearField(hostField);
 
     // Attempt to click next button, should not proceed
-    clickElement(nextButton);
+    clickNextButton();
 
     // Assert that the wizard is still on the connection configuration step
     WebElement connectionConfigStep = waitForVaadinElement(driver, By.id("connection-config-step"));
@@ -111,17 +115,13 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     setVideoInfo("Admin", "MySQL Data Migration Wizard", "data-transfer-full-wizard");
 
     System.setProperty("simulateFailure", "false");
-    navigateTo("data-transfer");
-    waitForVaadinClientToLoad();
-    waitForVaadinClientToLoad();
 
-    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
     captureCaption(
         "Data Transfer Wizard — migrate all application data from H2 to MySQL in three"
             + " steps: connection config, table selection, and transfer. This is the"
             + " recommended path before switching to a production MySQL deployment.",
         4000);
-    clickElement(nextButton);
+    clickNextButton();
 
     waitForVaadinClientToLoad();
 
@@ -144,7 +144,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
         4000);
 
     // Click the next button to advance to Data Selection step
-    clickElement(nextButton);
+    clickNextButton();
 
     // Assert that the data selection step is displayed
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
@@ -157,8 +157,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
         4000);
 
     // Click the next button again to advance to Data Transfer Process step
-    nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    clickElement(nextButton);
+    clickNextButton();
 
     // Assert that the data transfer process step is displayed via WebDriver
     WebElement dataTransferProcessStep =
@@ -202,12 +201,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   @Test
   public void testRollbackMechanism() {
     System.setProperty("simulateFailure", "true");
-    navigateTo("data-transfer");
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.id("data-transfer-wizard"));
-
-    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    clickElement(nextButton);
+    clickNextButton();
 
     waitForVaadinClientToLoad();
 
@@ -226,14 +220,14 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     passwordField.sendKeys("testpassword");
 
     // Click the next button to advance to Data Selection step
-    clickElement(nextButton);
+    clickNextButton();
 
     // Assert that the data selection step is displayed
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
     assertNotNull(dataSelectionStep);
 
     // Click the next button again to advance to Data Transfer Process step
-    clickElement(nextButton);
+    clickNextButton();
 
     // Assert that the data transfer process step is displayed via WebDriver
     WebElement dataTransferProcessStep =
@@ -245,14 +239,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
   public void testRollbackFailureMechanism() {
     System.setProperty("simulateFailure", "true");
     System.setProperty("simulateRollbackFailure", "true");
-    navigateTo("data-transfer");
-    // This may run as the first test in the job (no other test has warmed up Vaadin yet).
-    // Wait for the wizard host as well as the client so server-rendered children are available.
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.id("data-transfer-wizard"));
-
-    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    clickElement(nextButton);
+    clickNextButton();
 
     waitForVaadinClientToLoad();
 
@@ -272,7 +259,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     passwordField.sendKeys("testpassword");
 
     // Click the next button to advance to Data Selection step
-    clickElement(nextButton);
+    clickNextButton();
 
     // Assert that the data selection step is displayed
 
@@ -280,7 +267,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     assertNotNull(dataSelectionStep);
 
     // Click the next button again to advance to Data Transfer Process step (simulates failure)
-    clickElement(nextButton);
+    clickNextButton();
 
     // Assert that the data transfer process step is displayed
 
@@ -291,9 +278,6 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
   @Test
   public void testCancelButton() {
-    navigateTo("data-transfer");
-    waitForVaadinClientToLoad();
-
     WebElement cancelButton = waitForVaadinElement(driver, By.id("cancel-button"));
     clickElement(cancelButton);
 
@@ -306,11 +290,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
   @Test
   public void testBackButton() {
-    navigateTo("data-transfer"); // Wait for page to fully load
-    waitForVaadinClientToLoad();
-
-    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    clickElement(nextButton); // To Connection Config
+    clickNextButton(); // To Connection Config
 
     waitForVaadinClientToLoad();
 
@@ -328,12 +308,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
   @Test
   public void testDataTransferWithNonBlankPassword() {
-    navigateTo("data-transfer"); // Wait for page to fully load
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.id("data-transfer-wizard"));
-
-    WebElement nextButton = waitForVaadinElement(driver, By.id("next-button"));
-    clickElement(nextButton);
+    clickNextButton();
 
     waitForVaadinClientToLoad();
 
@@ -353,7 +328,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement passwordField = waitForVaadinElement(driver, By.id("password-field"));
     passwordField.sendKeys(MYSQL_CONTAINER.getPassword());
 
-    clickElement(nextButton);
+    clickNextButton();
 
     WebElement dataSelectionStep = waitForVaadinElement(driver, By.id("data-selection-step"));
     assertNotNull(dataSelectionStep);
