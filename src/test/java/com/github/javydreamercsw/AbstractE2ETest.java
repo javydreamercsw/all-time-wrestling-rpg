@@ -410,6 +410,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @AfterEach
   public void teardown() {
+    // Reset lockout state even when the test failed during login or navigation. A failed test can
+    // otherwise poison the shared test account and make every subsequent E2E class fail login.
+    resetAccountLockoutState();
+
     // We no longer quit the driver here to allow reuse.
     // Instead, we navigate to a blank page and clear the state to ensure isolation.
     if (driver != null) {
@@ -584,6 +588,22 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                   + "requestAnimationFrame(() => requestAnimationFrame(done));");
     } catch (Exception ignored) {
       // Non-critical; proceed even if rAF is unavailable
+    }
+  }
+
+  private void resetAccountLockoutState() {
+    try {
+      accountRepository.findAll().stream()
+          .filter(account -> account.getFailedLoginAttempts() > 0 || !account.isAccountNonLocked())
+          .forEach(
+              account -> {
+                account.resetFailedAttempts();
+                accountRepository.save(account);
+              });
+      accountRepository.flush();
+    } catch (Exception e) {
+      // Teardown must not hide the original test failure or prevent browser cleanup.
+      log.warn("Unable to reset E2E account lockout state: {}", e.getMessage());
     }
   }
 
