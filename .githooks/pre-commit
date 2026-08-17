@@ -1,0 +1,6 @@
+#!/bin/sh
+# Keep pre-commit checks fast and deterministic. Graph maintenance runs post-commit.
+if command -v code-review-graph >/dev/null 2>&1; then
+  code-review-graph update --skip-flows --repo "$(git rev-parse --show-toplevel 2>/dev/null)" || true
+  code-review-graph detect-changes --brief || true
+fi

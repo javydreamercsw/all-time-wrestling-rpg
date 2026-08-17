@@ -1,15 +1,12 @@
 {
   "mcpServers": {
-    "graphify": {
-      "type": "http",
-      "url": "https://api.graphify.com/mcp"
-    },
     "code-review-graph": {
       "command": "uvx",
       "args": [
-        "code-review-graph==2.3.7",
+        "code-review-graph",
         "serve"
       ],
+      "cwd": "/Users/javierortiz/Documents/NetBeansProjects/all-time-wrestling-rpg",
       "type": "stdio"
     }
   }
