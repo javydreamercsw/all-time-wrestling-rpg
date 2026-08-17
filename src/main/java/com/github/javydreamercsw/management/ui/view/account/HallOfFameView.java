@@ -17,12 +17,19 @@
 package com.github.javydreamercsw.management.ui.view.account;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountAchievement;
+import com.github.javydreamercsw.base.domain.account.AccountAchievementRepository;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
@@ -31,6 +38,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -42,13 +53,20 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Slf4j
 public class HallOfFameView extends Main {
 
+  private static final DateTimeFormatter DATE_FMT =
+      DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM);
+
   private final AccountRepository accountRepository;
+  private final AccountAchievementRepository accountAchievementRepository;
   private final TransactionTemplate transactionTemplate;
   private final Grid<Account> grid = new Grid<>(Account.class, false);
 
   public HallOfFameView(
-      final AccountRepository accountRepository, final TransactionTemplate transactionTemplate) {
+      final AccountRepository accountRepository,
+      final AccountAchievementRepository accountAchievementRepository,
+      final TransactionTemplate transactionTemplate) {
     this.accountRepository = accountRepository;
+    this.accountAchievementRepository = accountAchievementRepository;
     this.transactionTemplate = transactionTemplate;
     addClassNames(
         LumoUtility.BoxSizing.BORDER,
@@ -92,6 +110,70 @@ public class HallOfFameView extends Main {
               return layout;
             })
         .setHeader("Achievements");
+
+    grid.addComponentColumn(
+            account -> {
+              Button trophyBtn = new Button(new Icon(VaadinIcon.TROPHY));
+              trophyBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
+              Tooltip.forComponent(trophyBtn)
+                  .setText("View " + account.getUsername() + "'s achievements");
+              trophyBtn.addClickListener(e -> openAchievementsDialog(account));
+              trophyBtn.setVisible(!account.getAchievements().isEmpty());
+              return trophyBtn;
+            })
+        .setWidth("60px")
+        .setFlexGrow(0);
+  }
+
+  private void openAchievementsDialog(final Account account) {
+    List<AccountAchievement> entries =
+        accountAchievementRepository.findByAccountIdOrderByUnlockedAtDesc(account.getId());
+
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle(account.getUsername() + "'s Achievements");
+    dialog.setWidth("min(900px, 95vw)");
+
+    Grid<AccountAchievement> achievementGrid = new Grid<>(AccountAchievement.class, false);
+    achievementGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+    achievementGrid
+        .addColumn(aa -> aa.getAchievement().getName())
+        .setHeader("Achievement")
+        .setSortable(true)
+        .setAutoWidth(true);
+    achievementGrid
+        .addColumn(aa -> aa.getAchievement().getCategory().name())
+        .setHeader("Category")
+        .setSortable(true)
+        .setAutoWidth(true);
+    achievementGrid
+        .addColumn(aa -> aa.getAchievement().getXpValue())
+        .setHeader("XP")
+        .setSortable(true)
+        .setWidth("60px")
+        .setFlexGrow(0);
+    achievementGrid
+        .addColumn(
+            aa ->
+                aa.getUnlockedAt() != null
+                    ? DATE_FMT.format(aa.getUnlockedAt().atZone(ZoneId.systemDefault()))
+                    : "—")
+        .setHeader("Unlocked")
+        .setSortable(true)
+        .setAutoWidth(true);
+    achievementGrid
+        .addColumn(aa -> aa.getAchievement().getDescription())
+        .setHeader("Description")
+        .setAutoWidth(true);
+
+    achievementGrid.setItems(entries);
+    achievementGrid.setHeight("400px");
+
+    Button closeBtn = new Button("Close", e -> dialog.close());
+    closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    dialog.add(achievementGrid);
+    dialog.getFooter().add(closeBtn);
+    dialog.open();
   }
 
   private void updateList() {
