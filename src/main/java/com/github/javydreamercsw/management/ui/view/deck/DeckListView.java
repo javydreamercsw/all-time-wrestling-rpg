@@ -36,6 +36,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -252,7 +253,7 @@ public class DeckListView extends VerticalLayout {
     Grid<DeckCard> cardGrid = new Grid<>(DeckCard.class, false);
     cardGrid.addColumn(dc -> dc.getCard().getName()).setHeader("Card").setSortable(true);
     cardGrid.addColumn(DeckCard::getAmount).setHeader("Amount").setSortable(true);
-    cardGrid.setItems(deck.getCards());
+    cardGrid.setItems(new ArrayList<>(deckService.findById(deck.getId()).getCards()));
 
     layout.add(cardGrid);
 
