@@ -250,6 +250,8 @@ public class DeckListView extends VerticalLayout {
     layout.add("Wrestler: " + deck.getWrestler().getName());
 
     Grid<DeckCard> cardGrid = new Grid<>(DeckCard.class, false);
+    cardGrid.addColumn(dc -> dc.getSet().getName()).setHeader("Set").setSortable(true);
+    cardGrid.addColumn(dc -> dc.getCard().getNumber()).setHeader("#").setSortable(true);
     cardGrid.addColumn(dc -> dc.getCard().getName()).setHeader("Card").setSortable(true);
     cardGrid.addColumn(DeckCard::getAmount).setHeader("Amount").setSortable(true);
     cardGrid.setItems(deckService.getCards(deck.getId()));
