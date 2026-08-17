@@ -34,8 +34,12 @@ public class AccountAchievementId implements Serializable {
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) return true;
-    if (!(o instanceof AccountAchievementId that)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof AccountAchievementId that)) {
+      return false;
+    }
     return Objects.equals(accountId, that.accountId)
         && Objects.equals(achievementId, that.achievementId);
   }
