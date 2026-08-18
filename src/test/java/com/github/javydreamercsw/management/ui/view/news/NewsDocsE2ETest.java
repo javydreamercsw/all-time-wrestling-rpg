@@ -105,9 +105,7 @@ class NewsDocsE2ETest extends AbstractE2ETest {
         false,
         3);
 
-    navigateTo("news");
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    navigateToAndWaitForElement("news", By.tagName("vaadin-grid"));
 
     captureCaption(
         "News & Rumors — a rolling feed of every significant event in the promotion."

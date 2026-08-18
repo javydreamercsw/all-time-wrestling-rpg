@@ -29,10 +29,9 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureAdminToolsView() {
-    navigateTo("admin");
-
     // Default tab is Admin Tools
-    waitForText("Recalculate Wrestler Tiers");
+    navigateToAndWaitForElement(
+        "admin", org.openqa.selenium.By.xpath("//*[contains(., 'Recalculate Wrestler Tiers')]"));
 
     documentFeature(
         "Admin",
@@ -46,12 +45,10 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureAiSettingsView() {
-    navigateTo("admin");
-
     // Click the AI Settings tab more robustly
     WebElement tab =
-        waitForVaadinElement(
-            driver, org.openqa.selenium.By.xpath("//vaadin-tab[contains(text(), 'AI Settings')]"));
+        navigateToAndWaitForElement(
+            "admin", org.openqa.selenium.By.xpath("//vaadin-tab[contains(text(), 'AI Settings')]"));
 
     clickElement(tab);
 
@@ -143,11 +140,9 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureExpansionManagementView() {
-    navigateTo("admin");
-
     WebElement tab =
-        waitForVaadinElement(
-            driver,
+        navigateToAndWaitForElement(
+            "admin",
             org.openqa.selenium.By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(tab);
 

@@ -24,7 +24,7 @@ public class UserDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void testCaptureProfileDrawer() {
     login("player", "player123");
-
+    waitForVaadinClientToLoad();
     // Open Profile Drawer
     clickButtonByText("Profile");
     waitForVaadinClientToLoad();

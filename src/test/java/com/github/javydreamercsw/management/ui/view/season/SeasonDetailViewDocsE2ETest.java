@@ -118,8 +118,7 @@ class SeasonDetailViewDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void captureSeasonListWithDetailsLink() {
-    navigateTo("season-list");
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    navigateToAndWaitForElement("season-list", By.tagName("vaadin-grid"));
     documentFeature(
         "Booker",
         "Season List",
@@ -131,9 +130,8 @@ class SeasonDetailViewDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void captureSeasonDetailView() {
-    navigateTo("season-detail/" + seasonId);
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.xpath("//*[contains(., 'Season Overview')]"));
+    navigateToAndWaitForElement(
+        "season-detail/" + seasonId, By.xpath("//*[contains(., 'Season Overview')]"));
     documentFeature(
         "Booker",
         "Season Detail",
