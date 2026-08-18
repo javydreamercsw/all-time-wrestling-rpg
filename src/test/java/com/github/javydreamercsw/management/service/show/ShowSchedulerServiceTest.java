@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -79,6 +80,7 @@ class ShowSchedulerServiceTest {
     ShowType pleType = new ShowType();
     pleType.setId(2L);
     pleType.setName("Premium Live Event (PLE)");
+    pleType.setCategory(ShowCategory.PLE);
 
     pleTemplate = new ShowTemplate();
     pleTemplate.setId(2L);
@@ -214,6 +216,7 @@ class ShowSchedulerServiceTest {
     ShowType pleType = new ShowType();
     pleType.setId(2L);
     pleType.setName("Premium Live Event (PLE)");
+    pleType.setCategory(ShowCategory.PLE);
 
     ShowTemplate invalidTemplate = new ShowTemplate();
     invalidTemplate.setId(3L);

@@ -20,6 +20,7 @@ import static com.github.javydreamercsw.base.domain.AbstractEntity.DESCRIPTION_M
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -99,14 +100,10 @@ public class Season extends AbstractEntity<Long> {
   public boolean isTimeForPpv() {
     int regularShows =
         (int)
-            shows.stream()
-                .filter(show -> !show.getType().getName().toLowerCase().contains("ppv"))
-                .count();
+            shows.stream().filter(show -> show.getType().getCategory() != ShowCategory.PLE).count();
     int ppvShows =
         (int)
-            shows.stream()
-                .filter(show -> show.getType().getName().toLowerCase().contains("ppv"))
-                .count();
+            shows.stream().filter(show -> show.getType().getCategory() == ShowCategory.PLE).count();
 
     return regularShows >= (ppvShows + 1) * showsPerPpv;
   }

@@ -51,6 +51,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition;
+import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
@@ -96,6 +98,8 @@ class MatchResultProcessorServiceTest {
   @Mock private StorylineDirectorService storylineDirectorService;
   @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private FeatureDataService featureDataService;
+  @Mock private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
+  @Mock private LegacyService legacyService;
   @Mock private CampaignService campaignService;
   @Mock private CampaignEncounterService campaignEncounterService;
 
@@ -474,6 +478,66 @@ class MatchResultProcessorServiceTest {
         .as("Face alignment found via fallback must unlock Promo action")
         .isTrue();
     assertThat(state.isAttackUnlocked()).isFalse();
+  }
+
+  @Test
+  void testProcessMatchResult_TournamentWin_incremensDeadlyCombatWins() {
+    com.github.javydreamercsw.base.domain.account.Account account =
+        new com.github.javydreamercsw.base.domain.account.Account();
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setAccount(account);
+    Universe universe = Universe.builder().name("Test Universe").build();
+    Campaign campaign = new Campaign();
+    campaign.setId(1L);
+    campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
+    CampaignState state = new CampaignState();
+    state.setWins(0);
+    state.setLosses(0);
+    state.setVictoryPoints(0);
+    state.setMatchesPlayed(0);
+    state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapterId("tournament");
+    Segment currentMatch = new Segment();
+    currentMatch.setShow(new Show());
+    state.setCurrentMatch(currentMatch);
+    campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(campaignService.getCurrentChapter(campaign))
+        .thenReturn(
+            Optional.of(
+                CampaignChapterDTO.builder()
+                    .id("tournament")
+                    .tournament(true)
+                    .rules(
+                        CampaignChapterDTO.ChapterRules.builder()
+                            .victoryPointsWin(2)
+                            .victoryPointsLoss(1)
+                            .build())
+                    .build()));
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.FACE);
+    alignment.setLevel(1);
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
+    when(tournamentService.isPlayerChampion(campaign)).thenReturn(true);
+    when(featureDataService.getFeatureValue(state, "deadlyCombatWins", Integer.class, 0))
+        .thenReturn(4);
+    when(scriptedAchievementEvaluator.resolveNewlyUnlockedKeys(
+            org.mockito.ArgumentMatchers.eq(account), any()))
+        .thenReturn(List.of("OMZ_DEADLY_COMBAT_CHAMPION"));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    com.github.javydreamercsw.management.domain.title.Title title =
+        new com.github.javydreamercsw.management.domain.title.Title();
+    title.setName("ATW World");
+    when(titleRepository.findByName("ATW World")).thenReturn(Optional.of(title));
+
+    service.processMatchResult(campaign, true);
+
+    verify(featureDataService).setFeatureValue(state, "deadlyCombatWins", 5);
+    verify(legacyService).unlockAchievement(account, "OMZ_DEADLY_COMBAT_CHAMPION");
   }
 
   private Campaign buildCampaignWithWrestler(final Wrestler wrestler, final int initialVp) {

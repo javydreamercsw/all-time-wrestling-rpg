@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.rivalry.heatevent.HeatEventRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -32,10 +33,12 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -50,9 +53,11 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Transactional
+@Slf4j
 public class RivalryService {
 
   @Autowired private RivalryRepository rivalryRepository;
+  @Autowired private HeatEventRepository heatEventRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private UniverseRepository universeRepository;
   @Autowired @Getter private RivalryMapper rivalryMapper;
@@ -241,14 +246,79 @@ public class RivalryService {
     boolean resolved = rivalry.attemptResolution(roll1, roll2, threshold, minHeat);
 
     if (resolved) {
-      rivalry.endRivalry("Rivalry resolved successfully");
-      rivalry.setIsActive(false);
+      // Rivalry.attemptResolution() already ends the rivalry and records the
+      // resolution event. Do not end it a second time here.
       rivalryRepository.saveAndFlush(rivalry);
       eventPublisher.publishEvent(new RivalryCompletedEvent(this, rivalry));
     } else {
       eventPublisher.publishEvent(new RivalryContinuesEvent(this, rivalry));
     }
 
+    return new ResolutionResult<>(
+        resolved,
+        resolved ? "Rivalry resolved successfully" : "Resolution attempt failed",
+        rivalry,
+        roll1,
+        roll2,
+        total);
+  }
+
+  /**
+   * Attempt to resolve an eligible rivalry at a PLE. The third PLE attempt is a hard stop, so an
+   * active rivalry cannot survive beyond three qualifying PLE matches.
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @org.springframework.cache.annotation.CacheEvict(
+      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
+      allEntries = true)
+  public ResolutionResult<Rivalry> resolveAtPle(
+      @NonNull final Long rivalryId,
+      @NonNull final Integer wrestler1Roll,
+      @NonNull final Integer wrestler2Roll,
+      @NonNull final Long showId) {
+    Optional<Rivalry> rivalryOpt = rivalryRepository.findById(rivalryId);
+    if (rivalryOpt.isEmpty()) {
+      return new ResolutionResult<>(false, "Rivalry not found", null, 0, 0, 0);
+    }
+
+    Rivalry rivalry = rivalryOpt.get();
+    int minHeat = gameSettingService.getRivalryResolutionMinHeat();
+    if (!rivalry.canAttemptResolution(minHeat)) {
+      return new ResolutionResult<>(
+          false,
+          "Rivalry needs at least %d heat to resolve at a PLE (current: %d)"
+              .formatted(minHeat, rivalry.getHeat()),
+          rivalry,
+          0,
+          0,
+          0);
+    }
+
+    if (showId.equals(rivalry.getLastPleResolutionShowId())) {
+      return new ResolutionResult<>(
+          false, "PLE resolution already attempted for this show", rivalry, 0, 0, 0);
+    }
+
+    int roll1 = wrestler1Roll;
+    int roll2 = wrestler2Roll;
+    int total = roll1 + roll2;
+    int attempt = rivalry.getPleResolutionAttempts() + 1;
+    rivalry.setPleResolutionAttempts(attempt);
+    rivalry.setLastPleResolutionShowId(showId);
+    boolean resolved =
+        total > gameSettingService.getRivalryResolutionThresholdPle() || attempt >= 3;
+    if (resolved) {
+      rivalry.endRivalry(
+          attempt >= 3 && total <= gameSettingService.getRivalryResolutionThresholdPle()
+              ? "Resolved after third PLE match"
+              : "Resolved by PLE resolution roll");
+      rivalryRepository.saveAndFlush(rivalry);
+      eventPublisher.publishEvent(new RivalryCompletedEvent(this, rivalry));
+    } else {
+      rivalryRepository.saveAndFlush(rivalry);
+      eventPublisher.publishEvent(new RivalryContinuesEvent(this, rivalry));
+    }
     return new ResolutionResult<>(
         resolved,
         resolved ? "Rivalry resolved successfully" : "Resolution attempt failed",
@@ -471,6 +541,29 @@ public class RivalryService {
 
     return rivalryRepository.hasRivalryHistory(wrestler1Opt.get(), wrestler2Opt.get());
   }
+
+  /**
+   * Delete all heat events belonging to closed rivalries that ended more than {@code retentionDays}
+   * days ago. Returns how many rivalries were processed and how many events were deleted.
+   */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  public HeatEventCleanupResult purgeClosedRivalryHeatEvents(final int retentionDays) {
+    Instant cutoff = Instant.now(clock).minus(retentionDays, ChronoUnit.DAYS);
+    List<Rivalry> stale = rivalryRepository.findByIsActiveFalseAndEndedDateBefore(cutoff);
+    if (stale.isEmpty()) {
+      return new HeatEventCleanupResult(0, 0);
+    }
+    int deleted = heatEventRepository.deleteByRivalryIn(stale);
+    log.info(
+        "HeatEvent cleanup: deleted {} events from {} closed rivalries (ended before {})",
+        deleted,
+        stale.size(),
+        cutoff);
+    return new HeatEventCleanupResult(stale.size(), deleted);
+  }
+
+  /** Result of a heat-event cleanup run. */
+  public record HeatEventCleanupResult(int rivalriesProcessed, int eventsDeleted) {}
 
   /** Rivalry statistics data class. */
   public record RivalryStats(

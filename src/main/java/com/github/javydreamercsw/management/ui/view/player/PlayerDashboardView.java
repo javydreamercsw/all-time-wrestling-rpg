@@ -642,7 +642,7 @@ public class PlayerDashboardView extends VerticalLayout {
                     .append(effect.replaceAll(".*momentum:\\s*", "").split(",")[0].trim());
               }
             });
-    Span mom = new Span("🚀 Momentum: " + effectiveMomentum);
+    Span mom = new Span("🔥 Momentum: " + effectiveMomentum);
     Tooltip.forComponent(mom).setText(momTooltip.toString());
 
     // Effective Hand Size with breakdown tooltip

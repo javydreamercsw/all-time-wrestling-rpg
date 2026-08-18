@@ -21,7 +21,6 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H4;
-import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
@@ -72,7 +71,7 @@ public class CampaignAbilityCardComponent extends Div {
         LumoUtility.Width.FULL);
 
     // Description
-    Paragraph desc = new Paragraph(card.getDescription());
+    Div desc = (Div) GuideTextRenderer.render(card.getDescription());
     desc.addClassNames(
         LumoUtility.FontSize.SMALL,
         LumoUtility.TextColor.SECONDARY,

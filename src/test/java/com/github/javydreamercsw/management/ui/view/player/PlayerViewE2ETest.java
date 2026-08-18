@@ -441,7 +441,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     WrestlerStatus status =
         WrestlerStatus.builder().wrestler(wrestler).statusCard(drawCard).level(1).build();
-    wrestlerStatusRepository.save(status);
+    wrestlerStatusRepository.saveAndFlush(status);
 
     login("player", "player123");
     navigateTo("player");
@@ -484,6 +484,7 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
             .account(playerAccount)
             .build();
     wrestler = wrestlerService.save(wrestler);
+    accountService.setActiveWrestlerId(playerAccount.getId(), wrestler.getId());
     WrestlerState state =
         wrestlerService.getOrCreateState(wrestler.getId(), defaultUniverse.getId());
     state.setTier(WrestlerTier.MIDCARDER);
@@ -525,6 +526,11 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     segment.setWinners(List.of(wrestler));
     segmentService.updateSegment(segment);
 
+    // Explicitly log out the active admin session before logging in as player.
+    // After cleanupLeagues() recreates accounts with the same IDs, Spring Security may
+    // consider the existing admin session still valid and redirect /login to /, preventing
+    // the player from authenticating.
+    logout();
     login("player", "player123");
 
     // Navigate to the PlayerView

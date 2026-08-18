@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -229,6 +230,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     pleShowType.setName("Premium Live Event (PLE)");
     pleShowType.setExpectedMatches(7);
     pleShowType.setExpectedPromos(2);
+    pleShowType.setCategory(ShowCategory.PLE);
     com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
         new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
     pleTemplate.setShowType(pleShowType);

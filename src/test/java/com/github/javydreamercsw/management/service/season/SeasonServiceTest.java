@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 /** Unit tests for SeasonService. Tests the ATW RPG season management functionality. */
 @ExtendWith(MockitoExtension.class)
@@ -63,6 +65,7 @@ class SeasonServiceTest {
 
   @Mock private Clock clock;
   @Mock private GameSettingService gameSettingService;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private SeasonService seasonService;
 
@@ -82,10 +85,12 @@ class SeasonServiceTest {
     weeklyShowType = new ShowType();
     weeklyShowType.setName("Weekly");
     weeklyShowType.setDescription("Weekly show type");
+    weeklyShowType.setCategory(ShowCategory.WEEKLY);
 
     pleShowType = new ShowType();
     pleShowType.setName("Premium Live Event (PLE)");
     pleShowType.setDescription("Premium Live Event show type");
+    pleShowType.setCategory(ShowCategory.PLE);
   }
 
   @Test

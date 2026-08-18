@@ -23,6 +23,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Clock;
@@ -163,6 +164,7 @@ class ShowTypeServiceTest {
     existing.setDescription("Pay-per-view event");
     existing.setExpectedMatches(8);
     existing.setExpectedPromos(3);
+    existing.setCategory(ShowCategory.PLE); // "PPV" infers PLE
     when(showTypeRepository.findByName("PPV")).thenReturn(Optional.of(existing));
 
     ShowType result = service.createOrUpdateShowType("PPV", "Pay-per-view event", 8, 3);

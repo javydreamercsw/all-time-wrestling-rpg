@@ -17,6 +17,18 @@
 package com.github.javydreamercsw.management.domain.rivalry.heatevent;
 
 import com.github.javydreamercsw.management.domain.rivalry.HeatEvent;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
-public interface HeatEventRepository extends JpaRepository<HeatEvent, Long> {}
+public interface HeatEventRepository extends JpaRepository<HeatEvent, Long> {
+
+  @Transactional
+  @Modifying(clearAutomatically = true)
+  @Query("DELETE FROM HeatEvent he WHERE he.rivalry IN :rivalries")
+  int deleteByRivalryIn(@Param("rivalries") List<Rivalry> rivalries);
+}

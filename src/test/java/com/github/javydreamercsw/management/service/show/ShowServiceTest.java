@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -100,6 +101,7 @@ class ShowServiceTest {
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private CampaignRepository campaignRepository;
   @Mock private Clock clock;
+  @Mock private ShowQualityService showQualityService;
 
   private ShowService showService;
 
@@ -135,7 +137,8 @@ class ShowServiceTest {
             legacyService,
             securityUtils,
             arenaRepository,
-            gmModeService);
+            gmModeService,
+            showQualityService);
 
     show = new Show();
     show.setId(1L);
@@ -623,6 +626,7 @@ class ShowServiceTest {
     // isPremiumLiveEvent() checks showType.getName() == "Premium Live Event (PLE)" on the template
     ShowType pleType = new ShowType();
     pleType.setName("Premium Live Event (PLE)");
+    pleType.setCategory(ShowCategory.PLE);
     ShowTemplate premiumTemplate = new ShowTemplate();
     premiumTemplate.setId(99L);
     premiumTemplate.setShowType(pleType);

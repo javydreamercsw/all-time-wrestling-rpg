@@ -300,6 +300,25 @@ public class TitleService {
   }
 
   /**
+   * Increments the consecutive-weekly-defenses counter on every active reign for {@code title}.
+   * Called when the champion successfully defends (not on draws). Resets to 0 implicitly when a new
+   * reign starts, since {@link TitleReign#consecutiveWeeklyDefenses} defaults to 0.
+   */
+  @Transactional
+  public void recordSuccessfulDefense(@NonNull final Title title) {
+    titleReignRepository
+        .findByTitleAndEndDateIsNull(title)
+        .forEach(
+            reign -> {
+              reign.setConsecutiveWeeklyDefenses(
+                  reign.getConsecutiveWeeklyDefenses() == null
+                      ? 1
+                      : reign.getConsecutiveWeeklyDefenses() + 1);
+              titleReignRepository.save(reign);
+            });
+  }
+
+  /**
    * Resolves the in-game date a title change should be recorded on. Prefers the show's in-game date
    * (kayfabe date) so reign history reflects the fictional timeline rather than the real-world
    * moment a booker clicked "Adjudicate".
@@ -458,6 +477,12 @@ public class TitleService {
   @PreAuthorize("isAuthenticated()")
   public List<Title> findTitlesByChampion(@NonNull final Wrestler wrestler) {
     return titleRepository.findTitlesHeldByWrestler(wrestler);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public List<com.github.javydreamercsw.management.domain.title.TitleReign> findReignsByChampion(
+      @NonNull final Wrestler wrestler) {
+    return titleReignRepository.findByChampionsContaining(wrestler);
   }
 
   @PreAuthorize(

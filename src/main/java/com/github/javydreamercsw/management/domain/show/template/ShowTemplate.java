@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.show.template;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -117,7 +118,7 @@ public class ShowTemplate extends AbstractEntity<Long> {
    * @return true if this template is for a PLE
    */
   public boolean isPremiumLiveEvent() {
-    return showType != null && "Premium Live Event (PLE)".equals(showType.getName());
+    return showType != null && showType.getCategory() == ShowCategory.PLE;
   }
 
   /**
@@ -126,7 +127,7 @@ public class ShowTemplate extends AbstractEntity<Long> {
    * @return true if this template is for a weekly show
    */
   public boolean isWeeklyShow() {
-    return showType != null && "Weekly".equals(showType.getName());
+    return showType != null && showType.getCategory() == ShowCategory.WEEKLY;
   }
 
   /** Ensure default values before persisting. */

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -53,6 +54,7 @@ class UniverseServiceTest {
   @Mock private LeagueRepository leagueRepository;
   @Mock private TitleRepository titleRepository;
   @Mock private CampaignRepository campaignRepository;
+  @Mock private DramaEventRepository dramaEventRepository;
 
   @InjectMocks private UniverseService universeService;
 
@@ -203,6 +205,7 @@ class UniverseServiceTest {
 
     universeService.delete(1L);
 
+    verify(dramaEventRepository).deleteByUniverse(universe);
     verify(universeRepository).delete(universe);
   }
 
@@ -218,6 +221,7 @@ class UniverseServiceTest {
 
     universeService.delete(1L);
 
+    verify(dramaEventRepository).deleteByUniverse(universe);
     verify(universeRepository).delete(universe);
     verify(universeContextService).clearCurrentUniverse();
   }

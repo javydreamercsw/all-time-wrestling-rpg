@@ -20,7 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -54,5 +57,39 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
 
     WebElement parent = grid.findElement(By.xpath(".."));
     assertThat(parent.getSize().getHeight()).isGreaterThan(0);
+  }
+
+  /**
+   * Regression test for LazyInitializationException in DeckListView.openDeckView().
+   *
+   * <p>Before the fix, clicking "View" passed a raw lazy Set to cardGrid.setItems(), which caused
+   * Vaadin's DataCommunicator to call ListDataProvider.size() during WebSocket push — outside any
+   * open Hibernate session — throwing a LazyInitializationException.
+   */
+  @Test
+  public void testViewDeckDialogOpensWithCardGrid() {
+    Wrestler wrestler =
+        wrestlerRepository.saveAndFlush(
+            Wrestler.builder()
+                .name("Deck View Dialog Regression Test")
+                .startingHealth(100)
+                .startingStamina(100)
+                .active(true)
+                .build());
+
+    Deck deck = new Deck();
+    deck.setWrestler(wrestler);
+    deck.setCreationDate(Instant.now());
+    deckRepository.saveAndFlush(deck);
+
+    navigateTo("deck-list");
+
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
+    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
+
+    clickElement(By.xpath("//vaadin-button[text()='View']"));
+
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-dialog")));
+    assertNotNull(driver.findElement(By.tagName("vaadin-grid")));
   }
 }

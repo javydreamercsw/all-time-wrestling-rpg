@@ -21,8 +21,10 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.event.dto.SeasonEndedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Clock;
 import java.time.Instant;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,6 +54,7 @@ public class SeasonService {
   @Autowired private WrestlerSeasonSnapshotRepository snapshotRepository;
   @Autowired private Clock clock;
   @Autowired private GameSettingService gameSettingService;
+  @Autowired private ApplicationEventPublisher eventPublisher;
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @org.springframework.cache.annotation.CacheEvict(
@@ -140,6 +144,13 @@ public class SeasonService {
     return seasonRepository.findById(seasonId);
   }
 
+  /** Get season by ID with the shows collection pre-loaded (for detail views). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Season> getSeasonByIdWithShows(@NonNull final Long seasonId) {
+    return seasonRepository.findByIdWithShows(seasonId);
+  }
+
   /** Find season by name. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -196,7 +207,9 @@ public class SeasonService {
       allEntries = true)
   public Season endSeason(@NonNull final Season season) {
     season.endSeason();
-    return seasonRepository.saveAndFlush(season);
+    Season saved = seasonRepository.saveAndFlush(season);
+    eventPublisher.publishEvent(new SeasonEndedEvent(this, saved));
+    return saved;
   }
 
   /** Add a show to the active season. */
@@ -300,11 +313,11 @@ public class SeasonService {
               int expectedPpvs = season.getExpectedPpvCount();
               long regularShows =
                   season.getShows().stream()
-                      .filter(show -> !show.getType().getName().toLowerCase().contains("ple"))
+                      .filter(show -> show.getType().getCategory() != ShowCategory.PLE)
                       .count();
               long ppvShows =
                   season.getShows().stream()
-                      .filter(show -> show.getType().getName().toLowerCase().contains("ple"))
+                      .filter(show -> show.getType().getCategory() == ShowCategory.PLE)
                       .count();
 
               return new SeasonStats(

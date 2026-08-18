@@ -32,6 +32,7 @@ class NewsDocsE2ETest extends AbstractE2ETest {
 
   @Test
   void testCaptureNewsFeature() {
+    login();
     // 1. Setup - Ensure some news exists
     newsService.createNewsItem(
         "Breaking: Major Championship Change!",
@@ -69,6 +70,7 @@ class NewsDocsE2ETest extends AbstractE2ETest {
 
   @Test
   void testRecordNewsWalkthrough() {
+    login();
     setVideoInfo("Dashboards", "News & Rumors Walkthrough", "news-walkthrough");
 
     newsService.createNewsItem(
@@ -103,9 +105,7 @@ class NewsDocsE2ETest extends AbstractE2ETest {
         false,
         3);
 
-    navigateTo("news");
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    navigateToAndWaitForElement("news", By.tagName("vaadin-grid"));
 
     captureCaption(
         "News & Rumors — a rolling feed of every significant event in the promotion."

@@ -283,7 +283,7 @@
     "id": "admin-admin-show-templates",
     "category": "Admin",
     "title": "Show Templates",
-    "description": "Manage templates for your shows. You can define default match and promo counts, and now generate custom AI art for each template.",
+    "description": "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
     "imagePath": "screenshots/admin-show-templates.png",
     "order": 110
   }, {
@@ -791,6 +791,69 @@
     "title": "Weekly Challenges",
     "description": "Browse official and custom weekly challenges. Filter by official status or required expansions and open any challenge for full setup instructions, conditions, and modifiers.",
     "imagePath": "screenshots/mechanic-weekly-challenges.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-season-list",
+    "category": "Booker",
+    "title": "Season List",
+    "description": "Browse all seasons with their status, show count, and date range. Click 'Details' on any season to open its full detail page, including the awards ceremony results.",
+    "imagePath": "screenshots/booker-season-list.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-season-detail",
+    "category": "Booker",
+    "title": "Season Detail",
+    "description": "Full season breakdown showing key stats (status, show count, duration) and the Awards Ceremony section listing Wrestler of the Year, Most Improved, and Most Decorated winners.",
+    "imagePath": "screenshots/booker-season-detail.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-list",
+    "category": "Booker",
+    "title": "Tournament Bracket Generator",
+    "description": "Plan and run tournaments directly from the Booker dashboard. Choose from Single Elimination or Round Robin formats, auto-seed wrestlers by fan count or pick them manually, and book each round across your scheduled shows.",
+    "imagePath": "screenshots/booker-tournament-list.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-detail-scheduled",
+    "category": "Booker",
+    "title": "Tournament Detail — Scheduled",
+    "description": "A freshly created tournament shows all entrants seeded and ready. The 'Start Tournament' button generates the first-round bracket. Entrants are ranked by seed — 1 vs 8, 2 vs 7, and so on.",
+    "imagePath": "screenshots/booker-tournament-detail-scheduled.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-detail-in-progress",
+    "category": "Booker",
+    "title": "Tournament Detail — In Progress",
+    "description": "Live tournament view shows completed round results and the pending next round. The booker can book the upcoming round onto any scheduled show and record match winners as each event is completed.",
+    "imagePath": "screenshots/booker-tournament-detail-in-progress.png",
+    "order": 0
+  }, {
+    "id": "wrestler-profile-wrestler-profile-abilities",
+    "category": "Wrestler Profile",
+    "title": "Wrestler Abilities Panel",
+    "description": "The Abilities panel groups each wrestler's moves into Core Abilities (shared by all wrestlers) and Wrestler Abilities (superstar-specific). Limited-use abilities show a colored chip with their use count. Unlockable abilities are collapsed by default.",
+    "imagePath": "screenshots/wrestler-profile-abilities.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-match-abilities",
+    "category": "Game Mechanics",
+    "title": "Wrestler Abilities in Match",
+    "description": "Your wrestler's ability board is always a tap away during a match. The collapsed 'Your Abilities' panel in the match sidebar shows your core, wrestler-specific, and unlockable abilities with their type badges and [[token]] icon descriptions — no need to leave the match to look something up.",
+    "imagePath": "screenshots/mechanic-match-abilities.png",
+    "order": 0
+  }, {
+    "id": "community-community-hall-of-fame-trophies",
+    "category": "Community",
+    "title": "Hall of Fame — Achievement Trophies",
+    "description": "Each player row shows a trophy icon when they have unlocked achievements. Hover the icon to see a quick summary; click it to open the full achievement history.",
+    "imagePath": "screenshots/community-hall-of-fame-trophies.png",
+    "order": 0
+  }, {
+    "id": "community-community-hall-of-fame-achievement-details",
+    "category": "Community",
+    "title": "Hall of Fame — Achievement Details",
+    "description": "The achievement dialog lists every unlocked achievement with its category, XP reward, and the date and time it was earned.",
+    "imagePath": "screenshots/community-hall-of-fame-achievement-details.png",
     "order": 0
   } ]
 }

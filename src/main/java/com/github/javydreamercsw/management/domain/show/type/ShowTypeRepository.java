@@ -31,6 +31,9 @@ public interface ShowTypeRepository
   /** Find show type by name. */
   Optional<ShowType> findByName(String name);
 
+  /** Find first show type matching the given category. */
+  Optional<ShowType> findFirstByCategory(ShowCategory category);
+
   /** Check if show type name exists. */
   boolean existsByName(String name);
 }

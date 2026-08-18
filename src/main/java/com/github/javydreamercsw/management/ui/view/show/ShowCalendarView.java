@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.util.StarRenderer;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
@@ -377,6 +378,10 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     }
   }
 
+  private String renderStars(final double score) {
+    return StarRenderer.renderStars(score);
+  }
+
   private Div createUpcomingShowItem(@NonNull final Show show) {
     Div showItem = new Div();
     showItem.addClassNames(
@@ -433,6 +438,13 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     VerticalLayout textLayout = new VerticalLayout(showName, showDate, showType);
     textLayout.setSpacing(false);
     textLayout.setPadding(false);
+
+    if (show.getQualityScore() != null) {
+      Span starBadge = new Span(renderStars(show.getQualityScore()) + " " + show.getQualityScore());
+      starBadge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+      starBadge.getStyle().set("color", "#d97706");
+      textLayout.add(starBadge);
+    }
 
     content.add(templateImage, textLayout);
 

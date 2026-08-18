@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -27,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDate;
 import java.util.List;
@@ -42,6 +46,8 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private WrestlerAbilityRepository wrestlerAbilityRepository;
+  @Autowired private AccountRepository accountRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
 
   @BeforeEach
@@ -264,6 +270,95 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
          without leaving the app.\
         """,
         "mechanic-match-info");
+  }
+
+  @Test
+  void testCapturePlayerAbilitiesInMatch() {
+    Account admin = accountRepository.findByUsername("admin").get();
+
+    // Use a seeded wrestler with abilities as the player, or create a minimal one.
+    Wrestler playerWrestler =
+        wrestlerRepository.findByAccount(admin).stream()
+            .findFirst()
+            .orElseGet(
+                () -> {
+                  Wrestler w =
+                      Wrestler.builder()
+                          .name("Docs Player")
+                          .startingHealth(15)
+                          .startingStamina(15)
+                          .account(admin)
+                          .isPlayer(true)
+                          .active(true)
+                          .gender(Gender.MALE)
+                          .build();
+                  return wrestlerRepository.saveAndFlush(w);
+                });
+
+    // Prefer a seeded wrestler that has abilities as the player.
+    Wrestler withAbilities =
+        wrestlerRepository.findAll().stream()
+            .filter(
+                w ->
+                    w.getAccount() == null
+                        && !wrestlerAbilityRepository.findByWrestlerId(w.getId()).isEmpty())
+            .findFirst()
+            .orElse(null);
+
+    if (withAbilities != null) {
+      withAbilities.setAccount(admin);
+      withAbilities.setIsPlayer(true);
+      playerWrestler = wrestlerRepository.saveAndFlush(withAbilities);
+    }
+
+    // Pick any other wrestler as the opponent.
+    final Wrestler finalPlayer = playerWrestler;
+    Wrestler opponent =
+        wrestlerRepository.findAll().stream()
+            .filter(w -> !w.getId().equals(finalPlayer.getId()))
+            .findFirst()
+            .orElse(null);
+
+    if (opponent == null) {
+      return;
+    }
+
+    Show show = showRepository.findAll().getFirst();
+    SegmentType matchType = segmentTypeRepository.findByName("One on One").get();
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(matchType);
+    segment.setSegmentDate(java.time.Instant.now());
+    segment.addParticipant(playerWrestler);
+    segment.addParticipant(opponent);
+    segment = segmentRepository.saveAndFlush(segment);
+
+    navigateTo("match/" + segment.getId());
+    waitForText("Your Abilities");
+
+    // Expand the abilities panel so it is visible in the screenshot.
+    org.openqa.selenium.WebElement abilitiesToggle =
+        waitForVaadinElement(
+            driver,
+            org.openqa.selenium.By.xpath(
+                "//vaadin-details-summary[contains(., 'Your Abilities')]"));
+    clickElement(abilitiesToggle);
+
+    try {
+      Thread.sleep(500);
+    } catch (InterruptedException ignored) {
+    }
+
+    documentFeature(
+        "Game Mechanics",
+        "Wrestler Abilities in Match",
+        """
+        Your wrestler's ability board is always a tap away during a match. The collapsed\
+         'Your Abilities' panel in the match sidebar shows your core, wrestler-specific,\
+         and unlockable abilities with their type badges and [[token]] icon descriptions\
+         — no need to leave the match to look something up.\
+        """,
+        "mechanic-match-abilities");
   }
 
   private void waitForText(final String text) {

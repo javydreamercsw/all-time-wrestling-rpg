@@ -19,7 +19,10 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class WrestlerProfileRedesignDocsE2ETest extends AbstractDocsE2ETest {
@@ -53,9 +56,38 @@ class WrestlerProfileRedesignDocsE2ETest extends AbstractDocsE2ETest {
          is organized into a clean, mobile-friendly accordion layout.\
         """,
         "wrestler-profile-redesign");
+
+    expandAccordionPanel("Abilities");
+    waitForText("Core Abilities");
+
+    documentFeature(
+        "Wrestler Profile",
+        "Wrestler Abilities Panel",
+        """
+        The Abilities panel groups each wrestler's moves into Core Abilities (shared by all\
+         wrestlers) and Wrestler Abilities (superstar-specific). Limited-use abilities show a\
+         colored chip with their use count. Unlockable abilities are collapsed by default.\
+        """,
+        "wrestler-profile-abilities");
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
+  }
+
+  private void expandAccordionPanel(final String label) {
+    waitForVaadinClientToLoad();
+    List<WebElement> panels = driver.findElements(By.tagName("vaadin-accordion-panel"));
+    for (WebElement panel : panels) {
+      if (panel.getText().contains(label)) {
+        clickElement(panel);
+        try {
+          Thread.sleep(500);
+        } catch (InterruptedException ignored) {
+        }
+        return;
+      }
+    }
+    throw new RuntimeException("Could not find accordion panel with label: " + label);
   }
 }

@@ -102,3 +102,5 @@ node/
 .repowise/jobs/
 .repowise/lancedb/
 .repowise/omissions/
+# Added by code-review-graph
+.code-review-graph/

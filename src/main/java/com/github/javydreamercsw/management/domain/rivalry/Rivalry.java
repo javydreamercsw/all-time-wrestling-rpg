@@ -76,6 +76,12 @@ public class Rivalry extends AbstractEntity<Long> {
   @Column(name = "priority")
   private Integer priority = 0;
 
+  @Column(name = "ple_resolution_attempts", nullable = false)
+  private Integer pleResolutionAttempts = 0;
+
+  @Column(name = "last_ple_resolution_show_id")
+  private Long lastPleResolutionShowId;
+
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 

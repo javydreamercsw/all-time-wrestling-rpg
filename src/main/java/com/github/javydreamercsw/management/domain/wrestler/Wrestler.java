@@ -137,6 +137,10 @@ public class Wrestler extends AbstractEntity<Long> {
   @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
   private Integer brawl = 1;
 
+  @Column(name = "consecutive_wins", nullable = false)
+  @Builder.Default
+  private Integer consecutiveWins = 0;
+
   // ==================== ATW RPG RELATIONSHIPS ====================
   @ManyToOne
   @JoinColumn(name = "account_id")
@@ -206,6 +210,15 @@ public class Wrestler extends AbstractEntity<Long> {
   @JsonIgnore
   @Builder.Default
   private Set<WrestlerState> wrestlerStates = new LinkedHashSet<>();
+
+  @OneToMany(
+      mappedBy = "wrestler",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Builder.Default
+  private List<WrestlerAbility> abilities = new ArrayList<>();
 
   @JsonIgnore
   public java.util.Optional<WrestlerState> getState(final Long universeId) {

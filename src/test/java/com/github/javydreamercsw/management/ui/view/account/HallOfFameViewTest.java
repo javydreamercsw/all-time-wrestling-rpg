@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountAchievementRepository;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -40,6 +41,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class HallOfFameViewTest extends AbstractViewTest {
 
   @Mock private AccountRepository accountRepository;
+  @Mock private AccountAchievementRepository accountAchievementRepository;
   @Mock private TransactionTemplate transactionTemplate;
 
   private HallOfFameView view;
@@ -55,7 +57,7 @@ class HallOfFameViewTest extends AbstractViewTest {
             });
     when(accountRepository.findAll(any(Sort.class))).thenReturn(Collections.emptyList());
 
-    view = new HallOfFameView(accountRepository, transactionTemplate);
+    view = new HallOfFameView(accountRepository, accountAchievementRepository, transactionTemplate);
     UI.getCurrent().add(view);
   }
 
@@ -73,7 +75,7 @@ class HallOfFameViewTest extends AbstractViewTest {
     account.setUsername("champion");
     when(accountRepository.findAll(any(Sort.class))).thenReturn(List.of(account));
 
-    view = new HallOfFameView(accountRepository, transactionTemplate);
+    view = new HallOfFameView(accountRepository, accountAchievementRepository, transactionTemplate);
     UI.getCurrent().add(view);
 
     Grid<?> grid = _get(view, Grid.class, spec -> spec.withId("hall-of-fame-grid"));

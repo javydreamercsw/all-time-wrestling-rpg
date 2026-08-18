@@ -96,6 +96,138 @@ The `DataInitializer` automatically scans all `*.json` files in this directory.
 
 ## Wrestlers
 
+### Wrestler abilities and forward-compatible effect scripts
+
+Wrestler-specific abilities are defined in the expansion JSON files under
+`src/main/resources/wrestlers/`. Each ability may include an `effectScript`
+field. These scripts are currently **content metadata for display and future
+use**; wrestler abilities are not executed by the match engine yet.
+
+Use the match-oriented context names consistently when describing a future
+effect:
+
+- `wrestler` — the ability owner
+- `opponent` — the opposing wrestler
+- `match` — match-level state and future helper methods
+- `event` — the lifecycle event that triggers the ability
+
+Use the existing style, for example:
+
+```json
+{
+  "name": "Example Reversal",
+  "description": "Gain the initiative and deal -1 [[health]].",
+  "type": "USES_LIMITED",
+  "category": "SIGNATURE",
+  "timing": "DEFENSE",
+  "maxUses": 1,
+  "effectScript": "wrestler.gainInitiative(); opponent.health -= 1"
+}
+```
+
+### Defined future execution semantics
+
+The scripts are display-only today, but their behavior is defined now so a
+future match engine can implement them without changing the content contract.
+The engine must evaluate an ability in a match-scoped context containing
+`wrestler`, `opponent`, `match`, and `event`. Resource changes are clamped by
+the normal match rules; an ability cannot create negative health or stamina,
+and a spent use is consumed only after its script completes successfully.
+
+#### Lifecycle events
+
+The engine should expose these event names to `unlockCondition` and script
+execution:
+
+|          Event           |                        When it fires                        |
+|--------------------------|-------------------------------------------------------------|
+| `ABILITY_WINDOW_OFFENSE` | The wrestler's offensive ability window opens.              |
+| `ABILITY_WINDOW_DEFENSE` | The wrestler's defensive ability window opens.              |
+| `ATTACK_PLAYED`          | An attack card is committed, before its roll.               |
+| `ATTACK_ROLL_RESOLVED`   | The attack die result is available, before success effects. |
+| `ATTACK_SUCCESS`         | The attack succeeds and damage is known.                    |
+| `ATTACK_FAILURE`         | The attack fails.                                           |
+| `DAMAGE_RECEIVED`        | Damage is applied to the defending wrestler.                |
+| `PIN_ATTEMPT`            | A pin attempt is declared.                                  |
+| `KICKOUT_ATTEMPT`        | One kick-out roll is about to be made.                      |
+| `KICKOUT_SUCCESS`        | The defender successfully kicks out.                        |
+| `KICKOUT_FAILURE`        | The defender fails a kick-out roll.                         |
+| `COMBO_SUCCESS`          | A combo resolves successfully.                              |
+| `MATCH_END`              | The match reaches a terminal outcome.                       |
+
+An event is emitted once per occurrence. In particular, `KICKOUT_ATTEMPT` and
+`KICKOUT_SUCCESS` are per roll, not once per pin sequence.
+
+#### Persistent ability state
+
+`wrestler.abilityTokens` is a match-scoped map keyed by ability name. The map
+starts empty for every match and is discarded at match end. It is suitable for
+counters and activation flags, not permanent wrestler progression.
+
+- **Angry Giant:** an activation adds one `Angry Giant` token. While the token
+  is present, each future attack by that wrestler gets +1 damage and +1 stamina
+  cost. Activating it again has no additional effect. A deactivation operation
+  removes the token and both modifiers; deactivation costs two cards from the
+  wrestler's hand. If the wrestler cannot pay, the ability remains active.
+- **Piledriver the Referee:** activation adds one token. The next pin attempt
+  initiated by the opponent is cancelled, the token is consumed, and no
+  kick-out sequence begins. If the wrestler initiates a pin first, the token is
+  consumed after that pin is declared and the wrestler's own pin proceeds.
+- **Loose Cannon:** Loose Cannon is an ability token, not a dynamically created
+  `WrestlerAbility` row. Each awarded token increments
+  `wrestler.abilityTokens['Loose Cannon']`. “Trigger Loose Cannon” consumes one
+  token only when the ability text says to spend one; otherwise it awards one.
+  Token state resets at match end.
+
+#### Rolls and dice
+
+`match.modifyCurrentRoll(amount)` changes the result of the roll currently
+being resolved and is valid only during `ATTACK_ROLL_RESOLVED` or
+`KICKOUT_ATTEMPT`. Results are clamped to the roll's legal range. It does not
+reroll the die and cannot modify a completed roll. A future `rollDie(sides)`
+helper returns a value without changing the active attack or kick-out roll.
+
+`match.modifyNextRoll(amount)` applies once to the next eligible roll and is
+then cleared. `match.modifyOpponentNextRoll(amount)` does the same for the
+opponent. These are distinct from current-roll modification.
+
+#### Cards and allies
+
+`wrestler.returnCardsToDrawPile(count, filter)` removes up to `count` matching
+cards from the wrestler's hand and shuffles them into that wrestler's draw
+pile. If fewer cards match, all matching cards are returned and no error is
+raised. `filter` may be `ANY`, a card type, or a card name.
+
+`wrestler.addAlly(name)` adds the named ally to the match only if that ally is
+available and not already present. `wrestler.removeAlly(name)` removes that
+ally and any match-scoped effects it supplied. Removing a missing ally is a
+no-op. Ally changes never modify the persistent roster or database.
+
+#### Conditional triggers
+
+The engine evaluates conditions only after the relevant facts are known:
+
+- `ATTACK_SUCCESS` exposes `match.attackCardType`,
+  `match.attackDamage`, `match.attackWasWeapon`,
+  `match.attackWasDevastating`, and `match.comboCategoriesUsed`.
+- `DAMAGE_RECEIVED` exposes `match.incomingDamage`.
+- `KICKOUT_SUCCESS` and `KICKOUT_FAILURE` expose the pin attempt and current
+  roll number, allowing effects such as “when the opponent kicks out.”
+- A condition saying “after dealing 2+ damage” evaluates against the final
+  damage after all modifiers, not the card's printed damage.
+- AERIAL, STRIKE, SIGNATURE, FINISHER, and weapon checks use the normalized
+  card flags, not display-name string matching.
+
+These semantics are a specification only. No current service is required to
+execute wrestler ability `effectScript` values until the match ability engine
+is implemented.
+
+Guide-text placeholders use inline SVG icons. Registered names currently
+include `pin`, `stamina`, `health`, `card`, `momentum`, `reversal`, `tag`,
+`signature`, `finisher`, `roll`, and `kick-out`. Add a matching SVG under
+`src/main/resources/static/icons/` and register its name in `manifest.json`
+before using a new `[[icon-name]]` placeholder.
+
 Wrestlers are defined in `src/main/resources/wrestlers.json` (and optionally `wrestlers-extra.json`).
 
 **Structure:**
@@ -393,6 +525,7 @@ For bundled challenges shipped in the JAR, the path is `images/challenges/filena
     {
       "id": "season_2_weekly",
       "jsonUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_2/weekly_challenges.json",
+      "achievementsUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_2/achievements.json",
       "images": [
         { "name": "week4.png", "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week4.png" }
       ]
@@ -403,6 +536,7 @@ For bundled challenges shipped in the JAR, the path is `images/challenges/filena
 
 - `id` — unique package identifier (used to avoid re-downloading the same content).
 - `jsonUrl` — full GitHub Pages URL to the challenge JSON file.
+- `achievementsUrl` — optional. Full URL to an `achievements.json`-shaped file (same schema as [Achievements](#achievements), including `unlockCondition`). Applied via the same upsert logic as the bundled `achievements.json` — existing keys are updated in place, new keys are inserted. Omit if the package doesn't ship achievements.
 - `images` — list of images to download alongside this package. Already-downloaded images are skipped on repeat checks.
 - `lastUpdated` — human-readable date (informational only; the app always re-downloads changed packages).
 
@@ -455,13 +589,14 @@ Achievements are persistent player rewards with an XP value. They are loaded fro
 
 ### Field reference
 
-|     Field     |                                                                         Description                                                                          |
-|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `key`         | Unique string identifier. Must match the key passed to `LegacyService.unlockAchievement()` exactly — a mismatch means the achievement silently never awards. |
-| `name`        | Short display name shown in the player profile.                                                                                                              |
-| `description` | One-sentence description of what the player did to earn it.                                                                                                  |
-| `xpValue`     | Prestige XP awarded on unlock.                                                                                                                               |
-| `category`    | One of `COLLECTION`, `FANS`, `CHAMPIONSHIP`, `MATCH_TYPE`, `BOOKING`, `SPECIAL_EVENT`, `CHALLENGE`.                                                          |
+|       Field       |                                                                         Description                                                                          |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `key`             | Unique string identifier. Must match the key passed to `LegacyService.unlockAchievement()` exactly — a mismatch means the achievement silently never awards. |
+| `name`            | Short display name shown in the player profile.                                                                                                              |
+| `description`     | One-sentence description of what the player did to earn it.                                                                                                  |
+| `xpValue`         | Prestige XP awarded on unlock.                                                                                                                               |
+| `category`        | One of `COLLECTION`, `FANS`, `CHAMPIONSHIP`, `MATCH_TYPE`, `BOOKING`, `SPECIAL_EVENT`, `CHALLENGE`.                                                          |
+| `unlockCondition` | Optional. A Groovy boolean expression — see [Scripted unlock conditions](#scripted-unlock-conditions). Omit for achievements unlocked only from Java code.   |
 
 ### Categories
 
@@ -486,9 +621,73 @@ Achievements are persistent player rewards with an XP value. They are loaded fro
 
 Non-challenge achievements (match-type, collection, etc.) are unlocked by calling `LegacyService.unlockAchievement(account, key)` from the relevant service layer. `unlockAchievement` is idempotent — calling it multiple times for the same account and key is safe.
 
+### Scripted unlock conditions
+
+Achievement *metadata* has always lived in `achievements.json`, but until the `unlockCondition` field existed, the *unlock logic itself* was 100% hardcoded Java spread across three services. `unlockCondition` lets you add a new achievement — including its trigger condition — by editing `achievements.json` alone, as long as the condition can be expressed against the variables already available at one of the three existing check sites below. No Java change, no recompile.
+
+`unlockCondition` is a Groovy expression that must evaluate to `true`/`false`. It is evaluated by `AchievementScriptService` (`management/service/achievement/`), which fails **closed**: a syntax error, a runtime exception, or a non-boolean result is logged and treated as "not unlocked" — a broken script can never crash gameplay or block an achievement check for every other player. Compiled scripts are cached by snippet text, and an achievement the account already holds is skipped before its script is even compiled, so scripted achievements add negligible overhead.
+
+`unlockCondition` is evaluated once per relevant event, at each of the three sites that already check achievements. Each site binds a different set of variables:
+
+**`LegacyService.checkAchievements`** (runs on every legacy score recalculation — roster/fan/title changes):
+
+|      Variable       |       Type       |                         Meaning                         |
+|---------------------|------------------|---------------------------------------------------------|
+| `account`           | `Account`        | The account being evaluated.                            |
+| `wrestlers`         | `List<Wrestler>` | All wrestlers managed by the account.                   |
+| `totalFans`         | `long`           | Sum of fans across all managed wrestlers.               |
+| `currentTitlesHeld` | `long`           | Count of titles currently held by any managed wrestler. |
+
+**`ChallengeCompletionService.checkAchievements`** (runs on first completion of a challenge):
+
+|        Variable         |        Type         |                     Meaning                      |
+|-------------------------|---------------------|--------------------------------------------------|
+| `account`               | `Account`           | The account completing the challenge.            |
+| `challenge`             | `ChallengeDTO`      | The challenge just completed.                    |
+| `challengeId`           | `String`            | The completed challenge's ID.                    |
+| `difficulty`            | `Difficulty`        | The completed challenge's difficulty.            |
+| `season`                | `String` (nullable) | The completed challenge's season label, if any.  |
+| `totalCompleted`        | `long`              | Total completed-challenge count for the account. |
+| `hardCompletedCount`    | `long`              | Count of completed HARD-difficulty challenges.   |
+| `completedChallengeIds` | `Set<String>`       | IDs of all challenges the account has completed. |
+
+**`SegmentAdjudicationService.triggerAchievements`** (runs per participant after every match adjudication):
+
+|       Variable       |       Type       |                      Meaning                       |
+|----------------------|------------------|----------------------------------------------------|
+| `segment`            | `Segment`        | The adjudicated segment.                           |
+| `winners`            | `List<Wrestler>` | The segment's winners.                             |
+| `participant`        | `Wrestler`       | The wrestler this evaluation is for.               |
+| `isWinner`           | `boolean`        | Whether `participant` is a winner.                 |
+| `isMainEvent`        | `boolean`        | Whether the segment was the show's main event.     |
+| `isPremiumLiveEvent` | `boolean`        | Whether the show is a Premium Live Event.          |
+| `segmentTypeName`    | `String`         | The segment type's display name.                   |
+| `segmentRuleNames`   | `List<String>`   | Display names of the segment's rules/stipulations. |
+
+Example — a script-only achievement with no corresponding Java, added purely via `achievements.json`:
+
+```json
+{
+  "key": "ELITE_SCOUT",
+  "name": "Elite Scout",
+  "description": "Build a roster of 20 wrestlers while holding at least 3 titles",
+  "xpValue": 750,
+  "category": "COLLECTION",
+  "unlockCondition": "wrestlers.size() >= 20 && currentTitlesHeld >= 3"
+}
+```
+
+**Limitation:** a condition that needs data not available at any of the three sites above (e.g. "wrestler retires") still requires a new Java call site invoking `ScriptedAchievementEvaluator.resolveNewlyUnlockedKeys(...)` — this mechanism only covers the three existing choke points, not arbitrary new game events.
+
+Scripted achievements distributed via a remote content pack's `achievementsUrl` (see [Publishing new challenges without a release](#publishing-new-challenges-without-a-release)) work identically — `unlockCondition` is preserved whether an achievement is inserted or updated, and the in-memory cache of scripted achievements is refreshed immediately so an update takes effect without an app restart.
+
 ### Adding a new achievement
 
-1. Add an entry to `achievements.json` with a unique `key`.
+**Preferred path — no Java change:** if the trigger condition can be expressed against the variables available at one of the three sites in [Scripted unlock conditions](#scripted-unlock-conditions), add an entry to `achievements.json` with a unique `key` and an `unlockCondition` script. Nothing else is required.
+
+**Java-triggered path** — needed only for a genuinely new trigger point:
+
+1. Add an entry to `achievements.json` with a unique `key` (omit `unlockCondition`).
 2. Call `legacyService.unlockAchievement(account, "YOUR_KEY")` from the service that should trigger it.
 3. If the achievement is paired with a new challenge, set `achievementKey` on the challenge entry.
 4. Add a test that verifies `unlockAchievement` is called with the correct key string (see `ChallengeCompletionServiceTest` for patterns to follow).

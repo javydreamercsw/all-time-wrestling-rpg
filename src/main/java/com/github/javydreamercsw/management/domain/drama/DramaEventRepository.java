@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.drama;
 
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
@@ -152,6 +153,10 @@ public interface DramaEventRepository
   @Transactional
   void deleteByPrimaryWrestlerOrSecondaryWrestler(
       Wrestler primaryWrestler, Wrestler secondaryWrestler);
+
+  @Modifying
+  @Transactional
+  void deleteByUniverse(Universe universe);
 
   @Modifying
   @Transactional

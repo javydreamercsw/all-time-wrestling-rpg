@@ -132,6 +132,9 @@ public class UniverseExportService {
       Universe universe, List<WrestlerState> states) {
     List<Map<String, Object>> rows = new ArrayList<>();
     for (var r : rivalryRepository.findByUniverseWithWrestlers(universe)) {
+      if (Boolean.FALSE.equals(r.getIsActive()) && (r.getHeat() == null || r.getHeat() == 0)) {
+        continue;
+      }
       Map<String, Object> row = new LinkedHashMap<>();
       row.put("wrestler1", r.getWrestler1().getName());
       row.put("wrestler2", r.getWrestler2().getName());

@@ -16,7 +16,11 @@
 */
 package com.github.javydreamercsw.management.service.challenge;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.account.Achievement;
+import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -26,10 +30,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -45,7 +52,9 @@ public class ChallengeUpdateService {
   private String manifestUrl;
 
   private final ChallengeService challengeService;
+  private final AchievementRepository achievementRepository;
   private final ObjectMapper objectMapper;
+  private final CacheManager cacheManager;
 
   @Getter private Instant lastChecked;
 
@@ -108,6 +117,10 @@ public class ChallengeUpdateService {
           }
         }
       }
+
+      if (pkg.getAchievementsUrl() != null && !pkg.getAchievementsUrl().isBlank()) {
+        applyAchievements(pkg.getAchievementsUrl());
+      }
     }
 
     lastChecked = Instant.now();
@@ -117,6 +130,40 @@ public class ChallengeUpdateService {
 
     String msg = downloaded > 0 ? downloaded + " package(s) updated." : "Already up to date.";
     return new UpdateResult(downloaded, skipped, msg);
+  }
+
+  private void applyAchievements(final String url) {
+    byte[] bytes = fetchBytes(url);
+    if (bytes == null) {
+      log.warn("Could not download achievements from {}", url);
+      return;
+    }
+    try {
+      List<Achievement> incoming = objectMapper.readValue(bytes, new TypeReference<>() {});
+      List<Achievement> toSave = new ArrayList<>();
+      for (Achievement a : incoming) {
+        achievementRepository
+            .findByKey(a.getKey())
+            .ifPresentOrElse(
+                existing -> {
+                  existing.copyContentFrom(a);
+                  toSave.add(existing);
+                },
+                () -> toSave.add(a));
+      }
+      achievementRepository.saveAll(toSave);
+      log.debug("Applied {} achievement(s) from {}", toSave.size(), url);
+      // Imperative eviction, not @CacheEvict: this method is reached both externally (the
+      // "check for updates" button) and via the self-invoked @Scheduled path, and Spring's
+      // proxy-based cache AOP does not intercept self-invocation.
+      var scriptedAchievementsCache =
+          cacheManager.getCache(CacheConfig.SCRIPTED_ACHIEVEMENTS_CACHE);
+      if (scriptedAchievementsCache != null) {
+        scriptedAchievementsCache.clear();
+      }
+    } catch (Exception e) {
+      log.error("Error applying achievements from {}", url, e);
+    }
   }
 
   private ChallengeContentManifest fetchManifest() {
