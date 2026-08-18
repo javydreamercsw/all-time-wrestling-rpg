@@ -100,6 +100,8 @@ public class WrestlerSync implements DataSyncContributor {
   @Override
   public void sync() {
     if (skipIfNotEmpty && wrestlerRepository.count() > 0) {
+      syncAbilitiesForExistingWrestlers();
+      wrestlerService.evictWrestlerCache();
       return;
     }
     try {
@@ -357,6 +359,42 @@ public class WrestlerSync implements DataSyncContributor {
       log.error("Error resolving wrestler resources", e);
     }
     wrestlerService.evictWrestlerCache();
+  }
+
+  private void syncAbilitiesForExistingWrestlers() {
+    try {
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers/*.json");
+      Map<String, Wrestler> wrestlersByName =
+          wrestlerRepository.findAll().stream()
+              .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
+      List<WrestlerAbilityDTO> universalAbilities = loadUniversalAbilities();
+
+      for (Resource resource : resources) {
+        if (!resource.exists()) {
+          continue;
+        }
+        try (var is = resource.getInputStream()) {
+          List<WrestlerImportDTO> wrestlersFromFile =
+              objectMapper.readValue(is, new TypeReference<>() {});
+          for (WrestlerImportDTO dto : wrestlersFromFile) {
+            Wrestler wrestler = wrestlersByName.get(dto.getName());
+            if (wrestler == null) {
+              continue;
+            }
+
+            Map<String, WrestlerAbilityDTO> merged = new LinkedHashMap<>();
+            universalAbilities.forEach(a -> merged.put(a.getName(), a));
+            dto.getAbilities().forEach(a -> merged.put(a.getName(), a));
+            if (!merged.isEmpty()) {
+              syncAbilities(wrestler, new ArrayList<>(merged.values()));
+            }
+          }
+        }
+      }
+      log.debug("Synchronized wrestler abilities for existing wrestlers");
+    } catch (IOException e) {
+      log.error("Error synchronizing wrestler abilities for existing wrestlers", e);
+    }
   }
 
   private List<WrestlerAbilityDTO> loadUniversalAbilities() {
