@@ -136,7 +136,7 @@ public class DeckListView extends VerticalLayout {
                       deckCardService.delete(dc);
                       deck.getCards().remove(dc);
                       deckService.save(deck);
-                      cardGrid.setItems(deckService.findById(deck.getId()).getCards());
+                      cardGrid.setItems(deckService.getCards(deck.getId()));
                     });
                 removeBtn.setVisible(securityUtils.canDelete());
                 return removeBtn;
@@ -164,10 +164,10 @@ public class DeckListView extends VerticalLayout {
         event -> {
           DeckCard updated = event.getItem();
           deckCardService.save(updated);
-          cardGrid.setItems(deckService.findById(deck.getId()).getCards());
+          cardGrid.setItems(deckService.getCards(deck.getId()));
         });
 
-    cardGrid.setItems(deckService.findById(deck.getId()).getCards());
+    cardGrid.setItems(deckService.getCards(deck.getId()));
 
     // Add new card section (unchanged)
     ComboBox<Card> cardCombo = new ComboBox<>("Card");
@@ -190,7 +190,7 @@ public class DeckListView extends VerticalLayout {
                 dc.setSet(selected.getSet());
                 dc.setAmount(amount);
                 deckCardService.save(dc);
-                cardGrid.setItems(deckService.findById(deck.getId()).getCards());
+                cardGrid.setItems(deckService.getCards(deck.getId()));
               }
             });
 
@@ -228,7 +228,7 @@ public class DeckListView extends VerticalLayout {
               if (newAmount != null && newAmount > 0) {
                 deckCard.setAmount(newAmount);
                 deckCardService.save(deckCard);
-                cardGrid.setItems(deckService.findById(deck.getId()).getCards());
+                cardGrid.setItems(deckService.getCards(deck.getId()));
                 editDialog.close();
               }
             });
@@ -250,9 +250,11 @@ public class DeckListView extends VerticalLayout {
     layout.add("Wrestler: " + deck.getWrestler().getName());
 
     Grid<DeckCard> cardGrid = new Grid<>(DeckCard.class, false);
+    cardGrid.addColumn(dc -> dc.getSet().getName()).setHeader("Set").setSortable(true);
+    cardGrid.addColumn(dc -> dc.getCard().getNumber()).setHeader("#").setSortable(true);
     cardGrid.addColumn(dc -> dc.getCard().getName()).setHeader("Card").setSortable(true);
     cardGrid.addColumn(DeckCard::getAmount).setHeader("Amount").setSortable(true);
-    cardGrid.setItems(deck.getCards());
+    cardGrid.setItems(deckService.getCards(deck.getId()));
 
     layout.add(cardGrid);
 

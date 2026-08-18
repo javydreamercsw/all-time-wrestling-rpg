@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -91,6 +92,7 @@ class ShowFinalizationTest {
   @Mock private GmModeService gmModeService;
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private CampaignRepository campaignRepository;
+  @Mock private ShowQualityService showQualityService;
 
   private ShowService showService;
 
@@ -117,7 +119,8 @@ class ShowFinalizationTest {
             legacyService,
             securityUtils,
             arenaRepository,
-            gmModeService);
+            gmModeService,
+            showQualityService);
 
     when(showRepository.save(any(Show.class))).thenAnswer(inv -> inv.getArgument(0));
   }
@@ -155,6 +158,7 @@ class ShowFinalizationTest {
   private ShowTemplate pleTemplate() {
     ShowType st = new ShowType();
     st.setName("Premium Live Event (PLE)");
+    st.setCategory(ShowCategory.PLE);
     ShowTemplate t = new ShowTemplate();
     t.setName("PLE");
     t.setShowType(st);

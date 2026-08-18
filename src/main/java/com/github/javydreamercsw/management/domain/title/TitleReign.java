@@ -67,6 +67,9 @@ public class TitleReign extends AbstractEntity<Long> {
   @Column(name = "reign_number", nullable = false)
   private Integer reignNumber = 1;
 
+  @Column(name = "consecutive_weekly_defenses", nullable = false)
+  private Integer consecutiveWeeklyDefenses = 0;
+
   @Lob
   @Column(name = "notes")
   private String notes;

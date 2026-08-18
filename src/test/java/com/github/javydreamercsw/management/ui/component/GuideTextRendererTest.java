@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.util.List;
@@ -53,8 +52,8 @@ class GuideTextRendererTest {
   }
 
   @Test
-  void knownIcon_rendersInlineImage() {
-    // "pin" is a known icon in the manifest
+  void knownIcon_rendersInlineSpan() {
+    // "pin" is a known icon in the manifest — renders as a Span with inline SVG innerHTML
     Component result = GuideTextRenderer.render("Execute a [[pin]] to win.");
     assertThat(result).isInstanceOf(Div.class);
     List<Component> children = ((Div) result).getChildren().toList();
@@ -62,8 +61,9 @@ class GuideTextRendererTest {
     assertThat(children).hasSize(3);
     assertThat(children.get(0)).isInstanceOf(Span.class);
     assertThat(((Span) children.get(0)).getText()).isEqualTo("Execute a ");
-    assertThat(children.get(1)).isInstanceOf(Image.class);
-    assertThat(((Image) children.get(1)).getSrc()).isEqualTo("/icons/pin.svg");
+    assertThat(children.get(1)).isInstanceOf(Span.class);
+    String innerHTML = children.get(1).getElement().getProperty("innerHTML");
+    assertThat(innerHTML).isNotBlank();
     assertThat(children.get(2)).isInstanceOf(Span.class);
     assertThat(((Span) children.get(2)).getText()).isEqualTo(" to win.");
   }
@@ -86,29 +86,38 @@ class GuideTextRendererTest {
     Component result = GuideTextRenderer.render("Spend [[stamina]] to play a [[card]].");
     List<Component> children = ((Div) result).getChildren().toList();
 
-    long imageCount = children.stream().filter(c -> c instanceof Image).count();
-    assertThat(imageCount).isEqualTo(2);
-
-    List<String> imageSrcs =
-        children.stream().filter(c -> c instanceof Image).map(c -> ((Image) c).getSrc()).toList();
-    assertThat(imageSrcs).containsExactly("/icons/stamina.svg", "/icons/card.svg");
+    // Icon spans: Span with blank text and non-blank innerHTML (inline SVG)
+    long iconCount =
+        children.stream()
+            .filter(c -> c instanceof Span)
+            .filter(c -> ((Span) c).getText().isBlank())
+            .filter(
+                c -> {
+                  String html = c.getElement().getProperty("innerHTML");
+                  return html != null && !html.isBlank();
+                })
+            .count();
+    assertThat(iconCount).isEqualTo(2);
   }
 
   @Test
   void iconAtStart_rendersCorrectly() {
     Component result = GuideTextRenderer.render("[[pin]] wins the match.");
     List<Component> children = ((Div) result).getChildren().toList();
-    assertThat(children.get(0)).isInstanceOf(Image.class);
-    assertThat(((Image) children.get(0)).getSrc()).isEqualTo("/icons/pin.svg");
+    Component first = children.get(0);
+    assertThat(first).isInstanceOf(Span.class);
+    String innerHTML = first.getElement().getProperty("innerHTML");
+    assertThat(innerHTML).isNotBlank();
   }
 
   @Test
   void iconAtEnd_rendersCorrectly() {
     Component result = GuideTextRenderer.render("Win with a [[finisher]]");
     List<Component> children = ((Div) result).getChildren().toList();
-    assertThat(children.get(children.size() - 1)).isInstanceOf(Image.class);
-    assertThat(((Image) children.get(children.size() - 1)).getSrc())
-        .isEqualTo("/icons/finisher.svg");
+    Component last = children.get(children.size() - 1);
+    assertThat(last).isInstanceOf(Span.class);
+    String innerHTML = last.getElement().getProperty("innerHTML");
+    assertThat(innerHTML).isNotBlank();
   }
 
   @Test

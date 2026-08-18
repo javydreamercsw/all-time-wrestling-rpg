@@ -52,20 +52,15 @@ To ensure a fast feedback loop and efficient context usage, always follow this h
 - **Verification:** After a major refactor or replacement, verify the file content (using `read_file` if needed) to ensure that the surrounding logic remains intact and that no unintended deletions occurred.
 - **Context Awareness:** Always check for similar method names or patterns to avoid replacing the wrong occurrence when `allow_multiple` is false.
 
-## Repowise — Codebase Intelligence (mandatory usage rules)
+## Knowledge Graph
 
-This repo is indexed by Repowise. Use its MCP tools **before** falling back to raw `Read`/`grep` for any file you haven't already opened this session.
+**Read `docs/agent/knowledge-graph.md` whenever you:**
+- Answer any architecture, cross-module, or "how does X work" question
+- Plan to grep, find, or glob through the codebase
+- Need to understand an unfamiliar module or trace a call chain
+- Are about to refactor or change something with unclear blast radius
 
-### Decision rule — prefer Repowise over file tools when:
-
-|             You want to…             |                     Use instead of Read/grep                      |
-|--------------------------------------|-------------------------------------------------------------------|
-| Understand what a file/module does   | `get_context(["path"])` — returns full skeleton (~37% of a Read)  |
-| Read a specific method body          | `get_symbol("path::MethodName")` — live-verified source bytes     |
-| Read a line range you already know   | `get_symbol("path:start-end")` — cheaper than a full Read         |
-| Find where something is defined      | `get_answer("where is X")` — semantic search with citations       |
-| Understand why code is shaped a way  | `get_why(query, targets)` — before any refactor or pattern change |
-| Assess risk before editing a hotspot | `get_risk(targets, changed_files)` — churn + blast radius         |
+The doc covers graphify (community detection, path tracing, GRAPH_REPORT.md), code-review-graph (MCP tools, impact analysis), when to use each, and the full auto-update pipeline.
 
 ### Fallback to raw Read/grep only when:
 
@@ -138,3 +133,42 @@ git status  # MUST show "up to date with origin"
 - If push fails, resolve and retry until it succeeds
 
 <!-- END BEADS INTEGRATION -->
+
+<!-- code-review-graph MCP tools -->
+## MCP Tools: code-review-graph
+
+**IMPORTANT: This project has a knowledge graph. ALWAYS use the
+code-review-graph MCP tools BEFORE using Grep/Glob/Read to explore
+the codebase.** The graph is faster, cheaper (fewer tokens), and gives
+you structural context (callers, dependents, test coverage) that file
+scanning cannot.
+
+### When to use graph tools FIRST
+
+- **Exploring code**: `semantic_search_nodes_tool` or `query_graph_tool` instead of Grep
+- **Understanding impact**: `get_impact_radius_tool` instead of manually tracing imports
+- **Code review**: `detect_changes_tool` + `get_review_context_tool` instead of reading entire files
+- **Finding relationships**: `query_graph_tool` with callers_of/callees_of/imports_of/tests_for
+- **Architecture questions**: `get_architecture_overview_tool` + `list_communities_tool`
+
+Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
+
+### Key Tools
+
+| Tool | Use when |
+| ------ | ---------- |
+| `detect_changes_tool` | Reviewing code changes — gives risk-scored analysis |
+| `get_review_context_tool` | Need source snippets for review — token-efficient |
+| `get_impact_radius_tool` | Understanding blast radius of a change |
+| `get_affected_flows_tool` | Finding which execution paths are impacted |
+| `query_graph_tool` | Tracing callers, callees, imports, tests, dependencies |
+| `semantic_search_nodes_tool` | Finding functions/classes by name or keyword |
+| `get_architecture_overview_tool` | Understanding high-level codebase structure |
+| `refactor_tool` | Planning renames, finding dead code |
+
+### Workflow
+
+1. The graph auto-updates on file changes (via hooks).
+2. Use `detect_changes_tool` for code review.
+3. Use `get_affected_flows_tool` to understand impact.
+4. Use `query_graph_tool` pattern="tests_for" to check coverage.

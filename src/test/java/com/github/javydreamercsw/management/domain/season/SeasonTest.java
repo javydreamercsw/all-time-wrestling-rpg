@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.season;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -229,6 +230,14 @@ class SeasonTest {
     ShowType showType = new ShowType();
     showType.setName(type);
     showType.setDescription("Test show type");
+    String lower = type.toLowerCase();
+    if (lower.contains("ple") || lower.contains("premium") || lower.contains("ppv")) {
+      showType.setCategory(ShowCategory.PLE);
+    } else if (lower.contains("weekly")) {
+      showType.setCategory(ShowCategory.WEEKLY);
+    } else {
+      showType.setCategory(ShowCategory.OTHER);
+    }
     show.setType(showType);
 
     return show;

@@ -29,6 +29,8 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -67,6 +69,7 @@ class TitleServiceTest {
 
   @Mock private TierBoundaryService tierBoundaryService;
   @Mock private TitleRepository titleRepository;
+  @Mock private TitleReignRepository titleReignRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private UniverseRepository universeRepository;
@@ -1005,6 +1008,83 @@ class TitleServiceTest {
 
     assertThat(result).containsExactly(universeTitle);
     verify(universeSettingsService).getEnabledExpansionCodesForUniverse(universe);
+  }
+
+  // =====================================================================
+  // findReignsByChampion
+  // =====================================================================
+
+  @Test
+  void findReignsByChampion_delegatesToRepository() {
+    TitleReign reign = new TitleReign();
+    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(List.of(reign));
+
+    List<TitleReign> result = titleService.findReignsByChampion(wrestler);
+
+    assertThat(result).containsExactly(reign);
+    verify(titleReignRepository).findByChampionsContaining(wrestler);
+  }
+
+  @Test
+  void findReignsByChampion_returnsEmptyListWhenNoReigns() {
+    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(List.of());
+
+    List<TitleReign> result = titleService.findReignsByChampion(wrestler);
+
+    assertThat(result).isEmpty();
+  }
+
+  // =====================================================================
+  // recordSuccessfulDefense
+  // =====================================================================
+
+  @Test
+  void recordSuccessfulDefense_incrementsExistingCounter() {
+    TitleReign reign = new TitleReign();
+    reign.setConsecutiveWeeklyDefenses(2);
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title)).thenReturn(List.of(reign));
+    when(titleReignRepository.save(any(TitleReign.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    titleService.recordSuccessfulDefense(title);
+
+    assertThat(reign.getConsecutiveWeeklyDefenses()).isEqualTo(3);
+  }
+
+  @Test
+  void recordSuccessfulDefense_handlesNullCounter() {
+    TitleReign reign = new TitleReign();
+    reign.setConsecutiveWeeklyDefenses(null);
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title)).thenReturn(List.of(reign));
+    when(titleReignRepository.save(any(TitleReign.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    titleService.recordSuccessfulDefense(title);
+
+    assertThat(reign.getConsecutiveWeeklyDefenses()).isEqualTo(1);
+  }
+
+  @Test
+  void recordSuccessfulDefense_withNoActiveReign_doesNothing() {
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title)).thenReturn(List.of());
+
+    titleService.recordSuccessfulDefense(title);
+
+    verify(titleReignRepository, never()).save(any());
+  }
+
+  @Test
+  void recordSuccessfulDefense_withMultipleActiveReigns_incrementsAll() {
+    TitleReign reign1 = new TitleReign();
+    reign1.setConsecutiveWeeklyDefenses(1);
+    TitleReign reign2 = new TitleReign();
+    reign2.setConsecutiveWeeklyDefenses(3);
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title))
+        .thenReturn(List.of(reign1, reign2));
+    when(titleReignRepository.save(any(TitleReign.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    titleService.recordSuccessfulDefense(title);
+
+    assertThat(reign1.getConsecutiveWeeklyDefenses()).isEqualTo(2);
+    assertThat(reign2.getConsecutiveWeeklyDefenses()).isEqualTo(4);
   }
 
   // =====================================================================

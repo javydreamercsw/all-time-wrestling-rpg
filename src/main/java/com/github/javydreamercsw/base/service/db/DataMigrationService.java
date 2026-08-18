@@ -1305,13 +1305,13 @@ public class DataMigrationService {
       throws SQLException {
     String sql =
         """
-        INSERT INTO show_type (show_type_id, name, description, is_ppv, creation_date) \
+        INSERT INTO show_type (show_type_id, name, description, category, creation_date) \
         VALUES (?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
             sourceStatement.executeQuery(
-                "SELECT show_type_id, name, description, is_ppv, creation_date FROM show_type");
+                "SELECT show_type_id, name, description, category, creation_date FROM show_type");
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1319,7 +1319,7 @@ public class DataMigrationService {
         targetStatement.setLong(1, resultSet.getLong("show_type_id"));
         targetStatement.setString(2, resultSet.getString("name"));
         targetStatement.setString(3, resultSet.getString("description"));
-        targetStatement.setBoolean(4, resultSet.getBoolean("is_ppv"));
+        targetStatement.setString(4, resultSet.getString("category"));
         targetStatement.setTimestamp(5, resultSet.getTimestamp("creation_date"));
         targetStatement.addBatch();
         count++;

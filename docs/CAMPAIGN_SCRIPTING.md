@@ -9,6 +9,8 @@ Ability cards in the campaign (Face/Heel cards, Ally/Valet cards) use a simple s
 Scripts are stored in the `effect_script` and `secondary_effect_script` columns of the `campaign_ability_card` table.
 
 > **Note:** This same scripting engine is also used for **Title Abilities**. Titles can use a subset of these methods to influence AI narration. See the [Content Management Guide](CONTENT_GUIDE.md) for details.
+>
+> **Note:** A related but separate Groovy-based scripting surface exists for **Achievement unlock conditions** (`achievements.json`'s `unlockCondition` field). It does not use `CampaignEffectContext` and has its own variable bindings per check site. See [Content Management Guide § Scripted unlock conditions](CONTENT_GUIDE.md#scripted-unlock-conditions).
 
 ## Script Syntax
 

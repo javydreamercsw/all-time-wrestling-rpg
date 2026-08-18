@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCom
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletionRepository;
 import com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
+import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,13 +47,16 @@ class ChallengeCompletionServiceTest {
   @Mock private AccountChallengeCompletionRepository repository;
   @Mock private ChallengeService challengeService;
   @Mock private LegacyService legacyService;
+  @Mock private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
 
   private ChallengeCompletionService service;
   private Account account;
 
   @BeforeEach
   void setUp() {
-    service = new ChallengeCompletionService(repository, challengeService, legacyService);
+    service =
+        new ChallengeCompletionService(
+            repository, challengeService, legacyService, scriptedAchievementEvaluator);
     account = new Account();
   }
 

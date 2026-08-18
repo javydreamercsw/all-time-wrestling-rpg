@@ -329,12 +329,22 @@ class ShowDetailViewTest extends AbstractViewTest {
         new ShowContextFacade(
             showTypeService,
             seasonService,
+            mock(com.github.javydreamercsw.management.service.season.SeasonAwardsService.class),
             showTemplateService,
             showPlanningService,
             showPlanningAiService,
             arenaService);
     WrestlerFacade wrestlerFacade =
-        new WrestlerFacade(wrestlerService, wrestlerStatsService, relationshipService, teamService);
+        new WrestlerFacade(
+            wrestlerService,
+            wrestlerStatsService,
+            relationshipService,
+            teamService,
+            mock(com.github.javydreamercsw.management.service.injury.InjuryService.class),
+            mock(com.github.javydreamercsw.management.service.title.TitleService.class),
+            mock(
+                com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistoryService
+                    .class));
     ViewContext viewContext =
         new ViewContext(notificationService, su, universeContextService, expansionService);
     return new ShowDetailView(

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.type;
 
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Clock;
@@ -94,18 +95,38 @@ public class ShowTypeService {
   @org.springframework.cache.annotation.CacheEvict(
       value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
       allEntries = true)
+  /** Backward-compatible overload that infers {@link ShowCategory} from the show type name. */
   public ShowType createOrUpdateShowType(
       @NonNull final String name,
       @NonNull final String description,
       final int expectedMatches,
       final int expectedPromos) {
+    String lower = name.toLowerCase();
+    ShowCategory inferred;
+    if (lower.contains("ple") || lower.contains("premium") || lower.contains("ppv")) {
+      inferred = ShowCategory.PLE;
+    } else if (lower.contains("weekly")) {
+      inferred = ShowCategory.WEEKLY;
+    } else {
+      inferred = ShowCategory.OTHER;
+    }
+    return createOrUpdateShowType(name, description, expectedMatches, expectedPromos, inferred);
+  }
+
+  public ShowType createOrUpdateShowType(
+      @NonNull final String name,
+      @NonNull final String description,
+      final int expectedMatches,
+      final int expectedPromos,
+      @NonNull final ShowCategory category) {
     Optional<ShowType> existingShowType = findByName(name);
     if (existingShowType.isPresent()) {
       ShowType st = existingShowType.get();
       if (st.getName().equals(name)
           && st.getDescription().equals(description)
           && st.getExpectedMatches() == expectedMatches
-          && st.getExpectedPromos() == expectedPromos) {
+          && st.getExpectedPromos() == expectedPromos
+          && st.getCategory() == category) {
         return st;
       }
     }
@@ -114,7 +135,19 @@ public class ShowTypeService {
     showType.setDescription(description);
     showType.setExpectedMatches(expectedMatches);
     showType.setExpectedPromos(expectedPromos);
+    showType.setCategory(category);
     return save(showType);
+  }
+
+  /**
+   * Find the first show type matching the given category.
+   *
+   * @param category The show category to search for
+   * @return Optional containing the show type if found
+   */
+  @PreAuthorize("isAuthenticated()")
+  public Optional<ShowType> findFirstByCategory(@NonNull final ShowCategory category) {
+    return showTypeRepository.findFirstByCategory(category);
   }
 
   /**

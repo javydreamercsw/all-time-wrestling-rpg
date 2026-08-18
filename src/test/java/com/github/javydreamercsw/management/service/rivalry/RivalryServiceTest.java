@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.rivalry.heatevent.HeatEventRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.HeatChangeEvent;
@@ -33,6 +34,7 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +55,7 @@ import org.springframework.context.ApplicationEventPublisher;
 class RivalryServiceTest {
 
   @Mock private RivalryRepository rivalryRepository;
+  @Mock private HeatEventRepository heatEventRepository;
   @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock
@@ -196,6 +199,7 @@ class RivalryServiceTest {
     assertThat(result.totalRoll()).isEqualTo(31);
     assertThat(rivalry.getIsActive()).isFalse();
     verify(rivalryRepository).saveAndFlush(rivalry);
+    assertThat(rivalry.getHeatEvents()).hasSize(2);
   }
 
   @Test
@@ -253,6 +257,97 @@ class RivalryServiceTest {
     // Then
     assertThat(result.resolved()).isTrue();
     assertThat(rivalry.getIsActive()).isFalse();
+  }
+
+  @Test
+  @DisplayName("Should resolve an eligible rivalry at a PLE when the roll succeeds")
+  void shouldResolveEligibleRivalryAtPle() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    ResolutionResult<Rivalry> result = rivalryService.resolveAtPle(1L, 16, 15, 1L);
+
+    assertThat(result.resolved()).isTrue();
+    assertThat(rivalry.getIsActive()).isFalse();
+    assertThat(rivalry.getHeatEvents()).hasSize(1);
+    verify(rivalryRepository).saveAndFlush(rivalry);
+  }
+
+  @Test
+  @DisplayName("Should keep an eligible rivalry active after an unsuccessful PLE attempt")
+  void shouldKeepRivalryActiveAfterUnsuccessfulPleAttempt() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    ResolutionResult<Rivalry> result = rivalryService.resolveAtPle(1L, 5, 6, 1L);
+
+    assertThat(result.resolved()).isFalse();
+    assertThat(rivalry.getIsActive()).isTrue();
+    assertThat(rivalry.getPleResolutionAttempts()).isEqualTo(1);
+    assertThat(rivalry.getLastPleResolutionShowId()).isEqualTo(1L);
+    assertThat(rivalry.getHeatEvents()).hasSize(0);
+    verify(rivalryRepository).saveAndFlush(rivalry);
+  }
+
+  @Test
+  @DisplayName("Should not count the same PLE more than once")
+  void shouldNotCountSamePleMoreThanOnce() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    rivalryService.resolveAtPle(1L, 5, 6, 1L);
+    ResolutionResult<Rivalry> duplicate = rivalryService.resolveAtPle(1L, 20, 20, 1L);
+
+    assertThat(duplicate.resolved()).isFalse();
+    assertThat(rivalry.getIsActive()).isTrue();
+    assertThat(rivalry.getPleResolutionAttempts()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("Should force-close a rivalry on its third unsuccessful PLE attempt")
+  void shouldForceCloseRivalryOnThirdPleAttempt() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+    rivalry.setPleResolutionAttempts(2);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class))).thenReturn(rivalry);
+
+    ResolutionResult<Rivalry> result = rivalryService.resolveAtPle(1L, 5, 6, 1L);
+
+    assertThat(result.resolved()).isTrue();
+    assertThat(rivalry.getIsActive()).isFalse();
+    assertThat(rivalry.getPleResolutionAttempts()).isEqualTo(3);
+    assertThat(rivalry.getHeatEvents()).hasSize(1);
+  }
+
+  @Test
+  @DisplayName("Should not resolve an ineligible rivalry at a PLE")
+  void shouldNotResolveIneligibleRivalryAtPle() {
+    Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 5);
+
+    when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
+
+    ResolutionResult<Rivalry> result = rivalryService.resolveAtPle(1L, 10, 10, 1L);
+
+    assertThat(result.resolved()).isFalse();
+    assertThat(rivalry.getIsActive()).isTrue();
+    assertThat(rivalry.getHeatEvents()).isEmpty();
   }
 
   @Test
@@ -437,6 +532,42 @@ class RivalryServiceTest {
     wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(state)));
 
     return wrestler;
+  }
+
+  @Test
+  @DisplayName("purgeClosedRivalryHeatEvents: deletes events for stale closed rivalries")
+  void purgeClosedRivalryHeatEvents_deletesEventsForStaleRivalries() {
+    Instant now = Instant.parse("2026-08-10T10:00:00Z");
+    when(clock.instant()).thenReturn(now);
+
+    Rivalry stale = createRivalry(createWrestler("A", 1L), createWrestler("B", 2L), 0);
+    stale.setIsActive(false);
+    stale.setEndedDate(now.minus(60, ChronoUnit.DAYS));
+
+    Instant cutoff = now.minus(30, ChronoUnit.DAYS);
+    when(rivalryRepository.findByIsActiveFalseAndEndedDateBefore(cutoff))
+        .thenReturn(List.of(stale));
+    when(heatEventRepository.deleteByRivalryIn(List.of(stale))).thenReturn(5);
+
+    RivalryService.HeatEventCleanupResult result = rivalryService.purgeClosedRivalryHeatEvents(30);
+
+    assertThat(result.rivalriesProcessed()).isEqualTo(1);
+    assertThat(result.eventsDeleted()).isEqualTo(5);
+  }
+
+  @Test
+  @DisplayName("purgeClosedRivalryHeatEvents: returns zero when no stale rivalries exist")
+  void purgeClosedRivalryHeatEvents_returnsZeroWhenNothingToClean() {
+    Instant now = Instant.parse("2026-08-10T10:00:00Z");
+    when(clock.instant()).thenReturn(now);
+
+    when(rivalryRepository.findByIsActiveFalseAndEndedDateBefore(any(Instant.class)))
+        .thenReturn(List.of());
+
+    RivalryService.HeatEventCleanupResult result = rivalryService.purgeClosedRivalryHeatEvents(30);
+
+    assertThat(result.rivalriesProcessed()).isZero();
+    assertThat(result.eventsDeleted()).isZero();
   }
 
   private Rivalry createRivalry(

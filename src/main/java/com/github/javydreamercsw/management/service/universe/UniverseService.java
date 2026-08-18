@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.universe;
 
 import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -45,6 +46,7 @@ public class UniverseService {
   private final LeagueRepository leagueRepository;
   private final TitleRepository titleRepository;
   private final CampaignRepository campaignRepository;
+  private final DramaEventRepository dramaEventRepository;
 
   @PreAuthorize("isAuthenticated()")
   @Cacheable(value = CacheConfig.UNIVERSES_CACHE, key = "'all'")
@@ -110,6 +112,9 @@ public class UniverseService {
           "Cannot delete universe '" + universe.getName() + "': it has associated campaigns.");
     }
 
+    // Drama events are historical, universe-scoped records and must be removed before the
+    // universe row because the foreign key intentionally does not cascade at the database level.
+    dramaEventRepository.deleteByUniverse(universe);
     universeRepository.delete(universe);
     // If the deleted universe was the active session context, clear it so subsequent
     // requests don't try to scope settings/saves to a non-existent universe ID.

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.show.BookingMode;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
@@ -153,7 +154,8 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
     Show ppv = result.get();
     assertThat(ppv.getName()).isEqualTo(ppvName);
     assertThat(ppv.getDescription()).isEqualTo(ppvDescription);
-    assertThat(ppv.getType().getName()).isEqualTo("PPV");
+    assertThat(ppv.getType().getCategory())
+        .isEqualTo(com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE);
 
     // Check segments and promos were created (PPVs should have multiple segments, may be fewer due
     // to wrestler availability)
@@ -239,6 +241,30 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
     // Then
     assertThat(result2).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should book faction war show with FACTION_WAR booking mode")
+  void shouldBookFactionWarShow() {
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
+    var f1 =
+        factionService
+            .createFaction(
+                "Alpha Faction", "Alpha", wrestlers.get(0).getId(), defaultUniverse.getId())
+            .orElseThrow();
+    var f2 =
+        factionService
+            .createFaction(
+                "Beta Faction", "Beta", wrestlers.get(1).getId(), defaultUniverse.getId())
+            .orElseThrow();
+    factionRivalryService.createFactionRivalry(f1.getId(), f2.getId(), "Faction war heat");
+
+    Optional<Show> result =
+        showBookingService.bookFactionWarShow(
+            "Faction War Spectacular", "Driven by faction rivalry", "Weekly Show", 5, null, null);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getBookingMode()).isEqualTo(BookingMode.FACTION_WAR);
   }
 
   @Test

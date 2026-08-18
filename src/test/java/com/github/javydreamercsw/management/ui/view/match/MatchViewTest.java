@@ -55,6 +55,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -129,6 +130,7 @@ class MatchViewTest extends AbstractViewTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private CampaignEncounterService campaignEncounterService;
   @Mock private DeckService deckService;
+  @Mock private WrestlerAbilityRepository wrestlerAbilityRepository;
 
   private MatchView matchView;
 
@@ -161,6 +163,8 @@ class MatchViewTest extends AbstractViewTest {
             notificationService);
     ReflectionTestUtils.setField(matchView, "campaignEncounterService", campaignEncounterService);
     ReflectionTestUtils.setField(matchView, "deckService", deckService);
+    ReflectionTestUtils.setField(matchView, "wrestlerAbilityRepository", wrestlerAbilityRepository);
+    lenient().when(wrestlerAbilityRepository.findByWrestlerId(any())).thenReturn(List.of());
     lenient()
         .when(campaignEncounterService.getCurrentChoiceBonusConditions(ArgumentMatchers.any()))
         .thenReturn(List.of());

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Keep Husky users on the same canonical graph update path as Git hooks.
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+if [ -x "$ROOT/scripts/update-knowledge-graphs.sh" ]; then
+  nohup "$ROOT/scripts/update-knowledge-graphs.sh" </dev/null >/dev/null 2>&1 &
+fi

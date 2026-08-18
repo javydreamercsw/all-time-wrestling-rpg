@@ -50,7 +50,33 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service for managing drama events (backstage incidents, injuries, etc.) in the ATW RPG system.
+ * Manages drama events (backstage incidents, injuries, rivalry heat spikes, etc.) in ATW RPG.
+ *
+ * <p><b>Two-mode processing model — do not collapse these paths:</b>
+ *
+ * <ul>
+ *   <li><b>Eager (OutcomeMatrix-sourced)</b>: events created via {@link #createOutcomeMatrixEvent}
+ *       arrive with {@code isProcessed=true}. Their mechanical effects (stat changes, injury flags)
+ *       have already been applied by {@code OutcomeMatrixService} during the roll; the event is
+ *       persisted for narrative history only. Processing it a second time would double-apply side
+ *       effects.
+ *   <li><b>Deferred (manual / random)</b>: events created via {@link #createDramaEvent} or {@link
+ *       #generateRandomDramaEvent} arrive with {@code isProcessed=false}. A scheduler or {@link
+ *       #processUnprocessedEvents} must call {@link #processEvent} later to apply effects.
+ * </ul>
+ *
+ * <p><b>{@code OutcomeMatrixService} is @Lazy-injected</b> to break a circular dependency: {@code
+ * DramaEventService} → {@code OutcomeMatrixService} → {@code DramaEventService}. Do not change it
+ * to constructor injection without resolving that cycle first.
+ *
+ * <p><b>Adding new {@code DramaEventType} values:</b> update {@link #toOutcomeCategory} or the new
+ * type will silently fall through to {@code Optional.empty()} — no narrative will be generated and
+ * no {@code OutcomeMatrixCategory} will be associated.
+ *
+ * <p><b>N+1 in {@link #processUnprocessedEvents}:</b> each call to {@link #processEvent} may fire
+ * one or more DB writes (rivalry heat, injuries). Acceptable because the unprocessed queue is
+ * bounded by how often drama events are generated (scheduler-driven, not per-request). If the queue
+ * grows large, batch-load the affected wrestlers/universes before the loop.
  */
 @Service
 @Transactional

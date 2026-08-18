@@ -45,8 +45,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-    // Wait for the vaadin-grid to be visible
+    // Wait for the vaadin-grid and its server-populated rows to be visible.
     waitForVaadinToLoad();
+    waitForVaadinElement(driver, By.id("faction-grid"));
 
     captureCaption(
         "Faction List view — factions group wrestlers into allied stables. Bookers can create,"
@@ -114,8 +115,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     navigateTo("faction-list");
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-    // Wait for the vaadin-grid to be visible
+    // Wait for the vaadin-grid and its server-populated rows to be visible.
     waitForVaadinToLoad();
+    waitForVaadinElement(driver, By.id("faction-grid"));
 
     // Find the "Edit" button for the faction and click it
     WebElement editButton = driver.findElement(By.id("edit-" + faction.getId()));

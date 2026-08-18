@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -71,11 +72,13 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     ShowType pleType = new ShowType();
     pleType.setName("Premium Live Event (PLE)");
     pleType.setDescription("A major event");
+    pleType.setCategory(ShowCategory.PLE);
     pleType = showTypeRepository.save(pleType);
 
     ShowType weeklyType = new ShowType();
     weeklyType.setName("Weekly");
     weeklyType.setDescription("A weekly show");
+    weeklyType.setCategory(ShowCategory.WEEKLY);
     weeklyType = showTypeRepository.save(weeklyType);
 
     ShowType otherType = new ShowType();

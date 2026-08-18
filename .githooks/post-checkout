@@ -5,8 +5,12 @@ if [ "$3" != "1" ]; then
 fi
 
 # Suppress deletion noise for the beads passive export in worktrees.
-# The file is kept tracked for recovery purposes; skip-worktree stops git
-# treating its absence in a worktree as a pending deletion.
 if git ls-files --error-unmatch .beads/issues.jsonl > /dev/null 2>&1; then
   git update-index --skip-worktree .beads/issues.jsonl
+fi
+
+# Branch switches use the same canonical, portable updater as post-commit.
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+if [ -x "$ROOT/scripts/update-knowledge-graphs.sh" ]; then
+  nohup "$ROOT/scripts/update-knowledge-graphs.sh" </dev/null >/dev/null 2>&1 &
 fi

@@ -105,3 +105,77 @@ Status Cards can influence various wrestler attributes:
 
 Wrestlers can hold an unlimited number of **different** Status Cards, but never more than one of the same type.
 
+## Legacy Score, Prestige & Achievements
+
+While the mechanics above track a single wrestler's in-ring performance, your **Legacy Score** tracks your career as a manager — persisting across every wrestler you've ever booked and every season you've played.
+
+### How it Works
+
+Legacy Score is recalculated automatically whenever your roster changes, combining three factors:
+- **Fans:** 1 point per 1,000 total fans across all wrestlers you manage.
+- **Titles:** 50 points per championship currently held by any of your wrestlers.
+- **Prestige:** The sum of XP from every Achievement you've unlocked.
+
+**Prestige XP** is permanent — once an Achievement is unlocked, its XP keeps contributing to your Legacy Score for as long as your account exists, even if the wrestler who earned it retires or is released.
+
+### Achievements
+
+Achievements are milestone rewards that unlock automatically as you play — winning matches, building your roster, capturing titles, and completing Challenges are all monitored in the background, with no manual claiming required. Each spans one of several categories:
+
+| Category          | Examples                                                                                       |
+|:------------------|:-----------------------------------------------------------------------------------------------|
+| **Collection**    | Roster-building milestones (managing your first wrestler, reaching 10 or 50 wrestlers).        |
+| **Fans**          | Total fan-count thresholds across your roster.                                                 |
+| **Championship**  | Title reign milestones, including holding every active title at once.                          |
+| **Match Type**    | Participating in or winning a specific match stipulation (Cage, Ladder, Battle Royal, etc.).   |
+| **Booking**       | Show-quality and match-quality milestones as a booker.                                         |
+| **Special Event** | One-off feats like winning an Abu Dhabi Rumble.                                                |
+| **Challenge**     | Weekly and season Challenge completions, including cumulative and difficulty-based milestones. |
+
+#### Unlock Conditions
+
+Each achievement carries a Groovy boolean expression evaluated automatically against the current game state after every relevant event — no manual claiming is needed. Common variables available in unlock expressions:
+
+| Variable             | Type    | Description                                          |
+|:---------------------|:--------|:-----------------------------------------------------|
+| `wrestlers`          | List    | All wrestlers currently managed by the player        |
+| `currentTitlesHeld`  | int     | Number of championships currently held               |
+| `isWinner`           | boolean | Whether the segment outcome was a win                |
+| `isMainEvent`        | boolean | Whether the segment was the show's main event        |
+| `isPremiumLiveEvent` | boolean | Whether the event is flagged as a Premium Live Event |
+
+When no unlock condition is present, the achievement is triggered explicitly by service code at the exact game moment (e.g. completing a Challenge, winning a specific tournament).
+
+#### Wrestler-Specific Achievements
+
+The **Special Event** category includes wrestler-centric milestones that track feats only possible with a particular superstar — such as winning a championship while managing a specific Icon-tier wrestler, or completing a defined number of consecutive victories with the same competitor. These achievements are evaluated after every show segment and unlock silently in the background, the same as all other achievement types.
+
+### Management
+
+- **View Progress:** Your Legacy Score, Prestige, and unlocked Achievement badges are visible on the **Player Dashboard**, under the Career Legacy and Achievements tabs.
+- **Compare Rankings:** The **Hall of Fame** dashboard ranks every player across the ecosystem, primarily by Legacy Score.
+
+## Tournament Segment Rules
+
+Tournaments support two modes for determining the match stipulation played in each round.
+
+### Pool Mode
+
+The `Tournament.allowedRules` list holds a set of eligible `SegmentRule` entries. When a round starts without a fixed rule, the system randomly selects one from the pool. This creates open-draw tournaments where the stipulation is unknown until each round is scheduled.
+
+### Fixed-Rule Mode
+
+A specific `TournamentRound` can carry a `fixedRule` that overrides the pool for that round, regardless of what the pool contains. This enables structured brackets — for example, Quarterfinals under Submission rules, Semi-finals in a Steel Cage, and a Normal final.
+
+### Resolution Priority
+
+The system resolves a round's stipulation in this order:
+
+1. **Round's `fixedRule`** — if set, always used.
+2. **Random pick from `allowedRules` pool** — if the pool is non-empty.
+3. **Normal** (standard match) — fallback when neither applies.
+
+### Creating a Deadly Combat Tournament
+
+A Deadly Combat tournament (as referenced in OMZ's backstory) is configured by assigning a pool of high-intensity, No DQ-eligible rules — such as Submission, Last Man Standing, and Barbwire Exploding Deathmatch — to `allowedRules`. Each round then draws randomly from this pool, preserving the unpredictable, brutal nature of the original tournament.
+

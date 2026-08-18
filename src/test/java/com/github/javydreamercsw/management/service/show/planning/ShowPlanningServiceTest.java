@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -289,6 +290,7 @@ class ShowPlanningServiceTest {
     // Given
     ShowType pleShowType = new ShowType();
     pleShowType.setName("Premium Live Event (PLE)");
+    pleShowType.setCategory(ShowCategory.PLE);
 
     ShowTemplate pleTemplate = new ShowTemplate();
     pleTemplate.setShowType(pleShowType);

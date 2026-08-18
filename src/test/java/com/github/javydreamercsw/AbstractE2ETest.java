@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.util.Separators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.github.javydreamercsw.base.config.TestE2ESecurityConfig;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -115,6 +116,31 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     if (cacheManager != null) {
       cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
+
+    accountRepository.findAll().stream()
+        .filter(a -> a.getFailedLoginAttempts() > 0 || !a.isAccountNonLocked())
+        .forEach(
+            a -> {
+              a.resetFailedAttempts();
+              accountRepository.save(a);
+            });
+
+    RoleName testRole = getTestRole();
+    accountRepository
+        .findByUsername(getUsername())
+        .ifPresentOrElse(
+            account -> {
+              // Cleanup can leave a default account with a stale password, lockout state, or role.
+              // Repair all login state before the browser session is established.
+              account.setPassword(passwordEncoder.encode(getPassword()));
+              account.setRoles(java.util.Set.of(roleRepository.findByName(testRole).orElseThrow()));
+              account.resetFailedAttempts();
+              accountRepository.saveAndFlush(account);
+            },
+            () -> {
+              log.warn("Test user '{}' not found — re-creating account", getUsername());
+              createTestAccount(getUsername(), getPassword(), testRole);
+            });
 
     if (!appReady) {
       WebDriverManager.chromedriver().setup();
@@ -384,6 +410,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
 
   @AfterEach
   public void teardown() {
+    // Reset lockout state even when the test failed during login or navigation. A failed test can
+    // otherwise poison the shared test account and make every subsequent E2E class fail login.
+    resetAccountLockoutState();
+
     // We no longer quit the driver here to allow reuse.
     // Instead, we navigate to a blank page and clear the state to ensure isolation.
     if (driver != null) {
@@ -411,6 +441,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
 
     System.clearProperty("simulateFailure");
+    System.clearProperty("simulateRollbackFailure");
   }
 
   protected boolean isHeadless() {
@@ -560,12 +591,37 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     }
   }
 
+  private void resetAccountLockoutState() {
+    try {
+      accountRepository.findAll().stream()
+          .filter(account -> account.getFailedLoginAttempts() > 0 || !account.isAccountNonLocked())
+          .forEach(
+              account -> {
+                account.resetFailedAttempts();
+                accountRepository.save(account);
+              });
+      accountRepository.flush();
+    } catch (Exception e) {
+      // Teardown must not hide the original test failure or prevent browser cleanup.
+      log.warn("Unable to reset E2E account lockout state: {}", e.getMessage());
+    }
+  }
+
   protected String getUsername() {
     return "admin";
   }
 
   protected String getPassword() {
     return "admin123";
+  }
+
+  protected RoleName getTestRole() {
+    return switch (getUsername()) {
+      case "player" -> RoleName.PLAYER;
+      case "booker" -> RoleName.BOOKER;
+      case "viewer" -> RoleName.VIEWER;
+      default -> RoleName.ADMIN;
+    };
   }
 
   protected void click(@NonNull final String tagName, @NonNull final String text) {
@@ -1072,6 +1128,33 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   protected void navigateTo(@NonNull final String route) {
     driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
     waitForVaadinClientToLoad();
+  }
+
+  /** Navigates to a route and retries transient Vaadin route initialization failures. */
+  protected WebElement navigateToAndWaitForElement(
+      @NonNull final String route, @NonNull final By selector) {
+    RuntimeException lastFailure = null;
+    String url = "http://localhost:" + serverPort + getContextPath() + "/" + route;
+    for (int attempt = 1; attempt < 3 + 1; attempt++) {
+      try {
+        driver.get(url);
+        waitForVaadinClientToLoad();
+        return waitForVaadinElement(driver, selector);
+      } catch (RuntimeException e) {
+        lastFailure = e;
+        log.warn(
+            "Route '{}' did not initialize on attempt {}/{} (current URL: {}): {}",
+            route,
+            attempt,
+            3,
+            driver.getCurrentUrl(),
+            e.getMessage());
+        if (attempt < 3) {
+          sleep(500);
+        }
+      }
+    }
+    throw lastFailure;
   }
 
   protected void logout() {
