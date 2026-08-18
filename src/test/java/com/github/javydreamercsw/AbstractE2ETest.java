@@ -1135,7 +1135,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       @NonNull final String route, @NonNull final By selector) {
     RuntimeException lastFailure = null;
     String url = "http://localhost:" + serverPort + getContextPath() + "/" + route;
-    for (int attempt = 1; attempt <= 3; attempt++) {
+    for (int attempt = 1; attempt < 3 + 1; attempt++) {
       try {
         driver.get(url);
         waitForVaadinClientToLoad();
