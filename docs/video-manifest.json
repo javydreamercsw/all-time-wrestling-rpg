@@ -391,5 +391,12 @@
     "description": "The Awards Ceremony section lists each award winner: Wrestler of the Year (most wins), Most Improved (highest fan growth), and Most Decorated (most title reigns). Winners automatically receive fan bonuses when the season ends.",
     "videoPath": "videos/booker-season-awards-workflow.mp4",
     "order": 0
+  }, {
+    "id": "booker-booker-tournament-bracket-workflow",
+    "category": "Booker",
+    "title": "Tournament Bracket Generator",
+    "description": "The tournament engine supports Single Elimination and Round Robin formats. Single Elimination generates one round at a time, perfect for big multi-week events. Round Robin pre-builds all match-ups so every entrant faces every other entrant before a winner is determined.",
+    "videoPath": "videos/booker-tournament-bracket-workflow.mp4",
+    "order": 0
   } ]
 }
