@@ -1,0 +1,25 @@
+[ {
+  "key": "CHALLENGE_WEEK_01",
+  "name": "Locker Room Warrior",
+  "description": "Completed the \"Locker Room Attack!!!\" challenge as Rey Jaguar",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_WEEK_02",
+  "name": "Unbreakable Will",
+  "description": "Completed the \"Broken Neck, Unbreakable Will\" challenge as Kurt Angle",
+  "xpValue": 75,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_WEEK_03",
+  "name": "Deathmatch King",
+  "description": "Completed the \"All Time King!!!\" Barbwire Exploding Gauntlet as Matt Cardona",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_WEEK_04",
+  "name": "Timber!!!",
+  "description": "Completed the \"Timber!!!\" challenge by putting André the Giant through a table as Randy Savage",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+} ]

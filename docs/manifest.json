@@ -283,7 +283,7 @@
     "id": "admin-admin-show-templates",
     "category": "Admin",
     "title": "Show Templates",
-    "description": "Manage templates for your shows. You can define default match and promo counts, and now generate custom AI art for each template.",
+    "description": "Define reusable templates for your shows. Set up standard segments, match orders, and branding to quickly book consistent weekly episodes or pay-per-views.",
     "imagePath": "screenshots/admin-show-templates.png",
     "order": 110
   }, {
@@ -840,6 +840,20 @@
     "title": "Wrestler Abilities in Match",
     "description": "Your wrestler's ability board is always a tap away during a match. The collapsed 'Your Abilities' panel in the match sidebar shows your core, wrestler-specific, and unlockable abilities with their type badges and [[token]] icon descriptions — no need to leave the match to look something up.",
     "imagePath": "screenshots/mechanic-match-abilities.png",
+    "order": 0
+  }, {
+    "id": "community-community-hall-of-fame-trophies",
+    "category": "Community",
+    "title": "Hall of Fame — Achievement Trophies",
+    "description": "Each player row shows a trophy icon when they have unlocked achievements. Hover the icon to see a quick summary; click it to open the full achievement history.",
+    "imagePath": "screenshots/community-hall-of-fame-trophies.png",
+    "order": 0
+  }, {
+    "id": "community-community-hall-of-fame-achievement-details",
+    "category": "Community",
+    "title": "Hall of Fame — Achievement Details",
+    "description": "The achievement dialog lists every unlocked achievement with its category, XP reward, and the date and time it was earned.",
+    "imagePath": "screenshots/community-hall-of-fame-achievement-details.png",
     "order": 0
   } ]
 }
