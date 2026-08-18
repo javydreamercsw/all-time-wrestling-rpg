@@ -1130,6 +1130,33 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     waitForVaadinClientToLoad();
   }
 
+  /** Navigates to a route and retries transient Vaadin route initialization failures. */
+  protected WebElement navigateToAndWaitForElement(
+      @NonNull final String route, @NonNull final By selector) {
+    RuntimeException lastFailure = null;
+    String url = "http://localhost:" + serverPort + getContextPath() + "/" + route;
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        driver.get(url);
+        waitForVaadinClientToLoad();
+        return waitForVaadinElement(driver, selector);
+      } catch (RuntimeException e) {
+        lastFailure = e;
+        log.warn(
+            "Route '{}' did not initialize on attempt {}/{} (current URL: {}): {}",
+            route,
+            attempt,
+            3,
+            driver.getCurrentUrl(),
+            e.getMessage());
+        if (attempt < 3) {
+          sleep(500);
+        }
+      }
+    }
+    throw lastFailure;
+  }
+
   protected void logout() {
     driver.get("http://localhost:" + serverPort + getContextPath());
     waitForVaadinElement(driver, By.id("logout-button"));

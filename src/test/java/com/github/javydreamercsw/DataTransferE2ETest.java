@@ -51,13 +51,17 @@ public class DataTransferE2ETest extends AbstractE2ETest {
 
   @BeforeEach
   public void setUp() {
-    navigateTo("data-transfer");
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.id("data-transfer-wizard"));
+    navigateToAndWaitForElement("data-transfer", By.id("data-transfer-wizard"));
   }
 
   private void clickNextButton() {
     clickElement(By.id("next-button"));
+  }
+
+  private void waitForStatus(String text) {
+    // Full-table migration can take several minutes on a cold CI container.
+    new WebDriverWait(driver, Duration.ofMinutes(5))
+        .until(ExpectedConditions.textToBePresentInElementLocated(By.id("status-label"), text));
   }
 
   @Test
@@ -174,10 +178,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
         4500);
 
     // Wait for completion message
-    new WebDriverWait(driver, Duration.ofMinutes(2))
-        .until(
-            ExpectedConditions.textToBePresentInElementLocated(
-                By.id("status-label"), "Data transfer completed successfully."));
+    waitForStatus("Data transfer completed successfully.");
     captureCaption(
         "Migration complete — all data is now in MySQL and verified. Restart the"
             + " application with the MySQL Spring profile (spring.profiles.active=mysql)"
@@ -233,6 +234,7 @@ public class DataTransferE2ETest extends AbstractE2ETest {
     WebElement dataTransferProcessStep =
         waitForVaadinElement(driver, By.id("data-transfer-process-step"));
     assertNotNull(dataTransferProcessStep);
+    waitForStatus("Data transfer failed:");
   }
 
   @Test

@@ -198,9 +198,8 @@ public class CardListViewE2ETest extends AbstractE2ETest {
   }
 
   private WebDriverWait navigateToCardList() {
-    navigateTo("card-list");
-    waitForVaadinClientToLoad();
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    navigateToAndWaitForElement("card-list", By.tagName("vaadin-grid"));
     wait.pollingEvery(Duration.ofMillis(500));
     wait.until(
         d -> {
