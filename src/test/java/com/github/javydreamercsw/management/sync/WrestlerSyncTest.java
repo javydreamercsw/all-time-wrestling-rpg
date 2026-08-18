@@ -124,6 +124,33 @@ class WrestlerSyncTest {
   }
 
   @Test
+  void sync_backfillsAbilitiesWhenSkippingExistingWrestlers() {
+    Wrestler existing = new Wrestler();
+    existing.setId(1L);
+    existing.setName("Rob Van Dam");
+    when(wrestlerRepository.count()).thenReturn(1L);
+    when(wrestlerRepository.findAll()).thenReturn(List.of(existing));
+    when(wrestlerAbilityRepository.findByWrestler(existing)).thenReturn(List.of());
+
+    WrestlerSync skipSync =
+        new WrestlerSync(
+            true,
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper());
+
+    skipSync.sync();
+
+    verify(wrestlerAbilityRepository, atLeastOnce()).save(any());
+  }
+
+  @Test
   void sync_preservesFansWhenExistingIsHigher() {
     Wrestler existing = new Wrestler();
     existing.setId(1L);
