@@ -144,6 +144,7 @@ jobs:
               - 'src/main/resources/META-INF/resources/images/challenges/**'
               - 'scripts/generate-docs.cjs'
               - 'scripts/sync-challenge-content.cjs'
+              - 'scripts/sync-challenge-content.test.cjs'
 
   rewrite-check:
     needs: check-paths
@@ -438,6 +439,8 @@ jobs:
           cache-dependency-path: docs/site/package-lock.json
       - name: Install docs dependencies
         run: cd docs/site && npm install
+      - name: Test challenge content synchronization
+        run: node --test scripts/sync-challenge-content.test.cjs
       - name: Sync challenge content
         run: node scripts/sync-challenge-content.cjs
       - name: Build VitePress docs

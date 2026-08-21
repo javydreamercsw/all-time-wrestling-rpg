@@ -510,7 +510,7 @@ src/main/resources/META-INF/resources/images/challenges/
   week5.png
 ```
 
-The synchronization script copies these images into `docs/challenges/images/` and updates the matching manifest package automatically. Use `"imageUrl": "images/challenges/filename.png"` for bundled challenges shipped in the JAR (served from `META-INF/resources/`). Downloaded live-update content should use `"imageUrl": "challenge-content/images/filename.png"`; that path is served by `ChallengeContentResourceConfig` from the local ATW data directory.
+The synchronization script copies these images into `docs/challenges/images/`, rewrites bundled `imageUrl` values to `challenge-content/images/filename.png` in the live-update copy, and updates the matching manifest package automatically. Keep the canonical source URL as `"imageUrl": "images/challenges/filename.png"` for bundled challenges shipped in the JAR (served from `META-INF/resources/`). Already-live or external image URLs are preserved. The `challenge-content/images/` path is served by `ChallengeContentResourceConfig` from the local ATW data directory.
 
 #### Step 3 — Update the manifest
 

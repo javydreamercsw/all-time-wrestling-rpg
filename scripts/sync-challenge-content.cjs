@@ -23,6 +23,31 @@ function copyDirectoryContents(sourceDir, targetDir) {
   });
 }
 
+function toLiveImageUrl(imageUrl) {
+  return imageUrl?.replace(/^\/?images\/challenges\//, 'challenge-content/images/') ?? imageUrl;
+}
+
+function copyChallengeDirectory(sourceDir, targetDir) {
+  fs.mkdirSync(targetDir, { recursive: true });
+  fs.readdirSync(sourceDir, { withFileTypes: true }).forEach((entry) => {
+    const source = path.join(sourceDir, entry.name);
+    const target = path.join(targetDir, entry.name);
+    if (entry.isDirectory()) {
+      copyChallengeDirectory(source, target);
+    } else if (entry.name.endsWith('.json')) {
+      const content = JSON.parse(fs.readFileSync(source, 'utf8'));
+      const liveContent = Array.isArray(content)
+        ? content.map((challenge) =>
+            challenge.imageUrl ? { ...challenge, imageUrl: toLiveImageUrl(challenge.imageUrl) } : challenge,
+          )
+        : content;
+      fs.writeFileSync(target, JSON.stringify(liveContent, null, 2) + '\n');
+    } else {
+      fs.copyFileSync(source, target);
+    }
+  });
+}
+
 function challengeJsonPath(jsonUrl) {
   const marker = '/challenges/';
   const markerIndex = jsonUrl.indexOf(marker);
@@ -93,7 +118,7 @@ function syncChallengeContent() {
   }
 
   fs.mkdirSync(docsChallengesDir, { recursive: true });
-  copyDirectoryContents(sourceChallengesDir, docsChallengesDir);
+  copyChallengeDirectory(sourceChallengesDir, docsChallengesDir);
 
   // Keep images belonging to live-update packages while refreshing bundled images.
   copyDirectoryContents(sourceImagesDir, docsImagesDir);
@@ -114,4 +139,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { syncChallengeContent };
+module.exports = { copyChallengeDirectory, syncChallengeContent, toLiveImageUrl };
