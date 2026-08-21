@@ -73,7 +73,7 @@ class WrestlerSyncTest {
 
     // Return the real wrestlers*.json from the classpath for integration-style characterization
     PathMatchingResourcePatternResolver real = new PathMatchingResourcePatternResolver();
-    Resource[] resources = real.getResources("classpath*:wrestlers*.json");
+    Resource[] resources = real.getResources("classpath*:wrestlers/*.json");
     when(resourcePatternResolver.getResources(anyString())).thenReturn(resources);
 
     sync =
@@ -158,7 +158,7 @@ class WrestlerSyncTest {
     when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(existing));
 
     WrestlerState state = new WrestlerState();
-    state.setId(1L); // pre-existing: avoids null-id trigger in sync
+    state.setId(1L);
     state.setFans(999_999L); // higher than any seed value in the file
     state.setBumps(Integer.MAX_VALUE); // higher than any seed bump value
     when(wrestlerService.getOrCreateState(any(), any())).thenReturn(state);
