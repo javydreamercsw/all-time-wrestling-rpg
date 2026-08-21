@@ -93,19 +93,14 @@ node/
 /manifest.json
 /video-manifest.json
 
-# repowise — only config.yaml is shared; everything else is local-generated
-.repowise/.env
-.repowise/.augment-session.json
-.repowise/.augment-warned
-.repowise/*.pkl
-.repowise/*.db
-.repowise/*.db-shm
-.repowise/*.db-wal
-.repowise/knowledge-graph.json
-.repowise/state.json
-.repowise/mcp.json
-.repowise/jobs/
-.repowise/lancedb/
-.repowise/omissions/
+# Graphify local indexes and session files
+.graphify/cache/
+.graphify/.graphify_*
+.graphify/*.db
+.graphify/*.db-shm
+.graphify/*.db-wal
+.graphify/jobs/
+.graphify/lancedb/
+.graphify/omissions/
 # Added by code-review-graph
 .code-review-graph/
