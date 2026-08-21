@@ -366,16 +366,18 @@ jobs:
           name: docs-videos
           path: docs
 
+      - name: Sync challenge content from src to docs
+        run: node scripts/sync-challenge-content.cjs
+        env:
+          GITHUB_PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
       - name: Build and embed documentation site
         run: node scripts/generate-docs.cjs
         env:
           # Videos are not committed to git (too large). Both the in-app embedded
-          # docs and the GitHub Pages site reference videos via this absolute URL
-          # so they work in all packaged artifacts without shipping the mp4 files.
+          # docs and the GitHub Pages site reference videos via this absolute
+          # URL so they work in all packaged artifacts without shipping the mp4 files.
           GITHUB_PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-
-      - name: Copy challenge content into VitePress public dir
-        run: cp -r docs/challenges docs/site/public/challenges
 
       - name: Build documentation for GitHub Pages
         run: |

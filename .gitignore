@@ -77,7 +77,12 @@ node/
 /docs/screenshots/
 /docs/site/public/screenshots/
 /docs/site/public/videos/
+/docs/site/public/challenges/
 /docs/site/.vitepress/dist/videos/
+
+# Generated challenge copies; canonical content lives under src/main/resources.
+/docs/challenges/images/
+/docs/challenges/season_*/
 /docs/site/.vitepress/cache/
 /docs/site/node_modules/
 /docs/site/#/

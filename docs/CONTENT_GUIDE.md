@@ -388,7 +388,7 @@ Each variant is an object with any combination of the following optional text fi
 
 ## Challenges
 
-Challenges are scenario-based tasks that players complete outside of a normal show booking flow. They are loaded at startup from every `*.json` file found under `src/main/resources/challenges/**/*.json` — you can add as many files and subdirectories as needed.
+Challenges are scenario-based tasks that players complete outside of a normal show booking flow. The canonical bundled content lives under `src/main/resources/challenges/**/*.json` and is loaded at startup from the JAR. The documentation copy under `docs/challenges/` is synchronized from those source files for GitHub Pages and live updates; you can add as many seasons, files, and subdirectories as needed.
 
 ### File layout
 
@@ -486,36 +486,35 @@ If the same challenge `id` appears in both tiers, the downloaded (live) copy win
 
 #### Step 1 — Write the challenge JSON
 
-Add or update a JSON file under `docs/challenges/season_N/`:
+Add or update the canonical JSON file under `src/main/resources/challenges/season_N/`:
 
 ```
-docs/challenges/
+src/main/resources/challenges/
   season_1/
     weekly_challenges.json    ← official weekly challenges
+    weekly_achievements.json  ← live-update achievement definitions
     custom_challenges.json    ← custom/community challenges
   season_2/
     weekly_challenges.json    ← new season
 ```
 
-Each file is a JSON array of challenge objects (see [Structure](#structure) above). Use a new file per season to keep things tidy; the manifest references individual files, not directories.
+Each file is a JSON array of challenge objects (see [Structure](#structure) above). Use a new file per season to keep things tidy. The `sync-challenge-content.cjs` script copies every season and JSON file into `docs/challenges/` before packaging or publishing documentation; do not edit the generated documentation copy directly.
 
 #### Step 2 — Add optional images
 
-Drop any banner or card images into `docs/challenges/images/`:
+Drop bundled banner or card images into `src/main/resources/META-INF/resources/images/challenges/`:
 
 ```
-docs/challenges/images/
+src/main/resources/META-INF/resources/images/challenges/
   week4.png
-  custom_s2_01.png
+  week5.png
 ```
 
-Then set `"imageUrl": "challenge-content/images/week4.png"` on the challenge. The `challenge-content/images/` prefix is the URL path served by `ChallengeContentResourceConfig` from the downloaded images directory.
-
-For bundled challenges shipped in the JAR, the path is `images/challenges/filename.png` (served from `META-INF/resources/`).
+The synchronization script copies these images into `docs/challenges/images/` and updates the matching manifest package automatically. Use `"imageUrl": "images/challenges/filename.png"` for bundled challenges shipped in the JAR (served from `META-INF/resources/`). Downloaded live-update content should use `"imageUrl": "challenge-content/images/filename.png"`; that path is served by `ChallengeContentResourceConfig` from the local ATW data directory.
 
 #### Step 3 — Update the manifest
 
-`docs/challenges/manifest.json` is the index that tells the app what packages exist. Add or update an entry for every new or changed JSON file:
+`docs/challenges/manifest.json` is the index that tells the app what live-update packages exist. The synchronization script refreshes image lists for every package from the challenge JSON files, but package entries and their URLs must still be added manually for a new season or package. Add or update an entry for every new or changed JSON file:
 
 ```json
 {
@@ -542,7 +541,7 @@ For bundled challenges shipped in the JAR, the path is `images/challenges/filena
 
 #### Step 4 — Merge to `main`
 
-Open a PR that adds your files under `docs/challenges/`. Once it merges to `main`, GitHub Actions builds the VitePress site and copies `docs/challenges/` into the Pages output. The manifest is live at:
+Open a PR that adds your files under `src/main/resources/challenges/` (and any bundled images under `src/main/resources/META-INF/resources/images/challenges/`). The release/redeploy workflows and local docs preview run the synchronization script before building the documentation site. GitHub Actions then copies the synchronized `docs/challenges/` into the Pages output. The manifest is live at:
 
 ```
 https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/manifest.json

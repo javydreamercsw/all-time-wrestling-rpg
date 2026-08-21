@@ -16,11 +16,10 @@ else
   echo "No local videos found in docs/videos/ — video sections will be empty."
 fi
 
-# 2. Generate guide .md files, sidebar, and copy screenshots.
-#    GITHUB_PAGES_BASE tells the script to emit <source src="http://localhost:4173/videos/...">
-#    so the preview server can serve them from public/videos/.
-#    The script also runs an internal VitePress build (with the embedded-app BASE_URL);
-#    we rebuild in step 3 to fix that BASE_URL for local use.
+# 2. Sync challenge content, then generate guide .md files, sidebar, and copy screenshots.
+#    GITHUB_PAGES_BASE tells the scripts to emit local asset URLs for the preview server.
+echo "Syncing challenge content..."
+GITHUB_PAGES_BASE=http://localhost:4173 node scripts/sync-challenge-content.cjs
 echo "Running generate-docs.cjs..."
 GITHUB_PAGES_BASE=http://localhost:4173 node scripts/generate-docs.cjs
 
