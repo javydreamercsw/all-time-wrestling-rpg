@@ -78,4 +78,24 @@
   "imageUrl": "challenge-content/images/week4.png",
   "notes": null,
   "active": true
+}, {
+  "id": "week_05_lie_cheat_steal",
+  "weekNumber": 5,
+  "season": "Season 1",
+  "title": "Lie, Cheat & Steal",
+  "flavorText": "LADIES AND GENTLEMEN! It’s time for the ATW Weekly Main Event! This week's challenge is “Lie, Cheat & Steal”. When you're Eddie Guerrero, winning isn't everything... it's HOW you win. The referee has his hands full tonight because Latino Heat is ready to use every trick in the book. Can you lie, cheat and steal your way to victory?",
+  "productLine": "Eddie Guerrero Expansion",
+  "expansionCode": "EDDIE",
+  "requiredExpansions": [ "EDDIE" ],
+  "requiredWrestlerNames": [ "Eddie Guerrero" ],
+  "difficulty": "MEDIUM",
+  "objective": "Win a match as Eddie Guerrero.",
+  "setupInstructions": "Use the Eddie Guerrero Expansion with any compatible ATW game. Play solo on Medium difficulty (or Hard for some extra heat), OR play as a 2-player game in a Singles Match.",
+  "matchType": "Singles Match",
+  "conditions": [ "Before Eddie is allowed to win the match, he must successfully complete all three modifiers." ],
+  "modifiers": [ "Successfully perform 3 Taunts.", "Successfully perform 2 Signature Moves.", "Successfully use one of Eddie's Scheme Cards." ],
+  "achievementKey": "CHALLENGE_WEEK_05",
+  "imageUrl": "images/challenges/week5.png",
+  "notes": "Use spare dice or pen and paper to track completed objectives. Once all three objectives are complete, Eddie may finish the match normally.",
+  "active": true
 } ]

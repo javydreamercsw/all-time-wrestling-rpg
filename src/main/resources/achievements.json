@@ -422,6 +422,12 @@
   "xpValue": 100,
   "category": "CHALLENGE"
 }, {
+  "key": "CHALLENGE_WEEK_05",
+  "name": "Lie, Cheat & Steal",
+  "description": "Completed the \"Lie, Cheat & Steal\" challenge as Eddie Guerrero",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
   "key": "CHALLENGE_FIRST_HARD",
   "name": "Glutton for Punishment",
   "description": "Completed your first HARD-difficulty challenge",
