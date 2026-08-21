@@ -136,9 +136,14 @@ jobs:
             # DB migration changes — also gates integration tests
             db_changed:
               - 'src/main/resources/db/**'
-            # Docs site changes — gates VitePress build validation
+            # Docs site and challenge content changes — gate VitePress build validation
             docs_changed:
               - 'docs/site/**'
+              - 'docs/challenges/manifest.json'
+              - 'src/main/resources/challenges/**'
+              - 'src/main/resources/META-INF/resources/images/challenges/**'
+              - 'scripts/generate-docs.cjs'
+              - 'scripts/sync-challenge-content.cjs'
 
   rewrite-check:
     needs: check-paths
@@ -433,6 +438,8 @@ jobs:
           cache-dependency-path: docs/site/package-lock.json
       - name: Install docs dependencies
         run: cd docs/site && npm install
+      - name: Sync challenge content
+        run: node scripts/sync-challenge-content.cjs
       - name: Build VitePress docs
         run: cd docs/site && npm run docs:build
 
