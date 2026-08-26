@@ -20,11 +20,7 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
 import com.github.appreciated.apexcharts.ApexCharts;
 import com.github.appreciated.apexcharts.ApexChartsBuilder;
-import com.github.appreciated.apexcharts.config.builder.ChartBuilder;
-import com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder;
-import com.github.appreciated.apexcharts.config.builder.MarkersBuilder;
-import com.github.appreciated.apexcharts.config.builder.StrokeBuilder;
-import com.github.appreciated.apexcharts.config.builder.XAxisBuilder;
+import com.github.appreciated.apexcharts.config.builder.*;
 import com.github.appreciated.apexcharts.config.chart.Type;
 import com.github.appreciated.apexcharts.config.stroke.Curve;
 import com.github.appreciated.apexcharts.helper.Series;
@@ -46,6 +42,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
@@ -57,6 +54,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -204,8 +203,7 @@ public class SystemObservabilityView extends VerticalLayout {
     aiTokenChart.setId("ai-token-chart");
     layout.add(aiTokenChart);
 
-    com.vaadin.flow.component.orderedlayout.Scroller scroller =
-        new com.vaadin.flow.component.orderedlayout.Scroller(layout);
+    Scroller scroller = new Scroller(layout);
     scroller.setSizeFull();
     return scroller;
   }
@@ -221,10 +219,7 @@ public class SystemObservabilityView extends VerticalLayout {
                     .build())
             .withStroke(StrokeBuilder.get().withCurve(Curve.SMOOTH).build())
             .withMarkers(MarkersBuilder.get().withSize(4.0, 4.0).build())
-            .withTitle(
-                com.github.appreciated.apexcharts.config.builder.TitleSubtitleBuilder.get()
-                    .withText("AI Response Times (ms)")
-                    .build())
+            .withTitle(TitleSubtitleBuilder.get().withText("AI Response Times (ms)").build())
             .withXaxis(
                 XAxisBuilder.get()
                     .withCategories(
@@ -238,11 +233,11 @@ public class SystemObservabilityView extends VerticalLayout {
                     .build());
 
     // Group by provider
-    java.util.Set<String> providers =
+    Set<String> providers =
         history.stream()
             .flatMap(s -> s.getAverageResponseTimes().keySet().stream())
             .filter(k -> k.contains("AI"))
-            .collect(java.util.stream.Collectors.toSet());
+            .collect(Collectors.toSet());
 
     if (providers.isEmpty()) {
       builder.withSeries(new Series<>("No AI Data Yet", 0.0));
@@ -268,10 +263,7 @@ public class SystemObservabilityView extends VerticalLayout {
         ApexChartsBuilder.get()
             .withChart(
                 ChartBuilder.get().withType(Type.BAR).withHeight("300px").withWidth("100%").build())
-            .withTitle(
-                com.github.appreciated.apexcharts.config.builder.TitleSubtitleBuilder.get()
-                    .withText("AI Token Usage (Cumulative)")
-                    .build())
+            .withTitle(TitleSubtitleBuilder.get().withText("AI Token Usage (Cumulative)").build())
             .withXaxis(
                 XAxisBuilder.get()
                     .withCategories(
@@ -284,11 +276,11 @@ public class SystemObservabilityView extends VerticalLayout {
                             .toArray(String[]::new))
                     .build());
 
-    java.util.Set<String> tokenMetrics =
+    Set<String> tokenMetrics =
         history.stream()
             .flatMap(s -> s.getCounterDeltas().keySet().stream())
             .filter(k -> k.startsWith("ai.tokens."))
-            .collect(java.util.stream.Collectors.toSet());
+            .collect(Collectors.toSet());
 
     if (tokenMetrics.isEmpty()) {
       builder.withSeries(new Series<>("No Token Data Yet", 0.0));

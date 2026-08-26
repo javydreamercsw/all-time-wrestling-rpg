@@ -24,6 +24,8 @@ import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +69,7 @@ public class Season extends AbstractEntity<Long> {
   @Min(4) private Integer showsPerPpv = 5; // Default: Every 5 shows → 1 PPV
 
   @Column(name = "budget")
-  private java.math.BigDecimal budget = java.math.BigDecimal.ZERO;
+  private BigDecimal budget = BigDecimal.ZERO;
 
   @Column(name = "duration_weeks")
   private Integer durationWeeks;
@@ -134,7 +136,7 @@ public class Season extends AbstractEntity<Long> {
   /** Get the duration of this season in days. */
   public long getDurationDays() {
     Instant end = endDate != null ? endDate : Instant.now();
-    return java.time.Duration.between(startDate, end).toDays();
+    return Duration.between(startDate, end).toDays();
   }
 
   @PrePersist

@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningPle;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -80,8 +81,7 @@ public class ShowPlanningDtoMapper {
     dto.setSegmentDate(segment.getSegmentDate());
     dto.setShowName(segment.getShow().getName());
     if (segment.getShow().getShowDate() != null) {
-      dto.setShowDate(
-          segment.getShow().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+      dto.setShowDate(segment.getShow().getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
     }
     if (segment.getSegmentType() != null) {
       dto.setSegmentType(segment.getSegmentType().getName());
@@ -163,7 +163,7 @@ public class ShowPlanningDtoMapper {
     ShowPlanningPleDTO dto = new ShowPlanningPleDTO();
     dto.setPleName(ple.getPle().getName());
     if (ple.getPle().getShowDate() != null) {
-      dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+      dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
     }
     dto.setSummary(ple.getPle().getDescription());
     dto.setMatches(

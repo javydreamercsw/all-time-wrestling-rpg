@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,9 +34,7 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
 
     WebElement tab =
         waitForVaadinElement(
-            driver,
-            org.openqa.selenium.By.xpath(
-                "//vaadin-tab[contains(text(), 'Wrestler Relationships')]"));
+            driver, By.xpath("//vaadin-tab[contains(text(), 'Wrestler Relationships')]"));
     clickElement(tab);
 
     try {
@@ -63,8 +62,7 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
     navigateTo("wrestler-list");
 
     // Use the action menu to navigate to profile
-    WebElement actionMenu =
-        waitForVaadinElement(driver, org.openqa.selenium.By.id("action-menu-" + johnny.getId()));
+    WebElement actionMenu = waitForVaadinElement(driver, By.id("action-menu-" + johnny.getId()));
 
     selectFromVaadinMenuBar(actionMenu, "View Profile");
     waitForVaadinClientToLoad();
@@ -81,6 +79,6 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

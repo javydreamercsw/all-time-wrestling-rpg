@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -169,7 +170,7 @@ public class SegmentNarrationServiceFactory {
       new ProviderPriority("Mock", 10, 0.0, "Mock AI for testing and development")
     };
 
-    List<SegmentNarrationService> sortedServices = new java.util.ArrayList<>();
+    List<SegmentNarrationService> sortedServices = new ArrayList<>();
 
     for (ProviderPriority priority : priorityOrder) {
       for (SegmentNarrationService service : availableServices) {

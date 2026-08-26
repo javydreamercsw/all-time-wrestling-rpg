@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.GridKt;
+import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
@@ -54,6 +55,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.data.domain.Sort;
 
 class InboxViewTest extends AbstractViewTest {
@@ -263,8 +265,8 @@ class InboxViewTest extends AbstractViewTest {
     Button showMe = _get(freshView, Button.class, spec -> spec.withId("open-drawer-btn-30"));
     assertThat(showMe.getText()).isEqualTo("Show me");
 
-    com.github.mvysny.kaributesting.v10.LocatorJ._click(showMe);
-    org.mockito.Mockito.verify(openProfileDrawerBroadcaster).broadcast();
+    LocatorJ._click(showMe);
+    Mockito.verify(openProfileDrawerBroadcaster).broadcast();
   }
 
   @Test
@@ -335,7 +337,7 @@ class InboxViewTest extends AbstractViewTest {
     Grid<InboxItem> grid = _get(freshView, Grid.class);
     GridKt._clickItem(grid, 0, 1, false, false, false, false);
 
-    org.mockito.Mockito.verifyNoMoreInteractions(org.mockito.Mockito.ignoreStubs(inboxService));
+    Mockito.verifyNoMoreInteractions(Mockito.ignoreStubs(inboxService));
   }
 
   @Test

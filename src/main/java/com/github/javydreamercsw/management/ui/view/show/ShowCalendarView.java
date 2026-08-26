@@ -99,7 +99,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
             .getLocation()
             .getQueryParameters()
             .getParameters()
-            .getOrDefault("date", java.util.List.of())
+            .getOrDefault("date", List.of())
             .stream()
             .findFirst()
             .orElse(null);

@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompl
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.Expansion;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
@@ -56,6 +57,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -64,8 +66,7 @@ class TutorialServiceTest {
   @Mock private AccountTutorialCompletionRepository completionRepository;
   @Mock private GameSettingService gameSettingService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+  @Mock private ExpansionService expansionService;
 
   @Mock private AccountRepository accountRepository;
   @Mock private CampaignRepository campaignRepository;
@@ -237,7 +238,7 @@ class TutorialServiceTest {
   @Test
   void resetCampaignTutorial_withExistingUniverse_cleansUpUniverseAndWrestler() {
     Universe tutorialUniverse = new Universe();
-    org.springframework.test.util.ReflectionTestUtils.setField(tutorialUniverse, "id", 99L);
+    ReflectionTestUtils.setField(tutorialUniverse, "id", 99L);
     tutorialUniverse.setName("Tutorial – player");
 
     Campaign abandonedCampaign = new Campaign();
@@ -276,7 +277,7 @@ class TutorialServiceTest {
     Universe saved = new Universe();
     saved.setName("Tutorial – player");
     saved.setType(Universe.UniverseType.CAMPAIGN);
-    when(universeService.findByName("Tutorial – player")).thenReturn(java.util.Optional.empty());
+    when(universeService.findByName("Tutorial – player")).thenReturn(Optional.empty());
     when(universeService.save(any())).thenReturn(saved);
     when(universeMembershipService.addMember(any(), any(), any())).thenReturn(null);
 

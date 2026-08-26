@@ -20,10 +20,12 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +66,7 @@ public class Rivalry extends AbstractEntity<Long> {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "league_id")
-  private com.github.javydreamercsw.management.domain.league.League league;
+  private League league;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "universe_id", nullable = false)
@@ -247,7 +249,7 @@ public class Rivalry extends AbstractEntity<Long> {
   /** Get duration of the rivalry in days. */
   public long getDurationDays() {
     Instant end = endedDate != null ? endedDate : Instant.now();
-    return java.time.Duration.between(startedDate, end).toDays();
+    return Duration.between(startedDate, end).toDays();
   }
 
   @PrePersist

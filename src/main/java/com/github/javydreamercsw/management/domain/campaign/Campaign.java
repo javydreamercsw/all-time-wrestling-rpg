@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.CascadeType;
@@ -23,6 +24,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -53,7 +55,7 @@ public class Campaign {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "universe_id")
   private Universe universe;
 
@@ -72,7 +74,7 @@ public class Campaign {
   private LocalDateTime endedAt;
 
   @OneToOne(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
-  @com.fasterxml.jackson.annotation.JsonIgnore
+  @JsonIgnore
   @EqualsAndHashCode.Exclude
   @ToString.Exclude
   private CampaignState state;

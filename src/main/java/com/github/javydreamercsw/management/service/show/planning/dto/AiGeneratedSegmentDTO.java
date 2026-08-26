@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.jackson.Jacksonized;
@@ -29,10 +30,10 @@ public class AiGeneratedSegmentDTO {
   private String description;
   private String outcome;
   private String notes;
-  private java.util.List<String> participants;
-  private java.util.List<java.util.List<String>> teams;
-  private java.util.List<Long> participantIds;
-  private java.util.List<java.util.List<Long>> teamIds;
+  private List<String> participants;
+  private List<List<String>> teams;
+  private List<Long> participantIds;
+  private List<List<Long>> teamIds;
   private Long rivalryId;
-  private java.util.List<String> rules;
+  private List<String> rules;
 }

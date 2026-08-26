@@ -16,14 +16,18 @@
 */
 package com.github.javydreamercsw.management.service.show.type;
 
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -46,22 +50,18 @@ public class ShowTypeService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TYPES_CACHE, allEntries = true)
   public ShowType save(@NonNull final ShowType showType) {
     showType.setCreationDate(clock.instant());
     return showTypeRepository.saveAndFlush(showType);
   }
 
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.SHOW_TYPES_CACHE, key = "'all'")
   public List<ShowType> findAll() {
     return showTypeRepository.findAll().stream()
         .filter(ShowType::isActive)
-        .collect(java.util.stream.Collectors.toList());
+        .collect(Collectors.toList());
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -70,9 +70,7 @@ public class ShowTypeService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TYPES_CACHE, allEntries = true)
   public void setActive(@NonNull final Long id, final boolean active) {
     showTypeRepository
         .findById(id)
@@ -84,17 +82,13 @@ public class ShowTypeService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TYPES_CACHE, allEntries = true)
   public void delete(@NonNull final ShowType showType) {
     showTypeRepository.delete(showType);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TYPES_CACHE, allEntries = true)
   /** Backward-compatible overload that infers {@link ShowCategory} from the show type name. */
   public ShowType createOrUpdateShowType(
       @NonNull final String name,
@@ -157,9 +151,7 @@ public class ShowTypeService {
    * @return Optional containing the show type if found
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TYPES_CACHE,
-      key = "#name")
+  @Cacheable(value = CacheConfig.SHOW_TYPES_CACHE, key = "#name")
   public Optional<ShowType> findByName(@NonNull final String name) {
     return showTypeRepository.findByName(name);
   }

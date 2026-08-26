@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.account;
 
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 
 public class UserDocsE2ETest extends AbstractDocsE2ETest {
 
@@ -45,6 +46,6 @@ public class UserDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistory;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
@@ -25,14 +26,18 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -124,7 +129,7 @@ public class BackstageActionService {
         diceSides
             + featureDataService.consumeFeatureInt(
                 state, CampaignEffectContext.KEY_BACKSTAGE_DICE_BONUS);
-    java.util.List<Integer> rolls = rollDice(effectiveDice);
+    List<Integer> rolls = rollDice(effectiveDice);
     int successes = (int) rolls.stream().filter(r -> r >= 4).count();
 
     // Apply player roll modifier from script effects (ATW-t8q)
@@ -272,7 +277,7 @@ public class BackstageActionService {
    * @param numberOfDice Number of dice to roll (based on attribute).
    * @return List of roll results.
    */
-  public java.util.List<Integer> rollDice(final int numberOfDice) {
+  public List<Integer> rollDice(final int numberOfDice) {
     if (numberOfDice <= 0) {
       return new ArrayList<>();
     }
@@ -290,20 +295,18 @@ public class BackstageActionService {
       var show = campaignService.getOrCreateCampaignShow(campaign);
       var promoType = campaignService.getPromoSegmentType();
 
-      var segment = new com.github.javydreamercsw.management.domain.show.segment.Segment();
+      var segment = new Segment();
       segment.setShow(show);
       segment.setSegmentType(promoType);
-      segment.setSegmentDate(java.time.Instant.now());
+      segment.setSegmentDate(Instant.now());
       segment.setNarration("Backstage Promo: " + description);
-      segment.setStatus(
-          com.github.javydreamercsw.management.domain.show.segment.SegmentStatus.COMPLETED);
-      segment.setAdjudicationStatus(
-          com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+      segment.setStatus(SegmentStatus.COMPLETED);
+      segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
 
       // Add participants
       segment.addParticipant(campaign.getWrestler());
       if (success) {
-        segment.setWinners(java.util.List.of(campaign.getWrestler()));
+        segment.setWinners(List.of(campaign.getWrestler()));
       }
 
       // Add "Promo" rule

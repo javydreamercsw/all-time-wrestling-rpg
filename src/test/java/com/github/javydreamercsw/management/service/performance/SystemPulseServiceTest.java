@@ -25,6 +25,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -72,8 +73,8 @@ class SystemPulseServiceTest {
 
   @Test
   void getPulse_multipleServices_returnsAllStatuses() {
-    SegmentNarrationService openAiService = org.mockito.Mockito.mock(SegmentNarrationService.class);
-    SegmentNarrationService claudeService = org.mockito.Mockito.mock(SegmentNarrationService.class);
+    SegmentNarrationService openAiService = Mockito.mock(SegmentNarrationService.class);
+    SegmentNarrationService claudeService = Mockito.mock(SegmentNarrationService.class);
 
     when(openAiService.getProviderName()).thenReturn("OpenAI");
     when(openAiService.isAvailable()).thenReturn(true);

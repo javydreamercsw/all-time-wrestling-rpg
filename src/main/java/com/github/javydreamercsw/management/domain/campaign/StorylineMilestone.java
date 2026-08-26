@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -27,6 +29,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -73,13 +77,13 @@ public class StorylineMilestone {
   @JoinColumn(name = "next_on_failure_id")
   private StorylineMilestone nextMilestoneOnFailure;
 
-  @jakarta.persistence.ElementCollection(fetch = FetchType.EAGER)
-  @jakarta.persistence.CollectionTable(
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(
       name = "milestone_status_rewards",
       joinColumns = @JoinColumn(name = "milestone_id"))
   @Column(name = "status_key")
   @Builder.Default
-  private java.util.List<String> statusCardRewards = new java.util.ArrayList<>();
+  private List<String> statusCardRewards = new ArrayList<>();
 
   public enum MilestoneStatus {
     PENDING,

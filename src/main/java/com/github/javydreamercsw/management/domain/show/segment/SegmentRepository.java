@@ -16,8 +16,10 @@
 */
 package com.github.javydreamercsw.management.domain.show.segment;
 
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -98,19 +100,14 @@ public interface SegmentRepository
   List<Segment> findByIsTitleSegmentTrue();
 
   /** Find segments involving a specific title. */
-  @org.springframework.data.jpa.repository.Query(
-      "SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true")
-  List<Segment> findByTitle(
-      @org.springframework.data.repository.query.Param("title")
-          com.github.javydreamercsw.management.domain.title.Title title);
+  @Query("SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true")
+  List<Segment> findByTitle(@Param("title") Title title);
 
   /** Find all segments for a title ordered chronologically — used by the reign rebuild repair. */
-  @org.springframework.data.jpa.repository.Query(
+  @Query(
       "SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true"
           + " ORDER BY s.show.showDate ASC, s.id ASC")
-  List<Segment> findByTitleOrderedByShowDate(
-      @org.springframework.data.repository.query.Param("title")
-          com.github.javydreamercsw.management.domain.title.Title title);
+  List<Segment> findByTitleOrderedByShowDate(@Param("title") Title title);
 
   /** Find segments after a specific date. */
   List<Segment> findBySegmentDateAfter(Instant date);
@@ -276,6 +273,5 @@ public interface SegmentRepository
       """)
   Optional<Segment> findByIdWithDetails(@Param("id") Long id);
 
-  long countByAdjudicationStatus(
-      com.github.javydreamercsw.management.domain.AdjudicationStatus adjudicationStatus);
+  long countByAdjudicationStatus(AdjudicationStatus adjudicationStatus);
 }

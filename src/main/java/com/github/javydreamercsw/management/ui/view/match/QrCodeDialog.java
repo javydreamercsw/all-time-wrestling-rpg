@@ -24,6 +24,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,7 +39,7 @@ public class QrCodeDialog extends Dialog {
     VerticalLayout layout = new VerticalLayout();
     layout.setPadding(false);
     layout.setSpacing(true);
-    layout.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+    layout.setAlignItems(FlexComponent.Alignment.CENTER);
     layout.setWidth("300px");
 
     try {

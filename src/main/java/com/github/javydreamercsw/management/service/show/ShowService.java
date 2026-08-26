@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
@@ -39,12 +40,14 @@ import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -54,18 +57,22 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-@lombok.extern.slf4j.Slf4j
+@Slf4j
 public class ShowService {
   private final CampaignRepository campaignRepository;
   private final ShowRepository showRepository;
@@ -150,18 +157,16 @@ public class ShowService {
 
   /** Returns true when at least one show with at least one segment exists. Avoids lazy loading. */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  @Transactional(readOnly = true)
   public boolean existsShowWithSegments() {
     return showRepository.countShowsWithAtLeastOneSegment() > 0;
   }
 
   /** Returns true when at least one segment has been adjudicated. Avoids lazy loading. */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  @Transactional(readOnly = true)
   public boolean existsAdjudicatedSegment() {
-    return segmentRepository.countByAdjudicationStatus(
-            com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED)
-        > 0;
+    return segmentRepository.countByAdjudicationStatus(AdjudicationStatus.ADJUDICATED) > 0;
   }
 
   @PreAuthorize(
@@ -173,17 +178,13 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.SHOWS_CACHE, key = "'all'")
   public List<Show> findAll() {
     return showRepository.findAll();
   }
 
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
-      key = "'allWithRelationships'")
+  @Cacheable(value = CacheConfig.SHOWS_CACHE, key = "'allWithRelationships'")
   public List<Show> findAllWithRelationships() {
     return showRepository.findAllWithRelationships();
   }
@@ -204,17 +205,13 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
-      key = "#id")
+  @Cacheable(value = CacheConfig.SHOWS_CACHE, key = "#id")
   public Optional<Show> getShowById(final Long id) {
     return showRepository.findByIdWithArenaAndLocation(id);
   }
 
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE,
-      key = "#startDate + '-' + #endDate")
+  @Cacheable(value = CacheConfig.CALENDAR_CACHE, key = "#startDate + '-' + #endDate")
   public List<Show> getShowsByDateRange(final LocalDate startDate, final LocalDate endDate) {
     return showRepository.findByShowDateBetweenOrderByShowDate(startDate, endDate);
   }
@@ -260,11 +257,8 @@ public class ShowService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
-      },
+  @CacheEvict(
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public Show createShow(
       final String name,
@@ -274,7 +268,7 @@ public class ShowService {
       final Long seasonId,
       final Long templateId,
       final Long universeId,
-      @org.springframework.lang.Nullable final Long leagueId,
+      @Nullable final Long leagueId,
       final Long commentaryTeamId,
       final Long arenaId) {
 
@@ -344,11 +338,8 @@ public class ShowService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
-      },
+  @CacheEvict(
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public Optional<Show> updateShow(
       final Long id,
@@ -380,11 +371,8 @@ public class ShowService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
-      },
+  @CacheEvict(
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public Optional<Show> updateShow(
       final Long id,
@@ -399,7 +387,7 @@ public class ShowService {
       final Long arenaId,
       final Long leagueId,
       final Integer attendance,
-      final java.math.BigDecimal gateRevenue) {
+      final BigDecimal gateRevenue) {
 
     return showRepository
         .findById(id)
@@ -506,11 +494,8 @@ public class ShowService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
-      },
+  @CacheEvict(
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public boolean deleteShow(@NonNull final Long id) {
     if (showRepository.existsById(id)) {
@@ -522,11 +507,8 @@ public class ShowService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.CALENDAR_CACHE
-      },
+  @CacheEvict(
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public void adjudicateShow(@NonNull final Long showId) {
     Show show =
@@ -598,9 +580,8 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public org.springframework.data.domain.Page<Show> getShowsByUniverse(
-      @NonNull final Universe universe,
-      @NonNull final org.springframework.data.domain.Pageable pageable) {
+  public Page<Show> getShowsByUniverse(
+      @NonNull final Universe universe, @NonNull final Pageable pageable) {
     return showRepository.findByUniverseOrUniverseIsNull(universe, pageable);
   }
 
@@ -629,10 +610,7 @@ public class ShowService {
     }
     boolean allAdjudicated =
         segments.stream()
-            .allMatch(
-                s ->
-                    com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED
-                        .equals(s.getAdjudicationStatus()));
+            .allMatch(s -> AdjudicationStatus.ADJUDICATED.equals(s.getAdjudicationStatus()));
     if (allAdjudicated) {
       finalizeShow(show, segments);
     }
@@ -641,7 +619,7 @@ public class ShowService {
   @PreAuthorize("hasAnyRole('ADMIN', 'BOOKER')")
   public Show finalizeShow(@NonNull final Show show, @NonNull final List<Segment> segments) {
     // Collect unique wrestlers across all segments
-    java.util.Set<Long> seen = new java.util.HashSet<>();
+    Set<Long> seen = new HashSet<>();
     long totalFanWeight =
         segments.stream()
             .flatMap(s -> s.getWrestlers().stream())
@@ -680,27 +658,23 @@ public class ShowService {
             ? Math.min(projected, show.getArena().getCapacity())
             : projected;
 
-    java.math.BigDecimal ticketPrice =
+    BigDecimal ticketPrice =
         show.isPremiumLiveEvent()
             ? ShowEconomicsConstants.PREMIUM_TICKET_PRICE
             : ShowEconomicsConstants.STANDARD_TICKET_PRICE;
-    java.math.BigDecimal gateRevenue =
-        ticketPrice.multiply(java.math.BigDecimal.valueOf(finalAttendance));
+    BigDecimal gateRevenue = ticketPrice.multiply(BigDecimal.valueOf(finalAttendance));
 
     show.setAttendance(finalAttendance);
     show.setGateRevenue(gateRevenue);
     double qualityScore = showQualityService.computeAndPersist(show, segments);
     Show saved = showRepository.save(show);
     showQualityService.awardFanBonusesIfEligible(saved, segments, qualityScore);
-    eventPublisher.publishEvent(
-        new com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent(
-            this, saved, segments));
+    eventPublisher.publishEvent(new ShowFinalizedEvent(this, saved, segments));
 
     // Credit gate revenue to league budget (GM mode only)
     if (show.getLeague() != null) {
       League league = show.getLeague();
-      java.math.BigDecimal current =
-          league.getBudget() != null ? league.getBudget() : java.math.BigDecimal.ZERO;
+      BigDecimal current = league.getBudget() != null ? league.getBudget() : BigDecimal.ZERO;
       league.setBudget(current.add(gateRevenue));
       leagueRepository.save(league);
       log.info(

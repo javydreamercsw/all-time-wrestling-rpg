@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +63,7 @@ public class TutorialService {
    * empty if the player has not yet completed the mode-selection/setup step.
    */
   @PreAuthorize("permitAll()")
-  public java.util.Optional<Universe> findTutorialUniverse(@NonNull final String username) {
+  public Optional<Universe> findTutorialUniverse(@NonNull final String username) {
     return universeService.findByName("Tutorial – " + username);
   }
 
@@ -331,7 +332,7 @@ public class TutorialService {
    *
    * @return {@code null} on success; an error message string when the step is not yet satisfied.
    */
-  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  @Transactional(readOnly = true)
   @PreAuthorize("hasAnyRole('PLAYER','ADMIN','BOOKER')")
   public String validateStep(
       @NonNull final Account account,

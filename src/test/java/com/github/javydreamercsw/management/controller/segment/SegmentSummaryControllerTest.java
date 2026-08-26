@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.controller.AbstractControllerTest;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.exception.RestExceptionHandler;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -78,7 +79,7 @@ class SegmentSummaryControllerTest extends AbstractControllerTest {
 
     // Unhandled RuntimeException is re-thrown as a ServletException by MockMvc's
     // TestDispatcherServlet (unlike production where Spring converts it to a 500).
-    org.junit.jupiter.api.Assertions.assertThrows(
+    Assertions.assertThrows(
         Exception.class,
         () -> mockMvc.perform(post("/api/segments/{segmentId}/summarize", segmentId).with(csrf())));
 

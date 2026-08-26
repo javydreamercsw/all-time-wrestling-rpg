@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -28,6 +29,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -79,10 +82,10 @@ public class Npc extends AbstractEntity<Long> {
   @Builder.Default
   private boolean isActive = true;
 
-  @jakarta.persistence.Convert(converter = NpcAttributesConverter.class)
+  @Convert(converter = NpcAttributesConverter.class)
   @Column(columnDefinition = "TEXT")
   @Builder.Default
-  private java.util.Map<String, Object> attributes = new java.util.HashMap<>();
+  private Map<String, Object> attributes = new HashMap<>();
 
   @PrePersist
   protected void onCreate() {

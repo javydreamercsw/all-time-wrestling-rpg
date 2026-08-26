@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.faction;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -55,7 +56,7 @@ class FactionFormValidationTest {
   @Mock private NpcService npcService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseContextService universeContextService;
-  @Mock private com.github.javydreamercsw.base.ai.image.ImageStorageService imageStorageService;
+  @Mock private ImageStorageService imageStorageService;
   @Mock private SecurityUtils securityUtils;
 
   private FactionListView factionListView;

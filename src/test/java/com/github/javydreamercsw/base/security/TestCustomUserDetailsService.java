@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Clock;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -122,7 +123,7 @@ public class TestCustomUserDetailsService implements UserDetailsService {
   }
 
   private Wrestler findOrCreateWrestlerForAccount(@NonNull final Account account) {
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.getFirst();
     }

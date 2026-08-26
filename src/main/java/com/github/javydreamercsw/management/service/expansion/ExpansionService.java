@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,7 @@ public class ExpansionService {
       return expansions;
     }
     if (resource.exists()) {
-      try (java.io.InputStream is = resource.getInputStream()) {
+      try (InputStream is = resource.getInputStream()) {
         expansions = objectMapper.readValue(is, new TypeReference<List<Expansion>>() {});
         for (Expansion expansion : expansions) {
           expansion.setEnabled(isExpansionEnabled(expansion.getCode()));

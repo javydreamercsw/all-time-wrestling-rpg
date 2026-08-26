@@ -27,6 +27,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
@@ -35,6 +36,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
@@ -48,10 +50,17 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
@@ -67,6 +76,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.context.ApplicationEventPublisher;
 
 class ShowPlanningServiceTest {
 
@@ -75,22 +85,18 @@ class ShowPlanningServiceTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private SegmentTypeService segmentTypeService;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
-      segmentRuleRepository;
+  @Mock private SegmentRuleRepository segmentRuleRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper
-      mapper;
+  @Mock private ShowPlanningDtoMapper mapper;
 
-  @Mock private com.github.javydreamercsw.management.service.rivalry.RivalryService rivalryService;
-  @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
-  @Mock private com.github.javydreamercsw.management.service.faction.FactionService factionService;
-  @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
+  @Mock private RivalryService rivalryService;
+  @Mock private TitleService titleService;
+  @Mock private FactionService factionService;
+  @Mock private ShowService showService;
   @Mock private SegmentSummaryService segmentSummaryService;
-  @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
-  @Mock private com.github.javydreamercsw.management.service.npc.NpcService npcService;
-  @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
+  @Mock private SegmentService segmentService;
+  @Mock private NpcService npcService;
+  @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private TitleReignRepository titleReignRepository;
   @Mock private Clock clock;
   @Mock private InjuryService injuryService;
@@ -141,7 +147,7 @@ class ShowPlanningServiceTest {
     activeWrestler.setName("Active NPC");
     activeWrestler.setActive(true);
     activeWrestler.setIsPlayer(false);
-    activeWrestler.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    activeWrestler.setGender(Gender.MALE);
   }
 
   @Test

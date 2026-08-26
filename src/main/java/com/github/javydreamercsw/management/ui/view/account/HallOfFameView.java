@@ -41,6 +41,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -161,10 +162,9 @@ public class HallOfFameView extends Main {
   private void updateList() {
     transactionTemplate.execute(
         status -> {
-          java.util.List<Account> accounts =
+          List<Account> accounts =
               accountRepository.findAll(Sort.by(Sort.Direction.DESC, "legacyScore"));
-          accounts.forEach(
-              account -> org.hibernate.Hibernate.initialize(account.getAchievements()));
+          accounts.forEach(account -> Hibernate.initialize(account.getAchievements()));
           grid.setItems(accounts);
           return null;
         });

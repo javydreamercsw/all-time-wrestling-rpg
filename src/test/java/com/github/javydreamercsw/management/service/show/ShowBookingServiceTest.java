@@ -23,16 +23,21 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.BookingMode;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -53,10 +58,9 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired DeckRepository deckRepository;
   @Autowired DeckCardRepository deckCardRepository;
   @Autowired SegmentTypeRepository segmentTypeRepository;
-  @Autowired com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
+  @Autowired TeamRepository teamRepository;
 
-  @Autowired
-  com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
+  @Autowired FactionRepository factionRepository;
 
   @MockitoBean private OpenAISegmentNarrationService openAIService;
 
@@ -67,9 +71,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   public void setUp() {
     testSeason =
         seasonService.createOrUpdateSeason(
-            "Test Season",
-            java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant(),
-            true);
+            "Test Season", LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant(), true);
 
     // Create and save a weekly show type
     weeklyShowType =
@@ -154,8 +156,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
     Show ppv = result.get();
     assertThat(ppv.getName()).isEqualTo(ppvName);
     assertThat(ppv.getDescription()).isEqualTo(ppvDescription);
-    assertThat(ppv.getType().getCategory())
-        .isEqualTo(com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE);
+    assertThat(ppv.getType().getCategory()).isEqualTo(ShowCategory.PLE);
 
     // Check segments and promos were created (PPVs should have multiple segments, may be fewer due
     // to wrestler availability)

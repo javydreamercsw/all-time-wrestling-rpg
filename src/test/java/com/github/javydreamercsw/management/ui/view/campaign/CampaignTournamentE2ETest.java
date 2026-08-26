@@ -28,6 +28,8 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +78,7 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
         Campaign.builder()
             .wrestler(playerWrestler)
             .status(CampaignStatus.ACTIVE)
-            .startedAt(java.time.LocalDateTime.now())
+            .startedAt(LocalDateTime.now())
             .universe(defaultUniverse)
             .build();
     campaign = campaignRepository.saveAndFlush(campaign);
@@ -85,7 +87,7 @@ public class CampaignTournamentE2ETest extends AbstractE2ETest {
         CampaignState.builder()
             .campaign(campaign)
             .victoryPoints(9)
-            .currentGameDate(java.time.LocalDate.now())
+            .currentGameDate(LocalDate.now())
             .currentChapterId("tournament")
             .build();
     campaign.setState(state);

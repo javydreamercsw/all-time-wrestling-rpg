@@ -52,7 +52,7 @@ public class AdjudicationCompletedInboxListener
   @Override
   public void onApplicationEvent(@NonNull final AdjudicationCompletedEvent event) {
     log.debug("Received AdjudicationCompletedEvent for show: {}", event.getShow().getName());
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             adjudicationCompleted,
             "Adjudication Complete: " + event.getShow().getName(),

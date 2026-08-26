@@ -34,6 +34,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.provider.CallbackDataProvider;
 import com.vaadin.flow.data.provider.DataProvider;
@@ -91,8 +92,7 @@ public class LocationListView extends Main {
     grid.addComponentColumn(
             location -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
-              nameLayout.setAlignItems(
-                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!location.isActive()) {
@@ -101,7 +101,7 @@ public class LocationListView extends Main {
                 inactiveIcon.getStyle().set("margin-right", "6px");
                 nameLayout.add(inactiveIcon);
               }
-              nameLayout.add(new com.vaadin.flow.component.html.Span(location.getName()));
+              nameLayout.add(new Span(location.getName()));
               return nameLayout;
             })
         .setHeader("Name")

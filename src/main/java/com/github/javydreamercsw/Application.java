@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.service.ranking.RankingService;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
@@ -114,8 +115,7 @@ public class Application extends SpringBootServletInitializer {
             "Skipping tier recalculation on startup: No authenticated user in SecurityContext.");
         return;
       }
-      rankingService.recalculateRanking(
-          new java.util.ArrayList<>(wrestlerStateRepository.findAll()));
+      rankingService.recalculateRanking(new ArrayList<>(wrestlerStateRepository.findAll()));
       log.info("Tier recalculation complete.");
     };
   }

@@ -34,6 +34,8 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -283,12 +285,10 @@ class NarrationDialogTest {
     partner.setId(99L);
     partner.setName("Seth Rollins");
 
-    com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship rel =
-        new com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship();
+    WrestlerRelationship rel = new WrestlerRelationship();
     rel.setWrestler1(wrestler);
     rel.setWrestler2(partner);
-    rel.setType(
-        com.github.javydreamercsw.management.domain.relationship.RelationshipType.BEST_FRIEND);
+    rel.setType(RelationshipType.BEST_FRIEND);
     rel.setLevel(80);
     rel.setIsStoryline(true);
 

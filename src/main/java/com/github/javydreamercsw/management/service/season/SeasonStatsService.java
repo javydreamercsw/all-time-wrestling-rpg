@@ -29,9 +29,11 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.SeasonStatsDTO;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,8 +85,7 @@ public class SeasonStatsService {
 
     List<Segment> segments =
         segmentRepository
-            .findByWrestlerParticipationAndSeason(
-                managedWrestler, season, org.springframework.data.domain.Pageable.unpaged())
+            .findByWrestlerParticipationAndSeason(managedWrestler, season, Pageable.unpaged())
             .getContent();
 
     int wins = 0;
@@ -108,7 +109,7 @@ public class SeasonStatsService {
             .filter(reign -> isReignInSeason(reign, season))
             .map(reign -> reign.getTitle().getName())
             .distinct()
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
 
     return SeasonStatsDTO.builder()
         .seasonName(season.getName())

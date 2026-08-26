@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +71,7 @@ class CardServiceIT extends ManagementIntegrationTest {
     card.setPin(false);
     Integer max = cardRepository.findMaxCardNumberBySet(defaultCardSet.getId());
     card.setNumber(max == null ? 1 : max + 1);
-    card.setCreationDate(java.time.Instant.now());
+    card.setCreationDate(Instant.now());
     return cardRepository.save(card);
   }
 

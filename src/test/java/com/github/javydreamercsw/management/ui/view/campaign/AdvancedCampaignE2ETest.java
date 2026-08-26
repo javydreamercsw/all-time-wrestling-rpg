@@ -39,10 +39,13 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -79,7 +82,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
 
     Account admin = accountRepository.findByUsername("admin").get();
 
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
     player = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     if (player == null) {
@@ -104,7 +107,7 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
     Title title = titleRepository.findAll().getFirst();
     TitleReign reign = new TitleReign();
     reign.setTitle(title);
-    reign.setChampions(new java.util.LinkedHashSet<>(java.util.List.of(player)));
+    reign.setChampions(new LinkedHashSet<>(List.of(player)));
     reign.setStartDate(Instant.now());
     titleReignRepository.saveAndFlush(reign);
 
@@ -264,6 +267,6 @@ class AdvancedCampaignE2ETest extends AbstractE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

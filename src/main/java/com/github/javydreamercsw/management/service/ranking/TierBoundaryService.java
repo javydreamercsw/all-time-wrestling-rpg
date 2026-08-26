@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.config.CacheConfig;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +61,7 @@ public class TierBoundaryService {
     log.debug("Current boundaries: {}", tierBoundaryRepository.count());
     tierBoundaryRepository.deleteAllInBatch();
     log.debug("Boundaries after delete: {}", tierBoundaryRepository.count());
-    List<TierBoundary> boundaries = new java.util.ArrayList<>();
+    List<TierBoundary> boundaries = new ArrayList<>();
     for (Gender gender : Gender.values()) {
       for (WrestlerTier tier : WrestlerTier.values()) {
         TierBoundary boundary = new TierBoundary();

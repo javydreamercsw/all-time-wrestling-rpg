@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.InjuryResponseDTO;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -114,8 +115,7 @@ public class InjuryController {
           .body(new ErrorResponse("Wrestler not found"));
     }
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        injuryService.getWrestlerState(wrestlerId, universeId);
+    WrestlerState state = injuryService.getWrestlerState(wrestlerId, universeId);
     if (state.getBumps() < 3) {
       return ResponseEntity.badRequest()
           .body(

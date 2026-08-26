@@ -31,6 +31,7 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -267,8 +268,7 @@ class OpenAIImageGenerationServiceTest {
     when(aiSettings.getOpenAIApiKey()).thenReturn("sk-abc123");
     when(aiSettings.getOpenAIImageModel()).thenReturn("dall-e-3");
 
-    org.mockito.ArgumentCaptor<HttpRequest> requestCaptor =
-        org.mockito.ArgumentCaptor.forClass(HttpRequest.class);
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
     when(httpClient.send(requestCaptor.capture(), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 

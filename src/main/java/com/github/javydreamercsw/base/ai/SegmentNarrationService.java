@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.ai;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -79,9 +80,9 @@ public interface SegmentNarrationService {
    * @param segmentContext Complete segment context including all participants and details
    * @return a {@link java.util.concurrent.CompletableFuture} that resolves to the narration string
    */
-  default java.util.concurrent.CompletableFuture<String> narrateSegmentAsync(
+  default CompletableFuture<String> narrateSegmentAsync(
       @NonNull SegmentNarrationContext segmentContext) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> narrateSegment(segmentContext));
+    return CompletableFuture.supplyAsync(() -> narrateSegment(segmentContext));
   }
 
   /** Context object containing all information needed for segment narration. */

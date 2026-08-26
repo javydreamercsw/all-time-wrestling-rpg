@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -121,7 +122,7 @@ public class ArenaService {
   public List<Arena> findAll() {
     return repository.findAllWithLocation().stream()
         .filter(Arena::isActive)
-        .collect(java.util.stream.Collectors.toList());
+        .collect(Collectors.toList());
   }
 
   @PreAuthorize("isAuthenticated()")

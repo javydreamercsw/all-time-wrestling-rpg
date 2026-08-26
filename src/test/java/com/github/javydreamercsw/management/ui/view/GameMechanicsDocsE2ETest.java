@@ -26,16 +26,19 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -80,7 +83,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
         Segment segment = new Segment();
         segment.setShow(show);
         segment.setSegmentType(matchType);
-        segment.setSegmentDate(java.time.Instant.now());
+        segment.setSegmentDate(Instant.now());
         segment.addParticipant(wrestlers.get(0));
         segment.addParticipant(wrestlers.get(1));
         segmentRepository.save(segment);
@@ -173,9 +176,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
             .filter(
                 s ->
                     s.getSegmentType() != null
-                        && !com.github.javydreamercsw.management.domain.show.segment.type
-                            .SegmentTypeNames.PROMO
-                            .equalsIgnoreCase(s.getSegmentType().getName()))
+                        && !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName()))
             .findFirst()
             .orElse(null);
     if (segment != null) {
@@ -227,8 +228,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
     WebElement tab =
         waitForVaadinElement(
-            driver,
-            org.openqa.selenium.By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
+            driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(tab);
 
     try {
@@ -328,7 +328,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     Segment segment = new Segment();
     segment.setShow(show);
     segment.setSegmentType(matchType);
-    segment.setSegmentDate(java.time.Instant.now());
+    segment.setSegmentDate(Instant.now());
     segment.addParticipant(playerWrestler);
     segment.addParticipant(opponent);
     segment = segmentRepository.saveAndFlush(segment);
@@ -337,11 +337,9 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     waitForText("Your Abilities");
 
     // Expand the abilities panel so it is visible in the screenshot.
-    org.openqa.selenium.WebElement abilitiesToggle =
+    WebElement abilitiesToggle =
         waitForVaadinElement(
-            driver,
-            org.openqa.selenium.By.xpath(
-                "//vaadin-details-summary[contains(., 'Your Abilities')]"));
+            driver, By.xpath("//vaadin-details-summary[contains(., 'Your Abilities')]"));
     clickElement(abilitiesToggle);
 
     try {
@@ -362,6 +360,6 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

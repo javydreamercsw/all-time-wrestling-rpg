@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -160,7 +161,7 @@ class AccountServiceTest {
   void testDelete_nonExistentId_doesNothing() {
     accountService.delete(99L);
 
-    verify(accountRepository, org.mockito.Mockito.never()).save(any());
+    verify(accountRepository, Mockito.never()).save(any());
   }
 
   @Test
@@ -177,7 +178,7 @@ class AccountServiceTest {
   void testEnable_nonExistentId_doesNothing() {
     accountService.enable(99L);
 
-    verify(accountRepository, org.mockito.Mockito.never()).save(any());
+    verify(accountRepository, Mockito.never()).save(any());
   }
 
   @Test

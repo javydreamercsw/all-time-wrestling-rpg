@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.rivalry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -481,7 +482,7 @@ class RivalryHeatSimulationTest {
 
   private List<String> pickRandom(final List<String> source, final int count, final Random rng) {
     List<String> shuffled = new ArrayList<>(source);
-    java.util.Collections.shuffle(shuffled, rng);
+    Collections.shuffle(shuffled, rng);
     return shuffled.subList(0, Math.min(count, shuffled.size()));
   }
 

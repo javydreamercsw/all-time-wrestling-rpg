@@ -26,6 +26,8 @@ import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -78,7 +80,7 @@ public class AccountService {
             .findByName(roleName)
             .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
     Account account = new Account(username, passwordEncoder.encode(password), email);
-    account.setRoles(new java.util.HashSet<>(Set.of(role)));
+    account.setRoles(new HashSet<>(Set.of(role)));
     Account saved = accountRepository.save(account);
     log.info("[AUDIT] Account created: username={} role={}", username, roleName);
     return saved;
@@ -213,7 +215,7 @@ public class AccountService {
                 () ->
                     new RuntimeException(
                         "Account not found for setLockExpiredAndSave: " + account.getUsername()));
-    reloadedAccount.setLockedUntil(java.time.LocalDateTime.now().minusMinutes(1));
+    reloadedAccount.setLockedUntil(LocalDateTime.now().minusMinutes(1));
     return accountRepository.save(reloadedAccount);
   }
 

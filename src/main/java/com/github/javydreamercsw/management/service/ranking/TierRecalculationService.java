@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
@@ -231,7 +232,7 @@ public class TierRecalculationService implements RankingService {
         .findFirst()
         .orElseGet(
             () ->
-                java.util.Arrays.stream(WrestlerTier.values())
+                Arrays.stream(WrestlerTier.values())
                     .filter(tier -> fans >= tier.getMinFans() && fans <= tier.getMaxFans())
                     .findFirst()
                     .orElse(WrestlerTier.ROOKIE));

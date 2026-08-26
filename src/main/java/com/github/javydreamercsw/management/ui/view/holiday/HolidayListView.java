@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.holiday;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.Holiday;
+import com.github.javydreamercsw.management.domain.HolidayType;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -120,8 +121,7 @@ public class HolidayListView extends Main {
 
     grid.addColumn(
             holiday -> {
-              if (holiday.getType()
-                  == com.github.javydreamercsw.management.domain.HolidayType.FIXED) {
+              if (holiday.getType() == HolidayType.FIXED) {
                 return "%s %d".formatted(holiday.getHolidayMonth(), holiday.getDayOfMonth());
               } else {
                 return "%s %s of %s"

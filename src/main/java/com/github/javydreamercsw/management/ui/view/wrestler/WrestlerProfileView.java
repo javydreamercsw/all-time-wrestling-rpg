@@ -23,7 +23,10 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -38,11 +41,14 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.campaign.StatusCardService;
+import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -118,13 +124,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final SeasonService seasonService;
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
-  private final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-      wrestlerStatusService;
-  private final com.github.javydreamercsw.management.service.campaign.StatusCardService
-      statusCardService;
+  private final WrestlerRelationshipService relationshipService;
+  private final WrestlerStatusService wrestlerStatusService;
+  private final StatusCardService statusCardService;
   private final WrestlerStateRepository wrestlerStateRepository;
   private final WrestlerAbilityRepository wrestlerAbilityRepository;
   private final AlignmentService alignmentService;
@@ -171,12 +173,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final CampaignService campaignService,
       final ImageStorageService imageStorageService,
       final UniverseContextService universeContextService,
-      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService,
-      final com.github.javydreamercsw.management.service.campaign.WrestlerStatusService
-          wrestlerStatusService,
-      final com.github.javydreamercsw.management.service.campaign.StatusCardService
-          statusCardService,
+      final WrestlerRelationshipService relationshipService,
+      final WrestlerStatusService wrestlerStatusService,
+      final StatusCardService statusCardService,
       final WrestlerStateRepository wrestlerStateRepository,
       final WrestlerAbilityRepository wrestlerAbilityRepository,
       final AlignmentService alignmentService) {
@@ -415,7 +414,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
           .getCurrentUniverse()
           .ifPresent(
               universe -> {
-                com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment alignment =
+                WrestlerAlignment alignment =
                     alignmentService.getOrCreateUniverseAlignment(wrestler, universe);
                 statsLayout.add(new AlignmentTrackComponent(alignment, false));
               });
@@ -495,8 +494,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       relationshipsContainer.removeAll();
       relationshipsContainer.setPadding(false);
       relationshipsContainer.add(new H3("Relationships"));
-      List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
-          relationships = relationshipService.getRelationshipsForWrestler(wrestler.getId());
+      List<WrestlerRelationship> relationships =
+          relationshipService.getRelationshipsForWrestler(wrestler.getId());
       if (relationships.isEmpty()) {
         relationshipsContainer.add(new Paragraph("No active social relationships."));
       } else {
@@ -564,15 +563,13 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
             e -> {
               wrestlerService.resetWearAndTear(wrestler.getId(), universeId);
               updateView();
-              com.vaadin.flow.component.notification.Notification.show(
-                  "Wear & Tear reset to 100%!");
+              Notification.show("Wear & Tear reset to 100%!");
             });
         injuriesLayout.add(resetWearAndTearButton);
       }
 
       injuriesLayout.add(new Paragraph("Bumps: " + state.getBumps()));
-      List<com.github.javydreamercsw.management.domain.injury.Injury> injuries =
-          injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId);
+      List<Injury> injuries = injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId);
       if (injuries.isEmpty()) {
         injuriesLayout.add(new Paragraph("No current injuries."));
       } else {

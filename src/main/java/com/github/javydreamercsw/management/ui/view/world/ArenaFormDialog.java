@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -173,8 +174,7 @@ public class ArenaFormDialog extends Dialog {
     imageUpload.setUploadButtonText("Upload Image");
 
     Button generateImageButton = new Button("Generate AI Image", e -> generateImage());
-    generateImageButton.addThemeVariants(
-        com.vaadin.flow.component.button.ButtonVariant.LUMO_CONTRAST);
+    generateImageButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
     generateImageButton.setEnabled(
         arena != null && arena.getId() != null); // Can only generate for existing arena
 
@@ -194,13 +194,13 @@ public class ArenaFormDialog extends Dialog {
 
     Button saveButton = new Button(arena == null ? "Add" : "Save", e -> saveArena());
     saveButton.setId("arena-save-button");
-    saveButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
+    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveButton.setEnabled(false); // Disable initially
     binder.addStatusChangeListener(e -> saveButton.setEnabled(binder.isValid()));
 
     Button deleteButton = new Button("Delete", e -> deleteArena());
     deleteButton.setId("arena-delete-button");
-    deleteButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_ERROR);
+    deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
     deleteButton.setVisible(arena != null && arena.getId() != null);
 
     Button cancelButton = new Button("Cancel", e -> close());

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.domain.title.Title;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
@@ -32,7 +33,7 @@ public class ProposedSegment {
   private Long rivalryId;
   private List<String> winners;
   private Boolean isTitleSegment = false;
-  private Set<Title> titles = new java.util.HashSet<>();
+  private Set<Title> titles = new HashSet<>();
   private List<String> rules;
   private String refereeName;
 

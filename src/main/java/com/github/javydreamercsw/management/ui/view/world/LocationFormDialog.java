@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Image;
@@ -146,13 +147,13 @@ public class LocationFormDialog extends Dialog {
 
     Button saveButton = new Button(location == null ? "Add" : "Save", e -> saveLocation());
     saveButton.setId("location-save-button");
-    saveButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
+    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveButton.setEnabled(false); // Disable initially
     binder.addStatusChangeListener(e -> saveButton.setEnabled(binder.isValid()));
 
     Button deleteButton = new Button("Delete", e -> deleteLocation());
     deleteButton.setId("location-delete-button");
-    deleteButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_ERROR);
+    deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
     deleteButton.setVisible(location != null && location.getId() != null);
 
     Button cancelButton = new Button("Cancel", e -> close());

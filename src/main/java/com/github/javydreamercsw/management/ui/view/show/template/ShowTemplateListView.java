@@ -41,6 +41,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -53,6 +54,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.binder.ValidationResult;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -63,6 +65,8 @@ import java.time.Month;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -199,10 +203,8 @@ public class ShowTemplateListView extends Main {
     templateGrid
         .addComponentColumn(
             template -> {
-              com.vaadin.flow.component.orderedlayout.HorizontalLayout nameLayout =
-                  new com.vaadin.flow.component.orderedlayout.HorizontalLayout();
-              nameLayout.setAlignItems(
-                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              HorizontalLayout nameLayout = new HorizontalLayout();
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!template.isActive()) {
@@ -211,7 +213,7 @@ public class ShowTemplateListView extends Main {
                 inactiveIcon.getStyle().set("margin-right", "6px");
                 nameLayout.add(inactiveIcon);
               }
-              nameLayout.add(new com.vaadin.flow.component.html.Span(template.getName()));
+              nameLayout.add(new Span(template.getName()));
               return nameLayout;
             })
         .setHeader("Name")
@@ -365,7 +367,7 @@ public class ShowTemplateListView extends Main {
   }
 
   private void openGenerateArtDialog(final ShowTemplate template) {
-    java.util.function.Supplier<String> promptSupplier =
+    Supplier<String> promptSupplier =
         () -> {
           StringBuilder sb = new StringBuilder();
           sb.append("A professional wrestling show logo or poster for '")
@@ -385,7 +387,7 @@ public class ShowTemplateListView extends Main {
           return sb.toString();
         };
 
-    java.util.function.Consumer<String> imageSaver =
+    Consumer<String> imageSaver =
         imageUrl -> {
           template.setImageUrl(imageUrl);
           showTemplateService.save(template);
@@ -621,16 +623,14 @@ public class ShowTemplateListView extends Main {
             (value, context) -> {
               RecurrenceType type = editRecurrenceType.getValue();
               if (type == RecurrenceType.WEEKLY && value == null) {
-                return com.vaadin.flow.data.binder.ValidationResult.error(
-                    "Day of Week is required for weekly recurrence");
+                return ValidationResult.error("Day of Week is required for weekly recurrence");
               }
               if ((type == RecurrenceType.MONTHLY || type == RecurrenceType.ANNUAL)
                   && editDayOfMonth.getValue() == null
                   && value == null) {
-                return com.vaadin.flow.data.binder.ValidationResult.error(
-                    "Either Day of Month or Day of Week is required");
+                return ValidationResult.error("Either Day of Month or Day of Week is required");
               }
-              return com.vaadin.flow.data.binder.ValidationResult.ok();
+              return ValidationResult.ok();
             })
         .bind(ShowTemplate::getDayOfWeek, ShowTemplate::setDayOfWeek);
     binder.forField(editDayOfMonth).bind(ShowTemplate::getDayOfMonth, ShowTemplate::setDayOfMonth);
@@ -642,10 +642,9 @@ public class ShowTemplateListView extends Main {
               if ((type == RecurrenceType.MONTHLY || type == RecurrenceType.ANNUAL)
                   && editDayOfWeek.getValue() != null
                   && value == null) {
-                return com.vaadin.flow.data.binder.ValidationResult.error(
-                    "Week of Month is required when using Day of Week");
+                return ValidationResult.error("Week of Month is required when using Day of Week");
               }
-              return com.vaadin.flow.data.binder.ValidationResult.ok();
+              return ValidationResult.ok();
             })
         .bind(ShowTemplate::getWeekOfMonth, ShowTemplate::setWeekOfMonth);
     binder
@@ -653,10 +652,9 @@ public class ShowTemplateListView extends Main {
         .withValidator(
             (value, context) -> {
               if (editRecurrenceType.getValue() == RecurrenceType.ANNUAL && value == null) {
-                return com.vaadin.flow.data.binder.ValidationResult.error(
-                    "Month is required for annual recurrence");
+                return ValidationResult.error("Month is required for annual recurrence");
               }
-              return com.vaadin.flow.data.binder.ValidationResult.ok();
+              return ValidationResult.ok();
             })
         .bind(ShowTemplate::getMonth, ShowTemplate::setMonth);
   }

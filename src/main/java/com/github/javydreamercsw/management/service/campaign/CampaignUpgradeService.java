@@ -23,6 +23,11 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade;
 import com.github.javydreamercsw.management.domain.campaign.CampaignUpgradeRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,12 +45,9 @@ public class CampaignUpgradeService {
   private final ObjectMapper objectMapper;
   private final CampaignUpgradeRepository upgradeRepository;
   private final CampaignStateRepository stateRepository;
-  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
-      wrestlerRepository;
-  private final com.github.javydreamercsw.management.service.wrestler.WrestlerService
-      wrestlerService;
-  private final com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
-      wrestlerStateRepository;
+  private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
+  private final WrestlerStateRepository wrestlerStateRepository;
 
   @PostConstruct
   public void init() {
@@ -104,11 +106,9 @@ public class CampaignUpgradeService {
         "Wrestler {} purchased upgrade: {}", campaign.getWrestler().getName(), upgrade.getName());
 
     if ("HEALTH".equals(upgrade.getType())) {
-      com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
-          campaign.getWrestler();
+      Wrestler wrestler = campaign.getWrestler();
       Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
-      com.github.javydreamercsw.management.domain.wrestler.WrestlerState wrestlerState =
-          wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+      WrestlerState wrestlerState = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
 
       wrestlerState.setCurrentHealth(wrestler.getEffectiveStartingHealth(universeId));
       wrestlerStateRepository.save(wrestlerState);

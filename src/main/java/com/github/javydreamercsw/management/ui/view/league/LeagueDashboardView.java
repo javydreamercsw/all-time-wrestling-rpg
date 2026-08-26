@@ -48,10 +48,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 
 @Route(value = "league-dashboard", layout = MainLayout.class)
@@ -162,7 +159,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
     List<LeagueRoster> rosters =
         leagueRosterRepository.findByLeagueWithWrestlerStates(league).stream()
             .sorted(
-                java.util.Comparator.<LeagueRoster>comparingInt(r -> r.getWins() * 2 + r.getDraws())
+                Comparator.<LeagueRoster>comparingInt(r -> r.getWins() * 2 + r.getDraws())
                     .reversed()
                     .thenComparingInt(LeagueRoster::getLosses))
             .toList();
@@ -226,7 +223,7 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
         .setHeader("Actions");
 
     // Fetch shows associated with this league directly, then supplement with universe shows
-    List<Show> leagueShows = new java.util.ArrayList<>(showService.getShowsByLeague(league));
+    List<Show> leagueShows = new ArrayList<>(showService.getShowsByLeague(league));
     if (league.getUniverse() != null) {
       List<Show> universeShows = showService.getShowsByUniverse(league.getUniverse());
       for (Show s : universeShows) {

@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.service.league.MatchFulfillmentServi
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.combobox.ComboBox;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class MatchReportDialogTest extends AbstractViewTest {
 
   @BeforeEach
   void setup() {
-    when(securityUtils.getAuthenticatedUser()).thenReturn(java.util.Optional.empty());
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
 
     Show show = new Show();
     show.setName("Test Show");

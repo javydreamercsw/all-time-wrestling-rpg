@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.DenyAll;
 import jakarta.annotation.security.PermitAll;
@@ -40,22 +41,22 @@ class RouteRoleResolverTest {
 
   @Route("admin-only")
   @RolesAllowed(RoleName.ADMIN_ROLE)
-  static class AdminOnlyView extends com.vaadin.flow.component.Component {}
+  static class AdminOnlyView extends Component {}
 
   @Route("admin-or-booker")
   @RolesAllowed({RoleName.ADMIN_ROLE, RoleName.BOOKER_ROLE})
-  static class AdminOrBookerView extends com.vaadin.flow.component.Component {}
+  static class AdminOrBookerView extends Component {}
 
   @Route("permit-all")
   @PermitAll
-  static class PermitAllView extends com.vaadin.flow.component.Component {}
+  static class PermitAllView extends Component {}
 
   @Route("deny-all")
   @DenyAll
-  static class DenyAllView extends com.vaadin.flow.component.Component {}
+  static class DenyAllView extends Component {}
 
   @Route("unannotated")
-  static class UnannotatedView extends com.vaadin.flow.component.Component {}
+  static class UnannotatedView extends Component {}
 
   // ── Test setup ─────────────────────────────────────────────────────────────
 

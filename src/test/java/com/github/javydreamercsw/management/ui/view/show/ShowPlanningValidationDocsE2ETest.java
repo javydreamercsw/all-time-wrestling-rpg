@@ -27,11 +27,13 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -189,7 +191,7 @@ class ShowPlanningValidationDocsE2ETest extends AbstractE2ETest {
   }
 
   private void waitForNonEmptyText(final By locator) {
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+    new WebDriverWait(driver, Duration.ofSeconds(30))
         .until(d -> !d.findElement(locator).getText().isEmpty());
   }
 

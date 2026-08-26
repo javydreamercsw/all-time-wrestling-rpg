@@ -34,6 +34,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 class LoginViewTest extends AbstractViewTest {
@@ -45,7 +46,7 @@ class LoginViewTest extends AbstractViewTest {
   void setup() {
     accountRepository = mock(AccountRepository.class);
     passwordEncoder = mock(PasswordEncoder.class);
-    when(accountRepository.findByUsername(org.mockito.ArgumentMatchers.anyString()))
+    when(accountRepository.findByUsername(ArgumentMatchers.anyString()))
         .thenReturn(Optional.empty());
   }
 

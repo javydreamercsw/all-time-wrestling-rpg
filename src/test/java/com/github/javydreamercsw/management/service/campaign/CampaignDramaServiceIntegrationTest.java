@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -49,7 +50,7 @@ class CampaignDramaServiceIntegrationTest extends AbstractIntegrationTest {
     rival = wrestlerRepository.save(rival);
 
     // Mock random to just return 0 (first available opponent)
-    when(random.nextInt(org.mockito.ArgumentMatchers.anyInt())).thenReturn(0);
+    when(random.nextInt(ArgumentMatchers.anyInt())).thenReturn(0);
     when(random.nextDouble()).thenReturn(0.5);
 
     Campaign campaign =
@@ -85,7 +86,7 @@ class CampaignDramaServiceIntegrationTest extends AbstractIntegrationTest {
         CampaignState.builder().campaign(campaign).currentChapterId("tournament").build();
     campaign.setState(state);
 
-    when(random.nextInt(org.mockito.ArgumentMatchers.anyInt())).thenReturn(0);
+    when(random.nextInt(ArgumentMatchers.anyInt())).thenReturn(0);
 
     Optional<DramaEvent> event = campaignDramaService.checkForStoryEvents(campaign);
 

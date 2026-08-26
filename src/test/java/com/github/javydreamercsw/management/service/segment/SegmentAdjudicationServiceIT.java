@@ -41,6 +41,7 @@ import com.github.javydreamercsw.management.service.match.SegmentAdjudicationSer
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -92,7 +93,7 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
             WrestlerTier.MAIN_EVENTER,
             ChampionshipType.SINGLE,
             defaultUniverse.getId());
-    title.awardTitleTo(List.of(loser), java.time.Instant.now());
+    title.awardTitleTo(List.of(loser), Instant.now());
     titleRepository.save(title);
 
     ShowType showType = new ShowType();

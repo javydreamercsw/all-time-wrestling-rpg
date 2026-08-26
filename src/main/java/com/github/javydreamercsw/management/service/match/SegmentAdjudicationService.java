@@ -17,13 +17,10 @@
 package com.github.javydreamercsw.management.service.match;
 
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
-import com.github.javydreamercsw.management.domain.league.LeagueRepository;
-import com.github.javydreamercsw.management.domain.league.LeagueRoster;
-import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
-import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
-import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
+import com.github.javydreamercsw.management.domain.league.*;
 import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -33,6 +30,8 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.world.Arena;
+import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -72,6 +71,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,7 +100,7 @@ public class SegmentAdjudicationService {
   private final UniverseContextService universeContextService;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
-  @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy})
+  @Setter(onMethod_ = {@Autowired, @Lazy})
   private ShowService showService;
 
   // Field-injected to avoid changing the constructor (unit tests build this service manually).
@@ -335,14 +335,13 @@ public class SegmentAdjudicationService {
       @NonNull final List<Wrestler> losers) {
     // Update League Stats if applicable — check show.getLeague() first, then fall back to
     // the universe-based lookup for shows that were associated via universe rather than directly.
-    com.github.javydreamercsw.management.domain.league.League effectiveLeague =
-        segment.getShow().getLeague();
+    League effectiveLeague = segment.getShow().getLeague();
     if (effectiveLeague == null && segment.getShow().getUniverse() != null) {
       effectiveLeague =
           leagueRepository.findByUniverse(segment.getShow().getUniverse()).orElse(null);
     }
     if (effectiveLeague != null) {
-      final com.github.javydreamercsw.management.domain.league.League league = effectiveLeague;
+      final League league = effectiveLeague;
       Map<Long, LeagueRoster> rosterByWrestlerId =
           leagueRosterRepository.findByLeague(league).stream()
               .filter(r -> r.getWrestler() != null)
@@ -497,10 +496,7 @@ public class SegmentAdjudicationService {
 
     for (Wrestler participant : segment.getWrestlers()) {
       Faction faction =
-          participant
-              .getState(universeId)
-              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
-              .orElse(null);
+          participant.getState(universeId).map(WrestlerState::getFaction).orElse(null);
       if (faction != null) {
         Long factionId = faction.getId();
         factionParticipants.put(factionId, factionParticipants.getOrDefault(factionId, 0) + 1);
@@ -913,8 +909,7 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment resolveAlignment(
-      final Wrestler wrestler, final Segment segment) {
+  private WrestlerAlignment resolveAlignment(final Wrestler wrestler, final Segment segment) {
     if (alignmentService != null && segment.getShow().getUniverse() != null) {
       return alignmentService.getOrCreateUniverseAlignment(
           wrestler, segment.getShow().getUniverse());
@@ -928,9 +923,8 @@ public class SegmentAdjudicationService {
 
     // Arena Alignment Bias (+25%)
     if (segment.getShow().getArena() != null) {
-      com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment effectiveAlignment =
-          resolveAlignment(wrestler, segment);
-      com.github.javydreamercsw.management.domain.world.Arena arena = segment.getShow().getArena();
+      WrestlerAlignment effectiveAlignment = resolveAlignment(wrestler, segment);
+      Arena arena = segment.getShow().getArena();
       if (effectiveAlignment != null && effectiveAlignment.getAlignmentType() != null) {
         String wrestlerAlignment = effectiveAlignment.getAlignmentType().name();
         boolean matches = false;
@@ -953,8 +947,7 @@ public class SegmentAdjudicationService {
         && segment.getShow().getArena().getLocation() != null
         && wrestler.getHeritageTag() != null
         && !wrestler.getHeritageTag().isBlank()) {
-      com.github.javydreamercsw.management.domain.world.Location location =
-          segment.getShow().getArena().getLocation();
+      Location location = segment.getShow().getArena().getLocation();
       String[] heritageTags = wrestler.getHeritageTag().toLowerCase().split(",");
       boolean matched = false;
       for (String heritage : heritageTags) {
@@ -1180,11 +1173,8 @@ public class SegmentAdjudicationService {
         segment.getParticipants().stream()
             .filter(p -> p.getFinalHealth() != null && p.getWrestler().getAccount() != null)
             .collect(
-                java.util.stream.Collectors.toMap(
-                    p -> p.getWrestler().getId(),
-                    com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant
-                        ::getFinalHealth,
-                    (a, b) -> a));
+                Collectors.toMap(
+                    p -> p.getWrestler().getId(), SegmentParticipant::getFinalHealth, (a, b) -> a));
 
     for (Wrestler wrestler : segment.getWrestlers()) {
       WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);

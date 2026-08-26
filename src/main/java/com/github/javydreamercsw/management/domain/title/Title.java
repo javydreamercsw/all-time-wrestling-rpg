@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -148,7 +149,7 @@ public class Title extends AbstractEntity<Long> {
   }
 
   @JsonIgnore
-  public java.util.Optional<TitleReign> getCurrentReign() {
+  public Optional<TitleReign> getCurrentReign() {
     return getTitleReigns().stream().filter(TitleReign::isCurrentReign).findFirst();
   }
 

@@ -73,7 +73,7 @@ public class AiSettingsView extends VerticalLayout {
   public AiSettingsView(
       final AiSettingsService aiSettingsService,
       final GameSettingService gameSettingService,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final NotificationService notificationService) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
     this.notificationService = notificationService;

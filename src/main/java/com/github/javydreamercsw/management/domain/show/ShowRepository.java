@@ -27,6 +27,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificationExecutor<Show> {
 
@@ -145,8 +146,7 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
       LEFT JOIN FETCH t.showType
       WHERE s.id = :id
       """)
-  Optional<Show> findByIdWithArenaAndLocation(
-      @org.springframework.data.repository.query.Param("id") Long id);
+  Optional<Show> findByIdWithArenaAndLocation(@Param("id") Long id);
 
   @Query("SELECT COUNT(DISTINCT s) FROM Show s JOIN s.segments seg")
   long countShowsWithAtLeastOneSegment();

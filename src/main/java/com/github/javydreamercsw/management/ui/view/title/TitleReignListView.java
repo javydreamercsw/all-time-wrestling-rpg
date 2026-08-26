@@ -54,6 +54,7 @@ import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -108,7 +109,7 @@ public class TitleReignListView extends Main {
             reign ->
                 reign.getChampions().stream()
                     .map(Wrestler::getName)
-                    .collect(java.util.stream.Collectors.joining(" & ")))
+                    .collect(Collectors.joining(" & ")))
         .setHeader("Champion(s)")
         .setSortable(true);
     grid.addColumn(TitleReign::getReignNumber).setHeader("Reign #").setSortable(true);

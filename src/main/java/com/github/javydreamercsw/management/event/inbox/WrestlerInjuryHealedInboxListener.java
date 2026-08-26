@@ -56,7 +56,7 @@ public class WrestlerInjuryHealedInboxListener
       log.debug("Skipping inbox item for NPC wrestler (no account)");
       return;
     }
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             wrestlerInjuryHealed,
             "Injury Healed: " + event.getWrestlerState().getName(),

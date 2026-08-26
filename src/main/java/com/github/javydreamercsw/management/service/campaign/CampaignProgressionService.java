@@ -37,6 +37,8 @@ import java.util.Random;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,9 +65,7 @@ public class CampaignProgressionService {
   private final FeatureDataService featureDataService;
 
   // Field-injected with @Lazy to break the circular dependency with CampaignService
-  @org.springframework.beans.factory.annotation.Autowired
-  @org.springframework.context.annotation.Lazy
-  private CampaignService campaignService;
+  @Autowired @Lazy private CampaignService campaignService;
 
   private final Random random = new Random();
 
@@ -301,8 +301,7 @@ public class CampaignProgressionService {
                                   wrestler ->
                                       GeneralSecurityUtils.runAsAdmin(
                                           () ->
-                                              titleService.awardTitleTo(
-                                                  title, java.util.List.of(wrestler))),
+                                              titleService.awardTitleTo(title, List.of(wrestler))),
                                   () ->
                                       log.warn(
                                           "initialChampions: wrestler '{}' not found for title"

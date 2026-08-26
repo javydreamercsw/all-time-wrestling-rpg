@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -165,7 +166,7 @@ public class PlaceholderResolverService {
             .filter(w -> expansionService.isExpansionEnabled(w.getExpansionCode()))
             .filter(w -> genderFilter == null || genderFilter == w.getGender())
             .filter(w -> !resolvedExcluded.contains(w.getName()))
-            .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+            .collect(Collectors.toCollection(ArrayList::new));
 
     if (roster.isEmpty()) {
       throw new IllegalStateException("No eligible opponents available for match.");
@@ -208,10 +209,6 @@ public class PlaceholderResolverService {
         .findByName(ATW_WORLD_TITLE)
         .map(Title::getCurrentChampions)
         .filter(champs -> !champs.isEmpty())
-        .map(
-            champs ->
-                champs.stream()
-                    .map(Wrestler::getName)
-                    .collect(java.util.stream.Collectors.joining(" & ")));
+        .map(champs -> champs.stream().map(Wrestler::getName).collect(Collectors.joining(" & ")));
   }
 }

@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.campaign;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -26,23 +27,41 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
+import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
  * Structural simulation of campaign_chapters.json. Catches authoring errors that would trap players
@@ -82,17 +101,15 @@ class CampaignChapterSimulationTest {
     ObjectMapper objectMapper = new ObjectMapper();
     FeatureDataService featureDataService =
         new FeatureDataService(objectMapper, mock(CampaignStateRepository.class));
-    com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService =
-        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class);
-    org.mockito.Mockito.when(
-            expansionService.isExpansionEnabled(org.mockito.ArgumentMatchers.anyString()))
+    ExpansionService expansionService = mock(ExpansionService.class);
+    Mockito.when(expansionService.isExpansionEnabled(ArgumentMatchers.anyString()))
         .thenReturn(true);
     chapterService =
         new CampaignChapterService(
             objectMapper,
             featureDataService,
             expansionService,
-            new org.springframework.core.io.support.PathMatchingResourcePatternResolver());
+            new PathMatchingResourcePatternResolver());
     chapterService.init();
   }
 
@@ -173,7 +190,7 @@ class CampaignChapterSimulationTest {
       if (!chapter.hasStaticEncounters()) {
         continue;
       }
-      java.util.Set<String> seen = new java.util.HashSet<>();
+      Set<String> seen = new HashSet<>();
       for (var encounter : chapter.getStaticEncounters()) {
         if (encounter.getId() == null) {
           failures.add("[" + chapter.getId() + "] Encounter has null id: " + encounter.getTitle());
@@ -203,10 +220,10 @@ class CampaignChapterSimulationTest {
       if (!chapter.hasStaticEncounters()) {
         continue;
       }
-      java.util.Set<String> ids =
+      Set<String> ids =
           chapter.getStaticEncounters().stream()
-              .map(com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO::getId)
-              .collect(java.util.stream.Collectors.toSet());
+              .map(StaticEncounterDTO::getId)
+              .collect(Collectors.toSet());
 
       for (var encounter : chapter.getStaticEncounters()) {
         if (encounter.getChoices() == null) {
@@ -247,7 +264,7 @@ class CampaignChapterSimulationTest {
       String encounterId,
       String field,
       String target,
-      java.util.Set<String> validIds) {
+      Set<String> validIds) {
     if (target != null && !validIds.contains(target)) {
       failures.add(
           String.format(
@@ -277,11 +294,7 @@ class CampaignChapterSimulationTest {
 
       long matchSteps =
           chapter.getStaticEncounters().stream()
-              .flatMap(
-                  e ->
-                      e.getChoices() == null
-                          ? java.util.stream.Stream.empty()
-                          : e.getChoices().stream())
+              .flatMap(e -> e.getChoices() == null ? Stream.empty() : e.getChoices().stream())
               .filter(c -> c.getNextPhase() != null && c.getNextPhase() == CampaignPhase.MATCH)
               .count();
 
@@ -308,17 +321,12 @@ class CampaignChapterSimulationTest {
   @DisplayName("Expansion codes in chapters and choices reference known expansions")
   void expansionCodesAreKnown() {
     // Load known codes from expansions.json
-    java.util.Set<String> known;
+    Set<String> known;
     try {
-      com.fasterxml.jackson.databind.ObjectMapper om =
-          new com.fasterxml.jackson.databind.ObjectMapper();
-      java.io.InputStream is = getClass().getResourceAsStream("/expansions.json");
-      java.util.List<java.util.Map<String, String>> raw =
-          om.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
-      known =
-          raw.stream()
-              .map(m -> m.get("expansion_code"))
-              .collect(java.util.stream.Collectors.toSet());
+      ObjectMapper om = new ObjectMapper();
+      InputStream is = getClass().getResourceAsStream("/expansions.json");
+      List<Map<String, String>> raw = om.readValue(is, new TypeReference<>() {});
+      known = raw.stream().map(m -> m.get("expansion_code")).collect(Collectors.toSet());
     } catch (Exception e) {
       throw new RuntimeException("Could not load expansions.json", e);
     }
@@ -461,11 +469,11 @@ class CampaignChapterSimulationTest {
   @DisplayName("Generate campaign-graph.dot in target/ for visualization")
   void generateChapterGraph() throws Exception {
     // Build edge map: chapter → list of (exitName, successor)
-    java.util.Map<String, java.util.List<String[]>> edges = new java.util.LinkedHashMap<>();
-    java.util.Set<String> aiHandoffNodes = new java.util.HashSet<>();
+    Map<String, List<String[]>> edges = new LinkedHashMap<>();
+    Set<String> aiHandoffNodes = new HashSet<>();
 
     for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
-      edges.put(chapter.getId(), new java.util.ArrayList<>());
+      edges.put(chapter.getId(), new ArrayList<>());
 
       if (chapter.getExitPoints() == null || chapter.getExitPoints().isEmpty()) {
         continue;
@@ -557,7 +565,7 @@ class CampaignChapterSimulationTest {
 
     // Edges
     for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
-      for (String[] edge : edges.getOrDefault(chapter.getId(), java.util.Collections.emptyList())) {
+      for (String[] edge : edges.getOrDefault(chapter.getId(), Collections.emptyList())) {
         String exitName = edge[0];
         String targetId = edge[1];
         dot.append(
@@ -569,10 +577,10 @@ class CampaignChapterSimulationTest {
     dot.append("}\n");
 
     // Write to target/
-    java.nio.file.Path outDir = java.nio.file.Paths.get("target");
-    java.nio.file.Files.createDirectories(outDir);
-    java.nio.file.Path outFile = outDir.resolve("campaign-graph.dot");
-    java.nio.file.Files.writeString(outFile, dot.toString());
+    Path outDir = Paths.get("target");
+    Files.createDirectories(outDir);
+    Path outFile = outDir.resolve("campaign-graph.dot");
+    Files.writeString(outFile, dot.toString());
 
     log.info("Campaign chapter graph written to: {}", outFile.toAbsolutePath());
     log.info("Render with: dot -Tsvg {} -o target/campaign-graph.svg", outFile.getFileName());
@@ -586,7 +594,7 @@ class CampaignChapterSimulationTest {
   @Test
   @DisplayName("allowedWrestlerNames entries reference wrestlers that exist in wrestlers.json")
   void allowedWrestlerNamesExistInWrestlersJson() throws Exception {
-    java.util.Set<String> knownWrestlers = loadWrestlerNames();
+    Set<String> knownWrestlers = loadWrestlerNames();
     List<String> failures = new ArrayList<>();
 
     for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
@@ -617,7 +625,7 @@ class CampaignChapterSimulationTest {
   @Test
   @DisplayName("opponentPool and forcedOpponentName entries reference wrestlers in wrestlers.json")
   void opponentPoolAndForcedOpponentNamesExistInWrestlersJson() throws Exception {
-    java.util.Set<String> knownWrestlers = loadWrestlerNames();
+    Set<String> knownWrestlers = loadWrestlerNames();
     List<String> failures = new ArrayList<>();
 
     for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
@@ -689,14 +697,14 @@ class CampaignChapterSimulationTest {
   @Test
   @DisplayName("initialChampions wrestler names reference wrestlers that exist in wrestlers.json")
   void initialChampionsWrestlerNamesExistInWrestlersJson() throws Exception {
-    java.util.Set<String> knownWrestlers = loadWrestlerNames();
+    Set<String> knownWrestlers = loadWrestlerNames();
     List<String> failures = new ArrayList<>();
 
     for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
       if (chapter.getInitialChampions() == null || chapter.getInitialChampions().isEmpty()) {
         continue;
       }
-      for (java.util.Map.Entry<String, String> entry : chapter.getInitialChampions().entrySet()) {
+      for (Map.Entry<String, String> entry : chapter.getInitialChampions().entrySet()) {
         String wrestlerName = entry.getValue();
         if (!knownWrestlers.contains(wrestlerName)) {
           failures.add(
@@ -716,7 +724,7 @@ class CampaignChapterSimulationTest {
   @Test
   @DisplayName("initialChampions title names reference titles that exist in championships.json")
   void initialChampionsTitleNamesExistInChampionshipsJson() throws Exception {
-    java.util.Set<String> knownTitles = loadTitleNames();
+    Set<String> knownTitles = loadTitleNames();
     List<String> failures = new ArrayList<>();
 
     for (CampaignChapterDTO chapter : chapterService.getAllChapters()) {
@@ -740,33 +748,24 @@ class CampaignChapterSimulationTest {
   }
 
   /** Loads all wrestler names from wrestlers/*.json as a Set for O(1) lookup. */
-  private java.util.Set<String> loadWrestlerNames() throws Exception {
-    com.fasterxml.jackson.databind.ObjectMapper om =
-        new com.fasterxml.jackson.databind.ObjectMapper();
-    java.util.Set<String> names = new java.util.HashSet<>();
-    org.springframework.core.io.support.PathMatchingResourcePatternResolver resolver =
-        new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
-    org.springframework.core.io.Resource[] resources =
-        resolver.getResources("classpath*:wrestlers/*.json");
-    for (org.springframework.core.io.Resource r : resources) {
-      java.util.List<java.util.Map<String, Object>> raw =
-          om.readValue(
-              r.getInputStream(), new com.fasterxml.jackson.core.type.TypeReference<>() {});
+  private Set<String> loadWrestlerNames() throws Exception {
+    ObjectMapper om = new ObjectMapper();
+    Set<String> names = new HashSet<>();
+    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    Resource[] resources = resolver.getResources("classpath*:wrestlers/*.json");
+    for (Resource r : resources) {
+      List<Map<String, Object>> raw = om.readValue(r.getInputStream(), new TypeReference<>() {});
       raw.stream().map(m -> (String) m.get("name")).forEach(names::add);
     }
     return names;
   }
 
   /** Loads all title names from championships.json as a Set for O(1) lookup. */
-  private java.util.Set<String> loadTitleNames() throws Exception {
-    com.fasterxml.jackson.databind.ObjectMapper om =
-        new com.fasterxml.jackson.databind.ObjectMapper();
-    java.io.InputStream is = getClass().getResourceAsStream("/championships.json");
-    java.util.List<java.util.Map<String, Object>> raw =
-        om.readValue(is, new com.fasterxml.jackson.core.type.TypeReference<>() {});
-    return raw.stream()
-        .map(m -> (String) m.get("name"))
-        .collect(java.util.stream.Collectors.toSet());
+  private Set<String> loadTitleNames() throws Exception {
+    ObjectMapper om = new ObjectMapper();
+    InputStream is = getClass().getResourceAsStream("/championships.json");
+    List<Map<String, Object>> raw = om.readValue(is, new TypeReference<>() {});
+    return raw.stream().map(m -> (String) m.get("name")).collect(Collectors.toSet());
   }
 
   // ---------------------------------------------------------------------------
@@ -802,11 +801,7 @@ class CampaignChapterSimulationTest {
       return 0;
     }
     return chapter.getExitPoints().stream()
-        .flatMap(
-            p ->
-                p.getCriteria() == null
-                    ? java.util.stream.Stream.empty()
-                    : p.getCriteria().stream())
+        .flatMap(p -> p.getCriteria() == null ? Stream.empty() : p.getCriteria().stream())
         .mapToInt(c -> c.getMinMatchesPlayed() == null ? 0 : c.getMinMatchesPlayed())
         .max()
         .orElse(0);
@@ -836,7 +831,7 @@ class CampaignChapterSimulationTest {
 
     // Encode boolean feature flags into featureData JSON
     try {
-      java.util.Map<String, Object> flags = new java.util.HashMap<>();
+      Map<String, Object> flags = new HashMap<>();
       flags.put("tournamentWinner", tournamentWinner);
       flags.put("failedToQualify", failedToQualify);
       flags.put("wonFinale", wonFinale);
@@ -866,8 +861,7 @@ class CampaignChapterSimulationTest {
 
         // hasFaction: add a WrestlerState with a non-null faction
         if (Boolean.TRUE.equals(c.getHasFaction())) {
-          com.github.javydreamercsw.management.domain.faction.Faction faction =
-              new com.github.javydreamercsw.management.domain.faction.Faction();
+          Faction faction = new Faction();
           faction.setName("Sim Faction");
           WrestlerState ws = new WrestlerState();
           ws.setFaction(faction);

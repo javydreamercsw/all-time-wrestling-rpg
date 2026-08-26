@@ -26,6 +26,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -41,6 +42,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.Comparator;
 import lombok.NonNull;
 
 @Route("segment-type-list")
@@ -97,8 +99,7 @@ public class SegmentTypeListView extends Main {
         .addComponentColumn(
             st -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
-              nameLayout.setAlignItems(
-                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!st.isActive()) {
@@ -107,11 +108,11 @@ public class SegmentTypeListView extends Main {
                 inactiveIcon.getStyle().set("margin-right", "6px");
                 nameLayout.add(inactiveIcon);
               }
-              nameLayout.add(new com.vaadin.flow.component.html.Span(st.getName()));
+              nameLayout.add(new Span(st.getName()));
               return nameLayout;
             })
         .setHeader("Name")
-        .setComparator(java.util.Comparator.comparing(SegmentType::getName))
+        .setComparator(Comparator.comparing(SegmentType::getName))
         .setSortable(true);
     segmentTypeGrid
         .addColumn(SegmentType::getDescription)

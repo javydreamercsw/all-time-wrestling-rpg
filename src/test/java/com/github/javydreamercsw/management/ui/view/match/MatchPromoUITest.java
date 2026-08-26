@@ -31,6 +31,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -61,6 +62,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -172,8 +174,7 @@ class MatchPromoUITest extends AbstractViewTest {
     campaign.setId(50L);
     campaign.setWrestler(playerWrestler);
 
-    com.github.javydreamercsw.management.domain.campaign.CampaignState state =
-        new com.github.javydreamercsw.management.domain.campaign.CampaignState();
+    CampaignState state = new CampaignState();
     state.setCurrentMatch(segment);
     campaign.setState(state);
 
@@ -212,7 +213,7 @@ class MatchPromoUITest extends AbstractViewTest {
     _assertOne(Button.class, spec -> spec.withId("go-interactive-promo-button"));
 
     Button autoGenBtn = _get(Button.class, spec -> spec.withId("ai-generate-narration-button"));
-    org.junit.jupiter.api.Assertions.assertEquals("Auto-Generate Promo (AI)", autoGenBtn.getText());
+    Assertions.assertEquals("Auto-Generate Promo (AI)", autoGenBtn.getText());
   }
 
   @Test

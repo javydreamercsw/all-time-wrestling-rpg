@@ -27,8 +27,11 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.rivalry.heatevent.HeatEventRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.HeatChangeEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
@@ -36,6 +39,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -46,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -58,9 +63,7 @@ class RivalryServiceTest {
   @Mock private HeatEventRepository heatEventRepository;
   @Mock private WrestlerRepository wrestlerRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.universe.UniverseRepository
-      universeRepository;
+  @Mock private UniverseRepository universeRepository;
 
   @Mock private Clock clock;
   @Mock private Random random;
@@ -74,9 +77,7 @@ class RivalryServiceTest {
     lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
     lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
     lenient().when(gameSettingService.getRivalryResolutionMinHeat()).thenReturn(10);
-    com.github.javydreamercsw.management.domain.universe.Universe defaultUniverse =
-        org.mockito.Mockito.mock(
-            com.github.javydreamercsw.management.domain.universe.Universe.class);
+    Universe defaultUniverse = Mockito.mock(Universe.class);
     lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(defaultUniverse));
   }
 
@@ -520,16 +521,14 @@ class RivalryServiceTest {
     wrestler.setStartingHealth(15);
     wrestler.setIsPlayer(true);
 
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
-        new com.github.javydreamercsw.management.domain.universe.Universe();
+    Universe universe = new Universe();
     universe.setId(1L);
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    WrestlerState state = new WrestlerState();
     state.setWrestler(wrestler);
     state.setUniverse(universe);
     state.setFans(50000L);
-    wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(state)));
+    wrestler.setWrestlerStates(new LinkedHashSet<>(List.of(state)));
 
     return wrestler;
   }

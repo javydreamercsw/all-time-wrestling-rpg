@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.ui.view;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import java.time.Duration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 @Disabled("Flaky in CI environment, functionality verified manually")
 public class ThemePersistenceE2ETest extends AbstractE2ETest {
@@ -41,7 +43,7 @@ public class ThemePersistenceE2ETest extends AbstractE2ETest {
     waitForVaadinClientToLoad();
 
     // Explicitly wait for the theme attribute to be set
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(5))
+    new WebDriverWait(driver, Duration.ofSeconds(5))
         .until(
             d -> {
               String t =
@@ -67,7 +69,7 @@ public class ThemePersistenceE2ETest extends AbstractE2ETest {
     waitForAppToBeReady();
     waitForVaadinClientToLoad();
 
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(5))
+    new WebDriverWait(driver, Duration.ofSeconds(5))
         .until(
             d -> {
               String t =
@@ -100,7 +102,7 @@ public class ThemePersistenceE2ETest extends AbstractE2ETest {
 
     waitForVaadinClientToLoad();
 
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(5))
+    new WebDriverWait(driver, Duration.ofSeconds(5))
         .until(
             d -> {
               String t =

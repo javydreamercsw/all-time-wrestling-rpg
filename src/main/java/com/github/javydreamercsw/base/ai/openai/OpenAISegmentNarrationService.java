@@ -17,11 +17,13 @@
 package com.github.javydreamercsw.base.ai.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -95,7 +97,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
   /** Makes a call to the OpenAI API with the given prompt. */
   private String callOpenAI(@NonNull final String prompt) {
     if (!isAvailable()) {
-      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+      throw new AIServiceException(
           400,
           "Bad Request",
           getProviderName(),
@@ -143,7 +145,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
       if (response.statusCode() == 200) {
         return extractContentFromResponse(response.body());
       } else {
-        throw new com.github.javydreamercsw.base.ai.AIServiceException(
+        throw new AIServiceException(
             response.statusCode(),
             "OpenAI API Error",
             getProviderName(),
@@ -152,11 +154,10 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call OpenAI API for segment narration", e);
-      if (e instanceof java.net.http.HttpTimeoutException) {
-        throw new com.github.javydreamercsw.base.ai.AIServiceException(
-            504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
+      if (e instanceof HttpTimeoutException) {
+        throw new AIServiceException(504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
       }
-      throw new com.github.javydreamercsw.base.ai.AIServiceException(
+      throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);
     }
   }

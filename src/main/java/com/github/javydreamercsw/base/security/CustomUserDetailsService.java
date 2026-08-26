@@ -23,6 +23,8 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -78,9 +80,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     if (wrestler == null) {
-      java.util.List<Wrestler> wrestlers =
+      List<Wrestler> wrestlers =
           wrestlerRepository.findAllByAccount(account).stream()
-              .sorted(java.util.Comparator.comparing(Wrestler::getId))
+              .sorted(Comparator.comparing(Wrestler::getId))
               .toList();
       if (!wrestlers.isEmpty()) {
         wrestler = wrestlers.get(0);

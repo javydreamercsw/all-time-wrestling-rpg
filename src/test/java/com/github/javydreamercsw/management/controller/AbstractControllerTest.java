@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.service.ranking.TierRecalculationSch
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -35,7 +36,7 @@ import org.springframework.web.context.WebApplicationContext;
 public abstract class AbstractControllerTest extends AbstractIntegrationTest {
 
   protected MockMvc mockMvc;
-  @org.springframework.beans.factory.annotation.Autowired private WebApplicationContext context;
+  @Autowired private WebApplicationContext context;
 
   @BeforeEach
   public void configureMockMvc() {

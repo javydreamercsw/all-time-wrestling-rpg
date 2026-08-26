@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.campaign;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -30,8 +33,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -55,7 +60,7 @@ public class CampaignState {
 
   @OneToOne
   @JoinColumn(name = "campaign_id", nullable = false)
-  @com.fasterxml.jackson.annotation.JsonIgnore
+  @JsonIgnore
   @EqualsAndHashCode.Exclude
   @ToString.Exclude
   private Campaign campaign;
@@ -102,7 +107,7 @@ public class CampaignState {
   private int momentumBonus = 0;
 
   @Column(name = "current_game_date")
-  private java.time.LocalDate currentGameDate;
+  private LocalDate currentGameDate;
 
   // ==================== NEW FIELDS ====================
 
@@ -171,15 +176,15 @@ public class CampaignState {
   @Builder.Default
   private int losses = 0;
 
-  @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "rival_id")
-  private com.github.javydreamercsw.management.domain.wrestler.Wrestler rival;
+  private Wrestler rival;
 
-  @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "current_match_id")
-  private com.github.javydreamercsw.management.domain.show.segment.Segment currentMatch;
+  private Segment currentMatch;
 
-  @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "active_storyline_id")
   private CampaignStoryline activeStoryline;
 
@@ -187,12 +192,12 @@ public class CampaignState {
   @Lob
   private String featureData;
 
-  @com.fasterxml.jackson.annotation.JsonIgnore
+  @JsonIgnore
   public int getCampaignStaminaBonus() {
     return (int) upgrades.stream().filter(u -> "STAMINA".equals(u.getType())).count() * 2;
   }
 
-  @com.fasterxml.jackson.annotation.JsonIgnore
+  @JsonIgnore
   public int getCampaignHealthBonus() {
     return (int) upgrades.stream().filter(u -> "HEALTH".equals(u.getType())).count() * 2;
   }

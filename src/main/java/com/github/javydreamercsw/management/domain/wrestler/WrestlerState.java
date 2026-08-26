@@ -18,11 +18,14 @@ package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.WrestlerData;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -55,19 +58,18 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WrestlerState extends AbstractEntity<Long>
-    implements com.github.javydreamercsw.base.domain.WrestlerData {
+public class WrestlerState extends AbstractEntity<Long> implements WrestlerData {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @NotNull @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.PERSIST)
+  @NotNull @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
   @JoinColumn(name = "wrestler_id", nullable = false)
   @JsonIgnore
   private Wrestler wrestler;
 
-  @NotNull @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.MERGE)
+  @NotNull @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
   @JoinColumn(name = "universe_id", nullable = false)
   @JsonIgnore
   private Universe universe;
@@ -150,7 +152,7 @@ public class WrestlerState extends AbstractEntity<Long>
   }
 
   @JsonIgnore
-  public List<com.github.javydreamercsw.management.domain.injury.Injury> getActiveInjuries() {
+  public List<Injury> getActiveInjuries() {
     // This is now handled by InjuryService, but we'll keep a placeholder if needed
     return new ArrayList<>();
   }
@@ -162,7 +164,7 @@ public class WrestlerState extends AbstractEntity<Long>
   }
 
   @JsonIgnore
-  public List<com.github.javydreamercsw.management.domain.injury.Injury> getInjuries() {
+  public List<Injury> getInjuries() {
     // This is now handled by InjuryService
     return new ArrayList<>();
   }

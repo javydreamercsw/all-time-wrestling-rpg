@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+import java.time.Duration;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -98,7 +99,7 @@ public class FeudParticipant extends AbstractEntity<Long> {
   /** Get how long the wrestler has been in the feud (in days). */
   public long getDaysInFeud() {
     Instant endDate = leftDate != null ? leftDate : Instant.now();
-    return java.time.Duration.between(joinedDate, endDate).toDays();
+    return Duration.between(joinedDate, endDate).toDays();
   }
 
   /** Check if this participant is currently active in the feud. */

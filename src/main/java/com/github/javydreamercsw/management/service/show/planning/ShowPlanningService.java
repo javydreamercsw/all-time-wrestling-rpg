@@ -23,8 +23,11 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -34,7 +37,10 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -46,8 +52,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -67,15 +75,14 @@ public class ShowPlanningService {
   private final Clock clock;
   private final TitleService titleService;
   private final ShowService showService;
-  private final com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
-  private final com.github.javydreamercsw.management.service.segment.SegmentSummaryService
-      segmentSummaryService;
+  private final SegmentService segmentService;
+  private final SegmentSummaryService segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
   private final FactionService factionService;
   private final SegmentRuleRepository segmentRuleRepository;
-  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
+  private final NpcService npcService;
   private final ApplicationEventPublisher eventPublisher;
   private final TitleReignRepository titleReignRepository;
   private final InjuryService injuryService;
@@ -206,7 +213,7 @@ public class ShowPlanningService {
       // outside the original session (causes LazyInitializationException in async context).
       Instant lastDefense =
           titleReignRepository.findByTitleAndEndDateIsNull(title).stream()
-              .map(com.github.javydreamercsw.management.domain.title.TitleReign::getStartDate)
+              .map(TitleReign::getStartDate)
               .findFirst()
               .orElse(null);
 
@@ -214,7 +221,7 @@ public class ShowPlanningService {
       // Query directly instead of title.getSegments() — same lazy-collection issue as above.
       Optional<Instant> lastMatch =
           segmentRepository.findByTitle(title).stream()
-              .map(com.github.javydreamercsw.management.domain.show.segment.Segment::getSegmentDate)
+              .map(Segment::getSegmentDate)
               .max(Comparator.naturalOrder());
 
       if (lastMatch.isPresent() && (lastDefense == null || lastMatch.get().isAfter(lastDefense))) {
@@ -429,8 +436,8 @@ public class ShowPlanningService {
       log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
-      Optional<com.github.javydreamercsw.management.domain.show.segment.type.SegmentType>
-          segmentTypeOpt = segmentTypeService.findByName(proposedSegment.getType());
+      Optional<SegmentType> segmentTypeOpt =
+          segmentTypeService.findByName(proposedSegment.getType());
       if (segmentTypeOpt.isEmpty()) {
         log.warn("Segment type not found: {}. Skipping segment.", proposedSegment.getType());
         continue;
@@ -497,13 +504,12 @@ public class ShowPlanningService {
       segment.setWinners(actualWinners);
 
       if (proposedSegment.getRules() != null && !proposedSegment.getRules().isEmpty()) {
-        List<com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule>
-            newSegmentRules =
-                proposedSegment.getRules().stream()
-                    .map(ruleName -> segmentRuleRepository.findByName(ruleName))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
+        List<SegmentRule> newSegmentRules =
+            proposedSegment.getRules().stream()
+                .map(ruleName -> segmentRuleRepository.findByName(ruleName))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
         segment.syncSegmentRules(newSegmentRules);
       }
       segmentsToSave.add(segment);
@@ -519,7 +525,7 @@ public class ShowPlanningService {
       String segmentLabel = "segment " + (i + 1) + " (" + ps.getType() + ")";
 
       if (ps.getTeamIds() != null && !ps.getTeamIds().isEmpty()) {
-        java.util.Set<Long> seen = new java.util.HashSet<>();
+        Set<Long> seen = new HashSet<>();
         for (List<Long> team : ps.getTeamIds()) {
           if (team == null) {
             continue;
@@ -538,7 +544,7 @@ public class ShowPlanningService {
           }
         }
       } else if (ps.getTeams() != null && !ps.getTeams().isEmpty()) {
-        java.util.Set<String> seen = new java.util.HashSet<>();
+        Set<String> seen = new HashSet<>();
         for (List<String> team : ps.getTeams()) {
           if (team == null) {
             continue;

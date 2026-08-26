@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.news.NewsItem;
 import com.github.javydreamercsw.management.domain.news.NewsRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public class NewsService {
   }
 
   @Transactional(readOnly = true)
-  public java.util.Optional<NewsItem> getLatestMonthlyAnalysis() {
+  public Optional<NewsItem> getLatestMonthlyAnalysis() {
     return newsRepository.findAllByOrderByPublishDateDesc().stream()
         .filter(item -> item.getCategory() == NewsCategory.ANALYSIS && item.getImportance() == 5)
         .findFirst();

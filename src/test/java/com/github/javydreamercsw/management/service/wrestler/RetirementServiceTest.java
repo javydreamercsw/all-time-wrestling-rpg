@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -29,6 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.WrestlerRetiredEvent;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -112,8 +114,7 @@ class RetirementServiceTest {
     ObjectMapper mapper = new ObjectMapper();
     var map =
         mapper.readValue(
-            campaignState.getFeatureData(),
-            new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+            campaignState.getFeatureData(), new TypeReference<Map<String, Object>>() {});
     assertThat(map).containsEntry("retired", true);
     assertThat(map).containsKey("chapter"); // existing keys preserved
   }
@@ -132,8 +133,7 @@ class RetirementServiceTest {
     ObjectMapper mapper = new ObjectMapper();
     var map =
         mapper.readValue(
-            campaignState.getFeatureData(),
-            new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+            campaignState.getFeatureData(), new TypeReference<Map<String, Object>>() {});
     assertThat(map).containsEntry("retired", true);
   }
 
@@ -152,8 +152,7 @@ class RetirementServiceTest {
     ObjectMapper mapper = new ObjectMapper();
     var map =
         mapper.readValue(
-            campaignState.getFeatureData(),
-            new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+            campaignState.getFeatureData(), new TypeReference<Map<String, Object>>() {});
     assertThat(map).containsEntry("retired", true);
     assertThat(map).containsKey("nested"); // nested structure preserved
   }

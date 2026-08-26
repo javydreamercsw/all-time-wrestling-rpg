@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleVariantGuide;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
@@ -86,7 +87,7 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
             "IT No DQ", "No DQ", false, true, BumpAddition.ALL, "BASE_GAME", guide);
 
     assertThat(second.getGuideHash()).isEqualTo(hashAfterFirst);
-    verify(segmentRuleRepository, times(1)).save(org.mockito.ArgumentMatchers.any());
+    verify(segmentRuleRepository, times(1)).save(ArgumentMatchers.any());
   }
 
   @Test

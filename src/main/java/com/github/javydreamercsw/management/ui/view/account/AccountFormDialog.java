@@ -32,6 +32,7 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
+import java.util.HashSet;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +98,7 @@ public class AccountFormDialog extends Dialog {
         .bind(
             acc -> acc.getRoles().stream().findFirst().map(Role::getName).orElse(null),
             (acc, roleName) ->
-                acc.setRoles(new java.util.HashSet<>(Set.of(accountService.getRole(roleName)))));
+                acc.setRoles(new HashSet<>(Set.of(accountService.getRole(roleName)))));
 
     if (account.getRoles() != null && !account.getRoles().isEmpty()) {
       role.setValue(account.getRoles().iterator().next().getName());

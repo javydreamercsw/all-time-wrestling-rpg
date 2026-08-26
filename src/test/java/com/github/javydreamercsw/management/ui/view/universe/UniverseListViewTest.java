@@ -20,13 +20,18 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.export.CsvExportWriter;
+import com.github.javydreamercsw.management.service.export.ImageExportService;
+import com.github.javydreamercsw.management.service.export.ImageImportService;
 import com.github.javydreamercsw.management.service.export.JsonExportWriter;
 import com.github.javydreamercsw.management.service.export.UniverseExportService;
+import com.github.javydreamercsw.management.service.universe.InviteService;
+import com.github.javydreamercsw.management.service.universe.JoinRequestService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
@@ -50,19 +55,15 @@ class UniverseListViewTest extends AbstractViewTest {
   @Mock private JsonExportWriter jsonExportWriter;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.export.ImageExportService imageExportService;
+  @Mock private ImageExportService imageExportService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.export.ImageImportService imageImportService;
+  @Mock private ImageImportService imageImportService;
 
-  @Mock private com.github.javydreamercsw.management.service.universe.InviteService inviteService;
+  @Mock private InviteService inviteService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.universe.JoinRequestService
-      joinRequestService;
+  @Mock private JoinRequestService joinRequestService;
 
-  @Mock private com.github.javydreamercsw.base.security.SecurityUtils securityUtils;
+  @Mock private SecurityUtils securityUtils;
 
   private UniverseListView view;
 

@@ -44,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
@@ -278,7 +279,7 @@ class ChallengeUpdateServiceTest {
       setManifestUrl(server, "/manifest.json");
       updateService.checkAndApply();
       @SuppressWarnings("unchecked")
-      var captor = org.mockito.ArgumentCaptor.forClass(List.class);
+      var captor = ArgumentCaptor.forClass(List.class);
       verify(achievementRepository).saveAll(captor.capture());
       Achievement saved = (Achievement) captor.getValue().get(0);
       assertEquals("true", saved.getUnlockCondition());

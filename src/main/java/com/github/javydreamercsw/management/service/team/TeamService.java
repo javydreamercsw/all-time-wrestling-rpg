@@ -27,8 +27,11 @@ import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +40,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -62,7 +68,7 @@ public class TeamService {
     return universeContextService
         .getCurrentUniverse()
         .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
-        .orElseGet(() -> new java.util.HashSet<>(expansionService.getEnabledExpansionCodes()));
+        .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
 
   // ==================== CRUD OPERATIONS ====================
@@ -70,7 +76,7 @@ public class TeamService {
   /** Get all teams with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public org.springframework.data.domain.Page<Team> getAllTeams(@NonNull final Pageable pageable) {
+  public Page<Team> getAllTeams(@NonNull final Pageable pageable) {
     Set<String> enabledExpansions = enabledExpansionCodes();
 
     // Fetch all since we need to filter based on member properties not in the Team table directly
@@ -92,20 +98,18 @@ public class TeamService {
             .collect(Collectors.toList());
 
     if (pageable.isUnpaged()) {
-      return new org.springframework.data.domain.PageImpl<>(
-          allFiltered, pageable, allFiltered.size());
+      return new PageImpl<>(allFiltered, pageable, allFiltered.size());
     }
 
     int start = (int) pageable.getOffset();
     int end = Math.min(start + pageable.getPageSize(), allFiltered.size());
 
-    List<Team> pageContent = new java.util.ArrayList<>();
+    List<Team> pageContent = new ArrayList<>();
     if (start < allFiltered.size()) {
       pageContent = allFiltered.subList(start, end);
     }
 
-    return new org.springframework.data.domain.PageImpl<>(
-        pageContent, pageable, allFiltered.size());
+    return new PageImpl<>(pageContent, pageable, allFiltered.size());
   }
 
   /** Count all teams. */
@@ -307,9 +311,8 @@ public class TeamService {
         .collect(Collectors.toList());
   }
 
-  @org.springframework.context.event.EventListener
-  public void onExpansionToggled(
-      final com.github.javydreamercsw.management.service.expansion.ExpansionToggledEvent event) {
+  @EventListener
+  public void onExpansionToggled(final ExpansionToggledEvent event) {
     log.info("Expansion '{}' toggled, clear team caches if any.", event.getExpansionCode());
   }
 

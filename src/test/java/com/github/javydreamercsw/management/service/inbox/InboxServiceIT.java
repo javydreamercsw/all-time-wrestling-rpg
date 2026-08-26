@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -91,7 +92,7 @@ class InboxServiceIT extends ManagementIntegrationTest {
         eventTypeRegistry.getEventTypes().get(0),
         "Account Target Item",
         account.getId().toString(),
-        com.github.javydreamercsw.management.domain.inbox.InboxItemTarget.TargetType.ACCOUNT);
+        InboxItemTarget.TargetType.ACCOUNT);
 
     // Search for items for this account
     List<InboxItem> results = inboxService.search(null, null, null, false, account.getId());

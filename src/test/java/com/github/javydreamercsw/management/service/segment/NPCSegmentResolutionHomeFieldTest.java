@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Set;
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,7 +113,7 @@ class NPCSegmentResolutionHomeFieldTest {
     // Home wrestler should have 10% more weight than away wrestler
     assertThat(homeTeam.getTotalWeight()).isGreaterThan(awayTeam.getTotalWeight());
     double ratio = (double) homeTeam.getTotalWeight() / awayTeam.getTotalWeight();
-    assertThat(ratio).isCloseTo(1.10, org.assertj.core.data.Offset.offset(0.01));
+    assertThat(ratio).isCloseTo(1.10, Offset.offset(0.01));
   }
 
   @Test

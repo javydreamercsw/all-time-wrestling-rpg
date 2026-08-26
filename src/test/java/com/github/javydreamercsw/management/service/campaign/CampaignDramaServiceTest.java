@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -51,9 +53,7 @@ class CampaignDramaServiceTest {
 
   @Mock private DramaEventService dramaEventService;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
-      wrestlerRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private CampaignService campaignService;
   @Mock private UniverseContextService universeContextService;
@@ -86,7 +86,7 @@ class CampaignDramaServiceTest {
 
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     // Return the defaultValue arg so Boolean unboxing never receives null
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(featureDataService.getFeatureValue(any(), any(), any(), any()))
         .thenAnswer(inv -> inv.getArgument(3));
   }

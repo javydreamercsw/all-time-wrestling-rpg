@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.controller.title;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -274,14 +275,14 @@ public class TitleController {
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
       @NotNull(message = "Title tier is required") WrestlerTier tier,
       @NotNull(message = "Title type is required") ChampionshipType type,
-      com.github.javydreamercsw.base.domain.wrestler.Gender gender,
+      Gender gender,
       @NotNull(message = "League ID is required") Long leagueId) {}
 
   public record UpdateTitleRequest(
       @Size(max = 255, message = "Title name must not exceed 255 characters") String name,
       @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
       Boolean isActive,
-      com.github.javydreamercsw.base.domain.wrestler.Gender gender) {}
+      Gender gender) {}
 
   public record ErrorResponse(String message) {}
 }

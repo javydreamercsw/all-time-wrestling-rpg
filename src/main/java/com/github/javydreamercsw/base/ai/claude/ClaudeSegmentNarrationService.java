@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -120,7 +121,7 @@ public class ClaudeSegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call Claude API for segment narration", e);
-      if (e instanceof java.net.http.HttpTimeoutException) {
+      if (e instanceof HttpTimeoutException) {
         throw new AIServiceException(504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
       }
       throw new AIServiceException(

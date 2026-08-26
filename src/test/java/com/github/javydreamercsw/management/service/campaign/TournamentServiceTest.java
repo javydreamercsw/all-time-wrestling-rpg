@@ -25,7 +25,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -39,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -104,7 +108,7 @@ class TournamentServiceTest {
     tournamentService.initializeTournament(campaign);
 
     // Should not call save if already initialized
-    verify(campaignStateRepository, org.mockito.Mockito.never()).save(any(CampaignState.class));
+    verify(campaignStateRepository, Mockito.never()).save(any(CampaignState.class));
   }
 
   @Test
@@ -220,22 +224,17 @@ class TournamentServiceTest {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);
-      org.mockito.Mockito.lenient()
-          .when(wrestlerRepository.findById(i))
-          .thenReturn(java.util.Optional.of(w));
+      Mockito.lenient().when(wrestlerRepository.findById(i)).thenReturn(Optional.of(w));
     }
-    com.github.javydreamercsw.management.domain.show.segment.type.SegmentType type =
-        new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
-    when(segmentTypeRepository.findByName("One on One")).thenReturn(java.util.Optional.of(type));
+    SegmentType type = new SegmentType();
+    when(segmentTypeRepository.findByName("One on One")).thenReturn(Optional.of(type));
 
-    com.github.javydreamercsw.management.domain.show.segment.Segment mockSegment =
-        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+    Segment mockSegment = new Segment();
     when(segmentService.createSegment(any(), any(), any())).thenReturn(mockSegment);
 
     tournamentService.initializeTournament(campaign);
 
-    com.github.javydreamercsw.management.domain.show.Show show =
-        new com.github.javydreamercsw.management.domain.show.Show();
+    Show show = new Show();
 
     // Advance until all round 1 matches are done
     while (tournamentService.getTournamentState(campaign).getCurrentRound() == 1) {
@@ -243,7 +242,7 @@ class TournamentServiceTest {
     }
 
     // Verify NPC match was simulated and segment created
-    verify(segmentService, org.mockito.Mockito.atLeastOnce()).createSegment(any(), any(), any());
+    verify(segmentService, Mockito.atLeastOnce()).createSegment(any(), any(), any());
   }
 
   @Test
@@ -313,7 +312,7 @@ class TournamentServiceTest {
       w.setId(i);
       w.setName("Wrestler " + i);
       roster.add(w);
-      org.mockito.Mockito.lenient().when(wrestlerRepository.findById(i)).thenReturn(Optional.of(w));
+      Mockito.lenient().when(wrestlerRepository.findById(i)).thenReturn(Optional.of(w));
     }
     when(wrestlerRepository.findAll()).thenReturn(roster);
 

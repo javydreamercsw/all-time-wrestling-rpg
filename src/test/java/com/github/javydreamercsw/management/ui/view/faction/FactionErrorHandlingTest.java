@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -56,7 +57,7 @@ class FactionErrorHandlingTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
   @Mock private UniverseContextService universeContextService;
-  @Mock private com.github.javydreamercsw.base.ai.image.ImageStorageService imageStorageService;
+  @Mock private ImageStorageService imageStorageService;
 
   private FactionListView factionListView;
 
