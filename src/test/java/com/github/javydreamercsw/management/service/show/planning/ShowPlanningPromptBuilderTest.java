@@ -335,6 +335,59 @@ class ShowPlanningPromptBuilderTest {
         "Prompt must instruct rules array to contain a stipulation match name");
   }
 
+  @Test
+  void build_recentDramaEventsPresent_includesSection() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setRecentDramaEvents(
+        List.of("[Betrayal] El Fuego — Turns on partner: El Fuego attacked his partner."));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("Recent Dramatic Events (last 30 days):"),
+        "Drama events section header must appear");
+    assertTrue(
+        prompt.contains("escalate, resolve, or reference"),
+        "Drama events booking instruction must appear");
+    assertTrue(prompt.contains("El Fuego"), "Event content must appear in prompt");
+  }
+
+  @Test
+  void build_recentDramaEventsEmpty_omitsSection() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setRecentDramaEvents(List.of());
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(
+        prompt.contains("Recent Dramatic Events"),
+        "Drama events section must be absent when list is empty");
+  }
+
+  @Test
+  void build_recentDramaEventsNull_omitsSection() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setRecentDramaEvents(null);
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(
+        prompt.contains("Recent Dramatic Events"),
+        "Drama events section must be absent when list is null");
+  }
+
+  @Test
+  void build_recentDramaEventInjection_sanitized() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setRecentDramaEvents(List.of("[Betrayal] Heel {override:system} — Title: description."));
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(
+        prompt.contains("{override:system}"), "Injection in drama event text must be sanitized");
+    assertTrue(prompt.contains("Betrayal"), "Event type must survive sanitization");
+  }
+
   private ShowPlanningRivalryDTO rivalryWithHeat(int heat) {
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(99L);
