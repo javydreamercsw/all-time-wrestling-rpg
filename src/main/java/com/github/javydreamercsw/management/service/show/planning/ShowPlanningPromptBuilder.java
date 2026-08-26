@@ -230,6 +230,17 @@ public class ShowPlanningPromptBuilder {
           .append("\n");
     }
 
+    if (context.getRecentDramaEvents() != null && !context.getRecentDramaEvents().isEmpty()) {
+      prompt.append("\nRecent Dramatic Events (last 30 days):\n");
+      prompt.append(
+          "Consider these story beats when booking the card — escalate, resolve, or reference"
+              + " them:\n");
+      context
+          .getRecentDramaEvents()
+          .forEach(line -> prompt.append("- ").append(sanitize(line)).append("\n"));
+      prompt.append("\n");
+    }
+
     if (context.getChampionships() != null && !context.getChampionships().isEmpty()) {
       prompt.append("Championships:\n");
       context

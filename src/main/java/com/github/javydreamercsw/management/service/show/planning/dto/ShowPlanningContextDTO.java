@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.show.planning.dto;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.planning.ShowTemplate;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 
@@ -33,4 +34,5 @@ public class ShowPlanningContextDTO {
   private List<FactionDTO> factions;
   private Instant showDate;
   private boolean isPremiumLiveEvent;
+  private List<String> recentDramaEvents = new ArrayList<>();
 }

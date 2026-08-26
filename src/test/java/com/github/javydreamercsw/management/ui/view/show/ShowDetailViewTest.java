@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
@@ -324,7 +325,8 @@ class ShowDetailViewTest extends AbstractViewTest {
             segmentRuleService,
             segmentNarrationServiceFactory,
             narrationParserService,
-            npcService);
+            npcService,
+            mock(DramaEventService.class));
     ShowContextFacade showContextFacade =
         new ShowContextFacade(
             showTypeService,
