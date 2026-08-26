@@ -288,11 +288,6 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
   }
 
   private Wrestler createWrestler(final String name) {
-    return wrestlerService.createWrestler(
-        name,
-        false,
-        "Test",
-        WrestlerTier.MIDCARDER,
-        null);
+    return wrestlerService.createWrestler(name, false, "Test", WrestlerTier.MIDCARDER, null);
   }
 }

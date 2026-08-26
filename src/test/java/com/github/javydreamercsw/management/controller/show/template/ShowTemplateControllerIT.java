@@ -46,8 +46,7 @@ class ShowTemplateControllerIT extends AbstractRestControllerIT {
   public void setUp() {
     mockMvc =
         MockMvcBuilders.standaloneSetup(new ShowTemplateController(showTemplateService))
-            .setCustomArgumentResolvers(
-                new PageableHandlerMethodArgumentResolver())
+            .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
             .build();
 
     showTemplateRepository.deleteAll();

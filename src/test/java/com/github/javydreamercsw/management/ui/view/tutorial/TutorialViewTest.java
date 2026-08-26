@@ -64,8 +64,7 @@ class TutorialViewTest extends AbstractViewTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private AiSettingsService aiSettingsService;
 
-  @Mock
-  private ExpansionService expansionService;
+  @Mock private ExpansionService expansionService;
 
   private Account testAccount;
   private TutorialView view;

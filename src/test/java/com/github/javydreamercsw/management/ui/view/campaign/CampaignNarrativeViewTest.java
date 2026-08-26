@@ -67,9 +67,7 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
   @Mock private FeatureDataService featureDataService;
   @Mock private CampaignStateRepository campaignStateRepository;
 
-  @Mock
-  private PlaceholderResolverService
-      placeholderResolverService;
+  @Mock private PlaceholderResolverService placeholderResolverService;
 
   private CampaignNarrativeView view;
 

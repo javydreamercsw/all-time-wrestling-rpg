@@ -457,14 +457,12 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
 
     // 3. Perform Action (Click a hook)
     waitForPageSourceToContain("The crowd is buzzing");
-    WebElement hookButton =
-        waitForVaadinElement(driver, By.id("promo-hook-cheap-heat"));
+    WebElement hookButton = waitForVaadinElement(driver, By.id("promo-hook-cheap-heat"));
     clickElement(hookButton);
 
     // 4. Verify & Capture (synchronous processing may take a few seconds due to Mock AI sleep)
     waitForVaadinElement(driver, By.id("promo-outcome-status"));
-    WebElement status =
-        driver.findElement(By.id("promo-outcome-status"));
+    WebElement status = driver.findElement(By.id("promo-outcome-status"));
     new WebDriverWait(driver, Duration.ofSeconds(30))
         .until(d -> status.getText().contains("SUCCESSFUL"));
 

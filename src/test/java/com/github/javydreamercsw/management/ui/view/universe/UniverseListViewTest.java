@@ -55,17 +55,13 @@ class UniverseListViewTest extends AbstractViewTest {
   @Mock private JsonExportWriter jsonExportWriter;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
 
-  @Mock
-  private ImageExportService imageExportService;
+  @Mock private ImageExportService imageExportService;
 
-  @Mock
-  private ImageImportService imageImportService;
+  @Mock private ImageImportService imageImportService;
 
   @Mock private InviteService inviteService;
 
-  @Mock
-  private JoinRequestService
-      joinRequestService;
+  @Mock private JoinRequestService joinRequestService;
 
   @Mock private SecurityUtils securityUtils;
 

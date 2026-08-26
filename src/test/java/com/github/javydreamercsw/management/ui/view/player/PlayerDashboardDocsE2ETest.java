@@ -90,12 +90,9 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
 
-  @Autowired
-  private WrestlerStateRepository
-      wrestlerStateRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
-  @Autowired
-  private WrestlerService wrestlerService;
+  @Autowired private WrestlerService wrestlerService;
 
   @BeforeEach
   public void setupData() {
@@ -122,8 +119,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
             .account(playerAccount)
             .build();
     wrestlerRepository.save(wrestler);
-    WrestlerState state =
-        wrestlerService.getOrCreateState(wrestler.getId(), 1L);
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), 1L);
     state.setTier(WrestlerTier.MAIN_EVENTER);
     state.setFans(5000L);
     wrestlerStateRepository.saveAndFlush(state);

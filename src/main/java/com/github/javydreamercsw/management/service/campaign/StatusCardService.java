@@ -88,8 +88,7 @@ public class StatusCardService {
     statusCardRepository.deleteById(id);
   }
 
-  public Page<StatusCard> list(
-      final Pageable pageable) {
+  public Page<StatusCard> list(final Pageable pageable) {
     return statusCardRepository.findAll(pageable);
   }
 

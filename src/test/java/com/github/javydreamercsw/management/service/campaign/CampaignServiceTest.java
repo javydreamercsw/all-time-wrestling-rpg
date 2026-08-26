@@ -106,9 +106,7 @@ class CampaignServiceTest {
               }
               return c;
             });
-    lenient()
-        .when(campaignRepository.findActiveByWrestler(any()))
-        .thenReturn(Optional.empty());
+    lenient().when(campaignRepository.findActiveByWrestler(any())).thenReturn(Optional.empty());
 
     WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
@@ -306,8 +304,7 @@ class CampaignServiceTest {
     CampaignChapterDTO beginning =
         CampaignChapterDTO.builder().id("beginning").title("All or Nothing Campaign").build();
     // Wrestler-specific query returns empty; null-name query returns the chapter
-    when(chapterService.findAvailableChapters(
-            any(), ArgumentMatchers.eq("Unknown Joe")))
+    when(chapterService.findAvailableChapters(any(), ArgumentMatchers.eq("Unknown Joe")))
         .thenReturn(List.of());
     when(chapterService.findAvailableChapters(any(), ArgumentMatchers.isNull()))
         .thenReturn(List.of(beginning));

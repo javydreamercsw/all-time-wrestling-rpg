@@ -292,14 +292,11 @@ public class NewsGenerationService {
    * TitleReign} was won at that segment. This avoids the stale-read bug where {@code
    * title.getCurrentChampions()} already reflects the post-match state.
    */
-  private TitleContext resolveTitleContext(
-      Title title, Segment segment) {
+  private TitleContext resolveTitleContext(Title title, Segment segment) {
     boolean changedHands =
         titleReignRepository.findByWonAtSegment(segment).stream()
             .anyMatch(
-                r ->
-                    r.getTitle() != null
-                        && Objects.equals(r.getTitle().getId(), title.getId()));
+                r -> r.getTitle() != null && Objects.equals(r.getTitle().getId(), title.getId()));
 
     if (changedHands) {
       String prevChamps =

@@ -255,8 +255,7 @@ public class CardListView extends Main {
     actions.setVisible(securityUtils.canEdit());
     cardGrid.getElement().appendChild(actions.getElement());
 
-    Div gridWrapper =
-        new Div(cardGrid);
+    Div gridWrapper = new Div(cardGrid);
     gridWrapper.addClassName("grid-scroll-container");
 
     if (securityUtils.canCreate()) {

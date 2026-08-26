@@ -203,8 +203,7 @@ public class SystemObservabilityView extends VerticalLayout {
     aiTokenChart.setId("ai-token-chart");
     layout.add(aiTokenChart);
 
-    Scroller scroller =
-        new Scroller(layout);
+    Scroller scroller = new Scroller(layout);
     scroller.setSizeFull();
     return scroller;
   }
@@ -220,10 +219,7 @@ public class SystemObservabilityView extends VerticalLayout {
                     .build())
             .withStroke(StrokeBuilder.get().withCurve(Curve.SMOOTH).build())
             .withMarkers(MarkersBuilder.get().withSize(4.0, 4.0).build())
-            .withTitle(
-                TitleSubtitleBuilder.get()
-                    .withText("AI Response Times (ms)")
-                    .build())
+            .withTitle(TitleSubtitleBuilder.get().withText("AI Response Times (ms)").build())
             .withXaxis(
                 XAxisBuilder.get()
                     .withCategories(
@@ -267,10 +263,7 @@ public class SystemObservabilityView extends VerticalLayout {
         ApexChartsBuilder.get()
             .withChart(
                 ChartBuilder.get().withType(Type.BAR).withHeight("300px").withWidth("100%").build())
-            .withTitle(
-                TitleSubtitleBuilder.get()
-                    .withText("AI Token Usage (Cumulative)")
-                    .build())
+            .withTitle(TitleSubtitleBuilder.get().withText("AI Token Usage (Cumulative)").build())
             .withXaxis(
                 XAxisBuilder.get()
                     .withCategories(

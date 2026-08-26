@@ -187,16 +187,8 @@ public class Team extends AbstractEntity<Long> {
     }
     Long universeId = universe.getId();
 
-    Faction f1 =
-        wrestler1
-            .getState(universeId)
-            .map(WrestlerState::getFaction)
-            .orElse(null);
-    Faction f2 =
-        wrestler2
-            .getState(universeId)
-            .map(WrestlerState::getFaction)
-            .orElse(null);
+    Faction f1 = wrestler1.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction f2 = wrestler2.getState(universeId).map(WrestlerState::getFaction).orElse(null);
 
     return f1 != null && f2 != null && f1.equals(f2);
   }
@@ -208,16 +200,8 @@ public class Team extends AbstractEntity<Long> {
     }
     Long universeId = universe.getId();
 
-    Faction f1 =
-        wrestler1
-            .getState(universeId)
-            .map(WrestlerState::getFaction)
-            .orElse(null);
-    Faction f2 =
-        wrestler2
-            .getState(universeId)
-            .map(WrestlerState::getFaction)
-            .orElse(null);
+    Faction f1 = wrestler1.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction f2 = wrestler2.getState(universeId).map(WrestlerState::getFaction).orElse(null);
 
     if (f1 != null && f1.equals(f2)) {
       return f1;

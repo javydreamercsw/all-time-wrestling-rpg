@@ -74,10 +74,8 @@ class DataInitializerTest {
   void validateCardsJson() {
     assertDoesNotThrow(
         () -> {
-          PathMatchingResourcePatternResolver resolver =
-              new PathMatchingResourcePatternResolver();
-          Resource[] resources =
-              resolver.getResources("classpath*:cards/*.json");
+          PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+          Resource[] resources = resolver.getResources("classpath*:cards/*.json");
           for (Resource resource : resources) {
             new ObjectMapper()
                 .readValue(resource.getInputStream(), new TypeReference<List<CardDTO>>() {});
@@ -224,8 +222,7 @@ class DataInitializerTest {
           new ObjectMapper()
               .readValue(
                   new ClassPathResource("relationships.json").getInputStream(),
-                  new TypeReference<
-                      List<RelationshipImportDTO>>() {});
+                  new TypeReference<List<RelationshipImportDTO>>() {});
         });
   }
 
@@ -282,10 +279,8 @@ class DataInitializerTest {
   void validateWrestlersJson() {
     assertDoesNotThrow(
         () -> {
-          PathMatchingResourcePatternResolver resolver =
-              new PathMatchingResourcePatternResolver();
-          Resource[] resources =
-              resolver.getResources("classpath*:wrestlers*.json");
+          PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+          Resource[] resources = resolver.getResources("classpath*:wrestlers*.json");
           for (Resource resource : resources) {
             new ObjectMapper()
                 .readValue(

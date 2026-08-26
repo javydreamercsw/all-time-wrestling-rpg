@@ -353,11 +353,7 @@ public class InboxView extends VerticalLayout {
             e -> {
               // Find fulfillment ID from targets
               item.getTargets().stream()
-                  .filter(
-                      t ->
-                          t.getTargetType()
-                              == InboxItemTarget
-                                  .TargetType.MATCH_FULFILLMENT)
+                  .filter(t -> t.getTargetType() == InboxItemTarget.TargetType.MATCH_FULFILLMENT)
                   .findFirst()
                   .ifPresent(
                       target -> {
@@ -607,8 +603,7 @@ public class InboxView extends VerticalLayout {
     detailsView.add(actions);
   }
 
-  private String resolveTargetName(
-      @NonNull final InboxItemTarget target) {
+  private String resolveTargetName(@NonNull final InboxItemTarget target) {
     try {
       Long id = Long.parseLong(target.getTargetId());
       switch (target.getTargetType()) {

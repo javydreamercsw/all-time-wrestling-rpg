@@ -209,10 +209,6 @@ public class PlaceholderResolverService {
         .findByName(ATW_WORLD_TITLE)
         .map(Title::getCurrentChampions)
         .filter(champs -> !champs.isEmpty())
-        .map(
-            champs ->
-                champs.stream()
-                    .map(Wrestler::getName)
-                    .collect(Collectors.joining(" & ")));
+        .map(champs -> champs.stream().map(Wrestler::getName).collect(Collectors.joining(" & ")));
   }
 }

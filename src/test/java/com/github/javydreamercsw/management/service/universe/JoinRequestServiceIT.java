@@ -175,11 +175,7 @@ class JoinRequestServiceIT extends ManagementIntegrationTest {
 
   @Test
   void approveRequest_alreadyMember_stillApproves() {
-    membershipService.addMember(
-        universe,
-        requester,
-        UniverseMembership.UniverseMemberRole
-            .MEMBER);
+    membershipService.addMember(universe, requester, UniverseMembership.UniverseMemberRole.MEMBER);
 
     UniverseJoinRequest request =
         joinRequestService.submitRequest(invite, "Requester", null, requester);

@@ -53,9 +53,7 @@ class CampaignDramaServiceTest {
 
   @Mock private DramaEventService dramaEventService;
 
-  @Mock
-  private WrestlerRepository
-      wrestlerRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private CampaignService campaignService;
   @Mock private UniverseContextService universeContextService;

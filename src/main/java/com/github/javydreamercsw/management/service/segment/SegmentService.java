@@ -148,16 +148,11 @@ public class SegmentService {
             .map(p -> p.getWrestler().getName())
             .collect(Collectors.toList()));
     dto.setWinnerNames(
-        segment.getWinners().stream()
-            .map(Wrestler::getName)
-            .collect(Collectors.toList()));
+        segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.toList()));
     dto.setSegmentTypeName(segment.getSegmentType().getName());
     dto.setSegmentDate(segment.getSegmentDate());
     dto.setNarration(segment.getNarration());
-    dto.setTitleIds(
-        segment.getTitles().stream()
-            .map(Title::getId)
-            .collect(Collectors.toList()));
+    dto.setTitleIds(segment.getTitles().stream().map(Title::getId).collect(Collectors.toList()));
     dto.setSegmentOrder(segment.getSegmentOrder());
     dto.setMainEvent(segment.isMainEvent());
     return dto;
@@ -579,8 +574,7 @@ public class SegmentService {
     if (isNew) {
       // Check for league match and send notifications
       checkAndNotifyLeagueMatch(saved);
-    } else if (saved.getAdjudicationStatus()
-        == AdjudicationStatus.ADJUDICATED) {
+    } else if (saved.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED) {
       // Generate news for completed matches
       newsGenerationService.generateNewsForSegment(saved);
     }
@@ -681,8 +675,7 @@ public class SegmentService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void setAdjudicationStatus(
-      @NonNull final Segment segment,
-      @NonNull final AdjudicationStatus status) {
+      @NonNull final Segment segment, @NonNull final AdjudicationStatus status) {
     segment.setAdjudicationStatus(status);
     segmentRepository.save(segment);
   }

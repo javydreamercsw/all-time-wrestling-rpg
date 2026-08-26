@@ -103,11 +103,9 @@ public class CampaignService {
   private final FeatureDataService featureDataService;
 
   // Field-injected to break circular dependency: CampaignService ↔ MatchResultProcessorService
-  @Autowired
-  private MatchResultProcessorService matchResultProcessorService;
+  @Autowired private MatchResultProcessorService matchResultProcessorService;
 
-  @Autowired
-  private CampaignProgressionService campaignProgressionService;
+  @Autowired private CampaignProgressionService campaignProgressionService;
 
   public void setFeatureValue(final CampaignState state, final String key, final Object value) {
     featureDataService.setFeatureValue(state, key, value);
@@ -407,8 +405,7 @@ public class CampaignService {
   }
 
   @Transactional(readOnly = true)
-  public List<CampaignChapterDTO>
-      getAvailableNextChapters(@NonNull final Campaign campaignParam) {
+  public List<CampaignChapterDTO> getAvailableNextChapters(@NonNull final Campaign campaignParam) {
     return campaignProgressionService.getAvailableNextChapters(campaignParam);
   }
 

@@ -281,11 +281,7 @@ public class InboxListenersIT extends ManagementIntegrationTest {
   @Test
   void testWrestlerBumpEventCreatesInboxItemWithAccountTarget() {
     state1.setBumps(5);
-    WrestlerBumpEvent event =
-        new WrestlerBumpEvent(
-            this,
-            state1,
-            BumpSource.MANUAL);
+    WrestlerBumpEvent event = new WrestlerBumpEvent(this, state1, BumpSource.MANUAL);
     eventPublisher.publishEvent(event);
 
     @SuppressWarnings("unchecked")

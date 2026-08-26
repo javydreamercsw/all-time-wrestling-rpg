@@ -84,8 +84,7 @@ public class NpcListView extends Main {
         .addComponentColumn(
             npc -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
-              nameLayout.setAlignItems(
-                  FlexComponent.Alignment.CENTER);
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!npc.isActive()) {

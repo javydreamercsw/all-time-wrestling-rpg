@@ -237,8 +237,7 @@ public class CampaignEncounterService {
         Long partnerId = null;
         if (featureDataJson != null) {
           Map<String, Object> data =
-              objectMapper.readValue(
-                  featureDataJson, new TypeReference<>() {});
+              objectMapper.readValue(featureDataJson, new TypeReference<>() {});
           Object val = data.get("partnerId");
           if (val instanceof Number) {
             partnerId = ((Number) val).longValue();
@@ -259,8 +258,7 @@ public class CampaignEncounterService {
       String featureDataJson = campaign.getState().getFeatureData();
       if (featureDataJson != null) {
         Map<String, Object> data =
-            objectMapper.readValue(
-                featureDataJson, new TypeReference<>() {});
+            objectMapper.readValue(featureDataJson, new TypeReference<>() {});
         Object val = data.get("finalsPhase");
         if (val instanceof Boolean) {
           isFinalsPhase = (Boolean) val;
@@ -418,9 +416,7 @@ public class CampaignEncounterService {
     try {
       if (campaign.getState().getFeatureData() != null) {
         Map<String, Object> data =
-            objectMapper.readValue(
-                campaign.getState().getFeatureData(),
-                new TypeReference<>() {});
+            objectMapper.readValue(campaign.getState().getFeatureData(), new TypeReference<>() {});
         Object val = data.get("partnerId");
         if (val instanceof Number) {
           currentPartnerId = ((Number) val).longValue();
@@ -720,8 +716,7 @@ public class CampaignEncounterService {
   }
 
   /** Merges choice-level and chapter-level exclusion lists, deduplicating entries. */
-  private List<String> mergeExclusions(
-      List<String> choiceLevel, List<String> chapterLevel) {
+  private List<String> mergeExclusions(List<String> choiceLevel, List<String> chapterLevel) {
     if ((choiceLevel == null || choiceLevel.isEmpty())
         && (chapterLevel == null || chapterLevel.isEmpty())) {
       return null;

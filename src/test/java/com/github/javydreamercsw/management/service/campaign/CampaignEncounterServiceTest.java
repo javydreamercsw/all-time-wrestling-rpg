@@ -72,8 +72,7 @@ class CampaignEncounterServiceTest {
   @Mock private CommentatorRepository commentatorRepository;
   @Mock private FeatureDataService featureDataService;
 
-  @Mock
-  private ExpansionService expansionService;
+  @Mock private ExpansionService expansionService;
 
   @Mock private InjuryService injuryService;
   @Mock private WrestlerService wrestlerService;

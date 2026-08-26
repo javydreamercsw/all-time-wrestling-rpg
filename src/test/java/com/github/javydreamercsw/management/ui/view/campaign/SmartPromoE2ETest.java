@@ -49,15 +49,12 @@ class SmartPromoE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
   @Autowired private DataInitializer dataInitializer;
 
-  @MockitoBean
-  private BackstageEncounterService
-      backstageEncounterService;
+  @MockitoBean private BackstageEncounterService backstageEncounterService;
 
   @BeforeEach
   void setupCampaign() {
     // Disable random encounters for this test
-    Mockito.when(
-            backstageEncounterService.shouldTriggerEncounter(ArgumentMatchers.any()))
+    Mockito.when(backstageEncounterService.shouldTriggerEncounter(ArgumentMatchers.any()))
         .thenReturn(false);
 
     wrestlerAlignmentRepository.deleteAllInBatch();
@@ -95,17 +92,13 @@ class SmartPromoE2ETest extends AbstractE2ETest {
           .findByWrestler(player)
           .orElseGet(
               () -> {
-                WrestlerAlignment
-                    newAlignment =
-                        WrestlerAlignment
-                            .builder()
-                            .wrestler(finalPlayer)
-                            .alignmentType(
-                                AlignmentType
-                                    .NEUTRAL)
-                            .level(0)
-                            .campaign(campaignRepository.findActiveByWrestler(finalPlayer).get())
-                            .build();
+                WrestlerAlignment newAlignment =
+                    WrestlerAlignment.builder()
+                        .wrestler(finalPlayer)
+                        .alignmentType(AlignmentType.NEUTRAL)
+                        .level(0)
+                        .campaign(campaignRepository.findActiveByWrestler(finalPlayer).get())
+                        .build();
                 return wrestlerAlignmentRepository.save(newAlignment);
               });
     }
@@ -117,8 +110,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
             campaign -> {
               CampaignState state = campaign.getState();
               state.setPromoUnlocked(true);
-              state.setCurrentPhase(
-                  CampaignPhase.BACKSTAGE);
+              state.setCurrentPhase(CampaignPhase.BACKSTAGE);
               state.setActionsTaken(0);
               campaignStateRepository.save(state);
             });

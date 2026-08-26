@@ -44,8 +44,7 @@ import org.junit.jupiter.api.Test;
 class AchievementsJsonValidationTest {
 
   private static List<Achievement> achievements;
-  private static final GroovyClassLoader groovyClassLoader =
-      new GroovyClassLoader();
+  private static final GroovyClassLoader groovyClassLoader = new GroovyClassLoader();
 
   @BeforeAll
   static void loadAchievementsJson() throws Exception {

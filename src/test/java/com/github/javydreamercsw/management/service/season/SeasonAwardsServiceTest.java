@@ -180,8 +180,7 @@ class SeasonAwardsServiceTest {
             .build();
     when(awardRepository.findBySeasonId(99L)).thenReturn(List.of(existing));
 
-    service.onSeasonEnded(
-        new SeasonEndedEvent(this, season));
+    service.onSeasonEnded(new SeasonEndedEvent(this, season));
 
     verify(segmentRepository, never()).findByShow(any());
     verify(newsService, never()).createNewsItem(any(), any(), any(), anyBoolean(), anyInt());

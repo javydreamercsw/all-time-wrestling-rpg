@@ -120,8 +120,7 @@ public class NotificationService {
           detail.setText(getUserFriendlyMessage(ex));
           detail.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.FontSize.SMALL);
 
-          Button closeBtn =
-              new Button("Dismiss", e -> notification.close());
+          Button closeBtn = new Button("Dismiss", e -> notification.close());
           closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
           closeBtn.addClassName(LumoUtility.Margin.Top.MEDIUM);
 

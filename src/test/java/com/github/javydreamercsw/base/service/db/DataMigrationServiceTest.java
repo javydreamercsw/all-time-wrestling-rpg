@@ -225,8 +225,7 @@ class DataMigrationServiceTest {
 
       // Also verify counts match between source and target for all tables
       ResultSet tables = sourceStatement.executeQuery("SHOW TABLES");
-      List<Executable> assertions =
-          new ArrayList<>();
+      List<Executable> assertions = new ArrayList<>();
 
       while (tables.next()) {
         String tableName = tables.getString(1);

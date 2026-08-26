@@ -154,10 +154,8 @@ class StorylineIntegrationTest {
             storylineDirectorService,
             wrestlerStatusService,
             featureDataService);
-    ReflectionTestUtils.setField(
-        progressionService, "campaignService", campaignService);
-    ReflectionTestUtils.setField(
-        campaignService, "campaignProgressionService", progressionService);
+    ReflectionTestUtils.setField(progressionService, "campaignService", campaignService);
+    ReflectionTestUtils.setField(campaignService, "campaignProgressionService", progressionService);
   }
 
   @Test
@@ -217,8 +215,7 @@ class StorylineIntegrationTest {
     when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
 
     // Simulate no available predefined chapters
-    when(chapterService.findAvailableChapters(
-            ArgumentMatchers.any(), ArgumentMatchers.any()))
+    when(chapterService.findAvailableChapters(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(List.of());
 
     // Mock AI director initializing a new storyline
@@ -257,8 +254,7 @@ class StorylineIntegrationTest {
     when(chapterService.getChapter("unknown_id")).thenReturn(Optional.empty());
 
     // Simulate no available predefined chapters
-    when(chapterService.findAvailableChapters(
-            ArgumentMatchers.any(), ArgumentMatchers.any()))
+    when(chapterService.findAvailableChapters(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(List.of());
 
     // Mock AI director initializing a new storyline - should succeed even with null context

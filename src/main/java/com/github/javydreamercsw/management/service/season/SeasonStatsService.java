@@ -85,8 +85,7 @@ public class SeasonStatsService {
 
     List<Segment> segments =
         segmentRepository
-            .findByWrestlerParticipationAndSeason(
-                managedWrestler, season, Pageable.unpaged())
+            .findByWrestlerParticipationAndSeason(managedWrestler, season, Pageable.unpaged())
             .getContent();
 
     int wins = 0;

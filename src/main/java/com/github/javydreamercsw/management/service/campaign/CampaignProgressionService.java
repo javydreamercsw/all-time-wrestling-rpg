@@ -65,9 +65,7 @@ public class CampaignProgressionService {
   private final FeatureDataService featureDataService;
 
   // Field-injected with @Lazy to break the circular dependency with CampaignService
-  @Autowired
-  @Lazy
-  private CampaignService campaignService;
+  @Autowired @Lazy private CampaignService campaignService;
 
   private final Random random = new Random();
 
@@ -303,8 +301,7 @@ public class CampaignProgressionService {
                                   wrestler ->
                                       GeneralSecurityUtils.runAsAdmin(
                                           () ->
-                                              titleService.awardTitleTo(
-                                                  title, List.of(wrestler))),
+                                              titleService.awardTitleTo(title, List.of(wrestler))),
                                   () ->
                                       log.warn(
                                           "initialChampions: wrestler '{}' not found for title"

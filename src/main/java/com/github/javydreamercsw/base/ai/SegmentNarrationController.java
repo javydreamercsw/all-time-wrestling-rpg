@@ -347,9 +347,7 @@ public class SegmentNarrationController {
     commentator2.setPersonality("Knowledgeable with ECW bias");
     context.setNpcs(Arrays.asList(announcer, commentator1, commentator2));
 
-    List<Arena> allArenas =
-        GeneralSecurityUtils.runAsAdmin(
-            arenaService::findAll);
+    List<Arena> allArenas = GeneralSecurityUtils.runAsAdmin(arenaService::findAll);
     if (!allArenas.isEmpty()) {
       Arena selectedArena = allArenas.get(new Random().nextInt(allArenas.size()));
 
@@ -360,24 +358,19 @@ public class SegmentNarrationController {
       venue.setType("Wrestling Arena");
       venue.setCapacity(selectedArena.getCapacity());
       venue.setAlignmentBias(selectedArena.getAlignmentBias().getDisplayName());
-      venue.setEnvironmentalTraits(
-          new ArrayList<>(selectedArena.getEnvironmentalTraits()));
+      venue.setEnvironmentalTraits(new ArrayList<>(selectedArena.getEnvironmentalTraits()));
       venue.setImageUrl(selectedArena.getImageUrl());
-      venue.setCulturalTags(
-          new ArrayList<>(selectedArena.getLocation().getCulturalTags()));
+      venue.setCulturalTags(new ArrayList<>(selectedArena.getLocation().getCulturalTags()));
       venue.setAtmosphere("Electric and historic - where legends are made");
       venue.setSignificance("A key venue in the All Time Wrestling circuit.");
       context.setVenue(venue);
     } else {
       // Fallback: try to at least get a random location if no arenas exist
-      List<Location> allLocations =
-          GeneralSecurityUtils.runAsAdmin(
-              locationService::findAll);
+      List<Location> allLocations = GeneralSecurityUtils.runAsAdmin(locationService::findAll);
 
       VenueContext venue = new VenueContext();
       if (!allLocations.isEmpty()) {
-        Location selectedLocation =
-            allLocations.get(new Random().nextInt(allLocations.size()));
+        Location selectedLocation = allLocations.get(new Random().nextInt(allLocations.size()));
         venue.setLocation(selectedLocation.getName());
         venue.setCulturalTags(new ArrayList<>(selectedLocation.getCulturalTags()));
       } else {

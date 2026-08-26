@@ -106,8 +106,7 @@ public class EditSegmentDialog extends Dialog {
               "[DEBUG-ATW8djt] PreloadedData.load() entry — thread={} VaadinSession={}",
               Thread.currentThread().getName(),
               VaadinSession.getCurrent());
-      Set<String> enabledCodes =
-          new HashSet<>(expansionService.getEnabledExpansionCodes());
+      Set<String> enabledCodes = new HashSet<>(expansionService.getEnabledExpansionCodes());
       LoggerFactory.getLogger(EditSegmentDialog.class)
           .info("[DEBUG-ATW8djt] PreloadedData.load() enabledCodes={}", enabledCodes);
       List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
@@ -116,11 +115,7 @@ public class EditSegmentDialog extends Dialog {
               .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
       Map<String, String> expNames =
           expansionService.getExpansions().stream()
-              .collect(
-                  Collectors.toMap(
-                      Expansion::getCode,
-                      Expansion::getName,
-                      (a, b) -> a));
+              .collect(Collectors.toMap(Expansion::getCode, Expansion::getName, (a, b) -> a));
       List<SegmentType> segmentTypes =
           segmentTypeService.findAll(enabledCodes).stream()
               .sorted(Comparator.comparing(SegmentType::getName))
@@ -338,9 +333,7 @@ public class EditSegmentDialog extends Dialog {
 
     synergyBonusLabel = new Span("Synergy Bonus: +0");
     synergyBonusLabel.addClassNames(
-        LumoUtility.FontSize.SMALL,
-        LumoUtility.TextColor.SUCCESS,
-        LumoUtility.FontWeight.BOLD);
+        LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SUCCESS, LumoUtility.FontWeight.BOLD);
     synergyBonusLabel.setId("edit-synergy-bonus-label");
 
     segmentTypeCombo = new ComboBox<>("Segment Type");
@@ -601,9 +594,7 @@ public class EditSegmentDialog extends Dialog {
           healthFields.clear();
           boolean isPromo =
               segmentTypeCombo.getValue() != null
-                  && SegmentTypeNames
-                      .PROMO
-                      .equalsIgnoreCase(segmentTypeCombo.getValue().getName());
+                  && SegmentTypeNames.PROMO.equalsIgnoreCase(segmentTypeCombo.getValue().getName());
           Set<Wrestler> allTeamWrestlers =
               teamCombos.stream().flatMap(c -> c.getValue().stream()).collect(Collectors.toSet());
           List<Wrestler> playerWrestlers =

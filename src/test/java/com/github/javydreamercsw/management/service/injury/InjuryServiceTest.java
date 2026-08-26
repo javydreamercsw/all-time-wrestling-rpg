@@ -70,8 +70,7 @@ class InjuryServiceTest {
   @Mock private UniverseRepository universeRepository;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
 
-  @Mock
-  private WrestlerService wrestlerService;
+  @Mock private WrestlerService wrestlerService;
 
   @Mock private Clock clock;
   @Mock private Random random;
@@ -470,8 +469,7 @@ class InjuryServiceTest {
             .fans(fans)
             .tier(WrestlerTier.fromFanCount(fans))
             .build();
-    wrestler.setWrestlerStates(
-        new LinkedHashSet<>(List.of(state))); // Link state to wrestler
+    wrestler.setWrestlerStates(new LinkedHashSet<>(List.of(state))); // Link state to wrestler
 
     lenient().when(wrestlerRepository.findById(anyLong())).thenReturn(Optional.of(wrestler));
     lenient().when(universeRepository.findById(anyLong())).thenReturn(Optional.of(universe));

@@ -135,8 +135,7 @@ public interface InjuryRepository
       ORDER BY i.severity DESC, i.healthPenalty DESC
       LIMIT 1
       """)
-  Optional<Injury> findMostSevereActiveInjuryForWrestler(
-      @Param("wrestler") Wrestler wrestler);
+  Optional<Injury> findMostSevereActiveInjuryForWrestler(@Param("wrestler") Wrestler wrestler);
 
   /** Find injuries for a wrestler on a specific date. */
   List<Injury> findByWrestlerAndInjuryDate(Wrestler wrestler, Instant injuryDate);

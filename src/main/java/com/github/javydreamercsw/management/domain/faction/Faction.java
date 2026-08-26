@@ -109,8 +109,7 @@ public class Faction extends AbstractEntity<Long> {
   private int affinity = 0;
 
   // Computed count of members — avoids lazy-init when rendering grid columns detached
-  @Formula(
-      "(SELECT COUNT(*) FROM wrestler_state ws WHERE ws.faction_id = faction_id)")
+  @Formula("(SELECT COUNT(*) FROM wrestler_state ws WHERE ws.faction_id = faction_id)")
   @Getter(AccessLevel.NONE)
   private Integer memberCountComputed;
 

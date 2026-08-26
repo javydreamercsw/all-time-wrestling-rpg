@@ -384,12 +384,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
     // Ensure we have enough wrestlers
     if (wrestlerRepository.count() < 10) {
       for (int i = 0; i < 10; i++) {
-        wrestlerService.createWrestler(
-            "Wrestler " + i,
-            false,
-            "Bio",
-            WrestlerTier.MIDCARDER,
-            null);
+        wrestlerService.createWrestler("Wrestler " + i, false, "Bio", WrestlerTier.MIDCARDER, null);
       }
     }
   }

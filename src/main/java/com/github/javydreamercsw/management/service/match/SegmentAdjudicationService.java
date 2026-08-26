@@ -335,8 +335,7 @@ public class SegmentAdjudicationService {
       @NonNull final List<Wrestler> losers) {
     // Update League Stats if applicable — check show.getLeague() first, then fall back to
     // the universe-based lookup for shows that were associated via universe rather than directly.
-    League effectiveLeague =
-        segment.getShow().getLeague();
+    League effectiveLeague = segment.getShow().getLeague();
     if (effectiveLeague == null && segment.getShow().getUniverse() != null) {
       effectiveLeague =
           leagueRepository.findByUniverse(segment.getShow().getUniverse()).orElse(null);
@@ -497,10 +496,7 @@ public class SegmentAdjudicationService {
 
     for (Wrestler participant : segment.getWrestlers()) {
       Faction faction =
-          participant
-              .getState(universeId)
-              .map(WrestlerState::getFaction)
-              .orElse(null);
+          participant.getState(universeId).map(WrestlerState::getFaction).orElse(null);
       if (faction != null) {
         Long factionId = faction.getId();
         factionParticipants.put(factionId, factionParticipants.getOrDefault(factionId, 0) + 1);
@@ -913,8 +909,7 @@ public class SegmentAdjudicationService {
     }
   }
 
-  private WrestlerAlignment resolveAlignment(
-      final Wrestler wrestler, final Segment segment) {
+  private WrestlerAlignment resolveAlignment(final Wrestler wrestler, final Segment segment) {
     if (alignmentService != null && segment.getShow().getUniverse() != null) {
       return alignmentService.getOrCreateUniverseAlignment(
           wrestler, segment.getShow().getUniverse());
@@ -928,8 +923,7 @@ public class SegmentAdjudicationService {
 
     // Arena Alignment Bias (+25%)
     if (segment.getShow().getArena() != null) {
-      WrestlerAlignment effectiveAlignment =
-          resolveAlignment(wrestler, segment);
+      WrestlerAlignment effectiveAlignment = resolveAlignment(wrestler, segment);
       Arena arena = segment.getShow().getArena();
       if (effectiveAlignment != null && effectiveAlignment.getAlignmentType() != null) {
         String wrestlerAlignment = effectiveAlignment.getAlignmentType().name();
@@ -953,8 +947,7 @@ public class SegmentAdjudicationService {
         && segment.getShow().getArena().getLocation() != null
         && wrestler.getHeritageTag() != null
         && !wrestler.getHeritageTag().isBlank()) {
-      Location location =
-          segment.getShow().getArena().getLocation();
+      Location location = segment.getShow().getArena().getLocation();
       String[] heritageTags = wrestler.getHeritageTag().toLowerCase().split(",");
       boolean matched = false;
       for (String heritage : heritageTags) {
@@ -1181,10 +1174,7 @@ public class SegmentAdjudicationService {
             .filter(p -> p.getFinalHealth() != null && p.getWrestler().getAccount() != null)
             .collect(
                 Collectors.toMap(
-                    p -> p.getWrestler().getId(),
-                    SegmentParticipant
-                        ::getFinalHealth,
-                    (a, b) -> a));
+                    p -> p.getWrestler().getId(), SegmentParticipant::getFinalHealth, (a, b) -> a));
 
     for (Wrestler wrestler : segment.getWrestlers()) {
       WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);

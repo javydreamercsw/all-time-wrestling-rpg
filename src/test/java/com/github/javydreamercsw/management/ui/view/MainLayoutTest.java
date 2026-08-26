@@ -129,11 +129,7 @@ class MainLayoutTest extends AbstractViewTest {
     MainLayout layout = createLayout();
 
     // Inbox button is always visible for authenticated users; badge itself is hidden (no unread)
-    Button inboxButton =
-        _get(
-            layout,
-            Button.class,
-            spec -> spec.withId("inbox-button"));
+    Button inboxButton = _get(layout, Button.class, spec -> spec.withId("inbox-button"));
     assertTrue(inboxButton.isVisible());
   }
 

@@ -195,7 +195,6 @@ class DraftServiceTest {
 
     verify(leagueRosterRepository, times(4)).save(any(LeagueRoster.class));
     verify(draftPickRepository, times(4)).save(any(DraftPick.class));
-    verify(contractRepository, times(4))
-        .save(any(WrestlerContract.class));
+    verify(contractRepository, times(4)).save(any(WrestlerContract.class));
   }
 }

@@ -76,9 +76,7 @@ class WrestlerProfileViewTest extends AbstractViewTest {
   @Mock private StatusCardService statusCardService;
   @Mock private WrestlerStateRepository wrestlerStateRepository;
 
-  @Mock
-  private WrestlerAbilityRepository
-      wrestlerAbilityRepository;
+  @Mock private WrestlerAbilityRepository wrestlerAbilityRepository;
 
   @Mock private AlignmentService alignmentService;
   @Mock private SecurityUtils securityUtils;

@@ -63,9 +63,7 @@ class RivalryServiceTest {
   @Mock private HeatEventRepository heatEventRepository;
   @Mock private WrestlerRepository wrestlerRepository;
 
-  @Mock
-  private UniverseRepository
-      universeRepository;
+  @Mock private UniverseRepository universeRepository;
 
   @Mock private Clock clock;
   @Mock private Random random;
@@ -79,9 +77,7 @@ class RivalryServiceTest {
     lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
     lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
     lenient().when(gameSettingService.getRivalryResolutionMinHeat()).thenReturn(10);
-    Universe defaultUniverse =
-        Mockito.mock(
-            Universe.class);
+    Universe defaultUniverse = Mockito.mock(Universe.class);
     lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(defaultUniverse));
   }
 
@@ -525,12 +521,10 @@ class RivalryServiceTest {
     wrestler.setStartingHealth(15);
     wrestler.setIsPlayer(true);
 
-    Universe universe =
-        new Universe();
+    Universe universe = new Universe();
     universe.setId(1L);
 
-    WrestlerState state =
-        new WrestlerState();
+    WrestlerState state = new WrestlerState();
     state.setWrestler(wrestler);
     state.setUniverse(universe);
     state.setFans(50000L);

@@ -149,9 +149,7 @@ class WearAndTearAdjudicationTest {
 
     SegmentRule extremeRule = mock(SegmentRule.class);
     when(extremeRule.getName()).thenReturn("Extreme");
-    when(extremeRule.getBumpAddition())
-        .thenReturn(
-            BumpAddition.NONE);
+    when(extremeRule.getBumpAddition()).thenReturn(BumpAddition.NONE);
     when(segment.getSegmentRules()).thenReturn(Set.of(extremeRule)); // x2
 
     // (3 * 2) + 1 = 7
@@ -179,13 +177,7 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestlerService)
-        .addBump(
-            eq(1L),
-            anyLong(),
-            eq(
-                BumpSource
-                    .WEAR_AND_TEAR));
+    verify(wrestlerService).addBump(eq(1L), anyLong(), eq(BumpSource.WEAR_AND_TEAR));
   }
 
   @Test

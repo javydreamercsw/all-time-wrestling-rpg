@@ -99,8 +99,7 @@ public class SegmentTypeListView extends Main {
         .addComponentColumn(
             st -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
-              nameLayout.setAlignItems(
-                  FlexComponent.Alignment.CENTER);
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!st.isActive()) {

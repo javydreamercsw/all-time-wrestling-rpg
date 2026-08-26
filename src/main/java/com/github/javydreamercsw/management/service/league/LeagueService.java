@@ -53,14 +53,7 @@ public class LeagueService {
       final Set<Wrestler> excluded,
       final boolean commissionerPlays) {
     return createLeague(
-        name,
-        commissioner,
-        maxPicks,
-        excluded,
-        commissionerPlays,
-        BigDecimal.ZERO,
-        null,
-        100);
+        name, commissioner, maxPicks, excluded, commissionerPlays, BigDecimal.ZERO, null, 100);
   }
 
   @Transactional

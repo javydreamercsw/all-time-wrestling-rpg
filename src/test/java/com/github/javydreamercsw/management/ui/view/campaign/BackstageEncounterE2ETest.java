@@ -91,8 +91,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
 
     // Provide a mock encounter when requested
     var choice1 =
-        CampaignEncounterResponseDTO.Choice
-            .builder()
+        CampaignEncounterResponseDTO.Choice.builder()
             .text("Option A")
             .label("Respect")
             .alignmentShift(1)
@@ -131,8 +130,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
 
     // 6. Finish interaction
     WebElement finishBtn = waitForVaadinElement(driver, By.id("finish-backstage-situation-button"));
-    ((JavascriptExecutor) driver)
-        .executeScript("arguments[0].click();", finishBtn);
+    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", finishBtn);
     waitForVaadinClientToLoad();
 
     // 7. Verify we are back in Backstage Actions

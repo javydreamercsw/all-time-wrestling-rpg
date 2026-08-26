@@ -98,8 +98,7 @@ public class ArenaListView extends Main {
     grid.addComponentColumn(
             arena -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
-              nameLayout.setAlignItems(
-                  FlexComponent.Alignment.CENTER);
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!arena.isActive()) {

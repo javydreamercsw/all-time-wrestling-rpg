@@ -164,8 +164,7 @@ public class HallOfFameView extends Main {
         status -> {
           List<Account> accounts =
               accountRepository.findAll(Sort.by(Sort.Direction.DESC, "legacyScore"));
-          accounts.forEach(
-              account -> Hibernate.initialize(account.getAchievements()));
+          accounts.forEach(account -> Hibernate.initialize(account.getAchievements()));
           grid.setItems(accounts);
           return null;
         });

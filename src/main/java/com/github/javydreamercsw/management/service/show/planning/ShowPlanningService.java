@@ -74,8 +74,7 @@ public class ShowPlanningService {
   private final TitleService titleService;
   private final ShowService showService;
   private final SegmentService segmentService;
-  private final SegmentSummaryService
-      segmentSummaryService;
+  private final SegmentSummaryService segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
@@ -409,8 +408,8 @@ public class ShowPlanningService {
       log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
-      Optional<SegmentType>
-          segmentTypeOpt = segmentTypeService.findByName(proposedSegment.getType());
+      Optional<SegmentType> segmentTypeOpt =
+          segmentTypeService.findByName(proposedSegment.getType());
       if (segmentTypeOpt.isEmpty()) {
         log.warn("Segment type not found: {}. Skipping segment.", proposedSegment.getType());
         continue;
@@ -477,13 +476,12 @@ public class ShowPlanningService {
       segment.setWinners(actualWinners);
 
       if (proposedSegment.getRules() != null && !proposedSegment.getRules().isEmpty()) {
-        List<SegmentRule>
-            newSegmentRules =
-                proposedSegment.getRules().stream()
-                    .map(ruleName -> segmentRuleRepository.findByName(ruleName))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
+        List<SegmentRule> newSegmentRules =
+            proposedSegment.getRules().stream()
+                .map(ruleName -> segmentRuleRepository.findByName(ruleName))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
         segment.syncSegmentRules(newSegmentRules);
       }
       segmentsToSave.add(segment);

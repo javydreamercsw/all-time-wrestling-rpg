@@ -224,22 +224,17 @@ class TournamentServiceTest {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);
-      Mockito.lenient()
-          .when(wrestlerRepository.findById(i))
-          .thenReturn(Optional.of(w));
+      Mockito.lenient().when(wrestlerRepository.findById(i)).thenReturn(Optional.of(w));
     }
-    SegmentType type =
-        new SegmentType();
+    SegmentType type = new SegmentType();
     when(segmentTypeRepository.findByName("One on One")).thenReturn(Optional.of(type));
 
-    Segment mockSegment =
-        new Segment();
+    Segment mockSegment = new Segment();
     when(segmentService.createSegment(any(), any(), any())).thenReturn(mockSegment);
 
     tournamentService.initializeTournament(campaign);
 
-    Show show =
-        new Show();
+    Show show = new Show();
 
     // Advance until all round 1 matches are done
     while (tournamentService.getTournamentState(campaign).getCurrentRound() == 1) {

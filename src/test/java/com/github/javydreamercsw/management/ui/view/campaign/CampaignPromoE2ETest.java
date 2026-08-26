@@ -53,33 +53,22 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
 
-  @Autowired
-  private CampaignStateRepository
-      campaignStateRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
 
-  @Autowired
-  private BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
 
-  @Autowired
-  private CampaignEncounterRepository
-      campaignEncounterRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
 
-  @Autowired
-  private WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   @Autowired private DataInitializer dataInitializer;
 
-  @MockitoBean
-  private BackstageEncounterService
-      backstageEncounterService;
+  @MockitoBean private BackstageEncounterService backstageEncounterService;
 
   @BeforeEach
   void setupCampaign() {
     // Disable random encounters for this test
-    Mockito.when(
-            backstageEncounterService.shouldTriggerEncounter(ArgumentMatchers.any()))
+    Mockito.when(backstageEncounterService.shouldTriggerEncounter(ArgumentMatchers.any()))
         .thenReturn(false);
 
     wrestlerAlignmentRepository.deleteAllInBatch();

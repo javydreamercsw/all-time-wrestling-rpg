@@ -46,8 +46,7 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     WebElement checkbox = waitForVaadinElement(driver, By.id("expansion-toggle-HURT_BUSINESS"));
 
     // Use Javascript to click to be more robust
-    ((JavascriptExecutor) driver)
-        .executeScript("arguments[0].click();", checkbox);
+    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", checkbox);
 
     // Wait for notification
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'disabled')]"));
@@ -73,8 +72,7 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     WebElement reenableCheckbox =
         waitForVaadinElement(driver, By.id("expansion-toggle-HURT_BUSINESS"));
 
-    ((JavascriptExecutor) driver)
-        .executeScript("arguments[0].click();", reenableCheckbox);
+    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", reenableCheckbox);
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));
 

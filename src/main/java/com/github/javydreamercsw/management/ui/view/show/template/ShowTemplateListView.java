@@ -203,10 +203,8 @@ public class ShowTemplateListView extends Main {
     templateGrid
         .addComponentColumn(
             template -> {
-              HorizontalLayout nameLayout =
-                  new HorizontalLayout();
-              nameLayout.setAlignItems(
-                  FlexComponent.Alignment.CENTER);
+              HorizontalLayout nameLayout = new HorizontalLayout();
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!template.isActive()) {
@@ -625,14 +623,12 @@ public class ShowTemplateListView extends Main {
             (value, context) -> {
               RecurrenceType type = editRecurrenceType.getValue();
               if (type == RecurrenceType.WEEKLY && value == null) {
-                return ValidationResult.error(
-                    "Day of Week is required for weekly recurrence");
+                return ValidationResult.error("Day of Week is required for weekly recurrence");
               }
               if ((type == RecurrenceType.MONTHLY || type == RecurrenceType.ANNUAL)
                   && editDayOfMonth.getValue() == null
                   && value == null) {
-                return ValidationResult.error(
-                    "Either Day of Month or Day of Week is required");
+                return ValidationResult.error("Either Day of Month or Day of Week is required");
               }
               return ValidationResult.ok();
             })
@@ -646,8 +642,7 @@ public class ShowTemplateListView extends Main {
               if ((type == RecurrenceType.MONTHLY || type == RecurrenceType.ANNUAL)
                   && editDayOfWeek.getValue() != null
                   && value == null) {
-                return ValidationResult.error(
-                    "Week of Month is required when using Day of Week");
+                return ValidationResult.error("Week of Month is required when using Day of Week");
               }
               return ValidationResult.ok();
             })
@@ -657,8 +652,7 @@ public class ShowTemplateListView extends Main {
         .withValidator(
             (value, context) -> {
               if (editRecurrenceType.getValue() == RecurrenceType.ANNUAL && value == null) {
-                return ValidationResult.error(
-                    "Month is required for annual recurrence");
+                return ValidationResult.error("Month is required for annual recurrence");
               }
               return ValidationResult.ok();
             })

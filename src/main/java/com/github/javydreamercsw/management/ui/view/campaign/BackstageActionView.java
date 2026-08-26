@@ -114,8 +114,7 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
         .ifPresent(
             user -> {
               Account account = user.getAccount();
-              List<Wrestler>
-                  wrestlers = wrestlerRepository.findByAccount(account);
+              List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
               Wrestler active =
                   wrestlers.stream()
                       .filter(w -> w.getId().equals(account.getActiveWrestlerId()))

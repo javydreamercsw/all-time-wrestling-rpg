@@ -87,8 +87,7 @@ public class RingsideActionService {
         attachedSegment.getShow().getUniverse() != null
             ? attachedSegment.getShow().getUniverse().getId()
             : 1L;
-    WrestlerState state =
-        attachedWrestler.getState(universeId).orElse(null);
+    WrestlerState state = attachedWrestler.getState(universeId).orElse(null);
 
     // Check for direct manager
     if (state != null && state.getManager() != null) {
@@ -131,8 +130,7 @@ public class RingsideActionService {
         attachedSegment.getShow().getUniverse() != null
             ? attachedSegment.getShow().getUniverse().getId()
             : 1L;
-    WrestlerState state =
-        attachedWrestler.getState(universeId).orElse(null);
+    WrestlerState state = attachedWrestler.getState(universeId).orElse(null);
 
     // 1. Direct Manager
     if (state != null && state.getManager() != null) {
@@ -228,11 +226,9 @@ public class RingsideActionService {
     if (success
         && beneficiary.getAlignment() != null
         && beneficiary.getAlignment().getCampaign() != null) {
-      if (action.getAlignment()
-          == AlignmentType.FACE) {
+      if (action.getAlignment() == AlignmentType.FACE) {
         alignmentService.shiftAlignment(beneficiary.getAlignment().getCampaign(), 1);
-      } else if (action.getAlignment()
-          == AlignmentType.HEEL) {
+      } else if (action.getAlignment() == AlignmentType.HEEL) {
         alignmentService.shiftAlignment(beneficiary.getAlignment().getCampaign(), -1);
       }
     }
@@ -251,9 +247,7 @@ public class RingsideActionService {
     if (segment == null || segment.getSegmentRules() == null) {
       return false;
     }
-    return segment.getSegmentRules().stream()
-        .anyMatch(
-            SegmentRule::getNoDq);
+    return segment.getSegmentRules().stream().anyMatch(SegmentRule::getNoDq);
   }
 
   private String buildResultMessage(

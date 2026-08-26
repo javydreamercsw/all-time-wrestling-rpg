@@ -172,8 +172,7 @@ class ShowPlanningDtoMapperTest {
   @Test
   void toRosterEntryDto_mapsNameAndGender() {
     // Given
-    Wrestler wrestler =
-        Wrestler.builder().build();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("John Doe");
     wrestler.setGender(Gender.MALE);
 
@@ -189,8 +188,7 @@ class ShowPlanningDtoMapperTest {
   @Test
   void toRosterEntryDto_withDefaultState_mapsTierAndFans() {
     // Given
-    Wrestler wrestler =
-        Wrestler.builder().build();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Main Eventer");
     wrestler.setGender(Gender.FEMALE);
     WrestlerState state = WrestlerState.builder().tier(WrestlerTier.MAIN_EVENTER).build();
@@ -211,8 +209,7 @@ class ShowPlanningDtoMapperTest {
   @Test
   void toRosterEntryDto_nullGender_defaultsMale() {
     // Given
-    Wrestler wrestler =
-        Wrestler.builder().build();
+    Wrestler wrestler = Wrestler.builder().build();
     wrestler.setName("Unknown");
     wrestler.setGender(null);
 

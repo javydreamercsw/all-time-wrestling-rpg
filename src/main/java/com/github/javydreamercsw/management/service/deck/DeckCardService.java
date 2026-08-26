@@ -64,8 +64,7 @@ public class DeckCardService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<DeckCard> findByDeck(
-      final Deck deck) {
+  public List<DeckCard> findByDeck(final Deck deck) {
     return deckCardRepository.findByDeck(deck);
   }
 }

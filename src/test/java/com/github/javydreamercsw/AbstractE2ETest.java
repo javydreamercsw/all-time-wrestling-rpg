@@ -1411,8 +1411,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     int h = img.getHeight();
     Graphics2D g = img.createGraphics();
     g.setRenderingHint(
-        RenderingHints.KEY_TEXT_ANTIALIASING,
-        RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
     int fontSize = Math.max(16, w / 60);
     Font font = new Font(Font.SANS_SERIF, Font.BOLD, fontSize);
@@ -1526,8 +1525,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         new Thread(
             () -> {
               try (BufferedReader br =
-                  new BufferedReader(
-                      new InputStreamReader(process.getInputStream()))) {
+                  new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 br.lines().forEach(line -> output.append(line).append('\n'));
               } catch (IOException ignored) {
               }

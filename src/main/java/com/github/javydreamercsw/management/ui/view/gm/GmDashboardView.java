@@ -198,9 +198,7 @@ public class GmDashboardView extends VerticalLayout {
     budgetLabel.setText("$%,.2f".formatted(league.getBudget() != null ? league.getBudget() : 0.0));
 
     List<Wrestler> roster =
-        leagueService.getRoster(league.getId()).stream()
-            .map(LeagueRoster::getWrestler)
-            .toList();
+        leagueService.getRoster(league.getId()).stream().map(LeagueRoster::getWrestler).toList();
 
     Long universeId = league.getUniverse() != null ? league.getUniverse().getId() : null;
     if (universeId != null) {

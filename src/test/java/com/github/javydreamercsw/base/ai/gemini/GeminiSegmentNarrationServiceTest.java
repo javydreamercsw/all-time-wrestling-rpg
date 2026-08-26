@@ -318,8 +318,7 @@ class GeminiSegmentNarrationServiceTest {
     when(aiSettingsService.getGeminiApiKey()).thenReturn("AIzaSy-abc123");
     when(aiSettingsService.getAiTimeout()).thenReturn(30);
 
-    ArgumentCaptor<HttpRequest> requestCaptor =
-        ArgumentCaptor.forClass(HttpRequest.class);
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
     when(httpClient.send(requestCaptor.capture(), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 

@@ -43,14 +43,11 @@ class GameSettingsViewTest extends AbstractViewTest {
 
   @Mock private GameSettingService gameSettingService;
 
-  @Mock
-  private GameSettingRepository gameSettingRepository;
+  @Mock private GameSettingRepository gameSettingRepository;
 
   @Mock private ThemeService themeService;
 
-  @Mock
-  private UniverseContextService
-      universeContextService;
+  @Mock private UniverseContextService universeContextService;
 
   private GameSettingsView view;
 

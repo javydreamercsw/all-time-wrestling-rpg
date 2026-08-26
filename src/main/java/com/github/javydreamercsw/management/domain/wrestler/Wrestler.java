@@ -193,14 +193,12 @@ public class Wrestler extends AbstractEntity<Long> {
   @OneToMany(mappedBy = "wrestler1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private Set<WrestlerRelationship>
-      relationshipsAsWrestler1 = new LinkedHashSet<>();
+  private Set<WrestlerRelationship> relationshipsAsWrestler1 = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "wrestler2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private Set<WrestlerRelationship>
-      relationshipsAsWrestler2 = new LinkedHashSet<>();
+  private Set<WrestlerRelationship> relationshipsAsWrestler2 = new LinkedHashSet<>();
 
   @OneToMany(
       mappedBy = "wrestler",
@@ -357,23 +355,15 @@ public class Wrestler extends AbstractEntity<Long> {
   @JsonIgnore
   public Integer getTotalHandSizePenalty() {
     return getDefaultState()
-        .map(
-            s ->
-                s.getInjuries().stream()
-                    .mapToInt(
-                        Injury
-                            ::getHandSizePenalty)
-                    .sum())
+        .map(s -> s.getInjuries().stream().mapToInt(Injury::getHandSizePenalty).sum())
         .orElse(0);
   }
 
   // ==================== ATW RPG RELATIONSHIP METHODS ====================
 
   @JsonIgnore
-  public List<WrestlerRelationship>
-      getAllRelationships() {
-    List<WrestlerRelationship>
-        allRelationships = new ArrayList<>();
+  public List<WrestlerRelationship> getAllRelationships() {
+    List<WrestlerRelationship> allRelationships = new ArrayList<>();
     allRelationships.addAll(relationshipsAsWrestler1);
     allRelationships.addAll(relationshipsAsWrestler2);
     return allRelationships;

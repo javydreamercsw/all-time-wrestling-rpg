@@ -382,8 +382,7 @@ class ShowQualityAchievementServiceTest {
       segment.setSegmentRules(new HashSet<>());
     }
 
-    var participant =
-        new SegmentParticipant();
+    var participant = new SegmentParticipant();
     participant.setWrestler(w);
     segment.setParticipants(new HashSet<>(Set.of(participant)));
 

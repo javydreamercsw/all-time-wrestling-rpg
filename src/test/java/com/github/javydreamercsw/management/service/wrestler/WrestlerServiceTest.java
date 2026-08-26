@@ -73,9 +73,7 @@ class WrestlerServiceTest {
   @Mock private ExpansionService expansionService;
   @Mock private InjuryService injuryService;
 
-  @Mock
-  private WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
+  @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
   @Mock private DefaultImageService imageService;
   @Mock private LegacyService legacyService;

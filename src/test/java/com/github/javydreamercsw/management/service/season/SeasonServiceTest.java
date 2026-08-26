@@ -59,13 +59,9 @@ class SeasonServiceTest {
 
   @Mock private SeasonRepository seasonRepository;
 
-  @Mock
-  private WrestlerRepository
-      wrestlerRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
 
-  @Mock
-  private WrestlerSeasonSnapshotRepository
-      snapshotRepository;
+  @Mock private WrestlerSeasonSnapshotRepository snapshotRepository;
 
   @Mock private Clock clock;
   @Mock private GameSettingService gameSettingService;

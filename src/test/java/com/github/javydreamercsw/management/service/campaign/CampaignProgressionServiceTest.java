@@ -62,8 +62,7 @@ class CampaignProgressionServiceTest {
   @BeforeEach
   void setUpMocks() {
     // campaignService is @Lazy field-injected; @InjectMocks won't set it automatically
-    ReflectionTestUtils.setField(
-        service, "campaignService", campaignService);
+    ReflectionTestUtils.setField(service, "campaignService", campaignService);
     Mockito.lenient()
         .when(
             featureDataService.getFeatureValue(

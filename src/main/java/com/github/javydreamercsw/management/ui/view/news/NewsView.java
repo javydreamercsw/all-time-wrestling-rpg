@@ -90,14 +90,12 @@ public class NewsView extends Main {
                 boolean success = newsGenerationService.generateMonthlySynthesis();
                 reloadGrid();
                 if (success) {
-                  Notification.show(
-                      "Monthly synthesis generated.");
+                  Notification.show("Monthly synthesis generated.");
                 } else {
                   Notification notification =
                       Notification.show(
                           "AI news generation is disabled or unavailable. No synthesis generated.");
-                  notification.addThemeVariants(
-                      NotificationVariant.LUMO_WARNING);
+                  notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
                 }
               });
       synthButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);

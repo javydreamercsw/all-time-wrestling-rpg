@@ -174,8 +174,7 @@ class MatchPromoUITest extends AbstractViewTest {
     campaign.setId(50L);
     campaign.setWrestler(playerWrestler);
 
-    CampaignState state =
-        new CampaignState();
+    CampaignState state = new CampaignState();
     state.setCurrentMatch(segment);
     campaign.setState(state);
 

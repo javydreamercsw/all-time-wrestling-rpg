@@ -92,8 +92,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
 
     // Provide a mock encounter when requested
     var choice1 =
-        CampaignEncounterResponseDTO.Choice
-            .builder()
+        CampaignEncounterResponseDTO.Choice.builder()
             .text("Option A")
             .label("Respect")
             .alignmentShift(1)

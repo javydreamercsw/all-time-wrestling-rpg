@@ -81,8 +81,7 @@ public class ShowPlanningDtoMapper {
     dto.setSegmentDate(segment.getSegmentDate());
     dto.setShowName(segment.getShow().getName());
     if (segment.getShow().getShowDate() != null) {
-      dto.setShowDate(
-          segment.getShow().getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
+      dto.setShowDate(segment.getShow().getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
     }
     if (segment.getSegmentType() != null) {
       dto.setSegmentType(segment.getSegmentType().getName());

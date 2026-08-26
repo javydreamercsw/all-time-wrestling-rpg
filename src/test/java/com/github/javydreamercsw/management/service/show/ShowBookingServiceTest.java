@@ -60,8 +60,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   @Autowired SegmentTypeRepository segmentTypeRepository;
   @Autowired TeamRepository teamRepository;
 
-  @Autowired
-  FactionRepository factionRepository;
+  @Autowired FactionRepository factionRepository;
 
   @MockitoBean private OpenAISegmentNarrationService openAIService;
 
@@ -72,9 +71,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
   public void setUp() {
     testSeason =
         seasonService.createOrUpdateSeason(
-            "Test Season",
-            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant(),
-            true);
+            "Test Season", LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant(), true);
 
     // Create and save a weekly show type
     weeklyShowType =
@@ -159,8 +156,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
     Show ppv = result.get();
     assertThat(ppv.getName()).isEqualTo(ppvName);
     assertThat(ppv.getDescription()).isEqualTo(ppvDescription);
-    assertThat(ppv.getType().getCategory())
-        .isEqualTo(ShowCategory.PLE);
+    assertThat(ppv.getType().getCategory()).isEqualTo(ShowCategory.PLE);
 
     // Check segments and promos were created (PPVs should have multiple segments, may be fewer due
     // to wrestler availability)

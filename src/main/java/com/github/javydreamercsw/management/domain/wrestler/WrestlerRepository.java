@@ -40,8 +40,7 @@ public interface WrestlerRepository
       SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.alignments LEFT JOIN FETCH\
        w.wrestlerStates ws LEFT JOIN FETCH ws.faction WHERE w.account = :account\
       """)
-  List<Wrestler> findByAccountWithDetails(
-      @Param("account") Account account);
+  List<Wrestler> findByAccountWithDetails(@Param("account") Account account);
 
   List<Wrestler> findAllByAccount(Account account);
 
@@ -90,8 +89,7 @@ public interface WrestlerRepository
       """)
   List<Wrestler> findAllByActiveTrue();
 
-  List<Wrestler> findAllByGenderAndActive(
-      Gender gender, boolean active);
+  List<Wrestler> findAllByGenderAndActive(Gender gender, boolean active);
 
   List<Wrestler> findByAccountUsername(String username);
 
@@ -118,6 +116,5 @@ public interface WrestlerRepository
       SELECT DISTINCT w FROM Wrestler w JOIN SegmentParticipant sp ON sp.wrestler = w WHERE\
        sp.segment = :segment\
       """)
-  List<Wrestler> findAllBySegment(
-      @Param("segment") Segment segment);
+  List<Wrestler> findAllBySegment(@Param("segment") Segment segment);
 }

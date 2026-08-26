@@ -123,14 +123,11 @@ class ShowPlanningViewTest extends AbstractViewTest {
         new WrestlerFacade(
             wrestlerService,
             mock(WrestlerStatsService.class),
-            mock(
-                WrestlerRelationshipService.class),
+            mock(WrestlerRelationshipService.class),
             teamService,
             mock(InjuryService.class),
             mock(TitleService.class),
-            mock(
-                WrestlerStateHistoryService
-                    .class));
+            mock(WrestlerStateHistoryService.class));
     ViewContext viewContext =
         new ViewContext(notificationService, null, universeContextService, expansionService);
 

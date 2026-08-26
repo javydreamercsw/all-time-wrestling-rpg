@@ -371,8 +371,7 @@ class TitleServiceTest {
   @Test
   void getAllTitles_returnsPage() {
     Page<Title> page = new PageImpl<>(List.of(title));
-    when(titleRepository.findAll(any(Pageable.class)))
-        .thenReturn(page);
+    when(titleRepository.findAll(any(Pageable.class))).thenReturn(page);
 
     Page<Title> result = titleService.getAllTitles(PageRequest.of(0, 10));
 
@@ -443,18 +442,15 @@ class TitleServiceTest {
     // real-world wall-clock time the adjudication happened to run.
     List<Wrestler> champions = List.of(wrestler);
 
-    Show show =
-        new Show();
+    Show show = new Show();
     show.setShowDate(LocalDate.of(2020, 6, 15));
 
-    Segment segment =
-        new Segment();
+    Segment segment = new Segment();
     segment.setShow(show);
 
     titleService.awardTitleTo(title, champions, segment);
 
-    Instant expectedDate =
-        LocalDate.of(2020, 6, 15).atStartOfDay(ZoneOffset.UTC).toInstant();
+    Instant expectedDate = LocalDate.of(2020, 6, 15).atStartOfDay(ZoneOffset.UTC).toInstant();
     assertThat(title.getCurrentReign()).isPresent();
     assertThat(title.getCurrentReign().get().getStartDate()).isEqualTo(expectedDate);
   }
@@ -463,12 +459,10 @@ class TitleServiceTest {
   void awardTitleTo_withSegmentButNoShowDate_fallsBackToClock() {
     List<Wrestler> champions = List.of(wrestler);
 
-    Show show =
-        new Show();
+    Show show = new Show();
     // showDate intentionally left null
 
-    Segment segment =
-        new Segment();
+    Segment segment = new Segment();
     segment.setShow(show);
 
     titleService.awardTitleTo(title, champions, segment);

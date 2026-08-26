@@ -114,8 +114,7 @@ class RetirementServiceTest {
     ObjectMapper mapper = new ObjectMapper();
     var map =
         mapper.readValue(
-            campaignState.getFeatureData(),
-            new TypeReference<Map<String, Object>>() {});
+            campaignState.getFeatureData(), new TypeReference<Map<String, Object>>() {});
     assertThat(map).containsEntry("retired", true);
     assertThat(map).containsKey("chapter"); // existing keys preserved
   }
@@ -134,8 +133,7 @@ class RetirementServiceTest {
     ObjectMapper mapper = new ObjectMapper();
     var map =
         mapper.readValue(
-            campaignState.getFeatureData(),
-            new TypeReference<Map<String, Object>>() {});
+            campaignState.getFeatureData(), new TypeReference<Map<String, Object>>() {});
     assertThat(map).containsEntry("retired", true);
   }
 
@@ -154,8 +152,7 @@ class RetirementServiceTest {
     ObjectMapper mapper = new ObjectMapper();
     var map =
         mapper.readValue(
-            campaignState.getFeatureData(),
-            new TypeReference<Map<String, Object>>() {});
+            campaignState.getFeatureData(), new TypeReference<Map<String, Object>>() {});
     assertThat(map).containsEntry("retired", true);
     assertThat(map).containsKey("nested"); // nested structure preserved
   }

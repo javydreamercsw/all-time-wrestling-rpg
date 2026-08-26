@@ -45,12 +45,9 @@ public class CampaignUpgradeService {
   private final ObjectMapper objectMapper;
   private final CampaignUpgradeRepository upgradeRepository;
   private final CampaignStateRepository stateRepository;
-  private final WrestlerRepository
-      wrestlerRepository;
-  private final WrestlerService
-      wrestlerService;
-  private final WrestlerStateRepository
-      wrestlerStateRepository;
+  private final WrestlerRepository wrestlerRepository;
+  private final WrestlerService wrestlerService;
+  private final WrestlerStateRepository wrestlerStateRepository;
 
   @PostConstruct
   public void init() {
@@ -109,11 +106,9 @@ public class CampaignUpgradeService {
         "Wrestler {} purchased upgrade: {}", campaign.getWrestler().getName(), upgrade.getName());
 
     if ("HEALTH".equals(upgrade.getType())) {
-      Wrestler wrestler =
-          campaign.getWrestler();
+      Wrestler wrestler = campaign.getWrestler();
       Long universeId = campaign.getUniverse() != null ? campaign.getUniverse().getId() : 1L;
-      WrestlerState wrestlerState =
-          wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+      WrestlerState wrestlerState = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
 
       wrestlerState.setCurrentHealth(wrestler.getEffectiveStartingHealth(universeId));
       wrestlerStateRepository.save(wrestlerState);

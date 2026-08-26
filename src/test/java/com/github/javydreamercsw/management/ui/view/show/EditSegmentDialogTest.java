@@ -82,8 +82,7 @@ class EditSegmentDialogTest {
     segmentTypeService = mock(SegmentTypeService.class);
     segmentRuleService = mock(SegmentRuleService.class);
     npcService = mock(NpcService.class);
-    expansionService =
-        mock(ExpansionService.class);
+    expansionService = mock(ExpansionService.class);
 
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setId(1L);

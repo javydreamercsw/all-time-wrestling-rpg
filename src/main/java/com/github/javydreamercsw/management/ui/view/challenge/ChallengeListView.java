@@ -446,10 +446,7 @@ public class ChallengeListView extends VerticalLayout {
 
     AccountChallengeCompletion existing0 = existing.orElse(null);
     boolean alreadyCompleted =
-        existing0 != null
-            && existing0.getStatus()
-                == ChallengeCompletionStatus
-                    .COMPLETED;
+        existing0 != null && existing0.getStatus() == ChallengeCompletionStatus.COMPLETED;
 
     if (alreadyCompleted) {
       Span completedOn =

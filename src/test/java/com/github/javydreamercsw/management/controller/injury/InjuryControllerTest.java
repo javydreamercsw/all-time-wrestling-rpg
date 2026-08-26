@@ -149,8 +149,7 @@ class InjuryControllerTest extends AbstractControllerTest {
     mockMvc
         .perform(post("/api/injuries/from-bumps/1").with(csrf()).param("universeId", "1"))
         .andExpect(status().isBadRequest())
-        .andExpect(
-            jsonPath("$.message").value(Matchers.containsString("less than 3 bumps")));
+        .andExpect(jsonPath("$.message").value(Matchers.containsString("less than 3 bumps")));
   }
 
   @Test

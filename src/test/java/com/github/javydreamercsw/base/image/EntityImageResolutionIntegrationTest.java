@@ -39,8 +39,7 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-class EntityImageResolutionIntegrationTest
-    extends AbstractIntegrationTest {
+class EntityImageResolutionIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private NpcService npcService;
@@ -133,10 +132,7 @@ class EntityImageResolutionIntegrationTest
 
   @Test
   void testLocationFallbackResolution() {
-    Location location =
-        Location.builder()
-            .name("Unknown Location")
-            .build();
+    Location location = Location.builder().name("Unknown Location").build();
     String imageUrl = locationService.resolveLocationImage(location);
     assertNotNull(imageUrl);
     assertEquals("images/generic-venue.png", imageUrl);

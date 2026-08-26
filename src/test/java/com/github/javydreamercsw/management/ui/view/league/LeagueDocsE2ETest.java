@@ -471,12 +471,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
   private void ensureWrestlers() {
     if (wrestlerRepository.count() < 10) {
       for (int i = 0; i < 10; i++) {
-        wrestlerService.createWrestler(
-            "Wrestler " + i,
-            false,
-            "Bio",
-            WrestlerTier.MIDCARDER,
-            null);
+        wrestlerService.createWrestler("Wrestler " + i, false, "Bio", WrestlerTier.MIDCARDER, null);
       }
     }
   }

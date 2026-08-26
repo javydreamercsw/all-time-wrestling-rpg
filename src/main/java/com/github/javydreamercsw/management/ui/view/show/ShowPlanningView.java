@@ -79,9 +79,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@Route(
-    value = "show-planning",
-    layout = MainLayout.class)
+@Route(value = "show-planning", layout = MainLayout.class)
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
 @RolesAllowed({ADMIN_ROLE, BOOKER_ROLE})
@@ -204,9 +202,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             s ->
                 s.getTeams() == null
                     ? ""
-                    : s.getTeams().stream()
-                        .flatMap(List::stream)
-                        .collect(Collectors.joining(", ")))
+                    : s.getTeams().stream().flatMap(List::stream).collect(Collectors.joining(", ")))
         .setHeader("Participants");
 
     proposedSegmentsGrid
@@ -361,10 +357,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     Show show = showComboBox.getValue();
     if (show != null) {
       UI.getCurrent()
-          .navigate(
-              ShowDetailView.class,
-              show.getId(),
-              QueryParameters.of("ref", "booker"));
+          .navigate(ShowDetailView.class, show.getId(), QueryParameters.of("ref", "booker"));
     }
   }
 

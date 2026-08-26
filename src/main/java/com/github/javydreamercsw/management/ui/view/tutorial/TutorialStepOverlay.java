@@ -125,8 +125,7 @@ public class TutorialStepOverlay extends Dialog {
     headerRow.setSpacing(false);
 
     HorizontalLayout progressRow = new HorizontalLayout(stepCountLabel, progressBar);
-    progressRow.setAlignItems(
-        FlexComponent.Alignment.CENTER);
+    progressRow.setAlignItems(FlexComponent.Alignment.CENTER);
     progressRow.setSpacing(true);
 
     VerticalLayout header = new VerticalLayout(headerRow, progressRow);

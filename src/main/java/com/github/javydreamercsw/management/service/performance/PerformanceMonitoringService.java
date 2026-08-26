@@ -55,8 +55,7 @@ public class PerformanceMonitoringService {
 
   // Historical data for charting
   private static final int MAX_HISTORY_POINTS = 100;
-  private final List<PerformanceSnapshot> history =
-      Collections.synchronizedList(new ArrayList<>());
+  private final List<PerformanceSnapshot> history = Collections.synchronizedList(new ArrayList<>());
 
   // JVM monitoring beans
   private final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
@@ -294,9 +293,7 @@ public class PerformanceMonitoringService {
             .activeOperations(operationStartTimes.size())
             .counterDeltas(
                 counters.entrySet().stream()
-                    .collect(
-                        Collectors.toMap(
-                            Map.Entry::getKey, e -> e.getValue().get())))
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get())))
             .averageResponseTimes(avgs)
             .build();
 

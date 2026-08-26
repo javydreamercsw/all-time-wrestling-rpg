@@ -81,13 +81,9 @@ class ShowPlanningServiceTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private SegmentTypeService segmentTypeService;
 
-  @Mock
-  private SegmentRuleRepository
-      segmentRuleRepository;
+  @Mock private SegmentRuleRepository segmentRuleRepository;
 
-  @Mock
-  private ShowPlanningDtoMapper
-      mapper;
+  @Mock private ShowPlanningDtoMapper mapper;
 
   @Mock private RivalryService rivalryService;
   @Mock private TitleService titleService;

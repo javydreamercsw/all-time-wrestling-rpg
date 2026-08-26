@@ -118,9 +118,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
   private UniverseMembershipService universeMembershipService;
-  private ComboBox<
-          Universe>
-      universeSelector;
+  private ComboBox<Universe> universeSelector;
   private InboxService inboxService;
   private Span inboxBadge;
   private TutorialService tutorialService;
@@ -263,8 +261,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         new Anchor("https://github.com/javydreamercsw/all-time-wrestling-rpg", "Source Code");
     githubLink.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
 
-    Footer footer =
-        new Footer(versionSpan, githubLink);
+    Footer footer = new Footer(versionSpan, githubLink);
     footer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.CENTER, Padding.MEDIUM);
     footer.addClassName("drawer-footer");
     return footer;
@@ -486,8 +483,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     if (universeSelector == null || universeSelector.getValue() == null) {
       return;
     }
-    Universe selected =
-        universeSelector.getValue();
+    Universe selected = universeSelector.getValue();
     Long currentId = universeContextService.getCurrentUniverseId();
     if (!selected.getId().equals(currentId)) {
       universeContextService.setCurrentUniverse(selected);
@@ -514,8 +510,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       return;
     }
 
-    Account account =
-        accountService.get(accountId).orElse(null);
+    Account account = accountService.get(accountId).orElse(null);
     if (account == null) {
       return;
     }

@@ -60,8 +60,7 @@ public class RetirementService {
       return;
     }
 
-    WrestlerState state =
-        wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
     int condition = state.getPhysicalCondition();
 
     // Retirement logic:

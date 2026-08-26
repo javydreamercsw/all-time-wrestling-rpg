@@ -165,10 +165,8 @@ class DataExportControllerIT extends AbstractControllerTest {
     mockMvc
         .perform(post("/api/export/shows").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(
-            content().string(Matchers.containsString("Successfully exported 1 shows")))
-        .andExpect(
-            content().string(Matchers.containsString("target/exports/shows.json")));
+        .andExpect(content().string(Matchers.containsString("Successfully exported 1 shows")))
+        .andExpect(content().string(Matchers.containsString("target/exports/shows.json")));
 
     // Assert - Check file was created and has correct content
     Path exportedFile = Paths.get("target/exports/shows.json");
@@ -194,13 +192,8 @@ class DataExportControllerIT extends AbstractControllerTest {
         .perform(post("/api/export/show-templates").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(
-            content()
-                .string(
-                    Matchers.containsString("Successfully exported 1 show templates")))
-        .andExpect(
-            content()
-                .string(
-                    Matchers.containsString("target/exports/show_templates.json")));
+            content().string(Matchers.containsString("Successfully exported 1 show templates")))
+        .andExpect(content().string(Matchers.containsString("target/exports/show_templates.json")));
 
     // Assert - Check file was created and has correct content
     Path exportedFile = Paths.get("target/exports/show_templates.json");
@@ -257,9 +250,7 @@ class DataExportControllerIT extends AbstractControllerTest {
     mockMvc
         .perform(post("/api/export/shows").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .string(Matchers.containsString("Successfully exported 0 shows")));
+        .andExpect(content().string(Matchers.containsString("Successfully exported 0 shows")));
 
     // Assert - Check file was created with empty array
     Path exportedFile = Paths.get("target/exports/shows.json");
@@ -282,10 +273,7 @@ class DataExportControllerIT extends AbstractControllerTest {
         .perform(post("/api/export/show-templates").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(
-            content()
-                .string(
-                    Matchers.containsString(
-                        "Successfully exported 0 show templates")));
+            content().string(Matchers.containsString("Successfully exported 0 show templates")));
 
     // Assert - Check file was created with empty array
     Path exportedFile = Paths.get("target/exports/show_templates.json");

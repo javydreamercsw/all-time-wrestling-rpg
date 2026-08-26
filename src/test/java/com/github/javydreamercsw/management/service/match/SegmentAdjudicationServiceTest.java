@@ -106,9 +106,7 @@ class SegmentAdjudicationServiceTest {
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private LeagueRepository leagueRepository;
 
-  @Mock
-  private LeagueRosterRepository
-      leagueRosterRepository;
+  @Mock private LeagueRosterRepository leagueRosterRepository;
 
   @Mock private LegacyService legacyService;
   @Mock private FactionService factionService;
@@ -154,8 +152,7 @@ class SegmentAdjudicationServiceTest {
                 wrestlerStatusService,
                 universeContextService,
                 random));
-    ReflectionTestUtils.setField(
-        segmentAdjudicationService, "eventPublisher", eventPublisher);
+    ReflectionTestUtils.setField(segmentAdjudicationService, "eventPublisher", eventPublisher);
 
     when(universe.getId()).thenReturn(1L);
     when(show.getUniverse()).thenReturn(universe);
@@ -429,16 +426,13 @@ class SegmentAdjudicationServiceTest {
 
   @Test
   void adjudicateMatch_aiTaggedRivalry_attemptsResolutionOnPle() {
-    Rivalry rivalry =
-        mock(Rivalry.class);
+    Rivalry rivalry = mock(Rivalry.class);
     when(segment.getRivalryId()).thenReturn(42L);
     when(show.isPremiumLiveEvent()).thenReturn(true);
     when(show.getId()).thenReturn(1L);
     when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
     when(rivalryService.resolveAtPle(anyLong(), anyInt(), anyInt(), anyLong()))
-        .thenReturn(
-            new ResolutionResult<>(
-                true, "resolved", rivalry, 0, 0, 0));
+        .thenReturn(new ResolutionResult<>(true, "resolved", rivalry, 0, 0, 0));
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
@@ -622,9 +616,7 @@ class SegmentAdjudicationServiceTest {
     segmentAdjudicationService.adjudicateMatch(segment);
 
     verify(titleService, never()).awardTitleTo(any(Title.class), any(), any());
-    verify(eventPublisher)
-        .publishEvent(
-            any(ChampionshipDefendedEvent.class));
+    verify(eventPublisher).publishEvent(any(ChampionshipDefendedEvent.class));
   }
 
   @Test
@@ -669,9 +661,7 @@ class SegmentAdjudicationServiceTest {
 
     verify(titleService)
         .awardTitleTo(eq(title), eq(List.of(challenger1, challenger2)), eq(segment));
-    verify(eventPublisher)
-        .publishEvent(
-            any(ChampionshipChangeEvent.class));
+    verify(eventPublisher).publishEvent(any(ChampionshipChangeEvent.class));
   }
 
   @Test

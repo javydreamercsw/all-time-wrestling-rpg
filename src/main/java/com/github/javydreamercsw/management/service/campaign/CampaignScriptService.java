@@ -107,8 +107,7 @@ public class CampaignScriptService {
     }
   }
 
-  private Script getScript(final String scriptPath, final Binding binding)
-      throws IOException {
+  private Script getScript(final String scriptPath, final Binding binding) throws IOException {
     // Use the class's own ClassLoader — ForkJoinPool threads have a null context ClassLoader.
     Resource resource =
         new ClassPathResource("scripts/campaign/" + scriptPath, CampaignScriptService.class);

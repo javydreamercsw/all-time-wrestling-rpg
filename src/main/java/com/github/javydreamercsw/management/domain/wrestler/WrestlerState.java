@@ -58,8 +58,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WrestlerState extends AbstractEntity<Long>
-    implements WrestlerData {
+public class WrestlerState extends AbstractEntity<Long> implements WrestlerData {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -54,11 +54,9 @@ class SmartPromoServiceTest {
   private ObjectMapper objectMapper;
   private CampaignService campaignService;
   private CampaignStateRepository campaignStateRepository;
-  private CampaignRepository
-      campaignRepository;
+  private CampaignRepository campaignRepository;
   private BackstageActionHistoryRepository actionHistoryRepository;
-  private WrestlerRepository
-      wrestlerRepository;
+  private WrestlerRepository wrestlerRepository;
   private SegmentRuleRepository segmentRuleRepository;
   private RivalryService rivalryService;
   private MultiWrestlerFeudService feudService;
@@ -72,17 +70,13 @@ class SmartPromoServiceTest {
 
     objectMapper = new ObjectMapper();
     campaignService = mock(CampaignService.class);
-    campaignRepository =
-        mock(CampaignRepository.class);
+    campaignRepository = mock(CampaignRepository.class);
     campaignStateRepository = mock(CampaignStateRepository.class);
     actionHistoryRepository = mock(BackstageActionHistoryRepository.class);
-    wrestlerRepository =
-        mock(WrestlerRepository.class);
+    wrestlerRepository = mock(WrestlerRepository.class);
     segmentRuleRepository = mock(SegmentRuleRepository.class);
-    rivalryService =
-        mock(RivalryService.class);
-    feudService =
-        mock(MultiWrestlerFeudService.class);
+    rivalryService = mock(RivalryService.class);
+    feudService = mock(MultiWrestlerFeudService.class);
 
     smartPromoService =
         new SmartPromoService(
@@ -106,19 +100,13 @@ class SmartPromoServiceTest {
     Wrestler player = new Wrestler();
     player.setId(1L);
     player.setName("Player One");
-    player.setAlignment(
-        WrestlerAlignment.builder()
-            .alignmentType(AlignmentType.FACE)
-            .build());
+    player.setAlignment(WrestlerAlignment.builder().alignmentType(AlignmentType.FACE).build());
     campaign.setWrestler(player);
 
     Wrestler opponent = new Wrestler();
     opponent.setId(2L);
     opponent.setName("The Heel");
-    opponent.setAlignment(
-        WrestlerAlignment.builder()
-            .alignmentType(AlignmentType.HEEL)
-            .build());
+    opponent.setAlignment(WrestlerAlignment.builder().alignmentType(AlignmentType.HEEL).build());
 
     when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(player));
@@ -204,19 +192,13 @@ class SmartPromoServiceTest {
     Wrestler player = new Wrestler();
     player.setId(1L);
     player.setName("Player One");
-    player.setAlignment(
-        WrestlerAlignment.builder()
-            .alignmentType(AlignmentType.FACE)
-            .build());
+    player.setAlignment(WrestlerAlignment.builder().alignmentType(AlignmentType.FACE).build());
     campaign.setWrestler(player);
 
     Wrestler opponent = new Wrestler();
     opponent.setId(2L);
     opponent.setName("The Heel");
-    opponent.setAlignment(
-        WrestlerAlignment.builder()
-            .alignmentType(AlignmentType.HEEL)
-            .build());
+    opponent.setAlignment(WrestlerAlignment.builder().alignmentType(AlignmentType.HEEL).build());
 
     when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(player));
@@ -244,11 +226,8 @@ class SmartPromoServiceTest {
         """;
 
     when(aiService.generateText(anyString())).thenReturn(aiJsonResponse);
-    when(campaignService.getOrCreateCampaignShow(any()))
-        .thenReturn(new Show());
-    when(campaignService.getPromoSegmentType())
-        .thenReturn(
-            new SegmentType());
+    when(campaignService.getOrCreateCampaignShow(any())).thenReturn(new Show());
+    when(campaignService.getPromoSegmentType()).thenReturn(new SegmentType());
 
     PromoOutcomeDTO result =
         smartPromoService.processPromoHook(player, opponent, chosenHook, campaign);

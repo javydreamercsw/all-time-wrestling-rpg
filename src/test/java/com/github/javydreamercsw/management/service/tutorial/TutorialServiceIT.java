@@ -69,8 +69,7 @@ class TutorialServiceIT extends ManagementIntegrationTest {
     // Seed at least one wrestler so the query has something to return.
     // The seeded data initialiser creates wrestlers; rely on that or create one here.
     List<Wrestler> wrestlers =
-        GeneralSecurityUtils.runAsAdmin(
-            () -> wrestlerService.findAllActiveWithAlignments());
+        GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.findAllActiveWithAlignments());
 
     // The key assertion: accessing getAlignment() on each returned entity must NOT throw
     // LazyInitializationException regardless of transaction boundaries. Before the fix,
@@ -94,8 +93,7 @@ class TutorialServiceIT extends ManagementIntegrationTest {
   @DisplayName("findAllActiveWithAlignments: only returns active wrestlers")
   void findAllActiveWithAlignments_onlyReturnsActiveWrestlers() {
     List<Wrestler> wrestlers =
-        GeneralSecurityUtils.runAsAdmin(
-            () -> wrestlerService.findAllActiveWithAlignments());
+        GeneralSecurityUtils.runAsAdmin(() -> wrestlerService.findAllActiveWithAlignments());
 
     assertThat(wrestlers).allMatch(w -> Boolean.TRUE.equals(w.getActive()));
   }

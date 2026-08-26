@@ -105,17 +105,12 @@ class TitleFormDialogFieldsTest extends AbstractViewTest {
   @DisplayName(
       "defenseFrequencyType ComboBox and effectScript TextArea should exist in TitleFormDialog")
   void defenseFrequencyTypeAndEffectScriptFieldsExist() {
-    ComboBox<
-            DefenseFrequencyType>
-        defenseFrequencyType =
-            (ComboBox<
-                    DefenseFrequencyType>)
-                ReflectionTestUtils.getField(dialog, "defenseFrequencyType");
+    ComboBox<DefenseFrequencyType> defenseFrequencyType =
+        (ComboBox<DefenseFrequencyType>)
+            ReflectionTestUtils.getField(dialog, "defenseFrequencyType");
     assertNotNull(defenseFrequencyType, "defenseFrequencyType field should not be null");
 
-    TextArea effectScript =
-        (TextArea)
-            ReflectionTestUtils.getField(dialog, "effectScript");
+    TextArea effectScript = (TextArea) ReflectionTestUtils.getField(dialog, "effectScript");
     assertNotNull(effectScript, "effectScript field should not be null");
   }
 }

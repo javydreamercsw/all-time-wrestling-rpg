@@ -114,8 +114,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   private String generateMockBackstageSituation(final String prompt) {
     try {
       var choice1 =
-          CampaignEncounterResponseDTO.Choice
-              .builder()
+          CampaignEncounterResponseDTO.Choice.builder()
               .text("Shake hands and show respect to the veteran.")
               .label("Respect")
               .alignmentShift(1)
@@ -125,8 +124,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               .build();
 
       var choice2 =
-          CampaignEncounterResponseDTO.Choice
-              .builder()
+          CampaignEncounterResponseDTO.Choice.builder()
               .text("Ignore the advice and walk away dismissively.")
               .label("Dismiss")
               .alignmentShift(-1)
@@ -369,8 +367,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   private String generateMockCampaignEncounter(final String prompt) {
     try {
       var choice1 =
-          CampaignEncounterResponseDTO.Choice
-              .builder()
+          CampaignEncounterResponseDTO.Choice.builder()
               .text("Accept the challenge like a hero.")
               .label("Accept Heroically")
               .alignmentShift(1)
@@ -379,8 +376,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               .nextPhase("MATCH")
               .build();
       var choice2 =
-          CampaignEncounterResponseDTO.Choice
-              .builder()
+          CampaignEncounterResponseDTO.Choice.builder()
               .text("Refuse the challenge and mock them.")
               .label("Refuse & Mock")
               .alignmentShift(-1)

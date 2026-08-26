@@ -300,10 +300,8 @@ public class BackstageActionService {
       segment.setSegmentType(promoType);
       segment.setSegmentDate(Instant.now());
       segment.setNarration("Backstage Promo: " + description);
-      segment.setStatus(
-          SegmentStatus.COMPLETED);
-      segment.setAdjudicationStatus(
-          AdjudicationStatus.ADJUDICATED);
+      segment.setStatus(SegmentStatus.COMPLETED);
+      segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
 
       // Add participants
       segment.addParticipant(campaign.getWrestler());

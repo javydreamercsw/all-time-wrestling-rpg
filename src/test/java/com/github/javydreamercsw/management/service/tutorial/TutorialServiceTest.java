@@ -66,8 +66,7 @@ class TutorialServiceTest {
   @Mock private AccountTutorialCompletionRepository completionRepository;
   @Mock private GameSettingService gameSettingService;
 
-  @Mock
-  private ExpansionService expansionService;
+  @Mock private ExpansionService expansionService;
 
   @Mock private AccountRepository accountRepository;
   @Mock private CampaignRepository campaignRepository;

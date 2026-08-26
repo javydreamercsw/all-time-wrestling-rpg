@@ -264,8 +264,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(42L);
@@ -305,8 +304,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
 
@@ -328,8 +326,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(7L);
@@ -360,8 +357,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(2);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 4, 6).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 4, 6).atStartOfDay(ZoneId.of("UTC")).toInstant());
     context.setPremiumLiveEvent(true);
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
@@ -387,8 +383,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(2);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 4, 6).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 4, 6).atStartOfDay(ZoneId.of("UTC")).toInstant());
     context.setPremiumLiveEvent(false);
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
@@ -413,8 +408,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(1L);
@@ -441,8 +435,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(2L);
@@ -469,8 +462,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(3L);
@@ -498,8 +490,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
     context.setPremiumLiveEvent(true);
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
@@ -528,8 +519,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
 
@@ -549,8 +539,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     String aiResponseJson =
         """
@@ -584,8 +573,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     String aiResponseJson =
         """
@@ -618,8 +606,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedMatches(1);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
-    context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
 

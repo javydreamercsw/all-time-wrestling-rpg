@@ -172,13 +172,9 @@ public class FactionRivalryService {
                       reason,
                       Stream.concat(
                               rivalry.getFaction1().getMembers().stream()
-                                  .map(
-                                      WrestlerState
-                                          ::getWrestler),
+                                  .map(WrestlerState::getWrestler),
                               rivalry.getFaction2().getMembers().stream()
-                                  .map(
-                                      WrestlerState
-                                          ::getWrestler))
+                                  .map(WrestlerState::getWrestler))
                           .collect(Collectors.toList())));
 
               return savedRivalry;

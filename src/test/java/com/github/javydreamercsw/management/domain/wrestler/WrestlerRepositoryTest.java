@@ -254,24 +254,21 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
 
   @Test
   void testFindByFansQueries() {
-    Wrestler lowFans =
-        Wrestler.builder().name("Low Fans").creationDate(Instant.now()).build();
+    Wrestler lowFans = Wrestler.builder().name("Low Fans").creationDate(Instant.now()).build();
     lowFans = wrestlerRepository.save(lowFans);
     WrestlerState s1 =
         WrestlerState.builder().wrestler(lowFans).universe(defaultUniverse).fans(10L).build();
     s1 = wrestlerStateRepository.save(s1);
     lowFans.getWrestlerStates().add(s1);
 
-    Wrestler midFans =
-        Wrestler.builder().name("Mid Fans").creationDate(Instant.now()).build();
+    Wrestler midFans = Wrestler.builder().name("Mid Fans").creationDate(Instant.now()).build();
     midFans = wrestlerRepository.save(midFans);
     WrestlerState s2 =
         WrestlerState.builder().wrestler(midFans).universe(defaultUniverse).fans(50L).build();
     s2 = wrestlerStateRepository.save(s2);
     midFans.getWrestlerStates().add(s2);
 
-    Wrestler highFans =
-        Wrestler.builder().name("High Fans").creationDate(Instant.now()).build();
+    Wrestler highFans = Wrestler.builder().name("High Fans").creationDate(Instant.now()).build();
     highFans = wrestlerRepository.save(highFans);
     WrestlerState s3 =
         WrestlerState.builder().wrestler(highFans).universe(defaultUniverse).fans(100L).build();

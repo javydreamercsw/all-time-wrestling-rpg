@@ -159,13 +159,11 @@ class SegmentNarrationControllerIT extends AbstractIntegrationTest {
     segmentType.setTimeLimit(60);
     context.setSegmentType(segmentType);
 
-    SegmentNarrationService.WrestlerContext w1 =
-        new SegmentNarrationService.WrestlerContext();
+    SegmentNarrationService.WrestlerContext w1 = new SegmentNarrationService.WrestlerContext();
     w1.setName("The Undertaker");
     w1.setAlignment("FACE");
 
-    SegmentNarrationService.WrestlerContext w2 =
-        new SegmentNarrationService.WrestlerContext();
+    SegmentNarrationService.WrestlerContext w2 = new SegmentNarrationService.WrestlerContext();
     w2.setName("Mankind");
     w2.setAlignment("HEEL");
 

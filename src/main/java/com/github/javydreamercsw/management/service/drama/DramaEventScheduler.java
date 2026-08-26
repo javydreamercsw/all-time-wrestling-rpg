@@ -174,8 +174,7 @@ public class DramaEventScheduler {
           try {
             log.info("=== WEEKLY DRAMA EVENTS SUMMARY ===");
 
-            List<DramaEvent> recentEvents =
-                dramaEventService.getRecentEvents();
+            List<DramaEvent> recentEvents = dramaEventService.getRecentEvents();
 
             if (recentEvents.isEmpty()) {
               log.info("No drama events occurred in the past week");
@@ -186,19 +185,12 @@ public class DramaEventScheduler {
             var eventTypeCounts =
                 recentEvents.stream()
                     .collect(
-                        Collectors.groupingBy(
-                            DramaEvent
-                                ::getEventType,
-                            Collectors.counting()));
+                        Collectors.groupingBy(DramaEvent::getEventType, Collectors.counting()));
 
             // Count events by severity
             var severityCounts =
                 recentEvents.stream()
-                    .collect(
-                        Collectors.groupingBy(
-                            DramaEvent
-                                ::getSeverity,
-                            Collectors.counting()));
+                    .collect(Collectors.groupingBy(DramaEvent::getSeverity, Collectors.counting()));
 
             log.info("Total drama events this week: {}", recentEvents.size());
             log.info("Events by type: {}", eventTypeCounts);

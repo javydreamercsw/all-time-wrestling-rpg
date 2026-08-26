@@ -161,9 +161,7 @@ class InboxServiceTest {
   @Test
   void findAll_delegatesToRepository() {
     when(inboxRepository.findAll(
-            ArgumentMatchers
-                .<Specification<InboxItem>>any(),
-            any(Pageable.class)))
+            ArgumentMatchers.<Specification<InboxItem>>any(), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(item1)));
 
     List<InboxItem> result = inboxService.findAll(null, Pageable.unpaged());
@@ -193,8 +191,7 @@ class InboxServiceTest {
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(1L));
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1, item2));
 
     assertThat(inboxService.countUnread(1L)).isEqualTo(2L);
@@ -205,9 +202,7 @@ class InboxServiceTest {
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(1L));
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
-        .thenReturn(List.of());
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of());
 
     assertThat(inboxService.countUnread(1L)).isEqualTo(0L);
   }
@@ -234,8 +229,7 @@ class InboxServiceTest {
   void search_asAdmin_noFilters_returnsAllItems() {
     when(securityUtils.isAdmin()).thenReturn(true);
     when(securityUtils.isBooker()).thenReturn(false);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1, item2));
 
     List<InboxItem> result = inboxService.search(null, null, null, null, null);
@@ -246,8 +240,7 @@ class InboxServiceTest {
   @Test
   void search_hideReadFilter_appliesFilter() {
     when(securityUtils.isAdmin()).thenReturn(true);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(null, null, null, true, null);
@@ -258,8 +251,7 @@ class InboxServiceTest {
   @Test
   void search_withReadStatus_read_appliesFilter() {
     when(securityUtils.isAdmin()).thenReturn(true);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(null, "Read", null, null, null);
@@ -270,8 +262,7 @@ class InboxServiceTest {
   @Test
   void search_withEventTypeFilter_matchingType() {
     when(securityUtils.isAdmin()).thenReturn(true);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(null, null, "Test Event", null, null);
@@ -282,8 +273,7 @@ class InboxServiceTest {
   @Test
   void search_withEventTypeFilter_noMatch_returnsAll() {
     when(securityUtils.isAdmin()).thenReturn(true);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1, item2));
 
     // "UnknownType" won't match any registered event type, so no extra filter is applied
@@ -383,8 +373,7 @@ class InboxServiceTest {
   @Test
   void search_withReadStatus_unread_appliesUnreadFilter() {
     when(securityUtils.isAdmin()).thenReturn(true);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item2));
 
     List<InboxItem> result = inboxService.search(null, "Unread", null, null, null);
@@ -397,8 +386,7 @@ class InboxServiceTest {
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(5L));
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(null, null, null, null, 5L);
@@ -411,9 +399,7 @@ class InboxServiceTest {
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.empty());
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
-        .thenReturn(List.of());
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of());
 
     List<InboxItem> result = inboxService.search(null, null, null, null, null);
 
@@ -432,8 +418,7 @@ class InboxServiceTest {
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(10L));
     when(securityUtils.isOwner(owned)).thenReturn(true);
     when(securityUtils.isOwner(notOwned)).thenReturn(false);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(Set.of(owned, notOwned), null, null, null, 10L);
@@ -446,8 +431,7 @@ class InboxServiceTest {
     Wrestler w = new Wrestler();
     w.setId(7L);
     when(securityUtils.isAdmin()).thenReturn(true);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, null);
@@ -460,8 +444,7 @@ class InboxServiceTest {
     Wrestler w = new Wrestler();
     w.setId(3L);
     when(securityUtils.isAdmin()).thenReturn(true);
-    when(inboxRepository.findAll(
-            any(Specification.class), any(Sort.class)))
+    when(inboxRepository.findAll(any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1, item2));
 
     List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, 5L);
@@ -481,8 +464,7 @@ class InboxServiceTest {
 
     inboxService.createTutorialReminderIfAbsent(account, tutorialEventType);
 
-    ArgumentCaptor<InboxItem> captor =
-        ArgumentCaptor.forClass(InboxItem.class);
+    ArgumentCaptor<InboxItem> captor = ArgumentCaptor.forClass(InboxItem.class);
     verify(inboxRepository, times(2)).save(captor.capture());
     InboxItem saved = captor.getAllValues().get(1);
     assertThat(saved.getActionType()).isEqualTo("OPEN_DRAWER");

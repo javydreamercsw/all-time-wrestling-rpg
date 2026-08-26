@@ -65,9 +65,7 @@ class SeasonControllerIT extends AbstractRestControllerIT {
                     universeRepository.saveAndFlush(
                         Universe.builder()
                             .name("Default Universe")
-                            .type(
-                                Universe
-                                    .UniverseType.GLOBAL)
+                            .type(Universe.UniverseType.GLOBAL)
                             .build()));
   }
 

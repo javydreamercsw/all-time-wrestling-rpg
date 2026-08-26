@@ -115,8 +115,7 @@ public class InjuryController {
           .body(new ErrorResponse("Wrestler not found"));
     }
 
-    WrestlerState state =
-        injuryService.getWrestlerState(wrestlerId, universeId);
+    WrestlerState state = injuryService.getWrestlerState(wrestlerId, universeId);
     if (state.getBumps() < 3) {
       return ResponseEntity.badRequest()
           .body(

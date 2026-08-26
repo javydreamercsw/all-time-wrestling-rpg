@@ -87,10 +87,7 @@ public class ShowTemplateService {
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOW_TEMPLATES_CACHE,
-        CacheConfig.SHOWS_CACHE
-      },
+      value = {CacheConfig.SHOW_TEMPLATES_CACHE, CacheConfig.SHOWS_CACHE},
       allEntries = true)
   public ShowTemplate save(@NonNull final ShowTemplate showTemplate) {
     showTemplate.setCreationDate(clock.instant());
@@ -103,9 +100,7 @@ public class ShowTemplateService {
    * @return List of all show templates
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOW_TEMPLATES_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.SHOW_TEMPLATES_CACHE, key = "'all'")
   public List<ShowTemplate> findAll() {
     return showTemplateRepository.findAllWithShowType().stream()
         .filter(ShowTemplate::isActive)
@@ -119,9 +114,7 @@ public class ShowTemplateService {
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.SHOW_TEMPLATES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TEMPLATES_CACHE, allEntries = true)
   public void setActive(@NonNull final Long id, final boolean active) {
     showTemplateRepository
         .findById(id)
@@ -139,9 +132,7 @@ public class ShowTemplateService {
    * @return Optional containing the show template if found
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOW_TEMPLATES_CACHE,
-      key = "#name")
+  @Cacheable(value = CacheConfig.SHOW_TEMPLATES_CACHE, key = "#name")
   public Optional<ShowTemplate> findByName(@NonNull final String name) {
     return showTemplateRepository.findByName(name);
   }
@@ -164,9 +155,7 @@ public class ShowTemplateService {
    * @return Optional containing the show template if found
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOW_TEMPLATES_CACHE,
-      key = "#id")
+  @Cacheable(value = CacheConfig.SHOW_TEMPLATES_CACHE, key = "#id")
   public Optional<ShowTemplate> findById(@NonNull final Long id) {
     return showTemplateRepository.findById(id);
   }
@@ -177,9 +166,7 @@ public class ShowTemplateService {
    * @return List of PLE templates
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOW_TEMPLATES_CACHE,
-      key = "'ple'")
+  @Cacheable(value = CacheConfig.SHOW_TEMPLATES_CACHE, key = "'ple'")
   public List<ShowTemplate> getPremiumLiveEventTemplates() {
     return showTemplateRepository.findPremiumLiveEventTemplates().stream()
         .filter(ShowTemplate::isActive)
@@ -192,9 +179,7 @@ public class ShowTemplateService {
    * @return List of weekly show templates
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOW_TEMPLATES_CACHE,
-      key = "'weekly'")
+  @Cacheable(value = CacheConfig.SHOW_TEMPLATES_CACHE, key = "'weekly'")
   public List<ShowTemplate> getWeeklyShowTemplates() {
     return showTemplateRepository.findWeeklyShowTemplates().stream()
         .filter(ShowTemplate::isActive)
@@ -208,9 +193,7 @@ public class ShowTemplateService {
    * @return List of templates for the specified show type
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOW_TEMPLATES_CACHE,
-      key = "#showTypeName")
+  @Cacheable(value = CacheConfig.SHOW_TEMPLATES_CACHE, key = "#showTypeName")
   public List<ShowTemplate> findByShowTypeName(@NonNull final String showTypeName) {
     return showTemplateRepository.findByShowTypeName(showTypeName);
   }
@@ -236,10 +219,7 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOW_TEMPLATES_CACHE,
-        CacheConfig.SHOWS_CACHE
-      },
+      value = {CacheConfig.SHOW_TEMPLATES_CACHE, CacheConfig.SHOWS_CACHE},
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
       @NonNull final String name,
@@ -284,10 +264,7 @@ public class ShowTemplateService {
     template.setExpectedMatches(expectedMatches);
     template.setExpectedPromos(expectedPromos);
     template.setDurationDays(durationDays != null ? durationDays : 1);
-    template.setRecurrenceType(
-        recurrenceType != null
-            ? recurrenceType
-            : RecurrenceType.NONE);
+    template.setRecurrenceType(recurrenceType != null ? recurrenceType : RecurrenceType.NONE);
     template.setDayOfWeek(dayOfWeek);
     template.setDayOfMonth(dayOfMonth);
     template.setWeekOfMonth(weekOfMonth);
@@ -307,10 +284,7 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOW_TEMPLATES_CACHE,
-        CacheConfig.SHOWS_CACHE
-      },
+      value = {CacheConfig.SHOW_TEMPLATES_CACHE, CacheConfig.SHOWS_CACHE},
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
       @NonNull final String name, final String description, @NonNull final String showTypeName) {
@@ -376,10 +350,7 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOW_TEMPLATES_CACHE,
-        CacheConfig.SHOWS_CACHE
-      },
+      value = {CacheConfig.SHOW_TEMPLATES_CACHE, CacheConfig.SHOWS_CACHE},
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
       @NonNull final Long id,
@@ -419,10 +390,7 @@ public class ShowTemplateService {
     template.setExpectedMatches(expectedMatches);
     template.setExpectedPromos(expectedPromos);
     template.setDurationDays(durationDays != null ? durationDays : 1);
-    template.setRecurrenceType(
-        recurrenceType != null
-            ? recurrenceType
-            : RecurrenceType.NONE);
+    template.setRecurrenceType(recurrenceType != null ? recurrenceType : RecurrenceType.NONE);
     template.setDayOfWeek(dayOfWeek);
     template.setDayOfMonth(dayOfMonth);
     template.setWeekOfMonth(weekOfMonth);
@@ -455,10 +423,7 @@ public class ShowTemplateService {
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOW_TEMPLATES_CACHE,
-        CacheConfig.SHOWS_CACHE
-      },
+      value = {CacheConfig.SHOW_TEMPLATES_CACHE, CacheConfig.SHOWS_CACHE},
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
       @NonNull final Long id,
@@ -492,9 +457,7 @@ public class ShowTemplateService {
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.SHOW_TEMPLATES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TEMPLATES_CACHE, allEntries = true)
   public boolean deleteTemplate(@NonNull final Long id) {
     if (showTemplateRepository.existsById(id)) {
       showTemplateRepository.deleteById(id);

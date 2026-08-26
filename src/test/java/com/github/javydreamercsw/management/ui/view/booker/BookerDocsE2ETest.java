@@ -97,8 +97,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
 
     // 4. Wait for context to auto-load
     WebElement contextArea = waitForVaadinElement(driver, By.id("show-planning-context-area"));
-    new WebDriverWait(driver, Duration.ofSeconds(30))
-        .until(d -> !contextArea.getText().isEmpty());
+    new WebDriverWait(driver, Duration.ofSeconds(30)).until(d -> !contextArea.getText().isEmpty());
 
     // 5. Propose Segments (Triggers Mock AI)
     clickElement(waitForVaadinElement(driver, By.id("propose-segments-button")));

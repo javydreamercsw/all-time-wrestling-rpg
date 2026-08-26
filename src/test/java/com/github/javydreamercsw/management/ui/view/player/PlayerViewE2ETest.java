@@ -84,14 +84,11 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
 
-  @Autowired
-  private TitleRepository titleChampionRepository;
+  @Autowired private TitleRepository titleChampionRepository;
 
   @Autowired private SeasonRepository seasonRepository;
 
-  @Autowired
-  private TitleReignRepository
-      titleReignRepository;
+  @Autowired private TitleReignRepository titleReignRepository;
 
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
@@ -99,13 +96,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerStatusRepository wrestlerStatusRepository;
   @Autowired private StatusCardService statusCardService;
 
-  @Autowired
-  private BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
 
-  @Autowired
-  private CampaignEncounterRepository
-      campaignEncounterRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
 
   @BeforeEach
   public void setupTest() {

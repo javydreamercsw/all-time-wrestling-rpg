@@ -166,9 +166,7 @@ public class ShowService {
   @PreAuthorize("isAuthenticated()")
   @Transactional(readOnly = true)
   public boolean existsAdjudicatedSegment() {
-    return segmentRepository.countByAdjudicationStatus(
-            AdjudicationStatus.ADJUDICATED)
-        > 0;
+    return segmentRepository.countByAdjudicationStatus(AdjudicationStatus.ADJUDICATED) > 0;
   }
 
   @PreAuthorize(
@@ -180,17 +178,13 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOWS_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.SHOWS_CACHE, key = "'all'")
   public List<Show> findAll() {
     return showRepository.findAll();
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOWS_CACHE,
-      key = "'allWithRelationships'")
+  @Cacheable(value = CacheConfig.SHOWS_CACHE, key = "'allWithRelationships'")
   public List<Show> findAllWithRelationships() {
     return showRepository.findAllWithRelationships();
   }
@@ -211,17 +205,13 @@ public class ShowService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOWS_CACHE,
-      key = "#id")
+  @Cacheable(value = CacheConfig.SHOWS_CACHE, key = "#id")
   public Optional<Show> getShowById(final Long id) {
     return showRepository.findByIdWithArenaAndLocation(id);
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.CALENDAR_CACHE,
-      key = "#startDate + '-' + #endDate")
+  @Cacheable(value = CacheConfig.CALENDAR_CACHE, key = "#startDate + '-' + #endDate")
   public List<Show> getShowsByDateRange(final LocalDate startDate, final LocalDate endDate) {
     return showRepository.findByShowDateBetweenOrderByShowDate(startDate, endDate);
   }
@@ -268,10 +258,7 @@ public class ShowService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOWS_CACHE,
-        CacheConfig.CALENDAR_CACHE
-      },
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public Show createShow(
       final String name,
@@ -352,10 +339,7 @@ public class ShowService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOWS_CACHE,
-        CacheConfig.CALENDAR_CACHE
-      },
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public Optional<Show> updateShow(
       final Long id,
@@ -388,10 +372,7 @@ public class ShowService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOWS_CACHE,
-        CacheConfig.CALENDAR_CACHE
-      },
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public Optional<Show> updateShow(
       final Long id,
@@ -514,10 +495,7 @@ public class ShowService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOWS_CACHE,
-        CacheConfig.CALENDAR_CACHE
-      },
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public boolean deleteShow(@NonNull final Long id) {
     if (showRepository.existsById(id)) {
@@ -530,10 +508,7 @@ public class ShowService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(
-      value = {
-        CacheConfig.SHOWS_CACHE,
-        CacheConfig.CALENDAR_CACHE
-      },
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public void adjudicateShow(@NonNull final Long showId) {
     Show show =
@@ -606,8 +581,7 @@ public class ShowService {
 
   @PreAuthorize("isAuthenticated()")
   public Page<Show> getShowsByUniverse(
-      @NonNull final Universe universe,
-      @NonNull final Pageable pageable) {
+      @NonNull final Universe universe, @NonNull final Pageable pageable) {
     return showRepository.findByUniverseOrUniverseIsNull(universe, pageable);
   }
 
@@ -636,10 +610,7 @@ public class ShowService {
     }
     boolean allAdjudicated =
         segments.stream()
-            .allMatch(
-                s ->
-                    AdjudicationStatus.ADJUDICATED
-                        .equals(s.getAdjudicationStatus()));
+            .allMatch(s -> AdjudicationStatus.ADJUDICATED.equals(s.getAdjudicationStatus()));
     if (allAdjudicated) {
       finalizeShow(show, segments);
     }
@@ -691,23 +662,19 @@ public class ShowService {
         show.isPremiumLiveEvent()
             ? ShowEconomicsConstants.PREMIUM_TICKET_PRICE
             : ShowEconomicsConstants.STANDARD_TICKET_PRICE;
-    BigDecimal gateRevenue =
-        ticketPrice.multiply(BigDecimal.valueOf(finalAttendance));
+    BigDecimal gateRevenue = ticketPrice.multiply(BigDecimal.valueOf(finalAttendance));
 
     show.setAttendance(finalAttendance);
     show.setGateRevenue(gateRevenue);
     double qualityScore = showQualityService.computeAndPersist(show, segments);
     Show saved = showRepository.save(show);
     showQualityService.awardFanBonusesIfEligible(saved, segments, qualityScore);
-    eventPublisher.publishEvent(
-        new ShowFinalizedEvent(
-            this, saved, segments));
+    eventPublisher.publishEvent(new ShowFinalizedEvent(this, saved, segments));
 
     // Credit gate revenue to league budget (GM mode only)
     if (show.getLeague() != null) {
       League league = show.getLeague();
-      BigDecimal current =
-          league.getBudget() != null ? league.getBudget() : BigDecimal.ZERO;
+      BigDecimal current = league.getBudget() != null ? league.getBudget() : BigDecimal.ZERO;
       league.setBudget(current.add(gateRevenue));
       leagueRepository.save(league);
       log.info(

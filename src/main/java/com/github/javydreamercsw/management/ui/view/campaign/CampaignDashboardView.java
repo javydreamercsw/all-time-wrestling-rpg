@@ -164,8 +164,7 @@ public class CampaignDashboardView extends VerticalLayout {
     }
     try {
       Map<String, Object> data =
-          objectMapper.readValue(
-              state.getFeatureData(), new TypeReference<>() {});
+          objectMapper.readValue(state.getFeatureData(), new TypeReference<>() {});
       return Boolean.TRUE.equals(data.get(key));
     } catch (JsonProcessingException e) {
       log.error("Error parsing feature data", e);
@@ -188,9 +187,7 @@ public class CampaignDashboardView extends VerticalLayout {
                       ? accountRepository.findById(accountId).orElse(user.getAccount())
                       : user.getAccount();
               List<Wrestler> wrestlers =
-                  accountId != null
-                      ? wrestlerRepository.findByAccountId(accountId)
-                      : List.of();
+                  accountId != null ? wrestlerRepository.findByAccountId(accountId) : List.of();
               Wrestler active =
                   wrestlers.stream()
                       .filter(w -> w.getId().equals(freshAccount.getActiveWrestlerId()))
@@ -304,8 +301,7 @@ public class CampaignDashboardView extends VerticalLayout {
                               log.warn(
                                   "No authenticated user found when clicking debug start button"));
                 });
-        debugStartButton.addThemeVariants(
-            ButtonVariant.LUMO_TERTIARY);
+        debugStartButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         debugStartButton.setId("debug-start-campaign");
         add(debugStartButton);
       }
@@ -350,10 +346,8 @@ public class CampaignDashboardView extends VerticalLayout {
 
     // Show "Continue Match" if in a match and NOT adjudicated
     if (state.getCurrentMatch() != null
-        && state.getCurrentPhase()
-            == CampaignPhase.MATCH
-        && state.getCurrentMatch().getAdjudicationStatus()
-            != AdjudicationStatus.ADJUDICATED) {
+        && state.getCurrentPhase() == CampaignPhase.MATCH
+        && state.getCurrentMatch().getAdjudicationStatus() != AdjudicationStatus.ADJUDICATED) {
       Button continueMatchButton =
           new Button(
               "CONTINUE MATCH: " + state.getCurrentMatch().getNarration(),
@@ -364,9 +358,7 @@ public class CampaignDashboardView extends VerticalLayout {
                           new RouteParameters(
                               "matchId", String.valueOf(state.getCurrentMatch().getId()))));
       continueMatchButton.addThemeVariants(
-          ButtonVariant.LUMO_PRIMARY,
-          ButtonVariant.LUMO_LARGE,
-          ButtonVariant.LUMO_SUCCESS);
+          ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_SUCCESS);
       continueMatchButton.setWidthFull();
       add(continueMatchButton);
     }
@@ -455,8 +447,7 @@ public class CampaignDashboardView extends VerticalLayout {
     actionsInfo.addClassNames(FontSize.SMALL, TextColor.SECONDARY, Margin.Bottom.SMALL);
     rightColumn.add(actionsInfo);
 
-    if (state.getCurrentPhase()
-        == CampaignPhase.BACKSTAGE) {
+    if (state.getCurrentPhase() == CampaignPhase.BACKSTAGE) {
       Span remainingActions =
           new Span("Remaining actions for today: " + (2 - state.getActionsTaken()));
       remainingActions.addClassNames(FontSize.SMALL, FontWeight.BOLD, TextColor.PRIMARY);
@@ -471,9 +462,7 @@ public class CampaignDashboardView extends VerticalLayout {
             "Story Narrative",
             e -> {
               if (state.getActionsTaken() < 2
-                  && state.getCurrentPhase()
-                      == CampaignPhase
-                          .BACKSTAGE) {
+                  && state.getCurrentPhase() == CampaignPhase.BACKSTAGE) {
                 ConfirmDialog dialog = new ConfirmDialog();
                 dialog.setHeader("Unused Actions");
                 dialog.setText(
@@ -487,9 +476,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 dialog.addConfirmListener(event -> UI.getCurrent().navigate("campaign/narrative"));
                 dialog.open();
               } else {
-                if (state.getCurrentPhase()
-                    == CampaignPhase
-                        .POST_MATCH) {
+                if (state.getCurrentPhase() == CampaignPhase.POST_MATCH) {
                   log.debug("Navigating to post-match narrative.");
                 }
                 UI.getCurrent().navigate("campaign/narrative");
@@ -497,8 +484,7 @@ public class CampaignDashboardView extends VerticalLayout {
             }));
 
     // Only show "Next Show" if they are in POST_MATCH
-    if (state.getCurrentPhase()
-        == CampaignPhase.POST_MATCH) {
+    if (state.getCurrentPhase() == CampaignPhase.POST_MATCH) {
       Button nextShowButton =
           new Button(
               "Continue to Next Day",
@@ -545,8 +531,8 @@ public class CampaignDashboardView extends VerticalLayout {
           new Button(
               "Complete Chapter & Advance",
               e -> {
-                List<CampaignChapterDTO>
-                    options = campaignService.getAvailableNextChapters(currentCampaign);
+                List<CampaignChapterDTO> options =
+                    campaignService.getAvailableNextChapters(currentCampaign);
                 if (options.size() == 1) {
                   campaignService
                       .advanceToChapter(currentCampaign, options.get(0).getId())
@@ -572,9 +558,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 }
               });
       advanceButton.addThemeVariants(
-          ButtonVariant.LUMO_PRIMARY,
-          ButtonVariant.LUMO_SUCCESS,
-          ButtonVariant.LUMO_LARGE);
+          ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_LARGE);
       advanceButton.setWidthFull();
       add(advanceButton);
     }
@@ -597,8 +581,7 @@ public class CampaignDashboardView extends VerticalLayout {
       return;
     }
 
-    CampaignStoryline storyline =
-        state.getActiveStoryline();
+    CampaignStoryline storyline = state.getActiveStoryline();
     VerticalLayout section = new VerticalLayout();
     section.setPadding(true);
     section.setSpacing(false);
@@ -622,8 +605,7 @@ public class CampaignDashboardView extends VerticalLayout {
     milestoneList.setPadding(false);
     milestoneList.setSpacing(true);
 
-    for (StorylineMilestone milestone :
-        storyline.getMilestones()) {
+    for (StorylineMilestone milestone : storyline.getMilestones()) {
       HorizontalLayout item = new HorizontalLayout();
       item.setAlignItems(Alignment.CENTER);
       item.setSpacing(true);
@@ -632,14 +614,10 @@ public class CampaignDashboardView extends VerticalLayout {
       Span mTitle = new Span(milestone.getTitle());
       mTitle.addClassNames(LumoUtility.FontSize.SMALL);
 
-      if (milestone.getStatus()
-          == StorylineMilestone.MilestoneStatus
-              .ACTIVE) {
+      if (milestone.getStatus() == StorylineMilestone.MilestoneStatus.ACTIVE) {
         mTitle.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.HEADER);
         Tooltip.forComponent(item).setText("CURRENT GOAL: " + milestone.getNarrativeGoal());
-      } else if (milestone.getStatus()
-          == StorylineMilestone.MilestoneStatus
-              .PENDING) {
+      } else if (milestone.getStatus() == StorylineMilestone.MilestoneStatus.PENDING) {
         mTitle.addClassNames(LumoUtility.TextColor.SECONDARY);
       }
 
@@ -736,14 +714,10 @@ public class CampaignDashboardView extends VerticalLayout {
     HorizontalLayout upgradeContainer = new HorizontalLayout();
     upgradeContainer.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.MEDIUM);
 
-    List<CampaignUpgrade> available =
-        upgradeService.getAllUpgrades();
+    List<CampaignUpgrade> available = upgradeService.getAllUpgrades();
 
     // Filter out upgrades if the player already has one of that type
-    List<String> ownedTypes =
-        state.getUpgrades().stream()
-            .map(CampaignUpgrade::getType)
-            .toList();
+    List<String> ownedTypes = state.getUpgrades().stream().map(CampaignUpgrade::getType).toList();
 
     available.removeIf(u -> ownedTypes.contains(u.getType()));
 
@@ -756,9 +730,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 refreshUI();
               });
       buyButton.setTooltipText(upgrade.getDescription());
-      buyButton.addThemeVariants(
-          ButtonVariant.LUMO_PRIMARY,
-          ButtonVariant.LUMO_SMALL);
+      buyButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
       upgradeContainer.add(buyButton);
     }
 
@@ -767,8 +739,7 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void addTournamentBracket(@NonNull final VerticalLayout parent) {
-    TournamentDTO tournament =
-        tournamentService.getTournamentState(currentCampaign);
+    TournamentDTO tournament = tournamentService.getTournamentState(currentCampaign);
 
     if (tournament == null) {
       // Initialize if missing (e.g. legacy save)
@@ -809,9 +780,7 @@ public class CampaignDashboardView extends VerticalLayout {
                                   String.valueOf(
                                       currentCampaign.getState().getCurrentMatch().getId()))));
           continueMatchButton.addThemeVariants(
-              ButtonVariant.LUMO_PRIMARY,
-              ButtonVariant.LUMO_LARGE,
-              ButtonVariant.LUMO_SUCCESS);
+              ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_SUCCESS);
           bracketContainer.add(continueMatchButton);
         } else {
           // Match finished but not cleared (Post-Match phase)
@@ -823,9 +792,7 @@ public class CampaignDashboardView extends VerticalLayout {
                     refreshUI();
                   });
           advanceButton.addThemeVariants(
-              ButtonVariant.LUMO_PRIMARY,
-              ButtonVariant.LUMO_LARGE,
-              ButtonVariant.LUMO_SUCCESS);
+              ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_SUCCESS);
           bracketContainer.add(advanceButton);
         }
       } else {
@@ -847,9 +814,7 @@ public class CampaignDashboardView extends VerticalLayout {
                       "Normal");
                   refreshUI();
                 });
-        playMatchButton.addThemeVariants(
-            ButtonVariant.LUMO_PRIMARY,
-            ButtonVariant.LUMO_LARGE);
+        playMatchButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
         bracketContainer.add(playMatchButton);
       }
     } else if (getFeatureBoolean(currentCampaign.getState(), "tournamentWinner")) {
@@ -868,9 +833,7 @@ public class CampaignDashboardView extends VerticalLayout {
     parent.add(bracketContainer);
   }
 
-  private void openChapterSelectionDialog(
-      List<CampaignChapterDTO>
-          options) {
+  private void openChapterSelectionDialog(List<CampaignChapterDTO> options) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Choose Your Next Path");
     dialog.setWidth("600px");
@@ -995,8 +958,7 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void addStoryJournalSection() {
-    List<CampaignStoryline> history =
-        campaignService.getStorylineHistory(currentCampaign);
+    List<CampaignStoryline> history = campaignService.getStorylineHistory(currentCampaign);
 
     if (history.isEmpty()) {
       return;
@@ -1006,8 +968,7 @@ public class CampaignDashboardView extends VerticalLayout {
     journalContent.setPadding(true);
     journalContent.setSpacing(true);
 
-    for (CampaignStoryline storyline :
-        history) {
+    for (CampaignStoryline storyline : history) {
       HorizontalLayout row = new HorizontalLayout();
       row.setId("story-journal-row-" + storyline.getId());
       row.setWidthFull();
@@ -1022,11 +983,7 @@ public class CampaignDashboardView extends VerticalLayout {
       info.setSpacing(false);
 
       String statusLabel =
-          storyline.getStatus()
-                  == CampaignStoryline
-                      .StorylineStatus.ACTIVE
-              ? " (Active)"
-              : "";
+          storyline.getStatus() == CampaignStoryline.StorylineStatus.ACTIVE ? " (Active)" : "";
       Span title = new Span(storyline.getTitle() + statusLabel);
       title.addClassNames(LumoUtility.FontWeight.BOLD);
 
@@ -1268,10 +1225,7 @@ public class CampaignDashboardView extends VerticalLayout {
         new Button(
             "Force Backstage",
             e -> {
-              currentCampaign
-                  .getState()
-                  .setCurrentPhase(
-                      CampaignPhase.BACKSTAGE);
+              currentCampaign.getState().setCurrentPhase(CampaignPhase.BACKSTAGE);
               currentCampaign.getState().setActionsTaken(0);
               campaignRepository.save(currentCampaign);
               refreshUI();
@@ -1280,11 +1234,7 @@ public class CampaignDashboardView extends VerticalLayout {
         new Button(
             "Force Post-Match",
             e -> {
-              currentCampaign
-                  .getState()
-                  .setCurrentPhase(
-                      CampaignPhase
-                          .POST_MATCH);
+              currentCampaign.getState().setCurrentPhase(CampaignPhase.POST_MATCH);
               campaignRepository.save(currentCampaign);
               refreshUI();
             }));
@@ -1392,8 +1342,6 @@ public class CampaignDashboardView extends VerticalLayout {
               campaignService.processMatchResult(currentCampaign, win);
               refreshUI();
             },
-            () ->
-                Notification.show(
-                    "No opponent found for simulation!"));
+            () -> Notification.show("No opponent found for simulation!"));
   }
 }

@@ -294,9 +294,7 @@ public class Segment extends AbstractEntity<Long> {
    */
   public void syncParticipants(final Map<Integer, List<Wrestler>> teamWrestlers) {
     List<Wrestler> allWrestlers =
-        teamWrestlers.values().stream()
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
+        teamWrestlers.values().stream().flatMap(List::stream).collect(Collectors.toList());
 
     // Remove participants no longer in any team
     participants.removeIf(p -> !allWrestlers.contains(p.getWrestler()));
@@ -326,8 +324,7 @@ public class Segment extends AbstractEntity<Long> {
             Collectors.groupingBy(
                 SegmentParticipant::getTeamNumber,
                 TreeMap::new,
-                Collectors.mapping(
-                    SegmentParticipant::getWrestler, Collectors.toList())));
+                Collectors.mapping(SegmentParticipant::getWrestler, Collectors.toList())));
   }
 
   /** Add a segment rule to this segment. */
@@ -359,18 +356,14 @@ public class Segment extends AbstractEntity<Long> {
     if (segmentRules.isEmpty()) {
       return "Standard Match";
     }
-    return segmentRules.stream()
-        .map(SegmentRule::getName)
-        .collect(Collectors.joining(", "));
+    return segmentRules.stream().map(SegmentRule::getName).collect(Collectors.joining(", "));
   }
 
   @Override
   public String getName() {
     String type = segmentType != null ? segmentType.getName() : "Unknown Type";
     String participantsStr =
-        getWrestlers().stream()
-            .map(Wrestler::getName)
-            .collect(Collectors.joining(", "));
+        getWrestlers().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
     return "%s: %s (%s)".formatted(getEntityName(), type, participantsStr);
   }
 

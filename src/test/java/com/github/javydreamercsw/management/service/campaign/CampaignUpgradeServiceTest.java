@@ -84,8 +84,7 @@ class CampaignUpgradeServiceTest {
     // Simulate an I/O failure while parsing the resource file.
     doThrow(new IOException("parse error"))
         .when(objectMapper)
-        .readValue(
-            any(InputStream.class), any(TypeReference.class));
+        .readValue(any(InputStream.class), any(TypeReference.class));
 
     assertThatCode(() -> service.loadUpgrades()).doesNotThrowAnyException();
   }
@@ -95,8 +94,7 @@ class CampaignUpgradeServiceTest {
     // When parsing fails, the repository must not be modified.
     doThrow(new IOException("parse error"))
         .when(objectMapper)
-        .readValue(
-            any(InputStream.class), any(TypeReference.class));
+        .readValue(any(InputStream.class), any(TypeReference.class));
 
     service.loadUpgrades();
 
@@ -109,8 +107,7 @@ class CampaignUpgradeServiceTest {
     // When the file is found and parsed, upgrades are persisted.
     List<CampaignUpgrade> upgrades =
         List.of(CampaignUpgrade.builder().name("Iron Chin").type("DEFENSE").build());
-    when(objectMapper.readValue(
-            any(InputStream.class), any(TypeReference.class)))
+    when(objectMapper.readValue(any(InputStream.class), any(TypeReference.class)))
         .thenReturn(upgrades);
 
     service.loadUpgrades();
@@ -225,8 +222,7 @@ class CampaignUpgradeServiceTest {
   @Test
   void init_callsLoadUpgrades() throws Exception {
     // init() delegates to loadUpgrades(). Stub the mapper so the method completes cleanly.
-    when(objectMapper.readValue(
-            any(InputStream.class), any(TypeReference.class)))
+    when(objectMapper.readValue(any(InputStream.class), any(TypeReference.class)))
         .thenReturn(List.of());
 
     assertThatCode(() -> service.init()).doesNotThrowAnyException();

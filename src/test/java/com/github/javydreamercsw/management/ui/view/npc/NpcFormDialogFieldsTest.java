@@ -55,18 +55,14 @@ class NpcFormDialogFieldsTest extends AbstractViewTest {
   @Test
   @DisplayName("npcTypeField ComboBox should exist in NpcFormDialog")
   void npcTypeFieldExists() {
-    ComboBox<?> typeField =
-        (ComboBox<?>)
-            ReflectionTestUtils.getField(dialog, "npcTypeField");
+    ComboBox<?> typeField = (ComboBox<?>) ReflectionTestUtils.getField(dialog, "npcTypeField");
     assertNotNull(typeField, "npcTypeField should not be null");
   }
 
   @Test
   @DisplayName("descriptionField TextArea should exist in NpcFormDialog")
   void descriptionFieldExists() {
-    TextArea descField =
-        (TextArea)
-            ReflectionTestUtils.getField(dialog, "descriptionField");
+    TextArea descField = (TextArea) ReflectionTestUtils.getField(dialog, "descriptionField");
     assertNotNull(descField, "descriptionField should not be null");
   }
 }

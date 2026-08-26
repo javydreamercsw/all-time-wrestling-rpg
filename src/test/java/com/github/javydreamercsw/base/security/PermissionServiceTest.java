@@ -115,8 +115,7 @@ class PermissionServiceTest {
     wrestler.setId(1L);
     Deck deck = new Deck();
     deck.setWrestler(wrestler);
-    DeckCard card =
-        new DeckCard();
+    DeckCard card = new DeckCard();
     card.setDeck(deck);
 
     when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
@@ -132,13 +131,10 @@ class PermissionServiceTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
 
-    InboxItem item =
-        new InboxItem();
-    InboxItemTarget target =
-        new InboxItemTarget();
+    InboxItem item = new InboxItem();
+    InboxItemTarget target = new InboxItemTarget();
     target.setTargetId("1");
-    target.setTargetType(
-        InboxItemTarget.TargetType.ACCOUNT);
+    target.setTargetType(InboxItemTarget.TargetType.ACCOUNT);
     item.getTargets().add(target);
 
     when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));

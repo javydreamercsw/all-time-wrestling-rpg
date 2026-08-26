@@ -249,8 +249,7 @@ class MatchViewTest extends AbstractViewTest {
 
     MultiSelectComboBox<Wrestler> winnersComboBox =
         _get(MultiSelectComboBox.class, spec -> spec.withId("winners-combobox"));
-    assertEquals(
-        2, winnersComboBox.getDataProvider().size(new Query<>()));
+    assertEquals(2, winnersComboBox.getDataProvider().size(new Query<>()));
 
     winnersComboBox.setValue(new HashSet<>(List.of(wrestler1)));
 

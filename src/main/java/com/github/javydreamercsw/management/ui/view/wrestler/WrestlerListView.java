@@ -265,8 +265,7 @@ public class WrestlerListView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.SMALL);
 
-    Div gridWrapper =
-        new Div(wrestlerGrid);
+    Div gridWrapper = new Div(wrestlerGrid);
     gridWrapper.addClassName("grid-scroll-container");
 
     Button createButton = createWrestlerButton();

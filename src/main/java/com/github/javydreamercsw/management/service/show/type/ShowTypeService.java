@@ -50,18 +50,14 @@ public class ShowTypeService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.SHOW_TYPES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TYPES_CACHE, allEntries = true)
   public ShowType save(@NonNull final ShowType showType) {
     showType.setCreationDate(clock.instant());
     return showTypeRepository.saveAndFlush(showType);
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOW_TYPES_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.SHOW_TYPES_CACHE, key = "'all'")
   public List<ShowType> findAll() {
     return showTypeRepository.findAll().stream()
         .filter(ShowType::isActive)
@@ -74,9 +70,7 @@ public class ShowTypeService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.SHOW_TYPES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TYPES_CACHE, allEntries = true)
   public void setActive(@NonNull final Long id, final boolean active) {
     showTypeRepository
         .findById(id)
@@ -88,17 +82,13 @@ public class ShowTypeService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.SHOW_TYPES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TYPES_CACHE, allEntries = true)
   public void delete(@NonNull final ShowType showType) {
     showTypeRepository.delete(showType);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.SHOW_TYPES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SHOW_TYPES_CACHE, allEntries = true)
   /** Backward-compatible overload that infers {@link ShowCategory} from the show type name. */
   public ShowType createOrUpdateShowType(
       @NonNull final String name,
@@ -161,9 +151,7 @@ public class ShowTypeService {
    * @return Optional containing the show type if found
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SHOW_TYPES_CACHE,
-      key = "#name")
+  @Cacheable(value = CacheConfig.SHOW_TYPES_CACHE, key = "#name")
   public Optional<ShowType> findByName(@NonNull final String name) {
     return showTypeRepository.findByName(name);
   }

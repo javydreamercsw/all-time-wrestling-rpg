@@ -171,8 +171,7 @@ public class FactionService {
             .collect(Collectors.toList());
 
     if (pageable.isUnpaged()) {
-      return new PageImpl<>(
-          allFiltered, pageable, allFiltered.size());
+      return new PageImpl<>(allFiltered, pageable, allFiltered.size());
     }
 
     int start = (int) pageable.getOffset();
@@ -183,8 +182,7 @@ public class FactionService {
       pageContent = allFiltered.subList(start, end);
     }
 
-    return new PageImpl<>(
-        pageContent, pageable, allFiltered.size());
+    return new PageImpl<>(pageContent, pageable, allFiltered.size());
   }
 
   /** Get faction by ID. */
@@ -256,13 +254,10 @@ public class FactionService {
               .orElseGet(
                   () ->
                       wrestlerStateRepository.save(
-                          WrestlerState
-                              .builder()
+                          WrestlerState.builder()
                               .wrestler(leader)
                               .universe(universe)
-                              .tier(
-                                  WrestlerTier
-                                      .ROOKIE)
+                              .tier(WrestlerTier.ROOKIE)
                               .build()));
       faction.addMember(state);
     }

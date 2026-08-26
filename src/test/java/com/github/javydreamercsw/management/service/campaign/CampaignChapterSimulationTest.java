@@ -101,10 +101,8 @@ class CampaignChapterSimulationTest {
     ObjectMapper objectMapper = new ObjectMapper();
     FeatureDataService featureDataService =
         new FeatureDataService(objectMapper, mock(CampaignStateRepository.class));
-    ExpansionService expansionService =
-        mock(ExpansionService.class);
-    Mockito.when(
-            expansionService.isExpansionEnabled(ArgumentMatchers.anyString()))
+    ExpansionService expansionService = mock(ExpansionService.class);
+    Mockito.when(expansionService.isExpansionEnabled(ArgumentMatchers.anyString()))
         .thenReturn(true);
     chapterService =
         new CampaignChapterService(
@@ -296,11 +294,7 @@ class CampaignChapterSimulationTest {
 
       long matchSteps =
           chapter.getStaticEncounters().stream()
-              .flatMap(
-                  e ->
-                      e.getChoices() == null
-                          ? Stream.empty()
-                          : e.getChoices().stream())
+              .flatMap(e -> e.getChoices() == null ? Stream.empty() : e.getChoices().stream())
               .filter(c -> c.getNextPhase() != null && c.getNextPhase() == CampaignPhase.MATCH)
               .count();
 
@@ -329,15 +323,10 @@ class CampaignChapterSimulationTest {
     // Load known codes from expansions.json
     Set<String> known;
     try {
-      ObjectMapper om =
-          new ObjectMapper();
+      ObjectMapper om = new ObjectMapper();
       InputStream is = getClass().getResourceAsStream("/expansions.json");
-      List<Map<String, String>> raw =
-          om.readValue(is, new TypeReference<>() {});
-      known =
-          raw.stream()
-              .map(m -> m.get("expansion_code"))
-              .collect(Collectors.toSet());
+      List<Map<String, String>> raw = om.readValue(is, new TypeReference<>() {});
+      known = raw.stream().map(m -> m.get("expansion_code")).collect(Collectors.toSet());
     } catch (Exception e) {
       throw new RuntimeException("Could not load expansions.json", e);
     }
@@ -760,17 +749,12 @@ class CampaignChapterSimulationTest {
 
   /** Loads all wrestler names from wrestlers/*.json as a Set for O(1) lookup. */
   private Set<String> loadWrestlerNames() throws Exception {
-    ObjectMapper om =
-        new ObjectMapper();
+    ObjectMapper om = new ObjectMapper();
     Set<String> names = new HashSet<>();
-    PathMatchingResourcePatternResolver resolver =
-        new PathMatchingResourcePatternResolver();
-    Resource[] resources =
-        resolver.getResources("classpath*:wrestlers/*.json");
+    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    Resource[] resources = resolver.getResources("classpath*:wrestlers/*.json");
     for (Resource r : resources) {
-      List<Map<String, Object>> raw =
-          om.readValue(
-              r.getInputStream(), new TypeReference<>() {});
+      List<Map<String, Object>> raw = om.readValue(r.getInputStream(), new TypeReference<>() {});
       raw.stream().map(m -> (String) m.get("name")).forEach(names::add);
     }
     return names;
@@ -778,14 +762,10 @@ class CampaignChapterSimulationTest {
 
   /** Loads all title names from championships.json as a Set for O(1) lookup. */
   private Set<String> loadTitleNames() throws Exception {
-    ObjectMapper om =
-        new ObjectMapper();
+    ObjectMapper om = new ObjectMapper();
     InputStream is = getClass().getResourceAsStream("/championships.json");
-    List<Map<String, Object>> raw =
-        om.readValue(is, new TypeReference<>() {});
-    return raw.stream()
-        .map(m -> (String) m.get("name"))
-        .collect(Collectors.toSet());
+    List<Map<String, Object>> raw = om.readValue(is, new TypeReference<>() {});
+    return raw.stream().map(m -> (String) m.get("name")).collect(Collectors.toSet());
   }
 
   // ---------------------------------------------------------------------------
@@ -821,11 +801,7 @@ class CampaignChapterSimulationTest {
       return 0;
     }
     return chapter.getExitPoints().stream()
-        .flatMap(
-            p ->
-                p.getCriteria() == null
-                    ? Stream.empty()
-                    : p.getCriteria().stream())
+        .flatMap(p -> p.getCriteria() == null ? Stream.empty() : p.getCriteria().stream())
         .mapToInt(c -> c.getMinMatchesPlayed() == null ? 0 : c.getMinMatchesPlayed())
         .max()
         .orElse(0);
@@ -885,8 +861,7 @@ class CampaignChapterSimulationTest {
 
         // hasFaction: add a WrestlerState with a non-null faction
         if (Boolean.TRUE.equals(c.getHasFaction())) {
-          Faction faction =
-              new Faction();
+          Faction faction = new Faction();
           faction.setName("Sim Faction");
           WrestlerState ws = new WrestlerState();
           ws.setFaction(faction);

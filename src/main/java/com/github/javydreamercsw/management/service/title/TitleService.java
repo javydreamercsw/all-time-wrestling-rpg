@@ -84,10 +84,7 @@ public class TitleService {
   }
 
   private Instant currentGameInstant() {
-    return gameSettingService
-        .getCurrentGameDate()
-        .atStartOfDay(ZoneOffset.UTC)
-        .toInstant();
+    return gameSettingService.getCurrentGameDate().atStartOfDay(ZoneOffset.UTC).toInstant();
   }
 
   public boolean isWrestlerEligible(@NonNull final Wrestler wrestler, @NonNull final Title title) {
@@ -113,9 +110,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public Title createTitle(
       @NonNull final String name,
       @NonNull final String description,
@@ -127,9 +122,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public Title createTitle(
       @NonNull final String name,
       @NonNull final String description,
@@ -149,26 +142,20 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.TITLES_CACHE,
-      key = "#id")
+  @Cacheable(value = CacheConfig.TITLES_CACHE, key = "#id")
   public Optional<Title> getTitleById(@NonNull final Long id) {
     return titleRepository.findById(id);
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.TITLES_CACHE,
-      key = "#name")
+  @Cacheable(value = CacheConfig.TITLES_CACHE, key = "#name")
   public Optional<Title> findByName(@NonNull final String name) {
     return titleRepository.findByName(name);
   }
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public Title save(@NonNull final Title title) {
     return titleRepository.save(title);
   }
@@ -187,17 +174,13 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public List<Title> saveAll(@NonNull final List<Title> titles) {
     return (List<Title>) titleRepository.saveAll(titles);
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.TITLES_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.TITLES_CACHE, key = "'all'")
   public List<Title> findAll() {
     return findAll(enabledExpansionCodes());
   }
@@ -233,17 +216,13 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.TITLES_CACHE,
-      key = "'active'")
+  @Cacheable(value = CacheConfig.TITLES_CACHE, key = "'active'")
   public List<Title> getActiveTitles() {
     return titleRepository.findByIsActiveTrue();
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.TITLES_CACHE,
-      key = "'vacant'")
+  @Cacheable(value = CacheConfig.TITLES_CACHE, key = "'vacant'")
   public List<Title> getVacantTitles() {
     return titleRepository.findByIsActiveTrue().stream()
         .filter(Title::isVacant)
@@ -251,8 +230,7 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public Map<Long, String> getCurrentChampionNamesByTitleIds(
-      final Collection<Long> titleIds) {
+  public Map<Long, String> getCurrentChampionNamesByTitleIds(final Collection<Long> titleIds) {
     Map<Long, String> result = new HashMap<>();
     for (Long titleId : titleIds) {
       List<com.github.javydreamercsw.management.domain.title.TitleReign> activeReigns =
@@ -269,18 +247,14 @@ public class TitleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.TITLES_CACHE,
-      key = "#tier")
+  @Cacheable(value = CacheConfig.TITLES_CACHE, key = "#tier")
   public List<Title> getTitlesByTier(@NonNull final WrestlerTier tier) {
     return titleRepository.findByIsActiveTrueAndTier(tier);
   }
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   @Transactional
   public void awardTitleTo(@NonNull final Title title, @NonNull final List<Wrestler> newChampions) {
     // Reload from DB so titleReigns lazy collection is accessible within the transaction.
@@ -292,9 +266,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   @Transactional
   public void awardTitleTo(
       @NonNull final Title title,
@@ -331,25 +303,18 @@ public class TitleService {
    * (kayfabe date) so reign history reflects the fictional timeline rather than the real-world
    * moment a booker clicked "Adjudicate".
    */
-  private Instant awardDateFor(
-      final Segment wonAtSegment) {
+  private Instant awardDateFor(final Segment wonAtSegment) {
     if (wonAtSegment != null
         && wonAtSegment.getShow() != null
         && wonAtSegment.getShow().getShowDate() != null) {
-      return wonAtSegment
-          .getShow()
-          .getShowDate()
-          .atStartOfDay(ZoneOffset.UTC)
-          .toInstant();
+      return wonAtSegment.getShow().getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant();
     }
     return Instant.now(clock);
   }
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   @Transactional
   public Optional<Title> vacateTitle(@NonNull final Long titleId) {
     return titleRepository
@@ -364,9 +329,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public Optional<Title> updateTitle(
       @NonNull final Long id, final String name, final String description, final Boolean isActive) {
     return updateTitle(id, name, description, isActive, null);
@@ -374,9 +337,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public Optional<Title> updateTitle(
       @NonNull final Long id,
       final String name,
@@ -413,9 +374,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public boolean deleteTitle(@NonNull final Long id) {
 
     return titleRepository
@@ -442,18 +401,14 @@ public class TitleService {
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public com.github.javydreamercsw.management.domain.title.TitleReign saveReign(
       @NonNull final com.github.javydreamercsw.management.domain.title.TitleReign reign) {
     return titleReignRepository.save(reign);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public void deleteReign(@NonNull final Long reignId) {
     titleReignRepository.deleteById(reignId);
   }
@@ -495,9 +450,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public ChallengeResult challengeForTitle(
       @NonNull final Long wrestlerId, @NonNull final Long titleId, @NonNull final Long universeId) {
     Optional<Wrestler> challengerOpt = wrestlerRepository.findById(wrestlerId);
@@ -591,9 +544,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public ChallengeResult addChallengerToTitle(
       @NonNull final Long titleId, @NonNull final Long wrestlerId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
@@ -621,9 +572,7 @@ public class TitleService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.TITLES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public ChallengeResult removeChallengerFromTitle(
       @NonNull final Long titleId, @NonNull final Long wrestlerId) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);

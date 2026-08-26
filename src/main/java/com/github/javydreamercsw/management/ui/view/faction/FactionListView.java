@@ -65,9 +65,7 @@ import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-@Route(
-    value = "faction-list",
-    layout = MainLayout.class)
+@Route(value = "faction-list", layout = MainLayout.class)
 @PageTitle("Factions | ATW RPG")
 @PermitAll
 public class FactionListView extends VerticalLayout {
@@ -186,8 +184,7 @@ public class FactionListView extends VerticalLayout {
             ? new ViewToolbar("Factions", createBtn)
             : new ViewToolbar("Factions");
 
-    Div gridWrapper =
-        new Div(factionGrid);
+    Div gridWrapper = new Div(factionGrid);
     gridWrapper.addClassName("grid-scroll-container");
 
     add(toolbar, gridWrapper);

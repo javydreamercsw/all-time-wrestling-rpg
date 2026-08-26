@@ -57,8 +57,7 @@ public interface ImageGenerationService {
    * @return a {@link java.util.concurrent.CompletableFuture} that resolves to the image URL or
    *     base64 data.
    */
-  default CompletableFuture<String> generateImageAsync(
-      @NonNull ImageRequest request) {
+  default CompletableFuture<String> generateImageAsync(@NonNull ImageRequest request) {
     return CompletableFuture.supplyAsync(() -> generateImage(request));
   }
 

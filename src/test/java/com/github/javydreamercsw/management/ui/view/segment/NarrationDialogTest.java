@@ -278,12 +278,10 @@ class NarrationDialogTest {
     partner.setId(99L);
     partner.setName("Seth Rollins");
 
-    WrestlerRelationship rel =
-        new WrestlerRelationship();
+    WrestlerRelationship rel = new WrestlerRelationship();
     rel.setWrestler1(wrestler);
     rel.setWrestler2(partner);
-    rel.setType(
-        RelationshipType.BEST_FRIEND);
+    rel.setType(RelationshipType.BEST_FRIEND);
     rel.setLevel(80);
     rel.setIsStoryline(true);
 

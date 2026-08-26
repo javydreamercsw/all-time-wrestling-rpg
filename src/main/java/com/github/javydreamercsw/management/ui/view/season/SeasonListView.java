@@ -249,8 +249,7 @@ public class SeasonListView extends Main {
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
 
     HorizontalLayout buttonLayout = new HorizontalLayout(saveBtn, cancelBtn);
-    buttonLayout.setJustifyContentMode(
-        FlexComponent.JustifyContentMode.END);
+    buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
 
     // Dialog content
     VerticalLayout dialogContent = new VerticalLayout();

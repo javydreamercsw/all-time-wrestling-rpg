@@ -65,9 +65,7 @@ public class InjuryService {
 
   /** Create a new injury for a wrestler. Falls back to the Legacy Injury type if none specified. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.INJURIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.INJURIES_CACHE, allEntries = true)
   public Optional<Injury> createInjury(
       final Long wrestlerId,
       final Long universeId,
@@ -109,9 +107,7 @@ public class InjuryService {
    * injury should be created (bumps already reset by Wrestler.addBump()).
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.INJURIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.INJURIES_CACHE, allEntries = true)
   public Optional<Injury> createInjuryFromBumps(
       @NonNull final Long wrestlerId, @NonNull final Long universeId) {
     WrestlerState state =
@@ -168,18 +164,14 @@ public class InjuryService {
 
   /** Attempt to heal an injury. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.INJURIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.INJURIES_CACHE, allEntries = true)
   public HealingResult attemptHealing(@NonNull final Long injuryId) {
     return attemptHealing(injuryId, null);
   }
 
   /** Attempt to heal an injury. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.INJURIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.INJURIES_CACHE, allEntries = true)
   public HealingResult attemptHealing(@NonNull final Long injuryId, final Integer diceRoll) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 
@@ -244,9 +236,7 @@ public class InjuryService {
    * fan cost entirely, so it works even when the wrestler can't afford the healing cost.
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-  @CacheEvict(
-      value = CacheConfig.INJURIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.INJURIES_CACHE, allEntries = true)
   public HealingResult forceHeal(@NonNull final Long injuryId) {
     Optional<Injury> injuryOpt = injuryRepository.findById(injuryId);
 
@@ -280,9 +270,7 @@ public class InjuryService {
   /** Get injury by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.INJURIES_CACHE,
-      key = "#injuryId")
+  @Cacheable(value = CacheConfig.INJURIES_CACHE, key = "#injuryId")
   public Optional<Injury> getInjuryById(@NonNull final Long injuryId) {
     return injuryRepository.findById(injuryId);
   }
@@ -327,9 +315,7 @@ public class InjuryService {
   /** Get injuries by severity. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.INJURIES_CACHE,
-      key = "#severity")
+  @Cacheable(value = CacheConfig.INJURIES_CACHE, key = "#severity")
   public List<Injury> getInjuriesBySeverity(@NonNull final InjurySeverity severity) {
     return injuryRepository.findBySeverity(severity);
   }
@@ -337,9 +323,7 @@ public class InjuryService {
   /** Get all active injuries. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.INJURIES_CACHE,
-      key = "'allActive'")
+  @Cacheable(value = CacheConfig.INJURIES_CACHE, key = "'allActive'")
   public List<Injury> getAllActiveInjuries() {
     return injuryRepository.findAllActiveInjuries();
   }
@@ -417,9 +401,7 @@ public class InjuryService {
 
   /** Update injury information. */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @CacheEvict(
-      value = CacheConfig.INJURIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.INJURIES_CACHE, allEntries = true)
   public Optional<Injury> updateInjury(
       @NonNull final Long injuryId,
       final String name,

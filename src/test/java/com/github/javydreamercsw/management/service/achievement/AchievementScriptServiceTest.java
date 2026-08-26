@@ -42,8 +42,7 @@ class AchievementScriptServiceTest {
   @Test
   @DisplayName("Script can read bound context variables")
   void testScriptCanAccessContext() {
-    assertThat(
-            service.evaluate("wrestlers.size() >= 2", Map.of("wrestlers", List.of(1, 2))))
+    assertThat(service.evaluate("wrestlers.size() >= 2", Map.of("wrestlers", List.of(1, 2))))
         .isTrue();
     assertThat(service.evaluate("wrestlers.size() >= 2", Map.of("wrestlers", List.of(1))))
         .isFalse();

@@ -187,8 +187,7 @@ public class WrestlerDialog extends Dialog {
     imageUpload.setVisible(securityUtils.canEdit(this.wrestler));
 
     HorizontalLayout imageEditLayout = new HorizontalLayout(imageUrlField, imageUpload);
-    imageEditLayout.setAlignItems(
-        FlexComponent.Alignment.BASELINE);
+    imageEditLayout.setAlignItems(FlexComponent.Alignment.BASELINE);
     imageEditLayout.setWidthFull();
 
     boolean canEditAlignment = securityUtils.isAdmin() || securityUtils.isBooker();

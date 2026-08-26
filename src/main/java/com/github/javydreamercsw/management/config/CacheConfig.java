@@ -105,11 +105,8 @@ public class CacheConfig {
   @Bean
   public CacheMonitor cacheMonitor(
       final CacheManager cacheManager,
-      @Lazy
-          final NpcService npcService,
-      @Lazy
-          final ExpansionService
-              expansionService) {
+      @Lazy final NpcService npcService,
+      @Lazy final ExpansionService expansionService) {
     return new CacheMonitor(cacheManager, npcService, expansionService);
   }
 
@@ -117,14 +114,12 @@ public class CacheConfig {
   public static class CacheMonitor {
     private final CacheManager cacheManager;
     private final NpcService npcService;
-    private final ExpansionService
-        expansionService;
+    private final ExpansionService expansionService;
 
     public CacheMonitor(
         final CacheManager cacheManager,
         final NpcService npcService,
-        final ExpansionService
-            expansionService) {
+        final ExpansionService expansionService) {
       this.cacheManager = cacheManager;
       this.npcService = npcService;
       this.expansionService = expansionService;

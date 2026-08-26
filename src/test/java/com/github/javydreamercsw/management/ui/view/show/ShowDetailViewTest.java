@@ -341,9 +341,7 @@ class ShowDetailViewTest extends AbstractViewTest {
             teamService,
             mock(InjuryService.class),
             mock(TitleService.class),
-            mock(
-                WrestlerStateHistoryService
-                    .class));
+            mock(WrestlerStateHistoryService.class));
     ViewContext viewContext =
         new ViewContext(notificationService, su, universeContextService, expansionService);
     return new ShowDetailView(

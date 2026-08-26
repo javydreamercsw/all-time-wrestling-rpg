@@ -73,15 +73,10 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     var principal = new CustomUserDetails(account, wrestler);
-    Set<SimpleGrantedAuthority> authorities =
-        new HashSet<>();
+    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
     for (Role role : account.getRoles()) {
-      authorities.add(
-          new SimpleGrantedAuthority(
-              role.getName().name()));
-      authorities.add(
-          new SimpleGrantedAuthority(
-              "ROLE_" + role.getName().name()));
+      authorities.add(new SimpleGrantedAuthority(role.getName().name()));
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name()));
     }
 
     var authentication =

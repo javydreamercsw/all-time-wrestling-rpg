@@ -205,9 +205,7 @@ public class LegacyService {
                 long currentTitlesHeld =
                     wrestlers.stream()
                         .flatMap(w -> w.getReigns().stream())
-                        .filter(
-                            TitleReign
-                                ::isCurrentReign)
+                        .filter(TitleReign::isCurrentReign)
                         .count();
 
                 managedAccount.setLegacyScore(

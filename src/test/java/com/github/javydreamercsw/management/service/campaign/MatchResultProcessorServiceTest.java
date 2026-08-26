@@ -113,10 +113,8 @@ class MatchResultProcessorServiceTest {
   @BeforeEach
   void setUpFeatureDataMock() {
     // @Lazy field-injected beans are not set by @InjectMocks; inject manually
-    ReflectionTestUtils.setField(
-        service, "campaignService", campaignService);
-    ReflectionTestUtils.setField(
-        service, "campaignEncounterService", campaignEncounterService);
+    ReflectionTestUtils.setField(service, "campaignService", campaignService);
+    ReflectionTestUtils.setField(service, "campaignEncounterService", campaignEncounterService);
     Mockito.lenient()
         .when(
             featureDataService.getFeatureValue(
@@ -487,8 +485,7 @@ class MatchResultProcessorServiceTest {
 
   @Test
   void testProcessMatchResult_TournamentWin_incremensDeadlyCombatWins() {
-    Account account =
-        new Account();
+    Account account = new Account();
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setAccount(account);
@@ -530,12 +527,10 @@ class MatchResultProcessorServiceTest {
     when(tournamentService.isPlayerChampion(campaign)).thenReturn(true);
     when(featureDataService.getFeatureValue(state, "deadlyCombatWins", Integer.class, 0))
         .thenReturn(4);
-    when(scriptedAchievementEvaluator.resolveNewlyUnlockedKeys(
-            ArgumentMatchers.eq(account), any()))
+    when(scriptedAchievementEvaluator.resolveNewlyUnlockedKeys(ArgumentMatchers.eq(account), any()))
         .thenReturn(List.of("OMZ_DEADLY_COMBAT_CHAMPION"));
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    Title title =
-        new Title();
+    Title title = new Title();
     title.setName("ATW World");
     when(titleRepository.findByName("ATW World")).thenReturn(Optional.of(title));
 

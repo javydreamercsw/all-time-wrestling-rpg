@@ -83,9 +83,7 @@ public class SegmentRuleService {
    * @return Optional containing the segment rule if found
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      key = "#name")
+  @Cacheable(value = CacheConfig.SEGMENT_RULES_CACHE, key = "#name")
   public Optional<SegmentRule> findByName(final String name) {
     return segmentRuleRepository.findByName(name);
   }
@@ -96,9 +94,7 @@ public class SegmentRuleService {
    * @return List of segment rules appropriate for intense rivalries
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      key = "'highHeat'")
+  @Cacheable(value = CacheConfig.SEGMENT_RULES_CACHE, key = "'highHeat'")
   public List<SegmentRule> getHighHeatRules() {
     Set<String> enabled = enabledExpansionCodes();
     return deduplicateByPriority(
@@ -112,9 +108,7 @@ public class SegmentRuleService {
    * @return List of standard segment rules
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      key = "'standard'")
+  @Cacheable(value = CacheConfig.SEGMENT_RULES_CACHE, key = "'standard'")
   public List<SegmentRule> getStandardRules() {
     Set<String> enabled = enabledExpansionCodes();
     return deduplicateByPriority(
@@ -133,9 +127,7 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
   public SegmentRule createRule(
       @NonNull final String name,
       @NonNull final String description,
@@ -166,9 +158,7 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
   public SegmentRule updateRule(
       @NonNull final Long id,
       @NonNull final String name,
@@ -214,9 +204,7 @@ public class SegmentRuleService {
    * @return Optional containing the segment rule if found
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      key = "#id")
+  @Cacheable(value = CacheConfig.SEGMENT_RULES_CACHE, key = "#id")
   public Optional<SegmentRule> findById(@NonNull final Long id) {
     return segmentRuleRepository.findById(id);
   }
@@ -232,9 +220,7 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
       final String description,
@@ -248,9 +234,7 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
       final String description,
@@ -263,9 +247,7 @@ public class SegmentRuleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.SEGMENT_RULES_CACHE, key = "'all'")
   public List<SegmentRule> findAll() {
     return findAll(enabledExpansionCodes());
   }
@@ -285,9 +267,7 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
   public void setActive(@NonNull final Long id, final boolean active) {
     segmentRuleRepository
         .findById(id)
@@ -352,9 +332,7 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
       final String description,
@@ -370,9 +348,7 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @CacheEvict(
-      value = CacheConfig.SEGMENT_RULES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
       final String description,

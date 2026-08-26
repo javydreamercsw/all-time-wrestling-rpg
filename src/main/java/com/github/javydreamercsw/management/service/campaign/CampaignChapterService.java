@@ -287,11 +287,7 @@ public class CampaignChapterService {
           state.getCampaign().getUniverse() != null
               ? state.getCampaign().getUniverse().getId()
               : 1L;
-      boolean inFaction =
-          wrestler
-              .getState(universeId)
-              .map(WrestlerState::getFaction)
-              .isPresent();
+      boolean inFaction = wrestler.getState(universeId).map(WrestlerState::getFaction).isPresent();
       if (inFaction != criteria.getHasFaction()) {
         return false;
       }

@@ -115,8 +115,7 @@ public class Application extends SpringBootServletInitializer {
             "Skipping tier recalculation on startup: No authenticated user in SecurityContext.");
         return;
       }
-      rankingService.recalculateRanking(
-          new ArrayList<>(wrestlerStateRepository.findAll()));
+      rankingService.recalculateRanking(new ArrayList<>(wrestlerStateRepository.findAll()));
       log.info("Tier recalculation complete.");
     };
   }

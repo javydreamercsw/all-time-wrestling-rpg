@@ -84,8 +84,7 @@ public class WrestlerService {
   private final LegacyService legacyService;
   private final InjuryService injuryService;
   private final SecurityUtils securityUtils;
-  private final UniverseRepository
-      universeRepository;
+  private final UniverseRepository universeRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final UniverseContextService universeContextService;
   private final UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
@@ -103,8 +102,7 @@ public class WrestlerService {
       final LegacyService legacyService,
       @Lazy final InjuryService injuryService,
       final SecurityUtils securityUtils,
-      final UniverseRepository
-          universeRepository,
+      final UniverseRepository universeRepository,
       final WrestlerAlignmentRepository wrestlerAlignmentRepository,
       final UniverseContextService universeContextService,
       final UniverseWrestlerExclusionRepository wrestlerExclusionRepository,
@@ -220,8 +218,7 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Map<Long, WrestlerState> getStateMapByUniverseId(
-      @NonNull final Long universeId) {
+  public Map<Long, WrestlerState> getStateMapByUniverseId(@NonNull final Long universeId) {
     return wrestlerStateRepository.findByUniverseIdWithWrestler(universeId).stream()
         .filter(s -> s.getWrestler() != null)
         .collect(
@@ -237,9 +234,7 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(
-      value = CacheConfig.WRESTLERS_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.WRESTLERS_CACHE, key = "'all'")
   public List<Wrestler> findAll() {
     return wrestlerRepository.findAll();
   }
@@ -355,8 +350,7 @@ public class WrestlerService {
     // When no specific expansionCode is requested, restrict to the universe's enabled expansions.
     final Set<String> enabledExpansionCodes;
     if (expansionCode == null) {
-      Universe universe =
-          universeRepository.findById(finalUniverseId).orElse(null);
+      Universe universe = universeRepository.findById(finalUniverseId).orElse(null);
       enabledExpansionCodes =
           universe != null
               ? universeSettingsService.getEnabledExpansionCodesForUniverse(universe)
@@ -757,8 +751,7 @@ public class WrestlerService {
    * @param wrestler The wrestler
    * @return The resolved image source
    */
-  public ImageResolution resolveWrestlerImage(
-      @NonNull final Wrestler wrestler) {
+  public ImageResolution resolveWrestlerImage(@NonNull final Wrestler wrestler) {
     return imageService.resolveImage(wrestler.getName(), ImageCategory.WRESTLER);
   }
 

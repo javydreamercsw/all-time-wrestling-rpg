@@ -100,19 +100,14 @@ public interface SegmentRepository
   List<Segment> findByIsTitleSegmentTrue();
 
   /** Find segments involving a specific title. */
-  @Query(
-      "SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true")
-  List<Segment> findByTitle(
-      @Param("title")
-          Title title);
+  @Query("SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true")
+  List<Segment> findByTitle(@Param("title") Title title);
 
   /** Find all segments for a title ordered chronologically — used by the reign rebuild repair. */
   @Query(
       "SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true"
           + " ORDER BY s.show.showDate ASC, s.id ASC")
-  List<Segment> findByTitleOrderedByShowDate(
-      @Param("title")
-          Title title);
+  List<Segment> findByTitleOrderedByShowDate(@Param("title") Title title);
 
   /** Find segments after a specific date. */
   List<Segment> findBySegmentDateAfter(Instant date);
@@ -278,6 +273,5 @@ public interface SegmentRepository
       """)
   Optional<Segment> findByIdWithDetails(@Param("id") Long id);
 
-  long countByAdjudicationStatus(
-      AdjudicationStatus adjudicationStatus);
+  long countByAdjudicationStatus(AdjudicationStatus adjudicationStatus);
 }

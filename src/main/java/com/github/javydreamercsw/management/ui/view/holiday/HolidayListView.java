@@ -121,8 +121,7 @@ public class HolidayListView extends Main {
 
     grid.addColumn(
             holiday -> {
-              if (holiday.getType()
-                  == HolidayType.FIXED) {
+              if (holiday.getType() == HolidayType.FIXED) {
                 return "%s %d".formatted(holiday.getHolidayMonth(), holiday.getDayOfMonth());
               } else {
                 return "%s %s of %s"

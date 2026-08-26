@@ -174,8 +174,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     // Verify content is visible
     WebElement healedInjurySpan =
         healedDetails.findElement(By.xpath(".//span[contains(text(), 'Twisted Ankle')]"));
-    new WebDriverWait(driver, Duration.ofSeconds(5))
-        .until(d -> healedInjurySpan.isDisplayed());
+    new WebDriverWait(driver, Duration.ofSeconds(5)).until(d -> healedInjurySpan.isDisplayed());
 
     isOpened =
         (Boolean)
@@ -185,7 +184,6 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
   }
 
   private void waitForText(final String text) {
-    new WebDriverWait(driver, Duration.ofSeconds(10))
-        .until(d -> d.getPageSource().contains(text));
+    new WebDriverWait(driver, Duration.ofSeconds(10)).until(d -> d.getPageSource().contains(text));
   }
 }

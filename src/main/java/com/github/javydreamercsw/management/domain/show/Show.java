@@ -71,8 +71,7 @@ public class Show extends AbstractEntity<Long> {
   private String description;
 
   @OneToMany(mappedBy = "show", fetch = FetchType.LAZY)
-  private List<Segment> segments =
-      new ArrayList<>();
+  private List<Segment> segments = new ArrayList<>();
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "show_type_id", nullable = false)

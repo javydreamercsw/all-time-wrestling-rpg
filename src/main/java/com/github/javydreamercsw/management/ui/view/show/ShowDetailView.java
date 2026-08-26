@@ -129,9 +129,7 @@ import org.springframework.context.ApplicationListener;
 @PermitAll
 @Slf4j
 public class ShowDetailView extends Main
-    implements HasUrlParameter<Long>,
-        ApplicationListener<ApplicationEvent>,
-        BeforeLeaveObserver {
+    implements HasUrlParameter<Long>, ApplicationListener<ApplicationEvent>, BeforeLeaveObserver {
 
   private final ShowService showService;
   private final SegmentService segmentService;
@@ -613,10 +611,7 @@ public class ShowDetailView extends Main
 
     boolean hasPendingSegments =
         segmentRepository.findByShow(show).stream()
-            .anyMatch(
-                segment ->
-                    segment.getAdjudicationStatus()
-                        == AdjudicationStatus.PENDING);
+            .anyMatch(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING);
     adjudicateButton.setEnabled(hasPendingSegments);
 
     addSegmentButton =
@@ -711,9 +706,7 @@ public class ShowDetailView extends Main
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
     Map<Long, String> championNames =
-        titleIds.isEmpty()
-            ? Map.of()
-            : titleService.getCurrentChampionNamesByTitleIds(titleIds);
+        titleIds.isEmpty() ? Map.of() : titleService.getCurrentChampionNamesByTitleIds(titleIds);
 
     Map<String, String> alignments = new HashMap<>();
     if (show.getCommentaryTeam() != null) {

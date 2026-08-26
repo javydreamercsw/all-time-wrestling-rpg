@@ -131,8 +131,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
         .thenReturn(
             Optional.of(CampaignChapterDTO.builder().title("All or Nothing (Season 1)").build()));
     when(titleRepository.findByName(any())).thenReturn(Optional.empty());
-    when(wrestlerService.resolveWrestlerImage(any()))
-        .thenReturn(new ImageResolution(null, true));
+    when(wrestlerService.resolveWrestlerImage(any())).thenReturn(new ImageResolution(null, true));
   }
 
   @Test
@@ -357,8 +356,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     _click(_get(view, Button.class, spec -> spec.withId("abandon-campaign-button")));
 
     // ConfirmDialog should be open; campaign must NOT be abandoned yet
-    LocatorJ._get(
-        ConfirmDialog.class);
+    LocatorJ._get(ConfirmDialog.class);
     Mockito.verify(campaignService, Mockito.never()).abandonCampaign(any());
   }
 
@@ -550,7 +548,6 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
 
     _click(_get(dialog, Button.class, spec -> spec.withText("Cancel")));
 
-    Mockito.verify(campaignService, Mockito.never())
-        .startCampaign(any(), any());
+    Mockito.verify(campaignService, Mockito.never()).startCampaign(any(), any());
   }
 }

@@ -174,8 +174,7 @@ public class ArenaFormDialog extends Dialog {
     imageUpload.setUploadButtonText("Upload Image");
 
     Button generateImageButton = new Button("Generate AI Image", e -> generateImage());
-    generateImageButton.addThemeVariants(
-        ButtonVariant.LUMO_CONTRAST);
+    generateImageButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
     generateImageButton.setEnabled(
         arena != null && arena.getId() != null); // Can only generate for existing arena
 

@@ -297,9 +297,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
               if (segmentId != null) {
                 UI.getCurrent()
                     .navigate(
-                        MatchView.class,
-                        new RouteParameters(
-                            "matchId", segmentId.toString()));
+                        MatchView.class, new RouteParameters("matchId", segmentId.toString()));
               } else {
                 UI.getCurrent().navigate("campaign/actions");
               }

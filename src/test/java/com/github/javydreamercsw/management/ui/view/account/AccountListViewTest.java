@@ -72,8 +72,7 @@ class AccountListViewTest extends AbstractViewTest {
     Button newAccountButton = _get(view, Button.class, spec -> spec.withId("new-account-button"));
     newAccountButton.click();
 
-    Dialog dialog =
-        _get(Dialog.class);
+    Dialog dialog = _get(Dialog.class);
     assertTrue(dialog.isOpened());
   }
 }

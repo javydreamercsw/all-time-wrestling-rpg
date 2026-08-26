@@ -66,8 +66,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
   void shouldConvert3BumpsToInjuryAndResetBumps() {
     // Given - Add 2 bumps first
     assert wrestler1.getId() != null;
-    Optional<WrestlerState> afterFirstBump =
-        wrestlerService.addBump(wrestler1.getId(), universeId);
+    Optional<WrestlerState> afterFirstBump = wrestlerService.addBump(wrestler1.getId(), universeId);
     assertThat(afterFirstBump).isPresent();
     assertThat(afterFirstBump.get().getBumps()).isEqualTo(1);
 
@@ -77,8 +76,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
     assertThat(afterSecondBump.get().getBumps()).isEqualTo(2);
 
     // When - Add third bump (should trigger injury)
-    Optional<WrestlerState> afterThirdBump =
-        wrestlerService.addBump(wrestler1.getId(), universeId);
+    Optional<WrestlerState> afterThirdBump = wrestlerService.addBump(wrestler1.getId(), universeId);
 
     // Then - Bumps should be reset and injury created
     assertThat(afterThirdBump).isPresent();
@@ -172,8 +170,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
   @DisplayName("Should handle injury healing with fan cost")
   void shouldHandleInjuryHealingWithFanCost() {
     // Given - Create injury and ensure wrestler has enough fans
-    WrestlerState state =
-        wrestlerService.getOrCreateState(wrestler1.getId(), universeId);
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler1.getId(), universeId);
     state.setFans(50000L); // Plenty of fans
     wrestlerStateRepository.save(state);
 
@@ -263,8 +260,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
   @DisplayName("Should prevent healing when wrestler cannot afford cost")
   void shouldPreventHealingWhenWrestlerCannotAffordCost() {
     // Given - Create injury and ensure wrestler has insufficient fans
-    WrestlerState state =
-        wrestlerService.getOrCreateState(wrestler1.getId(), universeId);
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler1.getId(), universeId);
     state.setFans(1000L); // Not enough fans
     wrestlerStateRepository.save(state);
 

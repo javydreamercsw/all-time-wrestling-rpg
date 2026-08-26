@@ -133,11 +133,7 @@ class TitleListViewTest extends AbstractViewTest {
                 return false;
               }
               WrestlerTier wTier =
-                  w.getDefaultState()
-                      .map(
-                          WrestlerState
-                              ::getTier)
-                      .orElse(WrestlerTier.ROOKIE);
+                  w.getDefaultState().map(WrestlerState::getTier).orElse(WrestlerTier.ROOKIE);
               return wTier.ordinal() >= t.getTier().ordinal();
             });
 

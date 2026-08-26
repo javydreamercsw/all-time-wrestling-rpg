@@ -301,8 +301,7 @@ public class InboxService {
   @PreAuthorize("permitAll()")
   @Transactional
   public void createTutorialReminderIfAbsent(
-      @NonNull final Account account,
-      @NonNull final InboxEventType tutorialReminderEventType) {
+      @NonNull final Account account, @NonNull final InboxEventType tutorialReminderEventType) {
     String accountId = account.getId() != null ? account.getId().toString() : null;
     if (accountId == null) {
       return;

@@ -155,8 +155,7 @@ public class OpenAISegmentNarrationService extends AbstractSegmentNarrationServi
     } catch (Exception e) {
       log.error("Failed to call OpenAI API for segment narration", e);
       if (e instanceof HttpTimeoutException) {
-        throw new AIServiceException(
-            504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
+        throw new AIServiceException(504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
       }
       throw new AIServiceException(
           500, "Internal Server Error", getProviderName(), e.getMessage(), e);

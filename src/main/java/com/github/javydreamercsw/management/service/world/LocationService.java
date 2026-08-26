@@ -89,9 +89,7 @@ public class LocationService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @Cacheable(value = CacheConfig.LOCATIONS_CACHE, key = "'all'")
   public List<Location> findAll() {
-    return repository.findAll().stream()
-        .filter(Location::isActive)
-        .collect(Collectors.toList());
+    return repository.findAll().stream().filter(Location::isActive).collect(Collectors.toList());
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")

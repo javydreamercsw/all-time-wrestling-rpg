@@ -56,8 +56,7 @@ class CampaignChapterServiceTest {
         new CampaignChapterService(
             objectMapper,
             featureDataService,
-            Mockito.mock(
-                ExpansionService.class),
+            Mockito.mock(ExpansionService.class),
             new PathMatchingResourcePatternResolver());
     chapterService.init();
   }

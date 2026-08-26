@@ -124,12 +124,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final SeasonService seasonService;
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
-  private final WrestlerRelationshipService
-      relationshipService;
-  private final WrestlerStatusService
-      wrestlerStatusService;
-  private final StatusCardService
-      statusCardService;
+  private final WrestlerRelationshipService relationshipService;
+  private final WrestlerStatusService wrestlerStatusService;
+  private final StatusCardService statusCardService;
   private final WrestlerStateRepository wrestlerStateRepository;
   private final WrestlerAbilityRepository wrestlerAbilityRepository;
   private final AlignmentService alignmentService;
@@ -176,12 +173,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final CampaignService campaignService,
       final ImageStorageService imageStorageService,
       final UniverseContextService universeContextService,
-      final WrestlerRelationshipService
-          relationshipService,
-      final WrestlerStatusService
-          wrestlerStatusService,
-      final StatusCardService
-          statusCardService,
+      final WrestlerRelationshipService relationshipService,
+      final WrestlerStatusService wrestlerStatusService,
+      final StatusCardService statusCardService,
       final WrestlerStateRepository wrestlerStateRepository,
       final WrestlerAbilityRepository wrestlerAbilityRepository,
       final AlignmentService alignmentService) {
@@ -500,8 +494,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       relationshipsContainer.removeAll();
       relationshipsContainer.setPadding(false);
       relationshipsContainer.add(new H3("Relationships"));
-      List<WrestlerRelationship>
-          relationships = relationshipService.getRelationshipsForWrestler(wrestler.getId());
+      List<WrestlerRelationship> relationships =
+          relationshipService.getRelationshipsForWrestler(wrestler.getId());
       if (relationships.isEmpty()) {
         relationshipsContainer.add(new Paragraph("No active social relationships."));
       } else {
@@ -569,15 +563,13 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
             e -> {
               wrestlerService.resetWearAndTear(wrestler.getId(), universeId);
               updateView();
-              Notification.show(
-                  "Wear & Tear reset to 100%!");
+              Notification.show("Wear & Tear reset to 100%!");
             });
         injuriesLayout.add(resetWearAndTearButton);
       }
 
       injuriesLayout.add(new Paragraph("Bumps: " + state.getBumps()));
-      List<Injury> injuries =
-          injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId);
+      List<Injury> injuries = injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId);
       if (injuries.isEmpty()) {
         injuriesLayout.add(new Paragraph("No current injuries."));
       } else {

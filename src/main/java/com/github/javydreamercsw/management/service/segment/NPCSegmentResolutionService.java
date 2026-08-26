@@ -488,8 +488,7 @@ public class NPCSegmentResolutionService {
 
       // Factor in Ringside Actions
       int ringsideBonus = 0;
-      List<RingsideAction> allActions =
-          ringsideActionDataService.findAllActions();
+      List<RingsideAction> allActions = ringsideActionDataService.findAllActions();
       if (!allActions.isEmpty()) {
         for (Wrestler w : team.getMembers()) {
           WrestlerState state = wrestlerService.getOrCreateState(w.getId(), universeId);
@@ -497,8 +496,7 @@ public class NPCSegmentResolutionService {
             // 20% base chance for manager to attempt an action in simulation
             if (random.nextDouble() < 0.20) {
               // Pick a random ringside action
-              RingsideAction action =
-                  allActions.get(random.nextInt(allActions.size()));
+              RingsideAction action = allActions.get(random.nextInt(allActions.size()));
 
               // Success chance: 70% base for simulation ringside actions
               if (random.nextDouble() < 0.70) {

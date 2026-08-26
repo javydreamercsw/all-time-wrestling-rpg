@@ -42,8 +42,7 @@ class InjuryPenaltiesTest extends AbstractIntegrationTest {
           Wrestler wrestler = createTestWrestler("Penalty Tester");
           wrestler = wrestlerRepository.save(wrestler);
 
-          Universe universe =
-              universeRepository.findAll().stream().findFirst().orElseThrow();
+          Universe universe = universeRepository.findAll().stream().findFirst().orElseThrow();
 
           Optional<Injury> injury =
               injuryService.createInjury(

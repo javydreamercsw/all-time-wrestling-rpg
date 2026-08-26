@@ -180,11 +180,7 @@ class JoinRequestServiceTest {
     assertThat(request.getResolvedBy()).isEqualTo(admin);
     assertThat(request.getResolvedAt()).isNotNull();
     verify(membershipService)
-        .addMember(
-            universe,
-            requester,
-            UniverseMembership
-                .UniverseMemberRole.MEMBER);
+        .addMember(universe, requester, UniverseMembership.UniverseMemberRole.MEMBER);
   }
 
   @Test

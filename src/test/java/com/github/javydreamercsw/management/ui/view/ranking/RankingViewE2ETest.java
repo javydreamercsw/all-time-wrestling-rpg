@@ -64,8 +64,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private CacheManager cacheManager;
 
-  @Autowired
-  private ShowTypeService showTypeService;
+  @Autowired private ShowTypeService showTypeService;
 
   @BeforeEach
   public void setUp() {

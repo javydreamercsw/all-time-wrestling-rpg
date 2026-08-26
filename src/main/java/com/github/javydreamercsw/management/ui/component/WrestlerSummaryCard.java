@@ -372,12 +372,9 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 }
 
                 if (healedInjuries.getComponentCount() > 0) {
-                  Details healedDetails =
-                      new Details(
-                          "Healed Injuries", healedInjuries);
+                  Details healedDetails = new Details("Healed Injuries", healedInjuries);
                   healedDetails.addThemeVariants(
-                      DetailsVariant.LUMO_REVERSE,
-                      DetailsVariant.LUMO_SMALL);
+                      DetailsVariant.LUMO_REVERSE, DetailsVariant.LUMO_SMALL);
                   healedDetails.setOpened(false);
                   healedDetails.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
                   getContent().add(healedDetails);

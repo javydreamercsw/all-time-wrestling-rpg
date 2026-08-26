@@ -244,10 +244,8 @@ class AchievementSystemTest {
     List<Wrestler> wrestlers = List.of(wrestler);
     when(wrestlerRepository.findByAccount(account)).thenReturn(wrestlers);
 
-    Title t1 =
-        mock(Title.class);
-    Title t2 =
-        mock(Title.class);
+    Title t1 = mock(Title.class);
+    Title t2 = mock(Title.class);
     when(t1.getId()).thenReturn(1L);
     when(t2.getId()).thenReturn(2L);
     when(titleRepository.findByIsActiveTrue()).thenReturn(List.of(t1, t2));
@@ -293,9 +291,7 @@ class AchievementSystemTest {
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("One on One");
     when(rule.getName()).thenReturn("Normal");
-    when(rule.getBumpAddition())
-        .thenReturn(
-            BumpAddition.NONE);
+    when(rule.getBumpAddition()).thenReturn(BumpAddition.NONE);
     when(show.isPremiumLiveEvent()).thenReturn(false);
     when(segment.isMainEvent()).thenReturn(true);
 

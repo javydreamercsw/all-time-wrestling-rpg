@@ -92,8 +92,7 @@ public class LocationListView extends Main {
     grid.addComponentColumn(
             location -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
-              nameLayout.setAlignItems(
-                  FlexComponent.Alignment.CENTER);
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!location.isActive()) {

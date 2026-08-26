@@ -81,8 +81,7 @@ public class NarrationDialog extends Dialog {
   private final RivalryService rivalryService;
   private final RingsideActionService ringsideActionService;
   private final SegmentNarrationServiceFactory aiFactory;
-  private final WrestlerRelationshipService
-      relationshipService;
+  private final WrestlerRelationshipService relationshipService;
   private final UniverseContextService universeContextService;
   private final NotificationService notificationService;
 
@@ -113,8 +112,7 @@ public class NarrationDialog extends Dialog {
       final SegmentNarrationController segmentNarrationController,
       final SegmentNarrationServiceFactory aiFactory,
       final RingsideActionService ringsideActionService,
-      final WrestlerRelationshipService
-          relationshipService,
+      final WrestlerRelationshipService relationshipService,
       final UniverseContextService universeContextService,
       final NotificationService notificationService,
       final WrestlerStatsService wrestlerStatsService) {
@@ -299,13 +297,11 @@ public class NarrationDialog extends Dialog {
     log.debug("Sending narration context to AI: {}", context);
     showProgress(true);
     UI ui = UI.getCurrent();
-    SecurityContext securityContext =
-        SecurityContextHolder.getContext();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
 
     CompletableFuture.supplyAsync(
             () -> {
-              SecurityContextHolder.setContext(
-                  securityContext);
+              SecurityContextHolder.setContext(securityContext);
               try {
                 return segmentNarrationController.narrateSegment(context);
               } finally {
@@ -372,9 +368,7 @@ public class NarrationDialog extends Dialog {
 
     if (isTitleMatch) {
       String championshipNames =
-          segment.getTitles().stream()
-              .map(Title::getName)
-              .collect(Collectors.joining(" and "));
+          segment.getTitles().stream().map(Title::getName).collect(Collectors.joining(" and "));
       context.setSegmentChampionship(championshipNames);
 
       List<SegmentNarrationService.TitleContext> titleContexts = new ArrayList<>();
@@ -500,8 +494,7 @@ public class NarrationDialog extends Dialog {
                 w -> {
                   Object supporter = ringsideActionService.getBestSupporter(segment, w);
                   if (supporter != null) {
-                    if (supporter
-                        instanceof Npc n) {
+                    if (supporter instanceof Npc n) {
                       wc.setManagerName(n.getName());
                     } else if (supporter instanceof Wrestler other) {
                       wc.setManagerName(other.getName());
@@ -662,9 +655,7 @@ public class NarrationDialog extends Dialog {
     dialog.setHeaderTitle("Narration Failed");
 
     VerticalLayout content = new VerticalLayout();
-    content.add(
-        new Span(
-            errorResponse.path("error").asText("Unknown error")));
+    content.add(new Span(errorResponse.path("error").asText("Unknown error")));
 
     JsonNode alternativeProviders = errorResponse.path("alternativeProviders");
     if (alternativeProviders.isArray()) {
@@ -700,13 +691,11 @@ public class NarrationDialog extends Dialog {
     log.info("Retrying narration with provider {} and context: {}", provider, context);
     showProgress(true);
     UI ui = UI.getCurrent();
-    SecurityContext retrySecurityContext =
-        SecurityContextHolder.getContext();
+    SecurityContext retrySecurityContext = SecurityContextHolder.getContext();
 
     CompletableFuture.supplyAsync(
             () -> {
-              SecurityContextHolder.setContext(
-                  retrySecurityContext);
+              SecurityContextHolder.setContext(retrySecurityContext);
               try {
                 return segmentNarrationController.narrateSegmentWithProvider(provider, context);
               } finally {

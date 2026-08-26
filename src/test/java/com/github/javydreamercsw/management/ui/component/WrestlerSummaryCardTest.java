@@ -92,10 +92,7 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
             wrestler, 1L, wrestlerService, injuryService, true, wrestlerStatsService);
 
     // Verify Name
-    _get(
-        card,
-        H4.class,
-        spec -> spec.withText("Test Wrestler (YOU)"));
+    _get(card, H4.class, spec -> spec.withText("Test Wrestler (YOU)"));
 
     // Verify Stats
     _get(card, Span.class, spec -> spec.withText("Wins: 10"));

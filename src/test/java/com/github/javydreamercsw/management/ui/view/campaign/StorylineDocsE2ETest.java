@@ -95,13 +95,11 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
 
     // 3. Verify & Capture
     // Find the journal details component and expand it
-    WebElement journal =
-        waitForVaadinElement(driver, By.id("story-journal-details"));
+    WebElement journal = waitForVaadinElement(driver, By.id("story-journal-details"));
     clickElement(journal);
 
     waitForText("The Phantom Rival");
-    waitForVaadinElement(
-        driver, By.id("download-json-button-" + storyline.getId()));
+    waitForVaadinElement(driver, By.id("download-json-button-" + storyline.getId()));
 
     documentFeature(
         "Campaign",

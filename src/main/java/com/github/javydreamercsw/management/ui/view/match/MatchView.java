@@ -251,13 +251,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     if (isPromo || segment.getReferee() != null) {
       return;
     }
-    List<Npc> referees =
-        npcService.findAllByType("Referee");
+    List<Npc> referees = npcService.findAllByType("Referee");
     if (referees.isEmpty()) {
       return;
     }
-    Npc referee =
-        referees.get(new Random().nextInt(referees.size()));
+    Npc referee = referees.get(new Random().nextInt(referees.size()));
     segment.setReferee(referee);
     segment.setRefereeAwarenessLevel(npcService.getAwareness(referee));
     // Persist the referee assignment as a system operation so it succeeds regardless
@@ -647,8 +645,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 var abilities = wrestlerAbilityRepository.findByWrestlerId(matchPlayer.getId());
                 if (!abilities.isEmpty()) {
                   Details abilitiesSection =
-                      new Details(
-                          "Your Abilities", new WrestlerAbilityPanel(abilities));
+                      new Details("Your Abilities", new WrestlerAbilityPanel(abilities));
                   abilitiesSection.setOpened(false);
                   sideCol.add(abilitiesSection);
                 }
@@ -659,8 +656,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     boolean isGlobalUniverse =
         segment.getShow() != null
             && segment.getShow().getUniverse() != null
-            && Universe.UniverseType.GLOBAL
-                == segment.getShow().getUniverse().getType();
+            && Universe.UniverseType.GLOBAL == segment.getShow().getUniverse().getType();
     if (!isPromo && isGlobalUniverse) {
       final RingsideActionComponent[] actionComponentWrapper = new RingsideActionComponent[1];
 
@@ -745,9 +741,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     var winners = segment.getWinners();
     winnersComboBox.setValue(
         new HashSet<>(
-            winners != null
-                ? winners.stream().filter(Objects::nonNull).toList()
-                : List.of()));
+            winners != null ? winners.stream().filter(Objects::nonNull).toList() : List.of()));
     winnersComboBox.setId("winners-combobox");
 
     String saveButtonText = isBookerOrAdmin ? "Adjudicate Match" : "Submit Result";
@@ -777,9 +771,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         Integer existing =
             segment.getParticipants().stream()
                 .filter(p -> w.getId().equals(p.getWrestler().getId()))
-                .map(
-                    SegmentParticipant
-                        ::getFinalMomentum)
+                .map(SegmentParticipant::getFinalMomentum)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
@@ -805,9 +797,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         Integer existing =
             segment.getParticipants().stream()
                 .filter(p -> w.getId().equals(p.getWrestler().getId()))
-                .map(
-                    SegmentParticipant
-                        ::getFinalStamina)
+                .map(SegmentParticipant::getFinalStamina)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
@@ -835,9 +825,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         Integer existing =
             segment.getParticipants().stream()
                 .filter(p -> w.getId().equals(p.getWrestler().getId()))
-                .map(
-                    SegmentParticipant
-                        ::getFinalHealth)
+                .map(SegmentParticipant::getFinalHealth)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
@@ -862,16 +850,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               .findFirst()
               .orElse(null);
       if (activeCampaign != null) {
-        finishTypeGroup =
-            new RadioButtonGroup<>("Finish Type");
+        finishTypeGroup = new RadioButtonGroup<>("Finish Type");
         boolean refereeStoppageAllowed =
             segment.getSegmentRules().isEmpty()
-                || segment.getSegmentRules().stream()
-                    .allMatch(
-                        SegmentRule
-                            ::isAllowsRefereeStopage);
-        List<String> finishTypes =
-            new ArrayList<>(List.of("PINFALL", "SUBMISSION", "COUNTOUT"));
+                || segment.getSegmentRules().stream().allMatch(SegmentRule::isAllowsRefereeStopage);
+        List<String> finishTypes = new ArrayList<>(List.of("PINFALL", "SUBMISSION", "COUNTOUT"));
         if (refereeStoppageAllowed) {
           finishTypes.add("REFEREE STOPPAGE");
         }
@@ -1159,8 +1142,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     // Set manager/supporter context
                     Object supporter = ringsideActionService.getBestSupporter(segment, w);
                     if (supporter != null) {
-                      if (supporter
-                          instanceof Npc n) {
+                      if (supporter instanceof Npc n) {
                         wc.setManagerName(n.getName());
                       } else if (supporter instanceof Wrestler other) {
                         wc.setManagerName(other.getName());
@@ -1172,9 +1154,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               .toList());
 
       context.setDeterminedOutcome(
-          segment.getWinners().stream()
-              .map(Wrestler::getName)
-              .collect(Collectors.joining(", ")));
+          segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
 
       // Add all available NPCs to the context to help AI stay within roster
 
@@ -1321,9 +1301,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     cc.setActiveInjuries(
                         playerWrestler
                             .getDefaultState()
-                            .map(
-                                WrestlerState
-                                    ::getActiveInjuries)
+                            .map(WrestlerState::getActiveInjuries)
                             .orElseGet(Collections::emptyList)
                             .stream()
                             .map(Injury::getName)
@@ -1411,8 +1389,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     // Persist final momentum values entered by the player/booker
     if (!momentumFields.isEmpty()) {
-      for (SegmentParticipant p :
-          segment.getParticipants()) {
+      for (SegmentParticipant p : segment.getParticipants()) {
         IntegerField field = momentumFields.get(p.getWrestler().getId());
         if (field != null) {
           p.setFinalMomentum(field.getValue());
@@ -1422,8 +1399,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     // Persist final stamina values entered by the player/booker
     if (!staminaFields.isEmpty()) {
-      for (SegmentParticipant p :
-          segment.getParticipants()) {
+      for (SegmentParticipant p : segment.getParticipants()) {
         IntegerField field = staminaFields.get(p.getWrestler().getId());
         if (field != null) {
           p.setFinalStamina(field.getValue());
@@ -1433,8 +1409,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     // Persist final health values for player-controlled wrestlers (non-promo only)
     if (!healthFields.isEmpty()) {
-      for (SegmentParticipant p :
-          segment.getParticipants()) {
+      for (SegmentParticipant p : segment.getParticipants()) {
         IntegerField field = healthFields.get(p.getWrestler().getId());
         if (field != null) {
           p.setFinalHealth(field.getValue());
@@ -1446,8 +1421,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     if (finishTypeGroup != null || winningCardField != null) {
       String ft = finishTypeGroup != null ? finishTypeGroup.getValue() : null;
       String wc = winningCardField != null ? winningCardField.getValue() : null;
-      for (SegmentParticipant p :
-          segment.getParticipants()) {
+      for (SegmentParticipant p : segment.getParticipants()) {
         if (p.getWrestler() != null && p.getWrestler().getAccount() != null) {
           p.setFinishType(ft);
           p.setWinningCardName(wc);
@@ -1533,8 +1507,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       if (isCampaignMatch) {
         // For campaign matches, processMatchResult handles rewards.
         // We set status to ADJUDICATED to mark it done.
-        segment.setAdjudicationStatus(
-            AdjudicationStatus.ADJUDICATED);
+        segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
         GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
         Notification n = Notification.show("Match adjudicated & Campaign Progress Updated!");
         n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -1542,8 +1515,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       } else if (securityUtils.isBooker() || securityUtils.isAdmin()) {
         // For standard matches, perform full adjudication (Booker/Admin only)
         segmentAdjudicationService.adjudicateMatch(segment.getId());
-        segment.setAdjudicationStatus(
-            AdjudicationStatus.ADJUDICATED);
+        segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
         segmentService.updateSegment(segment);
         Notification.show("Match adjudicated successfully!")
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

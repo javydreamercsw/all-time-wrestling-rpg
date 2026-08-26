@@ -268,8 +268,7 @@ class OpenAIImageGenerationServiceTest {
     when(aiSettings.getOpenAIApiKey()).thenReturn("sk-abc123");
     when(aiSettings.getOpenAIImageModel()).thenReturn("dall-e-3");
 
-    ArgumentCaptor<HttpRequest> requestCaptor =
-        ArgumentCaptor.forClass(HttpRequest.class);
+    ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
     when(httpClient.send(requestCaptor.capture(), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 

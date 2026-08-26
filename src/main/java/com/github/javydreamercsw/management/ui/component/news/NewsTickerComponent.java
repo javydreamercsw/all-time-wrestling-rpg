@@ -123,9 +123,7 @@ public class NewsTickerComponent extends Composite<Div> {
     }
 
     dialog.add(content);
-    dialog
-        .getFooter()
-        .add(new Button("Close", e -> dialog.close()));
+    dialog.getFooter().add(new Button("Close", e -> dialog.close()));
     dialog.open();
   }
 }

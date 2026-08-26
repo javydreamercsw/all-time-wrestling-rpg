@@ -73,10 +73,7 @@ public class UniverseSettingsService {
         .map(UniverseExpansionSetting::isEnabled)
         .orElseGet(
             () -> {
-              String key =
-                  ExpansionService
-                          .SET_ENABLED_PREFIX
-                      + expansionCode;
+              String key = ExpansionService.SET_ENABLED_PREFIX + expansionCode;
               return gameSettingService
                   .findByKeyForUniverse(key, universe.getId())
                   .map(s -> Boolean.parseBoolean(s.getValue()))

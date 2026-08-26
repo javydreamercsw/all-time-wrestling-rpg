@@ -54,9 +54,7 @@ class WrestlerSyncTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
 
-  @Mock
-  private WrestlerAbilityRepository
-      wrestlerAbilityRepository;
+  @Mock private WrestlerAbilityRepository wrestlerAbilityRepository;
 
   @Mock private WrestlerService wrestlerService;
   @Mock private UniverseRepository universeRepository;

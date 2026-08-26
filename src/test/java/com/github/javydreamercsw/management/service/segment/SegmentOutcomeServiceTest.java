@@ -287,11 +287,7 @@ class SegmentOutcomeServiceTest {
     // intentionally no decks — getDecks() returns null
 
     WrestlerState detachedState =
-        WrestlerState.builder()
-            .wrestler(detachedWinner)
-            .fans(200L)
-            .tier(WrestlerTier.ICON)
-            .build();
+        WrestlerState.builder().wrestler(detachedWinner).fans(200L).tier(WrestlerTier.ICON).build();
     lenient().when(wrestlerService.getOrCreateState(eq(4L), anyLong())).thenReturn(detachedState);
 
     CardSet cs = new CardSet();

@@ -65,21 +65,18 @@ class LegacyServiceTest {
     account.setId(1L);
     account.setUsername("testuser");
 
-    Universe universe =
-        new Universe();
+    Universe universe = new Universe();
     universe.setId(1L);
 
     Wrestler w1 = new Wrestler();
-    WrestlerState s1 =
-        new WrestlerState();
+    WrestlerState s1 = new WrestlerState();
     s1.setWrestler(w1);
     s1.setUniverse(universe);
     s1.setFans(5000L);
     w1.setWrestlerStates(new LinkedHashSet<>(List.of(s1)));
 
     Wrestler w2 = new Wrestler();
-    WrestlerState s2 =
-        new WrestlerState();
+    WrestlerState s2 = new WrestlerState();
     s2.setWrestler(w2);
     s2.setUniverse(universe);
     s2.setFans(2500L);
@@ -100,13 +97,11 @@ class LegacyServiceTest {
     account.setId(1L);
     account.setUsername("testuser");
 
-    Universe universe =
-        new Universe();
+    Universe universe = new Universe();
     universe.setId(1L);
 
     Wrestler w1 = new Wrestler();
-    WrestlerState s1 =
-        new WrestlerState();
+    WrestlerState s1 = new WrestlerState();
     s1.setWrestler(w1);
     s1.setUniverse(universe);
     s1.setFans(10000L);

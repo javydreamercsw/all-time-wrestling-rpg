@@ -257,11 +257,7 @@ class ExtremeCampaignChapterTest {
 
     var choicesWithPool =
         chapter.get().getStaticEncounters().stream()
-            .flatMap(
-                e ->
-                    e.getChoices() != null
-                        ? e.getChoices().stream()
-                        : Stream.empty())
+            .flatMap(e -> e.getChoices() != null ? e.getChoices().stream() : Stream.empty())
             .filter(c -> c.getOpponentPool() != null && !c.getOpponentPool().isEmpty())
             .toList();
 

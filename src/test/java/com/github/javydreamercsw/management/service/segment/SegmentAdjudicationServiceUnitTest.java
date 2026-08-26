@@ -155,13 +155,9 @@ class SegmentAdjudicationServiceUnitTest {
     Mockito.lenient()
         .when(matchFulfillmentRepository.findBySegment(any(Segment.class)))
         .thenReturn(Optional.empty());
-    Mockito.lenient()
-        .when(universeContextService.getCurrentUniverseId())
-        .thenReturn(1L);
+    Mockito.lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     WrestlerState defaultState = WrestlerState.builder().physicalCondition(100).build();
-    Mockito.lenient()
-        .when(wrestlerService.getOrCreateState(any(), any()))
-        .thenReturn(defaultState);
+    Mockito.lenient().when(wrestlerService.getOrCreateState(any(), any())).thenReturn(defaultState);
   }
 
   @Test

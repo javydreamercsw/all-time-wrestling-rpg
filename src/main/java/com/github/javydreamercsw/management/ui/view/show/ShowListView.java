@@ -525,9 +525,7 @@ public class ShowListView extends Main {
             u ->
                 showGrid.setItems(
                     query -> {
-                      Pageable pageable =
-                          VaadinSpringDataHelpers.toSpringPageRequest(
-                              query);
+                      Pageable pageable = VaadinSpringDataHelpers.toSpringPageRequest(query);
                       return showService.getShowsByUniverse(u, pageable).stream();
                     },
                     query -> (int) showService.countShowsByUniverse(u)),

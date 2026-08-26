@@ -109,15 +109,11 @@ public class MatchResultProcessorService {
   private final LegacyService legacyService;
 
   // Field-injected with @Lazy to break circular dependency with CampaignService
-  @Autowired
-  @Lazy
-  private CampaignService campaignService;
+  @Autowired @Lazy private CampaignService campaignService;
 
   // Field-injected with @Lazy to break the cycle: MatchResultProcessorService →
   // CampaignEncounterService → CampaignService → MatchResultProcessorService
-  @Autowired
-  @Lazy
-  private CampaignEncounterService campaignEncounterService;
+  @Autowired @Lazy private CampaignEncounterService campaignEncounterService;
 
   private final Random random = new Random();
 
@@ -158,9 +154,7 @@ public class MatchResultProcessorService {
 
     String actualTypeName = segmentTypeName;
     List<String> actualRules =
-        segmentRules != null
-            ? new ArrayList<>(Arrays.asList(segmentRules))
-            : new ArrayList<>();
+        segmentRules != null ? new ArrayList<>(Arrays.asList(segmentRules)) : new ArrayList<>();
 
     if (isNarrativeFinale) {
       if (chapter.getRules().getFinalMatchType() != null) {

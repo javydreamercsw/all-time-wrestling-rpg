@@ -142,16 +142,14 @@ class RingsideActionServiceTest {
     coachAction.setType(legalType);
     coachAction.setRisk(0);
     coachAction.setImpact(5);
-    coachAction.setAlignment(
-        AlignmentType.FACE);
+    coachAction.setAlignment(AlignmentType.FACE);
 
     weaponAction = new RingsideAction();
     weaponAction.setName("Weapon Slide");
     weaponAction.setType(illegalType);
     weaponAction.setRisk(40);
     weaponAction.setImpact(25);
-    weaponAction.setAlignment(
-        AlignmentType.HEEL);
+    weaponAction.setAlignment(AlignmentType.HEEL);
 
     // Default repository behavior
     lenient().when(segmentRepository.findById(1L)).thenReturn(Optional.of(segment));
@@ -160,10 +158,8 @@ class RingsideActionServiceTest {
 
   @Test
   void shouldShiftAlignmentOnSuccess() {
-    Campaign campaign =
-        mock(Campaign.class);
-    WrestlerAlignment alignment =
-        new WrestlerAlignment();
+    Campaign campaign = mock(Campaign.class);
+    WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setCampaign(campaign);
     when(wrestler.getAlignment()).thenReturn(alignment);
 

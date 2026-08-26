@@ -279,9 +279,7 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
         .setHeader("Duration")
         .setAutoWidth(true);
     grid.setItems(
-        reigns.stream()
-            .sorted(Comparator.comparing(TitleReign::getStartDate).reversed())
-            .toList());
+        reigns.stream().sorted(Comparator.comparing(TitleReign::getStartDate).reversed()).toList());
     grid.setAllRowsVisible(true);
     grid.setWidthFull();
 
@@ -329,9 +327,7 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
         .setAutoWidth(true)
         .setFlexGrow(0);
     grid.setItems(
-        injuries.stream()
-            .sorted(Comparator.comparing(Injury::getInjuryDate).reversed())
-            .toList());
+        injuries.stream().sorted(Comparator.comparing(Injury::getInjuryDate).reversed()).toList());
     grid.setAllRowsVisible(true);
     grid.setWidthFull();
 

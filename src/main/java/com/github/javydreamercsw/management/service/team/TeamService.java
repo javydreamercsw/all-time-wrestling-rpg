@@ -98,8 +98,7 @@ public class TeamService {
             .collect(Collectors.toList());
 
     if (pageable.isUnpaged()) {
-      return new PageImpl<>(
-          allFiltered, pageable, allFiltered.size());
+      return new PageImpl<>(allFiltered, pageable, allFiltered.size());
     }
 
     int start = (int) pageable.getOffset();
@@ -110,8 +109,7 @@ public class TeamService {
       pageContent = allFiltered.subList(start, end);
     }
 
-    return new PageImpl<>(
-        pageContent, pageable, allFiltered.size());
+    return new PageImpl<>(pageContent, pageable, allFiltered.size());
   }
 
   /** Count all teams. */
@@ -314,8 +312,7 @@ public class TeamService {
   }
 
   @EventListener
-  public void onExpansionToggled(
-      final ExpansionToggledEvent event) {
+  public void onExpansionToggled(final ExpansionToggledEvent event) {
     log.info("Expansion '{}' toggled, clear team caches if any.", event.getExpansionCode());
   }
 

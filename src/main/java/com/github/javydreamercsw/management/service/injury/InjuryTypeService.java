@@ -169,8 +169,7 @@ public class InjuryTypeService {
   /** Gets all injury types with pagination. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Page<InjuryType> getAllInjuryTypes(
-      @NonNull final Pageable pageable) {
+  public Page<InjuryType> getAllInjuryTypes(@NonNull final Pageable pageable) {
     return injuryTypeRepository.findAll(pageable);
   }
 

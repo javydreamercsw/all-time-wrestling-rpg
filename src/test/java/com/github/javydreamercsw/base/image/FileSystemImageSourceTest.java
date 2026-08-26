@@ -42,9 +42,7 @@ class FileSystemImageSourceTest {
 
   @BeforeEach
   void setUp() {
-    Mockito.lenient()
-        .when(storageProperties.getResolvedDefaultImageDir())
-        .thenReturn(tempDir);
+    Mockito.lenient().when(storageProperties.getResolvedDefaultImageDir()).thenReturn(tempDir);
     source = new FileSystemImageSource(storageProperties);
   }
 

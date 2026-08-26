@@ -34,9 +34,7 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
 
     WebElement tab =
         waitForVaadinElement(
-            driver,
-            By.xpath(
-                "//vaadin-tab[contains(text(), 'Wrestler Relationships')]"));
+            driver, By.xpath("//vaadin-tab[contains(text(), 'Wrestler Relationships')]"));
     clickElement(tab);
 
     try {
@@ -64,8 +62,7 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
     navigateTo("wrestler-list");
 
     // Use the action menu to navigate to profile
-    WebElement actionMenu =
-        waitForVaadinElement(driver, By.id("action-menu-" + johnny.getId()));
+    WebElement actionMenu = waitForVaadinElement(driver, By.id("action-menu-" + johnny.getId()));
 
     selectFromVaadinMenuBar(actionMenu, "View Profile");
     waitForVaadinClientToLoad();

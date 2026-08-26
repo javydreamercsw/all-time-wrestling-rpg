@@ -80,8 +80,7 @@ class JoinRequestInboxListenerTest {
     adminAccount = new Account("admin", "hash", null);
     adminAccount.setId(10L);
     // Give admin the ADMIN role
-    Role adminRole =
-        new Role();
+    Role adminRole = new Role();
     adminRole.setName(RoleName.ADMIN);
     adminAccount.setRoles(new HashSet<>(List.of(adminRole)));
 

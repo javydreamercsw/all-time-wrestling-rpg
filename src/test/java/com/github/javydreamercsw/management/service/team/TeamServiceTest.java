@@ -51,8 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
     username = "admin",
     roles = {"ADMIN"})
 @DisplayName("TeamService Integration Tests")
-@TestPropertySource(
-    properties = {"data.initializer.enabled=false"})
+@TestPropertySource(properties = {"data.initializer.enabled=false"})
 @Transactional
 class TeamServiceTest extends ManagementIntegrationTest {
 

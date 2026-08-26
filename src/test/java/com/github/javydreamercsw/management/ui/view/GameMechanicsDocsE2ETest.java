@@ -176,8 +176,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
             .filter(
                 s ->
                     s.getSegmentType() != null
-                        && !SegmentTypeNames.PROMO
-                            .equalsIgnoreCase(s.getSegmentType().getName()))
+                        && !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName()))
             .findFirst()
             .orElse(null);
     if (segment != null) {
@@ -229,8 +228,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
     WebElement tab =
         waitForVaadinElement(
-            driver,
-            By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
+            driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(tab);
 
     try {
@@ -341,9 +339,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     // Expand the abilities panel so it is visible in the screenshot.
     WebElement abilitiesToggle =
         waitForVaadinElement(
-            driver,
-            By.xpath(
-                "//vaadin-details-summary[contains(., 'Your Abilities')]"));
+            driver, By.xpath("//vaadin-details-summary[contains(., 'Your Abilities')]"));
     clickElement(abilitiesToggle);
 
     try {

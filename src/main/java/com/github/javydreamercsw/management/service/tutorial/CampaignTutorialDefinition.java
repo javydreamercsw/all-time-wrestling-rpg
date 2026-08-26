@@ -116,9 +116,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
         return campaignChapterService.getAllChapters().stream()
             .filter(c -> !c.getAllowedWrestlerNames().isEmpty())
             .findFirst()
-            .map(
-                CampaignChapterDTO
-                    ::getAllowedWrestlerNames)
+            .map(CampaignChapterDTO::getAllowedWrestlerNames)
             .orElse(List.of());
       }
 

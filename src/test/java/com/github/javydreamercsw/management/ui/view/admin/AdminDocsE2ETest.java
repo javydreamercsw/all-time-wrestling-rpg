@@ -143,8 +143,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
   void testCaptureExpansionManagementView() {
     WebElement tab =
         navigateToAndWaitForElement(
-            "admin",
-            By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
+            "admin", By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(tab);
 
     try {

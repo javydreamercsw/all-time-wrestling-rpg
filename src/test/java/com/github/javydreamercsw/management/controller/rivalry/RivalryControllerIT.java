@@ -53,9 +53,7 @@ class RivalryControllerIT extends AbstractRestControllerIT {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
-  @Autowired
-  private UniverseRepository
-      universeRepository;
+  @Autowired private UniverseRepository universeRepository;
 
   @BeforeEach
   public void setUp() {

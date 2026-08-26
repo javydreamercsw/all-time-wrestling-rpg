@@ -151,9 +151,7 @@ public class PermissionService {
               target -> {
                 try {
                   long targetIdLong = Long.parseLong(target.getTargetId());
-                  if (InboxItemTarget.TargetType
-                          .ACCOUNT
-                      == target.getTargetType()) {
+                  if (InboxItemTarget.TargetType.ACCOUNT == target.getTargetType()) {
                     return accountId != null && accountId.equals(targetIdLong);
                   }
                   return ownedWrestlerIds.contains(targetIdLong);

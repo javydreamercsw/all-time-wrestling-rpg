@@ -198,8 +198,7 @@ public class AdminView extends VerticalLayout {
               trs.recalculateAllTiers();
             } else {
               // Fallback if not TierRecalculationService
-              rankingService.recalculateRanking(
-                  new ArrayList<>(wrestlerStateRepository.findAll()));
+              rankingService.recalculateRanking(new ArrayList<>(wrestlerStateRepository.findAll()));
             }
             notificationService.showSuccess("All wrestler tiers recalculated successfully!");
           } catch (Exception e) {

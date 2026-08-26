@@ -181,8 +181,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     ShowType pleShowType = new ShowType();
-    ShowTemplate pleTemplate =
-        mock(ShowTemplate.class);
+    ShowTemplate pleTemplate = mock(ShowTemplate.class);
     when(pleTemplate.isPremiumLiveEvent()).thenReturn(true);
     pleTemplate.setShowType(pleShowType);
 
@@ -236,8 +235,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     pleShowType.setExpectedMatches(7);
     pleShowType.setExpectedPromos(2);
     pleShowType.setCategory(ShowCategory.PLE);
-    ShowTemplate pleTemplate =
-        new ShowTemplate();
+    ShowTemplate pleTemplate = new ShowTemplate();
     pleTemplate.setShowType(pleShowType);
 
     Show upcomingPle = new Show();
@@ -296,8 +294,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     pleShowType.setName("Premium Live Event (PLE)");
     pleShowType.setExpectedMatches(7);
     pleShowType.setExpectedPromos(2);
-    ShowTemplate pleTemplate =
-        new ShowTemplate();
+    ShowTemplate pleTemplate = new ShowTemplate();
     pleTemplate.setShowType(pleShowType);
 
     Show upcomingPle = mock(Show.class);

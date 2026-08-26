@@ -78,20 +78,16 @@ class SeasonStatsServiceTest {
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
 
-    Universe universe =
-        new Universe();
+    Universe universe = new Universe();
     universe.setId(1L);
 
-    WrestlerState state =
-        new WrestlerState();
+    WrestlerState state = new WrestlerState();
     state.setWrestler(wrestler);
     state.setUniverse(universe);
     state.setFans(1000L);
     wrestler.setWrestlerStates(new LinkedHashSet<>(List.of(state)));
 
-    lenient()
-        .when(wrestlerRepository.findByIdWithStates(1L))
-        .thenReturn(Optional.of(wrestler));
+    lenient().when(wrestlerRepository.findByIdWithStates(1L)).thenReturn(Optional.of(wrestler));
 
     WrestlerSeasonSnapshot snapshot = new WrestlerSeasonSnapshot();
     snapshot.setStartingFans(500L);
@@ -154,8 +150,7 @@ class SeasonStatsServiceTest {
   @Test
   @DisplayName("startingFans falls back to 0 when no snapshot exists")
   void testStartingFansFallsBackToZeroWhenNoSnapshot() {
-    when(snapshotRepository.findByWrestlerIdAndSeasonId(1L, 1L))
-        .thenReturn(Optional.empty());
+    when(snapshotRepository.findByWrestlerIdAndSeasonId(1L, 1L)).thenReturn(Optional.empty());
     when(segmentRepository.findByWrestlerParticipationAndSeason(
             eq(wrestler), eq(season), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of()));

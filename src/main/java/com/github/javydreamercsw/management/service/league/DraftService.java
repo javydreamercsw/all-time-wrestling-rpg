@@ -205,10 +205,7 @@ public class DraftService {
         wrestler
             .getState(universeId)
             .or(wrestler::getDefaultState)
-            .orElseGet(
-                () ->
-                    WrestlerState.builder()
-                        .build());
+            .orElseGet(() -> WrestlerState.builder().build());
     WrestlerContract contract =
         WrestlerContract.builder()
             .wrestler(wrestler)
