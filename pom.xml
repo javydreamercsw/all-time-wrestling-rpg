@@ -736,6 +736,7 @@
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryFalseTrueRecipe</recipe>
             <recipe>org.openrewrite.staticanalysis.SimplifyTernaryRecipes$SimplifyTernaryTrueFalseRecipe</recipe>
+            <recipe>org.openrewrite.java.ShortenFullyQualifiedTypeReferences</recipe>
           </activeRecipes>
         </configuration>
         <dependencies>
