@@ -31,8 +31,12 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
+import com.github.javydreamercsw.management.service.season.SeasonAwardsService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -54,6 +58,8 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistoryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
@@ -66,6 +72,7 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.QueryParameters;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,12 +111,13 @@ class ShowPlanningViewTest extends AbstractViewTest {
             segmentRuleService,
             aiFactory,
             mock(NarrationParserService.class),
-            npcService);
+            npcService,
+            mock(DramaEventService.class));
     ShowContextFacade showContextFacade =
         new ShowContextFacade(
             mock(ShowTypeService.class),
             null,
-            mock(com.github.javydreamercsw.management.service.season.SeasonAwardsService.class),
+            mock(SeasonAwardsService.class),
             showTemplateService,
             showPlanningService,
             showPlanningAiService,
@@ -117,16 +125,12 @@ class ShowPlanningViewTest extends AbstractViewTest {
     WrestlerFacade wrestlerFacade =
         new WrestlerFacade(
             wrestlerService,
-            mock(com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService.class),
-            mock(
-                com.github.javydreamercsw.management.service.relationship
-                    .WrestlerRelationshipService.class),
+            mock(WrestlerStatsService.class),
+            mock(WrestlerRelationshipService.class),
             teamService,
-            mock(com.github.javydreamercsw.management.service.injury.InjuryService.class),
-            mock(com.github.javydreamercsw.management.service.title.TitleService.class),
-            mock(
-                com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistoryService
-                    .class));
+            mock(InjuryService.class),
+            mock(TitleService.class),
+            mock(WrestlerStateHistoryService.class));
     ViewContext viewContext =
         new ViewContext(notificationService, null, universeContextService, expansionService);
 
@@ -166,7 +170,9 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
     // Call the method to be tested
-    ((CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext"))
+    ((CompletableFuture<Void>)
+            Objects.requireNonNull(
+                ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext")))
         .join();
     MockVaadin.runUIQueue();
 
@@ -229,7 +235,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
         .join();
     MockVaadin.runUIQueue();
     ((CompletableFuture<Void>)
-            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments"))
+            Objects.requireNonNull(
+                ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments")))
         .join();
     MockVaadin.runUIQueue();
 
@@ -289,11 +296,14 @@ class ShowPlanningViewTest extends AbstractViewTest {
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
     // Call the method to be tested
     showPlanningView.setParameter(mock(BeforeEvent.class), showId);
-    ((CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext"))
+    ((CompletableFuture<Void>)
+            Objects.requireNonNull(
+                ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext")))
         .join();
     MockVaadin.runUIQueue();
     ((CompletableFuture<Void>)
-            ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments"))
+            Objects.requireNonNull(
+                ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments")))
         .join();
     MockVaadin.runUIQueue();
 

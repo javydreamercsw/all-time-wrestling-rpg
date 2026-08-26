@@ -176,6 +176,8 @@ public class ShowDetailView extends Main
   private final LeagueRepository leagueRepository;
   private final SecurityUtils securityUtils;
   private final NarrationParserService narrationParserService;
+  private final com.github.javydreamercsw.management.service.drama.DramaEventService
+      dramaEventService;
 
   @Autowired
   public ShowDetailView(
@@ -224,6 +226,7 @@ public class ShowDetailView extends Main
     this.leagueRepository = leagueRepository;
     this.securityUtils = viewContext.getSecurityUtils();
     this.narrationParserService = showFacade.getNarrationParserService();
+    this.dramaEventService = showFacade.getDramaEventService();
     this.expansionService = viewContext.getExpansionService();
     initializeComponents();
   }
@@ -1256,7 +1259,8 @@ public class ShowDetailView extends Main
                                       relationshipService,
                                       universeContextService,
                                       notificationService,
-                                      wrestlerStatsService)
+                                      wrestlerStatsService,
+                                      dramaEventService)
                                   .open()))
               .exceptionally(
                   ex -> {

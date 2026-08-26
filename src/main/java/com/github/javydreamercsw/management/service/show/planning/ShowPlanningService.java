@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -30,6 +31,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -78,6 +80,7 @@ public class ShowPlanningService {
   private final TitleReignRepository titleReignRepository;
   private final InjuryService injuryService;
   private final GameSettingService gameSettingService;
+  private final DramaEventService dramaEventService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -258,7 +261,32 @@ public class ShowPlanningService {
       context.setNextPle(ple);
     }
 
-    return mapper.toDto(context);
+    ShowPlanningContextDTO dto = mapper.toDto(context);
+
+    List<String> dramaLines =
+        dramaEventService.getRecentEvents().stream()
+            .filter(de -> de.getEventType() != DramaEventType.OUTCOME_MATRIX_RESULT)
+            .limit(15)
+            .map(
+                de ->
+                    "[%s] %s — %s: %s"
+                        .formatted(
+                            de.getEventType().getDisplayName(),
+                            de.getPrimaryWrestler().getName(),
+                            de.getTitle(),
+                            truncateDramaDescription(de.getDescription(), 100)))
+            .toList();
+    dto.setRecentDramaEvents(dramaLines);
+
+    return dto;
+  }
+
+  private static String truncateDramaDescription(final String text, final int maxLen) {
+    if (text == null || text.length() <= maxLen) {
+      return text == null ? "" : text;
+    }
+    int cut = text.lastIndexOf(' ', maxLen);
+    return (cut > 0 ? text.substring(0, cut) : text.substring(0, maxLen)) + "…";
   }
 
   /**

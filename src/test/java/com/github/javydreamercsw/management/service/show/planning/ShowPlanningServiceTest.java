@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -91,6 +92,7 @@ class ShowPlanningServiceTest {
   @Mock private Clock clock;
   @Mock private InjuryService injuryService;
   @Mock private GameSettingService gameSettingService;
+  @Mock private DramaEventService dramaEventService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
@@ -101,6 +103,7 @@ class ShowPlanningServiceTest {
   public void setUp() {
     MockitoAnnotations.openMocks(this);
 
+    lenient().when(dramaEventService.getRecentEvents()).thenReturn(List.of());
     lenient().when(gameSettingService.getConditionRestThreshold()).thenReturn(0);
     lenient()
         .when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong()))

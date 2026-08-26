@@ -22,12 +22,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -62,6 +64,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 
 @Slf4j
 public class NarrationDialog extends Dialog {
@@ -80,6 +83,7 @@ public class NarrationDialog extends Dialog {
       relationshipService;
   private final UniverseContextService universeContextService;
   private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final DramaEventService dramaEventService;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -112,7 +116,8 @@ public class NarrationDialog extends Dialog {
           relationshipService,
       final UniverseContextService universeContextService,
       final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
-      final WrestlerStatsService wrestlerStatsService) {
+      final WrestlerStatsService wrestlerStatsService,
+      final DramaEventService dramaEventService) {
     this.segmentService = segmentService;
     this.segment = preloaded.segment();
     this.allWrestlerDTOs = preloaded.allWrestlerDTOs();
@@ -128,6 +133,7 @@ public class NarrationDialog extends Dialog {
     this.relationshipService = relationshipService;
     this.universeContextService = universeContextService;
     this.wrestlerStatsService = wrestlerStatsService;
+    this.dramaEventService = dramaEventService;
 
     setHeaderTitle("Generate Narration for: " + this.segment.getSegmentType().getName());
     setWidth("min(900px, 95vw)");
@@ -472,6 +478,13 @@ public class NarrationDialog extends Dialog {
     }
     context.setPreviousSegments(previousSegmentContexts);
 
+    List<String> pastNarrations =
+        previousSegmentContexts.stream()
+            .map(SegmentNarrationService.SegmentNarrationContext::getNarration)
+            .filter(n -> n != null && !n.isBlank())
+            .toList();
+    context.setRecentSegmentNarrations(pastNarrations);
+
     return context;
   }
 
@@ -514,6 +527,22 @@ public class NarrationDialog extends Dialog {
           feuds.add("Feuding with %s (Heat: %d)".formatted(opponent.getName(), rivalry.getHeat()));
         }
         wc.setFeudsAndHeat(feuds);
+
+        List<String> recentEvents =
+            dramaEventService
+                .getEventsForWrestler(wrestler.getId(), PageRequest.of(0, 5))
+                .getContent()
+                .stream()
+                .filter(de -> de.getEventType() != DramaEventType.OUTCOME_MATRIX_RESULT)
+                .map(
+                    de ->
+                        "[%s] %s: %s"
+                            .formatted(
+                                de.getEventType().getDisplayName(),
+                                de.getTitle(),
+                                truncateDramaDescription(de.getDescription(), 120)))
+                .toList();
+        wc.setRecentSegments(recentEvents);
 
         List<String> relationships = new ArrayList<>();
         relationshipService
@@ -755,6 +784,14 @@ public class NarrationDialog extends Dialog {
                   });
               return null;
             });
+  }
+
+  private static String truncateDramaDescription(final String text, final int maxLen) {
+    if (text == null || text.length() <= maxLen) {
+      return text == null ? "" : text;
+    }
+    int cut = text.lastIndexOf(' ', maxLen);
+    return (cut > 0 ? text.substring(0, cut) : text.substring(0, maxLen)) + "…";
   }
 
   private void saveNarration() {
