@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.controller.segment;
 
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,9 +33,9 @@ public class SegmentSummaryController {
   private final SegmentSummaryService segmentSummaryService;
 
   @PostMapping("/{segmentId}/summarize")
-  public ResponseEntity<com.github.javydreamercsw.management.domain.show.segment.Segment>
+  public ResponseEntity<Segment>
       summarizeSegment(@PathVariable final Long segmentId) {
-    com.github.javydreamercsw.management.domain.show.segment.Segment updatedSegment =
+    Segment updatedSegment =
         segmentSummaryService.summarizeSegment(segmentId);
     return ResponseEntity.ok(updatedSegment);
   }

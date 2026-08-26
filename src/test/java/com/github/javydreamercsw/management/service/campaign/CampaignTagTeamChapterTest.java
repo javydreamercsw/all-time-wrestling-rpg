@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +59,7 @@ public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest 
 
   private Campaign campaign;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   public void setup() {
     // Ensure "ATW Tag Team" title exists
     if (titleRepository.findByName("ATW Tag Team").isEmpty()) {

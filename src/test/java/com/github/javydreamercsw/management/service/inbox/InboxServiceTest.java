@@ -32,17 +32,22 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
@@ -156,8 +161,8 @@ class InboxServiceTest {
   @Test
   void findAll_delegatesToRepository() {
     when(inboxRepository.findAll(
-            org.mockito.ArgumentMatchers
-                .<org.springframework.data.jpa.domain.Specification<InboxItem>>any(),
+            ArgumentMatchers
+                .<Specification<InboxItem>>any(),
             any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(item1)));
 
@@ -187,9 +192,9 @@ class InboxServiceTest {
   void countUnread_returnsNumberOfUnreadItemsForAccount() {
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
-    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(1L));
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(1L));
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1, item2));
 
     assertThat(inboxService.countUnread(1L)).isEqualTo(2L);
@@ -199,9 +204,9 @@ class InboxServiceTest {
   void countUnread_withNoUnreadItems_returnsZero() {
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
-    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(1L));
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(1L));
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of());
 
     assertThat(inboxService.countUnread(1L)).isEqualTo(0L);
@@ -230,7 +235,7 @@ class InboxServiceTest {
     when(securityUtils.isAdmin()).thenReturn(true);
     when(securityUtils.isBooker()).thenReturn(false);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1, item2));
 
     List<InboxItem> result = inboxService.search(null, null, null, null, null);
@@ -242,7 +247,7 @@ class InboxServiceTest {
   void search_hideReadFilter_appliesFilter() {
     when(securityUtils.isAdmin()).thenReturn(true);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(null, null, null, true, null);
@@ -254,7 +259,7 @@ class InboxServiceTest {
   void search_withReadStatus_read_appliesFilter() {
     when(securityUtils.isAdmin()).thenReturn(true);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(null, "Read", null, null, null);
@@ -266,7 +271,7 @@ class InboxServiceTest {
   void search_withEventTypeFilter_matchingType() {
     when(securityUtils.isAdmin()).thenReturn(true);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(null, null, "Test Event", null, null);
@@ -278,7 +283,7 @@ class InboxServiceTest {
   void search_withEventTypeFilter_noMatch_returnsAll() {
     when(securityUtils.isAdmin()).thenReturn(true);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1, item2));
 
     // "UnknownType" won't match any registered event type, so no extra filter is applied
@@ -379,7 +384,7 @@ class InboxServiceTest {
   void search_withReadStatus_unread_appliesUnreadFilter() {
     when(securityUtils.isAdmin()).thenReturn(true);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item2));
 
     List<InboxItem> result = inboxService.search(null, "Unread", null, null, null);
@@ -391,9 +396,9 @@ class InboxServiceTest {
   void search_asNonAdmin_withAccountId_appliesAccountTargetFilter() {
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
-    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(5L));
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(5L));
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(null, null, null, null, 5L);
@@ -405,9 +410,9 @@ class InboxServiceTest {
   void search_asNonAdmin_noTargetsNoAccount_returnsEmpty() {
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
-    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.empty());
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.empty());
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of());
 
     List<InboxItem> result = inboxService.search(null, null, null, null, null);
@@ -424,11 +429,11 @@ class InboxServiceTest {
 
     when(securityUtils.isAdmin()).thenReturn(false);
     when(securityUtils.isBooker()).thenReturn(false);
-    when(securityUtils.getCurrentAccountId()).thenReturn(java.util.Optional.of(10L));
+    when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(10L));
     when(securityUtils.isOwner(owned)).thenReturn(true);
     when(securityUtils.isOwner(notOwned)).thenReturn(false);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(Set.of(owned, notOwned), null, null, null, 10L);
@@ -442,7 +447,7 @@ class InboxServiceTest {
     w.setId(7L);
     when(securityUtils.isAdmin()).thenReturn(true);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1));
 
     List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, null);
@@ -456,7 +461,7 @@ class InboxServiceTest {
     w.setId(3L);
     when(securityUtils.isAdmin()).thenReturn(true);
     when(inboxRepository.findAll(
-            any(Specification.class), any(org.springframework.data.domain.Sort.class)))
+            any(Specification.class), any(Sort.class)))
         .thenReturn(List.of(item1, item2));
 
     List<InboxItem> result = inboxService.search(Set.of(w), null, null, null, 5L);
@@ -476,8 +481,8 @@ class InboxServiceTest {
 
     inboxService.createTutorialReminderIfAbsent(account, tutorialEventType);
 
-    org.mockito.ArgumentCaptor<InboxItem> captor =
-        org.mockito.ArgumentCaptor.forClass(InboxItem.class);
+    ArgumentCaptor<InboxItem> captor =
+        ArgumentCaptor.forClass(InboxItem.class);
     verify(inboxRepository, times(2)).save(captor.capture());
     InboxItem saved = captor.getAllValues().get(1);
     assertThat(saved.getActionType()).isEqualTo("OPEN_DRAWER");
@@ -494,6 +499,6 @@ class InboxServiceTest {
 
     inboxService.createTutorialReminderIfAbsent(account, tutorialEventType);
 
-    verify(inboxRepository, org.mockito.Mockito.never()).save(any());
+    verify(inboxRepository, Mockito.never()).save(any());
   }
 }

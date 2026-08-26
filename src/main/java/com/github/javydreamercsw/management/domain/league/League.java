@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -32,6 +33,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -75,14 +77,14 @@ public class League {
 
   @Column(name = "budget")
   @Builder.Default
-  private java.math.BigDecimal budget = java.math.BigDecimal.ZERO;
+  private BigDecimal budget = BigDecimal.ZERO;
 
   @Column(name = "duration_weeks")
   private Integer durationWeeks;
 
   @Column(name = "locker_room_morale", nullable = false)
   @Builder.Default
-  @Min(0) @jakarta.validation.constraints.Max(100) private Integer lockerRoomMorale = 100;
+  @Min(0) @Max(100) private Integer lockerRoomMorale = 100;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "universe_id")

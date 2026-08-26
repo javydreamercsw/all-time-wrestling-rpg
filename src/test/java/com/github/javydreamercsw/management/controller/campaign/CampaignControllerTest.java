@@ -437,7 +437,7 @@ class CampaignControllerTest extends AbstractIntegrationTest {
 
     List<CampaignUpgrade> upgrades =
         objectMapper.readValue(
-            responseJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+            responseJson, new TypeReference<>() {});
     assertThat(upgrades).isNotEmpty();
   }
 

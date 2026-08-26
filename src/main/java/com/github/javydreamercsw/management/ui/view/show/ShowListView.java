@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -62,6 +63,7 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
 import jakarta.annotation.security.PermitAll;
@@ -71,12 +73,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-@Route(value = "show-list", layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
+@Route(value = "show-list", layout = MainLayout.class)
 @PageTitle("Show List")
 @Menu(order = 3, icon = "vaadin:calendar-o", title = "Show List")
 @PermitAll
@@ -521,8 +525,8 @@ public class ShowListView extends Main {
             u ->
                 showGrid.setItems(
                     query -> {
-                      org.springframework.data.domain.Pageable pageable =
-                          com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRequest(
+                      Pageable pageable =
+                          VaadinSpringDataHelpers.toSpringPageRequest(
                               query);
                       return showService.getShowsByUniverse(u, pageable).stream();
                     },
@@ -535,7 +539,7 @@ public class ShowListView extends Main {
       return;
     }
 
-    java.util.function.Supplier<String> promptSupplier =
+    Supplier<String> promptSupplier =
         () -> {
           StringBuilder sb = new StringBuilder();
           sb.append("A professional wrestling show logo or poster for '")
@@ -555,7 +559,7 @@ public class ShowListView extends Main {
           return sb.toString();
         };
 
-    java.util.function.Consumer<String> imageSaver =
+    Consumer<String> imageSaver =
         imageUrl -> {
           template.setImageUrl(imageUrl);
           showTemplateService.save(template);

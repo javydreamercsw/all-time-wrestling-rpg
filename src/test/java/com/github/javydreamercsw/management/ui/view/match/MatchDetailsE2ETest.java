@@ -41,10 +41,13 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class MatchDetailsE2ETest extends AbstractE2ETest {
@@ -143,7 +146,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
     // Check if it's opened - should be false
     Boolean isOpened =
         (Boolean)
-            ((org.openqa.selenium.JavascriptExecutor) driver)
+            ((JavascriptExecutor) driver)
                 .executeScript("return arguments[0].opened;", healedDetails);
     assertFalse(Boolean.TRUE.equals(isOpened));
 
@@ -152,7 +155,7 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
 
     // 6. Open it and verify healed injury is there
     // Try to click the summary part specifically
-    ((org.openqa.selenium.JavascriptExecutor) driver)
+    ((JavascriptExecutor) driver)
         .executeScript(
             """
             const summary = arguments[0].shadowRoot.querySelector('[part="summary"]');\
@@ -161,28 +164,28 @@ class MatchDetailsE2ETest extends AbstractE2ETest {
             healedDetails);
 
     // Wait for the property to change
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
+    new WebDriverWait(driver, Duration.ofSeconds(10))
         .until(
             d ->
                 Boolean.TRUE.equals(
-                    ((org.openqa.selenium.JavascriptExecutor) driver)
+                    ((JavascriptExecutor) driver)
                         .executeScript("return arguments[0].opened;", healedDetails)));
 
     // Verify content is visible
     WebElement healedInjurySpan =
         healedDetails.findElement(By.xpath(".//span[contains(text(), 'Twisted Ankle')]"));
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(5))
+    new WebDriverWait(driver, Duration.ofSeconds(5))
         .until(d -> healedInjurySpan.isDisplayed());
 
     isOpened =
         (Boolean)
-            ((org.openqa.selenium.JavascriptExecutor) driver)
+            ((JavascriptExecutor) driver)
                 .executeScript("return arguments[0].opened;", healedDetails);
     assertTrue(Boolean.TRUE.equals(isOpened));
   }
 
   private void waitForText(final String text) {
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
+    new WebDriverWait(driver, Duration.ofSeconds(10))
         .until(d -> d.getPageSource().contains(text));
   }
 }

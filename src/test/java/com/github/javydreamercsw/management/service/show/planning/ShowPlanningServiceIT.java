@@ -28,9 +28,11 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -47,10 +49,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -85,11 +90,11 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
   @MockitoBean private PromoBookingService promoBookingService;
   @Autowired private ShowPlanningService showPlanningService;
 
-  private com.github.javydreamercsw.management.domain.universe.Universe universe;
+  private Universe universe;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setupUniverse() {
-    universe = mock(com.github.javydreamercsw.management.domain.universe.Universe.class);
+    universe = mock(Universe.class);
     when(universe.getId()).thenReturn(1L);
   }
 
@@ -127,7 +132,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     p1.setIsWinner(true);
     SegmentParticipant p2 = new SegmentParticipant();
     p2.setWrestler(wrestler2);
-    match.setParticipants(new java.util.HashSet<>(java.util.Arrays.asList(p1, p2)));
+    match.setParticipants(new HashSet<>(Arrays.asList(p1, p2)));
 
     Segment promo = new Segment();
     promo.setId(2L);
@@ -136,7 +141,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     promo.setSegmentType(promoSegmentType);
     SegmentParticipant p3 = new SegmentParticipant();
     p3.setWrestler(wrestler1);
-    promo.setParticipants(new java.util.HashSet<>(java.util.Collections.singletonList(p3)));
+    promo.setParticipants(new HashSet<>(Collections.singletonList(p3)));
 
     when(segmentRepository.findBySegmentDateBetween(any(), any()))
         .thenReturn(Arrays.asList(match, promo));
@@ -176,8 +181,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     when(factionService.findAll()).thenReturn(Collections.emptyList());
 
     ShowType pleShowType = new ShowType();
-    com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
-        mock(com.github.javydreamercsw.management.domain.show.template.ShowTemplate.class);
+    ShowTemplate pleTemplate =
+        mock(ShowTemplate.class);
     when(pleTemplate.isPremiumLiveEvent()).thenReturn(true);
     pleTemplate.setShowType(pleShowType);
 
@@ -231,8 +236,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     pleShowType.setExpectedMatches(7);
     pleShowType.setExpectedPromos(2);
     pleShowType.setCategory(ShowCategory.PLE);
-    com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
-        new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+    ShowTemplate pleTemplate =
+        new ShowTemplate();
     pleTemplate.setShowType(pleShowType);
 
     Show upcomingPle = new Show();
@@ -266,7 +271,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     assertNotNull(context.getNextPle());
     assertEquals("Upcoming PLE", context.getNextPle().getPleName());
     assertEquals(
-        upcomingPle.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant(),
+        upcomingPle.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant(),
         context.getNextPle().getPleDate());
   }
 
@@ -291,8 +296,8 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     pleShowType.setName("Premium Live Event (PLE)");
     pleShowType.setExpectedMatches(7);
     pleShowType.setExpectedPromos(2);
-    com.github.javydreamercsw.management.domain.show.template.ShowTemplate pleTemplate =
-        new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+    ShowTemplate pleTemplate =
+        new ShowTemplate();
     pleTemplate.setShowType(pleShowType);
 
     Show upcomingPle = mock(Show.class);
@@ -346,7 +351,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     assertNotNull(context.getNextPle());
     assertEquals("Upcoming PLE", context.getNextPle().getPleName());
     assertEquals(
-        upcomingPle.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant(),
+        upcomingPle.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant(),
         context.getNextPle().getPleDate());
 
     // Verify last month segments

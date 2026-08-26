@@ -22,6 +22,7 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 
 class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
@@ -45,7 +46,7 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     WebElement checkbox = waitForVaadinElement(driver, By.id("expansion-toggle-HURT_BUSINESS"));
 
     // Use Javascript to click to be more robust
-    ((org.openqa.selenium.JavascriptExecutor) driver)
+    ((JavascriptExecutor) driver)
         .executeScript("arguments[0].click();", checkbox);
 
     // Wait for notification
@@ -72,7 +73,7 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     WebElement reenableCheckbox =
         waitForVaadinElement(driver, By.id("expansion-toggle-HURT_BUSINESS"));
 
-    ((org.openqa.selenium.JavascriptExecutor) driver)
+    ((JavascriptExecutor) driver)
         .executeScript("arguments[0].click();", reenableCheckbox);
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));

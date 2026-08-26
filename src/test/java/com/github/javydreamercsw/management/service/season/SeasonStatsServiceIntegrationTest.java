@@ -31,6 +31,8 @@ import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashSet;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +66,7 @@ class SeasonStatsServiceIntegrationTest extends AbstractIntegrationTest {
 
     TitleReign reign = new TitleReign();
     reign.setTitle(title);
-    reign.setChampions(new java.util.LinkedHashSet<>(java.util.List.of(wrestler)));
+    reign.setChampions(new LinkedHashSet<>(List.of(wrestler)));
     reign.setStartDate(Instant.now().minus(5, ChronoUnit.DAYS));
     reign = titleReignRepository.save(reign);
 

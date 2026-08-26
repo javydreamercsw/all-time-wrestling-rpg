@@ -19,18 +19,22 @@ package com.github.javydreamercsw.management.ui.component;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.details.DetailsVariant;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
+import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -338,7 +342,7 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               }
               getContent().add(mods);
 
-              java.util.List<com.github.javydreamercsw.management.domain.injury.Injury> injuries =
+              List<Injury> injuries =
                   injuryService.getAllInjuriesForWrestler(
                       wrestler.getId(), universeId != null ? universeId : 1L);
               if (!injuries.isEmpty()) {
@@ -368,12 +372,12 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 }
 
                 if (healedInjuries.getComponentCount() > 0) {
-                  com.vaadin.flow.component.details.Details healedDetails =
-                      new com.vaadin.flow.component.details.Details(
+                  Details healedDetails =
+                      new Details(
                           "Healed Injuries", healedInjuries);
                   healedDetails.addThemeVariants(
-                      com.vaadin.flow.component.details.DetailsVariant.LUMO_REVERSE,
-                      com.vaadin.flow.component.details.DetailsVariant.LUMO_SMALL);
+                      DetailsVariant.LUMO_REVERSE,
+                      DetailsVariant.LUMO_SMALL);
                   healedDetails.setOpened(false);
                   healedDetails.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
                   getContent().add(healedDetails);

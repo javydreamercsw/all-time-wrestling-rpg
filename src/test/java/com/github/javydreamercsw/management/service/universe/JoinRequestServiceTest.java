@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseInvite.Invit
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequest.RequestStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseJoinRequestRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -49,7 +51,7 @@ class JoinRequestServiceTest {
   @Mock private UniverseJoinRequestRepository requestRepository;
   @Mock private UniverseMembershipService membershipService;
   @Mock private InviteService inviteService;
-  @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private JoinRequestService service;
 
@@ -181,7 +183,7 @@ class JoinRequestServiceTest {
         .addMember(
             universe,
             requester,
-            com.github.javydreamercsw.management.domain.universe.UniverseMembership
+            UniverseMembership
                 .UniverseMemberRole.MEMBER);
   }
 

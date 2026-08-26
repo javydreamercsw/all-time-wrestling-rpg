@@ -22,9 +22,12 @@ import static org.mockito.Mockito.mock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 class AdvancedCampaignChaptersTest {
 
@@ -39,9 +42,9 @@ class AdvancedCampaignChaptersTest {
         new CampaignChapterService(
             objectMapper,
             featureDataService,
-            org.mockito.Mockito.mock(
-                com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
-            new org.springframework.core.io.support.PathMatchingResourcePatternResolver());
+            Mockito.mock(
+                ExpansionService.class),
+            new PathMatchingResourcePatternResolver());
     chapterService.init(); // Loads from campaigns/
   }
 

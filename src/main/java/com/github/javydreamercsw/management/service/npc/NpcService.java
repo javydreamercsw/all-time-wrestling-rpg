@@ -27,9 +27,12 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionToggledEv
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseExpansionToggledEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +74,7 @@ public class NpcService {
     return universeContextService
         .getCurrentUniverse()
         .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
-        .orElseGet(() -> new java.util.HashSet<>(expansionService.getEnabledExpansionCodes()));
+        .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
 
   public static final String ATTRIBUTE_AWARENESS = "awareness";
@@ -80,7 +83,7 @@ public class NpcService {
     return npcRepository.findByName(name).orElse(null);
   }
 
-  public java.util.Optional<Npc> getByName(final String name) {
+  public Optional<Npc> getByName(final String name) {
     return npcRepository.findByName(name);
   }
 
@@ -175,7 +178,7 @@ public class NpcService {
     int start = (int) pageable.getOffset();
     int end = Math.min(start + pageable.getPageSize(), allFiltered.size());
 
-    List<Npc> pageContent = new java.util.ArrayList<>();
+    List<Npc> pageContent = new ArrayList<>();
     if (start < allFiltered.size()) {
       pageContent = allFiltered.subList(start, end);
     }

@@ -24,12 +24,15 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -222,8 +225,8 @@ class DataMigrationServiceTest {
 
       // Also verify counts match between source and target for all tables
       ResultSet tables = sourceStatement.executeQuery("SHOW TABLES");
-      java.util.List<org.junit.jupiter.api.function.Executable> assertions =
-          new java.util.ArrayList<>();
+      List<Executable> assertions =
+          new ArrayList<>();
 
       while (tables.next()) {
         String tableName = tables.getString(1);

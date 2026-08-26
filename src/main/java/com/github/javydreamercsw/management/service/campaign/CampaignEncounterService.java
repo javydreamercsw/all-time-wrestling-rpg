@@ -42,9 +42,14 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,7 +80,7 @@ public class CampaignEncounterService {
       final SegmentNarrationServiceFactory aiFactory,
       final CampaignEncounterRepository encounterRepository,
       final CampaignStateRepository stateRepository,
-      @org.springframework.context.annotation.Lazy final CampaignService campaignService,
+      @Lazy final CampaignService campaignService,
       final StorylineDirectorService storylineDirectorService,
       final WrestlerStatusService wrestlerStatusService,
       final WrestlerRepository wrestlerRepository,
@@ -231,9 +236,9 @@ public class CampaignEncounterService {
         String featureDataJson = campaign.getState().getFeatureData();
         Long partnerId = null;
         if (featureDataJson != null) {
-          java.util.Map<String, Object> data =
+          Map<String, Object> data =
               objectMapper.readValue(
-                  featureDataJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+                  featureDataJson, new TypeReference<>() {});
           Object val = data.get("partnerId");
           if (val instanceof Number) {
             partnerId = ((Number) val).longValue();
@@ -253,9 +258,9 @@ public class CampaignEncounterService {
       boolean isFinalsPhase = false;
       String featureDataJson = campaign.getState().getFeatureData();
       if (featureDataJson != null) {
-        java.util.Map<String, Object> data =
+        Map<String, Object> data =
             objectMapper.readValue(
-                featureDataJson, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+                featureDataJson, new TypeReference<>() {});
         Object val = data.get("finalsPhase");
         if (val instanceof Boolean) {
           isFinalsPhase = (Boolean) val;
@@ -314,7 +319,7 @@ public class CampaignEncounterService {
           match.getWrestlers().stream()
               .filter(w -> !w.getId().equals(campaign.getWrestler().getId()))
               .map(Wrestler::getName)
-              .collect(java.util.stream.Collectors.joining(", "));
+              .collect(Collectors.joining(", "));
       sb.append("- Opponents: ").append(opponents).append("\n");
     }
 
@@ -412,10 +417,10 @@ public class CampaignEncounterService {
     Long currentPartnerId = null;
     try {
       if (campaign.getState().getFeatureData() != null) {
-        java.util.Map<String, Object> data =
+        Map<String, Object> data =
             objectMapper.readValue(
                 campaign.getState().getFeatureData(),
-                new com.fasterxml.jackson.core.type.TypeReference<>() {});
+                new TypeReference<>() {});
         Object val = data.get("partnerId");
         if (val instanceof Number) {
           currentPartnerId = ((Number) val).longValue();
@@ -715,19 +720,19 @@ public class CampaignEncounterService {
   }
 
   /** Merges choice-level and chapter-level exclusion lists, deduplicating entries. */
-  private java.util.List<String> mergeExclusions(
-      java.util.List<String> choiceLevel, java.util.List<String> chapterLevel) {
+  private List<String> mergeExclusions(
+      List<String> choiceLevel, List<String> chapterLevel) {
     if ((choiceLevel == null || choiceLevel.isEmpty())
         && (chapterLevel == null || chapterLevel.isEmpty())) {
       return null;
     }
-    java.util.LinkedHashSet<String> merged = new java.util.LinkedHashSet<>();
+    LinkedHashSet<String> merged = new LinkedHashSet<>();
     if (choiceLevel != null) {
       merged.addAll(choiceLevel);
     }
     if (chapterLevel != null) {
       merged.addAll(chapterLevel);
     }
-    return new java.util.ArrayList<>(merged);
+    return new ArrayList<>(merged);
   }
 }

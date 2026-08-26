@@ -33,10 +33,13 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import lombok.NonNull;
@@ -68,7 +71,7 @@ class InjuryServiceTest {
   @Mock private WrestlerStateRepository wrestlerStateRepository;
 
   @Mock
-  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+  private WrestlerService wrestlerService;
 
   @Mock private Clock clock;
   @Mock private Random random;
@@ -84,7 +87,7 @@ class InjuryServiceTest {
     lenient().when(clock.instant()).thenReturn(fixedClock.instant());
     lenient()
         .when(wrestlerService.getOrCreateState(anyLong(), anyLong()))
-        .thenReturn(new com.github.javydreamercsw.management.domain.wrestler.WrestlerState());
+        .thenReturn(new WrestlerState());
 
     InjuryType legacyType = new InjuryType();
     legacyType.setInjuryName("Legacy Injury");
@@ -468,7 +471,7 @@ class InjuryServiceTest {
             .tier(WrestlerTier.fromFanCount(fans))
             .build();
     wrestler.setWrestlerStates(
-        new java.util.LinkedHashSet<>(java.util.List.of(state))); // Link state to wrestler
+        new LinkedHashSet<>(List.of(state))); // Link state to wrestler
 
     lenient().when(wrestlerRepository.findById(anyLong())).thenReturn(Optional.of(wrestler));
     lenient().when(universeRepository.findById(anyLong())).thenReturn(Optional.of(universe));

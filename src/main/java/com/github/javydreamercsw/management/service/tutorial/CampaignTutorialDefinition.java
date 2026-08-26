@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -116,7 +117,7 @@ public class CampaignTutorialDefinition implements TutorialDefinition {
             .filter(c -> !c.getAllowedWrestlerNames().isEmpty())
             .findFirst()
             .map(
-                com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO
+                CampaignChapterDTO
                     ::getAllowedWrestlerNames)
             .orElse(List.of());
       }

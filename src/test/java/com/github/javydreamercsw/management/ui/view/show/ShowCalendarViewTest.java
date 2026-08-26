@@ -31,6 +31,7 @@ import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 
 class ShowCalendarViewTest extends AbstractViewTest {
@@ -46,7 +47,7 @@ class ShowCalendarViewTest extends AbstractViewTest {
     when(gameSettingService.getCurrentGameDate()).thenReturn(LocalDate.now());
     when(showService.findAllWithRelationships()).thenReturn(Collections.emptyList());
     when(showService.getUpcomingShowsWithRelationships(
-            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt()))
+            ArgumentMatchers.any(), ArgumentMatchers.anyInt()))
         .thenReturn(Collections.emptyList());
 
     view = new ShowCalendarView(showService, gameSettingService, showTemplateService);

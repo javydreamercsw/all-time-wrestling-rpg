@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.tutorial;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import java.util.List;
 
 /** Defines one step in a mode-specific player tutorial. */
 public interface TutorialStep {
@@ -78,8 +79,8 @@ public interface TutorialStep {
    * allowed to choose. An empty list means all active wrestlers are eligible. The default
    * implementation returns an empty list (no restriction).
    */
-  default java.util.List<String> getAllowedWrestlerNames() {
-    return java.util.List.of();
+  default List<String> getAllowedWrestlerNames() {
+    return List.of();
   }
 
   /**

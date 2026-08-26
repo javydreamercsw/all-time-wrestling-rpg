@@ -27,10 +27,12 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
@@ -38,6 +40,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.Comparator;
 import lombok.NonNull;
 
 @Route("npc-list")
@@ -82,7 +85,7 @@ public class NpcListView extends Main {
             npc -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
               nameLayout.setAlignItems(
-                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+                  FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!npc.isActive()) {
@@ -91,11 +94,11 @@ public class NpcListView extends Main {
                 inactiveIcon.getStyle().set("margin-right", "6px");
                 nameLayout.add(inactiveIcon);
               }
-              nameLayout.add(new com.vaadin.flow.component.html.Span(npc.getName()));
+              nameLayout.add(new Span(npc.getName()));
               return nameLayout;
             })
         .setHeader("Name")
-        .setComparator(java.util.Comparator.comparing(Npc::getName))
+        .setComparator(Comparator.comparing(Npc::getName))
         .setSortable(true);
     npcGrid.addColumn(Npc::getNpcType).setHeader("Type").setSortable(true);
 

@@ -18,9 +18,11 @@ package com.github.javydreamercsw.management.ui.view.inbox;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
@@ -55,6 +57,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -134,7 +137,7 @@ public class InboxView extends VerticalLayout {
               user -> {
                 Wrestler wrestler = user.getWrestler();
                 if (wrestler != null) {
-                  targetFilter.setValue(java.util.Set.of(wrestler));
+                  targetFilter.setValue(Set.of(wrestler));
                   targetFilter.setReadOnly(true);
                 }
               });
@@ -353,7 +356,7 @@ public class InboxView extends VerticalLayout {
                   .filter(
                       t ->
                           t.getTargetType()
-                              == com.github.javydreamercsw.management.domain.inbox.InboxItemTarget
+                              == InboxItemTarget
                                   .TargetType.MATCH_FULFILLMENT)
                   .findFirst()
                   .ifPresent(
@@ -384,7 +387,7 @@ public class InboxView extends VerticalLayout {
       return Optional.empty();
     }
     try {
-      java.util.Map<String, String> payload =
+      Map<String, String> payload =
           objectMapper.readValue(item.getActionPayload(), new TypeReference<>() {});
       String route = payload.get("route");
       if (route == null || route.isBlank()) {
@@ -435,7 +438,7 @@ public class InboxView extends VerticalLayout {
                     return inboxService
                         .getAccountRepository()
                         .findById(id)
-                        .map(com.github.javydreamercsw.base.domain.account.Account::getUsername)
+                        .map(Account::getUsername)
                         .orElse("Unknown Account (" + id + ")");
                   case WRESTLER:
                     return wrestlerRepository
@@ -461,7 +464,7 @@ public class InboxView extends VerticalLayout {
     return inboxService
         .getAccountRepository()
         .findById(item.getSenderAccountId())
-        .map(com.github.javydreamercsw.base.domain.account.Account::getUsername)
+        .map(Account::getUsername)
         .orElse("Unknown (" + item.getSenderAccountId() + ")");
   }
 
@@ -605,7 +608,7 @@ public class InboxView extends VerticalLayout {
   }
 
   private String resolveTargetName(
-      @NonNull final com.github.javydreamercsw.management.domain.inbox.InboxItemTarget target) {
+      @NonNull final InboxItemTarget target) {
     try {
       Long id = Long.parseLong(target.getTargetId());
       switch (target.getTargetType()) {
@@ -613,7 +616,7 @@ public class InboxView extends VerticalLayout {
           return inboxService
               .getAccountRepository()
               .findById(id)
-              .map(com.github.javydreamercsw.base.domain.account.Account::getUsername)
+              .map(Account::getUsername)
               .orElse("Unknown Account (" + id + ")");
         case WRESTLER:
           return wrestlerRepository

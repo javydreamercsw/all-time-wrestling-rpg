@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -56,7 +57,7 @@ class EditSegmentDialogTest {
   private SegmentTypeService segmentTypeService;
   private SegmentRuleService segmentRuleService;
   private NpcService npcService;
-  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+  private ExpansionService expansionService;
   private Runnable onSave;
   private SegmentType matchType;
   private UI ui;
@@ -82,7 +83,7 @@ class EditSegmentDialogTest {
     segmentRuleService = mock(SegmentRuleService.class);
     npcService = mock(NpcService.class);
     expansionService =
-        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class);
+        mock(ExpansionService.class);
 
     Wrestler wrestler1 = new Wrestler();
     wrestler1.setId(1L);

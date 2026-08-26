@@ -28,10 +28,12 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.time.Duration;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class BookerDocsE2ETest extends AbstractE2ETest {
@@ -95,7 +97,7 @@ class BookerDocsE2ETest extends AbstractE2ETest {
 
     // 4. Wait for context to auto-load
     WebElement contextArea = waitForVaadinElement(driver, By.id("show-planning-context-area"));
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+    new WebDriverWait(driver, Duration.ofSeconds(30))
         .until(d -> !contextArea.getText().isEmpty());
 
     // 5. Propose Segments (Triggers Mock AI)
@@ -311,6 +313,6 @@ class BookerDocsE2ETest extends AbstractE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -64,7 +65,7 @@ class RankingViewE2ETest extends AbstractE2ETest {
   @Autowired private CacheManager cacheManager;
 
   @Autowired
-  private com.github.javydreamercsw.management.service.show.type.ShowTypeService showTypeService;
+  private ShowTypeService showTypeService;
 
   @BeforeEach
   public void setUp() {

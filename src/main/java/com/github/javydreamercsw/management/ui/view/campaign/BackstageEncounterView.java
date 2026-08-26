@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
@@ -41,6 +42,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +58,7 @@ public class BackstageEncounterView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final CampaignService campaignService;
 
-  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final NotificationService notificationService;
 
   private Campaign currentCampaign;
   private Wrestler playerWrestler;
@@ -91,8 +93,8 @@ public class BackstageEncounterView extends VerticalLayout {
         .getAuthenticatedUser()
         .ifPresent(
             user -> {
-              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
-              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+              Account account = user.getAccount();
+              List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
               playerWrestler =
                   wrestlers.stream()
                       .filter(w -> w.getId().equals(account.getActiveWrestlerId()))

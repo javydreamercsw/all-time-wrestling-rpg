@@ -33,6 +33,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
@@ -120,12 +121,12 @@ public class TutorialStepOverlay extends Dialog {
 
     HorizontalLayout headerRow = new HorizontalLayout(titleLabel, controls);
     headerRow.setWidthFull();
-    headerRow.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+    headerRow.setAlignItems(FlexComponent.Alignment.CENTER);
     headerRow.setSpacing(false);
 
     HorizontalLayout progressRow = new HorizontalLayout(stepCountLabel, progressBar);
     progressRow.setAlignItems(
-        com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+        FlexComponent.Alignment.CENTER);
     progressRow.setSpacing(true);
 
     VerticalLayout header = new VerticalLayout(headerRow, progressRow);

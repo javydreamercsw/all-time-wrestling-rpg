@@ -42,17 +42,14 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.router.*;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -129,7 +126,7 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
         new RouterLink(
             "← Back to Profile",
             WrestlerProfileView.class,
-            new com.vaadin.flow.router.RouteParameters("wrestlerId", wrestler.getId().toString()));
+            new RouteParameters("wrestlerId", wrestler.getId().toString()));
     back.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
     return back;
   }
@@ -283,7 +280,7 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
         .setAutoWidth(true);
     grid.setItems(
         reigns.stream()
-            .sorted(java.util.Comparator.comparing(TitleReign::getStartDate).reversed())
+            .sorted(Comparator.comparing(TitleReign::getStartDate).reversed())
             .toList());
     grid.setAllRowsVisible(true);
     grid.setWidthFull();
@@ -333,7 +330,7 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
         .setFlexGrow(0);
     grid.setItems(
         injuries.stream()
-            .sorted(java.util.Comparator.comparing(Injury::getInjuryDate).reversed())
+            .sorted(Comparator.comparing(Injury::getInjuryDate).reversed())
             .toList());
     grid.setAllRowsVisible(true);
     grid.setWidthFull();

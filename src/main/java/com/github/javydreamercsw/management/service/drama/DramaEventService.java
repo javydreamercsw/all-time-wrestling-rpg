@@ -43,6 +43,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -92,7 +93,7 @@ public class DramaEventService {
   private final Random random;
   private final ApplicationEventPublisher eventPublisher;
 
-  @Setter(onMethod_ = {@Autowired, @org.springframework.context.annotation.Lazy})
+  @Setter(onMethod_ = {@Autowired, @Lazy})
   private OutcomeMatrixService outcomeMatrixService;
 
   @Autowired

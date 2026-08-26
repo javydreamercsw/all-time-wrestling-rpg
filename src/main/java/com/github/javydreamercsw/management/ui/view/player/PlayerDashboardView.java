@@ -83,6 +83,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -154,9 +155,9 @@ public class PlayerDashboardView extends VerticalLayout {
             Account account = maybeUserDetails.get().getAccount();
             // Reload account to get latest activeWrestlerId and initialize collections
             account = accountService.get(account.getId()).get();
-            org.hibernate.Hibernate.initialize(account.getAchievements());
+            Hibernate.initialize(account.getAchievements());
 
-            java.util.List<Wrestler> owned = wrestlerService.findAllByAccount(account);
+            List<Wrestler> owned = wrestlerService.findAllByAccount(account);
             Wrestler active = null;
             if (account.getActiveWrestlerId() != null) {
               active = wrestlerService.findById(account.getActiveWrestlerId()).orElse(null);
@@ -190,7 +191,7 @@ public class PlayerDashboardView extends VerticalLayout {
   }
 
   private Component createWrestlerSwitcher(
-      @NonNull Account account, @NonNull java.util.List<Wrestler> owned, final Wrestler active) {
+      @NonNull Account account, @NonNull List<Wrestler> owned, final Wrestler active) {
     ComboBox<Wrestler> switcher = new ComboBox<>("Active Wrestler");
     switcher.setId("active-wrestler-switcher");
     switcher.setItems(owned);

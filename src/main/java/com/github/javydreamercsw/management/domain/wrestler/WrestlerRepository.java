@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.wrestler;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -30,7 +33,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 public interface WrestlerRepository
     extends JpaRepository<Wrestler, Long>, JpaSpecificationExecutor<Wrestler> {
 
-  List<Wrestler> findByAccount(com.github.javydreamercsw.base.domain.account.Account account);
+  List<Wrestler> findByAccount(Account account);
 
   @Query(
       """
@@ -38,9 +41,9 @@ public interface WrestlerRepository
        w.wrestlerStates ws LEFT JOIN FETCH ws.faction WHERE w.account = :account\
       """)
   List<Wrestler> findByAccountWithDetails(
-      @Param("account") com.github.javydreamercsw.base.domain.account.Account account);
+      @Param("account") Account account);
 
-  List<Wrestler> findAllByAccount(com.github.javydreamercsw.base.domain.account.Account account);
+  List<Wrestler> findAllByAccount(Account account);
 
   // If you don't need a total row count, Slice is better than Page.
   @Query(
@@ -88,7 +91,7 @@ public interface WrestlerRepository
   List<Wrestler> findAllByActiveTrue();
 
   List<Wrestler> findAllByGenderAndActive(
-      com.github.javydreamercsw.base.domain.wrestler.Gender gender, boolean active);
+      Gender gender, boolean active);
 
   List<Wrestler> findByAccountUsername(String username);
 
@@ -116,5 +119,5 @@ public interface WrestlerRepository
        sp.segment = :segment\
       """)
   List<Wrestler> findAllBySegment(
-      @Param("segment") com.github.javydreamercsw.management.domain.show.segment.Segment segment);
+      @Param("segment") Segment segment);
 }

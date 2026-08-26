@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class ShowCalendarDocsE2ETest extends AbstractDocsE2ETest {
@@ -72,7 +73,7 @@ class ShowCalendarDocsE2ETest extends AbstractDocsE2ETest {
     // Navigate to next month to demonstrate navigation
     try {
       // The next-month button is the second icon-tertiary vaadin-button in the toolbar
-      org.openqa.selenium.WebElement nextBtn =
+      WebElement nextBtn =
           waitForVaadinElement(driver, By.xpath("(//vaadin-button[@theme='icon tertiary'])[2]"));
       captureCaption(
           "Use the Previous and Next arrows to page through months and plan ahead."

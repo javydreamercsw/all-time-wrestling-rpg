@@ -39,6 +39,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -48,6 +49,7 @@ import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.binder.Binder;
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -166,8 +168,8 @@ public class EditShowDetailsDialog extends Dialog {
     attendanceField.setWidthFull();
 
     gateRevenueField.setValue(
-        show.getGateRevenue() != null ? show.getGateRevenue() : java.math.BigDecimal.ZERO);
-    gateRevenueField.setPrefixComponent(new com.vaadin.flow.component.html.Span("$"));
+        show.getGateRevenue() != null ? show.getGateRevenue() : BigDecimal.ZERO);
+    gateRevenueField.setPrefixComponent(new Span("$"));
     gateRevenueField.setWidthFull();
 
     // Bind fields

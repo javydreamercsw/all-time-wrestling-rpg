@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueMembership;
 import com.github.javydreamercsw.management.domain.league.LeagueMembershipRepository;
@@ -42,6 +43,8 @@ import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -130,7 +133,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     // Verify league settings in DB
     League league = leagueRepository.findByName(leagueName).orElseThrow();
-    org.junit.jupiter.api.Assertions.assertEquals(
+    Assertions.assertEquals(
         2, league.getMaxPicksPerPlayer(), "Max picks per player not saved correctly!");
 
     // Verify player1 is a member (Debug check)
@@ -155,12 +158,12 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     // Draft a wrestler as admin
     List<Wrestler> wrestlers =
-        new java.util.ArrayList<>(
+        new ArrayList<>(
             wrestlerRepository.findAll().stream()
                 .filter(w -> Boolean.TRUE.equals(w.getActive()))
                 .toList());
     // Sort by name to match DraftView grid default order
-    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getName));
+    wrestlers.sort(Comparator.comparing(Wrestler::getName));
 
     Wrestler w1 = wrestlers.removeFirst();
     clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
@@ -362,7 +365,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
   }
 
   private void waitForTurnChangeToAdmin() {
-    new WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+    new WebDriverWait(driver, Duration.ofSeconds(30))
         .until(
             ExpectedConditions.textToBePresentInElementLocated(
                 By.id("draft-turn-label"), "Current Turn: admin"));
@@ -385,7 +388,7 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
             "Wrestler " + i,
             false,
             "Bio",
-            com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MIDCARDER,
+            WrestlerTier.MIDCARDER,
             null);
       }
     }

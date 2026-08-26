@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletion;
 import com.github.javydreamercsw.management.domain.tutorial.AccountTutorialCompletionRepository;
@@ -68,7 +69,7 @@ class TutorialServiceIT extends ManagementIntegrationTest {
     // Seed at least one wrestler so the query has something to return.
     // The seeded data initialiser creates wrestlers; rely on that or create one here.
     List<Wrestler> wrestlers =
-        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+        GeneralSecurityUtils.runAsAdmin(
             () -> wrestlerService.findAllActiveWithAlignments());
 
     // The key assertion: accessing getAlignment() on each returned entity must NOT throw
@@ -93,7 +94,7 @@ class TutorialServiceIT extends ManagementIntegrationTest {
   @DisplayName("findAllActiveWithAlignments: only returns active wrestlers")
   void findAllActiveWithAlignments_onlyReturnsActiveWrestlers() {
     List<Wrestler> wrestlers =
-        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+        GeneralSecurityUtils.runAsAdmin(
             () -> wrestlerService.findAllActiveWithAlignments());
 
     assertThat(wrestlers).allMatch(w -> Boolean.TRUE.equals(w.getActive()));

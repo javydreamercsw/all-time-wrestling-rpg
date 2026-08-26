@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -178,7 +179,7 @@ class CardServiceTest {
   @Test
   @SuppressWarnings("unchecked")
   void save_throwsValidationException_whenViolationsPresent() {
-    ConstraintViolation<Card> violation = org.mockito.Mockito.mock(ConstraintViolation.class);
+    ConstraintViolation<Card> violation = Mockito.mock(ConstraintViolation.class);
     when(validator.validate(any(Card.class))).thenReturn(Set.of(violation));
 
     assertThatThrownBy(() -> cardService.save(card)).isInstanceOf(ValidationException.class);
@@ -201,7 +202,7 @@ class CardServiceTest {
   @Test
   @SuppressWarnings("unchecked")
   void saveAll_throwsValidationException_onAnyViolation() {
-    ConstraintViolation<Card> violation = org.mockito.Mockito.mock(ConstraintViolation.class);
+    ConstraintViolation<Card> violation = Mockito.mock(ConstraintViolation.class);
     when(validator.validate(any(Card.class))).thenReturn(Set.of(violation));
 
     assertThatThrownBy(() -> cardService.saveAll(List.of(card)))

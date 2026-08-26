@@ -21,13 +21,18 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.news.NewsItem;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.news.NewsService;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -69,35 +74,35 @@ public class NewsView extends Main {
     add(new ViewToolbar("News & Rumors"));
 
     if (securityUtils.canCreate()) {
-      com.vaadin.flow.component.button.Button createButton =
-          new com.vaadin.flow.component.button.Button(
+      Button createButton =
+          new Button(
               "Create News",
               e -> {
                 NewsDialog dialog = new NewsDialog(newsService, this::reloadGrid);
                 dialog.open();
               });
-      createButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
+      createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-      com.vaadin.flow.component.button.Button synthButton =
-          new com.vaadin.flow.component.button.Button(
+      Button synthButton =
+          new Button(
               "Generate Monthly Synthesis",
               e -> {
                 boolean success = newsGenerationService.generateMonthlySynthesis();
                 reloadGrid();
                 if (success) {
-                  com.vaadin.flow.component.notification.Notification.show(
+                  Notification.show(
                       "Monthly synthesis generated.");
                 } else {
-                  com.vaadin.flow.component.notification.Notification notification =
-                      com.vaadin.flow.component.notification.Notification.show(
+                  Notification notification =
+                      Notification.show(
                           "AI news generation is disabled or unavailable. No synthesis generated.");
                   notification.addThemeVariants(
-                      com.vaadin.flow.component.notification.NotificationVariant.LUMO_WARNING);
+                      NotificationVariant.LUMO_WARNING);
                 }
               });
-      synthButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+      synthButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
 
-      add(new com.vaadin.flow.component.orderedlayout.HorizontalLayout(createButton, synthButton));
+      add(new HorizontalLayout(createButton, synthButton));
     }
 
     setupGrid();
@@ -159,7 +164,7 @@ public class NewsView extends Main {
         .setFlexGrow(0);
 
     newsGrid.setItemDetailsRenderer(
-        new com.vaadin.flow.data.renderer.ComponentRenderer<>(
+        new ComponentRenderer<>(
             item -> {
               Span content = new Span(item.getContent());
               content.addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Display.BLOCK);

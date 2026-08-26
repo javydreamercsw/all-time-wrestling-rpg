@@ -31,6 +31,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -254,8 +255,8 @@ public class CardListView extends Main {
     actions.setVisible(securityUtils.canEdit());
     cardGrid.getElement().appendChild(actions.getElement());
 
-    com.vaadin.flow.component.html.Div gridWrapper =
-        new com.vaadin.flow.component.html.Div(cardGrid);
+    Div gridWrapper =
+        new Div(cardGrid);
     gridWrapper.addClassName("grid-scroll-container");
 
     if (securityUtils.canCreate()) {

@@ -32,7 +32,10 @@ import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
+import com.github.javydreamercsw.management.service.season.SeasonAwardsService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -54,6 +57,8 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistoryService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
@@ -109,7 +114,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
         new ShowContextFacade(
             mock(ShowTypeService.class),
             null,
-            mock(com.github.javydreamercsw.management.service.season.SeasonAwardsService.class),
+            mock(SeasonAwardsService.class),
             showTemplateService,
             showPlanningService,
             showPlanningAiService,
@@ -117,15 +122,14 @@ class ShowPlanningViewTest extends AbstractViewTest {
     WrestlerFacade wrestlerFacade =
         new WrestlerFacade(
             wrestlerService,
-            mock(com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService.class),
+            mock(WrestlerStatsService.class),
             mock(
-                com.github.javydreamercsw.management.service.relationship
-                    .WrestlerRelationshipService.class),
+                WrestlerRelationshipService.class),
             teamService,
-            mock(com.github.javydreamercsw.management.service.injury.InjuryService.class),
-            mock(com.github.javydreamercsw.management.service.title.TitleService.class),
+            mock(InjuryService.class),
+            mock(TitleService.class),
             mock(
-                com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistoryService
+                WrestlerStateHistoryService
                     .class));
     ViewContext viewContext =
         new ViewContext(notificationService, null, universeContextService, expansionService);

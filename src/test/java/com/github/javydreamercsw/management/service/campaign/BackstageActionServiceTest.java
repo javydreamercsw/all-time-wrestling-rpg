@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -267,7 +269,7 @@ class BackstageActionServiceTest {
   void performAction_recoveryTwoSuccessesWithInjury_healsInjury() {
     var injury = new Injury();
     injury.setId(42L);
-    var severity = com.github.javydreamercsw.management.domain.injury.InjurySeverity.MINOR;
+    var severity = InjurySeverity.MINOR;
     injury.setSeverity(severity);
     when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
         .thenReturn(List.of(injury));
@@ -299,7 +301,7 @@ class BackstageActionServiceTest {
     WrestlerState ws = new WrestlerState();
     ws.setBumps(3);
     // Use Spy pattern on Wrestler to return the WrestlerState
-    Wrestler spyWrestler = org.mockito.Mockito.spy(new Wrestler());
+    Wrestler spyWrestler = Mockito.spy(new Wrestler());
     spyWrestler.setId(10L);
     spyWrestler.setName("Spy Wrestler");
     spyWrestler.setAlignment(heelAlignment);
@@ -311,7 +313,7 @@ class BackstageActionServiceTest {
 
     assertThat(outcome.successes()).isEqualTo(2);
     assertThat(outcome.description()).contains("Removed 2 bumps");
-    verify(wrestlerService, org.mockito.Mockito.times(2)).healBump(anyLong(), anyLong());
+    verify(wrestlerService, Mockito.times(2)).healBump(anyLong(), anyLong());
   }
 
   @Test
@@ -319,7 +321,7 @@ class BackstageActionServiceTest {
     when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong())).thenReturn(List.of());
     WrestlerState ws = new WrestlerState();
     ws.setBumps(2);
-    Wrestler spyWrestler = org.mockito.Mockito.spy(new Wrestler());
+    Wrestler spyWrestler = Mockito.spy(new Wrestler());
     spyWrestler.setId(11L);
     spyWrestler.setName("Spy Wrestler");
     spyWrestler.setAlignment(heelAlignment);
@@ -331,7 +333,7 @@ class BackstageActionServiceTest {
 
     assertThat(outcome.successes()).isEqualTo(1);
     assertThat(outcome.description()).contains("Removed 1 bump");
-    verify(wrestlerService, org.mockito.Mockito.times(1)).healBump(anyLong(), anyLong());
+    verify(wrestlerService, Mockito.times(1)).healBump(anyLong(), anyLong());
   }
 
   @Test

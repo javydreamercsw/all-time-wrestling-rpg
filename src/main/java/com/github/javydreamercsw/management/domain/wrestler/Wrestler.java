@@ -24,16 +24,21 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -85,7 +90,7 @@ public class Wrestler extends AbstractEntity<Long> {
       orphanRemoval = true,
       fetch = FetchType.LAZY)
   @Builder.Default
-  @com.fasterxml.jackson.annotation.JsonIgnore
+  @JsonIgnore
   private List<WrestlerStatus> statuses = new ArrayList<>();
 
   @Column(name = "creation_date", nullable = false)
@@ -122,19 +127,19 @@ public class Wrestler extends AbstractEntity<Long> {
 
   // ==================== CAMPAIGN ATTRIBUTES ====================
   @Column(name = "drive")
-  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  @Min(1) @Max(6) @Builder.Default
   private Integer drive = 1;
 
   @Column(name = "resilience")
-  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  @Min(1) @Max(6) @Builder.Default
   private Integer resilience = 1;
 
   @Column(name = "charisma")
-  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  @Min(1) @Max(6) @Builder.Default
   private Integer charisma = 1;
 
   @Column(name = "brawl")
-  @Min(1) @jakarta.validation.constraints.Max(6) @Builder.Default
+  @Min(1) @Max(6) @Builder.Default
   private Integer brawl = 1;
 
   @Column(name = "consecutive_wins", nullable = false)
@@ -188,13 +193,13 @@ public class Wrestler extends AbstractEntity<Long> {
   @OneToMany(mappedBy = "wrestler1", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private Set<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+  private Set<WrestlerRelationship>
       relationshipsAsWrestler1 = new LinkedHashSet<>();
 
   @OneToMany(mappedBy = "wrestler2", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JsonIgnore
   @Builder.Default
-  private Set<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+  private Set<WrestlerRelationship>
       relationshipsAsWrestler2 = new LinkedHashSet<>();
 
   @OneToMany(
@@ -221,9 +226,9 @@ public class Wrestler extends AbstractEntity<Long> {
   private List<WrestlerAbility> abilities = new ArrayList<>();
 
   @JsonIgnore
-  public java.util.Optional<WrestlerState> getState(final Long universeId) {
+  public Optional<WrestlerState> getState(final Long universeId) {
     if (universeId == null) {
-      return java.util.Optional.empty();
+      return Optional.empty();
     }
     return wrestlerStates.stream()
         .filter(s -> s.getUniverse() != null && universeId.equals(s.getUniverse().getId()))
@@ -356,7 +361,7 @@ public class Wrestler extends AbstractEntity<Long> {
             s ->
                 s.getInjuries().stream()
                     .mapToInt(
-                        com.github.javydreamercsw.management.domain.injury.Injury
+                        Injury
                             ::getHandSizePenalty)
                     .sum())
         .orElse(0);
@@ -365,9 +370,9 @@ public class Wrestler extends AbstractEntity<Long> {
   // ==================== ATW RPG RELATIONSHIP METHODS ====================
 
   @JsonIgnore
-  public List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+  public List<WrestlerRelationship>
       getAllRelationships() {
-    List<com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship>
+    List<WrestlerRelationship>
         allRelationships = new ArrayList<>();
     allRelationships.addAll(relationshipsAsWrestler1);
     allRelationships.addAll(relationshipsAsWrestler2);
@@ -380,11 +385,11 @@ public class Wrestler extends AbstractEntity<Long> {
     allRivalries.addAll(
         rivalriesAsWrestler1.stream()
             .filter(Rivalry::getIsActive)
-            .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
+            .collect(Collectors.toCollection(ArrayList::new)));
     allRivalries.addAll(
         rivalriesAsWrestler2.stream()
             .filter(Rivalry::getIsActive)
-            .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
+            .collect(Collectors.toCollection(ArrayList::new)));
     return allRivalries;
   }
 
@@ -412,9 +417,9 @@ public class Wrestler extends AbstractEntity<Long> {
   protected void onUpdate() {}
 
   @JsonIgnore
-  public java.util.Optional<WrestlerState> getDefaultState() {
+  public Optional<WrestlerState> getDefaultState() {
     return wrestlerStates.isEmpty()
-        ? java.util.Optional.empty()
-        : java.util.Optional.of(wrestlerStates.iterator().next());
+        ? Optional.empty()
+        : Optional.of(wrestlerStates.iterator().next());
   }
 }

@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
@@ -311,7 +312,7 @@ public final class Launcher {
     Process process = pb.start();
 
     // Wait up to 5 s to catch an immediate crash (bad JAR, wrong Java version, etc.)
-    boolean exited = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+    boolean exited = process.waitFor(5, TimeUnit.SECONDS);
     if (exited && process.exitValue() != 0) {
       System.err.println(
           "[Launcher] Application exited immediately with code "

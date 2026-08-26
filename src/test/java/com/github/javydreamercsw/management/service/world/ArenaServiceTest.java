@@ -24,8 +24,10 @@ import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.world.Location;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -87,7 +89,7 @@ class ArenaServiceTest {
     // Verify it's one of the largest arenas (e.g., in the top 5)
     List<Arena> sortedArenas =
         testArenas.stream()
-            .sorted(java.util.Comparator.comparingInt(Arena::getCapacity).reversed())
+            .sorted(Comparator.comparingInt(Arena::getCapacity).reversed())
             .toList();
     List<Long> largestArenaIds = sortedArenas.subList(0, 5).stream().map(Arena::getId).toList();
     assertTrue(largestArenaIds.contains(assignedArenaId));
@@ -100,6 +102,6 @@ class ArenaServiceTest {
 
     Long assignedArenaId = arenaService.assignArenaToShow(false);
 
-    org.junit.jupiter.api.Assertions.assertNull(assignedArenaId);
+    Assertions.assertNull(assignedArenaId);
   }
 }

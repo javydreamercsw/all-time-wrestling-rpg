@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -90,7 +91,7 @@ public class LocationService {
   public List<Location> findAll() {
     return repository.findAll().stream()
         .filter(Location::isActive)
-        .collect(java.util.stream.Collectors.toList());
+        .collect(Collectors.toList());
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")

@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.domain.injury.InjuryTypeRepository;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -31,7 +32,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
   void testCaptureAdminToolsView() {
     // Default tab is Admin Tools
     navigateToAndWaitForElement(
-        "admin", org.openqa.selenium.By.xpath("//*[contains(., 'Recalculate Wrestler Tiers')]"));
+        "admin", By.xpath("//*[contains(., 'Recalculate Wrestler Tiers')]"));
 
     documentFeature(
         "Admin",
@@ -48,7 +49,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
     // Click the AI Settings tab more robustly
     WebElement tab =
         navigateToAndWaitForElement(
-            "admin", org.openqa.selenium.By.xpath("//vaadin-tab[contains(text(), 'AI Settings')]"));
+            "admin", By.xpath("//vaadin-tab[contains(text(), 'AI Settings')]"));
 
     clickElement(tab);
 
@@ -143,7 +144,7 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
     WebElement tab =
         navigateToAndWaitForElement(
             "admin",
-            org.openqa.selenium.By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
+            By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(tab);
 
     try {
@@ -162,6 +163,6 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

@@ -37,6 +37,7 @@ import java.net.http.HttpTimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -376,8 +377,8 @@ class OpenAISegmentNarrationServiceTest {
     when(aiSettingsService.getOpenAIMaxTokens()).thenReturn(1000);
     when(aiSettingsService.getAiTimeout()).thenReturn(30);
 
-    org.mockito.ArgumentCaptor<HttpRequest> requestCaptor =
-        org.mockito.ArgumentCaptor.forClass(HttpRequest.class);
+    ArgumentCaptor<HttpRequest> requestCaptor =
+        ArgumentCaptor.forClass(HttpRequest.class);
     when(httpClient.send(requestCaptor.capture(), any(HttpResponse.BodyHandler.class)))
         .thenReturn(httpResponse);
 

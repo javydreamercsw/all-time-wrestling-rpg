@@ -44,6 +44,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import org.hibernate.Hibernate;
 
 public class TitleFormDialog extends Dialog {
 
@@ -114,7 +115,7 @@ public class TitleFormDialog extends Dialog {
             "%s (%s)"
                 .formatted(
                     w.getName(),
-                    org.hibernate.Hibernate.isInitialized(w.getWrestlerStates())
+                    Hibernate.isInitialized(w.getWrestlerStates())
                         ? w.getDefaultState()
                             .map(s -> s.getTier().getDisplayName())
                             .orElse("Unknown")

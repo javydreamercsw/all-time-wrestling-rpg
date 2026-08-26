@@ -16,12 +16,15 @@
 */
 package com.github.javydreamercsw.management.service.ringside;
 
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.AlignmentService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -84,7 +87,7 @@ public class RingsideActionService {
         attachedSegment.getShow().getUniverse() != null
             ? attachedSegment.getShow().getUniverse().getId()
             : 1L;
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+    WrestlerState state =
         attachedWrestler.getState(universeId).orElse(null);
 
     // Check for direct manager
@@ -128,7 +131,7 @@ public class RingsideActionService {
         attachedSegment.getShow().getUniverse() != null
             ? attachedSegment.getShow().getUniverse().getId()
             : 1L;
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+    WrestlerState state =
         attachedWrestler.getState(universeId).orElse(null);
 
     // 1. Direct Manager
@@ -148,7 +151,7 @@ public class RingsideActionService {
       Wrestler otherMember =
           state.getFaction().getMembers().stream()
               .filter(m -> !attachedSegment.getWrestlers().contains(m.getWrestler()))
-              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getWrestler)
+              .map(WrestlerState::getWrestler)
               .findFirst()
               .orElse(null);
       if (otherMember != null) {
@@ -226,10 +229,10 @@ public class RingsideActionService {
         && beneficiary.getAlignment() != null
         && beneficiary.getAlignment().getCampaign() != null) {
       if (action.getAlignment()
-          == com.github.javydreamercsw.management.domain.campaign.AlignmentType.FACE) {
+          == AlignmentType.FACE) {
         alignmentService.shiftAlignment(beneficiary.getAlignment().getCampaign(), 1);
       } else if (action.getAlignment()
-          == com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL) {
+          == AlignmentType.HEEL) {
         alignmentService.shiftAlignment(beneficiary.getAlignment().getCampaign(), -1);
       }
     }
@@ -250,7 +253,7 @@ public class RingsideActionService {
     }
     return segment.getSegmentRules().stream()
         .anyMatch(
-            com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule::getNoDq);
+            SegmentRule::getNoDq);
   }
 
   private String buildResultMessage(

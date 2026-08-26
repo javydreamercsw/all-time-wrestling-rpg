@@ -16,7 +16,10 @@
 */
 package com.github.javydreamercsw.management.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -42,7 +45,7 @@ public class WrestlerImportDTO {
   private String imageUrl;
   private String heritageTag;
 
-  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  @JsonProperty("expansion_code")
   private String expansionCode;
 
   private Integer drive;
@@ -55,5 +58,5 @@ public class WrestlerImportDTO {
    */
   private Boolean active;
 
-  private java.util.List<WrestlerAbilityDTO> abilities = new java.util.ArrayList<>();
+  private List<WrestlerAbilityDTO> abilities = new ArrayList<>();
 }

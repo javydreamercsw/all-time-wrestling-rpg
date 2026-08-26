@@ -41,6 +41,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -221,7 +222,7 @@ class FactionServiceTest {
     when(universeRepository.findById(99L)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> factionService.findAllByUniverse(99L))
-        .isInstanceOf(java.util.NoSuchElementException.class);
+        .isInstanceOf(NoSuchElementException.class);
   }
 
   @Test
@@ -395,7 +396,7 @@ class FactionServiceTest {
     when(universeRepository.findById(99L)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> factionService.createFaction("New Faction", "desc", 10L, 99L))
-        .isInstanceOf(java.util.NoSuchElementException.class);
+        .isInstanceOf(NoSuchElementException.class);
 
     verify(factionRepository, never()).saveAndFlush(any());
   }

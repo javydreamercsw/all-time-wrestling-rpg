@@ -22,9 +22,11 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.world.Arena;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -69,7 +71,7 @@ public class Show extends AbstractEntity<Long> {
   private String description;
 
   @OneToMany(mappedBy = "show", fetch = FetchType.LAZY)
-  private List<com.github.javydreamercsw.management.domain.show.segment.Segment> segments =
+  private List<Segment> segments =
       new ArrayList<>();
 
   @ManyToOne(optional = false)
@@ -98,7 +100,7 @@ public class Show extends AbstractEntity<Long> {
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "arena_id")
-  private com.github.javydreamercsw.management.domain.world.Arena arena;
+  private Arena arena;
 
   @Column(name = "show_date")
   private LocalDate showDate;

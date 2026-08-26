@@ -27,22 +27,26 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot;
+import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -56,11 +60,11 @@ class SeasonServiceTest {
   @Mock private SeasonRepository seasonRepository;
 
   @Mock
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
+  private WrestlerRepository
       wrestlerRepository;
 
   @Mock
-  private com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository
+  private WrestlerSeasonSnapshotRepository
       snapshotRepository;
 
   @Mock private Clock clock;
@@ -80,7 +84,7 @@ class SeasonServiceTest {
     lenient().when(clock.instant()).thenReturn(fixedInstant);
     lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
     lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(fixedLocalDate);
-    lenient().when(wrestlerRepository.findAllByActiveTrue()).thenReturn(java.util.List.of());
+    lenient().when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of());
 
     weeklyShowType = new ShowType();
     weeklyShowType.setName("Weekly");
@@ -136,7 +140,7 @@ class SeasonServiceTest {
     w.setName("Snap Wrestler");
     WrestlerState state = new WrestlerState();
     state.setFans(7_500L);
-    w.setWrestlerStates(new java.util.LinkedHashSet<>(List.of(state)));
+    w.setWrestlerStates(new LinkedHashSet<>(List.of(state)));
 
     when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of(w));
     when(wrestlerRepository.findByIdWithStates(42L)).thenReturn(Optional.of(w));
@@ -145,7 +149,7 @@ class SeasonServiceTest {
     seasonService.createSeason("Snap Season", "desc", null);
 
     // Then: one snapshot saved with the wrestler's fan count
-    var captor = org.mockito.ArgumentCaptor.forClass(WrestlerSeasonSnapshot.class);
+    var captor = ArgumentCaptor.forClass(WrestlerSeasonSnapshot.class);
     verify(snapshotRepository).save(captor.capture());
     WrestlerSeasonSnapshot saved = captor.getValue();
     assertThat(saved.getWrestler()).isSameAs(w);

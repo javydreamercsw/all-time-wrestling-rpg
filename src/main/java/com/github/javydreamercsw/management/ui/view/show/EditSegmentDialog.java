@@ -22,10 +22,12 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.expansion.Expansion;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -48,17 +50,25 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.hibernate.Hibernate;
+import org.slf4j.LoggerFactory;
 
 public class EditSegmentDialog extends Dialog {
 
@@ -91,14 +101,14 @@ public class EditSegmentDialog extends Dialog {
       // The universe-context-aware findAll() overload is unreliable in async threads because
       // VaadinSession.getCurrent() returns null there, and a poisoned cache entry persists for
       // 10 minutes. Using the global enabled codes is correct for the edit dialog.
-      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+      LoggerFactory.getLogger(EditSegmentDialog.class)
           .info(
               "[DEBUG-ATW8djt] PreloadedData.load() entry — thread={} VaadinSession={}",
               Thread.currentThread().getName(),
-              com.vaadin.flow.server.VaadinSession.getCurrent());
+              VaadinSession.getCurrent());
       Set<String> enabledCodes =
-          new java.util.HashSet<>(expansionService.getEnabledExpansionCodes());
-      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+          new HashSet<>(expansionService.getEnabledExpansionCodes());
+      LoggerFactory.getLogger(EditSegmentDialog.class)
           .info("[DEBUG-ATW8djt] PreloadedData.load() enabledCodes={}", enabledCodes);
       List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
       Map<String, Wrestler> byName =
@@ -108,8 +118,8 @@ public class EditSegmentDialog extends Dialog {
           expansionService.getExpansions().stream()
               .collect(
                   Collectors.toMap(
-                      com.github.javydreamercsw.management.service.expansion.Expansion::getCode,
-                      com.github.javydreamercsw.management.service.expansion.Expansion::getName,
+                      Expansion::getCode,
+                      Expansion::getName,
                       (a, b) -> a));
       List<SegmentType> segmentTypes =
           segmentTypeService.findAll(enabledCodes).stream()
@@ -119,13 +129,13 @@ public class EditSegmentDialog extends Dialog {
           segmentRuleService.findAll(enabledCodes).stream()
               .sorted(Comparator.comparing(SegmentRule::getName))
               .collect(Collectors.toList());
-      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+      LoggerFactory.getLogger(EditSegmentDialog.class)
           .info(
               "[DEBUG-ATW8djt] PreloadedData.load() result — {} segmentTypes, {} segmentRules",
               segmentTypes.size(),
               segmentRules.size());
       List<Team> teams =
-          teamService != null ? teamService.getActiveTeams() : java.util.Collections.emptyList();
+          teamService != null ? teamService.getActiveTeams() : Collections.emptyList();
       return new PreloadedData(
           segmentTypes,
           segmentRules,
@@ -161,7 +171,7 @@ public class EditSegmentDialog extends Dialog {
           List<Wrestler> team =
               proposed.getTeams().get(i).stream()
                   .map(name -> data.wrestlerByName().get(name))
-                  .filter(java.util.Objects::nonNull)
+                  .filter(Objects::nonNull)
                   .collect(Collectors.toList());
           teams.put(i + 1, team);
         }
@@ -175,7 +185,7 @@ public class EditSegmentDialog extends Dialog {
           List<Wrestler> team =
               proposed.getTeamIds().get(i).stream()
                   .map(wrestlerById::get)
-                  .filter(java.util.Objects::nonNull)
+                  .filter(Objects::nonNull)
                   .collect(Collectors.toList());
           teams.put(i + 1, team);
         }
@@ -190,7 +200,7 @@ public class EditSegmentDialog extends Dialog {
               ? List.of()
               : proposed.getWinners().stream()
                   .map(name -> data.wrestlerByName().get(name))
-                  .filter(java.util.Objects::nonNull)
+                  .filter(Objects::nonNull)
                   .collect(Collectors.toList());
 
       Set<SegmentRule> rules =
@@ -303,7 +313,7 @@ public class EditSegmentDialog extends Dialog {
   private final HorizontalLayout winnerTeamButtonsLayout = new HorizontalLayout();
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
-  private final com.vaadin.flow.component.html.Span synergyBonusLabel;
+  private final Span synergyBonusLabel;
   private final VerticalLayout teamsLayout = new VerticalLayout();
   @Getter private final Map<Long, IntegerField> healthFields = new HashMap<>();
 
@@ -326,11 +336,11 @@ public class EditSegmentDialog extends Dialog {
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
 
-    synergyBonusLabel = new com.vaadin.flow.component.html.Span("Synergy Bonus: +0");
+    synergyBonusLabel = new Span("Synergy Bonus: +0");
     synergyBonusLabel.addClassNames(
-        com.vaadin.flow.theme.lumo.LumoUtility.FontSize.SMALL,
-        com.vaadin.flow.theme.lumo.LumoUtility.TextColor.SUCCESS,
-        com.vaadin.flow.theme.lumo.LumoUtility.FontWeight.BOLD);
+        LumoUtility.FontSize.SMALL,
+        LumoUtility.TextColor.SUCCESS,
+        LumoUtility.FontWeight.BOLD);
     synergyBonusLabel.setId("edit-synergy-bonus-label");
 
     segmentTypeCombo = new ComboBox<>("Segment Type");
@@ -421,7 +431,7 @@ public class EditSegmentDialog extends Dialog {
           }
         };
 
-    java.util.function.Consumer<Set<Wrestler>> addTeamRow =
+    Consumer<Set<Wrestler>> addTeamRow =
         initialWrestlers -> {
           int teamNum = teamCombos.size() + 1;
           MultiSelectComboBox<Wrestler> teamCombo = new MultiSelectComboBox<>("Team " + teamNum);
@@ -591,7 +601,7 @@ public class EditSegmentDialog extends Dialog {
           healthFields.clear();
           boolean isPromo =
               segmentTypeCombo.getValue() != null
-                  && com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames
+                  && SegmentTypeNames
                       .PROMO
                       .equalsIgnoreCase(segmentTypeCombo.getValue().getName());
           Set<Wrestler> allTeamWrestlers =
@@ -741,7 +751,7 @@ public class EditSegmentDialog extends Dialog {
       final TitleService titleService,
       final SegmentTypeService segmentTypeService,
       final SegmentRuleService segmentRuleService,
-      final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+      final NpcService npcService,
       final ExpansionService expansionService,
       final Gender defaultGenderConstraint,
       final Long universeId,
@@ -811,13 +821,13 @@ public class EditSegmentDialog extends Dialog {
     return filtered;
   }
 
-  private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {
+  private void updateSynergyBonus(final Collection<Wrestler> wrestlers) {
     int totalBonus = 0;
     Map<Long, Integer> factionCounts = new HashMap<>();
     Map<Long, Integer> factionAffinity = new HashMap<>();
 
     for (Wrestler w : wrestlers) {
-      if (!org.hibernate.Hibernate.isInitialized(w.getWrestlerStates())) {
+      if (!Hibernate.isInitialized(w.getWrestlerStates())) {
         continue;
       }
       w.getDefaultState()

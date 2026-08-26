@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Achievement;
+import groovy.lang.GroovyClassLoader;
 import java.io.InputStream;
 import java.util.List;
 import org.codehaus.groovy.control.CompilationFailedException;
@@ -43,8 +44,8 @@ import org.junit.jupiter.api.Test;
 class AchievementsJsonValidationTest {
 
   private static List<Achievement> achievements;
-  private static final groovy.lang.GroovyClassLoader groovyClassLoader =
-      new groovy.lang.GroovyClassLoader();
+  private static final GroovyClassLoader groovyClassLoader =
+      new GroovyClassLoader();
 
   @BeforeAll
   static void loadAchievementsJson() throws Exception {

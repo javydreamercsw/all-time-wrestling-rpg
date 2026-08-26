@@ -23,11 +23,13 @@ import java.lang.management.ThreadMXBean;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -53,8 +55,8 @@ public class PerformanceMonitoringService {
 
   // Historical data for charting
   private static final int MAX_HISTORY_POINTS = 100;
-  private final java.util.List<PerformanceSnapshot> history =
-      java.util.Collections.synchronizedList(new ArrayList<>());
+  private final List<PerformanceSnapshot> history =
+      Collections.synchronizedList(new ArrayList<>());
 
   // JVM monitoring beans
   private final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
@@ -293,7 +295,7 @@ public class PerformanceMonitoringService {
             .counterDeltas(
                 counters.entrySet().stream()
                     .collect(
-                        java.util.stream.Collectors.toMap(
+                        Collectors.toMap(
                             Map.Entry::getKey, e -> e.getValue().get())))
             .averageResponseTimes(avgs)
             .build();

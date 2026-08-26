@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
@@ -24,7 +25,7 @@ public class NpcDTO {
   private String description;
   private String type;
 
-  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  @JsonProperty("expansion_code")
   private String expansionCode;
 
   private String alignment;

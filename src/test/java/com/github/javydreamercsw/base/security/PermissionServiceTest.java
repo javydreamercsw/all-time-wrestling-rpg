@@ -24,7 +24,10 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
@@ -112,8 +115,8 @@ class PermissionServiceTest {
     wrestler.setId(1L);
     Deck deck = new Deck();
     deck.setWrestler(wrestler);
-    com.github.javydreamercsw.management.domain.deck.DeckCard card =
-        new com.github.javydreamercsw.management.domain.deck.DeckCard();
+    DeckCard card =
+        new DeckCard();
     card.setDeck(deck);
 
     when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
@@ -129,13 +132,13 @@ class PermissionServiceTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
 
-    com.github.javydreamercsw.management.domain.inbox.InboxItem item =
-        new com.github.javydreamercsw.management.domain.inbox.InboxItem();
-    com.github.javydreamercsw.management.domain.inbox.InboxItemTarget target =
-        new com.github.javydreamercsw.management.domain.inbox.InboxItemTarget();
+    InboxItem item =
+        new InboxItem();
+    InboxItemTarget target =
+        new InboxItemTarget();
     target.setTargetId("1");
     target.setTargetType(
-        com.github.javydreamercsw.management.domain.inbox.InboxItemTarget.TargetType.ACCOUNT);
+        InboxItemTarget.TargetType.ACCOUNT);
     item.getTargets().add(target);
 
     when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));

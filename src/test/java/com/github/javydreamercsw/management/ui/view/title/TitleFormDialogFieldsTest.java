@@ -25,11 +25,14 @@ import static org.mockito.Mockito.withSettings;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.textfield.TextArea;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -102,16 +105,16 @@ class TitleFormDialogFieldsTest extends AbstractViewTest {
   @DisplayName(
       "defenseFrequencyType ComboBox and effectScript TextArea should exist in TitleFormDialog")
   void defenseFrequencyTypeAndEffectScriptFieldsExist() {
-    com.vaadin.flow.component.combobox.ComboBox<
-            com.github.javydreamercsw.management.domain.title.DefenseFrequencyType>
+    ComboBox<
+            DefenseFrequencyType>
         defenseFrequencyType =
-            (com.vaadin.flow.component.combobox.ComboBox<
-                    com.github.javydreamercsw.management.domain.title.DefenseFrequencyType>)
+            (ComboBox<
+                    DefenseFrequencyType>)
                 ReflectionTestUtils.getField(dialog, "defenseFrequencyType");
     assertNotNull(defenseFrequencyType, "defenseFrequencyType field should not be null");
 
-    com.vaadin.flow.component.textfield.TextArea effectScript =
-        (com.vaadin.flow.component.textfield.TextArea)
+    TextArea effectScript =
+        (TextArea)
             ReflectionTestUtils.getField(dialog, "effectScript");
     assertNotNull(effectScript, "effectScript field should not be null");
   }

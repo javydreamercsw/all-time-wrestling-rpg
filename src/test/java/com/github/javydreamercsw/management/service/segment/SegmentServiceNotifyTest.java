@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -51,6 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -132,7 +134,7 @@ class SegmentServiceNotifyTest {
     show.setId(1L);
     show.setName("Monday Night Show");
     show.setLeague(league);
-    show.setUniverse(new com.github.javydreamercsw.management.domain.universe.Universe());
+    show.setUniverse(new Universe());
 
     MatchFulfillment fulfillment = new MatchFulfillment();
     fulfillment.setId(99L);
@@ -177,7 +179,7 @@ class SegmentServiceNotifyTest {
     show.setId(1L);
     show.setName("Monday Night Show");
     show.setLeague(league);
-    show.setUniverse(new com.github.javydreamercsw.management.domain.universe.Universe());
+    show.setUniverse(new Universe());
 
     MatchFulfillment existing = new MatchFulfillment();
     existing.setId(77L);
@@ -188,7 +190,7 @@ class SegmentServiceNotifyTest {
 
     buildSegmentWithLeague(league, show, wrestler);
 
-    org.mockito.Mockito.verify(inboxService, org.mockito.Mockito.never())
+    Mockito.verify(inboxService, Mockito.never())
         .createInboxItem(any(), any(String.class), any(List.class));
   }
 }

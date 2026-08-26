@@ -35,15 +35,17 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.springframework.data.domain.Page;
 
-class ShowListViewTest extends com.github.javydreamercsw.management.ui.view.AbstractViewTest {
+class ShowListViewTest extends AbstractViewTest {
 
   @Mock private ShowService showService;
   @Mock private ShowTypeService showTypeService;
@@ -66,7 +68,7 @@ class ShowListViewTest extends com.github.javydreamercsw.management.ui.view.Abst
   @BeforeEach
   void setup() {
     when(showTypeService.findAll()).thenReturn(Collections.emptyList());
-    when(seasonService.getAllSeasons(org.mockito.ArgumentMatchers.any())).thenReturn(Page.empty());
+    when(seasonService.getAllSeasons(ArgumentMatchers.any())).thenReturn(Page.empty());
     when(leagueRepository.findAll()).thenReturn(Collections.emptyList());
     when(universeRepository.findAll()).thenReturn(Collections.emptyList());
     when(arenaService.findAll()).thenReturn(Collections.emptyList());

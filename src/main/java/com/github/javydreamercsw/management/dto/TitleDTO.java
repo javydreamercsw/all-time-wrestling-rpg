@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
@@ -32,9 +33,9 @@ public class TitleDTO {
   private ChampionshipType championshipType;
   private Boolean includeInRankings;
 
-  @com.fasterxml.jackson.annotation.JsonProperty("effect_script")
+  @JsonProperty("effect_script")
   private String effectScript;
 
-  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  @JsonProperty("expansion_code")
   private String expansionCode;
 }

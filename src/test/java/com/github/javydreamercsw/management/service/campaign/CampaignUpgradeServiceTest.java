@@ -27,6 +27,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
@@ -84,7 +85,7 @@ class CampaignUpgradeServiceTest {
     doThrow(new IOException("parse error"))
         .when(objectMapper)
         .readValue(
-            any(InputStream.class), any(com.fasterxml.jackson.core.type.TypeReference.class));
+            any(InputStream.class), any(TypeReference.class));
 
     assertThatCode(() -> service.loadUpgrades()).doesNotThrowAnyException();
   }
@@ -95,7 +96,7 @@ class CampaignUpgradeServiceTest {
     doThrow(new IOException("parse error"))
         .when(objectMapper)
         .readValue(
-            any(InputStream.class), any(com.fasterxml.jackson.core.type.TypeReference.class));
+            any(InputStream.class), any(TypeReference.class));
 
     service.loadUpgrades();
 
@@ -109,7 +110,7 @@ class CampaignUpgradeServiceTest {
     List<CampaignUpgrade> upgrades =
         List.of(CampaignUpgrade.builder().name("Iron Chin").type("DEFENSE").build());
     when(objectMapper.readValue(
-            any(InputStream.class), any(com.fasterxml.jackson.core.type.TypeReference.class)))
+            any(InputStream.class), any(TypeReference.class)))
         .thenReturn(upgrades);
 
     service.loadUpgrades();
@@ -225,7 +226,7 @@ class CampaignUpgradeServiceTest {
   void init_callsLoadUpgrades() throws Exception {
     // init() delegates to loadUpgrades(). Stub the mapper so the method completes cleanly.
     when(objectMapper.readValue(
-            any(InputStream.class), any(com.fasterxml.jackson.core.type.TypeReference.class)))
+            any(InputStream.class), any(TypeReference.class)))
         .thenReturn(List.of());
 
     assertThatCode(() -> service.init()).doesNotThrowAnyException();

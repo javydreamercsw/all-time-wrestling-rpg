@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -92,7 +93,7 @@ public class TitleReign extends AbstractEntity<Long> {
   /** Get the length of this reign in days. */
   public long getReignLengthDays(final Instant now) {
     Instant end = endDate != null ? endDate : now;
-    return java.time.Duration.between(startDate, end).toDays();
+    return Duration.between(startDate, end).toDays();
   }
 
   /** Get the length of this reign in a human-readable format. */

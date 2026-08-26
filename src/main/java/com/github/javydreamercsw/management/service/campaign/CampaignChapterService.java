@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
@@ -32,13 +33,7 @@ import groovy.lang.GroovyShell;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -252,7 +247,7 @@ public class CampaignChapterService {
     }
 
     // Check Tournament Status
-    java.util.Map<String, Object> featureData = featureDataService.getFeatureData(state);
+    Map<String, Object> featureData = featureDataService.getFeatureData(state);
 
     if (criteria.getTournamentWinner() != null) {
       boolean isWinner = Boolean.TRUE.equals(featureData.get("tournamentWinner"));
@@ -295,7 +290,7 @@ public class CampaignChapterService {
       boolean inFaction =
           wrestler
               .getState(universeId)
-              .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
+              .map(WrestlerState::getFaction)
               .isPresent();
       if (inFaction != criteria.getHasFaction()) {
         return false;

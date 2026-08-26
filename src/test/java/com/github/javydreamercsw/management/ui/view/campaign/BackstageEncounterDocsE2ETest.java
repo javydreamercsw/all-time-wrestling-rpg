@@ -22,13 +22,17 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.BackstageEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -43,7 +47,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
   @MockitoBean private BackstageEncounterService backstageEncounterService;
-  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
+  @Autowired private DataInitializer dataInitializer;
 
   @BeforeEach
   void setup() {
@@ -62,7 +66,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private Wrestler getOrCreateWrestler(final Account account) {
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
     }
@@ -75,7 +79,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
             .account(account)
             .isPlayer(true)
             .active(true)
-            .gender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE)
+            .gender(Gender.MALE)
             .build();
     return wrestlerRepository.saveAndFlush(w);
   }
@@ -88,7 +92,7 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
 
     // Provide a mock encounter when requested
     var choice1 =
-        com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
+        CampaignEncounterResponseDTO.Choice
             .builder()
             .text("Option A")
             .label("Respect")
@@ -99,8 +103,8 @@ class BackstageEncounterDocsE2ETest extends AbstractDocsE2ETest {
             .build();
 
     var response =
-        new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
-            "Mock Situation: You are approached by a veteran", java.util.List.of(choice1));
+        new CampaignEncounterResponseDTO(
+            "Mock Situation: You are approached by a veteran", List.of(choice1));
 
     when(backstageEncounterService.generateBackstageEncounter(any())).thenReturn(response);
 

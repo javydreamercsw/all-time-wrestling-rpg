@@ -39,6 +39,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -51,6 +52,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -263,8 +265,8 @@ public class WrestlerListView extends Main {
         LumoUtility.Padding.MEDIUM,
         LumoUtility.Gap.SMALL);
 
-    com.vaadin.flow.component.html.Div gridWrapper =
-        new com.vaadin.flow.component.html.Div(wrestlerGrid);
+    Div gridWrapper =
+        new Div(wrestlerGrid);
     gridWrapper.addClassName("grid-scroll-container");
 
     Button createButton = createWrestlerButton();
@@ -333,7 +335,7 @@ public class WrestlerListView extends Main {
                     universeSettingsService.getExcludedWrestlers(u).stream()
                         .map(Wrestler::getId)
                         .collect(Collectors.toSet()))
-            .orElseGet(java.util.Collections::emptySet);
+            .orElseGet(Collections::emptySet);
 
     if (securityUtils.isAdmin() || securityUtils.isBooker()) {
       wrestlerGrid.setItems(

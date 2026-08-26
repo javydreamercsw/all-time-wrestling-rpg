@@ -16,10 +16,12 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.BackstageActionType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.BackstageActionService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
@@ -46,6 +48,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
 import jakarta.annotation.security.PermitAll;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -110,10 +113,10 @@ public class BackstageActionView extends VerticalLayout implements BeforeEnterOb
         .getAuthenticatedUser()
         .ifPresent(
             user -> {
-              com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
-              java.util.List<com.github.javydreamercsw.management.domain.wrestler.Wrestler>
+              Account account = user.getAccount();
+              List<Wrestler>
                   wrestlers = wrestlerRepository.findByAccount(account);
-              com.github.javydreamercsw.management.domain.wrestler.Wrestler active =
+              Wrestler active =
                   wrestlers.stream()
                       .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
                       .findFirst()

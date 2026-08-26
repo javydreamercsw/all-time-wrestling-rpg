@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class EntityDocsE2ETest extends AbstractDocsE2ETest {
@@ -104,6 +105,6 @@ class EntityDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -50,6 +51,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -65,7 +67,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Route(
     value = "faction-list",
-    layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
+    layout = MainLayout.class)
 @PageTitle("Factions | ATW RPG")
 @PermitAll
 public class FactionListView extends VerticalLayout {
@@ -184,8 +186,8 @@ public class FactionListView extends VerticalLayout {
             ? new ViewToolbar("Factions", createBtn)
             : new ViewToolbar("Factions");
 
-    com.vaadin.flow.component.html.Div gridWrapper =
-        new com.vaadin.flow.component.html.Div(factionGrid);
+    Div gridWrapper =
+        new Div(factionGrid);
     gridWrapper.addClassName("grid-scroll-container");
 
     add(toolbar, gridWrapper);
@@ -290,7 +292,7 @@ public class FactionListView extends VerticalLayout {
         .setKey("actions");
 
     factionGrid.setItemDetailsRenderer(
-        new com.vaadin.flow.data.renderer.ComponentRenderer<>(
+        new ComponentRenderer<>(
             faction -> {
               VerticalLayout details = new VerticalLayout();
               details.setPadding(true);

@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.FeatureDataService;
+import com.github.javydreamercsw.management.service.campaign.PlaceholderResolverService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -67,7 +68,7 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
   @Mock private CampaignStateRepository campaignStateRepository;
 
   @Mock
-  private com.github.javydreamercsw.management.service.campaign.PlaceholderResolverService
+  private PlaceholderResolverService
       placeholderResolverService;
 
   private CampaignNarrativeView view;

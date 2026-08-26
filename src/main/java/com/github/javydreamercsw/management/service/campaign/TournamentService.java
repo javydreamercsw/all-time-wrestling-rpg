@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO.TournamentMatch;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -290,7 +291,7 @@ public class TournamentService {
       // Create Segment
       Instant date =
           show.getShowDate() != null
-              ? show.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant()
+              ? show.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant()
               : Instant.now();
 
       Segment segment = segmentService.createSegment(show, type, date);

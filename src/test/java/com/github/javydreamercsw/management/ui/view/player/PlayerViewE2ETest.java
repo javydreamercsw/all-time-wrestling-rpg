@@ -24,12 +24,7 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.campaign.StatusCard;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository;
+import com.github.javydreamercsw.management.domain.campaign.*;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -40,6 +35,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -88,12 +85,12 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private ShowRepository showRepository;
 
   @Autowired
-  private com.github.javydreamercsw.management.domain.title.TitleRepository titleChampionRepository;
+  private TitleRepository titleChampionRepository;
 
   @Autowired private SeasonRepository seasonRepository;
 
   @Autowired
-  private com.github.javydreamercsw.management.domain.title.TitleReignRepository
+  private TitleReignRepository
       titleReignRepository;
 
   @Autowired private CampaignRepository campaignRepository;
@@ -103,11 +100,11 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private StatusCardService statusCardService;
 
   @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
+  private BackstageActionHistoryRepository
       backstageActionHistoryRepository;
 
   @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
+  private CampaignEncounterRepository
       campaignEncounterRepository;
 
   @BeforeEach

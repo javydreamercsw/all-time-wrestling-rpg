@@ -67,12 +67,12 @@ class ShowPlanningAiServiceTest {
         .thenAnswer(invocation -> segmentNarrationService.generateText(invocation.getArgument(0)));
     when(holidayService.getHolidayTheme(any(Instant.class)))
         .thenReturn(Optional.of("Christmas Day"));
-    when(segmentRuleService.getStandardRules()).thenReturn(java.util.List.of());
+    when(segmentRuleService.getStandardRules()).thenReturn(List.of());
 
     SegmentType segmentType = new SegmentType();
     segmentType.setName("One on One");
     segmentType.setDescription("A standard wrestling match between two competitors.");
-    when(segmentTypeService.findAll()).thenReturn(java.util.List.of(segmentType));
+    when(segmentTypeService.findAll()).thenReturn(List.of(segmentType));
 
     showPlanningAiService =
         new ShowPlanningAiService(
@@ -265,7 +265,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(42L);
@@ -306,7 +306,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
 
@@ -329,7 +329,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(7L);
@@ -361,7 +361,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 4, 6).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 4, 6).atStartOfDay(ZoneId.of("UTC")).toInstant());
     context.setPremiumLiveEvent(true);
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
@@ -388,7 +388,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 4, 6).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 4, 6).atStartOfDay(ZoneId.of("UTC")).toInstant());
     context.setPremiumLiveEvent(false);
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
@@ -414,7 +414,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(1L);
@@ -442,7 +442,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(2L);
@@ -470,7 +470,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(3L);
@@ -499,7 +499,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
     context.setPremiumLiveEvent(true);
 
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
@@ -529,7 +529,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
 
@@ -550,7 +550,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     String aiResponseJson =
         """
@@ -585,7 +585,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     String aiResponseJson =
         """
@@ -619,7 +619,7 @@ class ShowPlanningAiServiceTest {
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(
-        LocalDate.of(2025, 6, 1).atStartOfDay(java.time.ZoneId.of("UTC")).toInstant());
+        LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
 
     when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
 

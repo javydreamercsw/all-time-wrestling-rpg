@@ -27,6 +27,8 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -47,13 +49,17 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -62,6 +68,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -248,11 +255,11 @@ class TitleServiceTest {
   void createTitle_universeNotFound_throwsException() {
     when(universeRepository.findById(99L)).thenReturn(Optional.empty());
 
-    org.assertj.core.api.Assertions.assertThatThrownBy(
+    Assertions.assertThatThrownBy(
             () ->
                 titleService.createTitle(
                     "Title", "Desc", WrestlerTier.ROOKIE, ChampionshipType.SINGLE, 99L))
-        .isInstanceOf(java.util.NoSuchElementException.class);
+        .isInstanceOf(NoSuchElementException.class);
   }
 
   // =====================================================================
@@ -364,7 +371,7 @@ class TitleServiceTest {
   @Test
   void getAllTitles_returnsPage() {
     Page<Title> page = new PageImpl<>(List.of(title));
-    when(titleRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+    when(titleRepository.findAll(any(Pageable.class)))
         .thenReturn(page);
 
     Page<Title> result = titleService.getAllTitles(PageRequest.of(0, 10));
@@ -436,18 +443,18 @@ class TitleServiceTest {
     // real-world wall-clock time the adjudication happened to run.
     List<Wrestler> champions = List.of(wrestler);
 
-    com.github.javydreamercsw.management.domain.show.Show show =
-        new com.github.javydreamercsw.management.domain.show.Show();
-    show.setShowDate(java.time.LocalDate.of(2020, 6, 15));
+    Show show =
+        new Show();
+    show.setShowDate(LocalDate.of(2020, 6, 15));
 
-    com.github.javydreamercsw.management.domain.show.segment.Segment segment =
-        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+    Segment segment =
+        new Segment();
     segment.setShow(show);
 
     titleService.awardTitleTo(title, champions, segment);
 
     Instant expectedDate =
-        java.time.LocalDate.of(2020, 6, 15).atStartOfDay(ZoneOffset.UTC).toInstant();
+        LocalDate.of(2020, 6, 15).atStartOfDay(ZoneOffset.UTC).toInstant();
     assertThat(title.getCurrentReign()).isPresent();
     assertThat(title.getCurrentReign().get().getStartDate()).isEqualTo(expectedDate);
   }
@@ -456,12 +463,12 @@ class TitleServiceTest {
   void awardTitleTo_withSegmentButNoShowDate_fallsBackToClock() {
     List<Wrestler> champions = List.of(wrestler);
 
-    com.github.javydreamercsw.management.domain.show.Show show =
-        new com.github.javydreamercsw.management.domain.show.Show();
+    Show show =
+        new Show();
     // showDate intentionally left null
 
-    com.github.javydreamercsw.management.domain.show.segment.Segment segment =
-        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+    Segment segment =
+        new Segment();
     segment.setShow(show);
 
     titleService.awardTitleTo(title, champions, segment);
@@ -1095,6 +1102,6 @@ class TitleServiceTest {
    * Convenience wrapper to keep verify calls tidy with argument matchers that need static import.
    */
   private static <T> T eq(final T value) {
-    return org.mockito.ArgumentMatchers.eq(value);
+    return ArgumentMatchers.eq(value);
   }
 }

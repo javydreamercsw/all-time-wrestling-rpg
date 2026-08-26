@@ -38,11 +38,14 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -59,15 +62,15 @@ class CampaignProgressionServiceTest {
   @BeforeEach
   void setUpMocks() {
     // campaignService is @Lazy field-injected; @InjectMocks won't set it automatically
-    org.springframework.test.util.ReflectionTestUtils.setField(
+    ReflectionTestUtils.setField(
         service, "campaignService", campaignService);
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(
             featureDataService.getFeatureValue(
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any()))
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any()))
         .thenAnswer(inv -> inv.getArgument(3));
   }
 

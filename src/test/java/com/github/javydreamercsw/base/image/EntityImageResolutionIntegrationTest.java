@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.world.Arena;
+import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -34,11 +35,12 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class EntityImageResolutionIntegrationTest
-    extends com.github.javydreamercsw.management.test.AbstractIntegrationTest {
+    extends AbstractIntegrationTest {
 
   @Autowired private WrestlerService wrestlerService;
   @Autowired private NpcService npcService;
@@ -131,8 +133,8 @@ class EntityImageResolutionIntegrationTest
 
   @Test
   void testLocationFallbackResolution() {
-    com.github.javydreamercsw.management.domain.world.Location location =
-        com.github.javydreamercsw.management.domain.world.Location.builder()
+    Location location =
+        Location.builder()
             .name("Unknown Location")
             .build();
     String imageUrl = locationService.resolveLocationImage(location);

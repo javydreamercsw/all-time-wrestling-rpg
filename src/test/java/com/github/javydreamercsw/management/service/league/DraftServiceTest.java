@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerContract;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.league.DraftBroadcaster;
@@ -195,6 +196,6 @@ class DraftServiceTest {
     verify(leagueRosterRepository, times(4)).save(any(LeagueRoster.class));
     verify(draftPickRepository, times(4)).save(any(DraftPick.class));
     verify(contractRepository, times(4))
-        .save(any(com.github.javydreamercsw.management.domain.wrestler.WrestlerContract.class));
+        .save(any(WrestlerContract.class));
   }
 }

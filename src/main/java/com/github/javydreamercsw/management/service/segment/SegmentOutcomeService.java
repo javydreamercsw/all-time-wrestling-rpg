@@ -70,9 +70,9 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
    * @param context the narration context
    * @return the updated context
    */
-  public com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext
+  public SegmentNarrationService.SegmentNarrationContext
       determineOutcomeIfNeeded(
-          final com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext
+          final SegmentNarrationService.SegmentNarrationContext
               context) {
     if (context.getDeterminedOutcome() == null || context.getDeterminedOutcome().isBlank()) {
       String outcome = determineOutcome(context.getWrestlers(), context.getVenue(), 1L);
@@ -188,7 +188,7 @@ public class SegmentOutcomeService implements SegmentOutcomeProvider {
       return 50;
     }
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+    WrestlerState state =
         wrestlerService.getOrCreateState(dbWrestler.getId(), universeId);
 
     // Base weight from fan weight

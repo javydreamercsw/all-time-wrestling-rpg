@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -131,12 +132,12 @@ class TitleListViewTest extends AbstractViewTest {
               if (t.getTier() == null) {
                 return false;
               }
-              com.github.javydreamercsw.base.domain.wrestler.WrestlerTier wTier =
+              WrestlerTier wTier =
                   w.getDefaultState()
                       .map(
-                          com.github.javydreamercsw.management.domain.wrestler.WrestlerState
+                          WrestlerState
                               ::getTier)
-                      .orElse(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ROOKIE);
+                      .orElse(WrestlerTier.ROOKIE);
               return wTier.ordinal() >= t.getTier().ordinal();
             });
 
@@ -303,7 +304,7 @@ class TitleListViewTest extends AbstractViewTest {
         titleListView.grid.getColumns().stream()
             .map(Grid.Column::getHeaderText)
             .filter(h -> h != null)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     assertTrue(headers.contains("Rankings"));
     assertTrue(headers.contains("Defense Freq."));
   }

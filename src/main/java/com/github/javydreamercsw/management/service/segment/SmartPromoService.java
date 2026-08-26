@@ -40,7 +40,9 @@ import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponse
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -240,7 +242,7 @@ public class SmartPromoService {
     Segment segment = new Segment();
     segment.setShow(show);
     segment.setSegmentType(promoType);
-    segment.setSegmentDate(java.time.Instant.now());
+    segment.setSegmentDate(Instant.now());
     segment.setNarration(outcome.getFinalNarration());
     segment.setStatus(SegmentStatus.COMPLETED);
     segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
@@ -252,7 +254,7 @@ public class SmartPromoService {
     }
 
     if (outcome.isSuccess()) {
-      segment.setWinners(java.util.List.of(player));
+      segment.setWinners(List.of(player));
     }
 
     // Add "Promo" rule
@@ -350,7 +352,7 @@ public class SmartPromoService {
     return SmartPromoResponseDTO.builder()
         .opener("You step into the ring, ready to speak your mind.")
         .hooks(
-            java.util.List.of(
+            List.of(
                 PromoHookDTO.builder()
                     .hook("Standard Promo")
                     .label("Speak")

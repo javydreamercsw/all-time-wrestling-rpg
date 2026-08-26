@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,8 +114,8 @@ public class ShowPlanningAiService {
                     } else if (dto.getParticipants() != null && !dto.getParticipants().isEmpty()) {
                       segment.setTeams(
                           dto.getParticipants().stream()
-                              .map(java.util.List::of)
-                              .collect(java.util.stream.Collectors.toList()));
+                              .map(List::of)
+                              .collect(Collectors.toList()));
                     }
                     if (dto.getTeamIds() != null && !dto.getTeamIds().isEmpty()) {
                       segment.setTeamIds(dto.getTeamIds());
@@ -122,12 +123,12 @@ public class ShowPlanningAiService {
                         && !dto.getParticipantIds().isEmpty()) {
                       segment.setTeamIds(
                           dto.getParticipantIds().stream()
-                              .map(java.util.List::of)
-                              .collect(java.util.stream.Collectors.toList()));
+                              .map(List::of)
+                              .collect(Collectors.toList()));
                     }
                     return segment;
                   })
-              .collect(java.util.stream.Collectors.toList());
+              .collect(Collectors.toList());
 
       ProposedShow proposedShow = new ProposedShow();
       proposedShow.setSegments(proposedSegments);

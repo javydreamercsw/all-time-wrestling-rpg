@@ -270,8 +270,8 @@ class GeneralSecurityUtilsTest {
   }
 
   private static SecurityContextHolderStrategy simpleStrategy() {
-    java.util.concurrent.atomic.AtomicReference<SecurityContext> holder =
-        new java.util.concurrent.atomic.AtomicReference<>(
+    AtomicReference<SecurityContext> holder =
+        new AtomicReference<>(
             SecurityContextHolder.createEmptyContext());
     return new SecurityContextHolderStrategy() {
       @Override

@@ -26,6 +26,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.image.ImageResolution;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
@@ -48,8 +50,10 @@ import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H2;
@@ -63,6 +67,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 public class CampaignDashboardViewTest extends AbstractViewTest {
@@ -70,7 +75,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
   @Mock private CampaignRepository campaignRepository;
   @Mock private CampaignService campaignService;
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private com.github.javydreamercsw.base.domain.account.AccountRepository accountRepository;
+  @Mock private AccountRepository accountRepository;
   @Mock private CampaignAbilityCardRepository cardRepository;
   @Mock private CampaignUpgradeService upgradeService;
   @Mock private SecurityUtils securityUtils;
@@ -127,7 +132,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
             Optional.of(CampaignChapterDTO.builder().title("All or Nothing (Season 1)").build()));
     when(titleRepository.findByName(any())).thenReturn(Optional.empty());
     when(wrestlerService.resolveWrestlerImage(any()))
-        .thenReturn(new com.github.javydreamercsw.base.image.ImageResolution(null, true));
+        .thenReturn(new ImageResolution(null, true));
   }
 
   @Test
@@ -352,9 +357,9 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     _click(_get(view, Button.class, spec -> spec.withId("abandon-campaign-button")));
 
     // ConfirmDialog should be open; campaign must NOT be abandoned yet
-    com.github.mvysny.kaributesting.v10.LocatorJ._get(
-        com.vaadin.flow.component.confirmdialog.ConfirmDialog.class);
-    org.mockito.Mockito.verify(campaignService, org.mockito.Mockito.never()).abandonCampaign(any());
+    LocatorJ._get(
+        ConfirmDialog.class);
+    Mockito.verify(campaignService, Mockito.never()).abandonCampaign(any());
   }
 
   @Test
@@ -545,7 +550,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
 
     _click(_get(dialog, Button.class, spec -> spec.withText("Cancel")));
 
-    org.mockito.Mockito.verify(campaignService, org.mockito.Mockito.never())
+    Mockito.verify(campaignService, Mockito.never())
         .startCampaign(any(), any());
   }
 }

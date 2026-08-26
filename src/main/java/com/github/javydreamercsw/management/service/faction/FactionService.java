@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.faction;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.domain.faction.Faction;
@@ -30,13 +31,17 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -61,7 +66,7 @@ public class FactionService {
   private final Clock clock;
   private final DefaultImageService imageService;
 
-  @org.springframework.beans.factory.annotation.Autowired
+  @Autowired
   public FactionService(
       final FactionRepository factionRepository,
       final WrestlerRepository wrestlerRepository,
@@ -87,7 +92,7 @@ public class FactionService {
     return universeContextService
         .getCurrentUniverse()
         .map(universeSettingsService::getEnabledExpansionCodesForUniverse)
-        .orElseGet(() -> new java.util.HashSet<>(expansionService.getEnabledExpansionCodes()));
+        .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
 
   /** Get all factions. */
@@ -166,19 +171,19 @@ public class FactionService {
             .collect(Collectors.toList());
 
     if (pageable.isUnpaged()) {
-      return new org.springframework.data.domain.PageImpl<>(
+      return new PageImpl<>(
           allFiltered, pageable, allFiltered.size());
     }
 
     int start = (int) pageable.getOffset();
     int end = Math.min(start + pageable.getPageSize(), allFiltered.size());
 
-    List<Faction> pageContent = new java.util.ArrayList<>();
+    List<Faction> pageContent = new ArrayList<>();
     if (start < allFiltered.size()) {
       pageContent = allFiltered.subList(start, end);
     }
 
-    return new org.springframework.data.domain.PageImpl<>(
+    return new PageImpl<>(
         pageContent, pageable, allFiltered.size());
   }
 
@@ -245,18 +250,18 @@ public class FactionService {
     if (leaderOpt.isPresent()) {
       Wrestler leader = leaderOpt.get();
       faction.setLeader(leader);
-      com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+      WrestlerState state =
           wrestlerStateRepository
               .findByWrestlerIdAndUniverseId(leader.getId(), universeId)
               .orElseGet(
                   () ->
                       wrestlerStateRepository.save(
-                          com.github.javydreamercsw.management.domain.wrestler.WrestlerState
+                          WrestlerState
                               .builder()
                               .wrestler(leader)
                               .universe(universe)
                               .tier(
-                                  com.github.javydreamercsw.base.domain.wrestler.WrestlerTier
+                                  WrestlerTier
                                       .ROOKIE)
                               .build()));
       faction.addMember(state);
@@ -328,7 +333,7 @@ public class FactionService {
     }
     Long universeId = faction.getUniverse().getId();
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+    WrestlerState state =
         wrestlerStateRepository.findByWrestlerIdAndUniverseId(wrestlerId, universeId).orElseThrow();
 
     faction.removeMember(state);
@@ -378,7 +383,7 @@ public class FactionService {
       return Optional.of(faction);
     }
 
-    List<WrestlerState> members = new java.util.ArrayList<>(faction.getMembers());
+    List<WrestlerState> members = new ArrayList<>(faction.getMembers());
     faction.disband(reason);
     wrestlerStateRepository.saveAllAndFlush(members);
     Faction savedFaction = factionRepository.saveAndFlush(faction);

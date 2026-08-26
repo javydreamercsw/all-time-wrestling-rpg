@@ -17,19 +17,19 @@
 package com.github.javydreamercsw.management.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 /**
  * Cache configuration for improving application performance. Implements caching for frequently
@@ -105,10 +105,10 @@ public class CacheConfig {
   @Bean
   public CacheMonitor cacheMonitor(
       final CacheManager cacheManager,
-      @org.springframework.context.annotation.Lazy
-          final com.github.javydreamercsw.management.service.npc.NpcService npcService,
-      @org.springframework.context.annotation.Lazy
-          final com.github.javydreamercsw.management.service.expansion.ExpansionService
+      @Lazy
+          final NpcService npcService,
+      @Lazy
+          final ExpansionService
               expansionService) {
     return new CacheMonitor(cacheManager, npcService, expansionService);
   }
@@ -116,14 +116,14 @@ public class CacheConfig {
   /** Cache monitoring utility for performance analysis. */
   public static class CacheMonitor {
     private final CacheManager cacheManager;
-    private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
-    private final com.github.javydreamercsw.management.service.expansion.ExpansionService
+    private final NpcService npcService;
+    private final ExpansionService
         expansionService;
 
     public CacheMonitor(
         final CacheManager cacheManager,
-        final com.github.javydreamercsw.management.service.npc.NpcService npcService,
-        final com.github.javydreamercsw.management.service.expansion.ExpansionService
+        final NpcService npcService,
+        final ExpansionService
             expansionService) {
       this.cacheManager = cacheManager;
       this.npcService = npcService;
@@ -221,7 +221,7 @@ public class CacheConfig {
         // uncached, explicit-codes overload instead (mirrors SegmentTypeService/SegmentRuleService
         // fix for ATW-8djt).
         log.debug("Warming up NPCs cache...");
-        npcService.findAll(new java.util.HashSet<>(expansionService.getEnabledExpansionCodes()));
+        npcService.findAll(new HashSet<>(expansionService.getEnabledExpansionCodes()));
 
         log.debug("✅ Cache warm-up completed");
       } catch (Exception e) {
@@ -232,7 +232,7 @@ public class CacheConfig {
 
   /** Cache key generator for consistent cache key creation. */
   @Bean
-  public org.springframework.cache.interceptor.KeyGenerator customKeyGenerator() {
+  public KeyGenerator customKeyGenerator() {
     return (target, method, params) -> {
       StringBuilder sb = new StringBuilder();
       sb.append(target.getClass().getSimpleName()).append(".");

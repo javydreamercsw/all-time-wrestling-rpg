@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.service.theme;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,8 +35,8 @@ public class ThemeService {
   public static final String DEFAULT_THEME_KEY = "default_theme";
   public static final String FALLBACK_THEME = "light";
 
-  public java.util.List<String> getAvailableThemes() {
-    return java.util.List.of("light", "dark", "retro", "high-contrast", "neon");
+  public List<String> getAvailableThemes() {
+    return List.of("light", "dark", "retro", "high-contrast", "neon");
   }
 
   public String getEffectiveTheme(final Account account) {

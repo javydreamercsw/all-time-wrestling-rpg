@@ -16,8 +16,10 @@
 */
 package com.github.javydreamercsw.management.ui.view.campaign;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -40,13 +42,10 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.HasUrlParameter;
-import com.vaadin.flow.router.OptionalParameter;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.*;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +61,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
   private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
   private final SegmentService segmentService;
-  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final NotificationService notificationService;
 
   private Campaign currentCampaign;
   private Wrestler playerWrestler;
@@ -80,7 +79,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
       final WrestlerRepository wrestlerRepository,
       final SecurityUtils securityUtils,
       final SegmentService segmentService,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final NotificationService notificationService) {
     this.smartPromoService = smartPromoService;
     this.campaignRepository = campaignRepository;
     this.wrestlerRepository = wrestlerRepository;
@@ -120,8 +119,8 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
           .getAuthenticatedUser()
           .ifPresent(
               user -> {
-                com.github.javydreamercsw.base.domain.account.Account account = user.getAccount();
-                java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+                Account account = user.getAccount();
+                List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
                 playerWrestler =
                     wrestlers.stream()
                         .filter(w -> w.getId().equals(account.getActiveWrestlerId()))
@@ -299,7 +298,7 @@ public class PromoView extends VerticalLayout implements HasUrlParameter<Long> {
                 UI.getCurrent()
                     .navigate(
                         MatchView.class,
-                        new com.vaadin.flow.router.RouteParameters(
+                        new RouteParameters(
                             "matchId", segmentId.toString()));
               } else {
                 UI.getCurrent().navigate("campaign/actions");

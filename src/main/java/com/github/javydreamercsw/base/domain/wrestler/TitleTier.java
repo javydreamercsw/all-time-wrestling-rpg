@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.domain.wrestler;
 
+import java.util.Arrays;
 import lombok.Getter;
 
 /**
@@ -88,7 +89,7 @@ public enum TitleTier {
       return new TitleTier[0];
     }
 
-    return java.util.Arrays.stream(values())
+    return Arrays.stream(values())
         .filter(title -> title.isEligible(wrestlerFans))
         .toArray(TitleTier[]::new);
   }

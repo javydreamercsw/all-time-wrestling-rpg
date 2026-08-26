@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.segment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
@@ -33,6 +34,7 @@ import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,6 +43,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,8 +83,8 @@ public class SegmentRuleService {
    * @return Optional containing the segment rule if found
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       key = "#name")
   public Optional<SegmentRule> findByName(final String name) {
     return segmentRuleRepository.findByName(name);
@@ -92,8 +96,8 @@ public class SegmentRuleService {
    * @return List of segment rules appropriate for intense rivalries
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       key = "'highHeat'")
   public List<SegmentRule> getHighHeatRules() {
     Set<String> enabled = enabledExpansionCodes();
@@ -108,8 +112,8 @@ public class SegmentRuleService {
    * @return List of standard segment rules
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       key = "'standard'")
   public List<SegmentRule> getStandardRules() {
     Set<String> enabled = enabledExpansionCodes();
@@ -129,8 +133,8 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule createRule(
       @NonNull final String name,
@@ -162,8 +166,8 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule updateRule(
       @NonNull final Long id,
@@ -210,8 +214,8 @@ public class SegmentRuleService {
    * @return Optional containing the segment rule if found
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       key = "#id")
   public Optional<SegmentRule> findById(@NonNull final Long id) {
     return segmentRuleRepository.findById(id);
@@ -228,8 +232,8 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
@@ -244,8 +248,8 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
@@ -259,8 +263,8 @@ public class SegmentRuleService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       key = "'all'")
   public List<SegmentRule> findAll() {
     return findAll(enabledExpansionCodes());
@@ -281,8 +285,8 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public void setActive(@NonNull final Long id, final boolean active) {
     segmentRuleRepository
@@ -348,8 +352,8 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
@@ -366,8 +370,8 @@ public class SegmentRuleService {
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SEGMENT_RULES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SEGMENT_RULES_CACHE,
       allEntries = true)
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
@@ -383,13 +387,13 @@ public class SegmentRuleService {
 
     if (existingOpt.isPresent()) {
       SegmentRule sr = existingOpt.get();
-      boolean guideChanged = !java.util.Objects.equals(sr.getGuideHash(), incomingHash);
-      if (java.util.Objects.equals(sr.getDescription(), description)
+      boolean guideChanged = !Objects.equals(sr.getGuideHash(), incomingHash);
+      if (Objects.equals(sr.getDescription(), description)
           && sr.getRequiresHighHeat() == requiresHighHeat
           && sr.getNoDq() == noDq
           && sr.isAllowsRefereeStopage() == allowsRefereeStopage
           && sr.getBumpAddition() == bumpAddition
-          && java.util.Objects.equals(sr.getExpansionCode(), expansionCode)
+          && Objects.equals(sr.getExpansionCode(), expansionCode)
           && !guideChanged) {
         return sr;
       }

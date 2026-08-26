@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
@@ -30,8 +31,12 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.NonNull;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class StorylineDocsE2ETest extends AbstractDocsE2ETest {
@@ -42,9 +47,9 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStorylineRepository storylineRepository;
   @Autowired private StorylineMilestoneRepository milestoneRepository;
-  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
+  @Autowired private DataInitializer dataInitializer;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setup() {
     dataInitializer.init();
   }
@@ -90,13 +95,13 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
 
     // 3. Verify & Capture
     // Find the journal details component and expand it
-    org.openqa.selenium.WebElement journal =
-        waitForVaadinElement(driver, org.openqa.selenium.By.id("story-journal-details"));
+    WebElement journal =
+        waitForVaadinElement(driver, By.id("story-journal-details"));
     clickElement(journal);
 
     waitForText("The Phantom Rival");
     waitForVaadinElement(
-        driver, org.openqa.selenium.By.id("download-json-button-" + storyline.getId()));
+        driver, By.id("download-json-button-" + storyline.getId()));
 
     documentFeature(
         "Campaign",
@@ -109,7 +114,7 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private Wrestler getOrCreateWrestler(@NonNull final Account account) {
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
     }
@@ -135,6 +140,6 @@ class StorylineDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(@NonNull final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

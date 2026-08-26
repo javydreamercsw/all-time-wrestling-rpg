@@ -54,7 +54,7 @@ public class WrestlerInjuryInboxListener implements ApplicationListener<Wrestler
       log.debug("Skipping inbox item for NPC wrestler (no account)");
       return;
     }
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             wrestlerInjury,
             "Wrestler Injury: " + event.getWrestlerState().getName(),

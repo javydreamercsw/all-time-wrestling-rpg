@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.PasswordResetService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -29,6 +30,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.textfield.EmailField;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,20 +55,20 @@ class ForgotPasswordViewTest extends AbstractViewTest {
   @DisplayName("Should render Forgot Password heading")
   void shouldRenderHeading() {
     H1 heading = _get(view, H1.class, spec -> spec.withText("Forgot Password"));
-    org.junit.jupiter.api.Assertions.assertTrue(heading.isVisible());
+    Assertions.assertTrue(heading.isVisible());
   }
 
   @Test
   @DisplayName("Should render email field")
   void shouldRenderEmailField() {
     EmailField emailField = _get(view, EmailField.class);
-    org.junit.jupiter.api.Assertions.assertTrue(emailField.isVisible());
+    Assertions.assertTrue(emailField.isVisible());
   }
 
   @Test
   @DisplayName("Submit with known email should call createPasswordResetTokenForUser")
   void submitWithKnownEmailCallsService() {
-    var account = new com.github.javydreamercsw.base.domain.account.Account();
+    var account = new Account();
     when(accountService.findByEmail(anyString())).thenReturn(Optional.of(account));
     when(passwordResetService.createPasswordResetTokenForUser(account)).thenReturn("tok");
 

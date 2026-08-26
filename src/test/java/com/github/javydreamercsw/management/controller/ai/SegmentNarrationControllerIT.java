@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.List;
@@ -150,21 +151,21 @@ class SegmentNarrationControllerIT extends AbstractIntegrationTest {
   protected SegmentNarrationContext createCustomSegmentContext() {
     SegmentNarrationContext context = new SegmentNarrationContext();
 
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext segmentType =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext();
+    SegmentNarrationService.SegmentTypeContext segmentType =
+        new SegmentNarrationService.SegmentTypeContext();
     segmentType.setSegmentType("Hell in a Cell");
     segmentType.setStipulation("Grudge Match");
     segmentType.setRules(List.of("No Disqualification", "Cage Escape"));
     segmentType.setTimeLimit(60);
     context.setSegmentType(segmentType);
 
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext w1 =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext();
+    SegmentNarrationService.WrestlerContext w1 =
+        new SegmentNarrationService.WrestlerContext();
     w1.setName("The Undertaker");
     w1.setAlignment("FACE");
 
-    com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext w2 =
-        new com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext();
+    SegmentNarrationService.WrestlerContext w2 =
+        new SegmentNarrationService.WrestlerContext();
     w2.setName("Mankind");
     w2.setAlignment("HEEL");
 

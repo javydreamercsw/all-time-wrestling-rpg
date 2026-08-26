@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletion;
+import com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
 import com.github.javydreamercsw.management.service.challenge.ChallengeCompletionService;
@@ -447,7 +448,7 @@ public class ChallengeListView extends VerticalLayout {
     boolean alreadyCompleted =
         existing0 != null
             && existing0.getStatus()
-                == com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus
+                == ChallengeCompletionStatus
                     .COMPLETED;
 
     if (alreadyCompleted) {

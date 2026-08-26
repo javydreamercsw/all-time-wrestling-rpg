@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
@@ -36,6 +37,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseMembership.U
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
+import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,10 +80,10 @@ class JoinRequestInboxListenerTest {
     adminAccount = new Account("admin", "hash", null);
     adminAccount.setId(10L);
     // Give admin the ADMIN role
-    com.github.javydreamercsw.base.domain.account.Role adminRole =
-        new com.github.javydreamercsw.base.domain.account.Role();
+    Role adminRole =
+        new Role();
     adminRole.setName(RoleName.ADMIN);
-    adminAccount.setRoles(new java.util.HashSet<>(List.of(adminRole)));
+    adminAccount.setRoles(new HashSet<>(List.of(adminRole)));
 
     memberAccount = new Account("player", "hash", null);
     memberAccount.setId(11L);

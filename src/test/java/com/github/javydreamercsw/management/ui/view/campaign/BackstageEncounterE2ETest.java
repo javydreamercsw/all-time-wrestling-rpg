@@ -24,15 +24,19 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.service.campaign.BackstageEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -61,7 +65,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
   }
 
   private Wrestler getOrCreateWrestler(final Account account) {
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
     }
@@ -74,7 +78,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
             .account(account)
             .isPlayer(true)
             .active(true)
-            .gender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE)
+            .gender(Gender.MALE)
             .build();
     return wrestlerRepository.saveAndFlush(w);
   }
@@ -87,7 +91,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
 
     // Provide a mock encounter when requested
     var choice1 =
-        com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
+        CampaignEncounterResponseDTO.Choice
             .builder()
             .text("Option A")
             .label("Respect")
@@ -98,8 +102,8 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
             .build();
 
     var response =
-        new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
-            "Mock Situation: You are approached by a veteran", java.util.List.of(choice1));
+        new CampaignEncounterResponseDTO(
+            "Mock Situation: You are approached by a veteran", List.of(choice1));
 
     when(backstageEncounterService.generateBackstageEncounter(any())).thenReturn(response);
 
@@ -127,7 +131,7 @@ class BackstageEncounterE2ETest extends AbstractE2ETest {
 
     // 6. Finish interaction
     WebElement finishBtn = waitForVaadinElement(driver, By.id("finish-backstage-situation-button"));
-    ((org.openqa.selenium.JavascriptExecutor) driver)
+    ((JavascriptExecutor) driver)
         .executeScript("arguments[0].click();", finishBtn);
     waitForVaadinClientToLoad();
 

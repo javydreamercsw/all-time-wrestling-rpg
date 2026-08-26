@@ -81,7 +81,7 @@ public class ChampionshipDefendedInboxListener
       return;
     }
 
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             championshipDefended,
             "Title Defended: " + event.getTitleName(),

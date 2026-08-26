@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.season.Season;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -202,44 +203,44 @@ class AutomaticShowCreationDocsE2ETest extends AbstractE2ETest {
         "admin-season-settings-after-generation");
 
     // Verify shows were created
-    List<com.github.javydreamercsw.management.domain.show.Show> allShows = showService.findAll();
+    List<Show> allShows = showService.findAll();
     assertFalse(allShows.isEmpty());
     assertEquals(32, allShows.size());
 
     // Verify specific shows exist
-    Optional<com.github.javydreamercsw.management.domain.show.Show> mondayJan19 =
+    Optional<Show> mondayJan19 =
         showService.findByName("Monday Night Mayhem").stream()
             .filter(s -> s.getShowDate().equals(LocalDate.of(2026, 1, 19)))
             .findFirst();
     assertTrue(mondayJan19.isPresent());
 
-    Optional<com.github.javydreamercsw.management.domain.show.Show> fridayFeb6 =
+    Optional<Show> fridayFeb6 =
         showService.findByName("Friday Night Fire").stream()
             .filter(s -> s.getShowDate().equals(LocalDate.of(2026, 2, 6)))
             .findFirst();
     assertTrue(fridayFeb6.isPresent());
 
     // Verify PLEs - Last Sunday of Jan 2026 is Jan 25
-    Optional<com.github.javydreamercsw.management.domain.show.Show> wrestleFestJanNight1 =
+    Optional<Show> wrestleFestJanNight1 =
         showService.findByName("WrestleFest - Night 1").stream()
             .filter(s -> s.getShowDate().equals(LocalDate.of(2026, 1, 25)))
             .findFirst();
     assertTrue(wrestleFestJanNight1.isPresent());
 
-    Optional<com.github.javydreamercsw.management.domain.show.Show> wrestleFestJanNight2 =
+    Optional<Show> wrestleFestJanNight2 =
         showService.findByName("WrestleFest - Night 2").stream()
             .filter(s -> s.getShowDate().equals(LocalDate.of(2026, 1, 26)))
             .findFirst();
     assertTrue(wrestleFestJanNight2.isPresent());
 
     // Verify PLEs - Last Sunday of Feb 2026 is Feb 22
-    Optional<com.github.javydreamercsw.management.domain.show.Show> wrestleFestFebNight1 =
+    Optional<Show> wrestleFestFebNight1 =
         showService.findByName("WrestleFest - Night 1").stream()
             .filter(s -> s.getShowDate().equals(LocalDate.of(2026, 2, 22)))
             .findFirst();
     assertTrue(wrestleFestFebNight1.isPresent());
 
-    Optional<com.github.javydreamercsw.management.domain.show.Show> wrestleFestFebNight2 =
+    Optional<Show> wrestleFestFebNight2 =
         showService.findByName("WrestleFest - Night 2").stream()
             .filter(s -> s.getShowDate().equals(LocalDate.of(2026, 2, 23)))
             .findFirst();

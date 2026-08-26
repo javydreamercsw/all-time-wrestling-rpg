@@ -20,18 +20,14 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE;
 import static com.github.javydreamercsw.base.domain.account.RoleName.PLAYER_ROLE;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.SecurityUtils;
-import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
-import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
-import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignState;
-import com.github.javydreamercsw.management.domain.campaign.StorylineMilestone;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.campaign.*;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -55,6 +51,7 @@ import com.github.javydreamercsw.management.ui.component.GuideTextRenderer;
 import com.github.javydreamercsw.management.ui.component.PlayerCampaignCard;
 import com.github.javydreamercsw.management.ui.component.TournamentBracketComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
+import com.github.javydreamercsw.management.ui.view.match.MatchView;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -80,6 +77,7 @@ import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
@@ -88,8 +86,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility.*;
 import jakarta.annotation.security.RolesAllowed;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -166,11 +163,11 @@ public class CampaignDashboardView extends VerticalLayout {
       return false;
     }
     try {
-      java.util.Map<String, Object> data =
+      Map<String, Object> data =
           objectMapper.readValue(
-              state.getFeatureData(), new com.fasterxml.jackson.core.type.TypeReference<>() {});
+              state.getFeatureData(), new TypeReference<>() {});
       return Boolean.TRUE.equals(data.get(key));
-    } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+    } catch (JsonProcessingException e) {
       log.error("Error parsing feature data", e);
       return false;
     }
@@ -186,14 +183,14 @@ public class CampaignDashboardView extends VerticalLayout {
               // Re-load the account from DB to get the current activeWrestlerId — the principal's
               // Account object is stale when the wrestler was assigned after login (e.g. tutorial).
               Long accountId = user.getId();
-              com.github.javydreamercsw.base.domain.account.Account freshAccount =
+              Account freshAccount =
                   accountId != null
                       ? accountRepository.findById(accountId).orElse(user.getAccount())
                       : user.getAccount();
-              java.util.List<Wrestler> wrestlers =
+              List<Wrestler> wrestlers =
                   accountId != null
                       ? wrestlerRepository.findByAccountId(accountId)
-                      : java.util.List.of();
+                      : List.of();
               Wrestler active =
                   wrestlers.stream()
                       .filter(w -> w.getId().equals(freshAccount.getActiveWrestlerId()))
@@ -282,7 +279,7 @@ public class CampaignDashboardView extends VerticalLayout {
                       .ifPresentOrElse(
                           user -> {
                             Account account = user.getAccount();
-                            java.util.List<Wrestler> wrestlers =
+                            List<Wrestler> wrestlers =
                                 wrestlerRepository.findByAccountWithDetails(account);
                             Wrestler active =
                                 wrestlers.stream()
@@ -308,7 +305,7 @@ public class CampaignDashboardView extends VerticalLayout {
                                   "No authenticated user found when clicking debug start button"));
                 });
         debugStartButton.addThemeVariants(
-            com.vaadin.flow.component.button.ButtonVariant.LUMO_TERTIARY);
+            ButtonVariant.LUMO_TERTIARY);
         debugStartButton.setId("debug-start-campaign");
         add(debugStartButton);
       }
@@ -354,22 +351,22 @@ public class CampaignDashboardView extends VerticalLayout {
     // Show "Continue Match" if in a match and NOT adjudicated
     if (state.getCurrentMatch() != null
         && state.getCurrentPhase()
-            == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.MATCH
+            == CampaignPhase.MATCH
         && state.getCurrentMatch().getAdjudicationStatus()
-            != com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED) {
+            != AdjudicationStatus.ADJUDICATED) {
       Button continueMatchButton =
           new Button(
               "CONTINUE MATCH: " + state.getCurrentMatch().getNarration(),
               e ->
                   UI.getCurrent()
                       .navigate(
-                          com.github.javydreamercsw.management.ui.view.match.MatchView.class,
-                          new com.vaadin.flow.router.RouteParameters(
+                          MatchView.class,
+                          new RouteParameters(
                               "matchId", String.valueOf(state.getCurrentMatch().getId()))));
       continueMatchButton.addThemeVariants(
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE,
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+          ButtonVariant.LUMO_PRIMARY,
+          ButtonVariant.LUMO_LARGE,
+          ButtonVariant.LUMO_SUCCESS);
       continueMatchButton.setWidthFull();
       add(continueMatchButton);
     }
@@ -459,7 +456,7 @@ public class CampaignDashboardView extends VerticalLayout {
     rightColumn.add(actionsInfo);
 
     if (state.getCurrentPhase()
-        == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE) {
+        == CampaignPhase.BACKSTAGE) {
       Span remainingActions =
           new Span("Remaining actions for today: " + (2 - state.getActionsTaken()));
       remainingActions.addClassNames(FontSize.SMALL, FontWeight.BOLD, TextColor.PRIMARY);
@@ -475,7 +472,7 @@ public class CampaignDashboardView extends VerticalLayout {
             e -> {
               if (state.getActionsTaken() < 2
                   && state.getCurrentPhase()
-                      == com.github.javydreamercsw.management.domain.campaign.CampaignPhase
+                      == CampaignPhase
                           .BACKSTAGE) {
                 ConfirmDialog dialog = new ConfirmDialog();
                 dialog.setHeader("Unused Actions");
@@ -491,7 +488,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 dialog.open();
               } else {
                 if (state.getCurrentPhase()
-                    == com.github.javydreamercsw.management.domain.campaign.CampaignPhase
+                    == CampaignPhase
                         .POST_MATCH) {
                   log.debug("Navigating to post-match narrative.");
                 }
@@ -501,7 +498,7 @@ public class CampaignDashboardView extends VerticalLayout {
 
     // Only show "Next Show" if they are in POST_MATCH
     if (state.getCurrentPhase()
-        == com.github.javydreamercsw.management.domain.campaign.CampaignPhase.POST_MATCH) {
+        == CampaignPhase.POST_MATCH) {
       Button nextShowButton =
           new Button(
               "Continue to Next Day",
@@ -509,7 +506,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 campaignService.completePostMatch(currentCampaign);
                 refreshUI();
               });
-      nextShowButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+      nextShowButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
       actionsLayout.add(nextShowButton);
     }
 
@@ -548,7 +545,7 @@ public class CampaignDashboardView extends VerticalLayout {
           new Button(
               "Complete Chapter & Advance",
               e -> {
-                java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+                List<CampaignChapterDTO>
                     options = campaignService.getAvailableNextChapters(currentCampaign);
                 if (options.size() == 1) {
                   campaignService
@@ -575,9 +572,9 @@ public class CampaignDashboardView extends VerticalLayout {
                 }
               });
       advanceButton.addThemeVariants(
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS,
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE);
+          ButtonVariant.LUMO_PRIMARY,
+          ButtonVariant.LUMO_SUCCESS,
+          ButtonVariant.LUMO_LARGE);
       advanceButton.setWidthFull();
       add(advanceButton);
     }
@@ -600,7 +597,7 @@ public class CampaignDashboardView extends VerticalLayout {
       return;
     }
 
-    com.github.javydreamercsw.management.domain.campaign.CampaignStoryline storyline =
+    CampaignStoryline storyline =
         state.getActiveStoryline();
     VerticalLayout section = new VerticalLayout();
     section.setPadding(true);
@@ -625,7 +622,7 @@ public class CampaignDashboardView extends VerticalLayout {
     milestoneList.setPadding(false);
     milestoneList.setSpacing(true);
 
-    for (com.github.javydreamercsw.management.domain.campaign.StorylineMilestone milestone :
+    for (StorylineMilestone milestone :
         storyline.getMilestones()) {
       HorizontalLayout item = new HorizontalLayout();
       item.setAlignItems(Alignment.CENTER);
@@ -636,12 +633,12 @@ public class CampaignDashboardView extends VerticalLayout {
       mTitle.addClassNames(LumoUtility.FontSize.SMALL);
 
       if (milestone.getStatus()
-          == com.github.javydreamercsw.management.domain.campaign.StorylineMilestone.MilestoneStatus
+          == StorylineMilestone.MilestoneStatus
               .ACTIVE) {
         mTitle.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.HEADER);
         Tooltip.forComponent(item).setText("CURRENT GOAL: " + milestone.getNarrativeGoal());
       } else if (milestone.getStatus()
-          == com.github.javydreamercsw.management.domain.campaign.StorylineMilestone.MilestoneStatus
+          == StorylineMilestone.MilestoneStatus
               .PENDING) {
         mTitle.addClassNames(LumoUtility.TextColor.SECONDARY);
       }
@@ -710,7 +707,7 @@ public class CampaignDashboardView extends VerticalLayout {
                 campaignService.pickAbilityCard(campaign, card.getId());
                 refreshUI();
               });
-      pickButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
+      pickButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
       cardWrapper.add(pickButton);
 
       picksContainer.add(cardWrapper);
@@ -739,18 +736,18 @@ public class CampaignDashboardView extends VerticalLayout {
     HorizontalLayout upgradeContainer = new HorizontalLayout();
     upgradeContainer.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.MEDIUM);
 
-    List<com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade> available =
+    List<CampaignUpgrade> available =
         upgradeService.getAllUpgrades();
 
     // Filter out upgrades if the player already has one of that type
     List<String> ownedTypes =
         state.getUpgrades().stream()
-            .map(com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade::getType)
+            .map(CampaignUpgrade::getType)
             .toList();
 
     available.removeIf(u -> ownedTypes.contains(u.getType()));
 
-    for (com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade upgrade : available) {
+    for (CampaignUpgrade upgrade : available) {
       Button buyButton =
           new Button(
               upgrade.getName(),
@@ -760,8 +757,8 @@ public class CampaignDashboardView extends VerticalLayout {
               });
       buyButton.setTooltipText(upgrade.getDescription());
       buyButton.addThemeVariants(
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
-          com.vaadin.flow.component.button.ButtonVariant.LUMO_SMALL);
+          ButtonVariant.LUMO_PRIMARY,
+          ButtonVariant.LUMO_SMALL);
       upgradeContainer.add(buyButton);
     }
 
@@ -770,7 +767,7 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void addTournamentBracket(@NonNull final VerticalLayout parent) {
-    com.github.javydreamercsw.management.dto.campaign.TournamentDTO tournament =
+    TournamentDTO tournament =
         tournamentService.getTournamentState(currentCampaign);
 
     if (tournament == null) {
@@ -799,22 +796,22 @@ public class CampaignDashboardView extends VerticalLayout {
         // Match already created/in-progress
         // Only show continue if NOT adjudicated
         if (currentCampaign.getState().getCurrentMatch().getAdjudicationStatus()
-            != com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED) {
+            != AdjudicationStatus.ADJUDICATED) {
           Button continueMatchButton =
               new Button(
                   "Continue Tournament Match",
                   e ->
                       UI.getCurrent()
                           .navigate(
-                              com.github.javydreamercsw.management.ui.view.match.MatchView.class,
-                              new com.vaadin.flow.router.RouteParameters(
+                              MatchView.class,
+                              new RouteParameters(
                                   "matchId",
                                   String.valueOf(
                                       currentCampaign.getState().getCurrentMatch().getId()))));
           continueMatchButton.addThemeVariants(
-              com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
-              com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE,
-              com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+              ButtonVariant.LUMO_PRIMARY,
+              ButtonVariant.LUMO_LARGE,
+              ButtonVariant.LUMO_SUCCESS);
           bracketContainer.add(continueMatchButton);
         } else {
           // Match finished but not cleared (Post-Match phase)
@@ -826,9 +823,9 @@ public class CampaignDashboardView extends VerticalLayout {
                     refreshUI();
                   });
           advanceButton.addThemeVariants(
-              com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
-              com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE,
-              com.vaadin.flow.component.button.ButtonVariant.LUMO_SUCCESS);
+              ButtonVariant.LUMO_PRIMARY,
+              ButtonVariant.LUMO_LARGE,
+              ButtonVariant.LUMO_SUCCESS);
           bracketContainer.add(advanceButton);
         }
       } else {
@@ -851,8 +848,8 @@ public class CampaignDashboardView extends VerticalLayout {
                   refreshUI();
                 });
         playMatchButton.addThemeVariants(
-            com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY,
-            com.vaadin.flow.component.button.ButtonVariant.LUMO_LARGE);
+            ButtonVariant.LUMO_PRIMARY,
+            ButtonVariant.LUMO_LARGE);
         bracketContainer.add(playMatchButton);
       }
     } else if (getFeatureBoolean(currentCampaign.getState(), "tournamentWinner")) {
@@ -872,7 +869,7 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void openChapterSelectionDialog(
-      java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+      List<CampaignChapterDTO>
           options) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Choose Your Next Path");
@@ -888,7 +885,7 @@ public class CampaignDashboardView extends VerticalLayout {
     intro.addClassNames(TextColor.SECONDARY, FontSize.SMALL);
     content.add(intro);
 
-    for (com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO option : options) {
+    for (CampaignChapterDTO option : options) {
       VerticalLayout card = new VerticalLayout();
       card.addClassNames(Background.CONTRAST_5, BorderRadius.MEDIUM, Padding.MEDIUM);
       card.setSpacing(false);
@@ -975,7 +972,7 @@ public class CampaignDashboardView extends VerticalLayout {
     HorizontalLayout heelCards = new HorizontalLayout();
     heelCards.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
     cardRepository.findByAlignmentType(AlignmentType.HEEL).stream()
-        .sorted(java.util.Comparator.comparingInt(CampaignAbilityCard::getLevel))
+        .sorted(Comparator.comparingInt(CampaignAbilityCard::getLevel))
         .forEach(card -> heelCards.add(new CampaignAbilityCardComponent(card)));
     heelCol.add(heelCards);
 
@@ -985,7 +982,7 @@ public class CampaignDashboardView extends VerticalLayout {
     HorizontalLayout faceCards = new HorizontalLayout();
     faceCards.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
     cardRepository.findByAlignmentType(AlignmentType.FACE).stream()
-        .sorted(java.util.Comparator.comparingInt(CampaignAbilityCard::getLevel))
+        .sorted(Comparator.comparingInt(CampaignAbilityCard::getLevel))
         .forEach(card -> faceCards.add(new CampaignAbilityCardComponent(card)));
     faceCol.add(faceCards);
 
@@ -998,7 +995,7 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void addStoryJournalSection() {
-    List<com.github.javydreamercsw.management.domain.campaign.CampaignStoryline> history =
+    List<CampaignStoryline> history =
         campaignService.getStorylineHistory(currentCampaign);
 
     if (history.isEmpty()) {
@@ -1009,7 +1006,7 @@ public class CampaignDashboardView extends VerticalLayout {
     journalContent.setPadding(true);
     journalContent.setSpacing(true);
 
-    for (com.github.javydreamercsw.management.domain.campaign.CampaignStoryline storyline :
+    for (CampaignStoryline storyline :
         history) {
       HorizontalLayout row = new HorizontalLayout();
       row.setId("story-journal-row-" + storyline.getId());
@@ -1026,7 +1023,7 @@ public class CampaignDashboardView extends VerticalLayout {
 
       String statusLabel =
           storyline.getStatus()
-                  == com.github.javydreamercsw.management.domain.campaign.CampaignStoryline
+                  == CampaignStoryline
                       .StorylineStatus.ACTIVE
               ? " (Active)"
               : "";
@@ -1104,7 +1101,7 @@ public class CampaignDashboardView extends VerticalLayout {
             encounterSelect.setItems(ev.getValue().getStaticEncounters());
             encounterSelect.setEnabled(true);
           } else {
-            encounterSelect.setItems(new java.util.ArrayList<>());
+            encounterSelect.setItems(new ArrayList<>());
             encounterSelect.clear();
             encounterSelect.setEnabled(false);
           }
@@ -1274,7 +1271,7 @@ public class CampaignDashboardView extends VerticalLayout {
               currentCampaign
                   .getState()
                   .setCurrentPhase(
-                      com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE);
+                      CampaignPhase.BACKSTAGE);
               currentCampaign.getState().setActionsTaken(0);
               campaignRepository.save(currentCampaign);
               refreshUI();
@@ -1286,7 +1283,7 @@ public class CampaignDashboardView extends VerticalLayout {
               currentCampaign
                   .getState()
                   .setCurrentPhase(
-                      com.github.javydreamercsw.management.domain.campaign.CampaignPhase
+                      CampaignPhase
                           .POST_MATCH);
               campaignRepository.save(currentCampaign);
               refreshUI();
@@ -1342,7 +1339,7 @@ public class CampaignDashboardView extends VerticalLayout {
                   .getWrestler()
                   .getDefaultState()
                   .map(WrestlerState::getActiveInjuries)
-                  .orElseGet(java.util.Collections::emptyList)
+                  .orElseGet(Collections::emptyList)
                   .forEach(i -> i.heal());
               wrestlerRepository.save(currentCampaign.getWrestler());
               refreshUI();
@@ -1396,7 +1393,7 @@ public class CampaignDashboardView extends VerticalLayout {
               refreshUI();
             },
             () ->
-                com.vaadin.flow.component.notification.Notification.show(
+                Notification.show(
                     "No opponent found for simulation!"));
   }
 }

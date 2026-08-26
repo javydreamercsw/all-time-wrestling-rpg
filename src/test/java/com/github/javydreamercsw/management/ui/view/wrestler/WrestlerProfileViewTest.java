@@ -25,6 +25,7 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.campaign.AlignmentService;
@@ -76,7 +77,7 @@ class WrestlerProfileViewTest extends AbstractViewTest {
   @Mock private WrestlerStateRepository wrestlerStateRepository;
 
   @Mock
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository
+  private WrestlerAbilityRepository
       wrestlerAbilityRepository;
 
   @Mock private AlignmentService alignmentService;

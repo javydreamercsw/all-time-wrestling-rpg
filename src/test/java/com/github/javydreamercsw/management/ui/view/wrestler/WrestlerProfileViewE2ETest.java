@@ -55,6 +55,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -206,7 +207,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             + " shows the current heat total accumulated across all events in that feud.",
         4500);
 
-    ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.scrollBy(0, 200)");
+    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 200)");
     sleep(800);
     captureCaption(
         "Heat accumulates automatically from match outcomes, drama events, and promos."
@@ -292,7 +293,7 @@ class WrestlerProfileViewE2ETest extends AbstractE2ETest {
             + " This data feeds into the Championships accordion on the same profile.",
         4000);
 
-    ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("window.scrollBy(0, 200)");
+    ((JavascriptExecutor) driver).executeScript("window.scrollBy(0, 200)");
     sleep(800);
     captureCaption(
         "Click the show name in any row to navigate directly to that show's detail view."

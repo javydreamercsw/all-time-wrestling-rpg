@@ -33,6 +33,7 @@ import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
@@ -44,10 +45,12 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.season.SeasonAwardsService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -66,6 +69,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistoryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -73,13 +77,8 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.BeforeEvent;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import com.vaadin.flow.router.Location;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -167,7 +166,7 @@ class ShowDetailViewTest extends AbstractViewTest {
       Set<Wrestler> wrestlers = new HashSet<>(Arrays.asList(wrestler1, wrestler2));
 
       ShowDetailView showDetailView = buildView(mock(SecurityUtils.class));
-      java.util.Map<Integer, java.util.List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
+      Map<Integer, List<Wrestler>> teamMap = new LinkedHashMap<>();
       teamMap.put(1, List.of(wrestler1));
       teamMap.put(2, List.of(wrestler2));
       ReflectionTestUtils.invokeMethod(
@@ -228,7 +227,7 @@ class ShowDetailViewTest extends AbstractViewTest {
 
       ShowDetailView showDetailView = buildView(mock(SecurityUtils.class));
       BeforeEvent beforeEvent = Mockito.mock(BeforeEvent.class);
-      Mockito.when(beforeEvent.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
+      Mockito.when(beforeEvent.getLocation()).thenReturn(new Location(""));
       showDetailView.setParameter(beforeEvent, show.getId());
 
       ReflectionTestUtils.setField(showDetailView, "currentShow", show);
@@ -277,7 +276,7 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     ShowDetailView view = buildView(securityUtils);
     BeforeEvent event = Mockito.mock(BeforeEvent.class);
-    Mockito.when(event.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
     view.setParameter(event, 1L);
 
     assertThat(ReflectionTestUtils.getField(view, "adjudicateButton"))
@@ -306,7 +305,7 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     ShowDetailView view = buildView(securityUtils);
     BeforeEvent event = Mockito.mock(BeforeEvent.class);
-    Mockito.when(event.getLocation()).thenReturn(new com.vaadin.flow.router.Location(""));
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
     view.setParameter(event, 1L);
 
     Button adjudicate = (Button) ReflectionTestUtils.getField(view, "adjudicateButton");
@@ -329,7 +328,7 @@ class ShowDetailViewTest extends AbstractViewTest {
         new ShowContextFacade(
             showTypeService,
             seasonService,
-            mock(com.github.javydreamercsw.management.service.season.SeasonAwardsService.class),
+            mock(SeasonAwardsService.class),
             showTemplateService,
             showPlanningService,
             showPlanningAiService,
@@ -340,10 +339,10 @@ class ShowDetailViewTest extends AbstractViewTest {
             wrestlerStatsService,
             relationshipService,
             teamService,
-            mock(com.github.javydreamercsw.management.service.injury.InjuryService.class),
-            mock(com.github.javydreamercsw.management.service.title.TitleService.class),
+            mock(InjuryService.class),
+            mock(TitleService.class),
             mock(
-                com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistoryService
+                WrestlerStateHistoryService
                     .class));
     ViewContext viewContext =
         new ViewContext(notificationService, su, universeContextService, expansionService);
@@ -362,6 +361,6 @@ class ShowDetailViewTest extends AbstractViewTest {
         commentaryTeamRepository,
         ringsideActionService,
         mock(ShowExportService.class),
-        mock(com.github.javydreamercsw.management.domain.league.LeagueRepository.class));
+        mock(LeagueRepository.class));
   }
 }

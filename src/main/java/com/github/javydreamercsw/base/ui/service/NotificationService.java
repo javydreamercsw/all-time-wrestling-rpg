@@ -18,6 +18,8 @@ package com.github.javydreamercsw.base.ui.service;
 
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
@@ -118,9 +120,9 @@ public class NotificationService {
           detail.setText(getUserFriendlyMessage(ex));
           detail.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.FontSize.SMALL);
 
-          com.vaadin.flow.component.button.Button closeBtn =
-              new com.vaadin.flow.component.button.Button("Dismiss", e -> notification.close());
-          closeBtn.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_TERTIARY);
+          Button closeBtn =
+              new Button("Dismiss", e -> notification.close());
+          closeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
           closeBtn.addClassName(LumoUtility.Margin.Top.MEDIUM);
 
           layout.add(header, provider, detail, closeBtn);

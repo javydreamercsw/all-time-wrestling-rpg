@@ -23,11 +23,13 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 
 @Slf4j
 public abstract class AbstractSegmentNarrationService implements SegmentNarrationService {
@@ -433,9 +435,9 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
   }
 
   @Override
-  @org.springframework.scheduling.annotation.Async
-  public java.util.concurrent.CompletableFuture<String> narrateSegmentAsync(
+  @Async
+  public CompletableFuture<String> narrateSegmentAsync(
       @NonNull final SegmentNarrationContext segmentContext) {
-    return java.util.concurrent.CompletableFuture.completedFuture(narrateSegment(segmentContext));
+    return CompletableFuture.completedFuture(narrateSegment(segmentContext));
   }
 }

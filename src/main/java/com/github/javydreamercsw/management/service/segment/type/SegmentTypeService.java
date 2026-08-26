@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -213,9 +214,9 @@ public class SegmentTypeService {
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
     if (existingOpt.isPresent()) {
       SegmentType st = existingOpt.get();
-      boolean guideChanged = !java.util.Objects.equals(st.getGuideHash(), incomingHash);
-      if (java.util.Objects.equals(st.getDescription(), description)
-          && java.util.Objects.equals(st.getExpansionCode(), expansionCode)
+      boolean guideChanged = !Objects.equals(st.getGuideHash(), incomingHash);
+      if (Objects.equals(st.getDescription(), description)
+          && Objects.equals(st.getExpansionCode(), expansionCode)
           && !guideChanged) {
         return st;
       }

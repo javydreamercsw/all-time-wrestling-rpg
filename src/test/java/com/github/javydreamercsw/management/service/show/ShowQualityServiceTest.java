@@ -38,11 +38,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -425,7 +421,7 @@ class ShowQualityServiceTest {
     p.setFinalHealth(80);
     p.setFinalMomentum(50);
     p.setIsWinner(false);
-    p.setCardsPlayed(new java.util.HashMap<>());
+    p.setCardsPlayed(new HashMap<>());
     return p;
   }
 }

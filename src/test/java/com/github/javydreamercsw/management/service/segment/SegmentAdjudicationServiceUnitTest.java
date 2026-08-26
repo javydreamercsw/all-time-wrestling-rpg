@@ -62,6 +62,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -151,14 +152,14 @@ class SegmentAdjudicationServiceUnitTest {
     matchSegment.setShow(show);
 
     // Default mock behavior
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(matchFulfillmentRepository.findBySegment(any(Segment.class)))
         .thenReturn(Optional.empty());
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(universeContextService.getCurrentUniverseId())
         .thenReturn(1L);
     WrestlerState defaultState = WrestlerState.builder().physicalCondition(100).build();
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(wrestlerService.getOrCreateState(any(), any()))
         .thenReturn(defaultState);
   }

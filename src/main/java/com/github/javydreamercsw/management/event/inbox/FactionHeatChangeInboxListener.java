@@ -62,7 +62,7 @@ public class FactionHeatChangeInboxListener implements ApplicationListener<Facti
                 event.getNewHeat(),
                 event.getReason());
 
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             factionHeatChange,
             "Faction Rivalry Heat Change",

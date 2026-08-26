@@ -34,8 +34,10 @@ import com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,12 +63,12 @@ class ShowScriptedAchievementServiceTest {
 
   @BeforeEach
   void setUp() {
-    when(gameSettingService.getCurrentGameDate()).thenReturn(java.time.LocalDate.now());
+    when(gameSettingService.getCurrentGameDate()).thenReturn(LocalDate.now());
     service = new ShowScriptedAchievementService(evaluator, legacyService, gameSettingService);
 
     account = new Account();
     account.setId(1L);
-    account.setAchievements(java.util.Set.of());
+    account.setAchievements(Set.of());
 
     wrestler = mock(Wrestler.class);
     when(wrestler.getAccount()).thenReturn(account);
@@ -97,7 +99,7 @@ class ShowScriptedAchievementServiceTest {
   void onShowFinalized_callsEvaluatorForEachAccount() {
     Account account2 = new Account();
     account2.setId(2L);
-    account2.setAchievements(java.util.Set.of());
+    account2.setAchievements(Set.of());
     Wrestler wrestler2 = mock(Wrestler.class);
     when(wrestler2.getAccount()).thenReturn(account2);
 

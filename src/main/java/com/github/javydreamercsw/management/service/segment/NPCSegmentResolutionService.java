@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -36,6 +37,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionDataS
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -451,7 +453,7 @@ public class NPCSegmentResolutionService {
 
       // Add Faction Synergy Bonus
       int synergyBonus = 0;
-      java.util.Map<Long, Integer> factionCounts = new java.util.HashMap<>();
+      Map<Long, Integer> factionCounts = new HashMap<>();
       for (Wrestler w : team.getMembers()) {
         WrestlerState state = wrestlerService.getOrCreateState(w.getId(), universeId);
         if (state != null && state.getFaction() != null) {
@@ -460,7 +462,7 @@ public class NPCSegmentResolutionService {
         }
       }
 
-      for (java.util.Map.Entry<Long, Integer> entry : factionCounts.entrySet()) {
+      for (Map.Entry<Long, Integer> entry : factionCounts.entrySet()) {
         int count = entry.getValue();
         if (count > 1) {
           final Long fid = entry.getKey();
@@ -486,7 +488,7 @@ public class NPCSegmentResolutionService {
 
       // Factor in Ringside Actions
       int ringsideBonus = 0;
-      List<com.github.javydreamercsw.management.domain.show.segment.RingsideAction> allActions =
+      List<RingsideAction> allActions =
           ringsideActionDataService.findAllActions();
       if (!allActions.isEmpty()) {
         for (Wrestler w : team.getMembers()) {
@@ -495,7 +497,7 @@ public class NPCSegmentResolutionService {
             // 20% base chance for manager to attempt an action in simulation
             if (random.nextDouble() < 0.20) {
               // Pick a random ringside action
-              com.github.javydreamercsw.management.domain.show.segment.RingsideAction action =
+              RingsideAction action =
                   allActions.get(random.nextInt(allActions.size()));
 
               // Success chance: 70% base for simulation ringside actions

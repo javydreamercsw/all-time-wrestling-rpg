@@ -24,7 +24,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.service.theme.ThemeService;
+import com.github.javydreamercsw.management.domain.GameSettingRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -42,12 +44,12 @@ class GameSettingsViewTest extends AbstractViewTest {
   @Mock private GameSettingService gameSettingService;
 
   @Mock
-  private com.github.javydreamercsw.management.domain.GameSettingRepository gameSettingRepository;
+  private GameSettingRepository gameSettingRepository;
 
   @Mock private ThemeService themeService;
 
   @Mock
-  private com.github.javydreamercsw.management.service.universe.UniverseContextService
+  private UniverseContextService
       universeContextService;
 
   private GameSettingsView view;

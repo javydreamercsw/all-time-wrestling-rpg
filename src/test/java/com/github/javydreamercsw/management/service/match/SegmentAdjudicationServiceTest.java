@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
+import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -48,6 +49,8 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
+import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
@@ -66,6 +69,7 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -103,7 +107,7 @@ class SegmentAdjudicationServiceTest {
   @Mock private LeagueRepository leagueRepository;
 
   @Mock
-  private com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
+  private LeagueRosterRepository
       leagueRosterRepository;
 
   @Mock private LegacyService legacyService;
@@ -128,7 +132,7 @@ class SegmentAdjudicationServiceTest {
     lenient().when(gameSettingService.isRivalryResolutionOnRegularShowsEnabled()).thenReturn(false);
     lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
     lenient().when(gameSettingService.getRivalryResolutionThresholdRegular()).thenReturn(35);
-    lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(java.time.LocalDate.now());
+    lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(LocalDate.now());
     segmentAdjudicationService =
         new SegmentAdjudicationService(
             new SegmentAdjudicationService.Dependencies(
@@ -150,7 +154,7 @@ class SegmentAdjudicationServiceTest {
                 wrestlerStatusService,
                 universeContextService,
                 random));
-    org.springframework.test.util.ReflectionTestUtils.setField(
+    ReflectionTestUtils.setField(
         segmentAdjudicationService, "eventPublisher", eventPublisher);
 
     when(universe.getId()).thenReturn(1L);
@@ -425,15 +429,15 @@ class SegmentAdjudicationServiceTest {
 
   @Test
   void adjudicateMatch_aiTaggedRivalry_attemptsResolutionOnPle() {
-    com.github.javydreamercsw.management.domain.rivalry.Rivalry rivalry =
-        mock(com.github.javydreamercsw.management.domain.rivalry.Rivalry.class);
+    Rivalry rivalry =
+        mock(Rivalry.class);
     when(segment.getRivalryId()).thenReturn(42L);
     when(show.isPremiumLiveEvent()).thenReturn(true);
     when(show.getId()).thenReturn(1L);
     when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
     when(rivalryService.resolveAtPle(anyLong(), anyInt(), anyInt(), anyLong()))
         .thenReturn(
-            new com.github.javydreamercsw.management.service.resolution.ResolutionResult<>(
+            new ResolutionResult<>(
                 true, "resolved", rivalry, 0, 0, 0));
 
     segmentAdjudicationService.adjudicateMatch(segment);
@@ -620,7 +624,7 @@ class SegmentAdjudicationServiceTest {
     verify(titleService, never()).awardTitleTo(any(Title.class), any(), any());
     verify(eventPublisher)
         .publishEvent(
-            any(com.github.javydreamercsw.management.event.ChampionshipDefendedEvent.class));
+            any(ChampionshipDefendedEvent.class));
   }
 
   @Test
@@ -667,7 +671,7 @@ class SegmentAdjudicationServiceTest {
         .awardTitleTo(eq(title), eq(List.of(challenger1, challenger2)), eq(segment));
     verify(eventPublisher)
         .publishEvent(
-            any(com.github.javydreamercsw.management.event.ChampionshipChangeEvent.class));
+            any(ChampionshipChangeEvent.class));
   }
 
   @Test

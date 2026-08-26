@@ -23,6 +23,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -95,7 +96,7 @@ public class WrestlerAbilityPanel extends VerticalLayout {
         LumoUtility.Background.CONTRAST_5);
 
     HorizontalLayout header = new HorizontalLayout();
-    header.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+    header.setAlignItems(FlexComponent.Alignment.CENTER);
     header.setSpacing(true);
 
     Span nameSpan = new Span(ability.getName());

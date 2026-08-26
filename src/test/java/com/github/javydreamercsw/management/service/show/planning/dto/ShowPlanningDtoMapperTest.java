@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -30,7 +31,10 @@ import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,7 +50,7 @@ class ShowPlanningDtoMapperTest {
 
   @InjectMocks private ShowPlanningDtoMapper mapper;
 
-  @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
+  @Mock private ShowService showService;
   @Mock private Segment segment;
   @Mock private Show show;
   @Mock private SegmentType segmentType;
@@ -73,13 +77,13 @@ class ShowPlanningDtoMapperTest {
     when(participant2.getWrestler()).thenReturn(wrestler2);
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Promo");
-    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(segmentRule));
+    when(segment.getSegmentRules()).thenReturn(Set.of(segmentRule));
     when(segmentRule.getName()).thenReturn(PromoType.CONFRONTATION_PROMO.getDisplayName());
-    when(segment.getParticipants()).thenReturn(java.util.Set.of(participant1, participant2));
+    when(segment.getParticipants()).thenReturn(Set.of(participant1, participant2));
     when(participant1.getIsWinner()).thenReturn(true);
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Promo summary");
-    when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
+    when(show.getShowDate()).thenReturn(LocalDate.now());
 
     // When
     ShowPlanningSegmentDTO dto = mapper.toDto(segment);
@@ -98,12 +102,12 @@ class ShowPlanningDtoMapperTest {
     when(participant1.getWrestler()).thenReturn(wrestler1);
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Promo");
-    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(segmentRule));
+    when(segment.getSegmentRules()).thenReturn(Set.of(segmentRule));
     when(segmentRule.getName()).thenReturn(PromoType.SOLO_PROMO.getDisplayName());
-    when(segment.getParticipants()).thenReturn(java.util.Set.of(participant1));
+    when(segment.getParticipants()).thenReturn(Set.of(participant1));
     when(participant1.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Solo promo summary");
-    when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
+    when(show.getShowDate()).thenReturn(LocalDate.now());
 
     // When
     ShowPlanningSegmentDTO dto = mapper.toDto(segment);
@@ -124,11 +128,11 @@ class ShowPlanningDtoMapperTest {
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Match");
     when(segment.getSegmentRulesAsString()).thenReturn("Standard Match Rules");
-    when(segment.getParticipants()).thenReturn(java.util.Set.of(participant1, participant2));
+    when(segment.getParticipants()).thenReturn(Set.of(participant1, participant2));
     when(participant1.getIsWinner()).thenReturn(true); // Added this line
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Match summary");
-    when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
+    when(show.getShowDate()).thenReturn(LocalDate.now());
 
     // When
     ShowPlanningSegmentDTO dto = mapper.toDto(segment);
@@ -150,11 +154,11 @@ class ShowPlanningDtoMapperTest {
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Match");
     when(segment.getSegmentRulesAsString()).thenReturn("Standard Match Rules");
-    when(segment.getParticipants()).thenReturn(java.util.Set.of(participant1, participant2));
+    when(segment.getParticipants()).thenReturn(Set.of(participant1, participant2));
     when(participant1.getIsWinner()).thenReturn(false);
     when(participant2.getIsWinner()).thenReturn(false);
     when(segment.getSummary()).thenReturn("Match summary");
-    when(show.getShowDate()).thenReturn(java.time.LocalDate.now());
+    when(show.getShowDate()).thenReturn(LocalDate.now());
 
     // When
     ShowPlanningSegmentDTO dto = mapper.toDto(segment);
@@ -168,10 +172,10 @@ class ShowPlanningDtoMapperTest {
   @Test
   void toRosterEntryDto_mapsNameAndGender() {
     // Given
-    com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
-        com.github.javydreamercsw.management.domain.wrestler.Wrestler.builder().build();
+    Wrestler wrestler =
+        Wrestler.builder().build();
     wrestler.setName("John Doe");
-    wrestler.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    wrestler.setGender(Gender.MALE);
 
     // When
     ShowPlanningRosterEntryDTO dto = mapper.toRosterEntryDto(wrestler);
@@ -185,10 +189,10 @@ class ShowPlanningDtoMapperTest {
   @Test
   void toRosterEntryDto_withDefaultState_mapsTierAndFans() {
     // Given
-    com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
-        com.github.javydreamercsw.management.domain.wrestler.Wrestler.builder().build();
+    Wrestler wrestler =
+        Wrestler.builder().build();
     wrestler.setName("Main Eventer");
-    wrestler.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE);
+    wrestler.setGender(Gender.FEMALE);
     WrestlerState state = WrestlerState.builder().tier(WrestlerTier.MAIN_EVENTER).build();
     state.setFans(5000L);
     wrestler.getWrestlerStates().add(state);
@@ -207,8 +211,8 @@ class ShowPlanningDtoMapperTest {
   @Test
   void toRosterEntryDto_nullGender_defaultsMale() {
     // Given
-    com.github.javydreamercsw.management.domain.wrestler.Wrestler wrestler =
-        com.github.javydreamercsw.management.domain.wrestler.Wrestler.builder().build();
+    Wrestler wrestler =
+        Wrestler.builder().build();
     wrestler.setName("Unknown");
     wrestler.setGender(null);
 

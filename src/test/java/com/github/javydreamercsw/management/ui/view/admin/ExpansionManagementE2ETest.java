@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.AbstractE2ETest;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 
 class ExpansionManagementE2ETest extends AbstractE2ETest {
@@ -43,7 +44,7 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
     // Look up and click entirely inside JS to avoid StaleElementReferenceException — no WebElement
     // reference crosses the JVM→ChromeDriver boundary while Vaadin is re-rendering.
     waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
-    ((org.openqa.selenium.JavascriptExecutor) driver)
+    ((JavascriptExecutor) driver)
         .executeScript("document.getElementById('expansion-toggle-EXTREME').click();");
 
     // Wait for notification
@@ -68,7 +69,7 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
             driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
 
     waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
-    ((org.openqa.selenium.JavascriptExecutor) driver)
+    ((JavascriptExecutor) driver)
         .executeScript("document.getElementById('expansion-toggle-EXTREME').click();");
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));

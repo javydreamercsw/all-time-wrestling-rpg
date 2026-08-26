@@ -16,19 +16,27 @@
 */
 package com.github.javydreamercsw.management.service.show.template;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -78,10 +86,10 @@ public class ShowTemplateService {
    * @return The saved show template
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
+  @CacheEvict(
       value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+        CacheConfig.SHOW_TEMPLATES_CACHE,
+        CacheConfig.SHOWS_CACHE
       },
       allEntries = true)
   public ShowTemplate save(@NonNull final ShowTemplate showTemplate) {
@@ -95,13 +103,13 @@ public class ShowTemplateService {
    * @return List of all show templates
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "'all'")
   public List<ShowTemplate> findAll() {
     return showTemplateRepository.findAllWithShowType().stream()
         .filter(ShowTemplate::isActive)
-        .collect(java.util.stream.Collectors.toList());
+        .collect(Collectors.toList());
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -109,10 +117,10 @@ public class ShowTemplateService {
     return showTemplateRepository.findAllWithShowType();
   }
 
-  @org.springframework.transaction.annotation.Transactional
+  @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SHOW_TEMPLATES_CACHE,
       allEntries = true)
   public void setActive(@NonNull final Long id, final boolean active) {
     showTemplateRepository
@@ -131,8 +139,8 @@ public class ShowTemplateService {
    * @return Optional containing the show template if found
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "#name")
   public Optional<ShowTemplate> findByName(@NonNull final String name) {
     return showTemplateRepository.findByName(name);
@@ -156,8 +164,8 @@ public class ShowTemplateService {
    * @return Optional containing the show template if found
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "#id")
   public Optional<ShowTemplate> findById(@NonNull final Long id) {
     return showTemplateRepository.findById(id);
@@ -169,13 +177,13 @@ public class ShowTemplateService {
    * @return List of PLE templates
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "'ple'")
   public List<ShowTemplate> getPremiumLiveEventTemplates() {
     return showTemplateRepository.findPremiumLiveEventTemplates().stream()
         .filter(ShowTemplate::isActive)
-        .collect(java.util.stream.Collectors.toList());
+        .collect(Collectors.toList());
   }
 
   /**
@@ -184,13 +192,13 @@ public class ShowTemplateService {
    * @return List of weekly show templates
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "'weekly'")
   public List<ShowTemplate> getWeeklyShowTemplates() {
     return showTemplateRepository.findWeeklyShowTemplates().stream()
         .filter(ShowTemplate::isActive)
-        .collect(java.util.stream.Collectors.toList());
+        .collect(Collectors.toList());
   }
 
   /**
@@ -200,8 +208,8 @@ public class ShowTemplateService {
    * @return List of templates for the specified show type
    */
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+  @Cacheable(
+      value = CacheConfig.SHOW_TEMPLATES_CACHE,
       key = "#showTypeName")
   public List<ShowTemplate> findByShowTypeName(@NonNull final String showTypeName) {
     return showTemplateRepository.findByShowTypeName(showTypeName);
@@ -227,10 +235,10 @@ public class ShowTemplateService {
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
+  @CacheEvict(
       value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+        CacheConfig.SHOW_TEMPLATES_CACHE,
+        CacheConfig.SHOWS_CACHE
       },
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
@@ -242,12 +250,12 @@ public class ShowTemplateService {
       final Integer expectedMatches,
       final Integer expectedPromos,
       final Integer durationDays,
-      final com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
-      final java.time.DayOfWeek dayOfWeek,
+      final RecurrenceType recurrenceType,
+      final DayOfWeek dayOfWeek,
       final Integer dayOfMonth,
       final Integer weekOfMonth,
-      final java.time.Month month,
-      final com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
+      final Month month,
+      final Gender genderConstraint) {
 
     // Find or create show type
     Optional<ShowType> showTypeOpt = showTypeRepository.findByName(showTypeName);
@@ -279,7 +287,7 @@ public class ShowTemplateService {
     template.setRecurrenceType(
         recurrenceType != null
             ? recurrenceType
-            : com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE);
+            : RecurrenceType.NONE);
     template.setDayOfWeek(dayOfWeek);
     template.setDayOfMonth(dayOfMonth);
     template.setWeekOfMonth(weekOfMonth);
@@ -298,10 +306,10 @@ public class ShowTemplateService {
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
+  @CacheEvict(
       value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+        CacheConfig.SHOW_TEMPLATES_CACHE,
+        CacheConfig.SHOWS_CACHE
       },
       allEntries = true)
   public ShowTemplate createOrUpdateTemplate(
@@ -367,10 +375,10 @@ public class ShowTemplateService {
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
+  @CacheEvict(
       value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+        CacheConfig.SHOW_TEMPLATES_CACHE,
+        CacheConfig.SHOWS_CACHE
       },
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
@@ -383,12 +391,12 @@ public class ShowTemplateService {
       final Integer expectedMatches,
       final Integer expectedPromos,
       final Integer durationDays,
-      final com.github.javydreamercsw.management.domain.show.template.RecurrenceType recurrenceType,
-      final java.time.DayOfWeek dayOfWeek,
+      final RecurrenceType recurrenceType,
+      final DayOfWeek dayOfWeek,
       final Integer dayOfMonth,
       final Integer weekOfMonth,
-      final java.time.Month month,
-      final com.github.javydreamercsw.base.domain.wrestler.Gender genderConstraint) {
+      final Month month,
+      final Gender genderConstraint) {
 
     Optional<ShowTemplate> templateOpt = showTemplateRepository.findById(id);
     if (templateOpt.isEmpty()) {
@@ -414,7 +422,7 @@ public class ShowTemplateService {
     template.setRecurrenceType(
         recurrenceType != null
             ? recurrenceType
-            : com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE);
+            : RecurrenceType.NONE);
     template.setDayOfWeek(dayOfWeek);
     template.setDayOfMonth(dayOfMonth);
     template.setWeekOfMonth(weekOfMonth);
@@ -446,10 +454,10 @@ public class ShowTemplateService {
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
+  @CacheEvict(
       value = {
-        com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
-        com.github.javydreamercsw.management.config.CacheConfig.SHOWS_CACHE
+        CacheConfig.SHOW_TEMPLATES_CACHE,
+        CacheConfig.SHOWS_CACHE
       },
       allEntries = true)
   public Optional<ShowTemplate> updateTemplate(
@@ -484,8 +492,8 @@ public class ShowTemplateService {
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.SHOW_TEMPLATES_CACHE,
+  @CacheEvict(
+      value = CacheConfig.SHOW_TEMPLATES_CACHE,
       allEntries = true)
   public boolean deleteTemplate(@NonNull final Long id) {
     if (showTemplateRepository.existsById(id)) {

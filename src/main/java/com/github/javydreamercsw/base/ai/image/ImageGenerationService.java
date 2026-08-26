@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai.image;
 
+import java.util.concurrent.CompletableFuture;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -56,9 +57,9 @@ public interface ImageGenerationService {
    * @return a {@link java.util.concurrent.CompletableFuture} that resolves to the image URL or
    *     base64 data.
    */
-  default java.util.concurrent.CompletableFuture<String> generateImageAsync(
+  default CompletableFuture<String> generateImageAsync(
       @NonNull ImageRequest request) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> generateImage(request));
+    return CompletableFuture.supplyAsync(() -> generateImage(request));
   }
 
   @Getter

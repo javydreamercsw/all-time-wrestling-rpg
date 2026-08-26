@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.achievement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,9 +43,9 @@ class AchievementScriptServiceTest {
   @DisplayName("Script can read bound context variables")
   void testScriptCanAccessContext() {
     assertThat(
-            service.evaluate("wrestlers.size() >= 2", Map.of("wrestlers", java.util.List.of(1, 2))))
+            service.evaluate("wrestlers.size() >= 2", Map.of("wrestlers", List.of(1, 2))))
         .isTrue();
-    assertThat(service.evaluate("wrestlers.size() >= 2", Map.of("wrestlers", java.util.List.of(1))))
+    assertThat(service.evaluate("wrestlers.size() >= 2", Map.of("wrestlers", List.of(1))))
         .isFalse();
   }
 
@@ -73,7 +74,7 @@ class AchievementScriptServiceTest {
   void testRepeatedEvaluationIsConsistent() {
     String script = "wrestlers.size() >= 2";
     for (int i = 0; i < 3; i++) {
-      assertThat(service.evaluate(script, Map.of("wrestlers", java.util.List.of(1, 2)))).isTrue();
+      assertThat(service.evaluate(script, Map.of("wrestlers", List.of(1, 2)))).isTrue();
     }
   }
 }

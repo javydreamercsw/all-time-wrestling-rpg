@@ -58,6 +58,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -70,6 +71,7 @@ import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.github.javydreamercsw.management.util.StarRenderer;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -93,21 +95,27 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.HasUrlParameter;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.*;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -123,7 +131,7 @@ import org.springframework.context.ApplicationListener;
 public class ShowDetailView extends Main
     implements HasUrlParameter<Long>,
         ApplicationListener<ApplicationEvent>,
-        com.vaadin.flow.router.BeforeLeaveObserver {
+        BeforeLeaveObserver {
 
   private final ShowService showService;
   private final SegmentService segmentService;
@@ -150,7 +158,7 @@ public class ShowDetailView extends Main
   private final ArenaService arenaService;
   private final WrestlerRelationshipService relationshipService;
   private final ExpansionService expansionService;
-  private final com.github.javydreamercsw.management.service.team.TeamService teamService;
+  private final TeamService teamService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -164,7 +172,7 @@ public class ShowDetailView extends Main
   private Button saveOrderButton;
   private Span noSegmentsMessage;
   private Segment draggedSegment;
-  private com.vaadin.flow.component.progressbar.ProgressBar segmentsProgressBar;
+  private ProgressBar segmentsProgressBar;
 
   /** In-memory ordered list; mutations here are instant — persisted only on "Save Order". */
   private List<Segment> segmentOrder = new ArrayList<>();
@@ -488,7 +496,7 @@ public class ShowDetailView extends Main
           createDetailRow(
               "Created:",
               show.getCreationDate()
-                  .atZone(java.time.ZoneId.systemDefault())
+                  .atZone(ZoneId.systemDefault())
                   .format(DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a")));
       detailsLayout.add(createdLayout);
     }
@@ -608,7 +616,7 @@ public class ShowDetailView extends Main
             .anyMatch(
                 segment ->
                     segment.getAdjudicationStatus()
-                        == com.github.javydreamercsw.management.domain.AdjudicationStatus.PENDING);
+                        == AdjudicationStatus.PENDING);
     adjudicateButton.setEnabled(hasPendingSegments);
 
     addSegmentButton =
@@ -647,7 +655,7 @@ public class ShowDetailView extends Main
     segmentsGrid.setMinWidth("1100px");
     segmentsGrid.setId("segments-grid");
 
-    segmentsProgressBar = new com.vaadin.flow.component.progressbar.ProgressBar();
+    segmentsProgressBar = new ProgressBar();
     segmentsProgressBar.setIndeterminate(true);
     segmentsProgressBar.setWidthFull();
     segmentsProgressBar.setVisible(false);
@@ -695,19 +703,19 @@ public class ShowDetailView extends Main
     }
 
     // Build champion names for all title segments upfront (avoids lazy-load at render time)
-    java.util.Set<Long> titleIds =
+    Set<Long> titleIds =
         segments.stream()
             .filter(s -> Boolean.TRUE.equals(s.getIsTitleSegment()))
             .flatMap(s -> s.getTitles().stream())
-            .map(com.github.javydreamercsw.management.domain.title.Title::getId)
-            .filter(java.util.Objects::nonNull)
-            .collect(java.util.stream.Collectors.toSet());
-    java.util.Map<Long, String> championNames =
+            .map(Title::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    Map<Long, String> championNames =
         titleIds.isEmpty()
-            ? java.util.Map.of()
+            ? Map.of()
             : titleService.getCurrentChampionNamesByTitleIds(titleIds);
 
-    java.util.Map<String, String> alignments = new java.util.HashMap<>();
+    Map<String, String> alignments = new HashMap<>();
     if (show.getCommentaryTeam() != null) {
       show.getCommentaryTeam()
           .getCommentators()
@@ -743,8 +751,8 @@ public class ShowDetailView extends Main
   private Div createViewerSegmentCard(
       @NonNull final Segment segment,
       final boolean isMainEvent,
-      @NonNull final java.util.Map<String, String> alignments,
-      @NonNull final java.util.Map<Long, String> championNames) {
+      @NonNull final Map<String, String> alignments,
+      @NonNull final Map<Long, String> championNames) {
     Div card = new Div();
     card.addClassNames(
         LumoUtility.Padding.MEDIUM,
@@ -809,7 +817,7 @@ public class ShowDetailView extends Main
         new Span(
             segment
                 .getSegmentDate()
-                .atZone(java.time.ZoneId.systemDefault())
+                .atZone(ZoneId.systemDefault())
                 .format(DateTimeFormatter.ofPattern("MMM d, yyyy")));
     dateLabel.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
 
@@ -936,7 +944,7 @@ public class ShowDetailView extends Main
               Span badge = new Span(renderStars(stars));
               badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
               badge.getStyle().set("color", "#d97706");
-              com.vaadin.flow.component.shared.Tooltip.forComponent(badge).setText(raw + "/100");
+              Tooltip.forComponent(badge).setText(raw + "/100");
               return badge;
             })
         .setHeader("Score")
@@ -961,7 +969,7 @@ public class ShowDetailView extends Main
               if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
                 return segment.getTitles().stream()
                     .map(Title::getName)
-                    .collect(java.util.stream.Collectors.joining(", "));
+                    .collect(Collectors.joining(", "));
               } else {
                 return "N/A";
               }
@@ -1013,7 +1021,7 @@ public class ShowDetailView extends Main
             segment ->
                 segment
                     .getSegmentDate()
-                    .atZone(java.time.ZoneId.systemDefault())
+                    .atZone(ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
         .setHeader("Date")
         .setSortable(true)
@@ -1131,7 +1139,7 @@ public class ShowDetailView extends Main
     if (saveOrderButton != null) {
       saveOrderButton.setEnabled(false);
     }
-    com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    UI ui = UI.getCurrent();
     List<Segment> snapshot = new ArrayList<>(segmentOrder);
     GeneralSecurityUtils.runAsAdminAsync(
             () -> {
@@ -1196,9 +1204,9 @@ public class ShowDetailView extends Main
   }
 
   @Override
-  public void beforeLeave(com.vaadin.flow.router.BeforeLeaveEvent event) {
+  public void beforeLeave(BeforeLeaveEvent event) {
     if (orderDirty) {
-      com.vaadin.flow.router.BeforeLeaveEvent.ContinueNavigationAction action = event.postpone();
+      BeforeLeaveEvent.ContinueNavigationAction action = event.postpone();
       Dialog confirm = new Dialog();
       confirm.setHeaderTitle("Unsaved Order");
       confirm.add(new Paragraph("You have unsaved segment order changes. Leave without saving?"));
@@ -1230,7 +1238,7 @@ public class ShowDetailView extends Main
     narrateButton.setId("generate-narration-button-" + segment.getId());
     narrateButton.addClickListener(
         e -> {
-          final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+          final UI ui = UI.getCurrent();
           GeneralSecurityUtils.runAsAdminAsync(
                   () ->
                       NarrationDialog.PreloadedData.load(
@@ -1313,7 +1321,7 @@ public class ShowDetailView extends Main
       return;
     }
 
-    final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    final UI ui = UI.getCurrent();
     GeneralSecurityUtils.runAsAdminAsync(
             () -> segmentNarrationServiceFactory.summarizeNarration(segment.getNarration()))
         .thenAccept(
@@ -1463,7 +1471,7 @@ public class ShowDetailView extends Main
               currentWinners.stream().filter(allSelected::contains).collect(Collectors.toSet()));
         };
 
-    java.util.function.Consumer<Set<Wrestler>> addAddTeamRow =
+    Consumer<Set<Wrestler>> addAddTeamRow =
         initialWrestlers -> {
           int teamNumber = addTeamCombos.size() + 1;
           MultiSelectComboBox<Wrestler> teamCombo = new MultiSelectComboBox<>("Team " + teamNumber);
@@ -1653,7 +1661,7 @@ public class ShowDetailView extends Main
         new Button(
             "Add Segment",
             e -> {
-              java.util.Map<Integer, List<Wrestler>> teamMap = new java.util.LinkedHashMap<>();
+              Map<Integer, List<Wrestler>> teamMap = new LinkedHashMap<>();
               for (int i = 0; i < addTeamCombos.size(); i++) {
                 teamMap.put(i + 1, new ArrayList<>(addTeamCombos.get(i).getValue()));
               }
@@ -1665,7 +1673,7 @@ public class ShowDetailView extends Main
               newSegment.setNotes(notesArea.getValue());
               newSegment.setSegmentOrder(segmentRepository.findByShow(show).size() + 1);
               newSegment.setShow(show);
-              newSegment.setSegmentDate(java.time.Instant.now());
+              newSegment.setSegmentDate(Instant.now());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
               newSegment.setIsTitleSegment(isTitleSegment);
@@ -1713,7 +1721,7 @@ public class ShowDetailView extends Main
   }
 
   private void openEditSegmentDialog(@NonNull Segment segment) {
-    final com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    final UI ui = UI.getCurrent();
     Gender defaultGender =
         currentShow.getTemplate() != null ? currentShow.getTemplate().getGenderConstraint() : null;
     Long universeId = universeContextService.getCurrentUniverseId();
@@ -1879,7 +1887,7 @@ public class ShowDetailView extends Main
   private boolean validateAndSaveSegment(
       @NonNull final Show show,
       final SegmentType segmentType,
-      final java.util.Map<Integer, List<Wrestler>> teamWrestlers,
+      final Map<Integer, List<Wrestler>> teamWrestlers,
       final Set<Wrestler> winners,
       final Set<SegmentRule> rules,
       final Segment segmentToUpdate) {
@@ -1933,7 +1941,7 @@ public class ShowDetailView extends Main
           segment.setShow(show);
         }
         if (segment.getSegmentDate() == null) {
-          segment.setSegmentDate(java.time.Instant.now());
+          segment.setSegmentDate(Instant.now());
         }
         if (segment.getIsTitleSegment() == null) {
           segment.setIsTitleSegment(false);
@@ -1973,7 +1981,7 @@ public class ShowDetailView extends Main
   private void adjudicateShow(@NonNull final Show show) {
     adjudicateButton.setEnabled(false);
     addSegmentButton.setEnabled(false);
-    com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    UI ui = UI.getCurrent();
     GeneralSecurityUtils.runAsAdminAsync(() -> showController.adjudicateShow(show.getId()))
         .thenRun(
             () ->
@@ -2011,7 +2019,7 @@ public class ShowDetailView extends Main
       return;
     }
     showSegmentsProgress(true);
-    com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    UI ui = UI.getCurrent();
     Show show = currentShow;
     GeneralSecurityUtils.runAsAdminAsync(
             () -> segmentRepository.findByShowOrderBySegmentOrderAsc(show))

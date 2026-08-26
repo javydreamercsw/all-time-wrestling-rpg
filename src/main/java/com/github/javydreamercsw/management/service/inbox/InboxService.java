@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.inbox;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -199,7 +202,7 @@ public class InboxService {
               effectiveTargets =
                   effectiveTargets.stream()
                       .filter(wrestler -> securityUtils.isOwner(wrestler))
-                      .collect(java.util.stream.Collectors.toSet());
+                      .collect(Collectors.toSet());
             }
           }
 
@@ -298,7 +301,7 @@ public class InboxService {
   @PreAuthorize("permitAll()")
   @Transactional
   public void createTutorialReminderIfAbsent(
-      @NonNull final com.github.javydreamercsw.base.domain.account.Account account,
+      @NonNull final Account account,
       @NonNull final InboxEventType tutorialReminderEventType) {
     String accountId = account.getId() != null ? account.getId().toString() : null;
     if (accountId == null) {
@@ -308,7 +311,7 @@ public class InboxService {
       return;
     }
     InboxItem item =
-        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+        GeneralSecurityUtils.runAsAdmin(
             () ->
                 createInboxItem(
                     tutorialReminderEventType,
@@ -318,7 +321,7 @@ public class InboxService {
                     accountId,
                     InboxItemTarget.TargetType.ACCOUNT));
     item.setActionType("OPEN_DRAWER");
-    com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(() -> save(item));
+    GeneralSecurityUtils.runAsAdmin(() -> save(item));
   }
 
   /**

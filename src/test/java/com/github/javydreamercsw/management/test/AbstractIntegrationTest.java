@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.DataInitializer;
 import com.github.javydreamercsw.management.DatabaseCleanup;
 import com.github.javydreamercsw.management.config.TestAIConfiguration;
@@ -96,6 +97,7 @@ import jakarta.persistence.PersistenceContext;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -334,7 +336,7 @@ public abstract class AbstractIntegrationTest {
     //    runAsAdmin() sees "system" is already active (re-entrancy shortcut) and skips the
     //    context switch — using the outer system+ROLE_ADMIN context for @PreAuthorize checks.
     if (dataInitializerEnabled) {
-      com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+      GeneralSecurityUtils.runAsAdmin(
           () -> {
             dataInitializer.init();
             return null;
@@ -460,7 +462,7 @@ public abstract class AbstractIntegrationTest {
     final Set<SimpleGrantedAuthority> finalAuthorities = new HashSet<>();
 
     if (account != null) {
-      java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+      List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
       Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.get(0);
       finalPrincipal = new CustomUserDetails(account, wrestler);
 
@@ -577,7 +579,7 @@ public abstract class AbstractIntegrationTest {
 
           if (dataInitializerEnabled) {
             log.debug("Re-initializing data using DataInitializer...");
-            com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
+            GeneralSecurityUtils.runAsAdmin(
                 () -> {
                   dataInitializer.init();
                   return null;

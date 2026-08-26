@@ -30,8 +30,10 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -92,7 +94,7 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
     // Verify Name
     _get(
         card,
-        com.vaadin.flow.component.html.H4.class,
+        H4.class,
         spec -> spec.withText("Test Wrestler (YOU)"));
 
     // Verify Stats
@@ -127,7 +129,7 @@ public class WrestlerSummaryCardTest extends AbstractViewTest {
     _get(card, Span.class, spec -> spec.withText("🔻 Low Health: 5"));
 
     // Low Stamina must NOT appear for NPCs
-    org.junit.jupiter.api.Assertions.assertThrows(
+    Assertions.assertThrows(
         AssertionError.class,
         () -> _get(card, Span.class, spec -> spec.withText("⚠️ Low Stamina: 4")));
   }

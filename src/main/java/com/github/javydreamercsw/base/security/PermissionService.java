@@ -22,11 +22,13 @@ import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
+import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -149,7 +151,7 @@ public class PermissionService {
               target -> {
                 try {
                   long targetIdLong = Long.parseLong(target.getTargetId());
-                  if (com.github.javydreamercsw.management.domain.inbox.InboxItemTarget.TargetType
+                  if (InboxItemTarget.TargetType
                           .ACCOUNT
                       == target.getTargetType()) {
                     return accountId != null && accountId.equals(targetIdLong);
@@ -165,7 +167,7 @@ public class PermissionService {
       if (collection.isEmpty()) {
         return false;
       }
-      List<?> copy = new java.util.ArrayList<>(collection);
+      List<?> copy = new ArrayList<>(collection);
       return copy.stream().allMatch(this::isOwner);
     }
 

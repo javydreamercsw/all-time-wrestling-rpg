@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseInvite;
@@ -34,11 +35,18 @@ import com.github.javydreamercsw.management.service.universe.InviteService;
 import com.github.javydreamercsw.management.service.universe.JoinRequestService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.textfield.PasswordField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.RouteParameters;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 class JoinViewTest extends AbstractViewTest {
 
@@ -82,19 +90,19 @@ class JoinViewTest extends AbstractViewTest {
     assertThat(
             _get(
                 view,
-                com.vaadin.flow.component.textfield.TextField.class,
+                TextField.class,
                 spec -> spec.withId("join-username")))
         .isNotNull();
     assertThat(
             _get(
                 view,
-                com.vaadin.flow.component.textfield.PasswordField.class,
+                PasswordField.class,
                 spec -> spec.withId("join-password")))
         .isNotNull();
     assertThat(
             _get(
                 view,
-                com.vaadin.flow.component.button.Button.class,
+                Button.class,
                 spec -> spec.withId("join-register-submit")))
         .isNotNull();
   }
@@ -109,13 +117,13 @@ class JoinViewTest extends AbstractViewTest {
 
   @Test
   void validToken_loggedInUser_showsRequestForm() {
-    com.github.javydreamercsw.base.security.CustomUserDetails userDetails =
-        org.mockito.Mockito.mock(com.github.javydreamercsw.base.security.CustomUserDetails.class);
+    CustomUserDetails userDetails =
+        Mockito.mock(CustomUserDetails.class);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
     when(securityUtils.getCurrentAccountId()).thenReturn(Optional.of(99L));
 
-    com.github.javydreamercsw.base.domain.account.Account account =
-        new com.github.javydreamercsw.base.domain.account.Account("user", "hash", null);
+    Account account =
+        new Account("user", "hash", null);
     account.setId(99L);
     when(accountService.get(99L)).thenReturn(Optional.of(account));
 
@@ -125,19 +133,19 @@ class JoinViewTest extends AbstractViewTest {
     assertThat(
             _get(
                 view,
-                com.vaadin.flow.component.textfield.TextField.class,
+                TextField.class,
                 spec -> spec.withId("join-username-display")))
         .isNotNull();
     assertThat(
             _get(
                 view,
-                com.vaadin.flow.component.textfield.EmailField.class,
+                EmailField.class,
                 spec -> spec.withId("join-email-display")))
         .isNotNull();
     assertThat(
             _get(
                 view,
-                com.vaadin.flow.component.button.Button.class,
+                Button.class,
                 spec -> spec.withId("join-submit-button")))
         .isNotNull();
   }
@@ -153,25 +161,25 @@ class JoinViewTest extends AbstractViewTest {
 
     simulateBeforeEnter(view, "join/valid-token", "token", "valid-token");
 
-    com.vaadin.flow.component.textfield.TextField usernameField =
+    TextField usernameField =
         _get(
             view,
-            com.vaadin.flow.component.textfield.TextField.class,
+            TextField.class,
             s -> s.withId("join-username"));
-    com.vaadin.flow.component.textfield.PasswordField passwordField =
+    PasswordField passwordField =
         _get(
             view,
-            com.vaadin.flow.component.textfield.PasswordField.class,
+            PasswordField.class,
             s -> s.withId("join-password"));
-    com.vaadin.flow.component.textfield.PasswordField confirmField =
+    PasswordField confirmField =
         _get(
             view,
-            com.vaadin.flow.component.textfield.PasswordField.class,
+            PasswordField.class,
             s -> s.withId("join-confirm-password"));
-    com.vaadin.flow.component.textfield.EmailField emailField =
+    EmailField emailField =
         _get(
             view,
-            com.vaadin.flow.component.textfield.EmailField.class,
+            EmailField.class,
             s -> s.withId("join-email"));
 
     usernameField.setValue("alice");
@@ -179,10 +187,10 @@ class JoinViewTest extends AbstractViewTest {
     confirmField.setValue("Valid1!pw");
     emailField.setValue("alice@example.com");
 
-    com.vaadin.flow.component.button.Button submitBtn =
+    Button submitBtn =
         _get(
             view,
-            com.vaadin.flow.component.button.Button.class,
+            Button.class,
             s -> s.withId("join-register-submit"));
     _click(submitBtn);
 
@@ -194,11 +202,11 @@ class JoinViewTest extends AbstractViewTest {
 
   private void simulateBeforeEnter(
       final JoinView v, final String location, final String paramName, final String paramValue) {
-    com.vaadin.flow.router.RouteParameters params =
-        new com.vaadin.flow.router.RouteParameters(paramName, paramValue);
-    com.vaadin.flow.router.BeforeEnterEvent event =
-        org.mockito.Mockito.mock(com.vaadin.flow.router.BeforeEnterEvent.class);
-    org.mockito.Mockito.when(event.getRouteParameters()).thenReturn(params);
+    RouteParameters params =
+        new RouteParameters(paramName, paramValue);
+    BeforeEnterEvent event =
+        Mockito.mock(BeforeEnterEvent.class);
+    Mockito.when(event.getRouteParameters()).thenReturn(params);
     v.beforeEnter(event);
   }
 }

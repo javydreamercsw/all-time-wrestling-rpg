@@ -42,6 +42,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.Formula;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -108,7 +109,7 @@ public class Faction extends AbstractEntity<Long> {
   private int affinity = 0;
 
   // Computed count of members — avoids lazy-init when rendering grid columns detached
-  @org.hibernate.annotations.Formula(
+  @Formula(
       "(SELECT COUNT(*) FROM wrestler_state ws WHERE ws.faction_id = faction_id)")
   @Getter(AccessLevel.NONE)
   private Integer memberCountComputed;

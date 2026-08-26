@@ -84,6 +84,7 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
 import java.util.HashSet;
@@ -249,7 +250,7 @@ class MatchViewTest extends AbstractViewTest {
     MultiSelectComboBox<Wrestler> winnersComboBox =
         _get(MultiSelectComboBox.class, spec -> spec.withId("winners-combobox"));
     assertEquals(
-        2, winnersComboBox.getDataProvider().size(new com.vaadin.flow.data.provider.Query<>()));
+        2, winnersComboBox.getDataProvider().size(new Query<>()));
 
     winnersComboBox.setValue(new HashSet<>(List.of(wrestler1)));
 

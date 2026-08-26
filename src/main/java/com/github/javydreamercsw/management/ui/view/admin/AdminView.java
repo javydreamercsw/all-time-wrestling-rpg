@@ -47,6 +47,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.ArrayList;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -198,7 +199,7 @@ public class AdminView extends VerticalLayout {
             } else {
               // Fallback if not TierRecalculationService
               rankingService.recalculateRanking(
-                  new java.util.ArrayList<>(wrestlerStateRepository.findAll()));
+                  new ArrayList<>(wrestlerStateRepository.findAll()));
             }
             notificationService.showSuccess("All wrestler tiers recalculated successfully!");
           } catch (Exception e) {

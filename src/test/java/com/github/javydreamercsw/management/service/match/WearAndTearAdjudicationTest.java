@@ -23,6 +23,8 @@ import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -149,7 +151,7 @@ class WearAndTearAdjudicationTest {
     when(extremeRule.getName()).thenReturn("Extreme");
     when(extremeRule.getBumpAddition())
         .thenReturn(
-            com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition.NONE);
+            BumpAddition.NONE);
     when(segment.getSegmentRules()).thenReturn(Set.of(extremeRule)); // x2
 
     // (3 * 2) + 1 = 7
@@ -182,7 +184,7 @@ class WearAndTearAdjudicationTest {
             eq(1L),
             anyLong(),
             eq(
-                com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource
+                BumpSource
                     .WEAR_AND_TEAR));
   }
 

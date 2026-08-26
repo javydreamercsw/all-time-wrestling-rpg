@@ -34,6 +34,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -43,6 +44,7 @@ import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -149,7 +151,7 @@ public class LeagueDialog extends Dialog {
 
     BigDecimalField budgetField = new BigDecimalField("Budget");
     budgetField.setId("league-budget-field");
-    budgetField.setPrefixComponent(new com.vaadin.flow.component.html.Span("$"));
+    budgetField.setPrefixComponent(new Span("$"));
     budgetField.setValue(BigDecimal.ZERO);
     budgetField.setWidthFull();
 
@@ -284,7 +286,7 @@ public class LeagueDialog extends Dialog {
 
                           // Remove members not in either selected list
                           if (league != null) {
-                            Set<Account> allSelected = new java.util.HashSet<>(selectedPlayers);
+                            Set<Account> allSelected = new HashSet<>(selectedPlayers);
                             allSelected.addAll(selectedViewers);
                             leagueMembershipRepository.findByLeague(league).stream()
                                 .filter(

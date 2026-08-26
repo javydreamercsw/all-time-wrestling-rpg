@@ -54,6 +54,7 @@ import com.github.javydreamercsw.management.service.match.SegmentAdjudicationSer
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -62,6 +63,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -107,7 +109,7 @@ class ShowFinalizationTest {
             showTemplateRepository,
             universeRepository,
             leagueRepository,
-            java.time.Clock.systemUTC(),
+            Clock.systemUTC(),
             segmentAdjudicationService,
             segmentRepository,
             eventPublisher,
@@ -307,7 +309,7 @@ class ShowFinalizationTest {
     assertThat(result.getGateRevenue()).isGreaterThan(BigDecimal.ZERO);
     assertThat(result.getAttendance()).isGreaterThan(0);
     // No league save should happen
-    verify(leagueRepository, org.mockito.Mockito.never()).save(any(League.class));
+    verify(leagueRepository, Mockito.never()).save(any(League.class));
   }
 
   @Test
@@ -330,6 +332,6 @@ class ShowFinalizationTest {
 
     // attendance was already set — show should NOT be modified
     assertThat(show.getAttendance()).isEqualTo(999);
-    verify(showRepository, org.mockito.Mockito.never()).save(any(Show.class));
+    verify(showRepository, Mockito.never()).save(any(Show.class));
   }
 }

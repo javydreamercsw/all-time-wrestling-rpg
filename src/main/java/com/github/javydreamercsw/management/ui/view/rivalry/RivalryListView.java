@@ -43,6 +43,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 
@@ -72,7 +73,7 @@ public class RivalryListView extends Main {
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
 
-    java.util.List<Wrestler> allWrestlers =
+    List<Wrestler> allWrestlers =
         wrestlerService.getAllWrestlers().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
             .collect(Collectors.toList());

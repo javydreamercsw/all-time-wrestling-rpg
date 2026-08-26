@@ -60,6 +60,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -102,10 +103,10 @@ public class CampaignService {
   private final FeatureDataService featureDataService;
 
   // Field-injected to break circular dependency: CampaignService ↔ MatchResultProcessorService
-  @org.springframework.beans.factory.annotation.Autowired
+  @Autowired
   private MatchResultProcessorService matchResultProcessorService;
 
-  @org.springframework.beans.factory.annotation.Autowired
+  @Autowired
   private CampaignProgressionService campaignProgressionService;
 
   public void setFeatureValue(final CampaignState state, final String key, final Object value) {
@@ -405,8 +406,8 @@ public class CampaignService {
     return campaignProgressionService.advanceChapter(campaignParam);
   }
 
-  @org.springframework.transaction.annotation.Transactional(readOnly = true)
-  public java.util.List<com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO>
+  @Transactional(readOnly = true)
+  public List<CampaignChapterDTO>
       getAvailableNextChapters(@NonNull final Campaign campaignParam) {
     return campaignProgressionService.getAvailableNextChapters(campaignParam);
   }

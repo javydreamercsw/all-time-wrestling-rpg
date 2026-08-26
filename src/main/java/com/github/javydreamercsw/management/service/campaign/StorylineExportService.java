@@ -16,8 +16,10 @@
 */
 package com.github.javydreamercsw.management.service.campaign;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
+import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
 import java.util.List;
@@ -37,7 +39,7 @@ public class StorylineExportService {
     CampaignChapterDTO chapterDTO = toChapterDTO(storyline);
     try {
       return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(chapterDTO);
-    } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+    } catch (JsonProcessingException e) {
       log.error("Error exporting storyline as chapter", e);
       return "{}";
     }
@@ -76,7 +78,7 @@ public class StorylineExportService {
         .shortDescription(storyline.getDescription())
         .introText(storyline.getDescription())
         .aiSystemPrompt(aiSystemPrompt)
-        .difficulty(com.github.javydreamercsw.management.domain.campaign.Difficulty.MEDIUM)
+        .difficulty(Difficulty.MEDIUM)
         .tagTeam(isTagTeam(storyline))
         .tournament(isTournament(storyline))
         .entryPoints(entryPoints)

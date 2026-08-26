@@ -23,11 +23,15 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementCategory;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +46,7 @@ class LegacyServiceTest {
   @Mock private AccountRepository accountRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private AchievementRepository achievementRepository;
-  @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+  @Mock private TitleRepository titleRepository;
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
   @Mock private GameSettingService gameSettingService;
@@ -61,25 +65,25 @@ class LegacyServiceTest {
     account.setId(1L);
     account.setUsername("testuser");
 
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
-        new com.github.javydreamercsw.management.domain.universe.Universe();
+    Universe universe =
+        new Universe();
     universe.setId(1L);
 
     Wrestler w1 = new Wrestler();
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState s1 =
-        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    WrestlerState s1 =
+        new WrestlerState();
     s1.setWrestler(w1);
     s1.setUniverse(universe);
     s1.setFans(5000L);
-    w1.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(s1)));
+    w1.setWrestlerStates(new LinkedHashSet<>(List.of(s1)));
 
     Wrestler w2 = new Wrestler();
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState s2 =
-        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    WrestlerState s2 =
+        new WrestlerState();
     s2.setWrestler(w2);
     s2.setUniverse(universe);
     s2.setFans(2500L);
-    w2.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(s2)));
+    w2.setWrestlerStates(new LinkedHashSet<>(List.of(s2)));
 
     when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
     when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1, w2));
@@ -96,17 +100,17 @@ class LegacyServiceTest {
     account.setId(1L);
     account.setUsername("testuser");
 
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
-        new com.github.javydreamercsw.management.domain.universe.Universe();
+    Universe universe =
+        new Universe();
     universe.setId(1L);
 
     Wrestler w1 = new Wrestler();
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState s1 =
-        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    WrestlerState s1 =
+        new WrestlerState();
     s1.setWrestler(w1);
     s1.setUniverse(universe);
     s1.setFans(10000L);
-    w1.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(s1)));
+    w1.setWrestlerStates(new LinkedHashSet<>(List.of(s1)));
 
     when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
     when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(w1));

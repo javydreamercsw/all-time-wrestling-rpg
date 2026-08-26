@@ -40,6 +40,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -187,7 +188,7 @@ public class WrestlerDialog extends Dialog {
 
     HorizontalLayout imageEditLayout = new HorizontalLayout(imageUrlField, imageUpload);
     imageEditLayout.setAlignItems(
-        com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.BASELINE);
+        FlexComponent.Alignment.BASELINE);
     imageEditLayout.setWidthFull();
 
     boolean canEditAlignment = securityUtils.isAdmin() || securityUtils.isBooker();

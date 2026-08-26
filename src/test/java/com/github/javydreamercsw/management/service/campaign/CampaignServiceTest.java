@@ -41,10 +41,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -64,20 +67,20 @@ class CampaignServiceTest {
 
   @InjectMocks private CampaignService campaignService;
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setUpFeatureDataMock() {
     // campaignProgressionService is field-injected (@Autowired), not constructor-injected,
     // so @InjectMocks won't wire it automatically — inject it manually.
     ReflectionTestUtils.setField(
         campaignService, "campaignProgressionService", campaignProgressionService);
     // Return the defaultValue argument so Boolean auto-unboxing never receives null
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(
             featureDataService.getFeatureValue(
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any()))
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any()))
         .thenAnswer(inv -> inv.getArgument(3));
   }
 
@@ -105,7 +108,7 @@ class CampaignServiceTest {
             });
     lenient()
         .when(campaignRepository.findActiveByWrestler(any()))
-        .thenReturn(java.util.Optional.empty());
+        .thenReturn(Optional.empty());
 
     WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setAlignmentType(AlignmentType.NEUTRAL);
@@ -283,7 +286,7 @@ class CampaignServiceTest {
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
     CampaignChapterDTO beginning =
         CampaignChapterDTO.builder().id("beginning").title("All or Nothing Campaign").build();
-    when(chapterService.findAvailableChapters(any(), org.mockito.ArgumentMatchers.eq("Kurt Angle")))
+    when(chapterService.findAvailableChapters(any(), ArgumentMatchers.eq("Kurt Angle")))
         .thenReturn(List.of(beginning));
 
     List<CampaignChapterDTO> result = campaignService.findStartingChapters(wrestler);
@@ -304,9 +307,9 @@ class CampaignServiceTest {
         CampaignChapterDTO.builder().id("beginning").title("All or Nothing Campaign").build();
     // Wrestler-specific query returns empty; null-name query returns the chapter
     when(chapterService.findAvailableChapters(
-            any(), org.mockito.ArgumentMatchers.eq("Unknown Joe")))
+            any(), ArgumentMatchers.eq("Unknown Joe")))
         .thenReturn(List.of());
-    when(chapterService.findAvailableChapters(any(), org.mockito.ArgumentMatchers.isNull()))
+    when(chapterService.findAvailableChapters(any(), ArgumentMatchers.isNull()))
         .thenReturn(List.of(beginning));
 
     List<CampaignChapterDTO> result = campaignService.findStartingChapters(wrestler);

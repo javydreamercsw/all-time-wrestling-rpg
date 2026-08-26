@@ -43,11 +43,13 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 
 class NewsGenerationServiceTest {
 
@@ -117,7 +119,7 @@ class NewsGenerationServiceTest {
     // Verify the prompt contains the wrestler, NPC names, and strict instructions
     verify(aiService)
         .generateText(
-            org.mockito.ArgumentMatchers.argThat(
+            ArgumentMatchers.argThat(
                 prompt ->
                     prompt.contains("Star A")
                         && prompt.contains("Official X")
@@ -146,7 +148,7 @@ class NewsGenerationServiceTest {
 
     verify(aiService)
         .generateText(
-            org.mockito.ArgumentMatchers.argThat(
+            ArgumentMatchers.argThat(
                 prompt -> prompt.contains("Active Star") && !prompt.contains("Retired Legend")));
   }
 
@@ -268,7 +270,7 @@ class NewsGenerationServiceTest {
 
     Title title = new Title();
     title.setName("World Title");
-    title.awardTitleTo(List.of(champion), java.time.Instant.now(), null);
+    title.awardTitleTo(List.of(champion), Instant.now(), null);
 
     Show show = new Show();
     show.setName("Big Show");
@@ -296,7 +298,7 @@ class NewsGenerationServiceTest {
 
     verify(aiService)
         .generateText(
-            org.mockito.ArgumentMatchers.argThat(
+            ArgumentMatchers.argThat(
                 prompt ->
                     prompt.contains("TITLE DEFENSE")
                         && prompt.contains("World Title")
@@ -311,7 +313,7 @@ class NewsGenerationServiceTest {
 
     Title title = new Title();
     title.setName("World Title");
-    title.awardTitleTo(List.of(champion), java.time.Instant.now(), null);
+    title.awardTitleTo(List.of(champion), Instant.now(), null);
 
     Show show = new Show();
     show.setName("Big Show");
@@ -350,7 +352,7 @@ class NewsGenerationServiceTest {
 
     verify(aiService)
         .generateText(
-            org.mockito.ArgumentMatchers.argThat(
+            ArgumentMatchers.argThat(
                 prompt ->
                     prompt.contains("TITLE CHANGE")
                         && prompt.contains("World Title")
@@ -396,7 +398,7 @@ class NewsGenerationServiceTest {
 
     verify(aiService)
         .generateText(
-            org.mockito.ArgumentMatchers.argThat(
+            ArgumentMatchers.argThat(
                 prompt ->
                     prompt.contains("TITLE CHANGE")
                         && prompt.contains("VACANT")
@@ -409,7 +411,7 @@ class NewsGenerationServiceTest {
 
     Title title = new Title();
     title.setName("World Title");
-    title.awardTitleTo(List.of(champion), java.time.Instant.now(), null);
+    title.awardTitleTo(List.of(champion), Instant.now(), null);
 
     Show show = new Show();
     show.setName("Monday Night");
@@ -441,7 +443,7 @@ class NewsGenerationServiceTest {
 
     verify(aiService)
         .generateText(
-            org.mockito.ArgumentMatchers.argThat(
+            ArgumentMatchers.argThat(
                 prompt ->
                     prompt.contains("TITLE DEFENSE")
                         && prompt.contains("World Title")
@@ -455,7 +457,7 @@ class NewsGenerationServiceTest {
 
     Title title = new Title();
     title.setName("World Title");
-    title.awardTitleTo(List.of(oldChamp), java.time.Instant.now(), null);
+    title.awardTitleTo(List.of(oldChamp), Instant.now(), null);
 
     Show show = new Show();
     show.setName("Pay-Per-View");
@@ -494,7 +496,7 @@ class NewsGenerationServiceTest {
 
     verify(aiService)
         .generateText(
-            org.mockito.ArgumentMatchers.argThat(
+            ArgumentMatchers.argThat(
                 prompt ->
                     prompt.contains("TITLE CHANGE")
                         && prompt.contains("World Title")

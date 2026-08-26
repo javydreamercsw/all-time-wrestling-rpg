@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.team;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,7 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
     username = "admin",
     roles = {"ADMIN"})
 @DisplayName("TeamService Integration Tests")
-@org.springframework.test.context.TestPropertySource(
+@TestPropertySource(
     properties = {"data.initializer.enabled=false"})
 @Transactional
 class TeamServiceTest extends ManagementIntegrationTest {
@@ -78,15 +80,15 @@ class TeamServiceTest extends ManagementIntegrationTest {
                             .build()));
 
     // 2. Use it for all creations
-    wrestler1 = com.github.javydreamercsw.TestUtils.createWrestler("Wrestler 1", 0L, universe);
+    wrestler1 = TestUtils.createWrestler("Wrestler 1", 0L, universe);
     wrestler1.setExpansionCode("BASE_GAME");
     wrestler1 = wrestlerRepository.save(wrestler1);
 
-    wrestler2 = com.github.javydreamercsw.TestUtils.createWrestler("Wrestler 2", 0L, universe);
+    wrestler2 = TestUtils.createWrestler("Wrestler 2", 0L, universe);
     wrestler2.setExpansionCode("BASE_GAME");
     wrestler2 = wrestlerRepository.save(wrestler2);
 
-    wrestler3 = com.github.javydreamercsw.TestUtils.createWrestler("Wrestler 3", 0L, universe);
+    wrestler3 = TestUtils.createWrestler("Wrestler 3", 0L, universe);
     wrestler3.setExpansionCode("BASE_GAME");
     wrestler3 = wrestlerRepository.save(wrestler3);
 

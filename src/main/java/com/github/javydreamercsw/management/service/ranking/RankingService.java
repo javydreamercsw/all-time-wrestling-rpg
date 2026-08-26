@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -69,7 +70,7 @@ public class RankingService {
   private final WrestlerStateRepository wrestlerStateRepository;
   private final GameSettingService gameSettingService;
 
-  @org.springframework.beans.factory.annotation.Autowired
+  @Autowired
   public RankingService(
       final TitleRepository titleRepository,
       final WrestlerRepository wrestlerRepository,

@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.WrestlerRetiredEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +60,7 @@ public class RetirementService {
       return;
     }
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+    WrestlerState state =
         wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
     int condition = state.getPhysicalCondition();
 

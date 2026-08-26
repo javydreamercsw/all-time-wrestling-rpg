@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     wrestler1.setLowStamina(0);
     wrestler1.setStartingHealth(15);
     wrestler1.setStartingStamina(0);
-    wrestler1.setCreationDate(java.time.Instant.now());
+    wrestler1.setCreationDate(Instant.now());
     wrestler1.setIsPlayer(true);
     wrestler1.setGender(Gender.MALE);
     wrestler1 = wrestlerRepository.save(wrestler1);
@@ -73,7 +74,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     wrestler2.setLowStamina(0);
     wrestler2.setStartingHealth(15);
     wrestler2.setStartingStamina(0);
-    wrestler2.setCreationDate(java.time.Instant.now());
+    wrestler2.setCreationDate(Instant.now());
     wrestler2.setIsPlayer(true);
     wrestler2.setGender(Gender.MALE);
     wrestler2 = wrestlerRepository.save(wrestler2);
@@ -105,7 +106,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     wrestler.setLowStamina(0);
     wrestler.setStartingHealth(15);
     wrestler.setStartingStamina(0);
-    wrestler.setCreationDate(java.time.Instant.now());
+    wrestler.setCreationDate(Instant.now());
     wrestler.setIsPlayer(true);
     wrestler.setGender(Gender.MALE);
     wrestler = wrestlerRepository.save(wrestler);
@@ -139,7 +140,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
             .startingHealth(15)
             .gender(Gender.MALE)
             .active(true)
-            .creationDate(java.time.Instant.now())
+            .creationDate(Instant.now())
             .build();
     wrestler = wrestlerRepository.save(wrestler);
 
@@ -178,7 +179,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
             .startingHealth(15)
             .gender(Gender.MALE)
             .active(true)
-            .creationDate(java.time.Instant.now())
+            .creationDate(Instant.now())
             .build();
     wrestler = wrestlerRepository.save(wrestler);
 
@@ -221,7 +222,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
             .startingHealth(15)
             .gender(Gender.MALE)
             .active(true)
-            .creationDate(java.time.Instant.now())
+            .creationDate(Instant.now())
             .build();
     wrestler = wrestlerRepository.save(wrestler);
 
@@ -254,7 +255,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
   @Test
   void testFindByFansQueries() {
     Wrestler lowFans =
-        Wrestler.builder().name("Low Fans").creationDate(java.time.Instant.now()).build();
+        Wrestler.builder().name("Low Fans").creationDate(Instant.now()).build();
     lowFans = wrestlerRepository.save(lowFans);
     WrestlerState s1 =
         WrestlerState.builder().wrestler(lowFans).universe(defaultUniverse).fans(10L).build();
@@ -262,7 +263,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     lowFans.getWrestlerStates().add(s1);
 
     Wrestler midFans =
-        Wrestler.builder().name("Mid Fans").creationDate(java.time.Instant.now()).build();
+        Wrestler.builder().name("Mid Fans").creationDate(Instant.now()).build();
     midFans = wrestlerRepository.save(midFans);
     WrestlerState s2 =
         WrestlerState.builder().wrestler(midFans).universe(defaultUniverse).fans(50L).build();
@@ -270,7 +271,7 @@ class WrestlerRepositoryTest extends AbstractJpaTest {
     midFans.getWrestlerStates().add(s2);
 
     Wrestler highFans =
-        Wrestler.builder().name("High Fans").creationDate(java.time.Instant.now()).build();
+        Wrestler.builder().name("High Fans").creationDate(Instant.now()).build();
     highFans = wrestlerRepository.save(highFans);
     WrestlerState s3 =
         WrestlerState.builder().wrestler(highFans).universe(defaultUniverse).fans(100L).build();

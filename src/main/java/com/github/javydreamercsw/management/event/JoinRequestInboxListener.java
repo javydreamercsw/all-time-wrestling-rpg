@@ -94,7 +94,7 @@ public class JoinRequestInboxListener implements ApplicationListener<JoinRequest
           }
 
           try {
-            com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+            InboxItem inboxItem =
                 inboxService.createInboxItem(
                     joinRequestEventType,
                     "Join Request: " + request.getRequesterName(),

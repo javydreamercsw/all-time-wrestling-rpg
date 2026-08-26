@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialDefinition;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
@@ -64,7 +65,7 @@ class TutorialViewTest extends AbstractViewTest {
   @Mock private AiSettingsService aiSettingsService;
 
   @Mock
-  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+  private ExpansionService expansionService;
 
   private Account testAccount;
   private TutorialView view;
@@ -79,7 +80,7 @@ class TutorialViewTest extends AbstractViewTest {
     // Default: no tutorial universe exists → show mode-selection
     when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.empty());
 
-    when(expansionService.getExpansions()).thenReturn(java.util.List.of());
+    when(expansionService.getExpansions()).thenReturn(List.of());
     when(expansionService.isExpansionEnabled(any())).thenReturn(true);
 
     // Stub getDefinition for all three modes so modeCard() can call isAdvanced()

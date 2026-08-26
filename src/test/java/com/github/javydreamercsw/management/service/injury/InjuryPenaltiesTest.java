@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import java.util.Optional;
@@ -41,7 +42,7 @@ class InjuryPenaltiesTest extends AbstractIntegrationTest {
           Wrestler wrestler = createTestWrestler("Penalty Tester");
           wrestler = wrestlerRepository.save(wrestler);
 
-          com.github.javydreamercsw.management.domain.universe.Universe universe =
+          Universe universe =
               universeRepository.findAll().stream().findFirst().orElseThrow();
 
           Optional<Injury> injury =

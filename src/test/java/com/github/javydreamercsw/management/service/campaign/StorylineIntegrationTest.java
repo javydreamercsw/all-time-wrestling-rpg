@@ -50,13 +50,17 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class StorylineIntegrationTest {
@@ -131,10 +135,10 @@ class StorylineIntegrationTest {
             wrestlerStatusService,
             featureDataService);
     // Field-injected services must be set explicitly since we bypass Spring
-    org.springframework.test.util.ReflectionTestUtils.setField(
+    ReflectionTestUtils.setField(
         campaignService,
         "matchResultProcessorService",
-        org.mockito.Mockito.mock(MatchResultProcessorService.class));
+        Mockito.mock(MatchResultProcessorService.class));
 
     // Use a real CampaignProgressionService (with shared mocks) so advanceChapter works
     CampaignProgressionService progressionService =
@@ -150,9 +154,9 @@ class StorylineIntegrationTest {
             storylineDirectorService,
             wrestlerStatusService,
             featureDataService);
-    org.springframework.test.util.ReflectionTestUtils.setField(
+    ReflectionTestUtils.setField(
         progressionService, "campaignService", campaignService);
-    org.springframework.test.util.ReflectionTestUtils.setField(
+    ReflectionTestUtils.setField(
         campaignService, "campaignProgressionService", progressionService);
   }
 
@@ -199,7 +203,7 @@ class StorylineIntegrationTest {
   @Test
   void testAdvanceToAiStoryline() {
     Wrestler wrestler = new Wrestler();
-    wrestler.setReigns(new java.util.LinkedHashSet<>());
+    wrestler.setReigns(new LinkedHashSet<>());
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(wrestler);
@@ -214,7 +218,7 @@ class StorylineIntegrationTest {
 
     // Simulate no available predefined chapters
     when(chapterService.findAvailableChapters(
-            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+            ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(List.of());
 
     // Mock AI director initializing a new storyline
@@ -236,7 +240,7 @@ class StorylineIntegrationTest {
   @Test
   void testAdvanceToAiStoryline_WithMissingContext() {
     Wrestler wrestler = new Wrestler();
-    wrestler.setReigns(new java.util.LinkedHashSet<>());
+    wrestler.setReigns(new LinkedHashSet<>());
     Campaign campaign = new Campaign();
     campaign.setId(1L);
     campaign.setWrestler(wrestler);
@@ -254,7 +258,7 @@ class StorylineIntegrationTest {
 
     // Simulate no available predefined chapters
     when(chapterService.findAvailableChapters(
-            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+            ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(List.of());
 
     // Mock AI director initializing a new storyline - should succeed even with null context

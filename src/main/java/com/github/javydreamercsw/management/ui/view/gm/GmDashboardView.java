@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.gm;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.league.League;
+import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.league.LeagueService;
@@ -198,7 +199,7 @@ public class GmDashboardView extends VerticalLayout {
 
     List<Wrestler> roster =
         leagueService.getRoster(league.getId()).stream()
-            .map(com.github.javydreamercsw.management.domain.league.LeagueRoster::getWrestler)
+            .map(LeagueRoster::getWrestler)
             .toList();
 
     Long universeId = league.getUniverse() != null ? league.getUniverse().getId() : null;

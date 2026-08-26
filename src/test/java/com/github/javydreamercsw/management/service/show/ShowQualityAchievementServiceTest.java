@@ -28,8 +28,13 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
@@ -370,7 +375,7 @@ class ShowQualityAchievementServiceTest {
     w.setAccount(wrestlerAccount);
 
     if (hasStipulation) {
-      var rule = new com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule();
+      var rule = new SegmentRule();
       rule.setName("Ladder Match");
       segment.setSegmentRules(new HashSet<>(Set.of(rule)));
     } else {
@@ -378,7 +383,7 @@ class ShowQualityAchievementServiceTest {
     }
 
     var participant =
-        new com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant();
+        new SegmentParticipant();
     participant.setWrestler(w);
     segment.setParticipants(new HashSet<>(Set.of(participant)));
 
@@ -394,11 +399,11 @@ class ShowQualityAchievementServiceTest {
     return s;
   }
 
-  private com.github.javydreamercsw.management.domain.show.template.ShowTemplate makePleTemplate() {
-    var showType = new com.github.javydreamercsw.management.domain.show.type.ShowType();
+  private ShowTemplate makePleTemplate() {
+    var showType = new ShowType();
     showType.setName("Premium Live Event (PLE)");
-    showType.setCategory(com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE);
-    var template = new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+    showType.setCategory(ShowCategory.PLE);
+    var template = new ShowTemplate();
     template.setShowType(showType);
     return template;
   }

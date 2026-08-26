@@ -181,7 +181,7 @@ class SeasonAwardsServiceTest {
     when(awardRepository.findBySeasonId(99L)).thenReturn(List.of(existing));
 
     service.onSeasonEnded(
-        new com.github.javydreamercsw.management.event.dto.SeasonEndedEvent(this, season));
+        new SeasonEndedEvent(this, season));
 
     verify(segmentRepository, never()).findByShow(any());
     verify(newsService, never()).createNewsItem(any(), any(), any(), anyBoolean(), anyInt());

@@ -47,6 +47,8 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 /**
  * View for managing injury types in the ATW RPG system. Provides CRUD operations for injury type
@@ -183,12 +185,12 @@ public class InjuryTypeListView extends Main {
 
               return injuryTypeService
                   .getAllInjuryTypes(
-                      org.springframework.data.domain.PageRequest.of(
+                      PageRequest.of(
                           offset / limit,
                           limit,
                           ascending
-                              ? org.springframework.data.domain.Sort.by(sortProperty).ascending()
-                              : org.springframework.data.domain.Sort.by(sortProperty).descending()))
+                              ? Sort.by(sortProperty).ascending()
+                              : Sort.by(sortProperty).descending()))
                   .stream();
             },
             query -> (int) injuryTypeService.countAll()));

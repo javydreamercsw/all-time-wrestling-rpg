@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -260,7 +261,7 @@ class ExtremeCampaignChapterTest {
                 e ->
                     e.getChoices() != null
                         ? e.getChoices().stream()
-                        : java.util.stream.Stream.empty())
+                        : Stream.empty())
             .filter(c -> c.getOpponentPool() != null && !c.getOpponentPool().isEmpty())
             .toList();
 

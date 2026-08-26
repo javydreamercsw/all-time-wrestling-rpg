@@ -18,7 +18,9 @@ package com.github.javydreamercsw.management.domain.injury;
 
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -122,7 +124,7 @@ public interface InjuryRepository
       ORDER BY i.severity DESC, i.healthPenalty DESC
       LIMIT 1
       """)
-  java.util.Optional<Injury> findMostSevereActiveInjuryForWrestler(
+  Optional<Injury> findMostSevereActiveInjuryForWrestler(
       @Param("wrestler") Wrestler wrestler, @Param("universe") Universe universe);
 
   /** Find the most severe active injury for a wrestler. */
@@ -133,11 +135,11 @@ public interface InjuryRepository
       ORDER BY i.severity DESC, i.healthPenalty DESC
       LIMIT 1
       """)
-  java.util.Optional<Injury> findMostSevereActiveInjuryForWrestler(
+  Optional<Injury> findMostSevereActiveInjuryForWrestler(
       @Param("wrestler") Wrestler wrestler);
 
   /** Find injuries for a wrestler on a specific date. */
-  List<Injury> findByWrestlerAndInjuryDate(Wrestler wrestler, java.time.Instant injuryDate);
+  List<Injury> findByWrestlerAndInjuryDate(Wrestler wrestler, Instant injuryDate);
 
   /** Count injuries referencing a given InjuryType (used to guard deletion). */
   long countByInjuryType(InjuryType injuryType);

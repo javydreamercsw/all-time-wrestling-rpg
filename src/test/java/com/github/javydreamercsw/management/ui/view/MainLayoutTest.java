@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import java.util.Collections;
@@ -128,10 +129,10 @@ class MainLayoutTest extends AbstractViewTest {
     MainLayout layout = createLayout();
 
     // Inbox button is always visible for authenticated users; badge itself is hidden (no unread)
-    com.vaadin.flow.component.button.Button inboxButton =
+    Button inboxButton =
         _get(
             layout,
-            com.vaadin.flow.component.button.Button.class,
+            Button.class,
             spec -> spec.withId("inbox-button"));
     assertTrue(inboxButton.isVisible());
   }

@@ -26,12 +26,14 @@ import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -170,7 +172,7 @@ public class NewsGenerationService {
     if (segment.getIsTitleSegment()
         && segment.getTitles() != null
         && !segment.getTitles().isEmpty()) {
-      for (com.github.javydreamercsw.management.domain.title.Title title : segment.getTitles()) {
+      for (Title title : segment.getTitles()) {
         TitleContext ctx = resolveTitleContext(title, segment);
         prompt
             .append(ctx.outcome())
@@ -223,7 +225,7 @@ public class NewsGenerationService {
           .append(winners)
           .append(" won");
       if (s.getIsTitleSegment() && s.getTitles() != null && !s.getTitles().isEmpty()) {
-        for (com.github.javydreamercsw.management.domain.title.Title title : s.getTitles()) {
+        for (Title title : s.getTitles()) {
           TitleContext ctx = resolveTitleContext(title, s);
           context
               .append(" [")
@@ -291,13 +293,13 @@ public class NewsGenerationService {
    * title.getCurrentChampions()} already reflects the post-match state.
    */
   private TitleContext resolveTitleContext(
-      com.github.javydreamercsw.management.domain.title.Title title, Segment segment) {
+      Title title, Segment segment) {
     boolean changedHands =
         titleReignRepository.findByWonAtSegment(segment).stream()
             .anyMatch(
                 r ->
                     r.getTitle() != null
-                        && java.util.Objects.equals(r.getTitle().getId(), title.getId()));
+                        && Objects.equals(r.getTitle().getId(), title.getId()));
 
     if (changedHands) {
       String prevChamps =

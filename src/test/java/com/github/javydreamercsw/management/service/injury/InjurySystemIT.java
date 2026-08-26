@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import java.util.List;
 import java.util.Optional;
@@ -65,18 +66,18 @@ class InjurySystemIT extends ManagementIntegrationTest {
   void shouldConvert3BumpsToInjuryAndResetBumps() {
     // Given - Add 2 bumps first
     assert wrestler1.getId() != null;
-    Optional<com.github.javydreamercsw.management.domain.wrestler.WrestlerState> afterFirstBump =
+    Optional<WrestlerState> afterFirstBump =
         wrestlerService.addBump(wrestler1.getId(), universeId);
     assertThat(afterFirstBump).isPresent();
     assertThat(afterFirstBump.get().getBumps()).isEqualTo(1);
 
-    Optional<com.github.javydreamercsw.management.domain.wrestler.WrestlerState> afterSecondBump =
+    Optional<WrestlerState> afterSecondBump =
         wrestlerService.addBump(wrestler1.getId(), universeId);
     assertThat(afterSecondBump).isPresent();
     assertThat(afterSecondBump.get().getBumps()).isEqualTo(2);
 
     // When - Add third bump (should trigger injury)
-    Optional<com.github.javydreamercsw.management.domain.wrestler.WrestlerState> afterThirdBump =
+    Optional<WrestlerState> afterThirdBump =
         wrestlerService.addBump(wrestler1.getId(), universeId);
 
     // Then - Bumps should be reset and injury created
@@ -171,7 +172,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
   @DisplayName("Should handle injury healing with fan cost")
   void shouldHandleInjuryHealingWithFanCost() {
     // Given - Create injury and ensure wrestler has enough fans
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+    WrestlerState state =
         wrestlerService.getOrCreateState(wrestler1.getId(), universeId);
     state.setFans(50000L); // Plenty of fans
     wrestlerStateRepository.save(state);
@@ -262,7 +263,7 @@ class InjurySystemIT extends ManagementIntegrationTest {
   @DisplayName("Should prevent healing when wrestler cannot afford cost")
   void shouldPreventHealingWhenWrestlerCannotAffordCost() {
     // Given - Create injury and ensure wrestler has insufficient fans
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
+    WrestlerState state =
         wrestlerService.getOrCreateState(wrestler1.getId(), universeId);
     state.setFans(1000L); // Not enough fans
     wrestlerStateRepository.save(state);

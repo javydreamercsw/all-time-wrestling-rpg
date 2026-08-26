@@ -32,11 +32,9 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -344,7 +342,7 @@ class SegmentRuleServiceTest {
             "overview", "setup", null, null, "win", null, null, null, null, null, null, null);
     SegmentRulePlayGuide guide = new SegmentRulePlayGuide(solo, null);
 
-    when(segmentRuleRepository.findByName("Cage")).thenReturn(java.util.Optional.empty());
+    when(segmentRuleRepository.findByName("Cage")).thenReturn(Optional.empty());
     when(objectMapper.writeValueAsString(guide))
         .thenReturn("{\"solo\":{\"overview\":\"overview\"}}");
     when(segmentRuleRepository.save(any(SegmentRule.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -378,7 +376,7 @@ class SegmentRuleServiceTest {
     existing.setGuide(oldGuide);
     existing.setGuideHash("oldhash");
 
-    when(segmentRuleRepository.findByName("Cage")).thenReturn(java.util.Optional.of(existing));
+    when(segmentRuleRepository.findByName("Cage")).thenReturn(Optional.of(existing));
     when(objectMapper.writeValueAsString(newGuide))
         .thenReturn("{\"solo\":{\"overview\":\"new overview\"}}");
     when(segmentRuleRepository.save(any(SegmentRule.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -402,9 +400,9 @@ class SegmentRuleServiceTest {
 
     when(objectMapper.writeValueAsString(guide)).thenReturn(serialized);
 
-    java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-    byte[] hashBytes = digest.digest(serialized.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    String expectedHash = java.util.HexFormat.of().formatHex(hashBytes);
+    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+    byte[] hashBytes = digest.digest(serialized.getBytes(StandardCharsets.UTF_8));
+    String expectedHash = HexFormat.of().formatHex(hashBytes);
 
     SegmentRule existing = new SegmentRule();
     existing.setName("Cage");
@@ -416,7 +414,7 @@ class SegmentRuleServiceTest {
     existing.setGuide(guide);
     existing.setGuideHash(expectedHash);
 
-    when(segmentRuleRepository.findByName("Cage")).thenReturn(java.util.Optional.of(existing));
+    when(segmentRuleRepository.findByName("Cage")).thenReturn(Optional.of(existing));
 
     segmentRuleService.createOrUpdateRule(
         "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.faction;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -132,7 +133,7 @@ public interface FactionRivalryRepository
       WHERE fr.startedDate >= :sinceDate
       ORDER BY fr.startedDate DESC
       """)
-  List<FactionRivalry> findRecentRivalries(@Param("sinceDate") java.time.Instant sinceDate);
+  List<FactionRivalry> findRecentRivalries(@Param("sinceDate") Instant sinceDate);
 
   /** Count total wrestlers involved in faction rivalries. */
   @Query(

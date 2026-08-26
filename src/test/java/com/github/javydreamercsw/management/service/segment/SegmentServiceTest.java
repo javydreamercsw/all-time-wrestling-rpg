@@ -76,7 +76,7 @@ class SegmentServiceTest {
     testSegment.setShow(testShow);
     testSegment.setSegmentType(testSegmentType);
     testSegment.addParticipant(testWinner);
-    testSegment.setWinners(java.util.List.of(testWinner));
+    testSegment.setWinners(List.of(testWinner));
     testSegment.setSegmentDate(testDate);
     testSegment.setNarration("Great segment!");
     testSegment.setIsTitleSegment(false);

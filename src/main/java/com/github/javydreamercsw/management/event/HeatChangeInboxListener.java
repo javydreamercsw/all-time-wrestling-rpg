@@ -60,7 +60,7 @@ public class HeatChangeInboxListener implements ApplicationListener<HeatChangeEv
                 event.getReason());
 
     // Assuming the rivalry ID is the relevant reference for the inbox item
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             rivalryHeatChange,
             "Rivalry Heat " + (event.getNewHeat() - event.getOldHeat() > 0 ? "Gained" : "Lost"),

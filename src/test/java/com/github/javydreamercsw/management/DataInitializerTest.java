@@ -27,20 +27,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.dto.ArenaImportDTO;
-import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
-import com.github.javydreamercsw.management.dto.CardDTO;
-import com.github.javydreamercsw.management.dto.DeckDTO;
-import com.github.javydreamercsw.management.dto.FactionImportDTO;
-import com.github.javydreamercsw.management.dto.LocationImportDTO;
-import com.github.javydreamercsw.management.dto.NpcDTO;
-import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
-import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
-import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
-import com.github.javydreamercsw.management.dto.StatusCardDTO;
-import com.github.javydreamercsw.management.dto.TeamImportDTO;
-import com.github.javydreamercsw.management.dto.TitleDTO;
-import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
+import com.github.javydreamercsw.management.dto.*;
 import com.github.javydreamercsw.management.sync.DataSyncContributor;
 import java.io.IOException;
 import java.util.List;
@@ -52,6 +39,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @ExtendWith(MockitoExtension.class)
 class DataInitializerTest {
@@ -85,11 +74,11 @@ class DataInitializerTest {
   void validateCardsJson() {
     assertDoesNotThrow(
         () -> {
-          org.springframework.core.io.support.PathMatchingResourcePatternResolver resolver =
-              new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
-          org.springframework.core.io.Resource[] resources =
+          PathMatchingResourcePatternResolver resolver =
+              new PathMatchingResourcePatternResolver();
+          Resource[] resources =
               resolver.getResources("classpath*:cards/*.json");
-          for (org.springframework.core.io.Resource resource : resources) {
+          for (Resource resource : resources) {
             new ObjectMapper()
                 .readValue(resource.getInputStream(), new TypeReference<List<CardDTO>>() {});
           }
@@ -236,7 +225,7 @@ class DataInitializerTest {
               .readValue(
                   new ClassPathResource("relationships.json").getInputStream(),
                   new TypeReference<
-                      List<com.github.javydreamercsw.management.dto.RelationshipImportDTO>>() {});
+                      List<RelationshipImportDTO>>() {});
         });
   }
 
@@ -293,11 +282,11 @@ class DataInitializerTest {
   void validateWrestlersJson() {
     assertDoesNotThrow(
         () -> {
-          org.springframework.core.io.support.PathMatchingResourcePatternResolver resolver =
-              new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
-          org.springframework.core.io.Resource[] resources =
+          PathMatchingResourcePatternResolver resolver =
+              new PathMatchingResourcePatternResolver();
+          Resource[] resources =
               resolver.getResources("classpath*:wrestlers*.json");
-          for (org.springframework.core.io.Resource resource : resources) {
+          for (Resource resource : resources) {
             new ObjectMapper()
                 .readValue(
                     resource.getInputStream(), new TypeReference<List<WrestlerImportDTO>>() {});

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,7 +75,7 @@ class ThemeServiceTest {
 
   @Test
   void testGetAvailableThemes() {
-    java.util.List<String> available = themeService.getAvailableThemes();
+    List<String> available = themeService.getAvailableThemes();
     assertEquals(5, available.size());
     assert available.contains("light");
     assert available.contains("dark");

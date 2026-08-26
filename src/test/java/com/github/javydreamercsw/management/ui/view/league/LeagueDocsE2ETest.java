@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -36,6 +37,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -144,12 +147,12 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
 
     // Complete Draft to show other features
     List<Wrestler> wrestlers =
-        new java.util.ArrayList<>(
+        new ArrayList<>(
             wrestlerRepository.findAll().stream()
                 .filter(w -> Boolean.TRUE.equals(w.getActive()))
                 .toList());
     // Sort by name to match DraftView grid default order
-    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getName));
+    wrestlers.sort(Comparator.comparing(Wrestler::getName));
 
     Wrestler w1 = wrestlers.get(0);
     clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
@@ -303,11 +306,11 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
 
     // Make admin's pick
     List<Wrestler> wrestlers =
-        new java.util.ArrayList<>(
+        new ArrayList<>(
             wrestlerRepository.findAll().stream()
                 .filter(w -> Boolean.TRUE.equals(w.getActive()))
                 .toList());
-    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getName));
+    wrestlers.sort(Comparator.comparing(Wrestler::getName));
     Wrestler w1 = wrestlers.get(0);
     captureCaption(
         "Click Draft to lock in your pick — the wrestler disappears from the available"
@@ -398,11 +401,11 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
 
     // Make one pick so the draft completes (max picks = 1, commissioner + player1)
     List<Wrestler> wrestlers =
-        new java.util.ArrayList<>(
+        new ArrayList<>(
             wrestlerRepository.findAll().stream()
                 .filter(w -> Boolean.TRUE.equals(w.getActive()))
                 .toList());
-    wrestlers.sort(java.util.Comparator.comparing(Wrestler::getName));
+    wrestlers.sort(Comparator.comparing(Wrestler::getName));
     Wrestler w1 = wrestlers.get(0);
     clickElement(By.id("draft-wrestler-btn-" + w1.getId()));
     waitForVaadinClientToLoad();
@@ -472,7 +475,7 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
             "Wrestler " + i,
             false,
             "Bio",
-            com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MIDCARDER,
+            WrestlerTier.MIDCARDER,
             null);
       }
     }

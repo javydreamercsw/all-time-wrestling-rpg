@@ -178,7 +178,7 @@ class JoinRequestServiceIT extends ManagementIntegrationTest {
     membershipService.addMember(
         universe,
         requester,
-        com.github.javydreamercsw.management.domain.universe.UniverseMembership.UniverseMemberRole
+        UniverseMembership.UniverseMemberRole
             .MEMBER);
 
     UniverseJoinRequest request =

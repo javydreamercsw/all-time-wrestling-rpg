@@ -67,7 +67,7 @@ public class FeudHeatChangeInboxListener implements ApplicationListener<FeudHeat
                 event.getNewHeat(),
                 event.getReason());
 
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             feudHeatChange,
             "Feud Heat Change: " + event.getFeudName(),

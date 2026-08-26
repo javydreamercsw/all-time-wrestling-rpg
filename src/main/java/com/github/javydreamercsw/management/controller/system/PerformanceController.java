@@ -23,6 +23,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -105,8 +107,8 @@ public class PerformanceController {
       description = "Returns detailed cache usage statistics and performance metrics")
   @GetMapping("/cache/stats")
   public ResponseEntity<Map<String, Object>> getCacheStatistics() {
-    java.util.List<Map<String, Object>> perCacheStats = cacheMonitor.getDetailedCacheStatistics();
-    Map<String, Object> response = new java.util.LinkedHashMap<>();
+    List<Map<String, Object>> perCacheStats = cacheMonitor.getDetailedCacheStatistics();
+    Map<String, Object> response = new LinkedHashMap<>();
     response.put("status", "active");
     response.put("cacheCount", perCacheStats.size());
     response.put("caches", perCacheStats);

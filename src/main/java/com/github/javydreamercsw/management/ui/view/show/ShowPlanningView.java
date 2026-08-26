@@ -21,11 +21,14 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowContextFacade;
@@ -40,9 +43,11 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -63,24 +68,20 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.router.BeforeEvent;
-import com.vaadin.flow.router.HasUrlParameter;
-import com.vaadin.flow.router.Menu;
-import com.vaadin.flow.router.OptionalParameter;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.*;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(
     value = "show-planning",
-    layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
+    layout = MainLayout.class)
 @PageTitle("Show Planning")
 @Menu(order = 6, icon = "vaadin:calendar", title = "Show Planning")
 @RolesAllowed({ADMIN_ROLE, BOOKER_ROLE})
@@ -92,11 +93,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ShowPlanningAiService showPlanningAiService;
   private final WrestlerService wrestlerService;
   private final ShowTemplateService showTemplateService;
-  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
+  private final NpcService npcService;
   private final ObjectMapper objectMapper;
   private final SegmentNarrationServiceFactory aiFactory;
-  private final com.github.javydreamercsw.management.service.world.ArenaService arenaService;
-  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final ArenaService arenaService;
+  private final NotificationService notificationService;
   private final UniverseContextService universeContextService;
   private final WrestlerRepository wrestlerRepository;
   private final TitleService titleService;
@@ -204,8 +205,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 s.getTeams() == null
                     ? ""
                     : s.getTeams().stream()
-                        .flatMap(java.util.List::stream)
-                        .collect(java.util.stream.Collectors.joining(", ")))
+                        .flatMap(List::stream)
+                        .collect(Collectors.joining(", ")))
         .setHeader("Participants");
 
     proposedSegmentsGrid
@@ -251,7 +252,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           editButton.addClickListener(
               e -> {
                 Show selectedShow = showComboBox.getValue();
-                com.github.javydreamercsw.base.domain.wrestler.Gender constraint =
+                Gender constraint =
                     selectedShow != null && selectedShow.getTemplate() != null
                         ? selectedShow.getTemplate().getGenderConstraint()
                         : null;
@@ -363,7 +364,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           .navigate(
               ShowDetailView.class,
               show.getId(),
-              com.vaadin.flow.router.QueryParameters.of("ref", "booker"));
+              QueryParameters.of("ref", "booker"));
     }
   }
 
@@ -498,7 +499,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     }
   }
 
-  private void showValidationErrorDialog(final java.util.List<String> errors) {
+  private void showValidationErrorDialog(final List<String> errors) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Card Validation Failed");
 
@@ -525,7 +526,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     dialog.open();
   }
 
-  private void showMustBookWarningDialog(final Show show, final java.util.List<String> warnings) {
+  private void showMustBookWarningDialog(final Show show, final List<String> warnings) {
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Unbooked Rivalries (" + warnings.size() + ")");
 

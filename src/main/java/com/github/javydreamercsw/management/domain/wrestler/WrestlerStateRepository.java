@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.wrestler;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +54,7 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
   List<WrestlerState> findAllWithWrestler();
 
   List<WrestlerState> findByUniverseIdAndTier(
-      Long universeId, com.github.javydreamercsw.base.domain.wrestler.WrestlerTier tier);
+      Long universeId, WrestlerTier tier);
 
   @Modifying(clearAutomatically = true)
   @Query(
