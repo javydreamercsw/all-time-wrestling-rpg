@@ -35,4 +35,5 @@ public class ShowPlanningContextDTO {
   private Instant showDate;
   private boolean isPremiumLiveEvent;
   private List<String> recentDramaEvents = new ArrayList<>();
+  private List<FeudScriptBeatDTO> upcomingScriptedBeats;
 }
