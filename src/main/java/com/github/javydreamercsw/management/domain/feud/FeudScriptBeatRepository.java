@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.domain.feud;
 
-import com.github.javydreamercsw.management.domain.show.Show;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,9 +26,9 @@ import org.springframework.stereotype.Repository;
 public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, Long> {
 
   @Query(
-      "SELECT b FROM FeudScriptBeat b WHERE b.targetShow = :show"
+      "SELECT b FROM FeudScriptBeat b WHERE b.targetShow.id = :showId"
           + " AND b.beatStatus = 'PENDING'"
           + " AND b.script.status = 'ACTIVE'"
           + " ORDER BY b.script.id, b.beatOrder")
-  List<FeudScriptBeat> findPendingBeatsForShow(@Param("show") Show show);
+  List<FeudScriptBeat> findPendingBeatsForShow(@Param("showId") Long showId);
 }

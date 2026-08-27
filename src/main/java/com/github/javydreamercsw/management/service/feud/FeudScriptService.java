@@ -70,7 +70,7 @@ public class FeudScriptService {
     if (show.getId() == null) {
       return List.of();
     }
-    return feudScriptBeatRepository.findPendingBeatsForShow(show);
+    return feudScriptBeatRepository.findPendingBeatsForShow(show.getId());
   }
 
   /** Maps pending beats for a show to DTOs suitable for the AI prompt. */
