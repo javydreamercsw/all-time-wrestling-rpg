@@ -33,6 +33,7 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
@@ -303,7 +304,7 @@ public class FeudScriptWizardDialog extends Dialog {
               plannedWinnerCombo,
               culminationCheck,
               removeBtn);
-      topRow.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.END);
+      topRow.setAlignItems(FlexComponent.Alignment.END);
       topRow.setWidthFull();
 
       rowLayout = new VerticalLayout(topRow, notesField);
