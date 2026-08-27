@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
@@ -325,7 +326,8 @@ class ShowDetailViewTest extends AbstractViewTest {
             segmentNarrationServiceFactory,
             narrationParserService,
             npcService,
-            mock(DramaEventService.class));
+            mock(DramaEventService.class),
+            mock(FeudScriptService.class));
     ShowContextFacade showContextFacade =
         new ShowContextFacade(
             showTypeService,

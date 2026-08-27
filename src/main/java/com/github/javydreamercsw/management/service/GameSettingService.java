@@ -68,6 +68,9 @@ public class GameSettingService {
   /** Days to retain inbox items before automatic purge. -1 disables the purge. */
   public static final String INBOX_RETENTION_DAYS_KEY = "inbox.retention.days";
 
+  /** Maximum number of PLEs a feud script can appear at (1–3). */
+  public static final String MAX_PLE_FEUD_APPEARANCES_KEY = "feud.script.max_ple_appearances";
+
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
    * defaults — each universe must configure its own. Reading without an active universe returns
@@ -426,6 +429,20 @@ public class GameSettingService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void save(final String key, final String value) {
     saveInternal(key, value);
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getMaxPleFeudAppearances() {
+    return resolveValue(MAX_PLE_FEUD_APPEARANCES_KEY)
+        .map(Integer::parseInt)
+        .filter(v -> v >= 1 && v <= 3)
+        .orElse(3);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setMaxPleFeudAppearances(final int value) {
+    saveInternal(MAX_PLE_FEUD_APPEARANCES_KEY, String.valueOf(Math.min(Math.max(value, 1), 3)));
   }
 
   @PreAuthorize("permitAll()")

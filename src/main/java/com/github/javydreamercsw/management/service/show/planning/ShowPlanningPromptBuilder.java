@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.util.List;
 import java.util.Optional;
@@ -336,6 +337,18 @@ public class ShowPlanningPromptBuilder {
                                 .collect(Collectors.joining(", ")))
                         .append("\n"));
       }
+    }
+
+    if (context.getUpcomingScriptedBeats() != null
+        && !context.getUpcomingScriptedBeats().isEmpty()) {
+      prompt.append("\n**Pre-Scripted Match Slots (booker-mandated — include these exactly):**\n");
+      context.getUpcomingScriptedBeats().stream()
+          .map(FeudScriptBeatDTO::toAiInstruction)
+          .map(ShowPlanningPromptBuilder::sanitize)
+          .forEach(line -> prompt.append("- ").append(line).append("\n"));
+      prompt.append(
+          "These slots MUST appear on the card. Book the specified match type,"
+              + " honour the winner instruction, and preserve any quoted story notes.\n\n");
     }
 
     prompt.append("\n**Booking Rules & Participation Goal:**\n");

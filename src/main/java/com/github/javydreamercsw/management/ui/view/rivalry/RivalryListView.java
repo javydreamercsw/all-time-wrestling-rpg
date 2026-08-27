@@ -21,11 +21,17 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.feud.FeudScriptWizardDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -58,6 +64,9 @@ public class RivalryListView extends Main {
   private final WrestlerService wrestlerService;
   private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
+  private final FeudScriptService feudScriptService;
+  private final SegmentTypeService segmentTypeService;
+  private final SegmentRuleService segmentRuleService;
 
   final Grid<RivalryDTO> rivalryGrid;
 
@@ -66,12 +75,18 @@ public class RivalryListView extends Main {
       @NonNull final RivalryRepository rivalryRepository,
       @NonNull final WrestlerService wrestlerService,
       @NonNull final WrestlerRepository wrestlerRepository,
-      @NonNull final SecurityUtils securityUtils) {
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final FeudScriptService feudScriptService,
+      @NonNull final SegmentTypeService segmentTypeService,
+      @NonNull final SegmentRuleService segmentRuleService) {
     this.rivalryService = rivalryService;
     this.rivalryRepository = rivalryRepository;
     this.wrestlerService = wrestlerService;
     this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
+    this.feudScriptService = feudScriptService;
+    this.segmentTypeService = segmentTypeService;
+    this.segmentRuleService = segmentRuleService;
 
     List<Wrestler> allWrestlers =
         wrestlerService.getAllWrestlers().stream()
@@ -186,6 +201,47 @@ public class RivalryListView extends Main {
               return deleteButton;
             })
         .setHeader("Delete");
+
+    if (securityUtils.canCreate()) {
+      rivalryGrid
+          .addComponentColumn(
+              rivalry -> {
+                Button scriptButton = new Button("Story Arc");
+                scriptButton.addClickListener(
+                    e -> {
+                      List<Wrestler> wrestlers =
+                          List.of(
+                              wrestlerService
+                                  .findById(rivalry.getWrestler1().getId())
+                                  .orElseThrow(),
+                              wrestlerService
+                                  .findById(rivalry.getWrestler2().getId())
+                                  .orElseThrow());
+                      List<String> typeNames =
+                          segmentTypeService.findAll().stream()
+                              .map(SegmentType::getName)
+                              .sorted()
+                              .collect(Collectors.toList());
+                      List<String> ruleNames =
+                          segmentRuleService.findAll().stream()
+                              .map(SegmentRule::getName)
+                              .sorted()
+                              .collect(Collectors.toList());
+                      FeudScriptWizardDialog dialog =
+                          new FeudScriptWizardDialog(
+                              allWrestlers,
+                              typeNames,
+                              ruleNames,
+                              feudScriptService.getDefaultMaxPleAppearances(),
+                              feudScriptService,
+                              null);
+                      dialog.preSelectWrestlers(wrestlers);
+                      dialog.open();
+                    });
+                return scriptButton;
+              })
+          .setHeader("Story Arc");
+    }
 
     rivalryGrid.setSizeFull();
 

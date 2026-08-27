@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -88,6 +89,7 @@ public class ShowPlanningService {
   private final InjuryService injuryService;
   private final GameSettingService gameSettingService;
   private final DramaEventService dramaEventService;
+  private final FeudScriptService feudScriptService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -284,6 +286,9 @@ public class ShowPlanningService {
                             truncateDramaDescription(de.getDescription(), 100)))
             .toList();
     dto.setRecentDramaEvents(dramaLines);
+
+    // Inject scripted beat slots so the AI honours pre-planned match types and winner intent
+    dto.setUpcomingScriptedBeats(feudScriptService.getUpcomingBeatDTOsForShow(show));
 
     return dto;
   }
