@@ -67,6 +67,9 @@ public class FeudScriptService {
 
   /** Returns pending beats targeting the given show, used to inject into show planning context. */
   public List<FeudScriptBeat> getUpcomingBeatsForShow(@NonNull Show show) {
+    if (show.getId() == null) {
+      return List.of();
+    }
     return feudScriptBeatRepository.findPendingBeatsForShow(show);
   }
 
