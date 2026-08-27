@@ -51,6 +51,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -102,6 +103,7 @@ class ShowPlanningServiceTest {
   @Mock private InjuryService injuryService;
   @Mock private GameSettingService gameSettingService;
   @Mock private DramaEventService dramaEventService;
+  @Mock private FeudScriptService feudScriptService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
