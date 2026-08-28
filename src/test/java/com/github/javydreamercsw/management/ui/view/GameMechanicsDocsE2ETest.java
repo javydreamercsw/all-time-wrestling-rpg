@@ -26,8 +26,8 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -176,7 +176,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
             .filter(
                 s ->
                     s.getSegmentType() != null
-                        && !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName()))
+                        && !WellKnownSegmentType.PROMO.matches(s.getSegmentType()))
             .findFirst()
             .orElse(null);
     if (segment != null) {

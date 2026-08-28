@@ -28,7 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
@@ -392,7 +392,7 @@ public class SegmentAdjudicationService {
       return;
     }
     OutcomeMatrixCategory category =
-        SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())
+        WellKnownSegmentType.PROMO.matches(segment.getSegmentType())
             ? OutcomeMatrixCategory.PROMO
             : OutcomeMatrixCategory.MATCH_FLOW;
     Map<String, String> chartVars = new HashMap<>();
@@ -444,7 +444,7 @@ public class SegmentAdjudicationService {
 
   private void applyRingsideActions(@NonNull final Segment segment) {
     // Automated Ringside Actions
-    if (!SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
+    if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
       for (Wrestler w : segment.getWrestlers()) {
         Object supporter = ringsideActionService.getBestSupporter(segment, w);
         if (supporter != null) {
@@ -458,7 +458,7 @@ public class SegmentAdjudicationService {
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> winners,
       @NonNull final List<Wrestler> losers) {
-    if (!SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
+    if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
       if (segment.getIsTitleSegment()) {
         for (Title title : segment.getTitles()) {
           List<Wrestler> currentChampions = title.getCurrentChampions();
@@ -526,7 +526,7 @@ public class SegmentAdjudicationService {
             }
 
             // Promo bonus: +1 for shared spotlight
-            if (SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
+            if (WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
               affinityGain += 1;
             }
 
@@ -556,15 +556,15 @@ public class SegmentAdjudicationService {
     }
 
     // Add heat to rivalries
-    String segmentTypeName = segment.getSegmentType().getName();
-    boolean isPromo = SegmentTypeNames.PROMO.equals(segmentTypeName);
+    String segmentTypeCode = segment.getSegmentType().getCode();
+    boolean isPromo = WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
     boolean isAiTargeted = segment.getRivalryId() != null;
     final int heat = isPromo ? 4 : 1;
 
     // Skip all-pairs heat addition for Rumbles to avoid performance issues,
     // excessive rivalry creation, and because determining eliminations from
     // narration is complex. Bookers can manage these rivalries manually.
-    if (!SegmentTypeNames.ABU_DHABI_RUMBLE.equals(segmentTypeName)) {
+    if (!WellKnownSegmentType.ABU_DHABI_RUMBLE.matches(segment.getSegmentType())) {
       for (int i = 0; i < participants.size(); i++) {
         for (int j = i + 1; j < participants.size(); j++) {
           Wrestler wi = participants.get(i);
@@ -582,7 +582,7 @@ public class SegmentAdjudicationService {
           if (isPromo || isAiTargeted) {
             // Promos and AI-targeted segments may create a new rivalry if none exists.
             rivalryService.addHeatBetweenWrestlers(
-                wi.getId(), wj.getId(), heat, "From segment: " + segmentTypeName, universeId);
+                wi.getId(), wj.getId(), heat, "From segment: " + segmentTypeCode, universeId);
           } else {
             // Plain matches only add heat to an already-established rivalry; they do not
             // spawn new ones for every random pairing.
@@ -591,7 +591,7 @@ public class SegmentAdjudicationService {
                 .ifPresent(
                     r ->
                         rivalryService.addHeat(
-                            r.getId(), heat, "From segment: " + segmentTypeName));
+                            r.getId(), heat, "From segment: " + segmentTypeCode));
           }
         }
       }
@@ -663,48 +663,42 @@ public class SegmentAdjudicationService {
             segment.getId());
       } else {
         // Fall back to generic pair-scan when no rivalry was explicitly tagged.
-        switch (segment.getSegmentType().getName()) {
-          case SegmentTypeNames.TAG_TEAM:
-            attemptRivalryResolution(
-                segment.getWrestlers().get(0),
-                segment.getWrestlers().get(2),
-                threshold,
-                isPle,
-                segment.getShow().getId());
-            attemptRivalryResolution(
-                segment.getWrestlers().get(0),
-                segment.getWrestlers().get(3),
-                threshold,
-                isPle,
-                segment.getShow().getId());
-            attemptRivalryResolution(
-                segment.getWrestlers().get(1),
-                segment.getWrestlers().get(2),
-                threshold,
-                isPle,
-                segment.getShow().getId());
-            attemptRivalryResolution(
-                segment.getWrestlers().get(1),
-                segment.getWrestlers().get(3),
-                threshold,
-                isPle,
-                segment.getShow().getId());
-            break;
-          case SegmentTypeNames.ABU_DHABI_RUMBLE:
-          case SegmentTypeNames.ONE_ON_ONE:
-          case "Free-for-All":
-          default:
-            List<Wrestler> wrestlers = segment.getWrestlers();
-            if (!wrestlers.isEmpty()) {
-              Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
-              for (Wrestler other : wrestlers) {
-                if (!baseWrestler.equals(other)) {
-                  attemptRivalryResolution(
-                      baseWrestler, other, threshold, isPle, segment.getShow().getId());
-                }
+        if (WellKnownSegmentType.TAG_TEAM.matches(segment.getSegmentType())) {
+          attemptRivalryResolution(
+              segment.getWrestlers().get(0),
+              segment.getWrestlers().get(2),
+              threshold,
+              isPle,
+              segment.getShow().getId());
+          attemptRivalryResolution(
+              segment.getWrestlers().get(0),
+              segment.getWrestlers().get(3),
+              threshold,
+              isPle,
+              segment.getShow().getId());
+          attemptRivalryResolution(
+              segment.getWrestlers().get(1),
+              segment.getWrestlers().get(2),
+              threshold,
+              isPle,
+              segment.getShow().getId());
+          attemptRivalryResolution(
+              segment.getWrestlers().get(1),
+              segment.getWrestlers().get(3),
+              threshold,
+              isPle,
+              segment.getShow().getId());
+        } else {
+          List<Wrestler> wrestlers = segment.getWrestlers();
+          if (!wrestlers.isEmpty()) {
+            Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
+            for (Wrestler other : wrestlers) {
+              if (!baseWrestler.equals(other)) {
+                attemptRivalryResolution(
+                    baseWrestler, other, threshold, isPle, segment.getShow().getId());
               }
             }
-            break;
+          }
         }
       }
     }
@@ -767,7 +761,7 @@ public class SegmentAdjudicationService {
         }
 
         if (winners.contains(participant)
-            && SegmentTypeNames.ABU_DHABI_RUMBLE.equals(segment.getSegmentType().getName())) {
+            && WellKnownSegmentType.ABU_DHABI_RUMBLE.matches(segment.getSegmentType())) {
           legacyService.unlockAchievement(participant.getAccount(), "RUMBLE_WINNER");
         }
 
@@ -842,7 +836,7 @@ public class SegmentAdjudicationService {
     DiceBag d20 = new DiceBag(random, new int[] {20});
     int roll = d20.roll();
 
-    if (!SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
+    if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
       handleMatchRewards(segment, winners, losers, roll, difficultyMultiplier);
     } else {
       handlePromoRewards(segment, roll, difficultyMultiplier);
@@ -1143,7 +1137,7 @@ public class SegmentAdjudicationService {
   private Set<Long> applyWearAndTear(@NonNull final Segment segment) {
     Set<Long> bumpedIds = new HashSet<>();
 
-    if (SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())
+    if (WellKnownSegmentType.PROMO.matches(segment.getSegmentType())
         || !gameSettingService.isWearAndTearEnabled()) {
       return bumpedIds;
     }

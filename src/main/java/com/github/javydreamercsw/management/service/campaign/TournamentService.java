@@ -27,8 +27,8 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
@@ -285,7 +285,7 @@ public class TournamentService {
       // Determine Segment Type (Standard Match)
       SegmentType type =
           segmentTypeRepository
-              .findByName(SegmentTypeNames.ONE_ON_ONE)
+              .findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode())
               .orElseThrow(() -> new IllegalStateException("One on One segment type not found"));
 
       // Create Segment

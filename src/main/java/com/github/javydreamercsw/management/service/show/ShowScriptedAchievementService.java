@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -80,7 +80,7 @@ public class ShowScriptedAchievementService {
 
     List<Segment> promoSegments =
         segments.stream()
-            .filter(s -> SegmentTypeNames.PROMO.equals(s.getSegmentType().getName()))
+            .filter(s -> WellKnownSegmentType.PROMO.matches(s.getSegmentType()))
             .toList();
 
     List<Wrestler> promoParticipants =

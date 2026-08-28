@@ -30,5 +30,7 @@ public class SegmentTypeDTO {
   @JsonProperty("expansion_code")
   private String expansionCode;
 
+  private String code;
+
   private SegmentRulePlayGuide guide;
 }

@@ -22,7 +22,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -594,7 +594,7 @@ public class EditSegmentDialog extends Dialog {
           healthFields.clear();
           boolean isPromo =
               segmentTypeCombo.getValue() != null
-                  && SegmentTypeNames.PROMO.equalsIgnoreCase(segmentTypeCombo.getValue().getName());
+                  && WellKnownSegmentType.PROMO.matches(segmentTypeCombo.getValue());
           Set<Wrestler> allTeamWrestlers =
               teamCombos.stream().flatMap(c -> c.getValue().stream()).collect(Collectors.toSet());
           List<Wrestler> playerWrestlers =

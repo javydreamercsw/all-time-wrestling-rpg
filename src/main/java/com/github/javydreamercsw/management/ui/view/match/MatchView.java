@@ -41,7 +41,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.world.Arena;
@@ -247,7 +247,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void autoAssignRefereeIfNeeded() {
     boolean isPromo =
         segment.getSegmentType() != null
-            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
+            && WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
     if (isPromo || segment.getReferee() != null) {
       return;
     }
@@ -290,7 +290,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     boolean isPromo =
         segment.getSegmentType() != null
-            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
+            && WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
 
     // Initialize narrationArea
     narrationArea = new TextArea(isPromo ? "Promo Transcript" : "Match Story");
@@ -464,7 +464,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void buildMatchInterface(final Wrestler playerWrestler) {
     boolean isPromo =
         segment.getSegmentType() != null
-            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
+            && WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
 
     List<Wrestler> wrestlers = segment.getWrestlers();
     // Fall back to the show's universe when no universe is selected in the session.
@@ -1232,7 +1232,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
       String feedback = feedbackArea.getValue();
       String segmentType = segment.getSegmentType().getName();
-      boolean isPromo = SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType);
+      boolean isPromo = WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
 
       String instructions =
           "Narrate a compelling "

@@ -30,8 +30,8 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
@@ -79,17 +79,19 @@ class FactionWarBookingServiceTest {
             npcSegmentResolutionService);
 
     oneOnOne = new SegmentType();
-    oneOnOne.setName(SegmentTypeNames.ONE_ON_ONE);
+    oneOnOne.setName("One on One");
+    oneOnOne.setCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
 
     tagTeam = new SegmentType();
-    tagTeam.setName(SegmentTypeNames.TAG_TEAM);
+    tagTeam.setName("Tag Team");
+    tagTeam.setCode(WellKnownSegmentType.TAG_TEAM.getCode());
 
     show = new Show();
     show.setName("Faction War PLE");
 
-    when(segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE))
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
         .thenReturn(Optional.of(oneOnOne));
-    when(segmentTypeRepository.findByName(SegmentTypeNames.TAG_TEAM))
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.TAG_TEAM.getCode()))
         .thenReturn(Optional.of(tagTeam));
     when(factionRivalryService.getActiveFactionRivalries()).thenReturn(List.of());
     when(multiWrestlerFeudService.getInterFactionFeuds()).thenReturn(List.of());
@@ -98,7 +100,7 @@ class FactionWarBookingServiceTest {
 
   @Test
   void generateFactionWarSegments_returnsEmptyWhenNoOneOnOneType() {
-    when(segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE))
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
         .thenReturn(Optional.empty());
 
     List<Segment> result = service.generateFactionWarSegments(show, 5);

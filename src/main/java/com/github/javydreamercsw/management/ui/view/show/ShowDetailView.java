@@ -38,7 +38,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -732,8 +732,7 @@ public class ShowDetailView extends Main
     Long mainEventId = null;
     for (int i = segments.size() - 1; i >= 0; i--) {
       Segment s = segments.get(i);
-      if (s.getSegmentType() == null
-          || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+      if (s.getSegmentType() == null || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
         mainEventId = s.getId();
         break;
       }
@@ -1069,7 +1068,7 @@ public class ShowDetailView extends Main
               for (int i = segmentOrder.size() - 1; i >= 0; i--) {
                 Segment s = segmentOrder.get(i);
                 if (s.getSegmentType() == null
-                    || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+                    || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
                   mainEventId = s.getId();
                   break;
                 }
@@ -1176,7 +1175,7 @@ public class ShowDetailView extends Main
               for (int i = snapshot.size() - 1; i >= 0; i--) {
                 Segment s = snapshot.get(i);
                 if (s.getSegmentType() == null
-                    || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+                    || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
                   mainEventIdx = i;
                   break;
                 }
@@ -1317,8 +1316,7 @@ public class ShowDetailView extends Main
     deleteButton.addClickListener(e -> deleteSegment(segment));
 
     SegmentType segmentType = segment.getSegmentType();
-    boolean isMatch =
-        segmentType != null && !SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName());
+    boolean isMatch = segmentType != null && !WellKnownSegmentType.PROMO.matches(segmentType);
     Button qrButton = new Button(new Icon(VaadinIcon.QRCODE));
     qrButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     qrButton.setTooltipText("Share Match QR Code");
@@ -1807,8 +1805,7 @@ public class ShowDetailView extends Main
                                   notificationService.showError("Please select a segment type");
                                   return;
                                 }
-                                if (!SegmentTypeNames.PROMO.equalsIgnoreCase(
-                                    saveData.segmentType().getName())) {
+                                if (!WellKnownSegmentType.PROMO.matches(saveData.segmentType())) {
                                   if (wrestlers.isEmpty()) {
                                     notificationService.showError(
                                         "Please select at least one wrestler");
@@ -1963,7 +1960,7 @@ public class ShowDetailView extends Main
       return false;
     }
 
-    if (!SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName())) {
+    if (!WellKnownSegmentType.PROMO.matches(segmentType)) {
       if (wrestlers.isEmpty()) {
         log.debug("Validation failed: Wrestlers are null or empty for non-promo segment.");
         notificationService.showError("Please select at least one wrestler");
