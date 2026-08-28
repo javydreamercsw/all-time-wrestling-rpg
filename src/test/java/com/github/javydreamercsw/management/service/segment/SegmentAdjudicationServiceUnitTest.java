@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -51,6 +52,7 @@ import com.github.javydreamercsw.management.service.relationship.WrestlerRelatio
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -65,6 +67,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class SegmentAdjudicationServiceUnitTest {
@@ -221,5 +225,74 @@ class SegmentAdjudicationServiceUnitTest {
     // Unstubbed getCurrentUniverseId() returns null (default for Long)
 
     assertDoesNotThrow(() -> service.adjudicateMatch(matchSegment));
+  }
+
+  // ── Contender automation hooks ─────────────────────────────────────────────
+
+  @Test
+  void testAdjudicateMatch_ContenderMatch_DesignatesWinnerAsContender() {
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    lenient().when(gameSettingService.getContenderMatchFanMultiplier()).thenReturn(1.5);
+    lenient().when(gameSettingService.getContenderMatchHeatBonus()).thenReturn(10);
+
+    Title title = new Title();
+    title.setName("World Title");
+    matchSegment.setContenderMatch(true);
+    matchSegment.getTitles().add(title);
+    matchSegment.setWinners(java.util.List.of(wrestler1));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(contenderSelectionService).designateAsContender(title, wrestler1);
+    verify(contenderSelectionService, never()).autoSelectNextContender(any());
+  }
+
+  @Test
+  void testAdjudicateMatch_TitleSegment_AutoSelectsNextContender() {
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    ReflectionTestUtils.setField(
+        adjudicationService, "eventPublisher", mock(ApplicationEventPublisher.class));
+
+    Title title = new Title();
+    title.setName("World Title");
+    matchSegment.setIsTitleSegment(true);
+    matchSegment.getTitles().add(title);
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(contenderSelectionService).autoSelectNextContender(title);
+    verify(contenderSelectionService, never()).designateAsContender(any(), any());
+  }
+
+  @Test
+  void testAdjudicateMatch_ContenderMatch_AddsHeatBonusToExistingRivalry() {
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    lenient().when(gameSettingService.getContenderMatchFanMultiplier()).thenReturn(1.5);
+    lenient().when(gameSettingService.getContenderMatchHeatBonus()).thenReturn(10);
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(99L);
+    when(rivalryService.getRivalryBetweenWrestlers(wrestler1.getId(), wrestler2.getId()))
+        .thenReturn(Optional.of(rivalry));
+
+    matchSegment.setContenderMatch(true);
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(rivalryService).addHeat(eq(99L), eq(10), eq("Number one contender match"));
+  }
+
+  @Test
+  void testAdjudicateMatch_ContenderMatch_NullService_DoesNotThrow() {
+    // contenderSelectionService is not injected (unit-test construction) — must be a no-op.
+    lenient().when(gameSettingService.getContenderMatchFanMultiplier()).thenReturn(1.5);
+    lenient().when(gameSettingService.getContenderMatchHeatBonus()).thenReturn(10);
+    matchSegment.setContenderMatch(true);
+    matchSegment.setWinners(java.util.List.of(wrestler1));
+
+    assertDoesNotThrow(() -> adjudicationService.adjudicateMatch(matchSegment));
   }
 }
