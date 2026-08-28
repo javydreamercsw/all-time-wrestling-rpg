@@ -16,14 +16,51 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
 
+  @Autowired private RivalryService rivalryService;
+  @Autowired private WrestlerRepository wrestlerRepository;
+
+  /**
+   * The docs data initializer does not seed rivalries, so each capture creates (or reuses) one
+   * deterministically instead of depending on grid content.
+   */
+  private Rivalry ensureRivalry() {
+    List<Rivalry> active = rivalryService.getActiveRivalries();
+    if (!active.isEmpty()) {
+      return active.get(0);
+    }
+    List<Wrestler> wrestlers = wrestlerRepository.findAll();
+    Wrestler wrestler1 =
+        wrestlers.isEmpty()
+            ? wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Feud Wrestler 1"))
+            : wrestlers.get(0);
+    Wrestler wrestler2 =
+        wrestlers.size() > 1
+            ? wrestlers.get(1)
+            : wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Feud Wrestler 2"));
+    Rivalry rivalry =
+        rivalryService
+            .createRivalry(
+                wrestler1.getId(), wrestler2.getId(), "A grudge that has boiled over for months.")
+            .orElseThrow();
+    rivalryService.addHeat(rivalry.getId(), 40, "Docs seed heat");
+    return rivalry;
+  }
+
   @Test
   void captureRivalryListView() {
+    ensureRivalry();
     navigateTo("rivalry-list");
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     documentFeature(
@@ -36,17 +73,10 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void captureRivalryDetailView() {
-    navigateTo("rivalry-list");
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    Rivalry rivalry = ensureRivalry();
+    navigateTo("rivalry/" + rivalry.getId());
 
-    // Click the first row to open the detail view
-    driver.findElements(By.cssSelector("vaadin-grid-cell-content")).stream()
-        .filter(e -> !e.getText().isBlank())
-        .findFirst()
-        .ifPresent(WebElement::click);
-
-    waitForVaadinElement(
-        driver, By.xpath("//*[contains(@class,'rivalry-detail') or contains(.,'vs')]"));
+    waitForVaadinElement(driver, By.xpath("//h2[contains(text(),' vs ')]"));
     documentFeature(
         "Booker",
         "Rivalry Detail",
@@ -57,16 +87,11 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void captureStoryArcWizard() {
-    navigateTo("rivalry-list");
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    Rivalry rivalry = ensureRivalry();
+    navigateTo("rivalry/" + rivalry.getId());
 
-    driver.findElements(By.cssSelector("vaadin-grid-cell-content")).stream()
-        .filter(e -> !e.getText().isBlank())
-        .findFirst()
-        .ifPresent(WebElement::click);
-
-    waitForVaadinElement(driver, By.xpath("//*[text()='Story Arc']"));
-    driver.findElement(By.xpath("//*[text()='Story Arc']")).click();
+    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
+    clickElement(By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
 
     waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 1')]"));
     documentFeature(
