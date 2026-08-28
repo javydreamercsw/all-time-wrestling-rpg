@@ -81,6 +81,7 @@ public class FeudScriptWizardDialog extends Dialog {
   // Nav
   private Button backButton;
   private Button nextButton;
+  private Button cancelButton;
   private H3 stepTitle;
 
   public FeudScriptWizardDialog(
@@ -97,7 +98,7 @@ public class FeudScriptWizardDialog extends Dialog {
     this.feudScriptService = feudScriptService;
     this.onComplete = onComplete;
 
-    setWidth("min(1100px, 95vw)");
+    setWidth("min(1400px, 98vw)");
     setHeight("min(90vh, 90vh)");
     setDraggable(true);
     setResizable(true);
@@ -110,12 +111,17 @@ public class FeudScriptWizardDialog extends Dialog {
     nextButton = new Button("Next", e -> navigateForward());
     nextButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     backButton.setVisible(false);
+    cancelButton = new Button("Cancel", e -> close());
+    cancelButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
     content.setPadding(false);
     content.setSpacing(true);
     content.setSizeFull();
 
-    add(stepTitle, content, new HorizontalLayout(backButton, nextButton));
+    HorizontalLayout navBar = new HorizontalLayout(cancelButton, backButton, nextButton);
+    navBar.setWidthFull();
+    navBar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+    add(stepTitle, content, navBar);
     renderStep1();
   }
 
