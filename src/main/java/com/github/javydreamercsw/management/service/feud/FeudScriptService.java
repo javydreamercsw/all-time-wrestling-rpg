@@ -162,6 +162,52 @@ public class FeudScriptService {
     return saved;
   }
 
+  /**
+   * Automatically finds and completes the first PENDING beat whose rivalry wrestlers both appear in
+   * the segment's participants. Called after a segment is saved with results. Returns the linked
+   * beat if one was matched and completed, otherwise empty.
+   */
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
+  public Optional<FeudScriptBeat> autoCompleteBeatForSegment(@NonNull Segment segment) {
+    List<Long> wrestlerIds =
+        segment.getParticipants().stream()
+            .map(p -> p.getWrestler().getId())
+            .collect(Collectors.toList());
+    if (wrestlerIds.size() < 2) {
+      return Optional.empty();
+    }
+    List<FeudScriptBeat> matches =
+        feudScriptBeatRepository.findPendingBeatsForWrestlers(wrestlerIds);
+    if (matches.isEmpty()) {
+      return Optional.empty();
+    }
+    FeudScriptBeat beat = matches.get(0);
+    beat.setActualSegment(segment);
+    beat.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
+    FeudScriptBeat saved = feudScriptBeatRepository.save(beat);
+
+    FeudScript script = saved.getScript();
+    boolean allDone =
+        script.getBeats().stream()
+            .allMatch(
+                b ->
+                    b.getBeatStatus() == FeudScriptBeatStatus.COMPLETED
+                        || b.getBeatStatus() == FeudScriptBeatStatus.SKIPPED);
+    if (allDone) {
+      script.setStatus(FeudScriptStatus.COMPLETED);
+      feudScriptRepository.save(script);
+    }
+    log.info(
+        "Auto-completed beat #{} of arc '{}' for segment {}",
+        saved.getBeatOrder(),
+        script.getName(),
+        segment.getId());
+    return Optional.of(saved);
+  }
+
   /** Marks a beat as completed and checks if the whole script is now complete. */
   @Transactional
   @PreAuthorize(

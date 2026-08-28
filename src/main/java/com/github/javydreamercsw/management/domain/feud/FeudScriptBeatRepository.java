@@ -35,4 +35,16 @@ public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, 
   List<FeudScriptBeat> findPendingBeatsForShow(@Param("showId") Long showId);
 
   Optional<FeudScriptBeat> findByActualSegment(Segment segment);
+
+  /** Find the first pending beat whose rivalry wrestlers are both present in the given ID set. */
+  @Query(
+      "SELECT b FROM FeudScriptBeat b"
+          + " JOIN b.script s"
+          + " JOIN s.rivalry r"
+          + " WHERE b.beatStatus = 'PENDING'"
+          + " AND s.status = 'ACTIVE'"
+          + " AND r.wrestler1.id IN :wrestlerIds"
+          + " AND r.wrestler2.id IN :wrestlerIds"
+          + " ORDER BY b.beatOrder ASC")
+  List<FeudScriptBeat> findPendingBeatsForWrestlers(@Param("wrestlerIds") List<Long> wrestlerIds);
 }

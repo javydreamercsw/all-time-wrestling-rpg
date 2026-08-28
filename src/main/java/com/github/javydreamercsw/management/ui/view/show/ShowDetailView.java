@@ -95,6 +95,8 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -1847,14 +1849,34 @@ public class ShowDetailView extends Main
                                 }
                                 // Async DB write
                                 dialogHolder[0].getSaveButton().setEnabled(false);
+                                java.util.Optional<?>[] linkedBeatHolder =
+                                    new java.util.Optional[] {java.util.Optional.empty()};
                                 GeneralSecurityUtils.runAsAdminAsync(
-                                        () -> segmentService.updateSegment(seg))
+                                        () -> {
+                                          segmentService.updateSegment(seg);
+                                          linkedBeatHolder[0] =
+                                              feudScriptService.autoCompleteBeatForSegment(seg);
+                                        })
                                     .thenRun(
                                         () ->
                                             ui.access(
                                                 () -> {
                                                   notificationService.showSuccess(
                                                       "Segment updated successfully!");
+                                                  linkedBeatHolder[0].ifPresent(
+                                                      b -> {
+                                                        FeudScriptBeat beat = (FeudScriptBeat) b;
+                                                        Notification.show(
+                                                                "Story arc beat #"
+                                                                    + beat.getBeatOrder()
+                                                                    + " of \""
+                                                                    + beat.getScript().getName()
+                                                                    + "\" auto-completed!",
+                                                                4000,
+                                                                Notification.Position.BOTTOM_END)
+                                                            .addThemeVariants(
+                                                                NotificationVariant.LUMO_SUCCESS);
+                                                      });
                                                   dialogHolder[0].close();
                                                   refreshSegmentsGrid();
                                                 }))
