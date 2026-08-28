@@ -93,7 +93,7 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
   public void setParameter(BeforeEvent event, Long rivalryId) {
     content.removeAll();
     rivalryService
-        .getRivalryById(rivalryId)
+        .getRivalryByIdWithWrestlers(rivalryId)
         .ifPresentOrElse(this::buildView, () -> showNotFound(rivalryId));
   }
 

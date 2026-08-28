@@ -339,6 +339,13 @@ public class RivalryService {
     return rivalryRepository.findById(rivalryId);
   }
 
+  /** Loads a rivalry by ID with wrestlers eagerly fetched — safe to use outside a transaction. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Rivalry> getRivalryByIdWithWrestlers(@NonNull final Long rivalryId) {
+    return rivalryRepository.findByIdWithWrestlers(rivalryId);
+  }
+
   /**
    * Get a rivalry by ID and return it as a DTO.
    *
