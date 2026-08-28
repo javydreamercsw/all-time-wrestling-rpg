@@ -60,6 +60,7 @@ src/main/resources/META-INF/resources/images/generated/
 
 # Beads internal state
 .beads/backup/
+.beads.backup-pre-recovery/
 .beads/dolt-server.*
 .beads/interactions.jsonl
 .beads/last-touched
