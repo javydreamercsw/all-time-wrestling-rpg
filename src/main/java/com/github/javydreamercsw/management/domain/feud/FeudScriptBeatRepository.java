@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.feud;
 
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +33,18 @@ public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, 
           + " AND b.script.status = 'ACTIVE'"
           + " ORDER BY b.script.id, b.beatOrder")
   List<FeudScriptBeat> findPendingBeatsForShow(@Param("showId") Long showId);
+
+  Optional<FeudScriptBeat> findByActualSegment(Segment segment);
+
+  /** Find the first pending beat whose rivalry wrestlers are both present in the given ID set. */
+  @Query(
+      "SELECT b FROM FeudScriptBeat b"
+          + " JOIN b.script s"
+          + " JOIN s.rivalry r"
+          + " WHERE b.beatStatus = 'PENDING'"
+          + " AND s.status = 'ACTIVE'"
+          + " AND r.wrestler1.id IN :wrestlerIds"
+          + " AND r.wrestler2.id IN :wrestlerIds"
+          + " ORDER BY b.beatOrder ASC")
+  List<FeudScriptBeat> findPendingBeatsForWrestlers(@Param("wrestlerIds") List<Long> wrestlerIds);
 }

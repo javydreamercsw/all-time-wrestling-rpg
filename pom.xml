@@ -959,6 +959,8 @@
               <excludes>
                 <exclude>target/**</exclude>
                 <exclude>docs/site/node_modules/**</exclude>
+                <!-- Prettier strips YAML frontmatter indentation in this file; manage manually -->
+                <exclude>docs/site/index.md</exclude>
               </excludes>
               <prettier>
                 <prettierVersion>3.3.3</prettierVersion>

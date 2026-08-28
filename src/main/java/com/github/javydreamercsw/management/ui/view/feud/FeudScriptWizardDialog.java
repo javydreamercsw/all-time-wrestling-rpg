@@ -81,6 +81,7 @@ public class FeudScriptWizardDialog extends Dialog {
   // Nav
   private Button backButton;
   private Button nextButton;
+  private Button cancelButton;
   private H3 stepTitle;
 
   public FeudScriptWizardDialog(
@@ -97,7 +98,11 @@ public class FeudScriptWizardDialog extends Dialog {
     this.feudScriptService = feudScriptService;
     this.onComplete = onComplete;
 
-    setWidth("700px");
+    setWidth("min(1400px, 98vw)");
+    setHeight("min(90vh, 90vh)");
+    setDraggable(true);
+    setResizable(true);
+    setModal(false);
     setCloseOnEsc(true);
     setCloseOnOutsideClick(false);
 
@@ -106,11 +111,17 @@ public class FeudScriptWizardDialog extends Dialog {
     nextButton = new Button("Next", e -> navigateForward());
     nextButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     backButton.setVisible(false);
+    cancelButton = new Button("Cancel", e -> close());
+    cancelButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
     content.setPadding(false);
     content.setSpacing(true);
+    content.setSizeFull();
 
-    add(stepTitle, content, new HorizontalLayout(backButton, nextButton));
+    HorizontalLayout navBar = new HorizontalLayout(cancelButton, backButton, nextButton);
+    navBar.setWidthFull();
+    navBar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+    add(stepTitle, content, navBar);
     renderStep1();
   }
 
@@ -170,6 +181,7 @@ public class FeudScriptWizardDialog extends Dialog {
     beatContainer = new VerticalLayout();
     beatContainer.setPadding(false);
     beatContainer.setSpacing(false);
+    beatContainer.setSizeFull();
 
     Button addBeatButton = new Button("+ Add Beat", e -> addBeatRow());
     addBeatButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -265,12 +277,12 @@ public class FeudScriptWizardDialog extends Dialog {
       segmentTypeCombo = new ComboBox<>("Match Type");
       segmentTypeCombo.setItems(types);
       segmentTypeCombo.setRequired(true);
-      segmentTypeCombo.setWidth("200px");
+      segmentTypeCombo.setWidth("250px");
 
       segmentRuleCombo = new ComboBox<>("Stipulation");
       segmentRuleCombo.setItems(rules);
       segmentRuleCombo.setPlaceholder("None");
-      segmentRuleCombo.setWidth("180px");
+      segmentRuleCombo.setWidth("220px");
       segmentRuleCombo.setClearButtonVisible(true);
 
       winnerControlRadio = new RadioButtonGroup<>("Winner");
@@ -290,7 +302,7 @@ public class FeudScriptWizardDialog extends Dialog {
       notesField = new TextArea("Story Notes");
       notesField.setPlaceholder("Context for the AI narrator…");
       notesField.setWidthFull();
-      notesField.setMaxHeight("80px");
+      notesField.setMaxHeight("120px");
 
       Button removeBtn = new Button("Remove", ev -> removeRow(this));
       removeBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -37,7 +36,7 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
     navigateTo("deck-list");
 
     // Check that the grid is present
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
     assertNotNull(driver.findElement(By.tagName("vaadin-grid")));
   }
@@ -45,7 +44,7 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
   @Test
   public void testGridSize() {
     navigateTo("deck-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
     // Check that the grid is present
     WebElement grid =

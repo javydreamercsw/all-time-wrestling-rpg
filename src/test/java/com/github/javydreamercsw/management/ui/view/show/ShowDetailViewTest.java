@@ -33,6 +33,8 @@ import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -75,12 +77,16 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistor
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.Location;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -125,6 +131,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private ExpansionService expansionService;
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private TeamService teamService;
+  @Mock private FeudScriptService feudScriptService;
 
   @BeforeEach
   public void setUp() {
@@ -316,6 +323,56 @@ class ShowDetailViewTest extends AbstractViewTest {
     assertThat(addSegment.isVisible()).isTrue();
   }
 
+  @Test
+  void deleteSegment_arcLinked_dialogMentionsArcName() {
+    Segment segment = new Segment();
+    segment.setId(77L);
+
+    FeudScript script = new FeudScript();
+    script.setName("The Bloodline Saga");
+
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setScript(script);
+    beat.setBeatOrder(2);
+    beat.setActualSegment(segment);
+
+    Mockito.when(feudScriptService.findBeatForSegment(segment)).thenReturn(Optional.of(beat));
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.invokeMethod(view, "deleteSegment", segment);
+
+    Dialog dialog = LocatorJ._get(Dialog.class);
+    String dialogText =
+        dialog
+            .getChildren()
+            .filter(c -> c instanceof Paragraph)
+            .map(c -> ((Paragraph) c).getText())
+            .collect(Collectors.joining(" "));
+    assertThat(dialogText).contains("The Bloodline Saga");
+    assertThat(dialogText).contains("beat #2");
+  }
+
+  @Test
+  void deleteSegment_notArcLinked_genericConfirmDialog() {
+    Segment segment = new Segment();
+    segment.setId(88L);
+
+    Mockito.when(feudScriptService.findBeatForSegment(segment)).thenReturn(Optional.empty());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.invokeMethod(view, "deleteSegment", segment);
+
+    Dialog dialog = LocatorJ._get(Dialog.class);
+    String dialogText =
+        dialog
+            .getChildren()
+            .filter(c -> c instanceof Paragraph)
+            .map(c -> ((Paragraph) c).getText())
+            .collect(Collectors.joining(" "));
+    assertThat(dialogText).doesNotContain("Story Arc");
+    assertThat(dialogText).contains("Are you sure");
+  }
+
   private ShowDetailView buildView(final SecurityUtils su) {
     ShowFacade showFacade =
         new ShowFacade(
@@ -327,7 +384,7 @@ class ShowDetailViewTest extends AbstractViewTest {
             narrationParserService,
             npcService,
             mock(DramaEventService.class),
-            mock(FeudScriptService.class));
+            feudScriptService);
     ShowContextFacade showContextFacade =
         new ShowContextFacade(
             showTypeService,

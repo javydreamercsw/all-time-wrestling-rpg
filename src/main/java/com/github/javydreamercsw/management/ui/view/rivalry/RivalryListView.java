@@ -21,17 +21,11 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
-import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
-import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.ui.view.feud.FeudScriptWizardDialog;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -50,7 +44,6 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 
 @Route("rivalry-list")
@@ -62,11 +55,7 @@ public class RivalryListView extends Main {
   private final RivalryService rivalryService;
   private final RivalryRepository rivalryRepository;
   private final WrestlerService wrestlerService;
-  private final WrestlerRepository wrestlerRepository;
   private final SecurityUtils securityUtils;
-  private final FeudScriptService feudScriptService;
-  private final SegmentTypeService segmentTypeService;
-  private final SegmentRuleService segmentRuleService;
 
   final Grid<RivalryDTO> rivalryGrid;
 
@@ -74,54 +63,57 @@ public class RivalryListView extends Main {
       @NonNull final RivalryService rivalryService,
       @NonNull final RivalryRepository rivalryRepository,
       @NonNull final WrestlerService wrestlerService,
-      @NonNull final WrestlerRepository wrestlerRepository,
-      @NonNull final SecurityUtils securityUtils,
-      @NonNull final FeudScriptService feudScriptService,
-      @NonNull final SegmentTypeService segmentTypeService,
-      @NonNull final SegmentRuleService segmentRuleService) {
+      @NonNull final SecurityUtils securityUtils) {
     this.rivalryService = rivalryService;
     this.rivalryRepository = rivalryRepository;
     this.wrestlerService = wrestlerService;
-    this.wrestlerRepository = wrestlerRepository;
     this.securityUtils = securityUtils;
-    this.feudScriptService = feudScriptService;
-    this.segmentTypeService = segmentTypeService;
-    this.segmentRuleService = segmentRuleService;
 
     List<Wrestler> allWrestlers =
         wrestlerService.getAllWrestlers().stream()
             .sorted(Comparator.comparing(Wrestler::getName))
-            .collect(Collectors.toList());
-
-    ComboBox<Wrestler> wrestler1ComboBox = new ComboBox<>("Wrestler 1");
-    wrestler1ComboBox.setItems(allWrestlers);
-    wrestler1ComboBox.setItemLabelGenerator(Wrestler::getName);
-
-    ComboBox<Wrestler> wrestler2ComboBox = new ComboBox<>("Wrestler 2");
-    wrestler2ComboBox.setItems(allWrestlers);
-    wrestler2ComboBox.setItemLabelGenerator(Wrestler::getName);
-
-    TextField storylineNotes = new TextField("Storyline Notes");
+            .toList();
 
     rivalryGrid = new Grid<>();
 
-    Button createButton =
+    Button newRivalryButton =
         new Button(
-            "Create",
-            event -> {
-              rivalryService.createRivalry(
-                  wrestler1ComboBox.getValue().getId(),
-                  wrestler2ComboBox.getValue().getId(),
-                  storylineNotes.getValue());
-              rivalryGrid.getDataProvider().refreshAll();
-              wrestler1ComboBox.clear();
-              wrestler2ComboBox.clear();
-              storylineNotes.clear();
-              Notification.show("Rivalry created", 2000, Notification.Position.BOTTOM_END)
-                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            "New Rivalry",
+            e -> {
+              ComboBox<Wrestler> w1 = new ComboBox<>("Wrestler 1");
+              w1.setItems(allWrestlers);
+              w1.setItemLabelGenerator(Wrestler::getName);
+              ComboBox<Wrestler> w2 = new ComboBox<>("Wrestler 2");
+              w2.setItems(allWrestlers);
+              w2.setItemLabelGenerator(Wrestler::getName);
+              TextField notes = new TextField("Storyline Notes");
+              notes.setWidthFull();
+
+              Dialog createDialog = new Dialog();
+              createDialog.setHeaderTitle("New Rivalry");
+              Button saveBtn =
+                  new Button(
+                      "Create",
+                      ev -> {
+                        if (w1.getValue() == null || w2.getValue() == null) {
+                          return;
+                        }
+                        rivalryService.createRivalry(
+                            w1.getValue().getId(), w2.getValue().getId(), notes.getValue());
+                        rivalryGrid.getDataProvider().refreshAll();
+                        createDialog.close();
+                        Notification.show("Rivalry created", 2000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      });
+              saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+              Button cancelBtn = new Button("Cancel", ev -> createDialog.close());
+              cancelBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+              createDialog.add(new VerticalLayout(w1, w2, notes));
+              createDialog.getFooter().add(cancelBtn, saveBtn);
+              createDialog.open();
             });
-    createButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    createButton.setVisible(securityUtils.canCreate());
+    newRivalryButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    newRivalryButton.setVisible(securityUtils.canCreate());
 
     rivalryGrid.setItems(
         query ->
@@ -202,47 +194,9 @@ public class RivalryListView extends Main {
             })
         .setHeader("Delete");
 
-    if (securityUtils.canCreate()) {
-      rivalryGrid
-          .addComponentColumn(
-              rivalry -> {
-                Button scriptButton = new Button("Story Arc");
-                scriptButton.addClickListener(
-                    e -> {
-                      List<Wrestler> wrestlers =
-                          List.of(
-                              wrestlerService
-                                  .findById(rivalry.getWrestler1().getId())
-                                  .orElseThrow(),
-                              wrestlerService
-                                  .findById(rivalry.getWrestler2().getId())
-                                  .orElseThrow());
-                      List<String> typeNames =
-                          segmentTypeService.findAll().stream()
-                              .map(SegmentType::getName)
-                              .sorted()
-                              .collect(Collectors.toList());
-                      List<String> ruleNames =
-                          segmentRuleService.findAll().stream()
-                              .map(SegmentRule::getName)
-                              .sorted()
-                              .collect(Collectors.toList());
-                      FeudScriptWizardDialog dialog =
-                          new FeudScriptWizardDialog(
-                              allWrestlers,
-                              typeNames,
-                              ruleNames,
-                              feudScriptService.getDefaultMaxPleAppearances(),
-                              feudScriptService,
-                              null);
-                      dialog.preSelectWrestlers(wrestlers);
-                      dialog.open();
-                    });
-                return scriptButton;
-              })
-          .setHeader("Story Arc");
-    }
-
+    rivalryGrid.addItemClickListener(
+        e -> UI.getCurrent().navigate(RivalryDetailView.class, e.getItem().getId()));
+    rivalryGrid.getStyle().set("cursor", "pointer");
     rivalryGrid.setSizeFull();
 
     setSizeFull();
@@ -254,11 +208,7 @@ public class RivalryListView extends Main {
         LumoUtility.Gap.SMALL);
 
     if (securityUtils.canCreate()) {
-      add(
-          new ViewToolbar(
-              "Rivalry List",
-              ViewToolbar.group(
-                  wrestler1ComboBox, wrestler2ComboBox, storylineNotes, createButton)));
+      add(new ViewToolbar("Rivalry List", ViewToolbar.group(newRivalryButton)));
     } else {
       add(new ViewToolbar("Rivalry List"));
     }

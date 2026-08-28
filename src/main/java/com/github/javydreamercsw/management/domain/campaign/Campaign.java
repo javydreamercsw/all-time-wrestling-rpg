@@ -55,8 +55,15 @@ public class Campaign {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /**
+   * Lazy association: excluded from equals/hashCode/toString so that hashing a detached Campaign
+   * (e.g. Vaadin's grid KeyMapper during a WebSocket push flush) never triggers a
+   * LazyInitializationException on the uninitialized proxy.
+   */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "universe_id")
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
   private Universe universe;
 
   @ManyToOne
@@ -79,7 +86,10 @@ public class Campaign {
   @ToString.Exclude
   private CampaignState state;
 
+  /** Lazy collection: excluded from equals/hashCode/toString for the same reason as universe. */
   @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
   private List<BackstageActionHistory> actionHistory = new ArrayList<>();
 }

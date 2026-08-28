@@ -33,7 +33,9 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +63,12 @@ public class FeudScriptService {
     return feudScriptRepository.findByRivalryAndStatus(rivalry, FeudScriptStatus.ACTIVE);
   }
 
+  /** Returns all scripts for a rivalry (any status) with beats eagerly loaded. */
+  @Transactional(readOnly = true)
+  public List<FeudScript> getScriptsWithBeatsForRivalry(@NonNull Rivalry rivalry) {
+    return feudScriptRepository.findByRivalryWithBeats(rivalry);
+  }
+
   public List<FeudScript> getActiveScriptsForFeud(@NonNull MultiWrestlerFeud feud) {
     return feudScriptRepository.findByFeudAndStatus(feud, FeudScriptStatus.ACTIVE);
   }
@@ -76,6 +84,14 @@ public class FeudScriptService {
   /** Maps pending beats for a show to DTOs suitable for the AI prompt. */
   public List<FeudScriptBeatDTO> getUpcomingBeatDTOsForShow(@NonNull Show show) {
     return getUpcomingBeatsForShow(show).stream().map(this::toDTO).collect(Collectors.toList());
+  }
+
+  /** Returns the beat that produced a given segment, if any (used for UI warnings). */
+  public Optional<FeudScriptBeat> findBeatForSegment(@NonNull Segment segment) {
+    if (segment.getId() == null) {
+      return Optional.empty();
+    }
+    return feudScriptBeatRepository.findByActualSegment(segment);
   }
 
   // ── Creation from wizard ─────────────────────────────────────────────────
@@ -147,6 +163,52 @@ public class FeudScriptService {
     return saved;
   }
 
+  /**
+   * Automatically finds and completes the first PENDING beat whose rivalry wrestlers both appear in
+   * the segment's participants. Called after a segment is saved with results. Returns the linked
+   * beat if one was matched and completed, otherwise empty.
+   */
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
+  public Optional<FeudScriptBeat> autoCompleteBeatForSegment(@NonNull Segment segment) {
+    List<Long> wrestlerIds =
+        segment.getParticipants().stream()
+            .map(p -> p.getWrestler().getId())
+            .collect(Collectors.toList());
+    if (wrestlerIds.size() < 2) {
+      return Optional.empty();
+    }
+    List<FeudScriptBeat> matches =
+        feudScriptBeatRepository.findPendingBeatsForWrestlers(wrestlerIds);
+    if (matches.isEmpty()) {
+      return Optional.empty();
+    }
+    FeudScriptBeat beat = matches.get(0);
+    beat.setActualSegment(segment);
+    beat.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
+    FeudScriptBeat saved = feudScriptBeatRepository.save(beat);
+
+    FeudScript script = saved.getScript();
+    boolean allDone =
+        script.getBeats().stream()
+            .allMatch(
+                b ->
+                    b.getBeatStatus() == FeudScriptBeatStatus.COMPLETED
+                        || b.getBeatStatus() == FeudScriptBeatStatus.SKIPPED);
+    if (allDone) {
+      script.setStatus(FeudScriptStatus.COMPLETED);
+      feudScriptRepository.save(script);
+    }
+    log.info(
+        "Auto-completed beat #{} of arc '{}' for segment {}",
+        saved.getBeatOrder(),
+        script.getName(),
+        segment.getId());
+    return Optional.of(saved);
+  }
+
   /** Marks a beat as completed and checks if the whole script is now complete. */
   @Transactional
   @PreAuthorize(
@@ -174,6 +236,42 @@ public class FeudScriptService {
   /** Returns the default PLE cap from settings (1–3, defaults to 3). */
   public int getDefaultMaxPleAppearances() {
     return gameSettingService.getMaxPleFeudAppearances();
+  }
+
+  // ── Edit / cancel ─────────────────────────────────────────────────────────
+
+  /** Updates the arc name and PLE cap. */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public FeudScript updateScript(
+      @NonNull FeudScript script, @NonNull String name, int maxPleAppearances) {
+    script.setName(name.trim());
+    script.setMaxPleAppearances(Math.min(Math.max(maxPleAppearances, 1), 3));
+    return feudScriptRepository.save(script);
+  }
+
+  /** Removes a beat and renumbers the remaining beats in order. */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void removeBeat(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
+    script.getBeats().remove(beat);
+    feudScriptBeatRepository.delete(beat);
+    int order = 1;
+    for (FeudScriptBeat remaining :
+        script.getBeats().stream()
+            .sorted(Comparator.comparing(FeudScriptBeat::getBeatOrder))
+            .collect(Collectors.toList())) {
+      remaining.setBeatOrder(order++);
+      feudScriptBeatRepository.save(remaining);
+    }
+  }
+
+  /** Marks the arc as CANCELLED. Beats remain for historical reference. */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void cancelScript(@NonNull FeudScript script) {
+    script.setStatus(FeudScriptStatus.CANCELLED);
+    feudScriptRepository.save(script);
   }
 
   // ── Internal helpers ─────────────────────────────────────────────────────

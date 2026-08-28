@@ -19,17 +19,14 @@ package com.github.javydreamercsw.management.ui.view.rivalry;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
-import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -45,36 +42,19 @@ class RivalryListViewTest extends AbstractViewTest {
   @Mock private RivalryService rivalryService;
   @Mock private RivalryRepository rivalryRepository;
   @Mock private WrestlerService wrestlerService;
-  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
   @Mock private RivalryMapper rivalryMapper;
-  @Mock private FeudScriptService feudScriptService;
-  @Mock private SegmentTypeService segmentTypeService;
-  @Mock private SegmentRuleService segmentRuleService;
 
   private RivalryListView view;
 
   @SuppressWarnings("unchecked")
   @BeforeEach
   void setup() {
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    doReturn(Collections.emptyList()).when(wrestlerService).getAllWrestlers();
     when(rivalryService.getAllRivalriesWithWrestlers(any())).thenReturn(Page.empty());
     when(rivalryService.getRivalryMapper()).thenReturn(rivalryMapper);
 
-    when(feudScriptService.getDefaultMaxPleAppearances()).thenReturn(3);
-    when(segmentTypeService.findAll()).thenReturn(Collections.emptyList());
-    when(segmentRuleService.findAll()).thenReturn(Collections.emptyList());
-
-    view =
-        new RivalryListView(
-            rivalryService,
-            rivalryRepository,
-            wrestlerService,
-            wrestlerRepository,
-            securityUtils,
-            feudScriptService,
-            segmentTypeService,
-            segmentRuleService);
+    view = new RivalryListView(rivalryService, rivalryRepository, wrestlerService, securityUtils);
     UI.getCurrent().add(view);
   }
 
