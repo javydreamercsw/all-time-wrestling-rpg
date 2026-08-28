@@ -38,7 +38,7 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
     navigateTo("rivalry-list");
 
     // Check that the grid is present
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
     assertNotNull(driver.findElement(By.tagName("vaadin-grid")));
   }
