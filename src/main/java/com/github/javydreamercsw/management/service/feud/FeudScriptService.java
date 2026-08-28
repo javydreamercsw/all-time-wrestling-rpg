@@ -191,6 +191,42 @@ public class FeudScriptService {
     return gameSettingService.getMaxPleFeudAppearances();
   }
 
+  // ── Edit / cancel ─────────────────────────────────────────────────────────
+
+  /** Updates the arc name and PLE cap. */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public FeudScript updateScript(
+      @NonNull FeudScript script, @NonNull String name, int maxPleAppearances) {
+    script.setName(name.trim());
+    script.setMaxPleAppearances(Math.min(Math.max(maxPleAppearances, 1), 3));
+    return feudScriptRepository.save(script);
+  }
+
+  /** Removes a beat and renumbers the remaining beats in order. */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void removeBeat(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
+    script.getBeats().remove(beat);
+    feudScriptBeatRepository.delete(beat);
+    int order = 1;
+    for (FeudScriptBeat remaining :
+        script.getBeats().stream()
+            .sorted(java.util.Comparator.comparing(FeudScriptBeat::getBeatOrder))
+            .collect(java.util.stream.Collectors.toList())) {
+      remaining.setBeatOrder(order++);
+      feudScriptBeatRepository.save(remaining);
+    }
+  }
+
+  /** Marks the arc as CANCELLED. Beats remain for historical reference. */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void cancelScript(@NonNull FeudScript script) {
+    script.setStatus(FeudScriptStatus.CANCELLED);
+    feudScriptRepository.save(script);
+  }
+
   // ── Internal helpers ─────────────────────────────────────────────────────
 
   private void validatePleCap(FeudScript script, FeudScriptBeat newBeat) {

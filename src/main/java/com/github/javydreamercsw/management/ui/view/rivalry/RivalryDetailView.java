@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.rivalry;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -182,6 +183,25 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
 
     HorizontalLayout header = new HorizontalLayout(nameSpan, statusBadge);
     header.setAlignItems(FlexComponent.Alignment.CENTER);
+    header.setFlexGrow(1, nameSpan);
+
+    boolean editable =
+        securityUtils.canCreate()
+            && !"COMPLETED".equals(script.getStatus().name())
+            && !"CANCELLED".equals(script.getStatus().name());
+
+    if (editable) {
+      Button editButton = new Button("Edit");
+      editButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+      editButton.addClickListener(e -> openEditDialog(script));
+
+      Button cancelButton = new Button("Cancel Arc");
+      cancelButton.addThemeVariants(
+          ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
+      cancelButton.addClickListener(e -> confirmCancelScript(script));
+
+      header.add(editButton, cancelButton);
+    }
 
     List<FeudScriptBeat> beats =
         script.getBeats().stream()
@@ -207,11 +227,129 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
         .setWidth("6em")
         .setFlexGrow(0);
     beatGrid.addColumn(b -> b.getBeatStatus().name()).setHeader("Status").setFlexGrow(1);
+
+    if (editable) {
+      beatGrid
+          .addComponentColumn(
+              beat -> {
+                if (beat.getBeatStatus() == FeudScriptBeatStatus.PENDING) {
+                  Button removeBtn = new Button("✕");
+                  removeBtn.addThemeVariants(
+                      ButtonVariant.LUMO_SMALL,
+                      ButtonVariant.LUMO_TERTIARY,
+                      ButtonVariant.LUMO_ERROR);
+                  removeBtn.addClickListener(e -> confirmRemoveBeat(script, beat));
+                  return removeBtn;
+                }
+                return new Span();
+              })
+          .setWidth("4em")
+          .setFlexGrow(0);
+    }
+
     beatGrid.setItems(beats);
     beatGrid.setAllRowsVisible(true);
 
     card.add(header, beatGrid);
     return card;
+  }
+
+  private void openEditDialog(FeudScript script) {
+    com.vaadin.flow.component.textfield.TextField nameField =
+        new com.vaadin.flow.component.textfield.TextField("Arc Name");
+    nameField.setValue(script.getName());
+    nameField.setWidthFull();
+    nameField.setRequired(true);
+
+    com.vaadin.flow.component.textfield.IntegerField pleField =
+        new com.vaadin.flow.component.textfield.IntegerField("Max PLE Appearances (1–3)");
+    pleField.setValue(script.getMaxPleAppearances());
+    pleField.setMin(1);
+    pleField.setMax(3);
+    pleField.setStepButtonsVisible(true);
+
+    com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+    dialog.setHeaderTitle("Edit Story Arc");
+
+    Button saveBtn =
+        new Button(
+            "Save",
+            e -> {
+              if (nameField.getValue().isBlank()) {
+                nameField.setInvalid(true);
+                return;
+              }
+              feudScriptService.updateScript(
+                  script,
+                  nameField.getValue(),
+                  pleField.getValue() != null
+                      ? pleField.getValue()
+                      : script.getMaxPleAppearances());
+              dialog.close();
+              reload();
+            });
+    saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    Button cancelBtn = new Button("Cancel", e -> dialog.close());
+    cancelBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+    dialog.add(new VerticalLayout(nameField, pleField));
+    dialog.getFooter().add(cancelBtn, saveBtn);
+    dialog.open();
+  }
+
+  private void confirmCancelScript(FeudScript script) {
+    com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+    dialog.setHeaderTitle("Cancel Story Arc");
+    dialog.add(
+        new Paragraph(
+            "Cancel arc \""
+                + script.getName()
+                + "\"? Completed beats are kept for reference, but no new beats can be added."));
+
+    Button confirmBtn =
+        new Button(
+            "Cancel Arc",
+            e -> {
+              feudScriptService.cancelScript(script);
+              dialog.close();
+              reload();
+            });
+    confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+    Button backBtn = new Button("Keep Arc", e -> dialog.close());
+    backBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+    dialog.getFooter().add(backBtn, confirmBtn);
+    dialog.open();
+  }
+
+  private void confirmRemoveBeat(FeudScript script, FeudScriptBeat beat) {
+    com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+    dialog.setHeaderTitle("Remove Beat");
+    dialog.add(
+        new Paragraph(
+            "Remove beat #"
+                + beat.getBeatOrder()
+                + " ("
+                + beat.getSegmentType()
+                + ")? Remaining beats will be renumbered."));
+
+    Button confirmBtn =
+        new Button(
+            "Remove",
+            e -> {
+              feudScriptService.removeBeat(script, beat);
+              dialog.close();
+              reload();
+            });
+    confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+    Button cancelBtn = new Button("Keep Beat", e -> dialog.close());
+    cancelBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+    dialog.getFooter().add(cancelBtn, confirmBtn);
+    dialog.open();
   }
 
   private void openWizard(Rivalry rivalry) {
