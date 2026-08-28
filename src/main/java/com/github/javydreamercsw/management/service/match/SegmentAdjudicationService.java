@@ -709,42 +709,40 @@ public class SegmentAdjudicationService {
             segment.getRivalryId(),
             isPle ? "PLE" : "regular",
             segment.getId());
+      } else // Fall back to generic pair-scan when no rivalry was explicitly tagged.
+      if (WellKnownSegmentType.TAG_TEAM.matches(segment.getSegmentType())) {
+        attemptRivalryResolution(
+            segment.getWrestlers().get(0),
+            segment.getWrestlers().get(2),
+            threshold,
+            isPle,
+            segment.getShow().getId());
+        attemptRivalryResolution(
+            segment.getWrestlers().get(0),
+            segment.getWrestlers().get(3),
+            threshold,
+            isPle,
+            segment.getShow().getId());
+        attemptRivalryResolution(
+            segment.getWrestlers().get(1),
+            segment.getWrestlers().get(2),
+            threshold,
+            isPle,
+            segment.getShow().getId());
+        attemptRivalryResolution(
+            segment.getWrestlers().get(1),
+            segment.getWrestlers().get(3),
+            threshold,
+            isPle,
+            segment.getShow().getId());
       } else {
-        // Fall back to generic pair-scan when no rivalry was explicitly tagged.
-        if (WellKnownSegmentType.TAG_TEAM.matches(segment.getSegmentType())) {
-          attemptRivalryResolution(
-              segment.getWrestlers().get(0),
-              segment.getWrestlers().get(2),
-              threshold,
-              isPle,
-              segment.getShow().getId());
-          attemptRivalryResolution(
-              segment.getWrestlers().get(0),
-              segment.getWrestlers().get(3),
-              threshold,
-              isPle,
-              segment.getShow().getId());
-          attemptRivalryResolution(
-              segment.getWrestlers().get(1),
-              segment.getWrestlers().get(2),
-              threshold,
-              isPle,
-              segment.getShow().getId());
-          attemptRivalryResolution(
-              segment.getWrestlers().get(1),
-              segment.getWrestlers().get(3),
-              threshold,
-              isPle,
-              segment.getShow().getId());
-        } else {
-          List<Wrestler> wrestlers = segment.getWrestlers();
-          if (!wrestlers.isEmpty()) {
-            Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
-            for (Wrestler other : wrestlers) {
-              if (!baseWrestler.equals(other)) {
-                attemptRivalryResolution(
-                    baseWrestler, other, threshold, isPle, segment.getShow().getId());
-              }
+        List<Wrestler> wrestlers = segment.getWrestlers();
+        if (!wrestlers.isEmpty()) {
+          Wrestler baseWrestler = winners.isEmpty() ? wrestlers.get(0) : winners.get(0);
+          for (Wrestler other : wrestlers) {
+            if (!baseWrestler.equals(other)) {
+              attemptRivalryResolution(
+                  baseWrestler, other, threshold, isPle, segment.getShow().getId());
             }
           }
         }

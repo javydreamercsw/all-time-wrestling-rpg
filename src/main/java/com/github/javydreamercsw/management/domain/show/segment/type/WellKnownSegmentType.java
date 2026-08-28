@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.show.segment.type;
 
 import java.util.Optional;
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -34,14 +35,10 @@ public enum WellKnownSegmentType {
   FREE_FOR_ALL("free_for_all"),
   HANDICAP_MATCH("handicap_match");
 
-  private final String code;
+  @Getter private final String code;
 
   WellKnownSegmentType(final String code) {
     this.code = code;
-  }
-
-  public String getCode() {
-    return code;
   }
 
   /** Null-safe match against a {@link SegmentType} entity's code field. */
