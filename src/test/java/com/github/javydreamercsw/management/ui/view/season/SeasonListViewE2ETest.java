@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.ui.view.season;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -32,7 +31,7 @@ public class SeasonListViewE2ETest extends AbstractE2ETest {
     navigateTo("season-list");
 
     // Check that the grid is present
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
     assertNotNull(driver.findElement(By.tagName("vaadin-grid")));
   }

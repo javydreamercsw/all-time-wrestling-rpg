@@ -23,7 +23,6 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import java.time.Duration;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +66,7 @@ public class ShowPlanningViewE2ETest extends AbstractE2ETest {
   public void testNavigateToShowPlanningView() {
     driver.get(
         "http://localhost:" + serverPort + getContextPath() + "/show-planning/" + testShow.getId());
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
     wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("select-show-combo-box")));
 
