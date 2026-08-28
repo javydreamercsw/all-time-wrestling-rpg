@@ -95,7 +95,9 @@ public class RivalryListView extends Main {
                   new Button(
                       "Create",
                       ev -> {
-                        if (w1.getValue() == null || w2.getValue() == null) return;
+                        if (w1.getValue() == null || w2.getValue() == null) {
+                          return;
+                        }
                         rivalryService.createRivalry(
                             w1.getValue().getId(), w2.getValue().getId(), notes.getValue());
                         rivalryGrid.getDataProvider().refreshAll();

@@ -945,7 +945,7 @@ public class ShowDetailView extends Main
                                     + beat.getBeatOrder()
                                     + " — "
                                     + beat.getScript().getName());
-                        return (com.vaadin.flow.component.Component) badge;
+                        return (Component) badge;
                       })
                   .orElse(new Span(""));
             })
@@ -1849,8 +1849,7 @@ public class ShowDetailView extends Main
                                 }
                                 // Async DB write
                                 dialogHolder[0].getSaveButton().setEnabled(false);
-                                java.util.Optional<?>[] linkedBeatHolder =
-                                    new java.util.Optional[] {java.util.Optional.empty()};
+                                Optional<?>[] linkedBeatHolder = new Optional[] {Optional.empty()};
                                 GeneralSecurityUtils.runAsAdminAsync(
                                         () -> {
                                           segmentService.updateSegment(seg);
@@ -1910,7 +1909,7 @@ public class ShowDetailView extends Main
     Dialog confirmDialog = new Dialog();
     confirmDialog.setHeaderTitle("Delete Segment");
 
-    java.util.Optional<FeudScriptBeat> linkedBeat = feudScriptService.findBeatForSegment(segment);
+    Optional<FeudScriptBeat> linkedBeat = feudScriptService.findBeatForSegment(segment);
     if (linkedBeat.isPresent()) {
       FeudScriptBeat beat = linkedBeat.get();
       confirmDialog.add(

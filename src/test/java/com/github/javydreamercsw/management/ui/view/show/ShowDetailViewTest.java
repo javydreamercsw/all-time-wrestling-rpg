@@ -77,12 +77,16 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistor
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.Location;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -337,15 +341,13 @@ class ShowDetailViewTest extends AbstractViewTest {
     ShowDetailView view = buildView(mock(SecurityUtils.class));
     ReflectionTestUtils.invokeMethod(view, "deleteSegment", segment);
 
-    com.vaadin.flow.component.dialog.Dialog dialog =
-        com.github.mvysny.kaributesting.v10.LocatorJ._get(
-            com.vaadin.flow.component.dialog.Dialog.class);
+    Dialog dialog = LocatorJ._get(Dialog.class);
     String dialogText =
         dialog
             .getChildren()
-            .filter(c -> c instanceof com.vaadin.flow.component.html.Paragraph)
-            .map(c -> ((com.vaadin.flow.component.html.Paragraph) c).getText())
-            .collect(java.util.stream.Collectors.joining(" "));
+            .filter(c -> c instanceof Paragraph)
+            .map(c -> ((Paragraph) c).getText())
+            .collect(Collectors.joining(" "));
     assertThat(dialogText).contains("The Bloodline Saga");
     assertThat(dialogText).contains("beat #2");
   }
@@ -360,15 +362,13 @@ class ShowDetailViewTest extends AbstractViewTest {
     ShowDetailView view = buildView(mock(SecurityUtils.class));
     ReflectionTestUtils.invokeMethod(view, "deleteSegment", segment);
 
-    com.vaadin.flow.component.dialog.Dialog dialog =
-        com.github.mvysny.kaributesting.v10.LocatorJ._get(
-            com.vaadin.flow.component.dialog.Dialog.class);
+    Dialog dialog = LocatorJ._get(Dialog.class);
     String dialogText =
         dialog
             .getChildren()
-            .filter(c -> c instanceof com.vaadin.flow.component.html.Paragraph)
-            .map(c -> ((com.vaadin.flow.component.html.Paragraph) c).getText())
-            .collect(java.util.stream.Collectors.joining(" "));
+            .filter(c -> c instanceof Paragraph)
+            .map(c -> ((Paragraph) c).getText())
+            .collect(Collectors.joining(" "));
     assertThat(dialogText).doesNotContain("Story Arc");
     assertThat(dialogText).contains("Are you sure");
   }

@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -258,8 +259,8 @@ public class FeudScriptService {
     int order = 1;
     for (FeudScriptBeat remaining :
         script.getBeats().stream()
-            .sorted(java.util.Comparator.comparing(FeudScriptBeat::getBeatOrder))
-            .collect(java.util.stream.Collectors.toList())) {
+            .sorted(Comparator.comparing(FeudScriptBeat::getBeatOrder))
+            .collect(Collectors.toList())) {
       remaining.setBeatOrder(order++);
       feudScriptBeatRepository.save(remaining);
     }

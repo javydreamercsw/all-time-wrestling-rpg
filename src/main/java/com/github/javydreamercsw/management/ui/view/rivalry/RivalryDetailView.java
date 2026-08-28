@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.ui.view.feud.FeudScriptWizardDialog;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -44,6 +45,8 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
@@ -140,7 +143,7 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
     backButton.addClickListener(e -> UI.getCurrent().navigate(RivalryListView.class));
 
     HorizontalLayout actions = new HorizontalLayout(backButton);
-    actions.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+    actions.setAlignItems(FlexComponent.Alignment.CENTER);
 
     if (securityUtils.canCreate()) {
       Button storyArcButton = new Button("Story Arc");
@@ -255,20 +258,18 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
   }
 
   private void openEditDialog(FeudScript script) {
-    com.vaadin.flow.component.textfield.TextField nameField =
-        new com.vaadin.flow.component.textfield.TextField("Arc Name");
+    TextField nameField = new TextField("Arc Name");
     nameField.setValue(script.getName());
     nameField.setWidthFull();
     nameField.setRequired(true);
 
-    com.vaadin.flow.component.textfield.IntegerField pleField =
-        new com.vaadin.flow.component.textfield.IntegerField("Max PLE Appearances (1–3)");
+    IntegerField pleField = new IntegerField("Max PLE Appearances (1–3)");
     pleField.setValue(script.getMaxPleAppearances());
     pleField.setMin(1);
     pleField.setMax(3);
     pleField.setStepButtonsVisible(true);
 
-    com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+    Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Edit Story Arc");
 
     Button saveBtn =
@@ -299,7 +300,7 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
   }
 
   private void confirmCancelScript(FeudScript script) {
-    com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+    Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Cancel Story Arc");
     dialog.add(
         new Paragraph(
@@ -325,7 +326,7 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
   }
 
   private void confirmRemoveBeat(FeudScript script, FeudScriptBeat beat) {
-    com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+    Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Remove Beat");
     dialog.add(
         new Paragraph(
