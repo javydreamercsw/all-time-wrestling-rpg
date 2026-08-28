@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
@@ -56,6 +57,7 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
@@ -145,6 +147,7 @@ class SegmentAdjudicationServiceUnitTest {
     matchSegment.addParticipant(wrestler2);
 
     Show show = new Show();
+    show.setId(5L);
     ShowType showType = new ShowType();
     showType.setName("Weekly Show");
     show.setType(showType);
@@ -218,5 +221,60 @@ class SegmentAdjudicationServiceUnitTest {
     // Unstubbed getCurrentUniverseId() returns null (default for Long)
 
     assertDoesNotThrow(() -> service.adjudicateMatch(matchSegment));
+  }
+
+  // ── Rivalry/feud resolution (ATW-buyh) ─────────────────────────────────────
+
+  @Test
+  void testResolution_FeudWithMultipleParticipants_AttemptedOnlyOnce() {
+    // A feud with several participants in the segment must get exactly one resolution roll.
+    when(gameSettingService.isRivalryResolutionOnRegularShowsEnabled()).thenReturn(true);
+    when(gameSettingService.getRivalryResolutionThresholdRegular()).thenReturn(25);
+
+    MultiWrestlerFeud feud = new MultiWrestlerFeud();
+    feud.setId(7L);
+    feud.setName("Shared Feud");
+    when(feudService.getActiveFeudsForWrestler(wrestler1.getId())).thenReturn(List.of(feud));
+    when(feudService.getActiveFeudsForWrestler(wrestler2.getId())).thenReturn(List.of(feud));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(feudResolutionService, times(1)).attemptFeudResolution(feud);
+  }
+
+  @Test
+  void testResolution_TaggedRivalry_NotRolledTwiceByPairScan() {
+    // The AI-tagged rivalry is also the rivalry between the participants — one roll only.
+    when(gameSettingService.isRivalryResolutionOnRegularShowsEnabled()).thenReturn(true);
+    when(gameSettingService.getRivalryResolutionThresholdRegular()).thenReturn(25);
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(99L);
+    when(rivalryService.getRivalryBetweenWrestlers(wrestler1.getId(), wrestler2.getId()))
+        .thenReturn(Optional.of(rivalry));
+    matchSegment.setRivalryId(99L);
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(rivalryService, times(1)).attemptResolution(eq(99L), anyInt(), anyInt(), eq(25));
+  }
+
+  @Test
+  void testResolution_TaggedRivalry_PairScanStillCoversOtherRivalries() {
+    // An AI-tagged rivalry must not suppress resolution attempts for OTHER active
+    // rivalries between the participants (previously the pair-scan was skipped entirely).
+    when(gameSettingService.isRivalryResolutionOnRegularShowsEnabled()).thenReturn(true);
+    when(gameSettingService.getRivalryResolutionThresholdRegular()).thenReturn(25);
+
+    Rivalry pairRivalry = new Rivalry();
+    pairRivalry.setId(42L);
+    when(rivalryService.getRivalryBetweenWrestlers(wrestler1.getId(), wrestler2.getId()))
+        .thenReturn(Optional.of(pairRivalry));
+    matchSegment.setRivalryId(50L); // tagged rivalry is a different one
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(rivalryService, times(1)).attemptResolution(eq(50L), anyInt(), anyInt(), eq(25));
+    verify(rivalryService, times(1)).attemptResolution(eq(42L), anyInt(), anyInt(), eq(25));
   }
 }
