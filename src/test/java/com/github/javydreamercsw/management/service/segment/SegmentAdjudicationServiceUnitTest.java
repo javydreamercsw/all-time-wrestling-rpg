@@ -59,6 +59,7 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
@@ -240,7 +241,7 @@ class SegmentAdjudicationServiceUnitTest {
     title.setName("World Title");
     matchSegment.setContenderMatch(true);
     matchSegment.getTitles().add(title);
-    matchSegment.setWinners(java.util.List.of(wrestler1));
+    matchSegment.setWinners(List.of(wrestler1));
 
     adjudicationService.adjudicateMatch(matchSegment);
 
@@ -291,7 +292,7 @@ class SegmentAdjudicationServiceUnitTest {
     lenient().when(gameSettingService.getContenderMatchFanMultiplier()).thenReturn(1.5);
     lenient().when(gameSettingService.getContenderMatchHeatBonus()).thenReturn(10);
     matchSegment.setContenderMatch(true);
-    matchSegment.setWinners(java.util.List.of(wrestler1));
+    matchSegment.setWinners(List.of(wrestler1));
 
     assertDoesNotThrow(() -> adjudicationService.adjudicateMatch(matchSegment));
   }
