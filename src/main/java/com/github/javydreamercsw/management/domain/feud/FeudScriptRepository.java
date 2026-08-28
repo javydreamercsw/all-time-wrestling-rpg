@@ -19,12 +19,19 @@ package com.github.javydreamercsw.management.domain.feud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FeudScriptRepository extends JpaRepository<FeudScript, Long> {
 
   List<FeudScript> findByRivalryAndStatus(Rivalry rivalry, FeudScriptStatus status);
+
+  @Query(
+      "SELECT DISTINCT s FROM FeudScript s LEFT JOIN FETCH s.beats"
+          + " WHERE s.rivalry = :rivalry ORDER BY s.id")
+  List<FeudScript> findByRivalryWithBeats(@Param("rivalry") Rivalry rivalry);
 
   List<FeudScript> findByFeudAndStatus(MultiWrestlerFeud feud, FeudScriptStatus status);
 

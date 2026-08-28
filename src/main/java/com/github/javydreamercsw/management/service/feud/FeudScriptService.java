@@ -62,6 +62,12 @@ public class FeudScriptService {
     return feudScriptRepository.findByRivalryAndStatus(rivalry, FeudScriptStatus.ACTIVE);
   }
 
+  /** Returns all scripts for a rivalry (any status) with beats eagerly loaded. */
+  @Transactional(readOnly = true)
+  public List<FeudScript> getScriptsWithBeatsForRivalry(@NonNull Rivalry rivalry) {
+    return feudScriptRepository.findByRivalryWithBeats(rivalry);
+  }
+
   public List<FeudScript> getActiveScriptsForFeud(@NonNull MultiWrestlerFeud feud) {
     return feudScriptRepository.findByFeudAndStatus(feud, FeudScriptStatus.ACTIVE);
   }

@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.ui.view.rivalry;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -30,12 +32,15 @@ import com.github.javydreamercsw.management.ui.view.feud.FeudScriptWizardDialog;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.BeforeEvent;
@@ -62,6 +67,7 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
   private final SecurityUtils securityUtils;
 
   private final VerticalLayout content = new VerticalLayout();
+  private Long currentRivalryId;
 
   public RivalryDetailView(
       @NonNull final RivalryService rivalryService,
@@ -91,10 +97,15 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
 
   @Override
   public void setParameter(BeforeEvent event, Long rivalryId) {
+    this.currentRivalryId = rivalryId;
+    reload();
+  }
+
+  private void reload() {
     content.removeAll();
     rivalryService
-        .getRivalryByIdWithWrestlers(rivalryId)
-        .ifPresentOrElse(this::buildView, () -> showNotFound(rivalryId));
+        .getRivalryByIdWithWrestlers(currentRivalryId)
+        .ifPresentOrElse(this::buildView, () -> showNotFound(currentRivalryId));
   }
 
   private void buildView(Rivalry rivalry) {
@@ -138,6 +149,69 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
     }
 
     content.add(info, actions);
+
+    // Story arcs section
+    List<FeudScript> scripts = feudScriptService.getScriptsWithBeatsForRivalry(rivalry);
+    if (!scripts.isEmpty()) {
+      H3 arcsHeader = new H3("Story Arcs");
+      arcsHeader.addClassNames(LumoUtility.Margin.Top.MEDIUM);
+      content.add(arcsHeader);
+      scripts.forEach(script -> content.add(buildScriptCard(script)));
+    }
+  }
+
+  private VerticalLayout buildScriptCard(FeudScript script) {
+    VerticalLayout card = new VerticalLayout();
+    card.setPadding(true);
+    card.setSpacing(true);
+    card.addClassNames(
+        LumoUtility.Border.ALL, LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.SMALL);
+
+    Span nameSpan = new Span(script.getName());
+    nameSpan.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.SEMIBOLD);
+
+    Span statusBadge = new Span(script.getStatus().name());
+    statusBadge.getElement().getThemeList().add("badge");
+    if ("COMPLETED".equals(script.getStatus().name())) {
+      statusBadge.getElement().getThemeList().add("success");
+    } else if ("CANCELLED".equals(script.getStatus().name())) {
+      statusBadge.getElement().getThemeList().add("error");
+    } else {
+      statusBadge.getElement().getThemeList().add("contrast");
+    }
+
+    HorizontalLayout header = new HorizontalLayout(nameSpan, statusBadge);
+    header.setAlignItems(FlexComponent.Alignment.CENTER);
+
+    List<FeudScriptBeat> beats =
+        script.getBeats().stream()
+            .sorted(Comparator.comparing(FeudScriptBeat::getBeatOrder))
+            .collect(Collectors.toList());
+
+    if (beats.isEmpty()) {
+      card.add(header, new Paragraph("No beats defined."));
+      return card;
+    }
+
+    Grid<FeudScriptBeat> beatGrid = new Grid<>(FeudScriptBeat.class, false);
+    beatGrid.addColumn(FeudScriptBeat::getBeatOrder).setHeader("#").setWidth("4em").setFlexGrow(0);
+    beatGrid.addColumn(FeudScriptBeat::getSegmentType).setHeader("Match Type").setFlexGrow(1);
+    beatGrid
+        .addColumn(b -> b.getSegmentRule() != null ? b.getSegmentRule() : "—")
+        .setHeader("Stipulation")
+        .setFlexGrow(1);
+    beatGrid.addColumn(b -> b.getWinnerControl().name()).setHeader("Winner Control").setFlexGrow(1);
+    beatGrid
+        .addColumn(b -> b.isCulmination() ? "★ Blowoff" : "")
+        .setHeader("")
+        .setWidth("6em")
+        .setFlexGrow(0);
+    beatGrid.addColumn(b -> b.getBeatStatus().name()).setHeader("Status").setFlexGrow(1);
+    beatGrid.setItems(beats);
+    beatGrid.setAllRowsVisible(true);
+
+    card.add(header, beatGrid);
+    return card;
   }
 
   private void openWizard(Rivalry rivalry) {
@@ -170,7 +244,7 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
             ruleNames,
             feudScriptService.getDefaultMaxPleAppearances(),
             feudScriptService,
-            null);
+            this::reload);
     dialog.preSelectWrestlers(participants);
     dialog.open();
   }
