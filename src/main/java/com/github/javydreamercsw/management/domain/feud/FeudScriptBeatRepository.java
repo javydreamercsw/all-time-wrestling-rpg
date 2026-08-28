@@ -16,7 +16,9 @@
 */
 package com.github.javydreamercsw.management.domain.feud;
 
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +33,6 @@ public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, 
           + " AND b.script.status = 'ACTIVE'"
           + " ORDER BY b.script.id, b.beatOrder")
   List<FeudScriptBeat> findPendingBeatsForShow(@Param("showId") Long showId);
+
+  Optional<FeudScriptBeat> findByActualSegment(Segment segment);
 }

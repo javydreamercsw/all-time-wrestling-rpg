@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -44,6 +45,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
@@ -184,6 +186,7 @@ public class ShowDetailView extends Main
   private final SecurityUtils securityUtils;
   private final NarrationParserService narrationParserService;
   private final DramaEventService dramaEventService;
+  private final FeudScriptService feudScriptService;
 
   @Autowired
   public ShowDetailView(
@@ -233,6 +236,7 @@ public class ShowDetailView extends Main
     this.securityUtils = viewContext.getSecurityUtils();
     this.narrationParserService = showFacade.getNarrationParserService();
     this.dramaEventService = showFacade.getDramaEventService();
+    this.feudScriptService = showFacade.getFeudScriptService();
     this.expansionService = viewContext.getExpansionService();
     initializeComponents();
   }
@@ -920,6 +924,32 @@ public class ShowDetailView extends Main
         .setWidth("3em")
         .setFlexGrow(0)
         .setHeader("");
+
+    // Story arc badge — shown when the segment was produced by a FeudScriptBeat
+    grid.addComponentColumn(
+            segment -> {
+              return feudScriptService
+                  .findBeatForSegment(segment)
+                  .map(
+                      beat -> {
+                        String arcName = beat.getScript().getName();
+                        Span badge = new Span("🎭 " + arcName);
+                        badge.getElement().getThemeList().add("badge contrast");
+                        badge.addClassNames(
+                            LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                        Tooltip.forComponent(badge)
+                            .setText(
+                                "Story Arc beat #"
+                                    + beat.getBeatOrder()
+                                    + " — "
+                                    + beat.getScript().getName());
+                        return (com.vaadin.flow.component.Component) badge;
+                      })
+                  .orElse(new Span(""));
+            })
+        .setHeader("Arc")
+        .setAutoWidth(true)
+        .setFlexGrow(0);
 
     // Segment type column
     grid.addColumn(
@@ -1857,7 +1887,21 @@ public class ShowDetailView extends Main
   private void deleteSegment(@NonNull Segment segment) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setHeaderTitle("Delete Segment");
-    confirmDialog.add(new Paragraph("Are you sure you want to delete this segment?"));
+
+    java.util.Optional<FeudScriptBeat> linkedBeat = feudScriptService.findBeatForSegment(segment);
+    if (linkedBeat.isPresent()) {
+      FeudScriptBeat beat = linkedBeat.get();
+      confirmDialog.add(
+          new Paragraph(
+              "⚠️ This segment is part of story arc \""
+                  + beat.getScript().getName()
+                  + "\" (beat #"
+                  + beat.getBeatOrder()
+                  + "). Deleting it will leave the arc beat unresolved."));
+      confirmDialog.add(new Paragraph("Are you sure you want to delete it?"));
+    } else {
+      confirmDialog.add(new Paragraph("Are you sure you want to delete this segment?"));
+    }
 
     Button deleteButton =
         new Button(

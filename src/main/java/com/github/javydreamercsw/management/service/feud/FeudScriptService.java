@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.show.ShowSegmentReservationS
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -76,6 +77,14 @@ public class FeudScriptService {
   /** Maps pending beats for a show to DTOs suitable for the AI prompt. */
   public List<FeudScriptBeatDTO> getUpcomingBeatDTOsForShow(@NonNull Show show) {
     return getUpcomingBeatsForShow(show).stream().map(this::toDTO).collect(Collectors.toList());
+  }
+
+  /** Returns the beat that produced a given segment, if any (used for UI warnings). */
+  public Optional<FeudScriptBeat> findBeatForSegment(@NonNull Segment segment) {
+    if (segment.getId() == null) {
+      return Optional.empty();
+    }
+    return feudScriptBeatRepository.findByActualSegment(segment);
   }
 
   // ── Creation from wizard ─────────────────────────────────────────────────
