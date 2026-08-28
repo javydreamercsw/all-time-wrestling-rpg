@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -77,6 +78,7 @@ class ShowPlanningDtoMapperTest {
     when(participant2.getWrestler()).thenReturn(wrestler2);
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Promo");
+    when(segmentType.getCode()).thenReturn(WellKnownSegmentType.PROMO.getCode());
     when(segment.getSegmentRules()).thenReturn(Set.of(segmentRule));
     when(segmentRule.getName()).thenReturn(PromoType.CONFRONTATION_PROMO.getDisplayName());
     when(segment.getParticipants()).thenReturn(Set.of(participant1, participant2));
@@ -102,6 +104,7 @@ class ShowPlanningDtoMapperTest {
     when(participant1.getWrestler()).thenReturn(wrestler1);
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("Promo");
+    when(segmentType.getCode()).thenReturn(WellKnownSegmentType.PROMO.getCode());
     when(segment.getSegmentRules()).thenReturn(Set.of(segmentRule));
     when(segmentRule.getName()).thenReturn(PromoType.SOLO_PROMO.getDisplayName());
     when(segment.getParticipants()).thenReturn(Set.of(participant1));

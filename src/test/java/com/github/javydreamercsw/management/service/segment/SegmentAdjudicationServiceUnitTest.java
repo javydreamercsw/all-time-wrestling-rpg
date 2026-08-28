@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -131,6 +132,7 @@ class SegmentAdjudicationServiceUnitTest {
 
     SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
+    promoType.setCode(WellKnownSegmentType.PROMO.getCode());
 
     Segment promoSegment = new Segment();
     promoSegment.setSegmentType(promoType);
@@ -139,6 +141,7 @@ class SegmentAdjudicationServiceUnitTest {
 
     SegmentType matchType = new SegmentType();
     matchType.setName("Match");
+    matchType.setCode("match");
     matchSegment = new Segment();
     matchSegment.setSegmentType(matchType);
     matchSegment.addParticipant(wrestler1);
@@ -184,7 +187,7 @@ class SegmentAdjudicationServiceUnitTest {
 
     adjudicationService.adjudicateMatch(matchSegment);
 
-    verify(rivalryService, times(1)).addHeat(eq(99L), eq(1), eq("From segment: Match"));
+    verify(rivalryService, times(1)).addHeat(eq(99L), eq(1), eq("From segment: match"));
     verify(rivalryService, never())
         .addHeatBetweenWrestlers(anyLong(), anyLong(), anyInt(), anyString(), anyLong());
   }

@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -315,6 +316,7 @@ class EditSegmentDialogTest {
 
     SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
+    promoType.setCode(WellKnownSegmentType.PROMO.getCode());
     when(segmentTypeService.findAll()).thenReturn(List.of(matchType, promoType));
     lenient().when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
 

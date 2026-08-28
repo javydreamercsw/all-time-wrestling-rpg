@@ -51,6 +51,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
@@ -124,6 +125,11 @@ public class SegmentAdjudicationService {
   // when null (unit tests).
   @Setter(onMethod_ = {@Autowired})
   private WrestlerRepository wrestlerRepository;
+
+  // Field-injected for the same reason — null-safe, contender automation is skipped
+  // when null (unit tests).
+  @Setter(onMethod_ = {@Autowired})
+  private ContenderSelectionService contenderSelectionService;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -304,13 +310,20 @@ public class SegmentAdjudicationService {
     List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
     losers.removeAll(winners);
 
+    // Contender matches are high-profile: boost fan gains for everyone involved.
+    double effectiveMultiplier =
+        segment.isContenderMatch()
+            ? multiplier * gameSettingService.getContenderMatchFanMultiplier()
+            : multiplier;
+
     applyLeagueStats(segment, winners, losers);
-    processRewards(segment, multiplier);
+    processRewards(segment, effectiveMultiplier);
     applyOutcomeMatrix(segment, winners, losers);
     applyRatingAndNoise(segment);
     Set<Long> wearAndTearBumpedIds = applyWearAndTear(segment);
     applyRingsideActions(segment);
     applyTitleChange(segment, winners, losers);
+    applyContenderOutcomes(segment, winners);
 
     Long universeId =
         segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
@@ -486,6 +499,30 @@ public class SegmentAdjudicationService {
     }
   }
 
+  /**
+   * Handles contender-match automation after a segment is adjudicated: the winner of a contender
+   * match becomes the #1 contender for the attached title(s), and after any title defence or change
+   * the next contender is auto-selected from the rankings. Null-safe: skipped when the contender
+   * service is not injected (unit tests).
+   */
+  private void applyContenderOutcomes(
+      @NonNull final Segment segment, @NonNull final List<Wrestler> winners) {
+    if (contenderSelectionService == null
+        || WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+      return;
+    }
+    // Contender match (title not on the line): the winner is the new #1 contender.
+    if (segment.isContenderMatch() && !segment.getIsTitleSegment() && !winners.isEmpty()) {
+      for (Title title : segment.getTitles()) {
+        contenderSelectionService.designateAsContender(title, winners.get(0));
+      }
+    }
+    // After a title defence or title change, rotate to the next contender.
+    if (segment.getIsTitleSegment()) {
+      segment.getTitles().forEach(contenderSelectionService::autoSelectNextContender);
+    }
+  }
+
   private void applyFactionAffinity(
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> winners,
@@ -592,6 +629,17 @@ public class SegmentAdjudicationService {
                     r ->
                         rivalryService.addHeat(
                             r.getId(), heat, "From segment: " + segmentTypeCode));
+          }
+          if (segment.isContenderMatch()) {
+            // Contender matches are high-stakes: boost any established rivalry further.
+            rivalryService
+                .getRivalryBetweenWrestlers(wi.getId(), wj.getId())
+                .ifPresent(
+                    r ->
+                        rivalryService.addHeat(
+                            r.getId(),
+                            gameSettingService.getContenderMatchHeatBonus(),
+                            "Number one contender match"));
           }
         }
       }

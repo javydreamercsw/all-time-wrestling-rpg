@@ -1073,6 +1073,7 @@ class MatchViewTest extends AbstractViewTest {
     segment.setShow(show);
     SegmentType segmentType = new SegmentType();
     segmentType.setName(typeName);
+    segmentType.setCode(typeName.toLowerCase().replace(' ', '_').replace('-', '_'));
     segment.setSegmentType(segmentType);
     return segment;
   }

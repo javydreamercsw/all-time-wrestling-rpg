@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservation;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -99,6 +100,15 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   @Column(name = "beat_status", nullable = false, length = 16)
   private FeudScriptBeatStatus beatStatus = FeudScriptBeatStatus.PENDING;
+
+  /**
+   * CONTENDER_DESIGNATION outcome: when set, the winner of this beat's segment is designated as the
+   * #1 contender for this title once the beat completes.
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "contender_title_id")
+  @JsonIgnoreProperties({"titleReigns", "challengers"})
+  @Nullable private Title contenderTitle;
 
   /** Formats this beat as a one-line AI instruction. */
   public String toAiInstruction() {

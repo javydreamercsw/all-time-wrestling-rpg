@@ -814,6 +814,20 @@ public class ShowDetailView extends Main
       }
     }
 
+    if (segment.isContenderMatch()) {
+      Span contenderBadge = new Span("⭐ #1 Contender Match");
+      contenderBadge.setId("contender-match-badge");
+      contenderBadge
+          .getStyle()
+          .set("background", "#ffd700")
+          .set("color", "#5c4400")
+          .set("border-radius", "4px")
+          .set("padding", "2px 8px")
+          .set("font-size", "var(--lumo-font-size-s)")
+          .set("font-weight", "bold");
+      leftBadges.add(contenderBadge);
+    }
+
     Span dateLabel =
         new Span(
             segment
@@ -1643,13 +1657,22 @@ public class ShowDetailView extends Main
     // Add checkbox to indicate if it's a title segment
     Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
     isTitleSegmentCheckbox.setId("is-title-segment-checkbox");
-    isTitleSegmentCheckbox.addValueChangeListener(
-        event -> {
-          titleMultiSelectComboBox.setVisible(event.getValue());
-          if (!event.getValue()) {
+
+    // #1 contender match: the winner becomes the next challenger for the selected title(s)
+    Checkbox isContenderMatchCheckbox = new Checkbox("This is a #1 Contender Match");
+    isContenderMatchCheckbox.setId("is-contender-match-checkbox");
+
+    Runnable refreshTitleComboVisibility =
+        () -> {
+          boolean visible =
+              isTitleSegmentCheckbox.getValue() || isContenderMatchCheckbox.getValue();
+          titleMultiSelectComboBox.setVisible(visible);
+          if (!visible) {
             titleMultiSelectComboBox.clear();
           }
-        });
+        };
+    isTitleSegmentCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
+    isContenderMatchCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
 
     // Narration
     TextArea summaryArea = new TextArea("Summary");
@@ -1678,6 +1701,7 @@ public class ShowDetailView extends Main
         addTeamsSection,
         winnerCombo,
         isTitleSegmentCheckbox,
+        isContenderMatchCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
         narrationArea,
@@ -1703,7 +1727,9 @@ public class ShowDetailView extends Main
               newSegment.setSegmentDate(Instant.now());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
+              boolean isContenderMatch = isContenderMatchCheckbox.getValue();
               newSegment.setIsTitleSegment(isTitleSegment);
+              newSegment.setContenderMatch(isContenderMatch);
               newSegment.setIsNpcGenerated(false);
               newSegment.syncParticipants(teamMap);
               newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
@@ -1711,8 +1737,8 @@ public class ShowDetailView extends Main
               newSegment.setWinners(new ArrayList<>(winners));
               newSegment.setReferee(refereeCombo.getValue());
 
-              // If it's a title segment, set the selected titles
-              if (isTitleSegment) {
+              // Title matches and contender matches both need the selected titles
+              if (isTitleSegment || isContenderMatch) {
                 newSegment.setTitles(titleMultiSelectComboBox.getValue());
               }
 
@@ -1793,7 +1819,8 @@ public class ShowDetailView extends Main
                                 seg.setNotes(saveData.notes());
                                 seg.setReferee(saveData.referee());
                                 seg.setIsTitleSegment(saveData.isTitleSegment());
-                                if (saveData.isTitleSegment()) {
+                                seg.setContenderMatch(saveData.isContenderMatch());
+                                if (saveData.isTitleSegment() || saveData.isContenderMatch()) {
                                   seg.setTitles(saveData.titles());
                                 }
                                 // Inline validation (no DB)
