@@ -33,6 +33,8 @@ import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -125,6 +127,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private ExpansionService expansionService;
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private TeamService teamService;
+  @Mock private FeudScriptService feudScriptService;
 
   @BeforeEach
   public void setUp() {
@@ -316,6 +319,60 @@ class ShowDetailViewTest extends AbstractViewTest {
     assertThat(addSegment.isVisible()).isTrue();
   }
 
+  @Test
+  void deleteSegment_arcLinked_dialogMentionsArcName() {
+    Segment segment = new Segment();
+    segment.setId(77L);
+
+    FeudScript script = new FeudScript();
+    script.setName("The Bloodline Saga");
+
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setScript(script);
+    beat.setBeatOrder(2);
+    beat.setActualSegment(segment);
+
+    Mockito.when(feudScriptService.findBeatForSegment(segment)).thenReturn(Optional.of(beat));
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.invokeMethod(view, "deleteSegment", segment);
+
+    com.vaadin.flow.component.dialog.Dialog dialog =
+        com.github.mvysny.kaributesting.v10.LocatorJ._get(
+            com.vaadin.flow.component.dialog.Dialog.class);
+    String dialogText =
+        dialog
+            .getChildren()
+            .filter(c -> c instanceof com.vaadin.flow.component.html.Paragraph)
+            .map(c -> ((com.vaadin.flow.component.html.Paragraph) c).getText())
+            .collect(java.util.stream.Collectors.joining(" "));
+    assertThat(dialogText).contains("The Bloodline Saga");
+    assertThat(dialogText).contains("beat #2");
+  }
+
+  @Test
+  void deleteSegment_notArcLinked_genericConfirmDialog() {
+    Segment segment = new Segment();
+    segment.setId(88L);
+
+    Mockito.when(feudScriptService.findBeatForSegment(segment)).thenReturn(Optional.empty());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.invokeMethod(view, "deleteSegment", segment);
+
+    com.vaadin.flow.component.dialog.Dialog dialog =
+        com.github.mvysny.kaributesting.v10.LocatorJ._get(
+            com.vaadin.flow.component.dialog.Dialog.class);
+    String dialogText =
+        dialog
+            .getChildren()
+            .filter(c -> c instanceof com.vaadin.flow.component.html.Paragraph)
+            .map(c -> ((com.vaadin.flow.component.html.Paragraph) c).getText())
+            .collect(java.util.stream.Collectors.joining(" "));
+    assertThat(dialogText).doesNotContain("Story Arc");
+    assertThat(dialogText).contains("Are you sure");
+  }
+
   private ShowDetailView buildView(final SecurityUtils su) {
     ShowFacade showFacade =
         new ShowFacade(
@@ -327,7 +384,7 @@ class ShowDetailViewTest extends AbstractViewTest {
             narrationParserService,
             npcService,
             mock(DramaEventService.class),
-            mock(FeudScriptService.class));
+            feudScriptService);
     ShowContextFacade showContextFacade =
         new ShowContextFacade(
             showTypeService,
