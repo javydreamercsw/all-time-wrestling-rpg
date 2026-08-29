@@ -192,8 +192,10 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
   @Test
   void testTitleSkillButtonVisibleForChampion() {
     login("player", "player123");
-    navigateTo("match/" + titleSegment.getId());
-    waitForVaadinClientToLoad();
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get() and
+    // leave the browser on the Home view instead of the match view.
+    navigateToAndWaitForElement(
+        "match/" + titleSegment.getId(), By.id("activate-title-skill-button"));
 
     WebElement skillBtn =
         new WebDriverWait(driver, getWaitTimeout())
@@ -212,8 +214,8 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
   @Test
   void testTitleSkillActivatesAndShowsWeaponCardNotification() {
     login("player", "player123");
-    navigateTo("match/" + titleSegment.getId());
-    waitForVaadinClientToLoad();
+    navigateToAndWaitForElement(
+        "match/" + titleSegment.getId(), By.id("activate-title-skill-button"));
 
     WebElement skillBtn =
         new WebDriverWait(driver, getWaitTimeout())
@@ -241,17 +243,19 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
   @Test
   void testTitleSkillButtonAbsentAfterActivationOnReload() {
     login("player", "player123");
-    navigateTo("match/" + titleSegment.getId());
-    waitForVaadinClientToLoad();
+    navigateToAndWaitForElement(
+        "match/" + titleSegment.getId(), By.id("activate-title-skill-button"));
 
     clickElement(
         new WebDriverWait(driver, getWaitTimeout())
             .until(ExpectedConditions.elementToBeClickable(By.id("activate-title-skill-button"))));
     waitForNotification("weapons deck");
 
-    // Reload — flag is now persisted in the database
-    navigateTo("match/" + titleSegment.getId());
-    waitForVaadinClientToLoad();
+    // Reload — flag is now persisted in the database. Wait for the match view itself to render
+    // before asserting the button's absence, so a slow/redirected navigation cannot produce a
+    // false positive.
+    navigateToAndWaitForElement(
+        "match/" + titleSegment.getId(), By.id("match-view-" + titleSegment.getId()));
 
     List<WebElement> buttons = driver.findElements(By.id("activate-title-skill-button"));
     Assertions.assertTrue(
@@ -268,8 +272,8 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
     titleRepository.saveAndFlush(extremeTitle);
 
     login("player", "player123");
-    navigateTo("match/" + titleSegment.getId());
-    waitForVaadinClientToLoad();
+    navigateToAndWaitForElement(
+        "match/" + titleSegment.getId(), By.id("match-view-" + titleSegment.getId()));
 
     List<WebElement> buttons = driver.findElements(By.id("activate-title-skill-button"));
     Assertions.assertTrue(
@@ -281,8 +285,8 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
   @Test
   void testTitleSkillButtonNotShownInNonTitleMatch() {
     login("player", "player123");
-    navigateTo("match/" + nonTitleSegment.getId());
-    waitForVaadinClientToLoad();
+    navigateToAndWaitForElement(
+        "match/" + nonTitleSegment.getId(), By.id("match-view-" + nonTitleSegment.getId()));
 
     List<WebElement> buttons = driver.findElements(By.id("activate-title-skill-button"));
     Assertions.assertTrue(

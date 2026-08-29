@@ -59,11 +59,9 @@ public class AccountE2ETest extends AbstractE2ETest {
             username, "ValidPassword1!", username + "@atw.com", RoleName.VIEWER);
     Long accountId = testAccount.getId();
 
-    // Navigate to the AccountListView
-    navigateTo("account-list");
-
-    // Wait for the grid to load
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    // Navigate to the AccountListView and wait for the grid to load. Retry-enabled navigation —
+    // a login redirect race can swallow a plain driver.get() and leave the browser on Home.
+    navigateToAndWaitForElement("account-list", By.tagName("vaadin-grid"));
 
     // Find the edit button for the test account
     WebElement editButton = waitForVaadinElement(driver, By.id("edit-button-" + accountId));
@@ -85,7 +83,7 @@ public class AccountE2ETest extends AbstractE2ETest {
         .until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Navigate to the AccountListView
-    navigateTo("account-list");
+    navigateToAndWaitForElement("account-list", By.tagName("vaadin-grid"));
 
     Optional<Account> accountOptional = accountService.get(accountId);
     assertTrue(accountOptional.isPresent());
@@ -112,11 +110,8 @@ public class AccountE2ETest extends AbstractE2ETest {
         accountService.createAccount(
             username, "ValidPassword1!", username + "@atw.com", RoleName.VIEWER);
 
-    // Navigate to the AccountListView
-    navigateTo("account-list");
-
-    // Wait for the grid to load
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    // Navigate to the AccountListView and wait for the grid to load
+    navigateToAndWaitForElement("account-list", By.tagName("vaadin-grid"));
 
     // Find the delete button for the new account
     WebElement deleteButton =
@@ -140,11 +135,8 @@ public class AccountE2ETest extends AbstractE2ETest {
   @Test
   public void testCreateAccount() {
     String username = "new_account_" + System.currentTimeMillis();
-    // Navigate to the AccountListView
-    navigateTo("account-list");
-
-    // Wait for the grid to load
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    // Navigate to the AccountListView and wait for the grid to load
+    navigateToAndWaitForElement("account-list", By.tagName("vaadin-grid"));
 
     // Click the new account button
     WebElement newAccountButton = waitForVaadinElement(driver, By.id("new-account-button"));
@@ -173,7 +165,7 @@ public class AccountE2ETest extends AbstractE2ETest {
         .until(ExpectedConditions.invisibilityOfElementLocated(By.tagName("vaadin-dialog")));
 
     // Navigate to the AccountListView
-    navigateTo("account-list");
+    navigateToAndWaitForElement("account-list", By.tagName("vaadin-grid"));
 
     // Verify the account is created
     Failsafe.with(
