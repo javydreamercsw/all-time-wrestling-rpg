@@ -65,6 +65,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
@@ -145,6 +146,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   @Autowired private CampaignEncounterService campaignEncounterService;
   @Autowired private DeckService deckService;
   @Autowired private WrestlerAbilityRepository wrestlerAbilityRepository;
+  @Autowired private AbilityReminderTextService abilityReminderTextService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -644,8 +646,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               matchPlayer -> {
                 var abilities = wrestlerAbilityRepository.findByWrestlerId(matchPlayer.getId());
                 if (!abilities.isEmpty()) {
+                  // Reminder mode: timing chips + human-readable trigger lines so the player
+                  // remembers when to apply each ability at the table.
                   Details abilitiesSection =
-                      new Details("Your Abilities", new WrestlerAbilityPanel(abilities));
+                      new Details(
+                          "Your Abilities",
+                          new WrestlerAbilityPanel(abilities, abilityReminderTextService));
                   abilitiesSection.setOpened(false);
                   sideCol.add(abilitiesSection);
                 }
