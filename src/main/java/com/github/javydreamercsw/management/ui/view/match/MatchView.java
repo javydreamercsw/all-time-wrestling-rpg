@@ -535,7 +535,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             w -> {
               boolean isThisWrestlerPlayer =
                   isPlayerInMatch && playerWrestlerIds.contains(w.getId());
-              cardGrid.add(
+              WrestlerSummaryCard card =
                   new WrestlerSummaryCard(
                       w,
                       universeId,
@@ -543,7 +543,15 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       injuryService,
                       isThisWrestlerPlayer,
                       isThisWrestlerPlayer ? 0 : penalty,
-                      wrestlerStatsService));
+                      wrestlerStatsService);
+              // Table-side reminders: everyone sees what each wrestler's default abilities do.
+              // The player's own abilities get the full interactive panel in the side column.
+              List<WrestlerAbility> defaultAbilities =
+                  wrestlerAbilityRepository.findByWrestlerId(w.getId()).stream()
+                      .filter(WrestlerAbility::isDefault)
+                      .toList();
+              card.showAbilityChips(defaultAbilities, abilityReminderTextService);
+              cardGrid.add(card);
             });
     participantsCard.add(cardGrid);
     mainContent.add(participantsCard);
@@ -1154,6 +1162,20 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                                         + " (Level "
                                         + status.getLevel()
                                         + ")")
+                            .toList());
+                    // Ability reminders so the narration can reference signature abilities.
+                    wc.setAbilities(
+                        wrestlerAbilityRepository.findByWrestlerId(w.getId()).stream()
+                            .filter(WrestlerAbility::isDefault)
+                            .map(
+                                a -> {
+                                  String trigger = abilityReminderTextService.triggerText(a);
+                                  return a.getName()
+                                      + (trigger.isBlank() ? "" : " (" + trigger + ")")
+                                      + (a.getDescription() == null
+                                          ? ""
+                                          : ": " + a.getDescription());
+                                })
                             .toList());
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
