@@ -16,17 +16,21 @@
   "expansion_code": "BASE_GAME",
   "abilities": [ {
     "name": "Fearless: Ring Apron Attack",
+    "description": "When you play an aerial attack with base damage 2 or more, go all in: on success add +3 damage and +2 momentum but take 1 damage; on failure take 2 damage.",
+    "timing": "OFFENSE",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "unlockCondition": "event == 'ATTACK_PLAY' && match.attackCardType == 'AERIAL' && match.attackCardBaseDamage >= 2",
     "effectScript": "match.onAttackOutcome('match.attackDamageBonus += 3; wrestler.momentum += 2; wrestler.health -= 1', 'wrestler.health -= 2')"
   }, {
     "name": "Survivor",
+    "description": "Recover 3 health and gain 2 momentum.",
     "type": "USES_LIMITED",
     "maxUses": 1,
     "effectScript": "wrestler.health += 3; wrestler.momentum += 2"
   }, {
     "name": "Unbeatable",
+    "description": "Convert up to 3 stamina into health, one for one.",
     "type": "USES_LIMITED",
     "maxUses": 1,
     "effectScript": "match.convertResources(wrestler, 'stamina', 'health', 1, 1, 3)"

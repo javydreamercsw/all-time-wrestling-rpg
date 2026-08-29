@@ -22,14 +22,17 @@
     "timing": "DEFENSE",
     "costScript": "wrestler.stamina -= 1",
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 2; wrestler.momentum += 2",
-    "description": ""
+    "description": "Spend 1 stamina to reverse: gain the initiative, deal 2 damage, and gain 2 momentum."
   }, {
     "name": "Recover",
+    "description": "Recover 3 stamina and draw a card; your opponent gains 1 stamina, 1 health, and draws a card.",
     "type": "ALWAYS_ON",
     "category": "ACTION",
     "effectScript": "wrestler.stamina += 3; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
   }, {
     "name": "Mama Pump",
+    "description": "When you play a strike or throw, spend 1 stamina to roll the Power Die for a bonus.",
+    "timing": "OFFENSE",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "unlockCondition": "event == 'ATTACK_PLAY' && (match.attackCardType == 'STRIKE' || match.attackCardType == 'THROW')",
@@ -37,6 +40,7 @@
     "effectScript": "rollDie('POWER')"
   }, {
     "name": "Get Off Me!",
+    "description": "When an attack is incoming, spend 2 stamina to roll the Power Die — a Heart or Momentum result steals the initiative.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "timing": "DEFENSE",
@@ -45,6 +49,8 @@
     "effectScript": "rollDie('POWER'); if (result == 'HEART' || result == 'MOMENTUM') { wrestler.gainInitiative() }"
   }, {
     "name": "Power Kickout",
+    "description": "When attempting a kickout, roll the Power Die — a Heart overrides one kickout die.",
+    "timing": "PINNED",
     "type": "USES_LIMITED",
     "maxUses": 1,
     "unlockCondition": "event == 'KICKOUT_ATTEMPT'",
@@ -158,12 +164,15 @@
   "expansion_code": "ATW_VS_WOW",
   "abilities": [ {
     "name": "Inspirational",
+    "description": "When you taunt, gain 1 momentum — with 5 or more momentum, choose between +1 momentum or +1 on your next attack roll.",
+    "timing": "OFFENSE",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "unlockCondition": "event == 'TAUNT'",
     "effectScript": "if (wrestler.momentum >= 5) { playerChoice('wrestler.momentum += 1', 'wrestler.nextAttack.rollModifier += 1') } else { wrestler.momentum += 1 }"
   }, {
     "name": "Inspirational Cheat",
+    "description": "Spend 1 stamina to gain the initiative and deal 1 damage.",
     "type": "USES_LIMITED",
     "maxUses": 1,
     "category": "SIGNATURE",
@@ -172,6 +181,7 @@
     "effectScript": "wrestler.gainInitiative(); opponent.health -= 1"
   }, {
     "name": "All Out",
+    "description": "Discard an attack card to deal 2 damage.",
     "type": "USES_LIMITED",
     "maxUses": 1,
     "effectScript": "discardCards(1, 'ATTACK'); opponent.health -= 2"
