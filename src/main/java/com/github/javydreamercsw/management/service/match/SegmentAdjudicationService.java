@@ -687,12 +687,18 @@ public class SegmentAdjudicationService {
           segment.getShow().getName(),
           threshold);
 
+      // Attempt each distinct feud only once — a feud with several participants in this
+      // segment must not get one resolution roll per participant.
+      Set<MultiWrestlerFeud> feudsToResolve = new HashSet<>();
       for (Wrestler wrestler : segment.getWrestlers()) {
-        List<MultiWrestlerFeud> feuds = feudService.getActiveFeudsForWrestler(wrestler.getId());
-        for (MultiWrestlerFeud feud : feuds) {
-          feudResolutionService.attemptFeudResolution(feud);
-        }
+        feudsToResolve.addAll(feudService.getActiveFeudsForWrestler(wrestler.getId()));
       }
+      for (MultiWrestlerFeud feud : feudsToResolve) {
+        feudResolutionService.attemptFeudResolution(feud);
+      }
+
+      // Track rivalries already attempted this segment so no rivalry gets two rolls.
+      Set<Long> attemptedRivalryIds = new HashSet<>();
 
       // If the AI tagged a specific rivalry, attempt resolution on it directly.
       if (segment.getRivalryId() != null) {
@@ -704,37 +710,47 @@ public class SegmentAdjudicationService {
           rivalryService.attemptResolution(
               segment.getRivalryId(), diceBag.roll(), diceBag.roll(), threshold);
         }
+        attemptedRivalryIds.add(segment.getRivalryId());
         log.info(
             "Attempted resolution of AI-tagged rivalry {} after {} segment {}",
             segment.getRivalryId(),
             isPle ? "PLE" : "regular",
             segment.getId());
-      } else // Fall back to generic pair-scan when no rivalry was explicitly tagged.
+      }
+
+      // Always run the generic pair-scan so every eligible rivalry between participants
+      // gets its qualifying attempt. Previously the scan was skipped entirely when an
+      // AI-tagged rivalry was present, so other active rivalries never accrued PLE
+      // resolution attempts and could survive indefinitely.
       if (WellKnownSegmentType.TAG_TEAM.matches(segment.getSegmentType())) {
         attemptRivalryResolution(
             segment.getWrestlers().get(0),
             segment.getWrestlers().get(2),
             threshold,
             isPle,
-            segment.getShow().getId());
+            segment.getShow().getId(),
+            attemptedRivalryIds);
         attemptRivalryResolution(
             segment.getWrestlers().get(0),
             segment.getWrestlers().get(3),
             threshold,
             isPle,
-            segment.getShow().getId());
+            segment.getShow().getId(),
+            attemptedRivalryIds);
         attemptRivalryResolution(
             segment.getWrestlers().get(1),
             segment.getWrestlers().get(2),
             threshold,
             isPle,
-            segment.getShow().getId());
+            segment.getShow().getId(),
+            attemptedRivalryIds);
         attemptRivalryResolution(
             segment.getWrestlers().get(1),
             segment.getWrestlers().get(3),
             threshold,
             isPle,
-            segment.getShow().getId());
+            segment.getShow().getId(),
+            attemptedRivalryIds);
       } else {
         List<Wrestler> wrestlers = segment.getWrestlers();
         if (!wrestlers.isEmpty()) {
@@ -742,7 +758,12 @@ public class SegmentAdjudicationService {
           for (Wrestler other : wrestlers) {
             if (!baseWrestler.equals(other)) {
               attemptRivalryResolution(
-                  baseWrestler, other, threshold, isPle, segment.getShow().getId());
+                  baseWrestler,
+                  other,
+                  threshold,
+                  isPle,
+                  segment.getShow().getId(),
+                  attemptedRivalryIds);
             }
           }
         }
@@ -1165,12 +1186,17 @@ public class SegmentAdjudicationService {
       @NonNull final Wrestler w2,
       final int threshold,
       final boolean isPle,
-      @NonNull final Long showId) {
+      @NonNull final Long showId,
+      @NonNull final Set<Long> attemptedRivalryIds) {
     DiceBag diceBag = new DiceBag(20);
     Optional<Rivalry> rivalryBetweenWrestlers =
         rivalryService.getRivalryBetweenWrestlers(w1.getId(), w2.getId());
     rivalryBetweenWrestlers.ifPresent(
         rivalry -> {
+          if (!attemptedRivalryIds.add(rivalry.getId())) {
+            // Already attempted this segment (e.g. as the AI-tagged rivalry) — one roll only.
+            return;
+          }
           if (isPle) {
             rivalryService.resolveAtPle(rivalry.getId(), diceBag.roll(), diceBag.roll(), showId);
           } else {

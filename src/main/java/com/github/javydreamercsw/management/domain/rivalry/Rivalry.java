@@ -164,23 +164,20 @@ public class Rivalry extends AbstractEntity<Long> {
     boolean resolved = totalRoll > threshold;
 
     if (resolved) {
+      // endRivalry() records the final "Rivalry ended" heat event — do not add a
+      // second event for the same resolution.
       endRivalry(
           "Resolved by dice roll: " + wrestler1Roll + " + " + wrestler2Roll + " = " + totalRoll);
+    } else {
+      // Record the failed attempt so the rivalry history shows it.
+      HeatEvent event = new HeatEvent();
+      event.setRivalry(this);
+      event.setHeatChange(0);
+      event.setReason("Failed resolution attempt (" + totalRoll + ")");
+      event.setEventDate(Instant.now());
+      event.setHeatAfterEvent(this.heat);
+      heatEvents.add(event);
     }
-
-    // Create heat event for the resolution attempt
-    String reason =
-        resolved
-            ? "Rivalry resolved by dice roll (" + totalRoll + ")"
-            : "Failed resolution attempt (" + totalRoll + ")";
-
-    HeatEvent event = new HeatEvent();
-    event.setRivalry(this);
-    event.setHeatChange(0);
-    event.setReason(reason);
-    event.setEventDate(Instant.now());
-    event.setHeatAfterEvent(this.heat);
-    heatEvents.add(event);
 
     return resolved;
   }

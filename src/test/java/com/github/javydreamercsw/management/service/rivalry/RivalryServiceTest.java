@@ -200,7 +200,8 @@ class RivalryServiceTest {
     assertThat(result.totalRoll()).isEqualTo(31);
     assertThat(rivalry.getIsActive()).isFalse();
     verify(rivalryRepository).saveAndFlush(rivalry);
-    assertThat(rivalry.getHeatEvents()).hasSize(2);
+    // Exactly one heat event records the resolution — no duplicate end event.
+    assertThat(rivalry.getHeatEvents()).hasSize(1);
   }
 
   @Test

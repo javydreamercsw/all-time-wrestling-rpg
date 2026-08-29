@@ -438,8 +438,10 @@ class SegmentAdjudicationServiceTest {
 
     verify(rivalryService).resolveAtPle(eq(42L), anyInt(), anyInt(), anyLong());
     verify(rivalryService, never()).attemptResolution(anyLong(), anyInt(), anyInt(), anyInt());
-    // Generic pair-scan should NOT run when rivalryId is set
-    verify(rivalryService, never()).getRivalryBetweenWrestlers(anyLong(), anyLong());
+    // The generic pair-scan still runs so OTHER rivalries between participants get their
+    // qualifying PLE attempt; the tagged rivalry itself is not rolled a second time (the
+    // pair lookup returned no rivalry here, so only the tagged attempt happened).
+    verify(rivalryService, times(1)).resolveAtPle(anyLong(), anyInt(), anyInt(), anyLong());
   }
 
   @Test
