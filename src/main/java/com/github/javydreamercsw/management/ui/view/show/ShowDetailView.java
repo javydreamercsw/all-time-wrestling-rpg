@@ -966,10 +966,22 @@ public class ShowDetailView extends Main
         .setAutoWidth(true)
         .setFlexGrow(0);
 
-    // Segment type column
-    grid.addColumn(
-            segment ->
-                segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A")
+    // Segment type column — carries a gold star when this is a #1 contender match
+    grid.addComponentColumn(
+            segment -> {
+              String typeName =
+                  segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A";
+              Span typeSpan = new Span(typeName);
+              if (segment.isContenderMatch()) {
+                Span star = new Span(" ⭐");
+                star.setId("contender-match-badge-" + segment.getId());
+                star.getStyle().set("color", "#ffd700");
+                Tooltip.forComponent(star)
+                    .setText("#1 Contender Match — the winner becomes the next challenger");
+                typeSpan.add(star);
+              }
+              return typeSpan;
+            })
         .setHeader("Segment Type")
         .setSortable(true)
         .setFlexGrow(1);
