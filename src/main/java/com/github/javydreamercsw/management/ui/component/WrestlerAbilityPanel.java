@@ -20,6 +20,8 @@ import com.github.javydreamercsw.management.domain.campaign.AbilityTiming;
 import com.github.javydreamercsw.management.domain.wrestler.AbilityType;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -31,6 +33,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -43,7 +46,15 @@ public class WrestlerAbilityPanel extends VerticalLayout {
   public static final Set<String> CORE_ABILITY_NAMES =
       Set.of("Discard Block", "Stamina Block", "Recover", "Taunt");
 
+  /** Notified when the player marks an ability as used at the table. */
+  @FunctionalInterface
+  public interface AbilityUsageListener {
+    void abilityUsed(WrestlerAbility ability);
+  }
+
   @Nullable private final AbilityReminderTextService reminderTextService;
+  @Nullable private final AbilityUsageListener usageListener;
+  private final Map<String, Integer> initialUsedCounts;
 
   public WrestlerAbilityPanel(final List<WrestlerAbility> abilities) {
     this(abilities, null);
@@ -57,7 +68,24 @@ public class WrestlerAbilityPanel extends VerticalLayout {
   public WrestlerAbilityPanel(
       final List<WrestlerAbility> abilities,
       @Nullable final AbilityReminderTextService reminderTextService) {
+    this(abilities, reminderTextService, null, Map.of());
+  }
+
+  /**
+   * Interactive reminder mode: limited/conditional abilities get a "Mark used" button that fires
+   * the listener (the caller logs the usage into the match notes) and decrements an advisory
+   * uses-left counter. The counter is a reminder only — it never disables anything; the table is
+   * the authority. {@code initialUsedCounts} (keyed by ability name) seeds the counters from
+   * previously logged notes.
+   */
+  public WrestlerAbilityPanel(
+      final List<WrestlerAbility> abilities,
+      @Nullable final AbilityReminderTextService reminderTextService,
+      @Nullable final AbilityUsageListener usageListener,
+      final Map<String, Integer> initialUsedCounts) {
     this.reminderTextService = reminderTextService;
+    this.usageListener = usageListener;
+    this.initialUsedCounts = initialUsedCounts;
     setPadding(false);
     setSpacing(false);
     build(abilities);
@@ -87,17 +115,17 @@ public class WrestlerAbilityPanel extends VerticalLayout {
 
     if (!core.isEmpty()) {
       add(new H3("Core Abilities"));
-      core.forEach(a -> add(buildEntry(a, reminderTextService)));
+      core.forEach(a -> add(buildInteractiveEntry(a)));
     }
     if (!specific.isEmpty()) {
       add(new H3("Wrestler Abilities"));
-      specific.forEach(a -> add(buildEntry(a, reminderTextService)));
+      specific.forEach(a -> add(buildInteractiveEntry(a)));
     }
     if (!unlockable.isEmpty()) {
       VerticalLayout unlockableContent = new VerticalLayout();
       unlockableContent.setPadding(false);
       unlockableContent.setSpacing(false);
-      unlockable.forEach(a -> unlockableContent.add(buildEntry(a, reminderTextService)));
+      unlockable.forEach(a -> unlockableContent.add(buildInteractiveEntry(a)));
       Details unlockableSection = new Details("Unlockable Abilities", unlockableContent);
       unlockableSection.setOpened(false);
       add(unlockableSection);
@@ -106,6 +134,49 @@ public class WrestlerAbilityPanel extends VerticalLayout {
 
   public static Div buildEntry(final WrestlerAbility ability) {
     return buildEntry(ability, null);
+  }
+
+  /** Entry plus, in interactive mode, an advisory uses-left counter and a "Mark used" button. */
+  private Div buildInteractiveEntry(final WrestlerAbility ability) {
+    Div card = buildEntry(ability, reminderTextService);
+    boolean trackable =
+        ability.getAbilityType() == AbilityType.USES_LIMITED
+            || ability.getAbilityType() == AbilityType.CONDITIONAL;
+    if (usageListener == null || !trackable) {
+      return card;
+    }
+
+    HorizontalLayout footer = new HorizontalLayout();
+    footer.setAlignItems(FlexComponent.Alignment.CENTER);
+    footer.setSpacing(true);
+
+    Span usesLeft = null;
+    int[] remaining = {-1};
+    if (ability.getAbilityType() == AbilityType.USES_LIMITED && ability.getMaxUses() != null) {
+      int used = initialUsedCounts.getOrDefault(ability.getName(), 0);
+      remaining[0] = Math.max(0, ability.getMaxUses() - used);
+      usesLeft = new Span(remaining[0] + " left");
+      usesLeft.setId("ability-uses-left-" + ability.getId());
+      usesLeft.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+      usesLeft.getStyle().set("color", "var(--lumo-primary-text-color)");
+      footer.add(usesLeft);
+    }
+
+    Button markUsed = new Button("Mark used");
+    markUsed.setId("ability-mark-used-" + ability.getId());
+    markUsed.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+    Span counterRef = usesLeft;
+    markUsed.addClickListener(
+        e -> {
+          usageListener.abilityUsed(ability);
+          if (counterRef != null && remaining[0] > -1) {
+            remaining[0] = Math.max(0, remaining[0] - 1);
+            counterRef.setText(remaining[0] + " left");
+          }
+        });
+    footer.add(markUsed);
+    card.add(footer);
+    return card;
   }
 
   public static Div buildEntry(

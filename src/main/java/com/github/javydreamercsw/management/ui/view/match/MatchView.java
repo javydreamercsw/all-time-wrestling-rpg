@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
@@ -647,11 +648,24 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                 var abilities = wrestlerAbilityRepository.findByWrestlerId(matchPlayer.getId());
                 if (!abilities.isEmpty()) {
                   // Reminder mode: timing chips + human-readable trigger lines so the player
-                  // remembers when to apply each ability at the table.
+                  // remembers when to apply each ability at the table. "Mark used" logs the
+                  // usage into the match notes (advisory — the table is the authority); notes
+                  // feed the AI narration and, from there, the match summary.
+                  Map<String, Integer> usedCounts = new HashMap<>();
+                  abilities.forEach(
+                      a ->
+                          usedCounts.put(
+                              a.getName(),
+                              abilityReminderTextService.countUses(
+                                  segment.getNotes(), a.getName(), matchPlayer.getName())));
                   Details abilitiesSection =
                       new Details(
                           "Your Abilities",
-                          new WrestlerAbilityPanel(abilities, abilityReminderTextService));
+                          new WrestlerAbilityPanel(
+                              abilities,
+                              abilityReminderTextService,
+                              ability -> logAbilityUsage(matchPlayer.getName(), ability),
+                              usedCounts));
                   abilitiesSection.setOpened(false);
                   sideCol.add(abilitiesSection);
                 }
@@ -1545,5 +1559,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     segmentService.updateSegment(segment);
     updateCommentaryDisplay();
     Notification.show("Narration saved!");
+  }
+
+  /**
+   * Appends an ability usage line to the match notes so it flows into the AI narration and, from
+   * there, the match summary. Advisory bookkeeping only — nothing is enforced.
+   */
+  private void logAbilityUsage(final String wrestlerName, final WrestlerAbility ability) {
+    if (feedbackArea == null) {
+      return;
+    }
+    String line = abilityReminderTextService.usageNoteLine(ability, wrestlerName);
+    String current = feedbackArea.getValue();
+    feedbackArea.setValue(current == null || current.isBlank() ? line : current + "\n" + line);
+    Notification.show("Logged: " + ability.getName());
   }
 }
