@@ -327,10 +327,10 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     login("player", "player123");
 
-    // Navigate to the PlayerView
-    navigateTo("player");
-
-    waitForVaadinToLoad();
+    // Navigate to the PlayerView and wait for the Go to Match button to render.
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser on the Home view instead of the Player dashboard.
+    navigateToAndWaitForElement("player", By.id("go-to-match-" + segment.getId()));
 
     captureCaption(
         "Upcoming matches grid — each scheduled segment has a 'Go to Match' button that"
