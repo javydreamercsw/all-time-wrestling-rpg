@@ -59,6 +59,8 @@ public class ShowPlanningViewE2ETest extends AbstractE2ETest {
     testShow.setType(showType);
     testShow.setShowDate(LocalDate.now().plusDays(7));
     testShow.setDescription("Test Description");
+    // ShowPlanningService rejects shows without a universe (ATW-e6z8).
+    testShow.setUniverse(defaultUniverse);
     showRepository.save(testShow);
   }
 
