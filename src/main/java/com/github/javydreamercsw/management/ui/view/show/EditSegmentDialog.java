@@ -22,7 +22,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -156,6 +156,7 @@ public class EditSegmentDialog extends Dialog {
       String summary,
       String notes,
       boolean isTitleSegment,
+      boolean isContenderMatch,
       Set<Title> titles) {
 
     /** Build from a planning DTO using pre-loaded wrestler map for name resolution. */
@@ -229,6 +230,7 @@ public class EditSegmentDialog extends Dialog {
           proposed.getSummary() != null ? proposed.getSummary() : "",
           proposed.getNotes() != null ? proposed.getNotes() : "",
           Boolean.TRUE.equals(proposed.getIsTitleSegment()),
+          false,
           proposed.getTitles() != null ? proposed.getTitles() : new HashSet<>());
     }
 
@@ -256,6 +258,7 @@ public class EditSegmentDialog extends Dialog {
           segment.getSummary() != null ? segment.getSummary() : "",
           segment.getNotes() != null ? segment.getNotes() : "",
           Boolean.TRUE.equals(segment.getIsTitleSegment()),
+          segment.isContenderMatch(),
           segment.getTitles() != null ? segment.getTitles() : new HashSet<>());
     }
   }
@@ -271,6 +274,7 @@ public class EditSegmentDialog extends Dialog {
       String summary,
       String notes,
       boolean isTitleSegment,
+      boolean isContenderMatch,
       Set<Title> titles,
       Map<Long, Integer> finalHealthValues) {}
 
@@ -308,6 +312,7 @@ public class EditSegmentDialog extends Dialog {
   private final HorizontalLayout winnerTeamButtonsLayout = new HorizontalLayout();
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
+  private final Checkbox isContenderMatchCheckbox;
   private final Span synergyBonusLabel;
   private final VerticalLayout teamsLayout = new VerticalLayout();
   @Getter private final Map<Long, IntegerField> healthFields = new HashMap<>();
@@ -594,7 +599,7 @@ public class EditSegmentDialog extends Dialog {
           healthFields.clear();
           boolean isPromo =
               segmentTypeCombo.getValue() != null
-                  && SegmentTypeNames.PROMO.equalsIgnoreCase(segmentTypeCombo.getValue().getName());
+                  && WellKnownSegmentType.PROMO.matches(segmentTypeCombo.getValue());
           Set<Wrestler> allTeamWrestlers =
               teamCombos.stream().flatMap(c -> c.getValue().stream()).collect(Collectors.toSet());
           List<Wrestler> playerWrestlers =
@@ -625,16 +630,28 @@ public class EditSegmentDialog extends Dialog {
 
     isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
     isTitleSegmentCheckbox.setId("edit-is-title-segment-checkbox");
-    isTitleSegmentCheckbox.addValueChangeListener(
-        event -> {
-          titleMultiSelectComboBox.setVisible(event.getValue());
-          if (!event.getValue()) {
+
+    isContenderMatchCheckbox = new Checkbox("This is a #1 Contender Match");
+    isContenderMatchCheckbox.setId("edit-is-contender-match-checkbox");
+
+    // The title selector is needed for title matches (title on the line) and contender
+    // matches (which title the winner becomes #1 contender for).
+    Runnable refreshTitleComboVisibility =
+        () -> {
+          boolean visible =
+              isTitleSegmentCheckbox.getValue() || isContenderMatchCheckbox.getValue();
+          titleMultiSelectComboBox.setVisible(visible);
+          if (!visible) {
             titleMultiSelectComboBox.clear();
           }
-        });
+        };
+    isTitleSegmentCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
+    isContenderMatchCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
+
     isTitleSegmentCheckbox.setValue(initial.isTitleSegment());
-    titleMultiSelectComboBox.setVisible(initial.isTitleSegment());
-    if (initial.isTitleSegment()) {
+    isContenderMatchCheckbox.setValue(initial.isContenderMatch());
+    titleMultiSelectComboBox.setVisible(initial.isTitleSegment() || initial.isContenderMatch());
+    if (initial.isTitleSegment() || initial.isContenderMatch()) {
       titleMultiSelectComboBox.setValue(initial.titles());
     }
 
@@ -651,6 +668,7 @@ public class EditSegmentDialog extends Dialog {
         winnersCombo,
         winnerTeamButtonsLayout,
         isTitleSegmentCheckbox,
+        isContenderMatchCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
         notesArea,
@@ -683,6 +701,7 @@ public class EditSegmentDialog extends Dialog {
                       summaryArea.getValue(),
                       notesArea.getValue(),
                       isTitleSegmentCheckbox.getValue(),
+                      isContenderMatchCheckbox.getValue(),
                       titleMultiSelectComboBox.getValue(),
                       healthValues));
             });

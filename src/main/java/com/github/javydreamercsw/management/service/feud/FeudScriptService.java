@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.Comparator;
 import java.util.List;
@@ -56,6 +57,7 @@ public class FeudScriptService {
   private final ShowSegmentReservationService reservationService;
   private final GameSettingService gameSettingService;
   private final UniverseContextService universeContextService;
+  private final ContenderSelectionService contenderSelectionService;
 
   // ── Query ────────────────────────────────────────────────────────────────
 
@@ -189,6 +191,7 @@ public class FeudScriptService {
     beat.setActualSegment(segment);
     beat.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
     FeudScriptBeat saved = feudScriptBeatRepository.save(beat);
+    applyContenderDesignation(saved, segment);
 
     FeudScript script = saved.getScript();
     boolean allDone =
@@ -218,6 +221,7 @@ public class FeudScriptService {
     beat.setActualSegment(segment);
     beat.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
     FeudScriptBeat saved = feudScriptBeatRepository.save(beat);
+    applyContenderDesignation(saved, segment);
 
     FeudScript script = saved.getScript();
     boolean allDone =
@@ -231,6 +235,27 @@ public class FeudScriptService {
       feudScriptRepository.save(script);
     }
     return saved;
+  }
+
+  /**
+   * CONTENDER_DESIGNATION beat outcome: when the beat carries a contender title, its segment winner
+   * becomes the #1 contender for that title. Null-safe on the winner list (no declared winner → no
+   * designation) and on the injected service (unit tests).
+   */
+  private void applyContenderDesignation(
+      @NonNull final FeudScriptBeat beat, @NonNull final Segment segment) {
+    if (beat.getContenderTitle() == null
+        || contenderSelectionService == null
+        || segment.getWinners().isEmpty()) {
+      return;
+    }
+    Wrestler winner = segment.getWinners().get(0);
+    log.info(
+        "Beat #{} carries a contender designation: {} -> #1 contender for {}",
+        beat.getBeatOrder(),
+        winner.getName(),
+        beat.getContenderTitle().getName());
+    contenderSelectionService.designateAsContender(beat.getContenderTitle(), winner);
   }
 
   /** Returns the default PLE cap from settings (1–3, defaults to 3). */

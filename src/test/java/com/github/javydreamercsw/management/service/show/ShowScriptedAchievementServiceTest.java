@@ -28,7 +28,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -178,7 +178,7 @@ class ShowScriptedAchievementServiceTest {
   private Segment matchSegment(final List<Wrestler> wrestlers, final boolean isMainEvent) {
     Segment seg = mock(Segment.class);
     SegmentType type = mock(SegmentType.class);
-    when(type.getName()).thenReturn(SegmentTypeNames.ONE_ON_ONE);
+    when(type.getCode()).thenReturn(WellKnownSegmentType.ONE_ON_ONE.getCode());
     when(seg.getSegmentType()).thenReturn(type);
     when(seg.getWrestlers()).thenReturn(wrestlers);
     when(seg.isMainEvent()).thenReturn(isMainEvent);
@@ -188,7 +188,7 @@ class ShowScriptedAchievementServiceTest {
   private Segment promoSegment(final List<Wrestler> wrestlers) {
     Segment seg = mock(Segment.class);
     SegmentType type = mock(SegmentType.class);
-    when(type.getName()).thenReturn(SegmentTypeNames.PROMO);
+    when(type.getCode()).thenReturn(WellKnownSegmentType.PROMO.getCode());
     when(seg.getSegmentType()).thenReturn(type);
     when(seg.getWrestlers()).thenReturn(wrestlers);
     when(seg.isMainEvent()).thenReturn(false);

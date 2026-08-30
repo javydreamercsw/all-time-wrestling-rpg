@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
@@ -332,6 +333,7 @@ class AchievementSystemTest {
     when(segment.getSegmentRules()).thenReturn(Collections.emptySet());
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("Abu Dhabi Rumble");
+    when(type.getCode()).thenReturn(WellKnownSegmentType.ABU_DHABI_RUMBLE.getCode());
     when(show.isPremiumLiveEvent()).thenReturn(true);
     when(segment.isMainEvent()).thenReturn(true);
 
