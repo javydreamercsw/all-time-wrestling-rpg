@@ -103,13 +103,11 @@ class ShowDetailViewerDocsE2ETest extends AbstractE2ETest {
 
     String expectedUrl = "/show-detail/" + testShow.getId();
 
-    driver.get("http://localhost:" + serverPort + getContextPath() + expectedUrl);
+    // Retry-enabled navigation: the post-login redirect can swallow the first driver.get(),
+    // leaving the browser on the Home view instead of the requested route.
+    navigateToAndWaitForElement("show-detail/" + testShow.getId(), By.id("show-info-details"));
 
     new WebDriverWait(driver, getWaitTimeout()).until(ExpectedConditions.urlContains(expectedUrl));
-
-    // The first idle signal can arrive before the router finishes pushing the view contents.
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.id("show-info-details"));
 
     List<WebElement> adjudicateButtons = driver.findElements(By.id("adjudicate-show-btn"));
     assertTrue(
