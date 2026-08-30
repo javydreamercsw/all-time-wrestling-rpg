@@ -97,20 +97,28 @@ public class ShowScriptedAchievementService {
       return;
     }
 
-    Map<String, Object> context = new HashMap<>();
-    context.put("show", event.getShow());
-    context.put("segments", segments);
-    context.put("mainEventParticipants", mainEvent.getWrestlers());
-    context.put("promoSegments", promoSegments);
-    context.put("promoParticipants", promoParticipants);
-    context.put(
-        "gameDate",
-        gameSettingService.getCurrentGameDate().atStartOfDay(ZoneOffset.UTC).toInstant());
-
     for (Account account : accounts) {
+      // Scope the participant lists to the account's OWN wrestlers: wrestler-specific
+      // conditions ("Johnny cut a promo") must only unlock for the account that wrestler
+      // is assigned to, not for everyone who happened to be on the same show.
+      Map<String, Object> context = new HashMap<>();
+      context.put("show", event.getShow());
+      context.put("segments", segments);
+      context.put("mainEventParticipants", ownedBy(mainEvent.getWrestlers(), account));
+      context.put("promoSegments", promoSegments);
+      context.put("promoParticipants", ownedBy(promoParticipants, account));
+      context.put(
+          "gameDate",
+          gameSettingService.getCurrentGameDate().atStartOfDay(ZoneOffset.UTC).toInstant());
       scriptedAchievementEvaluator
           .resolveNewlyUnlockedKeys(account, context)
           .forEach(key -> legacyService.unlockAchievement(account, key));
     }
+  }
+
+  private static List<Wrestler> ownedBy(final List<Wrestler> wrestlers, final Account account) {
+    return wrestlers.stream()
+        .filter(w -> w.getAccount() != null && account.getId().equals(w.getAccount().getId()))
+        .toList();
   }
 }
