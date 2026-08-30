@@ -163,6 +163,41 @@ class ShowScriptedAchievementServiceTest {
   }
 
   @Test
+  void onShowFinalized_scopesParticipantsToTheAccountsOwnWrestlers() {
+    // Johnny (account 2) cuts a promo; account 1 also has a wrestler on the show.
+    // Account 1's context must NOT contain Johnny — otherwise wrestler-specific
+    // achievements (e.g. Mayor of Slamtown) unlock for everyone on the card.
+    // Account.equals() compares usernames, so both need distinct ones to stay
+    // separate entries in the service's account set.
+    account.setUsername("player1");
+    Account account2 = new Account();
+    account2.setId(2L);
+    account2.setUsername("player2");
+    account2.setAchievements(Set.of());
+    Wrestler johnny = mock(Wrestler.class);
+    when(johnny.getAccount()).thenReturn(account2);
+
+    Segment match = matchSegment(List.of(wrestler, johnny), true);
+    Segment promo = promoSegment(List.of(johnny));
+
+    service.onShowFinalized(new ShowFinalizedEvent(this, show, List.of(promo, match)));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+    verify(evaluator).resolveNewlyUnlockedKeys(eq(account), captor.capture());
+    Map<String, Object> account1Ctx = captor.getValue();
+    assertThat((List<Wrestler>) account1Ctx.get("promoParticipants")).isEmpty();
+    assertThat((List<Wrestler>) account1Ctx.get("mainEventParticipants")).containsExactly(wrestler);
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> captor2 = ArgumentCaptor.forClass(Map.class);
+    verify(evaluator).resolveNewlyUnlockedKeys(eq(account2), captor2.capture());
+    Map<String, Object> account2Ctx = captor2.getValue();
+    assertThat((List<Wrestler>) account2Ctx.get("promoParticipants")).containsExactly(johnny);
+    assertThat((List<Wrestler>) account2Ctx.get("mainEventParticipants")).containsExactly(johnny);
+  }
+
+  @Test
   void onShowFinalized_unlocksAchievementsReturnedByEvaluator() {
     when(evaluator.resolveNewlyUnlockedKeys(eq(account), any()))
         .thenReturn(List.of("RVD_WHOLE_DAMN_SHOW"));
