@@ -29,7 +29,8 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
   @Test
   void testToggleExpansionAndVerifyFiltering() {
     // 1. Navigate to Admin and select Expansion Management tab
-    navigateTo("admin");
+    navigateToAndWaitForElement(
+        "admin", By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
 
     WebElement tab =
         waitForVaadinElement(
@@ -57,13 +58,14 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
     }
 
     // 3. Navigate to Wrestler List and verify Rob Van Dam (EXTREME set) is hidden
-    navigateTo("wrestler-list");
+    navigateToAndWaitForElement("wrestler-list", By.tagName("vaadin-grid"));
 
     // Verify 'Rob Van Dam' is NOT present
     assertThat(driver.findElements(By.xpath("//*[contains(., 'Rob Van Dam')]"))).isEmpty();
 
     // 4. Go back and re-enable it
-    navigateTo("admin");
+    navigateToAndWaitForElement(
+        "admin", By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(
         waitForVaadinElement(
             driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
@@ -81,7 +83,7 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
     }
 
     // 5. Verify Rob Van Dam is back
-    navigateTo("wrestler-list");
+    navigateToAndWaitForElement("wrestler-list", By.tagName("vaadin-grid"));
     waitForVaadinElement(driver, By.xpath("//*[contains(., 'Rob Van Dam')]"));
   }
 }

@@ -21,18 +21,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.github.javydreamercsw.AbstractE2ETest;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class SeasonListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToSeasonListView() {
-    navigateTo("season-list");
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser on the Home view instead of the season list.
+    navigateToAndWaitForElement("season-list", By.tagName("vaadin-grid"));
 
     // Check that the grid is present
-    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
-    assertNotNull(driver.findElement(By.tagName("vaadin-grid")));
+    assertNotNull(waitForVaadinElementVisible(By.tagName("vaadin-grid")));
   }
 }

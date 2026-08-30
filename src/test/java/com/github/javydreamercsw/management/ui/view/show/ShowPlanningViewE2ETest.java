@@ -28,8 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class ShowPlanningViewE2ETest extends AbstractE2ETest {
@@ -66,13 +64,12 @@ public class ShowPlanningViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToShowPlanningView() {
-    driver.get(
-        "http://localhost:" + serverPort + getContextPath() + "/show-planning/" + testShow.getId());
-    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser on the Home view instead of the planning view.
+    navigateToAndWaitForElement(
+        "show-planning/" + testShow.getId(), By.id("select-show-combo-box"));
 
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("select-show-combo-box")));
-
-    WebElement comboBox = driver.findElement(By.id("select-show-combo-box"));
+    WebElement comboBox = waitForVaadinElementVisible(By.id("select-show-combo-box"));
     assertNotNull(comboBox);
   }
 }
