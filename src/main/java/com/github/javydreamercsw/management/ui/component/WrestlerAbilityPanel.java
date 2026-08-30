@@ -160,6 +160,13 @@ public class WrestlerAbilityPanel extends VerticalLayout {
       usesLeft.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
       usesLeft.getStyle().set("color", "var(--lumo-primary-text-color)");
       footer.add(usesLeft);
+      // The live counter supersedes the static "N uses" badge — showing both is redundant.
+      String badgeId = "ability-badge-" + ability.getId();
+      card.getChildren()
+          .flatMap(c -> c.getChildren())
+          .filter(c -> c.getId().map(badgeId::equals).orElse(false))
+          .findFirst()
+          .ifPresent(badge -> badge.setVisible(false));
     }
 
     Button markUsed = new Button("Mark used");
@@ -270,6 +277,7 @@ public class WrestlerAbilityPanel extends VerticalLayout {
     if (ability.getAbilityType() == AbilityType.USES_LIMITED && ability.getMaxUses() != null) {
       int uses = ability.getMaxUses();
       badge = new Span(uses + (uses == 1 ? " use" : " uses"));
+      badge.setId("ability-badge-" + ability.getId());
       badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.Padding.Horizontal.SMALL);
       badge.getStyle().set("background", "var(--lumo-primary-color-10pct)");
       badge.getStyle().set("color", "var(--lumo-primary-text-color)");
