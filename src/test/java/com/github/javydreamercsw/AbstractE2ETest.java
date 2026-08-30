@@ -357,6 +357,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         if (!loginUrl.equals(driver.getCurrentUrl())) {
           driver.get(loginUrl);
         }
+        // A lingering authenticated session makes Spring Security redirect /login back
+        // to the app root — the login form then NEVER renders and the wait below burns
+        // its full timeout. Clear the stale session cookies and navigate again.
+        if (!driver.getCurrentUrl().startsWith(loginUrl)) {
+          log.warn(
+              "Redirected off the login page to {} — clearing stale session cookies and retrying",
+              driver.getCurrentUrl());
+          driver.manage().deleteAllCookies();
+          driver.get(loginUrl);
+        }
         // Wait for the login form directly — the Vaadin client on the login page can
         // remain "active" while initializing its push connection (Vaadin 25), causing
         // waitForVaadinClientToLoad() to time out before we even reach the form.
