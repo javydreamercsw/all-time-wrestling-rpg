@@ -24,6 +24,11 @@
 #
 # Freeze rule: do NOT use production between `snapshot` and `promote`/`discard` —
 # prod changes made after the snapshot are lost on promote.
+#
+# Promote guards: `promote` refuses unless the sandbox was provably created by
+# `snapshot` (provenance file) AND production is byte-identical to the snapshot
+# (freeze-rule check). Set FORCE_PROMOTE=1 to override the freeze check ONLY when
+# you accept losing the prod changes made since the snapshot.
 
 set -euo pipefail
 
@@ -40,6 +45,8 @@ TOMCAT_SERVICE="${TOMCAT_SERVICE:-tomcat}"
 RUN_DIR="${HOME}/.atwrpg/sandbox"
 PID_FILE="${RUN_DIR}/candidate.pid"
 LOG_FILE="${RUN_DIR}/candidate.log"
+# Provenance record proving the sandbox was seeded from a prod snapshot.
+STATE_FILE="${RUN_DIR}/sandbox.meta"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
@@ -65,8 +72,34 @@ run_mysql() {
 }
 
 run_mysqldump() {
+  # --skip-dump-date keeps dumps deterministic so identical data hashes identically
+  # (the freeze-rule check in `promote` depends on this).
   # shellcheck disable=SC2046
-  mysqldump $(mysql_args) --single-transaction --routines --triggers "$@"
+  mysqldump $(mysql_args) --single-transaction --routines --triggers --skip-dump-date "$@"
+}
+
+dump_sha() { shasum -a 256 "$1" | awk '{print $1}'; }
+
+meta_get() { sed -n "s/^${1}=//p" "$STATE_FILE" 2>/dev/null | head -1; }
+
+# The sandbox is only trustworthy if OUR `snapshot` created it from the current
+# PROD_DB. Anything else (hand-made schema, stale schema from an abandoned cycle,
+# schema built by Flyway from scratch) must never be promoted over production.
+meta_valid() {
+  [ -f "$STATE_FILE" ] \
+    && [ "$(meta_get PROD_DB)" = "$PROD_DB" ] \
+    && [ "$(meta_get SANDBOX_DB)" = "$SANDBOX_DB" ] \
+    && [ -n "$(meta_get SNAPSHOT_SHA256)" ]
+}
+
+require_snapshot_provenance() {
+  if ! meta_valid; then
+    echo "REFUSING: sandbox '${SANDBOX_DB}' was not created by '$0 snapshot' for '${PROD_DB}'" >&2
+    echo "(missing or mismatched ${STATE_FILE})." >&2
+    echo "Promoting such a sandbox would REPLACE production with data that never" >&2
+    echo "started as a copy of production. Run '$0 snapshot' first." >&2
+    exit 1
+  fi
 }
 
 # Read a key from the [client] section of ~/.my.cnf (what the mysql CLI uses),
@@ -128,6 +161,15 @@ cmd_snapshot() {
   echo "Rebuilding sandbox schema '${SANDBOX_DB}'"
   run_mysql -e "DROP DATABASE IF EXISTS \`${SANDBOX_DB}\`; CREATE DATABASE \`${SANDBOX_DB}\`"
   run_mysql "$SANDBOX_DB" < "$dump"
+  # Record provenance: promote/start refuse without this, and promote uses the
+  # dump hash to detect prod changes made after the snapshot (freeze-rule check).
+  cat > "$STATE_FILE" <<EOF
+PROD_DB=${PROD_DB}
+SANDBOX_DB=${SANDBOX_DB}
+PRE_TEST_DUMP=${dump}
+SNAPSHOT_SHA256=$(dump_sha "$dump")
+CREATED=$(timestamp)
+EOF
   echo
   echo "Sandbox ready: ${SANDBOX_DB} (copy of ${PROD_DB})"
   echo ">>> FREEZE production use now. Changes to '${PROD_DB}' after this point are LOST on promote. <<<"
@@ -142,6 +184,7 @@ cmd_start() {
     echo "Sandbox schema '${SANDBOX_DB}' does not exist. Run 'snapshot' first." >&2
     exit 1
   fi
+  require_snapshot_provenance
   local jar="${1:-}"
   if [ -z "$jar" ]; then
     echo "Building candidate JAR (-Pproduction)..."
@@ -203,12 +246,21 @@ cmd_discard() {
     echo "Dropping sandbox schema '${SANDBOX_DB}' (production untouched)"
     run_mysql -e "DROP DATABASE \`${SANDBOX_DB}\`"
   fi
+  rm -f "$STATE_FILE"
   echo "Reverted. Production schema '${PROD_DB}' was never modified."
 }
 
 cmd_promote() {
   if ! schema_exists "$SANDBOX_DB"; then
     echo "Sandbox schema '${SANDBOX_DB}' does not exist — nothing to promote." >&2
+    exit 1
+  fi
+  require_snapshot_provenance
+  local sandbox_tables
+  sandbox_tables=$(run_mysql -N -e \
+    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${SANDBOX_DB}'")
+  if [ "${sandbox_tables:-0}" -eq 0 ]; then
+    echo "REFUSING: sandbox '${SANDBOX_DB}' is empty — promoting it would wipe production." >&2
     exit 1
   fi
   confirm_prod
@@ -231,6 +283,22 @@ cmd_promote() {
   echo "Rollback point: dumping '${PROD_DB}' -> ${pre_promote}"
   run_mysqldump "$PROD_DB" > "$pre_promote"
 
+  # Freeze-rule check: production must be byte-identical to what `snapshot` copied.
+  # If it changed, someone used prod during the test window — promoting now would
+  # silently discard those changes.
+  if [ "$(dump_sha "$pre_promote")" != "$(meta_get SNAPSHOT_SHA256)" ]; then
+    if [ "${FORCE_PROMOTE:-0}" = "1" ]; then
+      echo "WARNING: production changed since the snapshot — FORCE_PROMOTE=1 set, continuing." >&2
+      echo "         Prod changes made after the snapshot WILL BE LOST (rollback dump: ${pre_promote})." >&2
+    else
+      echo "REFUSING: production '${PROD_DB}' changed since the snapshot the sandbox was built from." >&2
+      echo "Promoting would DISCARD those production changes. Either:" >&2
+      echo "  - re-run '$0 snapshot' and repeat the test on fresh data, or" >&2
+      echo "  - re-run with FORCE_PROMOTE=1 if losing the post-snapshot prod changes is acceptable." >&2
+      exit 1
+    fi
+  fi
+
   local sandbox_dump="${BACKUP_DIR}/sandbox-final-$(timestamp).sql"
   echo "Dumping tested sandbox '${SANDBOX_DB}' -> ${sandbox_dump}"
   run_mysqldump "$SANDBOX_DB" > "$sandbox_dump"
@@ -239,6 +307,7 @@ cmd_promote() {
   run_mysql -e "DROP DATABASE \`${PROD_DB}\`; CREATE DATABASE \`${PROD_DB}\`"
   run_mysql "$PROD_DB" < "$sandbox_dump"
   run_mysql -e "DROP DATABASE \`${SANDBOX_DB}\`"
+  rm -f "$STATE_FILE"
 
   echo
   echo "Promotion complete. '${PROD_DB}' now holds the tested (migrated) data."
@@ -277,6 +346,11 @@ cmd_rollback() {
 cmd_status() {
   echo "Prod schema:     ${PROD_DB}    $(schema_exists "$PROD_DB" && echo '[exists]' || echo '[MISSING]')"
   echo "Sandbox schema:  ${SANDBOX_DB} $(schema_exists "$SANDBOX_DB" && echo '[exists]' || echo '[absent]')"
+  if schema_exists "$SANDBOX_DB"; then
+    meta_valid \
+      && echo "Provenance:      OK (snapshot of ${PROD_DB} taken $(meta_get CREATED))" \
+      || echo "Provenance:      INVALID — sandbox not created by 'snapshot'; promote will refuse"
+  fi
   if candidate_running; then
     echo "Candidate:       RUNNING (pid $(candidate_pid), http://localhost:${CANDIDATE_PORT}/)"
   else
@@ -287,7 +361,7 @@ cmd_status() {
 }
 
 usage() {
-  sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
   exit 1
 }
 

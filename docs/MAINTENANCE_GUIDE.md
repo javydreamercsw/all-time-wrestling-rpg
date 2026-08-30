@@ -500,11 +500,19 @@ TOMCAT_WEBAPPS=/opt/homebrew/etc/tomcat/webapps   # same value the Cargo Deploy 
 Rules and caveats:
 
 - **Freeze rule:** do not use production between `snapshot` and `promote`/`discard` —
-  production changes made after the snapshot are lost on promote.
+  production changes made after the snapshot are lost on promote. This is
+  **enforced**: `promote` re-dumps production and compares it against the
+  snapshot; if production changed it refuses (override with `FORCE_PROMOTE=1`
+  only if losing those changes is acceptable).
+- **Provenance guard:** `start` and `promote` refuse unless the sandbox was
+  created by `snapshot` from the current production schema (recorded in
+  `~/.atwrpg/sandbox/sandbox.meta`). A hand-made, stale, or Flyway-built-from-
+  scratch sandbox can never replace production — promoting one would reset
+  production data.
 - `promote` refuses to proceed without typing the production schema name, stops
   Tomcat first, archives the current WAR, and takes a `pre-promote-*.sql` dump —
   that dump is the true rollback point (the old WAR cannot run against a
-  migrated schema).
+  migrated schema). It also refuses to promote an empty sandbox.
 - All dumps are timestamped in `BACKUP_DIR` and never overwritten.
 - Image storage (`~/.atwrpg/images` / `ATW_STORAGE_BASE_DIR`) is shared between
   production and the candidate. Images uploaded during a discarded test remain
