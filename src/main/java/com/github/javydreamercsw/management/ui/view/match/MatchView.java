@@ -112,6 +112,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import jakarta.annotation.security.PermitAll;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -510,15 +511,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     DashboardCard participantsCard = new DashboardCard("Participants");
     participantsCard.getStyle().set("flex", "1 1 500px");
 
-    Div cardGrid = new Div();
-    cardGrid
-        .getStyle()
-        .set("display", "grid")
-        .set("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))")
-        .set("gap", "var(--lumo-space-m)")
-        .set("width", "100%")
-        .set("align-items", "start");
-
     // Opponent penalty: derived from the active wrestler's campaign (primary player wrestler)
     int opponentPenalty = 0;
     if (isPlayerInMatch && playerWrestler != null) {
@@ -529,31 +521,94 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
     final int penalty = opponentPenalty;
 
+    Function<Wrestler, WrestlerSummaryCard> cardFactory =
+        w -> {
+          boolean isThisWrestlerPlayer = isPlayerInMatch && playerWrestlerIds.contains(w.getId());
+          WrestlerSummaryCard card =
+              new WrestlerSummaryCard(
+                  w,
+                  universeId,
+                  wrestlerService,
+                  injuryService,
+                  isThisWrestlerPlayer,
+                  isThisWrestlerPlayer ? 0 : penalty,
+                  wrestlerStatsService);
+          // Table-side reminders: everyone sees what each wrestler's default abilities do.
+          // The player's own abilities get the full interactive panel in the side column.
+          List<WrestlerAbility> defaultAbilities =
+              wrestlerAbilityRepository.findByWrestlerId(w.getId()).stream()
+                  .filter(WrestlerAbility::isDefault)
+                  .toList();
+          card.showAbilityChips(defaultAbilities, abilityReminderTextService);
+          return card;
+        };
+
+    // Group participants by team so tag partners are visually together (ordered by team number).
+    Map<Long, Integer> teamNumbers = new HashMap<>();
+    for (SegmentParticipant p : segment.getParticipants()) {
+      if (p.getWrestler() != null) {
+        teamNumbers.put(p.getWrestler().getId(), p.getTeamNumber());
+      }
+    }
+    Map<Integer, List<Wrestler>> teams = new TreeMap<>();
     wrestlers.stream()
         .filter(Objects::nonNull)
         .forEach(
-            w -> {
-              boolean isThisWrestlerPlayer =
-                  isPlayerInMatch && playerWrestlerIds.contains(w.getId());
-              WrestlerSummaryCard card =
-                  new WrestlerSummaryCard(
-                      w,
-                      universeId,
-                      wrestlerService,
-                      injuryService,
-                      isThisWrestlerPlayer,
-                      isThisWrestlerPlayer ? 0 : penalty,
-                      wrestlerStatsService);
-              // Table-side reminders: everyone sees what each wrestler's default abilities do.
-              // The player's own abilities get the full interactive panel in the side column.
-              List<WrestlerAbility> defaultAbilities =
-                  wrestlerAbilityRepository.findByWrestlerId(w.getId()).stream()
-                      .filter(WrestlerAbility::isDefault)
-                      .toList();
-              card.showAbilityChips(defaultAbilities, abilityReminderTextService);
-              cardGrid.add(card);
-            });
-    participantsCard.add(cardGrid);
+            w ->
+                teams
+                    .computeIfAbsent(teamNumbers.getOrDefault(w.getId(), 1), t -> new ArrayList<>())
+                    .add(w));
+    // Only draw team boxes for real team matches — a 1v1 or triple threat (every team
+    // a single wrestler) keeps the plain grid to avoid visual noise.
+    boolean isTeamMatch = teams.size() > 1 && teams.values().stream().anyMatch(m -> m.size() > 1);
+
+    if (isTeamMatch) {
+      Div teamRow = new Div();
+      teamRow
+          .getStyle()
+          .set("display", "flex")
+          .set("flex-wrap", "wrap")
+          .set("gap", "var(--lumo-space-m)")
+          .set("width", "100%")
+          .set("align-items", "stretch");
+      teams.forEach(
+          (teamNumber, members) -> {
+            Div teamBox = new Div();
+            teamBox.setId("match-team-" + teamNumber);
+            teamBox
+                .getStyle()
+                .set("flex", "1 1 280px")
+                .set("border", "1px solid var(--lumo-contrast-20pct)")
+                .set("border-radius", "var(--lumo-border-radius-m)")
+                .set("padding", "var(--lumo-space-s)");
+            Span teamLabel = new Span("Team " + teamNumber);
+            teamLabel.addClassNames(FontSize.XSMALL, FontWeight.SEMIBOLD, TextColor.SECONDARY);
+            teamLabel.getStyle().set("text-transform", "uppercase").set("letter-spacing", "0.05em");
+            Div memberGrid = new Div();
+            memberGrid
+                .getStyle()
+                .set("display", "grid")
+                .set("grid-template-columns", "repeat(auto-fill, minmax(240px, 1fr))")
+                .set("gap", "var(--lumo-space-s)")
+                .set("margin-top", "var(--lumo-space-xs)")
+                .set("align-items", "start");
+            members.forEach(w -> memberGrid.add(cardFactory.apply(w)));
+            teamBox.add(teamLabel, memberGrid);
+            teamRow.add(teamBox);
+          });
+      participantsCard.add(teamRow);
+    } else {
+      Div cardGrid = new Div();
+      cardGrid
+          .getStyle()
+          .set("display", "grid")
+          .set("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))")
+          .set("gap", "var(--lumo-space-m)")
+          .set("width", "100%")
+          .set("align-items", "start");
+      wrestlers.stream().filter(Objects::nonNull).forEach(w -> cardGrid.add(cardFactory.apply(w)));
+      participantsCard.add(cardGrid);
+    }
     mainContent.add(participantsCard);
 
     // Side column: rules, ringside actions, adjudication — fixed width, wraps below on mobile

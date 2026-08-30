@@ -21,6 +21,7 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,6 +82,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -88,6 +90,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -261,6 +264,113 @@ class MatchViewTest extends AbstractViewTest {
 
     assertEquals(1, segment.getWinners().size());
     assertEquals(wrestler1, segment.getWinners().get(0));
+  }
+
+  @Test
+  void tagMatchGroupsParticipantsIntoTeamBoxes() {
+    Segment segment = new Segment();
+    segment.setId(1L);
+    Show show = new Show();
+    show.setName("Test Show");
+    segment.setShow(show);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Tag Team");
+    segment.setSegmentType(segmentType);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    List<Wrestler> tagWrestlers = new ArrayList<>();
+    for (long i = 1; i <= 4; i++) {
+      Wrestler w = new Wrestler();
+      w.setId(i);
+      w.setName("Wrestler " + i);
+      w.getWrestlerStates().add(WrestlerState.builder().wrestler(w).universe(universe).build());
+      tagWrestlers.add(w);
+      SegmentParticipant p = new SegmentParticipant();
+      p.setSegment(segment);
+      p.setWrestler(w);
+      p.setIsWinner(false);
+      // Wrestlers 1+2 -> team 1, wrestlers 3+4 -> team 2.
+      p.setTeamNumber(i <= 2 ? 1 : 2);
+      segment.getParticipants().add(p);
+      lenient().when(wrestlerService.findById(i)).thenReturn(Optional.of(w));
+      lenient().when(wrestlerService.findByIdWithDetails(i)).thenReturn(Optional.of(w));
+    }
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(userDetails.getWrestler()).thenReturn(tagWrestlers.get(0));
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenAnswer(
+            invocation -> {
+              Long wrestlerId = invocation.getArgument(0);
+              return tagWrestlers.get((int) (wrestlerId - 1)).getState(1L).orElseThrow();
+            });
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // Both team boxes render, each labelled and holding its two members.
+    assertNotNull(_get(Div.class, spec -> spec.withId("match-team-1")));
+    assertNotNull(_get(Div.class, spec -> spec.withId("match-team-2")));
+  }
+
+  @Test
+  void singlesMatchDoesNotRenderTeamBoxes() {
+    Segment segment = new Segment();
+    segment.setId(1L);
+    Show show = new Show();
+    show.setName("Test Show");
+    segment.setShow(show);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Test Match");
+    segment.setSegmentType(segmentType);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    for (long i = 1; i <= 2; i++) {
+      Wrestler w = new Wrestler();
+      w.setId(i);
+      w.setName("Wrestler " + i);
+      w.getWrestlerStates().add(WrestlerState.builder().wrestler(w).universe(universe).build());
+      SegmentParticipant p = new SegmentParticipant();
+      p.setSegment(segment);
+      p.setWrestler(w);
+      p.setIsWinner(false);
+      p.setTeamNumber((int) i); // 1v1: every wrestler on their own team
+      segment.getParticipants().add(p);
+      lenient().when(wrestlerService.findById(i)).thenReturn(Optional.of(w));
+      lenient().when(wrestlerService.findByIdWithDetails(i)).thenReturn(Optional.of(w));
+      final Wrestler wrestler = w;
+      lenient()
+          .when(wrestlerService.getOrCreateState(eq(i), eq(1L)))
+          .thenAnswer(invocation -> wrestler.getState(1L).orElseThrow());
+    }
+
+    CustomUserDetails userDetails = mock(CustomUserDetails.class);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(userDetails));
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(userDetails.getWrestler()).thenReturn(null);
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    assertTrue(_find(Div.class, spec -> spec.withId("match-team-1")).isEmpty());
+    assertTrue(_find(Div.class, spec -> spec.withId("match-team-2")).isEmpty());
   }
 
   @Test
