@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
@@ -65,6 +66,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
@@ -145,6 +147,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   @Autowired private CampaignEncounterService campaignEncounterService;
   @Autowired private DeckService deckService;
   @Autowired private WrestlerAbilityRepository wrestlerAbilityRepository;
+  @Autowired private AbilityReminderTextService abilityReminderTextService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -532,7 +535,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             w -> {
               boolean isThisWrestlerPlayer =
                   isPlayerInMatch && playerWrestlerIds.contains(w.getId());
-              cardGrid.add(
+              WrestlerSummaryCard card =
                   new WrestlerSummaryCard(
                       w,
                       universeId,
@@ -540,7 +543,15 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       injuryService,
                       isThisWrestlerPlayer,
                       isThisWrestlerPlayer ? 0 : penalty,
-                      wrestlerStatsService));
+                      wrestlerStatsService);
+              // Table-side reminders: everyone sees what each wrestler's default abilities do.
+              // The player's own abilities get the full interactive panel in the side column.
+              List<WrestlerAbility> defaultAbilities =
+                  wrestlerAbilityRepository.findByWrestlerId(w.getId()).stream()
+                      .filter(WrestlerAbility::isDefault)
+                      .toList();
+              card.showAbilityChips(defaultAbilities, abilityReminderTextService);
+              cardGrid.add(card);
             });
     participantsCard.add(cardGrid);
     mainContent.add(participantsCard);
@@ -644,8 +655,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               matchPlayer -> {
                 var abilities = wrestlerAbilityRepository.findByWrestlerId(matchPlayer.getId());
                 if (!abilities.isEmpty()) {
+                  // Reminder mode: timing chips + human-readable trigger lines so the player
+                  // remembers when to apply each ability at the table. "Mark used" logs the
+                  // usage into the match notes (advisory — the table is the authority); notes
+                  // feed the AI narration and, from there, the match summary.
+                  Map<String, Integer> usedCounts = new HashMap<>();
+                  abilities.forEach(
+                      a ->
+                          usedCounts.put(
+                              a.getName(),
+                              abilityReminderTextService.countUses(
+                                  segment.getNotes(), a.getName(), matchPlayer.getName())));
                   Details abilitiesSection =
-                      new Details("Your Abilities", new WrestlerAbilityPanel(abilities));
+                      new Details(
+                          "Your Abilities",
+                          new WrestlerAbilityPanel(
+                              abilities,
+                              abilityReminderTextService,
+                              ability -> logAbilityUsage(matchPlayer.getName(), ability),
+                              usedCounts));
                   abilitiesSection.setOpened(false);
                   sideCol.add(abilitiesSection);
                 }
@@ -1135,6 +1163,20 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                                         + status.getLevel()
                                         + ")")
                             .toList());
+                    // Ability reminders so the narration can reference signature abilities.
+                    wc.setAbilities(
+                        wrestlerAbilityRepository.findByWrestlerId(w.getId()).stream()
+                            .filter(WrestlerAbility::isDefault)
+                            .map(
+                                a -> {
+                                  String trigger = abilityReminderTextService.triggerText(a);
+                                  return a.getName()
+                                      + (trigger.isBlank() ? "" : " (" + trigger + ")")
+                                      + (a.getDescription() == null
+                                          ? ""
+                                          : ": " + a.getDescription());
+                                })
+                            .toList());
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
@@ -1539,5 +1581,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     segmentService.updateSegment(segment);
     updateCommentaryDisplay();
     Notification.show("Narration saved!");
+  }
+
+  /**
+   * Appends an ability usage line to the match notes so it flows into the AI narration and, from
+   * there, the match summary. Advisory bookkeeping only — nothing is enforced.
+   */
+  private void logAbilityUsage(final String wrestlerName, final WrestlerAbility ability) {
+    if (feedbackArea == null) {
+      return;
+    }
+    String line = abilityReminderTextService.usageNoteLine(ability, wrestlerName);
+    String current = feedbackArea.getValue();
+    feedbackArea.setValue(current == null || current.isBlank() ? line : current + "\n" + line);
+    Notification.show("Logged: " + ability.getName());
   }
 }

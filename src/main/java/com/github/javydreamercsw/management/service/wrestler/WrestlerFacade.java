@@ -37,4 +37,5 @@ public class WrestlerFacade {
   private final InjuryService injuryService;
   private final TitleService titleService;
   private final WrestlerStateHistoryService wrestlerStateHistoryService;
+  private final AbilityReminderTextService abilityReminderTextService;
 }

@@ -96,12 +96,35 @@ The `DataInitializer` automatically scans all `*.json` files in this directory.
 
 ## Wrestlers
 
-### Wrestler abilities and forward-compatible effect scripts
+### Wrestler abilities and effect scripts (display metadata)
+
+> **Superseded (2026-08):** the match ability engine will **not** be built.
+> The physical card game is played at the table; the app reminds and records,
+> it does not enforce rules. Ability scripts (`effectScript`, `costScript`,
+> `unlockCondition`) are permanent **design metadata**. The engine execution
+> semantics below are retained as historical documentation of intent.
+>
+> **What the app consumes today (required for new abilities):**
+>
+> - `description` — rendered as the effect reminder in the match view and in
+>   `[Ability]` usage notes. **Required**: every ability must have one.
+> - `timing` (`OFFENSE`/`DEFENSE`/`PINNED`/`BACKSTAGE`) — rendered as a
+>   color-coded chip; also the first fallback when the trigger cannot be
+>   humanized.
+> - `unlockCondition` — statically humanized (never evaluated) by
+>   `AbilityReminderTextService` into a "Trigger: …" line. Stick to the
+>   established vocabulary (`event == '<TOKEN>'` plus `match.attackCardType`,
+>   `match.damageAmount`-style comparisons); a data-driven test fails when a
+>   new event token is not in the humanizer's table.
+> - `type`/`maxUses` — drive the advisory uses-left counter and the
+>   "Mark used" button, which appends a machine-countable
+>   `[Ability] <wrestler>: <name> — <effect>` line to the match notes
+>   (`Segment.notes`). Those notes feed the AI narration and match summary.
 
 Wrestler-specific abilities are defined in the expansion JSON files under
 `src/main/resources/wrestlers/`. Each ability may include an `effectScript`
-field. These scripts are currently **content metadata for display and future
-use**; wrestler abilities are not executed by the match engine yet.
+field. These scripts are **content metadata for display**; wrestler abilities
+are not executed by the match engine.
 
 Use the match-oriented context names consistently when describing a future
 effect:
@@ -218,9 +241,9 @@ The engine evaluates conditions only after the relevant facts are known:
 - AERIAL, STRIKE, SIGNATURE, FINISHER, and weapon checks use the normalized
   card flags, not display-name string matching.
 
-These semantics are a specification only. No current service is required to
-execute wrestler ability `effectScript` values until the match ability engine
-is implemented.
+These semantics are historical specification only. The match ability engine
+was declined as a product decision (see the superseded note above) — no
+service executes wrestler ability `effectScript` values, and none is planned.
 
 Guide-text placeholders use inline SVG icons. Registered names currently
 include `pin`, `stamina`, `health`, `card`, `momentum`, `reversal`, `tag`,
