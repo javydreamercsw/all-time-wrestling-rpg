@@ -259,12 +259,21 @@ public class AbilityReminderTextService {
   }
 
   private String firstSentence(@Nullable final String description) {
+    String plain = plainText(description);
+    int end = plain.indexOf(". ");
+    return end > 0 ? plain.substring(0, end + 1) : plain;
+  }
+
+  /**
+   * Converts text containing {@code [[icon]]} placeholders (rendered as inline SVGs by {@code
+   * GuideTextRenderer}) into readable plain text for tooltip/log contexts, replacing each token
+   * with its name: {@code "Discard 2 [[card]]s"} becomes {@code "Discard 2 cards"}. Deleting the
+   * tokens instead would leave dangling plural suffixes ("Discard 2 s").
+   */
+  public String plainText(@Nullable final String description) {
     if (description == null || description.isBlank()) {
       return "";
     }
-    // Strip [[icon]] placeholders used by GuideTextRenderer; keep plain words.
-    String plain = description.replaceAll("\\[\\[[^]]*]]", "").replaceAll("\\s+", " ").trim();
-    int end = plain.indexOf(". ");
-    return end > 0 ? plain.substring(0, end + 1) : plain;
+    return description.replaceAll("\\[\\[([^]]*)]]", "$1").replaceAll("\\s+", " ").trim();
   }
 }

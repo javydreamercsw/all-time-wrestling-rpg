@@ -188,6 +188,36 @@ class AbilityReminderTextServiceTest {
     }
   }
 
+  // ── plainText: [[icon]] tokens become words, never dangling suffixes ──────
+
+  @Test
+  void plainTextReplacesIconTokensWithTheirNames() {
+    assertThat(
+            service.plainText(
+                "Discard 2 [[card]]s (except [[finisher]]s) to block an attack, then gain the"
+                    + " initiative."))
+        .isEqualTo(
+            "Discard 2 cards (except finishers) to block an attack, then gain the"
+                + " initiative.");
+  }
+
+  @Test
+  void plainTextHandlesNullAndBlank() {
+    assertThat(service.plainText(null)).isEmpty();
+    assertThat(service.plainText("   ")).isEmpty();
+  }
+
+  @Test
+  void usageNoteLineKeepsIconTokenWordsInsteadOfDroppingThem() {
+    WrestlerAbility a = ability(null);
+    a.setName("Discard Block");
+    a.setDescription("Discard 2 [[card]]s (except [[finisher]]s) to block. Second sentence.");
+    assertThat(service.usageNoteLine(a, "Matt Cardona"))
+        .isEqualTo(
+            "[Ability] Matt Cardona: Discard Block — Discard 2 cards (except finishers) to"
+                + " block.");
+  }
+
   // ── usageNoteLine + countUses round-trip ──────────────────────────────────
 
   @Test

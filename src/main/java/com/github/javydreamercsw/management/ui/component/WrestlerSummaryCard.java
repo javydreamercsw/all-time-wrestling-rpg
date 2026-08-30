@@ -410,10 +410,9 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
               Padding.Horizontal.XSMALL,
               BorderRadius.SMALL);
           String trigger = reminderTextService.triggerText(ability);
-          String description =
-              ability.getDescription() == null
-                  ? ""
-                  : ability.getDescription().replaceAll("\\[\\[[^]]*]]", "").trim();
+          // Tooltips are plain text, so [[icon]] tokens are converted to their names
+          // ("2 [[card]]s" -> "2 cards") rather than rendered as SVGs.
+          String description = reminderTextService.plainText(ability.getDescription());
           String tooltip = (trigger.isBlank() ? "" : trigger + ". ") + description;
           Tooltip.forComponent(chip).setText(tooltip.isBlank() ? ability.getName() : tooltip);
           chips.add(chip);
