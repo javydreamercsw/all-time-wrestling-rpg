@@ -855,5 +855,12 @@
     "description": "The achievement dialog lists every unlocked achievement with its category, XP reward, and the date and time it was earned.",
     "imagePath": "screenshots/community-hall-of-fame-achievement-details.png",
     "order": 0
+  }, {
+    "id": "game-mechanics-match-ability-reminders",
+    "category": "Game Mechanics",
+    "title": "Ability Reminders",
+    "description": "The match view reminds everyone at the table what each wrestler's abilities do. Participant cards carry compact ability chips with trigger tooltips, and the player's own panel shows when each ability fires (color-coded by offense/defense/pinned), an advisory uses-left counter, and a Mark Used button that logs the usage into the match notes — feeding the AI narration and match summary. Nothing is enforced: the table remains the authority.",
+    "imagePath": "screenshots/match-ability-reminders.png",
+    "order": 0
   } ]
 }
