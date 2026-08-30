@@ -282,7 +282,7 @@ class MatchViewTest extends AbstractViewTest {
     universe.setName("Default");
 
     List<Wrestler> tagWrestlers = new ArrayList<>();
-    for (long i = 1; i <= 4; i++) {
+    for (long i = 1; i < 4 + 1; i++) {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);
@@ -338,7 +338,7 @@ class MatchViewTest extends AbstractViewTest {
     universe.setId(1L);
     universe.setName("Default");
 
-    for (long i = 1; i <= 2; i++) {
+    for (long i = 1; i < 2 + 1; i++) {
       Wrestler w = new Wrestler();
       w.setId(i);
       w.setName("Wrestler " + i);
