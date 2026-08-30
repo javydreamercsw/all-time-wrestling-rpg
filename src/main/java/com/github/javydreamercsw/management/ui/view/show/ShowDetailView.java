@@ -38,7 +38,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -732,8 +732,7 @@ public class ShowDetailView extends Main
     Long mainEventId = null;
     for (int i = segments.size() - 1; i >= 0; i--) {
       Segment s = segments.get(i);
-      if (s.getSegmentType() == null
-          || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+      if (s.getSegmentType() == null || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
         mainEventId = s.getId();
         break;
       }
@@ -813,6 +812,20 @@ public class ShowDetailView extends Main
             .set("font-weight", "bold");
         leftBadges.add(titleBadge);
       }
+    }
+
+    if (segment.isContenderMatch()) {
+      Span contenderBadge = new Span("⭐ #1 Contender Match");
+      contenderBadge.setId("contender-match-badge");
+      contenderBadge
+          .getStyle()
+          .set("background", "#ffd700")
+          .set("color", "#5c4400")
+          .set("border-radius", "4px")
+          .set("padding", "2px 8px")
+          .set("font-size", "var(--lumo-font-size-s)")
+          .set("font-weight", "bold");
+      leftBadges.add(contenderBadge);
     }
 
     Span dateLabel =
@@ -953,10 +966,22 @@ public class ShowDetailView extends Main
         .setAutoWidth(true)
         .setFlexGrow(0);
 
-    // Segment type column
-    grid.addColumn(
-            segment ->
-                segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A")
+    // Segment type column — carries a gold star when this is a #1 contender match
+    grid.addComponentColumn(
+            segment -> {
+              String typeName =
+                  segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A";
+              Span typeSpan = new Span(typeName);
+              if (segment.isContenderMatch()) {
+                Span star = new Span(" ⭐");
+                star.setId("contender-match-badge-" + segment.getId());
+                star.getStyle().set("color", "#ffd700");
+                Tooltip.forComponent(star)
+                    .setText("#1 Contender Match — the winner becomes the next challenger");
+                typeSpan.add(star);
+              }
+              return typeSpan;
+            })
         .setHeader("Segment Type")
         .setSortable(true)
         .setFlexGrow(1);
@@ -1069,7 +1094,7 @@ public class ShowDetailView extends Main
               for (int i = segmentOrder.size() - 1; i >= 0; i--) {
                 Segment s = segmentOrder.get(i);
                 if (s.getSegmentType() == null
-                    || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+                    || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
                   mainEventId = s.getId();
                   break;
                 }
@@ -1176,7 +1201,7 @@ public class ShowDetailView extends Main
               for (int i = snapshot.size() - 1; i >= 0; i--) {
                 Segment s = snapshot.get(i);
                 if (s.getSegmentType() == null
-                    || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+                    || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
                   mainEventIdx = i;
                   break;
                 }
@@ -1317,8 +1342,7 @@ public class ShowDetailView extends Main
     deleteButton.addClickListener(e -> deleteSegment(segment));
 
     SegmentType segmentType = segment.getSegmentType();
-    boolean isMatch =
-        segmentType != null && !SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName());
+    boolean isMatch = segmentType != null && !WellKnownSegmentType.PROMO.matches(segmentType);
     Button qrButton = new Button(new Icon(VaadinIcon.QRCODE));
     qrButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     qrButton.setTooltipText("Share Match QR Code");
@@ -1645,13 +1669,22 @@ public class ShowDetailView extends Main
     // Add checkbox to indicate if it's a title segment
     Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
     isTitleSegmentCheckbox.setId("is-title-segment-checkbox");
-    isTitleSegmentCheckbox.addValueChangeListener(
-        event -> {
-          titleMultiSelectComboBox.setVisible(event.getValue());
-          if (!event.getValue()) {
+
+    // #1 contender match: the winner becomes the next challenger for the selected title(s)
+    Checkbox isContenderMatchCheckbox = new Checkbox("This is a #1 Contender Match");
+    isContenderMatchCheckbox.setId("is-contender-match-checkbox");
+
+    Runnable refreshTitleComboVisibility =
+        () -> {
+          boolean visible =
+              isTitleSegmentCheckbox.getValue() || isContenderMatchCheckbox.getValue();
+          titleMultiSelectComboBox.setVisible(visible);
+          if (!visible) {
             titleMultiSelectComboBox.clear();
           }
-        });
+        };
+    isTitleSegmentCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
+    isContenderMatchCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
 
     // Narration
     TextArea summaryArea = new TextArea("Summary");
@@ -1680,6 +1713,7 @@ public class ShowDetailView extends Main
         addTeamsSection,
         winnerCombo,
         isTitleSegmentCheckbox,
+        isContenderMatchCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
         narrationArea,
@@ -1705,7 +1739,9 @@ public class ShowDetailView extends Main
               newSegment.setSegmentDate(Instant.now());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
+              boolean isContenderMatch = isContenderMatchCheckbox.getValue();
               newSegment.setIsTitleSegment(isTitleSegment);
+              newSegment.setContenderMatch(isContenderMatch);
               newSegment.setIsNpcGenerated(false);
               newSegment.syncParticipants(teamMap);
               newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
@@ -1713,8 +1749,8 @@ public class ShowDetailView extends Main
               newSegment.setWinners(new ArrayList<>(winners));
               newSegment.setReferee(refereeCombo.getValue());
 
-              // If it's a title segment, set the selected titles
-              if (isTitleSegment) {
+              // Title matches and contender matches both need the selected titles
+              if (isTitleSegment || isContenderMatch) {
                 newSegment.setTitles(titleMultiSelectComboBox.getValue());
               }
 
@@ -1795,7 +1831,8 @@ public class ShowDetailView extends Main
                                 seg.setNotes(saveData.notes());
                                 seg.setReferee(saveData.referee());
                                 seg.setIsTitleSegment(saveData.isTitleSegment());
-                                if (saveData.isTitleSegment()) {
+                                seg.setContenderMatch(saveData.isContenderMatch());
+                                if (saveData.isTitleSegment() || saveData.isContenderMatch()) {
                                   seg.setTitles(saveData.titles());
                                 }
                                 // Inline validation (no DB)
@@ -1807,8 +1844,7 @@ public class ShowDetailView extends Main
                                   notificationService.showError("Please select a segment type");
                                   return;
                                 }
-                                if (!SegmentTypeNames.PROMO.equalsIgnoreCase(
-                                    saveData.segmentType().getName())) {
+                                if (!WellKnownSegmentType.PROMO.matches(saveData.segmentType())) {
                                   if (wrestlers.isEmpty()) {
                                     notificationService.showError(
                                         "Please select at least one wrestler");
@@ -1963,7 +1999,7 @@ public class ShowDetailView extends Main
       return false;
     }
 
-    if (!SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName())) {
+    if (!WellKnownSegmentType.PROMO.matches(segmentType)) {
       if (wrestlers.isEmpty()) {
         log.debug("Validation failed: Wrestlers are null or empty for non-promo segment.");
         notificationService.showError("Please select at least one wrestler");

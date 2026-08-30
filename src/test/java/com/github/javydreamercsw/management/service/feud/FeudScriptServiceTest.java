@@ -30,10 +30,12 @@ import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +58,7 @@ class FeudScriptServiceTest {
   @Mock private ShowSegmentReservationService reservationService;
   @Mock private GameSettingService gameSettingService;
   @Mock private UniverseContextService universeContextService;
+  @Mock private ContenderSelectionService contenderSelectionService;
 
   @InjectMocks private FeudScriptService service;
 
@@ -205,6 +208,104 @@ class FeudScriptServiceTest {
 
     assertThat(script.getStatus()).isEqualTo(FeudScriptStatus.COMPLETED);
     verify(feudScriptRepository).save(script);
+  }
+
+  // ── contender designation (CONTENDER_DESIGNATION beat outcome) ───────────
+
+  @Test
+  void autoCompleteBeatForSegment_beatWithContenderTitle_designatesWinner() {
+    Segment segment = new Segment();
+    segment.setId(77L);
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    w1.setName("Winner");
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    segment.addParticipant(w1);
+    segment.addParticipant(w2);
+    segment.setWinners(List.of(w1));
+
+    Title title = new Title();
+    title.setName("World Title");
+
+    FeudScript script = new FeudScript();
+    script.setName("Contender Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setScript(script);
+    beat.setContenderTitle(title);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+    when(feudScriptRepository.save(script)).thenReturn(script);
+
+    service.autoCompleteBeatForSegment(segment);
+
+    verify(contenderSelectionService).designateAsContender(title, w1);
+  }
+
+  @Test
+  void autoCompleteBeatForSegment_noContenderTitle_doesNotDesignate() {
+    Segment segment = new Segment();
+    segment.setId(78L);
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    segment.addParticipant(w1);
+    segment.addParticipant(w2);
+    segment.setWinners(List.of(w1));
+
+    FeudScript script = new FeudScript();
+    script.setName("Plain Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setScript(script);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+    when(feudScriptRepository.save(script)).thenReturn(script);
+
+    service.autoCompleteBeatForSegment(segment);
+
+    verifyNoInteractions(contenderSelectionService);
+  }
+
+  @Test
+  void completeBeat_contenderTitleButNoWinner_doesNotDesignate() {
+    Segment segment = new Segment();
+    segment.setId(79L);
+
+    Title title = new Title();
+    title.setName("World Title");
+
+    FeudScript script = new FeudScript();
+    script.setName("Contender Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setScript(script);
+    beat.setContenderTitle(title);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+    when(feudScriptRepository.save(script)).thenReturn(script);
+
+    service.completeBeat(beat, segment);
+
+    verifyNoInteractions(contenderSelectionService);
   }
 
   // ── getDefaultMaxPleAppearances ───────────────────────────────────────────

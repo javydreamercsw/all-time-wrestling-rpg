@@ -24,8 +24,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
@@ -387,7 +387,7 @@ public class ShowBookingService {
 
     // Pre-fetch segment type once to avoid per-segment DB reads in the booking loops
     Optional<SegmentType> oneOnOneType =
-        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+        segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
     if (oneOnOneType.isEmpty()) {
       log.warn("One on One segment type not found — show booking skipped");
       return segments;
@@ -420,7 +420,7 @@ public class ShowBookingService {
       @NonNull final Wrestler wrestler2,
       @NonNull final String label) {
     Optional<SegmentType> oneOnOneType =
-        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+        segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
     if (oneOnOneType.isEmpty()) {
       log.warn("One on One segment type not found — cannot book specific match");
       return Optional.empty();
@@ -439,7 +439,7 @@ public class ShowBookingService {
       @NonNull final String label,
       @NonNull final String stipulation) {
     Optional<SegmentType> oneOnOneType =
-        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+        segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
     if (oneOnOneType.isEmpty()) {
       log.warn("One on One segment type not found — cannot book specific match");
       return Optional.empty();
@@ -467,7 +467,7 @@ public class ShowBookingService {
 
     // Pre-fetch segment types and rule names once to avoid per-segment and per-rivalry DB reads
     Optional<SegmentType> oneOnOneType =
-        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+        segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
     if (oneOnOneType.isEmpty()) {
       log.warn("One on One segment type not found — PPV booking skipped");
       return segments;

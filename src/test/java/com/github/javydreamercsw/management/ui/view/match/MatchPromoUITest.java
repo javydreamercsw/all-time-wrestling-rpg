@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
@@ -151,6 +152,7 @@ class MatchPromoUITest extends AbstractViewTest {
     segment.setShow(show);
     SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
+    promoType.setCode(WellKnownSegmentType.PROMO.getCode());
     segment.setSegmentType(promoType);
 
     // 2. Setup User and Wrestler
@@ -236,6 +238,7 @@ class MatchPromoUITest extends AbstractViewTest {
     segment.setShow(show);
     SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
+    promoType.setCode(WellKnownSegmentType.PROMO.getCode());
     segment.setSegmentType(promoType);
 
     // 2. Setup User and Wrestler

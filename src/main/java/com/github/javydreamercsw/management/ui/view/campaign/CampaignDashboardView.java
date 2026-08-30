@@ -28,7 +28,6 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.*;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -810,7 +809,7 @@ public class CampaignDashboardView extends VerticalLayout {
                       currentCampaign,
                       opponentName,
                       "Tournament Match: " + opponentName,
-                      SegmentTypeNames.ONE_ON_ONE,
+                      "One on One",
                       "Normal");
                   refreshUI();
                 });
@@ -1335,10 +1334,7 @@ public class CampaignDashboardView extends VerticalLayout {
         .ifPresentOrElse(
             opponent -> {
               campaignService.createMatchForEncounter(
-                  currentCampaign,
-                  opponent.getName(),
-                  "Debug Match Simulation",
-                  SegmentTypeNames.ONE_ON_ONE);
+                  currentCampaign, opponent.getName(), "Debug Match Simulation", "One on One");
               campaignService.processMatchResult(currentCampaign, win);
               refreshUI();
             },

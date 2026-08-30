@@ -14,14 +14,24 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.domain.show.segment.type;
+package com.github.javydreamercsw.management.event;
 
-public final class SegmentTypeNames {
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import lombok.Getter;
+import org.springframework.context.ApplicationEvent;
 
-  public static final String PROMO = "Promo";
-  public static final String ONE_ON_ONE = "One on One";
-  public static final String TAG_TEAM = "Tag Team";
-  public static final String ABU_DHABI_RUMBLE = "Abu Dhabi Rumble";
+/** Published when a wrestler is designated as the #1 contender for a title. */
+@Getter
+public class ContenderDesignatedEvent extends ApplicationEvent {
 
-  private SegmentTypeNames() {}
+  private final Title title;
+  private final Wrestler contender;
+
+  public ContenderDesignatedEvent(
+      final Object source, final Title title, final Wrestler contender) {
+    super(source);
+    this.title = title;
+    this.contender = contender;
+  }
 }

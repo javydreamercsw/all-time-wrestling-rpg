@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -31,6 +32,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
@@ -302,6 +304,118 @@ public class GameSettingsView extends VerticalLayout {
             decayInterval);
     rivalrySection.setPadding(false);
 
+    // ── Contender Automation ─────────────────────────────────────────────────
+    H4 contenderHeader = new H4("Contender Automation");
+
+    Checkbox contenderAutoSelect = new Checkbox("Auto-select #1 contender after title matches");
+    contenderAutoSelect.setId("contender-auto-select-enabled");
+    contenderAutoSelect.setHelperText(
+        universeInheritanceLabel(GameSettingService.CONTENDER_AUTO_SELECT_ENABLED_KEY, universeId));
+    contenderAutoSelect.setValue(gameSettingService.isContenderAutoSelectEnabled());
+    contenderAutoSelect.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderAutoSelectEnabled(event.getValue());
+          Notification.show(
+                  "Contender auto-selection " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    IntegerField tieThreshold = new IntegerField("Tie threshold (% fan gap)");
+    tieThreshold.setId("contender-tie-threshold-percent");
+    tieThreshold.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.CONTENDER_TIE_THRESHOLD_PERCENT_KEY, universeId));
+    tieThreshold.setMin(0);
+    tieThreshold.setMax(100);
+    tieThreshold.setStepButtonsVisible(true);
+    tieThreshold.setValue(gameSettingService.getContenderTieThresholdPercent());
+    tieThreshold.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderTieThresholdPercent(event.getValue());
+          Notification.show("Contender tie threshold updated to: " + event.getValue() + "%")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    ComboBox<WellKnownSegmentType> tieMatchType = new ComboBox<>("Tie-breaker match type");
+    tieMatchType.setId("contender-tie-match-type");
+    tieMatchType.setHelperText(
+        universeInheritanceLabel(GameSettingService.CONTENDER_TIE_MATCH_TYPE_KEY, universeId));
+    tieMatchType.setItems(
+        List.of(
+            WellKnownSegmentType.FREE_FOR_ALL,
+            WellKnownSegmentType.ABU_DHABI_RUMBLE,
+            WellKnownSegmentType.ONE_ON_ONE));
+    tieMatchType.setItemLabelGenerator(WellKnownSegmentType::getCode);
+    tieMatchType.setValue(
+        WellKnownSegmentType.fromCode(gameSettingService.getContenderTieMatchType())
+            .orElse(WellKnownSegmentType.FREE_FOR_ALL));
+    tieMatchType.addValueChangeListener(
+        event -> {
+          if (event.getValue() != null) {
+            gameSettingService.setContenderTieMatchType(event.getValue().getCode());
+            Notification.show("Contender tie-breaker match type updated")
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          }
+        });
+
+    IntegerField tieMinWrestlers = new IntegerField("Min wrestlers for multi-man tie-breaker");
+    tieMinWrestlers.setId("contender-tie-min-wrestlers");
+    tieMinWrestlers.setHelperText(
+        universeInheritanceLabel(GameSettingService.CONTENDER_TIE_MIN_WRESTLERS_KEY, universeId));
+    tieMinWrestlers.setMin(2);
+    tieMinWrestlers.setMax(30);
+    tieMinWrestlers.setStepButtonsVisible(true);
+    tieMinWrestlers.setValue(gameSettingService.getContenderTieMinWrestlers());
+    tieMinWrestlers.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderTieMinWrestlers(event.getValue());
+          Notification.show("Contender tie-breaker minimum updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    IntegerField contenderHeatBonus = new IntegerField("Contender match heat bonus");
+    contenderHeatBonus.setId("contender-match-heat-bonus");
+    contenderHeatBonus.setHelperText(
+        universeInheritanceLabel(GameSettingService.CONTENDER_MATCH_HEAT_BONUS_KEY, universeId));
+    contenderHeatBonus.setMin(0);
+    contenderHeatBonus.setMax(100);
+    contenderHeatBonus.setStepButtonsVisible(true);
+    contenderHeatBonus.setValue(gameSettingService.getContenderMatchHeatBonus());
+    contenderHeatBonus.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderMatchHeatBonus(event.getValue());
+          Notification.show("Contender match heat bonus updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    NumberField contenderFanMultiplier = new NumberField("Contender match fan multiplier");
+    contenderFanMultiplier.setId("contender-match-fan-multiplier");
+    contenderFanMultiplier.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.CONTENDER_MATCH_FAN_MULTIPLIER_KEY, universeId));
+    contenderFanMultiplier.setMin(1.0);
+    contenderFanMultiplier.setMax(5.0);
+    contenderFanMultiplier.setStep(0.1);
+    contenderFanMultiplier.setStepButtonsVisible(true);
+    contenderFanMultiplier.setValue(gameSettingService.getContenderMatchFanMultiplier());
+    contenderFanMultiplier.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderMatchFanMultiplier(event.getValue());
+          Notification.show("Contender match fan multiplier updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    VerticalLayout contenderSection =
+        new VerticalLayout(
+            contenderHeader,
+            contenderAutoSelect,
+            tieThreshold,
+            tieMatchType,
+            tieMinWrestlers,
+            contenderHeatBonus,
+            contenderFanMultiplier);
+    contenderSection.setPadding(false);
+
     // ── Tutorial Configuration ────────────────────────────────────────────────
     H4 tutorialHeader = new H4("Tutorial Settings");
 
@@ -350,6 +464,7 @@ public class GameSettingsView extends VerticalLayout {
         rumorChance,
         newsStrategy,
         rivalrySection,
+        contenderSection,
         tutorialSection);
   }
 

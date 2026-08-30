@@ -252,6 +252,7 @@ class MarkdownShowCardFormatterTest {
     Segment segment = mock(Segment.class);
     SegmentType type = mock(SegmentType.class);
     when(type.getName()).thenReturn(typeName);
+    when(type.getCode()).thenReturn(typeName.toLowerCase().replace(' ', '_').replace('-', '_'));
     when(segment.getSegmentType()).thenReturn(type);
     when(segment.isMainEvent()).thenReturn(false);
     when(segment.getIsTitleSegment()).thenReturn(false);

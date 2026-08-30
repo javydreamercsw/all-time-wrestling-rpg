@@ -1,0 +1,1 @@
+ALTER TABLE segment ADD COLUMN is_contender_match BOOLEAN NOT NULL DEFAULT FALSE;

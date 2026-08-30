@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -80,6 +81,7 @@ class PromoBookingServiceTest {
 
     promoSegmentType = new SegmentType();
     promoSegmentType.setName("Promo");
+    promoSegmentType.setCode(WellKnownSegmentType.PROMO.getCode());
     promoSegmentType.setDescription("Non-wrestling promo segment for storyline development");
 
     savedSegment = new Segment();
@@ -96,7 +98,8 @@ class PromoBookingServiceTest {
     when(random.nextInt(any(int.class))).thenReturn(0);
 
     // Default: promo segment type exists
-    when(segmentTypeRepository.findByName("Promo")).thenReturn(Optional.of(promoSegmentType));
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.PROMO.getCode()))
+        .thenReturn(Optional.of(promoSegmentType));
 
     // Default: no active rivalries
     when(rivalryService.getActiveRivalries()).thenReturn(Collections.emptyList());
@@ -196,9 +199,11 @@ class PromoBookingServiceTest {
   @Test
   void bookPromosForShow_promoSegmentTypeNotFound_createsAndSavesFallback() {
     // Simulate promo type not in DB — fallback creation path
-    when(segmentTypeRepository.findByName("Promo")).thenReturn(Optional.empty());
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.PROMO.getCode()))
+        .thenReturn(Optional.empty());
     SegmentType fallbackType = new SegmentType();
     fallbackType.setName("Promo");
+    fallbackType.setCode(WellKnownSegmentType.PROMO.getCode());
     when(segmentTypeRepository.save(any(SegmentType.class))).thenReturn(fallbackType);
     when(random.nextDouble()).thenReturn(0.5);
     when(segmentRuleService.existsByName("Solo Promo")).thenReturn(true);

@@ -140,4 +140,14 @@ public class InboxEventTypeConfig {
   @Qualifier("DIRECT_MESSAGE") InboxEventType directMessage() {
     return new InboxEventType("DIRECT_MESSAGE", "Direct Message");
   }
+
+  @Bean
+  public InboxEventType contenderDesignated() {
+    return new InboxEventType("CONTENDER_DESIGNATED", "Contender Designated");
+  }
+
+  @Bean
+  public InboxEventType contenderTieDetected() {
+    return new InboxEventType("CONTENDER_TIE_DETECTED", "Contender Tie Detected");
+  }
 }

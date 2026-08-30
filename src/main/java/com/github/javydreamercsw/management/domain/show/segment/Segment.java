@@ -134,6 +134,10 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "is_main_event", nullable = false)
   private boolean isMainEvent;
 
+  /** Marks a #1 contender determination match (winner becomes the next challenger). */
+  @Column(name = "is_contender_match", nullable = false)
+  private boolean isContenderMatch = false;
+
   @Column(name = "title_skill_used", nullable = false)
   private boolean titleSkillUsed = false;
 

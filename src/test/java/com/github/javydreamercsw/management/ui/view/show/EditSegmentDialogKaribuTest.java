@@ -206,7 +206,7 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
   private EditSegmentDialog openDialog(Map<Integer, List<Wrestler>> teams) {
     EditSegmentDialog.SegmentDialogData initial =
         new EditSegmentDialog.SegmentDialogData(
-            "Match", teams, new ArrayList<>(), Set.of(), null, "", "", "", false, Set.of());
+            "Match", teams, new ArrayList<>(), Set.of(), null, "", "", "", false, false, Set.of());
 
     EditSegmentDialog dialog =
         new EditSegmentDialog(preloaded, initial, wrestlerService, null, 1L, saveData -> {});
