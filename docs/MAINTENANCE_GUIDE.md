@@ -477,42 +477,51 @@ TOMCAT_WEBAPPS=/opt/homebrew/etc/tomcat/webapps   # same value the Cargo Deploy 
 **Happy path:**
 
 ```bash
-./scripts/prod-sandbox.sh snapshot    # dump prod -> sandbox schema; FREEZE prod use from here
+./scripts/prod-sandbox.sh snapshot    # STOPS prod Tomcat, dumps prod -> sandbox schema
 ./scripts/prod-sandbox.sh preflight   # optional, needs Docker: FlywayMigrationIT against the dump
 ./scripts/prod-sandbox.sh start       # candidate JAR on :8081; Flyway migrates the SANDBOX only
 # ... play shows at http://localhost:8081/ ...
-./scripts/prod-sandbox.sh promote     # guarded swap: tested data becomes the new prod data
-# then: run the Cargo Deploy run configuration and `brew services start tomcat`
+./scripts/prod-sandbox.sh promote     # guarded swap; removes the old WAR and starts Tomcat EMPTY
+# then: run the Cargo Deploy run configuration to publish the new WAR
 ```
 
 **Revert path** (something looked wrong during testing):
 
 ```bash
-./scripts/prod-sandbox.sh discard     # stops the candidate, drops the sandbox — prod untouched
+./scripts/prod-sandbox.sh discard     # stops the candidate, drops the sandbox, RESTARTS prod Tomcat
 ```
 
 **Post-promote escape hatch:**
 
 ```bash
-./scripts/prod-sandbox.sh rollback    # restores the pre-promote dump + archived WAR
+./scripts/prod-sandbox.sh rollback    # restores the pre-promote dump + archived WAR, restarts Tomcat
 ```
 
 Rules and caveats:
 
-- **Freeze rule:** do not use production between `snapshot` and `promote`/`discard` —
-  production changes made after the snapshot are lost on promote. This is
-  **enforced**: `promote` re-dumps production and compares it against the
-  snapshot; if production changed it refuses (override with `FORCE_PROMOTE=1`
-  only if losing those changes is acceptable).
+- **Freeze rule:** production must not change between `snapshot` and
+  `promote`/`discard` — changes made after the snapshot are lost on promote.
+  This is enforced two ways: `snapshot` **stops production Tomcat** for the
+  whole test window (physically nothing can write to prod), and `promote`
+  re-dumps production and compares it against the snapshot; if production
+  changed anyway it refuses (override with `FORCE_PROMOTE=1` only if losing
+  those changes is acceptable).
+- **Tomcat lifecycle is automatic** and handles all three ways Tomcat may be
+  managed: a launchd KeepAlive agent (`~/Library/LaunchAgents/tomcat.plist` —
+  unloaded on stop so it cannot respawn, reloaded on start), `brew services`,
+  or a plain `catalina start`. Stop is verified against `PROD_PORT` (default
+  8080) and aborts the operation if the port will not close.
 - **Provenance guard:** `start` and `promote` refuse unless the sandbox was
   created by `snapshot` from the current production schema (recorded in
   `~/.atwrpg/sandbox/sandbox.meta`). A hand-made, stale, or Flyway-built-from-
   scratch sandbox can never replace production — promoting one would reset
   production data.
-- `promote` refuses to proceed without typing the production schema name, stops
-  Tomcat first, archives the current WAR, and takes a `pre-promote-*.sql` dump —
-  that dump is the true rollback point (the old WAR cannot run against a
-  migrated schema). It also refuses to promote an empty sandbox.
+- `promote` refuses to proceed without typing the production schema name,
+  archives then **removes** the current WAR (the old WAR cannot run against a
+  migrated schema), takes a `pre-promote-*.sql` dump — the true rollback
+  point — and finally starts Tomcat **empty** so Cargo Deploy (which needs a
+  running Tomcat manager) can publish the new WAR. It also refuses to promote
+  an empty sandbox.
 - All dumps are timestamped in `BACKUP_DIR` and never overwritten.
 - Image storage (`~/.atwrpg/images` / `ATW_STORAGE_BASE_DIR`) is shared between
   production and the candidate. Images uploaded during a discarded test remain
