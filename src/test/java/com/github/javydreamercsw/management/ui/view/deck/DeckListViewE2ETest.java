@@ -33,22 +33,19 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToDeckListView() {
-    navigateTo("deck-list");
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get() and
+    // leave the browser on the Home view instead of the deck list.
+    navigateToAndWaitForElement("deck-list", By.tagName("vaadin-grid"));
 
-    // Check that the grid is present
-    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
-    assertNotNull(driver.findElement(By.tagName("vaadin-grid")));
+    WebElement grid = waitForVaadinElementVisible(By.tagName("vaadin-grid"));
+    assertNotNull(grid);
   }
 
   @Test
   public void testGridSize() {
-    navigateTo("deck-list");
-    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
+    navigateToAndWaitForElement("deck-list", By.tagName("vaadin-grid"));
 
-    // Check that the grid is present
-    WebElement grid =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
+    WebElement grid = waitForVaadinElementVisible(By.tagName("vaadin-grid"));
     assertNotNull(grid);
 
     // Check that the grid and its container are full size
@@ -81,13 +78,12 @@ public class DeckListViewE2ETest extends AbstractE2ETest {
     deck.setCreationDate(Instant.now());
     deckRepository.saveAndFlush(deck);
 
-    navigateTo("deck-list");
-
-    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
+    navigateToAndWaitForElement("deck-list", By.tagName("vaadin-grid"));
+    waitForVaadinElementVisible(By.tagName("vaadin-grid"));
 
     clickElement(By.xpath("//vaadin-button[text()='View']"));
 
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
     wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-dialog")));
     assertNotNull(driver.findElement(By.tagName("vaadin-grid")));
   }
