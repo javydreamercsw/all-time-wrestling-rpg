@@ -21,6 +21,16 @@
 #   MYSQL_USER / MYSQL_PWD  credentials; omit to rely on ~/.my.cnf
 #   TOMCAT_WEBAPPS Tomcat webapps dir (promote/rollback WAR archiving; same var Cargo uses)
 #   TOMCAT_SERVICE brew service name         (default: tomcat)
+#   CATALINA_BIN   catalina launcher         (default: catalina; used when Tomcat is
+#                  not brew-services managed, e.g. started via 'catalina start')
+#   PROD_PORT      production Tomcat port    (default: 8080; used to verify stop/start)
+#   TOMCAT_LAUNCHD_LABEL / TOMCAT_LAUNCHD_PLIST  launchd agent supervising Tomcat
+#                  (default: tomcat / ~/Library/LaunchAgents/tomcat.plist); a KeepAlive
+#                  agent respawns Tomcat on kill, so stop unloads it and start reloads it
+#
+# Tomcat lifecycle: `snapshot` STOPS production Tomcat (enforcing the freeze rule),
+# `discard` and `rollback` start it again, and `promote` starts it empty so the
+# Cargo Deploy run configuration can publish the new WAR.
 #
 # Freeze rule: do NOT use production between `snapshot` and `promote`/`discard` —
 # prod changes made after the snapshot are lost on promote.
@@ -42,6 +52,11 @@ BACKUP_DIR="${BACKUP_DIR:-${HOME}/.atwrpg/sandbox-backups}"
 CANDIDATE_PORT="${CANDIDATE_PORT:-8081}"
 MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
 TOMCAT_SERVICE="${TOMCAT_SERVICE:-tomcat}"
+CATALINA_BIN="${CATALINA_BIN:-catalina}"
+PROD_PORT="${PROD_PORT:-8080}"
+# launchd agent that supervises Tomcat (KeepAlive respawns it unless unloaded).
+TOMCAT_LAUNCHD_LABEL="${TOMCAT_LAUNCHD_LABEL:-tomcat}"
+TOMCAT_LAUNCHD_PLIST="${TOMCAT_LAUNCHD_PLIST:-${HOME}/Library/LaunchAgents/${TOMCAT_LAUNCHD_LABEL}.plist}"
 RUN_DIR="${HOME}/.atwrpg/sandbox"
 PID_FILE="${RUN_DIR}/candidate.pid"
 LOG_FILE="${RUN_DIR}/candidate.log"
@@ -139,6 +154,75 @@ candidate_running() {
   [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
 }
 
+prod_tomcat_running() {
+  lsof -nP -iTCP:"$PROD_PORT" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+tomcat_launchd_loaded() {
+  launchctl list "$TOMCAT_LAUNCHD_LABEL" >/dev/null 2>&1
+}
+
+# Stop production Tomcat regardless of how it was started (brew services or a
+# plain 'catalina start'). Verifies the port actually closed — data must never
+# be swapped under a live server, so failure to stop is FATAL.
+stop_prod_tomcat() {
+  if ! prod_tomcat_running; then
+    echo "Production Tomcat already stopped (nothing on :${PROD_PORT})."
+    return 0
+  fi
+  echo "Stopping production Tomcat..."
+  # A launchd KeepAlive agent respawns Tomcat on every kill — it must be
+  # UNLOADED (bootout) or 'catalina stop'/'brew services stop' never stick.
+  if tomcat_launchd_loaded; then
+    echo "  (unloading launchd agent '${TOMCAT_LAUNCHD_LABEL}' so KeepAlive stops respawning it)"
+    launchctl bootout "gui/$(id -u)/${TOMCAT_LAUNCHD_LABEL}" 2>/dev/null || true
+  fi
+  brew services stop "$TOMCAT_SERVICE" >/dev/null 2>&1 || true
+  if prod_tomcat_running && command -v "$CATALINA_BIN" >/dev/null 2>&1; then
+    "$CATALINA_BIN" stop >/dev/null 2>&1 || true
+  fi
+  local i
+  for i in $(seq 1 15); do
+    if ! prod_tomcat_running; then
+      echo "Production Tomcat stopped."
+      return 0
+    fi
+    sleep 2
+  done
+  echo "FATAL: could not stop Tomcat — something still listens on :${PROD_PORT}." >&2
+  echo "Stop it manually ('${CATALINA_BIN} stop' or 'brew services stop ${TOMCAT_SERVICE}') and re-run." >&2
+  exit 1
+}
+
+start_prod_tomcat() {
+  if prod_tomcat_running; then
+    echo "Production Tomcat already running on :${PROD_PORT}."
+    return 0
+  fi
+  echo "Starting production Tomcat..."
+  # Start via exactly ONE mechanism — startup is async, so "port not up yet"
+  # must never trigger a second supervisor (two Tomcats then fight over
+  # 8080/8005). Priority: launchd agent > catalina > brew services.
+  if [ -f "$TOMCAT_LAUNCHD_PLIST" ]; then
+    # Reload the KeepAlive agent (the normal supervisor for this install).
+    launchctl bootstrap "gui/$(id -u)" "$TOMCAT_LAUNCHD_PLIST" 2>/dev/null \
+      || launchctl kickstart "gui/$(id -u)/${TOMCAT_LAUNCHD_LABEL}" 2>/dev/null || true
+  elif command -v "$CATALINA_BIN" >/dev/null 2>&1; then
+    "$CATALINA_BIN" start >/dev/null 2>&1 || true
+  else
+    brew services start "$TOMCAT_SERVICE" >/dev/null 2>&1 || true
+  fi
+  local i
+  for i in $(seq 1 30); do
+    if prod_tomcat_running; then
+      echo "Production Tomcat is up on :${PROD_PORT}."
+      return 0
+    fi
+    sleep 2
+  done
+  echo "WARNING: Tomcat did not open :${PROD_PORT} within 60s — start it manually ('${CATALINA_BIN} start')." >&2
+}
+
 cmd_preflight() {
   local dump
   dump="${1:-$(latest_dump pre-test)}"
@@ -155,6 +239,9 @@ cmd_preflight() {
 }
 
 cmd_snapshot() {
+  # Enforce the freeze physically: with prod Tomcat down, nothing can write to
+  # the production schema during the test window.
+  stop_prod_tomcat
   local dump="${BACKUP_DIR}/pre-test-$(timestamp).sql"
   echo "Dumping '${PROD_DB}' -> ${dump}"
   run_mysqldump "$PROD_DB" > "$dump"
@@ -172,7 +259,8 @@ CREATED=$(timestamp)
 EOF
   echo
   echo "Sandbox ready: ${SANDBOX_DB} (copy of ${PROD_DB})"
-  echo ">>> FREEZE production use now. Changes to '${PROD_DB}' after this point are LOST on promote. <<<"
+  echo "Production Tomcat is STOPPED for the test window — 'discard', 'rollback', or"
+  echo "'promote' + Cargo Deploy bring production back. Test at http://localhost:${CANDIDATE_PORT}/ after 'start'."
 }
 
 cmd_start() {
@@ -247,6 +335,7 @@ cmd_discard() {
     run_mysql -e "DROP DATABASE \`${SANDBOX_DB}\`"
   fi
   rm -f "$STATE_FILE"
+  start_prod_tomcat
   echo "Reverted. Production schema '${PROD_DB}' was never modified."
 }
 
@@ -265,16 +354,22 @@ cmd_promote() {
   fi
   confirm_prod
   cmd_stop
-
-  echo "Stopping production Tomcat (${TOMCAT_SERVICE})..."
-  brew services stop "$TOMCAT_SERVICE" >/dev/null 2>&1 || \
-    echo "  (brew services stop failed or not applicable — ensure Tomcat is stopped before continuing)"
+  stop_prod_tomcat
 
   if [ -n "${TOMCAT_WEBAPPS:-}" ] && ls "${TOMCAT_WEBAPPS}"/*.war >/dev/null 2>&1; then
     local war_archive="${BACKUP_DIR}/war-$(timestamp)"
     mkdir -p "$war_archive"
     cp "${TOMCAT_WEBAPPS}"/*.war "$war_archive/"
     echo "Archived current WAR(s) -> ${war_archive}/"
+    # Remove the old app so Tomcat comes back up EMPTY: the old WAR cannot run
+    # against the migrated schema. Cargo Deploy publishes the new WAR next.
+    local war base
+    for war in "${TOMCAT_WEBAPPS}"/*.war; do
+      base="${war%.war}"
+      rm -f "$war"
+      [ -d "$base" ] && rm -rf "$base"
+    done
+    echo "Removed old WAR(s) from ${TOMCAT_WEBAPPS}/ (archived above)."
   else
     echo "NOTE: TOMCAT_WEBAPPS not set or no WAR found — skipping WAR archive."
   fi
@@ -311,9 +406,10 @@ cmd_promote() {
 
   echo
   echo "Promotion complete. '${PROD_DB}' now holds the tested (migrated) data."
-  echo "Next steps:"
-  echo "  1. Deploy the new WAR via the normal Cargo Deploy run configuration."
-  echo "  2. Start Tomcat: brew services start ${TOMCAT_SERVICE}"
+  # Tomcat must be RUNNING for Cargo's remote deploy (it goes through the
+  # manager app). The old WAR was removed above, so it comes up empty.
+  start_prod_tomcat
+  echo "Next step: deploy the new WAR via the normal Cargo Deploy run configuration."
   echo "Rollback available via: $0 rollback   (uses ${pre_promote})"
 }
 
@@ -326,20 +422,28 @@ cmd_rollback() {
   fi
   echo "Rolling back '${PROD_DB}' to: $dump"
   confirm_prod
-  echo "Stopping production Tomcat (${TOMCAT_SERVICE})..."
-  brew services stop "$TOMCAT_SERVICE" >/dev/null 2>&1 || \
-    echo "  (brew services stop failed or not applicable — ensure Tomcat is stopped before continuing)"
+  stop_prod_tomcat
   run_mysql -e "DROP DATABASE IF EXISTS \`${PROD_DB}\`; CREATE DATABASE \`${PROD_DB}\`"
   run_mysql "$PROD_DB" < "$dump"
   local war_archive
   war_archive=$(ls -1dt "${BACKUP_DIR}"/war-* 2>/dev/null | head -1 || true)
   if [ -n "$war_archive" ] && [ -n "${TOMCAT_WEBAPPS:-}" ]; then
+    # Clear whatever is deployed now (the new WAR cannot run against the
+    # restored schema), then put the archived WAR back.
+    local war base
+    for war in "${TOMCAT_WEBAPPS}"/*.war; do
+      [ -f "$war" ] || continue
+      base="${war%.war}"
+      rm -f "$war"
+      [ -d "$base" ] && rm -rf "$base"
+    done
     cp "$war_archive"/*.war "$TOMCAT_WEBAPPS/"
     echo "Restored archived WAR(s) from ${war_archive}/ -> ${TOMCAT_WEBAPPS}/"
+    start_prod_tomcat
   else
     echo "NOTE: no archived WAR restored (missing archive or TOMCAT_WEBAPPS) — redeploy the previous release manually."
+    echo "Start Tomcat when ready: ${CATALINA_BIN} start"
   fi
-  echo "Start Tomcat when ready: brew services start ${TOMCAT_SERVICE}"
   echo "Rollback complete."
 }
 
@@ -356,12 +460,16 @@ cmd_status() {
   else
     echo "Candidate:       stopped"
   fi
+  prod_tomcat_running \
+    && echo "Prod Tomcat:     RUNNING (:${PROD_PORT})" \
+    || echo "Prod Tomcat:     stopped"
   echo "Backups in ${BACKUP_DIR}:"
   ls -1t "${BACKUP_DIR}" 2>/dev/null | head -10 | sed 's/^/  /' || echo "  (none)"
 }
 
 usage() {
-  sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
+  # Print the header comment block (everything up to 'set -euo pipefail').
+  sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
   exit 1
 }
 
