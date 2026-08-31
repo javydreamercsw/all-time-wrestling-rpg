@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -376,7 +377,41 @@ public class ShowPlanningService {
       }
     }
 
+    // Intergender enforcement: the AI is instructed not to mix genders in matches, but prompts
+    // are advisory — this is the authoritative check.
+    if (!gameSettingService.isIntergenderMatchesEnabled()) {
+      for (ProposedSegment segment : proposedSegments) {
+        if (isPromoSegment(segment) || segment.getTeams() == null) {
+          continue;
+        }
+        Set<Gender> genders =
+            segment.getTeams().stream()
+                .flatMap(List::stream)
+                .map(name -> wrestlerRepository.findByName(name).map(Wrestler::getGender))
+                .flatMap(Optional::stream)
+                .collect(Collectors.toSet());
+        if (genders.size() > 1) {
+          errors.add(
+              "Intergender matches are disabled but this match mixes genders: "
+                  + segment.getTeams().stream()
+                      .map(team -> String.join(" & ", team))
+                      .collect(Collectors.joining(" vs ")));
+        }
+      }
+    }
+
     return new CardValidationResult(errors, warnings);
+  }
+
+  /** True when the proposed segment's type resolves to the well-known Promo type. */
+  private boolean isPromoSegment(final ProposedSegment segment) {
+    if (segment.getType() == null) {
+      return false;
+    }
+    return segmentTypeService
+        .findByName(segment.getType())
+        .map(WellKnownSegmentType.PROMO::matches)
+        .orElseGet(() -> segment.getType().toLowerCase().contains("promo"));
   }
 
   /** Convenience overload — validates against live active rivalries from the database. */

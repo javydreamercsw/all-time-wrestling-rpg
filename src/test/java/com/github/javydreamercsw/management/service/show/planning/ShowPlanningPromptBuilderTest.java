@@ -140,6 +140,79 @@ class ShowPlanningPromptBuilderTest {
   }
 
   @Test
+  void build_intergenderDisallowed_addsFinalReminder() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(false);
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("REMINDER — intergender matches are DISABLED"));
+  }
+
+  @Test
+  void build_intergenderDisallowed_mixedRivalry_classifiedConfrontationOnly() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(false);
+    ctx.setFullRoster(
+        List.of(rosterEntry(1L, "Alpha", "MALE"), rosterEntry(2L, "Delta", "FEMALE")));
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(7L);
+    rivalry.setName("Alpha vs Delta");
+    rivalry.setHeat(35);
+    rivalry.setParticipants(List.of("Alpha", "Delta"));
+    ctx.setCurrentRivalries(List.of(rivalry));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Classification: CONFRONTATION_ONLY"));
+    assertTrue(prompt.contains("CONFRONTATION_ONLY: This rivalry pairs wrestlers"));
+  }
+
+  @Test
+  void build_intergenderAllowed_mixedRivalry_keepsNormalClassification() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(true);
+    ctx.setFullRoster(
+        List.of(rosterEntry(1L, "Alpha", "MALE"), rosterEntry(2L, "Delta", "FEMALE")));
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(7L);
+    rivalry.setName("Alpha vs Delta");
+    rivalry.setHeat(15);
+    rivalry.setParticipants(List.of("Alpha", "Delta"));
+    ctx.setCurrentRivalries(List.of(rivalry));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Classification: MUST_BOOK"));
+    assertFalse(prompt.contains("Classification: CONFRONTATION_ONLY"));
+  }
+
+  @Test
+  void build_intergenderDisallowed_sameGenderRivalry_keepsNormalClassification() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(false);
+    ctx.setFullRoster(List.of(rosterEntry(1L, "Alpha", "MALE"), rosterEntry(2L, "Beta", "MALE")));
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(7L);
+    rivalry.setName("Alpha vs Beta");
+    rivalry.setHeat(15);
+    rivalry.setParticipants(List.of("Alpha", "Beta"));
+    ctx.setCurrentRivalries(List.of(rivalry));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Classification: MUST_BOOK"));
+    assertFalse(prompt.contains("Classification: CONFRONTATION_ONLY"));
+  }
+
+  private ShowPlanningRosterEntryDTO rosterEntry(long id, String name, String gender) {
+    ShowPlanningRosterEntryDTO entry = new ShowPlanningRosterEntryDTO();
+    entry.setId(id);
+    entry.setName(name);
+    entry.setGender(gender);
+    entry.setInjured(false);
+    return entry;
+  }
+
+  @Test
   void build_injectionInWrestlerName_sanitized() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();

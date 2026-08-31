@@ -23,8 +23,13 @@ import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +47,24 @@ public class ShowPlanningPromptBuilder {
       return "";
     }
     return value.replaceAll("[\\[\\]{}|`\\\\]", "").trim();
+  }
+
+  /**
+   * A rivalry is mixed-gender when its participants resolve to more than one distinct gender in the
+   * roster. Participants missing from the roster (e.g. injured) contribute no information.
+   */
+  private static boolean isMixedGender(
+      final ShowPlanningRivalryDTO rivalry, final Map<String, String> genderByName) {
+    if (rivalry.getParticipants() == null) {
+      return false;
+    }
+    Set<String> genders =
+        rivalry.getParticipants().stream()
+            .map(ShowPlanningPromptBuilder::sanitize)
+            .map(genderByName::get)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    return genders.size() > 1;
   }
 
   public String build(@NonNull final ShowPlanningContextDTO context) {
@@ -146,6 +169,12 @@ public class ShowPlanningPromptBuilder {
           """);
     }
 
+    // Gender lookup for mixed-gender rivalry detection (names sanitized like the roster output)
+    Map<String, String> genderByName = new HashMap<>();
+    if (context.getFullRoster() != null) {
+      context.getFullRoster().forEach(w -> genderByName.put(sanitize(w.getName()), w.getGender()));
+    }
+
     if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
       prompt.append("Current Rivalries (heat ≥ 10 only):\n");
       context
@@ -153,7 +182,11 @@ public class ShowPlanningPromptBuilder {
           .forEach(
               rivalry -> {
                 String classification;
-                if (rivalry.getHeat() >= 30) {
+                if (!context.isIntergenderAllowed() && isMixedGender(rivalry, genderByName)) {
+                  // A match would violate the intergender restriction — advance the feud with
+                  // a non-match segment instead of leaving the model with contradictory rules.
+                  classification = "CONFRONTATION_ONLY";
+                } else if (rivalry.getHeat() >= 30) {
                   // On a regular show, max-heat feuds are saved for the PLE — no stipulation
                   // matches on weeklies. On a PLE they escalate to STIPULATION_REQUIRED.
                   classification =
@@ -198,6 +231,10 @@ public class ShowPlanningPromptBuilder {
           - STIPULATION_REQUIRED (Heat ≥ 30, PLE only): This rivalry has reached maximum intensity \
           and MUST have a match with a stipulation from the Available Stipulation Matches list below. \
           Use a decisive, no-DQ finish — do not end with a count-out or disqualification.
+          - CONFRONTATION_ONLY: This rivalry pairs wrestlers of different genders while intergender \
+          matches are disabled. It MUST still appear on the card, but as a Promo, backstage \
+          confrontation, or brawl — NEVER as a match. This satisfies its booking requirement, \
+          including on PLEs, and overrides every match/stipulation requirement above.
           """);
       List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
       List<String> highHeatRuleDescriptions =
@@ -403,9 +440,10 @@ public class ShowPlanningPromptBuilder {
           """
 
           **PLE-Specific Booking Rules:**
-          - ALL rivalries at Heat ≥ 10 MUST have a match on this card — no deferral to a future show.
+          - ALL rivalries at Heat ≥ 10 MUST have a match on this card — no deferral to a future show.\
+           Exception: CONFRONTATION_ONLY rivalries are advanced with a non-match segment instead.
           - ALL rivalries at Heat ≥ 30 MUST use a stipulation match from the Available Stipulation\
-           Matches list above.
+           Matches list above (CONFRONTATION_ONLY rivalries excepted).
           - Every active championship MUST be defended on this card.
           - Matches should have clear, decisive finishes — PLE is not the place for count-out or\
            disqualification endings.
@@ -432,6 +470,16 @@ public class ShowPlanningPromptBuilder {
         If a `Next PLE` is provided, the show should build towards it.
 
         """);
+    if (!context.isIntergenderAllowed()) {
+      prompt.append(
+          """
+          REMINDER — intergender matches are DISABLED: before finalizing, verify every match\
+           segment's teams contain wrestlers of ONE gender only (check the Gender column in the\
+           Full Roster). Rewrite any match that mixes genders. Promos and backstage segments are\
+           exempt.
+
+          """);
+    }
 
     prompt.append("\nHere is the JSON schema for a single segment:\n");
     prompt.append("```json\n");
