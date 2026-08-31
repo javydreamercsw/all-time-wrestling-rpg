@@ -15,6 +15,20 @@ if [ -n "$DB_FILES" ]; then
 fi
 ##### SECRET SCAN END #####
 
+##### LOCKFILE REGISTRY GUARD START #####
+# Local Maven runs can make the Vaadin plugin re-sync package-lock.json against a
+# corporate npm registry (e.g. art01.corp.pingidentity.com). CI runners cannot
+# resolve those hosts, so pushing such a lockfile breaks the frontend build.
+# The auto-commit below uses `git add -A`, so check the worktree state here.
+LOCKFILE="$(git rev-parse --show-toplevel)/package-lock.json"
+if [ -f "$LOCKFILE" ] && grep '"resolved": "https://' "$LOCKFILE" | grep -vq 'registry.npmjs.org'; then
+    echo 1>&2 "ERROR: package-lock.json contains non-npmjs registry URLs (corporate proxy leak):"
+    grep -o '"resolved": "https://[^/]*' "$LOCKFILE" | sort -u | grep -v 'registry.npmjs.org' 1>&2
+    echo 1>&2 "Restore it with: git checkout -- package.json package-lock.json"
+    exit 1
+fi
+##### LOCKFILE REGISTRY GUARD END #####
+
 EXECUTOR="$(git rev-parse --show-toplevel)/mvnw"
 
 ##### SPOTLESS + OPENREWRITE HOOK START #####
@@ -29,6 +43,14 @@ if git diff --name-only HEAD "$UPSTREAM" 2>/dev/null | grep -q '\.java$'; then
   $EXECUTOR rewrite:run -Dspotless.check.skip=true
   # Re-apply spotless to fix any formatting that rewrite introduced
   $EXECUTOR spotless:apply
+fi
+
+# The spotless run above can itself re-sync the lockfile through a corporate
+# registry. Restore both npm files before the auto-commit sweeps them up.
+if ! git diff --quiet HEAD -- package-lock.json 2>/dev/null \
+    && grep '"resolved": "https://' "$LOCKFILE" | grep -vq 'registry.npmjs.org'; then
+  echo 1>&2 "NOTICE: discarding corporate-registry lockfile churn from the formatting run."
+  git checkout -- package.json package-lock.json
 fi
 
 # If either tool changed anything, commit the fixes and abort the push.
