@@ -159,6 +159,13 @@ class TutorialDocsE2ETest extends AbstractDocsE2ETest {
     navigateTo("tutorial");
     waitForVaadinClientToLoad();
 
+    // TutorialView reroutes to the app root when the security context isn't visible yet —
+    // a race right after the login helper swaps sessions. One re-navigation settles it.
+    if (!driver.getCurrentUrl().contains("tutorial")) {
+      navigateTo("tutorial");
+      waitForVaadinClientToLoad();
+    }
+
     assertThat(driver.getCurrentUrl()).contains("tutorial");
 
     // Click Skip Tutorial button
