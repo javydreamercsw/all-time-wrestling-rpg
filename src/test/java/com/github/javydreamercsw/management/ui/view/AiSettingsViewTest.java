@@ -60,6 +60,8 @@ class AiSettingsViewTest extends AbstractViewTest {
     when(aiSettingsService.getGeminiModelName()).thenReturn("");
     when(aiSettingsService.isPollinationsEnabled()).thenReturn(false);
     when(aiSettingsService.getPollinationsApiKey()).thenReturn("");
+    when(aiSettingsService.getOllamaBaseUrl()).thenReturn("");
+    when(aiSettingsService.getOllamaModel()).thenReturn("llama3.2:1b");
 
     view = new AiSettingsView(aiSettingsService, gameSettingService, notificationService);
     UI.getCurrent().add(view);
