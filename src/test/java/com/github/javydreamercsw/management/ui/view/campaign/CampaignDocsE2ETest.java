@@ -490,11 +490,11 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     // NOTE: must use the real seeded password — the route is @RolesAllowed(ADMIN), and the
     // old "admin"/"admin" typo only worked while a stale admin session happened to survive.
     login();
-    navigateTo("campaign-card-export");
-    waitForVaadinClientToLoad();
-
     // Default selection is extreme_campaign; wait for at least one card to render.
-    waitForText("The Extreme Path");
+    // Uses retry navigation because the card-export view loads classpath resources asynchronously
+    // and can appear done before the content is injected into the DOM.
+    navigateToAndWaitForElement(
+        "campaign-card-export", By.xpath("//*[contains(., 'The Extreme Path')]"));
 
     documentFeature(
         "Campaign",
