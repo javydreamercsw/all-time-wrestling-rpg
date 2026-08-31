@@ -141,6 +141,9 @@ public class Title extends AbstractEntity<Long> {
     getTitleReigns().add(newReign);
 
     this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
+
+    // A challenger who wins the belt must not remain listed as their own challenger.
+    this.challengers.removeAll(newChampions);
   }
 
   public void vacateTitle(final Instant now) {

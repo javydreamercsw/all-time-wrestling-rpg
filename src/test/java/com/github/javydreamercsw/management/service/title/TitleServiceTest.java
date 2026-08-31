@@ -423,6 +423,45 @@ class TitleServiceTest {
   }
 
   // =====================================================================
+  // setSoleChallenger (ATW-0qd1)
+  // =====================================================================
+
+  @Test
+  void setSoleChallenger_replacesPreviousContender() {
+    Wrestler previous = new Wrestler();
+    previous.setId(2L);
+    previous.setName("Previous Contender");
+    title.addChallenger(previous);
+    title.setGender(null);
+
+    when(titleRepository.findById(100L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    TitleService.ChallengeResult result = titleService.setSoleChallenger(100L, 1L);
+
+    assertThat(result.success()).isTrue();
+    assertThat(title.getChallengers()).containsExactly(wrestler);
+    verify(titleRepository).save(title);
+  }
+
+  @Test
+  void setSoleChallenger_ineligibleWrestler_leavesChallengersUntouched() {
+    Wrestler previous = new Wrestler();
+    previous.setId(2L);
+    previous.setName("Previous Contender");
+    title.addChallenger(previous);
+    title.setGender(Gender.FEMALE); // fixture wrestler is MALE — ineligible
+
+    when(titleRepository.findById(100L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    TitleService.ChallengeResult result = titleService.setSoleChallenger(100L, 1L);
+
+    assertThat(result.success()).isFalse();
+    assertThat(title.getChallengers()).containsExactly(previous);
+  }
+
+  // =====================================================================
   // awardTitleTo
   // =====================================================================
 
@@ -434,6 +473,17 @@ class TitleServiceTest {
 
     assertThat(title.getCurrentChampions()).contains(wrestler);
     verify(titleRepository).save(title);
+  }
+
+  @Test
+  void awardTitleTo_removesNewChampionFromChallengers() {
+    // ATW-0qd1: a challenger who wins the belt must not stay listed as their own challenger.
+    title.addChallenger(wrestler);
+
+    titleService.awardTitleTo(title, List.of(wrestler));
+
+    assertThat(title.getCurrentChampions()).contains(wrestler);
+    assertThat(title.getChallengers()).doesNotContain(wrestler);
   }
 
   @Test
