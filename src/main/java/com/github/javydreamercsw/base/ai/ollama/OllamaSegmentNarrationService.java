@@ -62,7 +62,7 @@ public class OllamaSegmentNarrationService extends AbstractSegmentNarrationServi
       return env.trim();
     }
     String setting = aiSettingsService.getOllamaBaseUrl();
-    return (setting != null && !setting.isBlank()) ? setting.trim() : null;
+    return setting != null && !setting.isBlank() ? setting.trim() : null;
   }
 
   String model() {
@@ -71,7 +71,7 @@ public class OllamaSegmentNarrationService extends AbstractSegmentNarrationServi
       return env.trim();
     }
     String setting = aiSettingsService.getOllamaModel();
-    return (setting != null && !setting.isBlank()) ? setting.trim() : "llama3.2:1b";
+    return setting != null && !setting.isBlank() ? setting.trim() : "llama3.2:1b";
   }
 
   private int timeoutSeconds() {
