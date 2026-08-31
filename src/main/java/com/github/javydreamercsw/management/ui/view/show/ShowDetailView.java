@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
@@ -121,6 +122,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -162,6 +165,7 @@ public class ShowDetailView extends Main
   private final WrestlerRelationshipService relationshipService;
   private final ExpansionService expansionService;
   private final TeamService teamService;
+  private final GameSettingService gameSettingService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -240,6 +244,7 @@ public class ShowDetailView extends Main
     this.dramaEventService = showFacade.getDramaEventService();
     this.feudScriptService = showFacade.getFeudScriptService();
     this.expansionService = viewContext.getExpansionService();
+    this.gameSettingService = viewContext.getGameSettingService();
     initializeComponents();
   }
 
@@ -1496,6 +1501,12 @@ public class ShowDetailView extends Main
     genderFilter.setValue(defaultGender);
     genderFilter.setId("add-gender-filter-combo-box");
 
+    Checkbox intergenderCheckbox = new Checkbox("Allow intergender participants");
+    intergenderCheckbox.setValue(gameSettingService.isIntergenderMatchesEnabled());
+    intergenderCheckbox.setHelperText(
+        "When off, match participants are limited to one gender. Promos are unaffected.");
+    intergenderCheckbox.setId("add-intergender-checkbox");
+
     // Winner combo (defined first so team lambdas can capture it)
     MultiSelectComboBox<Wrestler> winnerCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnerCombo.setItemLabelGenerator(Wrestler::getName);
@@ -1524,6 +1535,44 @@ public class ShowDetailView extends Main
               currentWinners.stream().filter(allSelected::contains).collect(Collectors.toSet()));
         };
 
+    // Hard intergender enforcement: for non-promo segments with intergender disallowed,
+    // every dropdown is locked to the gender of the first selected wrestler.
+    Supplier<Gender> enforcedGender =
+        () -> {
+          if (intergenderCheckbox.getValue()) {
+            return null;
+          }
+          if (segmentTypeCombo.getValue() != null
+              && WellKnownSegmentType.PROMO.matches(segmentTypeCombo.getValue())) {
+            return null;
+          }
+          return addTeamCombos.stream()
+              .flatMap(c -> c.getValue().stream())
+              .map(Wrestler::getGender)
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElse(null);
+        };
+
+    Function<Set<Wrestler>, List<Wrestler>> filteredWrestlers =
+        forceInclude -> {
+          Gender enforced = enforcedGender.get();
+          return wrestlerService.findAllFiltered(
+              alignmentFilter.getValue(),
+              enforced != null ? enforced : genderFilter.getValue(),
+              universeContextService.getCurrentUniverseId(),
+              forceInclude);
+        };
+
+    Runnable refreshAddTeamItems =
+        () -> {
+          for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
+            Set<Wrestler> current = combo.getValue();
+            combo.setItems(filteredWrestlers.apply(current));
+            combo.setValue(current);
+          }
+        };
+
     Consumer<Set<Wrestler>> addAddTeamRow =
         initialWrestlers -> {
           int teamNumber = addTeamCombos.size() + 1;
@@ -1531,16 +1580,17 @@ public class ShowDetailView extends Main
           teamCombo.setItemLabelGenerator(Wrestler::getName);
           teamCombo.setWidthFull();
           teamCombo.setId("add-team-combo-" + teamNumber);
-          teamCombo.setItems(
-              wrestlerService.findAllFiltered(
-                  alignmentFilter.getValue(),
-                  genderFilter.getValue(),
-                  universeContextService.getCurrentUniverseId(),
-                  initialWrestlers));
+          teamCombo.setItems(filteredWrestlers.apply(initialWrestlers));
           if (!initialWrestlers.isEmpty()) {
             teamCombo.setValue(initialWrestlers);
           }
-          teamCombo.addValueChangeListener(e -> refreshAddWinners.run());
+          teamCombo.addValueChangeListener(
+              e -> {
+                refreshAddWinners.run();
+                if (!intergenderCheckbox.getValue()) {
+                  refreshAddTeamItems.run();
+                }
+              });
           addTeamCombos.add(teamCombo);
 
           Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
@@ -1618,32 +1668,11 @@ public class ShowDetailView extends Main
     }
     rulesCombo.addValueChangeListener(e -> checkStipulationAdvisory.run());
 
-    alignmentFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(
-                wrestlerService.findAllFiltered(
-                    e.getValue(),
-                    genderFilter.getValue(),
-                    universeContextService.getCurrentUniverseId(),
-                    current));
-            combo.setValue(current);
-          }
-        });
-    genderFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(
-                wrestlerService.findAllFiltered(
-                    alignmentFilter.getValue(),
-                    e.getValue(),
-                    universeContextService.getCurrentUniverseId(),
-                    current));
-            combo.setValue(current);
-          }
-        });
+    alignmentFilter.addValueChangeListener(e -> refreshAddTeamItems.run());
+    genderFilter.addValueChangeListener(e -> refreshAddTeamItems.run());
+    intergenderCheckbox.addValueChangeListener(e -> refreshAddTeamItems.run());
+    // Promo vs match changes whether the intergender restriction applies.
+    segmentTypeCombo.addValueChangeListener(e -> refreshAddTeamItems.run());
 
     Button addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
     addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -1710,6 +1739,7 @@ public class ShowDetailView extends Main
         refereeCombo,
         alignmentFilter,
         genderFilter,
+        intergenderCheckbox,
         addTeamsSection,
         winnerCombo,
         isTitleSegmentCheckbox,
@@ -1823,6 +1853,7 @@ public class ShowDetailView extends Main
                               initial,
                               wrestlerService,
                               defaultGender,
+                              gameSettingService.isIntergenderMatchesEnabled(),
                               universeId,
                               saveData -> {
                                 // Non-DB field assignments

@@ -31,6 +31,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
@@ -136,7 +137,12 @@ class ShowPlanningViewTest extends AbstractViewTest {
             mock(WrestlerStateHistoryService.class),
             mock(AbilityReminderTextService.class));
     ViewContext viewContext =
-        new ViewContext(notificationService, null, universeContextService, expansionService);
+        new ViewContext(
+            notificationService,
+            null,
+            universeContextService,
+            expansionService,
+            mock(GameSettingService.class));
 
     showPlanningView =
         new ShowPlanningView(

@@ -121,6 +121,25 @@ class ShowPlanningPromptBuilderTest {
   }
 
   @Test
+  void build_intergenderDisallowed_addsSameGenderRule() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(false);
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("Intergender matches are DISABLED"));
+    assertTrue(prompt.contains("same gender"));
+    assertFalse(prompt.contains("Intergender matches are ENABLED"));
+  }
+
+  @Test
+  void build_intergenderAllowed_addsMixedGenderRule() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(true);
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("Intergender matches are ENABLED"));
+    assertFalse(prompt.contains("Intergender matches are DISABLED"));
+  }
+
+  @Test
   void build_injectionInWrestlerName_sanitized() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();

@@ -26,6 +26,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -65,6 +66,7 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
     canonical1 = wrestler(1L, "Alpha");
     canonical2 = wrestler(2L, "Beta");
     canonical3 = wrestler(3L, "Gamma");
+    canonical3.setGender(Gender.FEMALE);
 
     // Deliberately separate instances — same IDs, same names, but not the same objects.
     segmentCopy1 = wrestler(1L, "Alpha");
@@ -72,7 +74,7 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
 
     preloaded =
         new EditSegmentDialog.PreloadedData(
-            List.of(segmentType("Match")),
+            List.of(segmentType("Match"), promoSegmentType()),
             List.of(),
             List.of(),
             List.of(),
@@ -201,15 +203,88 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
     assertThat(teamWinsButtons).isEmpty();
   }
 
+  // ── Intergender hard filter ───────────────────────────────────────────────
+
+  /**
+   * With intergender disallowed, the first selected wrestler locks every team dropdown to that
+   * wrestler's gender for match segments.
+   */
+  @Test
+  void intergenderDisallowed_matchDropdownsLockToFirstPickGender() {
+    Map<Integer, List<Wrestler>> teams = new LinkedHashMap<>();
+    teams.put(1, List.of(segmentCopy1)); // Alpha — MALE
+    teams.put(2, List.of());
+
+    EditSegmentDialog dialog = openDialog(teams, "Match", false);
+
+    for (int i = 0; i < dialog.getTeamCombos().size(); i++) {
+      MultiSelectComboBox<Wrestler> combo = dialog.getTeamCombos().get(i);
+      assertThat(combo.getListDataView().getItems().map(Wrestler::getGender))
+          .as("Team %d combo must only offer MALE wrestlers", i + 1)
+          .containsOnly(Gender.MALE);
+    }
+  }
+
+  /** Ticking the per-segment override checkbox restores the full mixed-gender pool. */
+  @Test
+  void intergenderCheckboxOverride_restoresFullPool() {
+    Map<Integer, List<Wrestler>> teams = new LinkedHashMap<>();
+    teams.put(1, List.of(segmentCopy1));
+    teams.put(2, List.of());
+
+    EditSegmentDialog dialog = openDialog(teams, "Match", false);
+    dialog.getIntergenderCheckbox().setValue(true);
+
+    for (MultiSelectComboBox<Wrestler> combo : dialog.getTeamCombos()) {
+      assertThat(combo.getListDataView().getItemCount()).isEqualTo(3);
+    }
+  }
+
+  /** Promo segments are exempt from the intergender restriction. */
+  @Test
+  void intergenderDisallowed_promoDropdownsStayUnrestricted() {
+    Map<Integer, List<Wrestler>> teams = new LinkedHashMap<>();
+    teams.put(1, List.of(segmentCopy1));
+    teams.put(2, List.of());
+
+    EditSegmentDialog dialog = openDialog(teams, "Promo", false);
+
+    for (MultiSelectComboBox<Wrestler> combo : dialog.getTeamCombos()) {
+      assertThat(combo.getListDataView().getItemCount())
+          .as("Promo dropdowns must offer the whole roster")
+          .isEqualTo(3);
+    }
+  }
+
+  /** Legacy constructors keep the old unrestricted behavior (intergender allowed). */
+  @Test
+  void intergenderAllowedByDefault_matchDropdownsUnrestricted() {
+    Map<Integer, List<Wrestler>> teams = new LinkedHashMap<>();
+    teams.put(1, List.of(segmentCopy1));
+    teams.put(2, List.of());
+
+    EditSegmentDialog dialog = openDialog(teams);
+
+    for (MultiSelectComboBox<Wrestler> combo : dialog.getTeamCombos()) {
+      assertThat(combo.getListDataView().getItemCount()).isEqualTo(3);
+    }
+  }
+
   // ── helpers ──────────────────────────────────────────────────────────────
 
   private EditSegmentDialog openDialog(Map<Integer, List<Wrestler>> teams) {
+    return openDialog(teams, "Match", true);
+  }
+
+  private EditSegmentDialog openDialog(
+      Map<Integer, List<Wrestler>> teams, String typeName, boolean intergenderAllowed) {
     EditSegmentDialog.SegmentDialogData initial =
         new EditSegmentDialog.SegmentDialogData(
-            "Match", teams, new ArrayList<>(), Set.of(), null, "", "", "", false, false, Set.of());
+            typeName, teams, new ArrayList<>(), Set.of(), null, "", "", "", false, false, Set.of());
 
     EditSegmentDialog dialog =
-        new EditSegmentDialog(preloaded, initial, wrestlerService, null, 1L, saveData -> {});
+        new EditSegmentDialog(
+            preloaded, initial, wrestlerService, null, intergenderAllowed, 1L, saveData -> {});
     dialog.open();
     return dialog;
   }
@@ -224,6 +299,12 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
   private static SegmentType segmentType(String name) {
     SegmentType st = new SegmentType();
     st.setName(name);
+    return st;
+  }
+
+  private static SegmentType promoSegmentType() {
+    SegmentType st = segmentType("Promo");
+    st.setCode("promo");
     return st;
   }
 }

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +31,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.textfield.IntegerField;
 import java.time.LocalDate;
 import java.util.List;
@@ -80,6 +82,40 @@ class GameSettingsViewTest extends AbstractViewTest {
     ComboBox<String> combo =
         _get(view, ComboBox.class, spec -> spec.withId("default-theme-selection"));
     assertTrue(combo.isVisible());
+  }
+
+  // ── Collapsible sections ────────────────────────────────────────────────────
+
+  @Test
+  @DisplayName("Settings are grouped into seven collapsible sections")
+  void settingsAreGroupedIntoCollapsibleSections() {
+    List<Details> sections = _find(view, Details.class);
+    assertEquals(7, sections.size());
+  }
+
+  @Test
+  @DisplayName("Match Booking section renders collapsed by default")
+  void matchBookingSection_rendersCollapsed() {
+    Details section =
+        _get(view, Details.class, spec -> spec.withId("settings-section-match-booking"));
+    assertFalse(section.isOpened());
+  }
+
+  // ── Intergender matches setting ─────────────────────────────────────────────
+
+  @Test
+  @DisplayName("Intergender checkbox renders unchecked by default")
+  void intergenderCheckbox_rendersUncheckedByDefault() {
+    Checkbox cb = _get(view, Checkbox.class, spec -> spec.withId("intergender-matches-enabled"));
+    assertFalse(cb.getValue());
+  }
+
+  @Test
+  @DisplayName("Toggling intergender matches persists via service")
+  void intergenderCheckbox_savesOnChange() {
+    Checkbox cb = _get(view, Checkbox.class, spec -> spec.withId("intergender-matches-enabled"));
+    cb.setValue(true);
+    verify(gameSettingService).setIntergenderMatchesEnabled(true);
   }
 
   // ── Rivalry Configuration — render with defaults ───────────────────────────

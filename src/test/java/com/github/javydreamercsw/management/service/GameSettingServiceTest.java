@@ -65,6 +65,23 @@ class GameSettingServiceTest {
   }
 
   @Test
+  void isIntergenderMatchesEnabled_settingMissing_returnsDefaultFalse() {
+    when(repository.findGlobal(GameSettingService.INTERGENDER_MATCHES_ENABLED_KEY))
+        .thenReturn(Optional.empty());
+
+    assertThat(service.isIntergenderMatchesEnabled()).isFalse();
+  }
+
+  @Test
+  void isIntergenderMatchesEnabled_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.INTERGENDER_MATCHES_ENABLED_KEY))
+        .thenReturn(
+            Optional.of(setting(GameSettingService.INTERGENDER_MATCHES_ENABLED_KEY, "true")));
+
+    assertThat(service.isIntergenderMatchesEnabled()).isTrue();
+  }
+
+  @Test
   void isWearAndTearEnabled_settingExists_returnsValue() {
     when(repository.findGlobal(GameSettingService.WEAR_AND_TEAR_ENABLED_KEY))
         .thenReturn(Optional.of(setting(GameSettingService.WEAR_AND_TEAR_ENABLED_KEY, "false")));

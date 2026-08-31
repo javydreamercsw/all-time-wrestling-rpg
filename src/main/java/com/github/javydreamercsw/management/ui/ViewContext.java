@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import lombok.Getter;
@@ -37,4 +38,5 @@ public class ViewContext {
   private final SecurityUtils securityUtils;
   private final UniverseContextService universeContextService;
   private final ExpansionService expansionService;
+  private final GameSettingService gameSettingService;
 }

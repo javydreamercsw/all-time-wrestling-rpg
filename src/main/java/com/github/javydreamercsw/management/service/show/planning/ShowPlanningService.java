@@ -118,6 +118,7 @@ public class ShowPlanningService {
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     context.setShowDate(showDate);
     context.setPremiumLiveEvent(show.isPremiumLiveEvent());
+    context.setIntergenderAllowed(gameSettingService.isIntergenderMatchesEnabled());
     Instant lookbackStart = showDate.minus(21, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lookbackStart, showDate);
     List<Segment> lastWeekSegments =

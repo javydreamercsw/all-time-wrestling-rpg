@@ -66,6 +66,9 @@ public class GameSettingService {
   public static final String RIVALRY_RESOLUTION_MIN_HEAT_KEY = "rivalry_resolution_min_heat";
   public static final String CONDITION_REST_THRESHOLD_KEY = "condition_rest_threshold";
 
+  /** Whether intergender (mixed-gender) matches may be booked. Default: disabled. */
+  public static final String INTERGENDER_MATCHES_ENABLED_KEY = "intergender_matches_enabled";
+
   /** Days to retain inbox items before automatic purge. -1 disables the purge. */
   public static final String INBOX_RETENTION_DAYS_KEY = "inbox.retention.days";
 
@@ -430,6 +433,17 @@ public class GameSettingService {
   @Transactional
   public void setContenderMatchFanMultiplier(final double multiplier) {
     saveInternal(CONTENDER_MATCH_FAN_MULTIPLIER_KEY, String.valueOf(multiplier));
+  }
+
+  @PreAuthorize("permitAll()")
+  public boolean isIntergenderMatchesEnabled() {
+    return resolveValue(INTERGENDER_MATCHES_ENABLED_KEY).map(Boolean::parseBoolean).orElse(false);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setIntergenderMatchesEnabled(final boolean enabled) {
+    saveInternal(INTERGENDER_MATCHES_ENABLED_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("permitAll()")

@@ -384,6 +384,20 @@ public class ShowPlanningPromptBuilder {
         - Within the same calendar week, avoid having a wrestler in more than one match. The\
          exception is for Premium Live Event (PLE) where this is not avoidable.
         """);
+    if (context.isIntergenderAllowed()) {
+      prompt.append(
+          """
+          - Intergender matches are ENABLED: matches may freely mix male and female wrestlers.
+          """);
+    } else {
+      prompt.append(
+          """
+          - Intergender matches are DISABLED: every match MUST have all participants of the same\
+           gender (see Gender in the Full Roster). Never book a male wrestler against or teaming\
+           with a female wrestler in a match. Promos, backstage segments, and other non-match\
+           segments MAY mix genders.
+          """);
+    }
     if (context.isPremiumLiveEvent()) {
       prompt.append(
           """
