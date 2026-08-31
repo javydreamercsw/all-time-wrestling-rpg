@@ -5,6 +5,9 @@ on:
     - cron: '0 3 * * *'  # 3 AM UTC nightly
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ollama-it:
     runs-on: ubuntu-latest
