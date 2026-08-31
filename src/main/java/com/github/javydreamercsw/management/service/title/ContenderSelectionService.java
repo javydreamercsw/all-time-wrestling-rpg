@@ -65,8 +65,10 @@ public class ContenderSelectionService {
   @Transactional
   public boolean designateAsContender(
       @NonNull final Title title, @NonNull final Wrestler wrestler) {
+    // The #1 contender spot is exclusive — replace the challenger list instead of appending,
+    // otherwise the previous contender lingers alongside the new one.
     TitleService.ChallengeResult result =
-        titleService.addChallengerToTitle(title.getId(), wrestler.getId());
+        titleService.setSoleChallenger(title.getId(), wrestler.getId());
     if (result.success()) {
       log.info("{} designated as #1 contender for {}", wrestler.getName(), title.getName());
       eventPublisher.publishEvent(new ContenderDesignatedEvent(this, title, wrestler));

@@ -30,6 +30,9 @@ class WrestlerRelationshipDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureAdminRelationshipsView() {
+    // Log in explicitly — relying on a session left over from the previous test class makes
+    // this test collapse whenever the preceding test ends unauthenticated.
+    login();
     navigateTo("admin");
 
     WebElement tab =

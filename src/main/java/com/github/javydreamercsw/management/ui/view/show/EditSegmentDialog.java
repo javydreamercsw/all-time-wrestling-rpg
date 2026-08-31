@@ -304,8 +304,16 @@ public class EditSegmentDialog extends Dialog {
   /** All wrestlers currently assigned to any team; kept in sync so every combo sees them. */
   private final Set<Wrestler> allAssignedWrestlers = new HashSet<>();
 
+  /**
+   * Re-entrancy guard for {@link #refreshTeamComboItems()}: setItems() makes Vaadin re-set the
+   * combo value internally, firing value-change events that would otherwise re-trigger the refresh
+   * and recurse until StackOverflowError.
+   */
+  private boolean refreshingTeamItems;
+
   private final ComboBox<Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
+  @Getter private final Checkbox intergenderCheckbox;
   private final ComboBox<AlignmentType> alignmentFilter;
   private final MultiSelectComboBox<SegmentRule> rulesCombo;
   private final MultiSelectComboBox<Wrestler> winnersCombo;
@@ -324,6 +332,17 @@ public class EditSegmentDialog extends Dialog {
       final SegmentDialogData initial,
       final WrestlerService wrestlerService,
       final Gender defaultGenderConstraint,
+      final Long universeId,
+      final SaveCallback onSave) {
+    this(data, initial, wrestlerService, defaultGenderConstraint, true, universeId, onSave);
+  }
+
+  public EditSegmentDialog(
+      final PreloadedData data,
+      final SegmentDialogData initial,
+      final WrestlerService wrestlerService,
+      final Gender defaultGenderConstraint,
+      final boolean intergenderAllowed,
       final Long universeId,
       final SaveCallback onSave) {
     this.data = data;
@@ -385,6 +404,12 @@ public class EditSegmentDialog extends Dialog {
     genderFilter.setWidthFull();
     genderFilter.setValue(defaultGenderConstraint);
     genderFilter.setId("edit-gender-filter-combo-box");
+
+    intergenderCheckbox = new Checkbox("Allow intergender participants");
+    intergenderCheckbox.setValue(intergenderAllowed);
+    intergenderCheckbox.setHelperText(
+        "When off, match participants are limited to one gender. Promos are unaffected.");
+    intergenderCheckbox.setId("edit-intergender-checkbox");
 
     // Winners combo — defined before teams so team lambdas can capture it
     winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
@@ -453,6 +478,13 @@ public class EditSegmentDialog extends Dialog {
                 allAssignedWrestlers.clear();
                 teamCombos.forEach(c -> allAssignedWrestlers.addAll(c.getValue()));
                 refreshWinners.run();
+                // Hard intergender enforcement: the first pick locks every combo to that
+                // gender, so the other dropdowns must be re-filtered after each selection.
+                // Only user-originated selections trigger this — the internal value-change
+                // events fired by setItems() during a refresh must not recurse.
+                if (e.isFromClient() && !intergenderCheckbox.getValue()) {
+                  refreshTeamComboItems();
+                }
               });
           teamCombos.add(teamCombo);
 
@@ -530,22 +562,9 @@ public class EditSegmentDialog extends Dialog {
     // Populate teams from initial data
     initial.teams().forEach((teamNum, wrestlers) -> addTeamRow.accept(new HashSet<>(wrestlers)));
 
-    alignmentFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(getFilteredWrestlers(current));
-            combo.setValue(current);
-          }
-        });
-    genderFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(getFilteredWrestlers(current));
-            combo.setValue(current);
-          }
-        });
+    alignmentFilter.addValueChangeListener(e -> refreshTeamComboItems());
+    genderFilter.addValueChangeListener(e -> refreshTeamComboItems());
+    intergenderCheckbox.addValueChangeListener(e -> refreshTeamComboItems());
 
     addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
     addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -624,7 +643,12 @@ public class EditSegmentDialog extends Dialog {
           }
         };
 
-    segmentTypeCombo.addValueChangeListener(e -> refreshHealthFields.run());
+    segmentTypeCombo.addValueChangeListener(
+        e -> {
+          refreshHealthFields.run();
+          // Promo vs match changes whether the intergender restriction applies.
+          refreshTeamComboItems();
+        });
     teamCombos.forEach(c -> c.addValueChangeListener(e -> refreshHealthFields.run()));
     refreshHealthFields.run();
 
@@ -663,6 +687,7 @@ public class EditSegmentDialog extends Dialog {
         refereeCombo,
         alignmentFilter,
         genderFilter,
+        intergenderCheckbox,
         teamsSection,
         synergyBonusLabel,
         winnersCombo,
@@ -722,11 +747,24 @@ public class EditSegmentDialog extends Dialog {
       final Gender defaultGenderConstraint,
       final Long universeId,
       final Runnable onSave) {
+    this(segment, data, wrestlerService, defaultGenderConstraint, true, universeId, onSave);
+  }
+
+  /** Same as above but with an explicit intergender-allowed default for the checkbox. */
+  public EditSegmentDialog(
+      final ProposedSegment segment,
+      final PreloadedData data,
+      final WrestlerService wrestlerService,
+      final Gender defaultGenderConstraint,
+      final boolean intergenderAllowed,
+      final Long universeId,
+      final Runnable onSave) {
     this(
         data,
         SegmentDialogData.from(segment, data),
         wrestlerService,
         defaultGenderConstraint,
+        intergenderAllowed,
         universeId,
         saveData -> {
           // finalHealthValues not applicable in planning context — health is tracked at match time
@@ -785,9 +823,55 @@ public class EditSegmentDialog extends Dialog {
 
   // ==================== PRIVATE HELPERS ====================
 
+  /** Re-applies the wrestler filters to every team dropdown, keeping current selections. */
+  private void refreshTeamComboItems() {
+    if (refreshingTeamItems) {
+      return;
+    }
+    refreshingTeamItems = true;
+    try {
+      for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
+        Set<Wrestler> current = combo.getValue();
+        List<Wrestler> items = getFilteredWrestlers(current);
+        // Remap selections onto the freshly loaded instances — Vaadin's KeyMapper is
+        // identity-based, so re-setting stale instances would silently deselect them.
+        Map<Long, Wrestler> itemsById =
+            items.stream().collect(Collectors.toMap(Wrestler::getId, w -> w, (a, b) -> a));
+        Set<Wrestler> canonical =
+            current.stream()
+                .map(w -> itemsById.getOrDefault(w.getId(), w))
+                .collect(Collectors.toSet());
+        combo.setItems(items);
+        combo.setValue(canonical);
+      }
+    } finally {
+      refreshingTeamItems = false;
+    }
+  }
+
+  /**
+   * Returns the gender every participant must have, or {@code null} when unrestricted. Non-promo
+   * segments with intergender disallowed are locked to the gender of the first assigned wrestler.
+   */
+  private Gender enforcedGender() {
+    if (intergenderCheckbox.getValue()) {
+      return null;
+    }
+    if (segmentTypeCombo.getValue() != null
+        && WellKnownSegmentType.PROMO.matches(segmentTypeCombo.getValue())) {
+      return null;
+    }
+    return allAssignedWrestlers.stream()
+        .map(Wrestler::getGender)
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }
+
   private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
     AlignmentType alignment = alignmentFilter.getValue();
-    Gender gender = genderFilter.getValue();
+    Gender enforced = enforcedGender();
+    final Gender gender = enforced != null ? enforced : genderFilter.getValue();
 
     List<Wrestler> filtered;
     if (alignment != null) {

@@ -487,7 +487,9 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   @Order(15)
   void testCaptureCampaignCardExport() {
     // Card export reads chapters from classpath — no DB data setup needed.
-    login("admin", "admin");
+    // NOTE: must use the real seeded password — the route is @RolesAllowed(ADMIN), and the
+    // old "admin"/"admin" typo only worked while a stale admin session happened to survive.
+    login();
     navigateTo("campaign-card-export");
     waitForVaadinClientToLoad();
 

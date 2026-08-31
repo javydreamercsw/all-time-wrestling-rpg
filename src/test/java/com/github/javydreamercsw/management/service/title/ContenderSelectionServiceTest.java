@@ -85,7 +85,7 @@ class ContenderSelectionServiceTest {
 
   @Test
   void designateAsContender_publishesEventOnSuccess() {
-    when(titleService.addChallengerToTitle(1L, 10L))
+    when(titleService.setSoleChallenger(1L, 10L))
         .thenReturn(new TitleService.ChallengeResult(true, "ok"));
 
     boolean result = service.designateAsContender(title, wrestler);
@@ -101,7 +101,7 @@ class ContenderSelectionServiceTest {
 
   @Test
   void designateAsContender_noEventOnFailure() {
-    when(titleService.addChallengerToTitle(1L, 10L))
+    when(titleService.setSoleChallenger(1L, 10L))
         .thenReturn(new TitleService.ChallengeResult(false, "not eligible"));
 
     boolean result = service.designateAsContender(title, wrestler);
@@ -134,12 +134,12 @@ class ContenderSelectionServiceTest {
         .when(rankingService)
         .getRankedContenders(1L);
     when(wrestlerRepository.findById(10L)).thenReturn(Optional.of(wrestler));
-    when(titleService.addChallengerToTitle(1L, 10L))
+    when(titleService.setSoleChallenger(1L, 10L))
         .thenReturn(new TitleService.ChallengeResult(true, "ok"));
 
     service.autoSelectNextContender(title);
 
-    verify(titleService).addChallengerToTitle(1L, 10L);
+    verify(titleService).setSoleChallenger(1L, 10L);
     verify(eventPublisher, never()).publishEvent(any(ContenderTieDetectedEvent.class));
   }
 
@@ -160,7 +160,7 @@ class ContenderSelectionServiceTest {
         ArgumentCaptor.forClass(ContenderTieDetectedEvent.class);
     verify(eventPublisher).publishEvent(captor.capture());
     assertThat(captor.getValue().getTiedWrestlers()).hasSize(2);
-    verify(titleService, never()).addChallengerToTitle(any(), any());
+    verify(titleService, never()).setSoleChallenger(any(), any());
   }
 
   @Test
@@ -169,7 +169,7 @@ class ContenderSelectionServiceTest {
 
     service.autoSelectNextContender(title);
 
-    verify(titleService, never()).addChallengerToTitle(any(), any());
+    verify(titleService, never()).setSoleChallenger(any(), any());
     verify(eventPublisher, never()).publishEvent(any());
   }
 
