@@ -117,6 +117,12 @@ class ContenderAutomationDocsE2ETest extends AbstractDocsE2ETest {
             "admin", By.xpath("//vaadin-tab[contains(text(), 'Game Settings')]"));
     clickElement(tab);
 
+    // The contender settings live in a collapsed section — expand it first.
+    WebElement contenderSection =
+        waitForVaadinElement(
+            driver, By.cssSelector("#settings-section-contender > vaadin-details-summary"));
+    clickElement(contenderSection);
+
     WebElement contenderToggle =
         waitForVaadinElement(driver, By.id("contender-auto-select-enabled"));
     assertNotNull(contenderToggle);

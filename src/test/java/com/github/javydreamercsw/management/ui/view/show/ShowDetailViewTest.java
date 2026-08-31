@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
@@ -406,7 +407,12 @@ class ShowDetailViewTest extends AbstractViewTest {
             mock(WrestlerStateHistoryService.class),
             mock(AbilityReminderTextService.class));
     ViewContext viewContext =
-        new ViewContext(notificationService, su, universeContextService, expansionService);
+        new ViewContext(
+            notificationService,
+            su,
+            universeContextService,
+            expansionService,
+            mock(GameSettingService.class));
     return new ShowDetailView(
         showFacade,
         showContextFacade,

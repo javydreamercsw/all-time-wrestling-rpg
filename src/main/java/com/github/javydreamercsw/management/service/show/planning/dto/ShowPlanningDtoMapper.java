@@ -72,6 +72,7 @@ public class ShowPlanningDtoMapper {
     }
     dto.setShowDate(context.getShowDate());
     dto.setPremiumLiveEvent(context.isPremiumLiveEvent());
+    dto.setIntergenderAllowed(context.isIntergenderAllowed());
     return dto;
   }
 

@@ -116,6 +116,9 @@ class ShowPlanningServiceTest {
 
     lenient().when(dramaEventService.getRecentEvents()).thenReturn(List.of());
     lenient().when(gameSettingService.getConditionRestThreshold()).thenReturn(0);
+    // Intergender validation collaborators — default: unknown wrestlers/types resolve empty
+    lenient().when(wrestlerRepository.findByName(any())).thenReturn(Optional.empty());
+    lenient().when(segmentTypeService.findByName(any())).thenReturn(Optional.empty());
     lenient()
         .when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong()))
         .thenReturn(List.of());
@@ -371,6 +374,68 @@ class ShowPlanningServiceTest {
     rivalry.setWrestler2(w2);
     rivalry.setHeat(heat);
     return rivalry;
+  }
+
+  private void stubWrestler(String name, Gender gender) {
+    Wrestler w = new Wrestler();
+    w.setName(name);
+    w.setGender(gender);
+    lenient().when(wrestlerRepository.findByName(name)).thenReturn(Optional.of(w));
+  }
+
+  @Test
+  void validateCard_intergenderDisabled_mixedMatch_isError() {
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(false);
+    stubWrestler("Alpha", Gender.MALE);
+    stubWrestler("Delta", Gender.FEMALE);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("One on One");
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Delta")));
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of());
+
+    assertFalse(result.isValid());
+    assertTrue(result.getErrors().get(0).contains("Intergender matches are disabled"));
+  }
+
+  @Test
+  void validateCard_intergenderDisabled_sameGenderMatch_noError() {
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(false);
+    stubWrestler("Alpha", Gender.MALE);
+    stubWrestler("Beta", Gender.MALE);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("One on One");
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
+
+    assertTrue(showPlanningService.validateCard(List.of(seg), List.of()).isValid());
+  }
+
+  @Test
+  void validateCard_intergenderDisabled_mixedPromo_isAllowed() {
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(false);
+    stubWrestler("Alpha", Gender.MALE);
+    stubWrestler("Delta", Gender.FEMALE);
+    SegmentType promo = new SegmentType();
+    promo.setName("Promo");
+    promo.setCode("promo");
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promo));
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Promo");
+    seg.setTeams(List.of(List.of("Alpha", "Delta")));
+
+    assertTrue(showPlanningService.validateCard(List.of(seg), List.of()).isValid());
+  }
+
+  @Test
+  void validateCard_intergenderEnabled_mixedMatch_noError() {
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+    stubWrestler("Alpha", Gender.MALE);
+    stubWrestler("Delta", Gender.FEMALE);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("One on One");
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Delta")));
+
+    assertTrue(showPlanningService.validateCard(List.of(seg), List.of()).isValid());
   }
 
   @Test

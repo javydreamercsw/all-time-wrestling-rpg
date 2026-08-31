@@ -140,6 +140,33 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  void testCaptureGameSettingsView() {
+    WebElement tab =
+        navigateToAndWaitForElement(
+            "admin", By.xpath("//vaadin-tab[contains(text(), 'Game Settings')]"));
+    clickElement(tab);
+
+    // Expand the Match Booking section so the intergender toggle is visible in the capture.
+    WebElement matchBookingSection =
+        waitForVaadinElement(
+            driver, By.cssSelector("#settings-section-match-booking > vaadin-details-summary"));
+    clickElement(matchBookingSection);
+
+    waitForVaadinElement(driver, By.id("intergender-matches-enabled"));
+
+    documentFeature(
+        "Admin",
+        "Game Settings",
+        """
+        Tune gameplay from grouped, collapsible sections: system defaults, general gameplay,\
+         match booking (including whether intergender matches may be booked), news generation,\
+         rivalry lifecycle, contender automation, and tutorials. Settings can be overridden\
+         per universe.\
+        """,
+        "admin-game-settings");
+  }
+
+  @Test
   void testCaptureExpansionManagementView() {
     WebElement tab =
         navigateToAndWaitForElement(

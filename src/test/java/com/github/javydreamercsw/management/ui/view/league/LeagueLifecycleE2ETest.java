@@ -276,6 +276,10 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     selectFromVaadinComboBox("segment-type-combo-box", "One on One");
 
+    // The league wrestlers may be different genders; intergender matches are disabled by
+    // default, which would filter the second pick out of the dropdown. Allow them here.
+    toggleVaadinCheckbox(By.id("add-intergender-checkbox"));
+
     String p1WrestlerName = getPlayer1WrestlerName(league);
     WebElement team1Combo = driver.findElement(By.id("add-team-combo-1"));
     selectFromVaadinMultiSelectComboBox(team1Combo, p1WrestlerName);

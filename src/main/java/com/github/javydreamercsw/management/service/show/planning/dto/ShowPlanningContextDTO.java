@@ -34,6 +34,7 @@ public class ShowPlanningContextDTO {
   private List<FactionDTO> factions;
   private Instant showDate;
   private boolean isPremiumLiveEvent;
+  private boolean intergenderAllowed;
   private List<String> recentDramaEvents = new ArrayList<>();
   private List<FeudScriptBeatDTO> upcomingScriptedBeats;
 }

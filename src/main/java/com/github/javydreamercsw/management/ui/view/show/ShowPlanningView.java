@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -103,6 +104,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final SegmentRuleService segmentRuleService;
   private final ExpansionService expansionService;
   private final TeamService teamService;
+  private final GameSettingService gameSettingService;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
@@ -143,6 +145,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.expansionService = viewContext.getExpansionService();
     this.teamService = wrestlerFacade.getTeamService();
+    this.gameSettingService = viewContext.getGameSettingService();
 
     setSizeFull();
     addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
@@ -280,6 +283,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                                           preloaded,
                                           wrestlerService,
                                           constraint,
+                                          gameSettingService.isIntergenderMatchesEnabled(),
                                           universeId,
                                           () -> {
                                             proposedSegmentsGrid.getDataProvider().refreshAll();
