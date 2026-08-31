@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.mvysny.kaributesting.v10.HasValueUtilsKt;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import java.util.ArrayList;
@@ -253,6 +254,35 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
       assertThat(combo.getListDataView().getItemCount())
           .as("Promo dropdowns must offer the whole roster")
           .isEqualTo(3);
+    }
+  }
+
+  /**
+   * Regression for the StackOverflowError seen in the add/edit segment dialogs: a user selection
+   * triggers a re-filter, setItems() fires internal value-change events, and without the
+   * isFromClient gate + re-entrancy guard the refresh recursed forever.
+   */
+  @Test
+  void intergenderDisallowed_userSelectionsDoNotRecurse() {
+    Map<Integer, List<Wrestler>> teams = new LinkedHashMap<>();
+    teams.put(1, List.of());
+    teams.put(2, List.of());
+
+    EditSegmentDialog dialog = openDialog(teams, "Match", false);
+
+    // Simulate browser-originated picks (fromClient = true), first then second wrestler.
+    MultiSelectComboBox<Wrestler> team1 = dialog.getTeamCombos().get(0);
+    MultiSelectComboBox<Wrestler> team2 = dialog.getTeamCombos().get(1);
+    HasValueUtilsKt._setValue(team1, Set.of(canonical1), true);
+    HasValueUtilsKt._setValue(team2, Set.of(canonical2), true);
+
+    // Both selections survive the re-filtering triggered by each pick...
+    assertThat(team1.getValue().stream().map(Wrestler::getId)).containsExactly(1L);
+    assertThat(team2.getValue().stream().map(Wrestler::getId)).containsExactly(2L);
+    // ...and the dropdowns stay locked to the first pick's gender.
+    for (MultiSelectComboBox<Wrestler> combo : dialog.getTeamCombos()) {
+      assertThat(combo.getListDataView().getItems().map(Wrestler::getGender))
+          .containsOnly(Gender.MALE);
     }
   }
 

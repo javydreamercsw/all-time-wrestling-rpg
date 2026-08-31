@@ -304,6 +304,13 @@ public class EditSegmentDialog extends Dialog {
   /** All wrestlers currently assigned to any team; kept in sync so every combo sees them. */
   private final Set<Wrestler> allAssignedWrestlers = new HashSet<>();
 
+  /**
+   * Re-entrancy guard for {@link #refreshTeamComboItems()}: setItems() makes Vaadin re-set the
+   * combo value internally, firing value-change events that would otherwise re-trigger the refresh
+   * and recurse until StackOverflowError.
+   */
+  private boolean refreshingTeamItems;
+
   private final ComboBox<Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
   @Getter private final Checkbox intergenderCheckbox;
@@ -473,7 +480,9 @@ public class EditSegmentDialog extends Dialog {
                 refreshWinners.run();
                 // Hard intergender enforcement: the first pick locks every combo to that
                 // gender, so the other dropdowns must be re-filtered after each selection.
-                if (!intergenderCheckbox.getValue()) {
+                // Only user-originated selections trigger this — the internal value-change
+                // events fired by setItems() during a refresh must not recurse.
+                if (e.isFromClient() && !intergenderCheckbox.getValue()) {
                   refreshTeamComboItems();
                 }
               });
@@ -816,10 +825,27 @@ public class EditSegmentDialog extends Dialog {
 
   /** Re-applies the wrestler filters to every team dropdown, keeping current selections. */
   private void refreshTeamComboItems() {
-    for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
-      Set<Wrestler> current = combo.getValue();
-      combo.setItems(getFilteredWrestlers(current));
-      combo.setValue(current);
+    if (refreshingTeamItems) {
+      return;
+    }
+    refreshingTeamItems = true;
+    try {
+      for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
+        Set<Wrestler> current = combo.getValue();
+        List<Wrestler> items = getFilteredWrestlers(current);
+        // Remap selections onto the freshly loaded instances — Vaadin's KeyMapper is
+        // identity-based, so re-setting stale instances would silently deselect them.
+        Map<Long, Wrestler> itemsById =
+            items.stream().collect(Collectors.toMap(Wrestler::getId, w -> w, (a, b) -> a));
+        Set<Wrestler> canonical =
+            current.stream()
+                .map(w -> itemsById.getOrDefault(w.getId(), w))
+                .collect(Collectors.toSet());
+        combo.setItems(items);
+        combo.setValue(canonical);
+      }
+    } finally {
+      refreshingTeamItems = false;
     }
   }
 

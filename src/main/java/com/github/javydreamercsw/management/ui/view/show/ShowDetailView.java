@@ -1564,12 +1564,33 @@ public class ShowDetailView extends Main
               forceInclude);
         };
 
+    // Re-entrancy guard: setItems() makes Vaadin re-set the combo value internally, which fires
+    // value-change events. Without the guard those events re-trigger this refresh and recurse
+    // until StackOverflowError.
+    boolean[] refreshingTeamItems = {false};
     Runnable refreshAddTeamItems =
         () -> {
-          for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(filteredWrestlers.apply(current));
-            combo.setValue(current);
+          if (refreshingTeamItems[0]) {
+            return;
+          }
+          refreshingTeamItems[0] = true;
+          try {
+            for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
+              Set<Wrestler> current = combo.getValue();
+              List<Wrestler> items = filteredWrestlers.apply(current);
+              // Remap selections onto the freshly loaded instances — Vaadin's KeyMapper is
+              // identity-based, so re-setting stale instances would silently deselect them.
+              Map<Long, Wrestler> itemsById =
+                  items.stream().collect(Collectors.toMap(Wrestler::getId, w -> w, (a, b) -> a));
+              Set<Wrestler> canonical =
+                  current.stream()
+                      .map(w -> itemsById.getOrDefault(w.getId(), w))
+                      .collect(Collectors.toSet());
+              combo.setItems(items);
+              combo.setValue(canonical);
+            }
+          } finally {
+            refreshingTeamItems[0] = false;
           }
         };
 
@@ -1587,7 +1608,9 @@ public class ShowDetailView extends Main
           teamCombo.addValueChangeListener(
               e -> {
                 refreshAddWinners.run();
-                if (!intergenderCheckbox.getValue()) {
+                // Only user-originated selections re-lock the gender filter; the internal
+                // value-change events fired by setItems() during a refresh must not recurse.
+                if (e.isFromClient() && !intergenderCheckbox.getValue()) {
                   refreshAddTeamItems.run();
                 }
               });
