@@ -299,7 +299,6 @@ class SegmentAdjudicationServiceUnitTest {
     assertDoesNotThrow(() -> adjudicationService.adjudicateMatch(matchSegment));
   }
 
-
   // ── Rivalry/feud resolution (ATW-buyh) ─────────────────────────────────────
 
   @Test

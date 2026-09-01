@@ -1594,7 +1594,6 @@ public class ShowDetailView extends Main
           }
         };
 
-
     Consumer<Set<Wrestler>> addAddTeamRow =
         initialWrestlers -> {
           int teamNumber = addTeamCombos.size() + 1;
