@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SegmentSerializationTest {
@@ -68,7 +69,7 @@ class SegmentSerializationTest {
     segment.setShow(show);
     segment.setSegmentType(segmentType);
     segment.addParticipant(wrestler);
-    segment.setWinners(java.util.List.of(wrestler));
+    segment.setWinners(List.of(wrestler));
     segment.addSegmentRule(segmentRule);
     segment.setNarration("Test narration");
     segment.setSummary("Test summary");

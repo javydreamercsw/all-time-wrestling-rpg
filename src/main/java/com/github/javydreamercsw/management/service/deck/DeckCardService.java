@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.deck;
 
+import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import java.util.List;
@@ -63,8 +64,7 @@ public class DeckCardService {
   }
 
   @PreAuthorize("isAuthenticated()")
-  public List<DeckCard> findByDeck(
-      final com.github.javydreamercsw.management.domain.deck.Deck deck) {
+  public List<DeckCard> findByDeck(final Deck deck) {
     return deckCardRepository.findByDeck(deck);
   }
 }

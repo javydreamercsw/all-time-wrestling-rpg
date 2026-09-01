@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -78,7 +79,7 @@ public class LegacyService {
     long currentTitlesHeld =
         wrestlers.stream()
             .flatMap(w -> w.getReigns().stream())
-            .filter(com.github.javydreamercsw.management.domain.title.TitleReign::isCurrentReign)
+            .filter(TitleReign::isCurrentReign)
             .count();
 
     long score = calculateScore(managedAccount, totalFans, currentTitlesHeld);
@@ -134,7 +135,7 @@ public class LegacyService {
       Set<Long> heldTitleIds =
           wrestlers.stream()
               .flatMap(w -> w.getReigns().stream())
-              .filter(com.github.javydreamercsw.management.domain.title.TitleReign::isCurrentReign)
+              .filter(TitleReign::isCurrentReign)
               .map(reign -> reign.getTitle().getId())
               .collect(Collectors.toSet());
 
@@ -204,9 +205,7 @@ public class LegacyService {
                 long currentTitlesHeld =
                     wrestlers.stream()
                         .flatMap(w -> w.getReigns().stream())
-                        .filter(
-                            com.github.javydreamercsw.management.domain.title.TitleReign
-                                ::isCurrentReign)
+                        .filter(TitleReign::isCurrentReign)
                         .count();
 
                 managedAccount.setLegacyScore(

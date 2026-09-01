@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,8 +46,7 @@ class ShowTemplateControllerIT extends AbstractRestControllerIT {
   public void setUp() {
     mockMvc =
         MockMvcBuilders.standaloneSetup(new ShowTemplateController(showTemplateService))
-            .setCustomArgumentResolvers(
-                new org.springframework.data.web.PageableHandlerMethodArgumentResolver())
+            .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
             .build();
 
     showTemplateRepository.deleteAll();

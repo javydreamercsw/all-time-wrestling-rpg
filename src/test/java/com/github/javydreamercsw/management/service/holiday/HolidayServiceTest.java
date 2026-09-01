@@ -41,6 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 
@@ -178,7 +179,7 @@ public class HolidayServiceTest {
 
     assertEquals(2, result.size());
     ArgumentCaptor<Sort> captor = ArgumentCaptor.forClass(Sort.class);
-    org.mockito.Mockito.verify(holidayRepository).findAll(captor.capture());
+    Mockito.verify(holidayRepository).findAll(captor.capture());
     assertEquals(sort, captor.getValue());
   }
 
@@ -191,7 +192,7 @@ public class HolidayServiceTest {
 
     assertEquals(floatingHoliday, result.get(0));
     ArgumentCaptor<Sort> captor = ArgumentCaptor.forClass(Sort.class);
-    org.mockito.Mockito.verify(holidayRepository).findAll(captor.capture());
+    Mockito.verify(holidayRepository).findAll(captor.capture());
     assertEquals(Sort.Direction.DESC, captor.getValue().getOrderFor("theme").getDirection());
   }
 

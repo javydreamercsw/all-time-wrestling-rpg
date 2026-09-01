@@ -17,6 +17,10 @@
 package com.github.javydreamercsw.management.config;
 
 import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -78,8 +82,8 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
   }
 
   /** Logs database statistics for monitoring performance. */
-  public java.util.Map<String, Object> getDatabaseStatistics() {
-    java.util.Map<String, Object> stats = new java.util.HashMap<>();
+  public Map<String, Object> getDatabaseStatistics() {
+    Map<String, Object> stats = new HashMap<>();
     try {
       // Get table counts for key entities
       stats.put(
@@ -125,9 +129,9 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
    *
    * @return A list of performance suggestions and warnings.
    */
-  public java.util.List<String> analyzeQueryPerformance() {
+  public List<String> analyzeQueryPerformance() {
     log.debug("🔍 Analyzing query performance...");
-    java.util.List<String> suggestions = new java.util.ArrayList<>();
+    List<String> suggestions = new ArrayList<>();
 
     try {
       // Check for slow queries (H2 doesn't have built-in slow query log, but we can check table
@@ -144,8 +148,8 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
     return suggestions;
   }
 
-  private java.util.List<String> checkLargeTablePerformance() {
-    java.util.List<String> warnings = new java.util.ArrayList<>();
+  private List<String> checkLargeTablePerformance() {
+    List<String> warnings = new ArrayList<>();
     try {
       // Check tables that might benefit from additional indexes
       String[] largeTables = {
@@ -174,8 +178,8 @@ public class DatabaseOptimizationConfig implements ApplicationRunner {
     return warnings;
   }
 
-  private java.util.List<String> suggestOptimizations() {
-    java.util.List<String> tips = new java.util.ArrayList<>();
+  private List<String> suggestOptimizations() {
+    List<String> tips = new ArrayList<>();
     tips.add("💡 Performance Optimization Suggestions:");
     tips.add("   - Enable query caching for frequently accessed data");
     tips.add("   - Consider read replicas for heavy read workloads");

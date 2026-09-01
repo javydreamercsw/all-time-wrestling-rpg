@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.image.ImageGenerationService;
 import com.github.javydreamercsw.base.ai.image.ImageGenerationServiceFactory;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -135,7 +136,7 @@ public class GenericImageGenerationDialog extends Dialog {
     Notification.show("Generating image... This may take a moment.");
     generateButton.setEnabled(false);
     saveButton.setEnabled(false);
-    com.vaadin.flow.component.UI ui = com.vaadin.flow.component.UI.getCurrent();
+    UI ui = UI.getCurrent();
 
     service
         .generateImageAsync(request)

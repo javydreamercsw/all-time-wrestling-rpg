@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
@@ -51,6 +52,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
+import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +69,7 @@ public class CampaignNarrativeView extends VerticalLayout {
   private final CampaignService campaignService;
   private final SecurityUtils securityUtils;
   private final SegmentNarrationServiceFactory aiFactory;
-  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final NotificationService notificationService;
   private final FeatureDataService featureDataService;
   private final CampaignStateRepository campaignStateRepository;
   private final PlaceholderResolverService placeholderResolver;
@@ -84,7 +86,7 @@ public class CampaignNarrativeView extends VerticalLayout {
       final CampaignService campaignService,
       final SecurityUtils securityUtils,
       final SegmentNarrationServiceFactory aiFactory,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
+      final NotificationService notificationService,
       final FeatureDataService featureDataService,
       final CampaignStateRepository campaignStateRepository,
       final PlaceholderResolverService placeholderResolver) {
@@ -120,7 +122,7 @@ public class CampaignNarrativeView extends VerticalLayout {
         .ifPresent(
             user -> {
               Account account = user.getAccount();
-              java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+              List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
               Wrestler active =
                   wrestlers.stream()
                       .filter(w -> w.getId().equals(account.getActiveWrestlerId()))

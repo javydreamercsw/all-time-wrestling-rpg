@@ -51,7 +51,7 @@ public class FeudResolvedInboxListener implements ApplicationListener<FeudResolv
   @Override
   public void onApplicationEvent(@NonNull final FeudResolvedEvent event) {
     log.debug("Received FeudResolvedEvent for feud: {}", event.getFeud().getName());
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             feudResolved,
             "Feud Resolved: " + event.getFeud().getName(),

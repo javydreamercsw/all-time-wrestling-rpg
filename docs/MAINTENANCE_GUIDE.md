@@ -455,6 +455,81 @@ Backup files land in `%USERPROFILE%\mysql_backups\`.
 
 ---
 
+## Pre-Release Smoke Testing (sandbox → promote)
+
+Testing a release candidate directly against the production database is risky:
+Flyway migrations run on first startup and are hard to undo. `scripts/prod-sandbox.sh`
+lets you exercise the candidate against a **copy** of production data, then either
+throw the copy away or promote it (including the shows you played during testing)
+to become the new production data.
+
+**Configuration** — environment variables, or `~/.atwrpg/sandbox.env` (sourced automatically):
+
+```bash
+PROD_DB=atwrpg              # required: production schema name
+# SANDBOX_DB=atwrpg_sandbox # default: ${PROD_DB}_sandbox
+# BACKUP_DIR=~/.atwrpg/sandbox-backups
+# CANDIDATE_PORT=8081
+# MYSQL_USER=... MYSQL_PWD=...   # omit to rely on ~/.my.cnf
+TOMCAT_WEBAPPS=/opt/homebrew/etc/tomcat/webapps   # same value the Cargo Deploy config uses
+```
+
+**Happy path:**
+
+```bash
+./scripts/prod-sandbox.sh snapshot    # STOPS prod Tomcat, dumps prod -> sandbox schema
+./scripts/prod-sandbox.sh preflight   # optional, needs Docker: FlywayMigrationIT against the dump
+./scripts/prod-sandbox.sh start       # candidate JAR on :8081; Flyway migrates the SANDBOX only
+# ... play shows at http://localhost:8081/ ...
+./scripts/prod-sandbox.sh promote     # guarded swap; removes the old WAR and starts Tomcat EMPTY
+# then: run the Cargo Deploy run configuration to publish the new WAR
+```
+
+**Revert path** (something looked wrong during testing):
+
+```bash
+./scripts/prod-sandbox.sh discard     # stops the candidate, drops the sandbox, RESTARTS prod Tomcat
+```
+
+**Post-promote escape hatch:**
+
+```bash
+./scripts/prod-sandbox.sh rollback    # restores the pre-promote dump + archived WAR, restarts Tomcat
+```
+
+Rules and caveats:
+
+- **Freeze rule:** production must not change between `snapshot` and
+  `promote`/`discard` — changes made after the snapshot are lost on promote.
+  This is enforced two ways: `snapshot` **stops production Tomcat** for the
+  whole test window (physically nothing can write to prod), and `promote`
+  re-dumps production and compares it against the snapshot; if production
+  changed anyway it refuses (override with `FORCE_PROMOTE=1` only if losing
+  those changes is acceptable).
+- **Tomcat lifecycle is automatic** and handles all three ways Tomcat may be
+  managed: a launchd KeepAlive agent (`~/Library/LaunchAgents/tomcat.plist` —
+  unloaded on stop so it cannot respawn, reloaded on start), `brew services`,
+  or a plain `catalina start`. Stop is verified against `PROD_PORT` (default
+  8080) and aborts the operation if the port will not close.
+- **Provenance guard:** `start` and `promote` refuse unless the sandbox was
+  created by `snapshot` from the current production schema (recorded in
+  `~/.atwrpg/sandbox/sandbox.meta`). A hand-made, stale, or Flyway-built-from-
+  scratch sandbox can never replace production — promoting one would reset
+  production data.
+- `promote` refuses to proceed without typing the production schema name,
+  archives then **removes** the current WAR (the old WAR cannot run against a
+  migrated schema), takes a `pre-promote-*.sql` dump — the true rollback
+  point — and finally starts Tomcat **empty** so Cargo Deploy (which needs a
+  running Tomcat manager) can publish the new WAR. It also refuses to promote
+  an empty sandbox.
+- All dumps are timestamped in `BACKUP_DIR` and never overwritten.
+- Image storage (`~/.atwrpg/images` / `ATW_STORAGE_BASE_DIR`) is shared between
+  production and the candidate. Images uploaded during a discarded test remain
+  on disk — harmless and additive. Set `ATW_STORAGE_BASE_DIR` on the candidate
+  if strict isolation is ever needed.
+
+---
+
 ## MySQL Automated Backups (macOS)
 
 The application uses a shell script and `launchd` to perform daily automated backups of the MySQL database.

@@ -33,6 +33,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -40,6 +41,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -96,7 +98,7 @@ public class SeasonListView extends Main {
   private HorizontalLayout createToolbar() {
     searchField.setPlaceholder("Search seasons...");
     searchField.setClearButtonVisible(true);
-    searchField.setValueChangeMode(com.vaadin.flow.data.value.ValueChangeMode.LAZY);
+    searchField.setValueChangeMode(ValueChangeMode.LAZY);
     searchField.addValueChangeListener(e -> updateGrid());
 
     Button addSeasonBtn = new Button("Add Season");
@@ -142,7 +144,7 @@ public class SeasonListView extends Main {
             season ->
                 season.getStartDate() != null
                     ? DateTimeFormatter.ofPattern("MMM dd, yyyy")
-                        .format(season.getStartDate().atZone(java.time.ZoneId.systemDefault()))
+                        .format(season.getStartDate().atZone(ZoneId.systemDefault()))
                     : "")
         .setHeader("Start Date")
         .setSortable(true);
@@ -151,7 +153,7 @@ public class SeasonListView extends Main {
             season ->
                 season.getEndDate() != null
                     ? DateTimeFormatter.ofPattern("MMM dd, yyyy")
-                        .format(season.getEndDate().atZone(java.time.ZoneId.systemDefault()))
+                        .format(season.getEndDate().atZone(ZoneId.systemDefault()))
                     : "")
         .setHeader("End Date")
         .setSortable(true);
@@ -247,8 +249,7 @@ public class SeasonListView extends Main {
     Button cancelBtn = new Button("Cancel", e -> editDialog.close());
 
     HorizontalLayout buttonLayout = new HorizontalLayout(saveBtn, cancelBtn);
-    buttonLayout.setJustifyContentMode(
-        com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.END);
+    buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
 
     // Dialog content
     VerticalLayout dialogContent = new VerticalLayout();

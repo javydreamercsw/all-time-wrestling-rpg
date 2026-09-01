@@ -19,6 +19,7 @@ package com.github.javydreamercsw.base.service.db;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -184,7 +185,7 @@ class FlywayMigrationIT {
       hostPath = System.getProperty("user.home") + hostPath.substring(1);
     }
 
-    java.io.File dumpFile = new java.io.File(hostPath);
+    File dumpFile = new File(hostPath);
     if (!dumpFile.exists()) {
       throw new IllegalStateException("Dump file not found: " + hostPath);
     }

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.drama;
 
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -24,6 +25,7 @@ import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -172,8 +174,7 @@ public class DramaEventScheduler {
           try {
             log.info("=== WEEKLY DRAMA EVENTS SUMMARY ===");
 
-            List<com.github.javydreamercsw.management.domain.drama.DramaEvent> recentEvents =
-                dramaEventService.getRecentEvents();
+            List<DramaEvent> recentEvents = dramaEventService.getRecentEvents();
 
             if (recentEvents.isEmpty()) {
               log.info("No drama events occurred in the past week");
@@ -184,19 +185,12 @@ public class DramaEventScheduler {
             var eventTypeCounts =
                 recentEvents.stream()
                     .collect(
-                        java.util.stream.Collectors.groupingBy(
-                            com.github.javydreamercsw.management.domain.drama.DramaEvent
-                                ::getEventType,
-                            java.util.stream.Collectors.counting()));
+                        Collectors.groupingBy(DramaEvent::getEventType, Collectors.counting()));
 
             // Count events by severity
             var severityCounts =
                 recentEvents.stream()
-                    .collect(
-                        java.util.stream.Collectors.groupingBy(
-                            com.github.javydreamercsw.management.domain.drama.DramaEvent
-                                ::getSeverity,
-                            java.util.stream.Collectors.counting()));
+                    .collect(Collectors.groupingBy(DramaEvent::getSeverity, Collectors.counting()));
 
             log.info("Total drama events this week: {}", recentEvents.size());
             log.info("Events by type: {}", eventTypeCounts);

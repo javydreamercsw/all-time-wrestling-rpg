@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.campaign;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -99,7 +100,7 @@ public class CampaignChapterDTO {
    * Default opponent gender filter applied to every match in this chapter unless a choice sets its
    * own {@code opponentGenderFilter}. Null = no restriction.
    */
-  private com.github.javydreamercsw.base.domain.wrestler.Gender defaultOpponentGenderFilter;
+  private Gender defaultOpponentGenderFilter;
 
   public boolean hasStaticEncounters() {
     return mode != CampaignChapterMode.AI_ONLY

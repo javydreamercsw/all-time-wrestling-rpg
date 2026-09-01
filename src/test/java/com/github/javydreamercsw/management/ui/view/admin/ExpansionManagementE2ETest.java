@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.AbstractE2ETest;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 
 class ExpansionManagementE2ETest extends AbstractE2ETest {
@@ -28,7 +29,8 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
   @Test
   void testToggleExpansionAndVerifyFiltering() {
     // 1. Navigate to Admin and select Expansion Management tab
-    navigateTo("admin");
+    navigateToAndWaitForElement(
+        "admin", By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
 
     WebElement tab =
         waitForVaadinElement(
@@ -43,7 +45,7 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
     // Look up and click entirely inside JS to avoid StaleElementReferenceException — no WebElement
     // reference crosses the JVM→ChromeDriver boundary while Vaadin is re-rendering.
     waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
-    ((org.openqa.selenium.JavascriptExecutor) driver)
+    ((JavascriptExecutor) driver)
         .executeScript("document.getElementById('expansion-toggle-EXTREME').click();");
 
     // Wait for notification
@@ -56,19 +58,20 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
     }
 
     // 3. Navigate to Wrestler List and verify Rob Van Dam (EXTREME set) is hidden
-    navigateTo("wrestler-list");
+    navigateToAndWaitForElement("wrestler-list", By.tagName("vaadin-grid"));
 
     // Verify 'Rob Van Dam' is NOT present
     assertThat(driver.findElements(By.xpath("//*[contains(., 'Rob Van Dam')]"))).isEmpty();
 
     // 4. Go back and re-enable it
-    navigateTo("admin");
+    navigateToAndWaitForElement(
+        "admin", By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(
         waitForVaadinElement(
             driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
 
     waitForVaadinElement(driver, By.id("expansion-toggle-EXTREME"));
-    ((org.openqa.selenium.JavascriptExecutor) driver)
+    ((JavascriptExecutor) driver)
         .executeScript("document.getElementById('expansion-toggle-EXTREME').click();");
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));
@@ -80,7 +83,7 @@ class ExpansionManagementE2ETest extends AbstractE2ETest {
     }
 
     // 5. Verify Rob Van Dam is back
-    navigateTo("wrestler-list");
+    navigateToAndWaitForElement("wrestler-list", By.tagName("vaadin-grid"));
     waitForVaadinElement(driver, By.xpath("//*[contains(., 'Rob Van Dam')]"));
   }
 }

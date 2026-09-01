@@ -28,14 +28,16 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,12 +63,12 @@ class ShowScriptedAchievementServiceTest {
 
   @BeforeEach
   void setUp() {
-    when(gameSettingService.getCurrentGameDate()).thenReturn(java.time.LocalDate.now());
+    when(gameSettingService.getCurrentGameDate()).thenReturn(LocalDate.now());
     service = new ShowScriptedAchievementService(evaluator, legacyService, gameSettingService);
 
     account = new Account();
     account.setId(1L);
-    account.setAchievements(java.util.Set.of());
+    account.setAchievements(Set.of());
 
     wrestler = mock(Wrestler.class);
     when(wrestler.getAccount()).thenReturn(account);
@@ -97,7 +99,7 @@ class ShowScriptedAchievementServiceTest {
   void onShowFinalized_callsEvaluatorForEachAccount() {
     Account account2 = new Account();
     account2.setId(2L);
-    account2.setAchievements(java.util.Set.of());
+    account2.setAchievements(Set.of());
     Wrestler wrestler2 = mock(Wrestler.class);
     when(wrestler2.getAccount()).thenReturn(account2);
 
@@ -161,6 +163,41 @@ class ShowScriptedAchievementServiceTest {
   }
 
   @Test
+  void onShowFinalized_scopesParticipantsToTheAccountsOwnWrestlers() {
+    // Johnny (account 2) cuts a promo; account 1 also has a wrestler on the show.
+    // Account 1's context must NOT contain Johnny — otherwise wrestler-specific
+    // achievements (e.g. Mayor of Slamtown) unlock for everyone on the card.
+    // Account.equals() compares usernames, so both need distinct ones to stay
+    // separate entries in the service's account set.
+    account.setUsername("player1");
+    Account account2 = new Account();
+    account2.setId(2L);
+    account2.setUsername("player2");
+    account2.setAchievements(Set.of());
+    Wrestler johnny = mock(Wrestler.class);
+    when(johnny.getAccount()).thenReturn(account2);
+
+    Segment match = matchSegment(List.of(wrestler, johnny), true);
+    Segment promo = promoSegment(List.of(johnny));
+
+    service.onShowFinalized(new ShowFinalizedEvent(this, show, List.of(promo, match)));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+    verify(evaluator).resolveNewlyUnlockedKeys(eq(account), captor.capture());
+    Map<String, Object> account1Ctx = captor.getValue();
+    assertThat((List<Wrestler>) account1Ctx.get("promoParticipants")).isEmpty();
+    assertThat((List<Wrestler>) account1Ctx.get("mainEventParticipants")).containsExactly(wrestler);
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> captor2 = ArgumentCaptor.forClass(Map.class);
+    verify(evaluator).resolveNewlyUnlockedKeys(eq(account2), captor2.capture());
+    Map<String, Object> account2Ctx = captor2.getValue();
+    assertThat((List<Wrestler>) account2Ctx.get("promoParticipants")).containsExactly(johnny);
+    assertThat((List<Wrestler>) account2Ctx.get("mainEventParticipants")).containsExactly(johnny);
+  }
+
+  @Test
   void onShowFinalized_unlocksAchievementsReturnedByEvaluator() {
     when(evaluator.resolveNewlyUnlockedKeys(eq(account), any()))
         .thenReturn(List.of("RVD_WHOLE_DAMN_SHOW"));
@@ -176,7 +213,7 @@ class ShowScriptedAchievementServiceTest {
   private Segment matchSegment(final List<Wrestler> wrestlers, final boolean isMainEvent) {
     Segment seg = mock(Segment.class);
     SegmentType type = mock(SegmentType.class);
-    when(type.getName()).thenReturn(SegmentTypeNames.ONE_ON_ONE);
+    when(type.getCode()).thenReturn(WellKnownSegmentType.ONE_ON_ONE.getCode());
     when(seg.getSegmentType()).thenReturn(type);
     when(seg.getWrestlers()).thenReturn(wrestlers);
     when(seg.isMainEvent()).thenReturn(isMainEvent);
@@ -186,7 +223,7 @@ class ShowScriptedAchievementServiceTest {
   private Segment promoSegment(final List<Wrestler> wrestlers) {
     Segment seg = mock(Segment.class);
     SegmentType type = mock(SegmentType.class);
-    when(type.getName()).thenReturn(SegmentTypeNames.PROMO);
+    when(type.getCode()).thenReturn(WellKnownSegmentType.PROMO.getCode());
     when(seg.getSegmentType()).thenReturn(type);
     when(seg.getWrestlers()).thenReturn(wrestlers);
     when(seg.isMainEvent()).thenReturn(false);

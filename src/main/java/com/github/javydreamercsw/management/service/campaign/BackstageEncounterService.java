@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +76,7 @@ public class BackstageEncounterService {
                 state.getFeatureData(), new TypeReference<Map<String, Object>>() {});
         String lastDateStr = (String) data.get("lastBackstageEncounterDate");
         if (lastDateStr != null) {
-          java.time.LocalDate lastDate = java.time.LocalDate.parse(lastDateStr);
+          LocalDate lastDate = LocalDate.parse(lastDateStr);
           if (lastDate.equals(state.getCurrentGameDate())) {
             log.debug("Backstage encounter already occurred today: {}", lastDate);
             return false;

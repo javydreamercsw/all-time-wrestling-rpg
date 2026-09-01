@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.component.news;
 import com.github.javydreamercsw.management.domain.news.NewsItem;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Paragraph;
@@ -122,9 +123,7 @@ public class NewsTickerComponent extends Composite<Div> {
     }
 
     dialog.add(content);
-    dialog
-        .getFooter()
-        .add(new com.vaadin.flow.component.button.Button("Close", e -> dialog.close()));
+    dialog.getFooter().add(new Button("Close", e -> dialog.close()));
     dialog.open();
   }
 }

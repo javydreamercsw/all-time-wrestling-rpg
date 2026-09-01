@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.expansion.Expansion;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialDefinition;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
@@ -345,7 +346,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     add(featureList);
 
     // Expansion selection — all off by default (opt-in)
-    java.util.List<com.github.javydreamercsw.management.service.expansion.Expansion> expansions =
+    List<Expansion> expansions =
         expansionService.getExpansions().stream()
             .filter(exp -> !"BASE_GAME".equals(exp.getCode()))
             .toList();
@@ -366,7 +367,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       expList.setPadding(false);
       expList.setSpacing(false);
 
-      for (com.github.javydreamercsw.management.service.expansion.Expansion exp : expansions) {
+      for (Expansion exp : expansions) {
         Checkbox cb = new Checkbox(exp.getName(), false);
         cb.addValueChangeListener(
             ev -> {
@@ -480,7 +481,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       Long id, String name, String alignmentLabel, String description, String imageUrl) {}
 
   private VerticalLayout buildWrestlerPicker(
-      final int totalSteps, final java.util.List<String> allowedNames) {
+      final int totalSteps, final List<String> allowedNames) {
     VerticalLayout picker = new VerticalLayout();
     picker.setPadding(false);
     picker.setSpacing(true);

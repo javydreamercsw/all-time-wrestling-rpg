@@ -23,8 +23,8 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
@@ -87,7 +87,7 @@ public class FactionWarBookingService {
       @NonNull final Show show, final int segmentCount) {
 
     Optional<SegmentType> oneOnOneOpt =
-        segmentTypeRepository.findByName(SegmentTypeNames.ONE_ON_ONE);
+        segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
     if (oneOnOneOpt.isEmpty()) {
       log.warn(
           "ONE_ON_ONE segment type not found — Faction War booking skipped for '{}'",
@@ -96,7 +96,7 @@ public class FactionWarBookingService {
     }
     SegmentType oneOnOne = oneOnOneOpt.get();
     SegmentType tagTeam =
-        segmentTypeRepository.findByName(SegmentTypeNames.TAG_TEAM).orElse(oneOnOne);
+        segmentTypeRepository.findByCode(WellKnownSegmentType.TAG_TEAM.getCode()).orElse(oneOnOne);
 
     List<Segment> segments = new ArrayList<>();
     Set<Long> bookedIds = new HashSet<>();

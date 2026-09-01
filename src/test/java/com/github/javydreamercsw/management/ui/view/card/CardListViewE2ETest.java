@@ -206,7 +206,7 @@ public class CardListViewE2ETest extends AbstractE2ETest {
           try {
             return d.getCurrentUrl().contains("/card-list")
                 && d.findElement(By.tagName("vaadin-grid")).isDisplayed();
-          } catch (org.openqa.selenium.NoSuchElementException e) {
+          } catch (NoSuchElementException e) {
             return false;
           }
         });

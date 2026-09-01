@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.test.annotation.DirtiesContext;
@@ -236,7 +237,7 @@ class SecurityServiceIT extends ManagementIntegrationTest {
 
     String newPassword = "NewPassword1!";
     var mockUserDetails =
-        org.springframework.security.core.userdetails.User.withUsername(account.getUsername())
+        User.withUsername(account.getUsername())
             .password(account.getPassword())
             .authorities(
                 account.getRoles().stream()

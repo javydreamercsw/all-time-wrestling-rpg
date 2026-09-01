@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -280,11 +281,7 @@ public class InboxListenersIT extends ManagementIntegrationTest {
   @Test
   void testWrestlerBumpEventCreatesInboxItemWithAccountTarget() {
     state1.setBumps(5);
-    WrestlerBumpEvent event =
-        new WrestlerBumpEvent(
-            this,
-            state1,
-            com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource.MANUAL);
+    WrestlerBumpEvent event = new WrestlerBumpEvent(this, state1, BumpSource.MANUAL);
     eventPublisher.publishEvent(event);
 
     @SuppressWarnings("unchecked")

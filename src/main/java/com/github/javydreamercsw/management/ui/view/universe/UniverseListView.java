@@ -40,6 +40,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.ListItem;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.UnorderedList;
@@ -179,7 +180,7 @@ public class UniverseListView extends Main {
             (metadata, bytes) -> {
               try {
                 ImageImportService.ImportSummary summary =
-                    imageImportService.importImages(new java.io.ByteArrayInputStream(bytes));
+                    imageImportService.importImages(new ByteArrayInputStream(bytes));
                 Notification.show(summary.toMessage(), 5000, Notification.Position.BOTTOM_END)
                     .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
               } catch (Exception ex) {
@@ -344,7 +345,7 @@ public class UniverseListView extends Main {
                 + "' cannot be deleted because it is still referenced by:");
 
     UnorderedList list = new UnorderedList();
-    blockers.stream().map(b -> new com.vaadin.flow.component.html.ListItem(b)).forEach(list::add);
+    blockers.stream().map(b -> new ListItem(b)).forEach(list::add);
 
     Paragraph outro =
         new Paragraph("Remove or reassign these entities before deleting this universe.");

@@ -23,8 +23,11 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.image.DefaultImageService;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
@@ -35,7 +38,11 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.github.javydreamercsw.utils.DiceBag;
 import java.util.ArrayList;
@@ -64,17 +71,15 @@ class WrestlerServiceTest {
   @Mock private TierBoundaryRepository tierBoundaryRepository;
   @Mock private TierRecalculationService tierRecalculationService;
   @Mock private ExpansionService expansionService;
-  @Mock private com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
+  @Mock private InjuryService injuryService;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
+  @Mock private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
-  @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
-  @Mock private com.github.javydreamercsw.management.service.legacy.LegacyService legacyService;
-  @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
-  @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
-  @Mock private com.github.javydreamercsw.base.security.SecurityUtils securityUtils;
+  @Mock private DefaultImageService imageService;
+  @Mock private LegacyService legacyService;
+  @Mock private SegmentService segmentService;
+  @Mock private TitleService titleService;
+  @Mock private SecurityUtils securityUtils;
   @Mock private UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
   @Mock private UniverseSettingsService universeSettingsService;
 

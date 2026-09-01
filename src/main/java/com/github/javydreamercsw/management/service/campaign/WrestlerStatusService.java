@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +57,7 @@ public class WrestlerStatusService {
         && expansionService.isExpansionEnabled(STATUS_CARDS_EXPANSION_CODE);
   }
 
-  public java.util.List<StatusCard> getAllStatusCards() {
+  public List<StatusCard> getAllStatusCards() {
     return statusCardService.findAll();
   }
 

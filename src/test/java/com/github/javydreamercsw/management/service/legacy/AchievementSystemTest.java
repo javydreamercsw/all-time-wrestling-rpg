@@ -29,8 +29,11 @@ import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -53,10 +56,8 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.time.LocalDate;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -102,7 +103,7 @@ class AchievementSystemTest {
   public void setUp() {
     lenient().when(gameSettingService.isWearAndTearEnabled()).thenReturn(true);
     lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
-    lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(java.time.LocalDate.now());
+    lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(LocalDate.now());
     legacyService =
         new LegacyService(
             accountRepository,
@@ -154,7 +155,7 @@ class AchievementSystemTest {
     wrestlerState.setUniverse(universe);
     wrestlerState.setFans(0L);
     wrestlerState.setPhysicalCondition(100);
-    wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(wrestlerState)));
+    wrestler.setWrestlerStates(new LinkedHashSet<>(List.of(wrestlerState)));
 
     // Mock achievement repository to return an achievement if found
     lenient()
@@ -233,7 +234,7 @@ class AchievementSystemTest {
 
     TitleReign reign = new TitleReign();
     reign.setEndDate(null);
-    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign)));
+    wrestler.setReigns(new LinkedHashSet<>(List.of(reign)));
 
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("FIRST_CHAMPION");
@@ -244,10 +245,8 @@ class AchievementSystemTest {
     List<Wrestler> wrestlers = List.of(wrestler);
     when(wrestlerRepository.findByAccount(account)).thenReturn(wrestlers);
 
-    com.github.javydreamercsw.management.domain.title.Title t1 =
-        mock(com.github.javydreamercsw.management.domain.title.Title.class);
-    com.github.javydreamercsw.management.domain.title.Title t2 =
-        mock(com.github.javydreamercsw.management.domain.title.Title.class);
+    Title t1 = mock(Title.class);
+    Title t2 = mock(Title.class);
     when(t1.getId()).thenReturn(1L);
     when(t2.getId()).thenReturn(2L);
     when(titleRepository.findByIsActiveTrue()).thenReturn(List.of(t1, t2));
@@ -257,7 +256,7 @@ class AchievementSystemTest {
     reign1.setEndDate(null);
 
     // Only holding one title - no grand slam
-    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign1)));
+    wrestler.setReigns(new LinkedHashSet<>(List.of(reign1)));
     legacyService.updateLegacyScore(account);
     verify(achievementRepository, never()).findByKey("GRAND_SLAM");
 
@@ -265,7 +264,7 @@ class AchievementSystemTest {
     TitleReign reign2 = new TitleReign();
     reign2.setTitle(t2);
     reign2.setEndDate(null);
-    wrestler.setReigns(new java.util.LinkedHashSet<>(java.util.List.of(reign1, reign2)));
+    wrestler.setReigns(new LinkedHashSet<>(List.of(reign1, reign2)));
 
     legacyService.updateLegacyScore(account);
     verify(achievementRepository).findByKey("GRAND_SLAM");
@@ -289,13 +288,11 @@ class AchievementSystemTest {
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(type);
-    when(segment.getSegmentRules()).thenReturn(java.util.Set.of(rule));
+    when(segment.getSegmentRules()).thenReturn(Set.of(rule));
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("One on One");
     when(rule.getName()).thenReturn("Normal");
-    when(rule.getBumpAddition())
-        .thenReturn(
-            com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition.NONE);
+    when(rule.getBumpAddition()).thenReturn(BumpAddition.NONE);
     when(show.isPremiumLiveEvent()).thenReturn(false);
     when(segment.isMainEvent()).thenReturn(true);
 
@@ -333,9 +330,10 @@ class AchievementSystemTest {
     when(segment.getWrestlers()).thenReturn(List.of(wrestler));
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(type);
-    when(segment.getSegmentRules()).thenReturn(java.util.Collections.emptySet());
+    when(segment.getSegmentRules()).thenReturn(Collections.emptySet());
     when(segment.getShow()).thenReturn(show);
     when(type.getName()).thenReturn("Abu Dhabi Rumble");
+    when(type.getCode()).thenReturn(WellKnownSegmentType.ABU_DHABI_RUMBLE.getCode());
     when(show.isPremiumLiveEvent()).thenReturn(true);
     when(segment.isMainEvent()).thenReturn(true);
 

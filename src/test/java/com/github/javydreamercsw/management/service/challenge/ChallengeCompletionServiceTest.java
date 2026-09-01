@@ -18,13 +18,16 @@ package com.github.javydreamercsw.management.service.challenge;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletion;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletionRepository;
@@ -45,6 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ChallengeCompletionServiceTest {
 
   @Mock private AccountChallengeCompletionRepository repository;
+  @Mock private AccountRepository accountRepository;
   @Mock private ChallengeService challengeService;
   @Mock private LegacyService legacyService;
   @Mock private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
@@ -56,8 +60,15 @@ class ChallengeCompletionServiceTest {
   void setUp() {
     service =
         new ChallengeCompletionService(
-            repository, challengeService, legacyService, scriptedAchievementEvaluator);
+            repository,
+            accountRepository,
+            challengeService,
+            legacyService,
+            scriptedAchievementEvaluator);
     account = new Account();
+    account.setId(5L);
+    account.setUsername("detached");
+    lenient().when(accountRepository.findById(5L)).thenReturn(Optional.of(account));
   }
 
   // ── seasonAchievementKey ──────────────────────────────────────────────────
@@ -76,6 +87,28 @@ class ChallengeCompletionServiceTest {
   }
 
   // ── markComplete — first completion ──────────────────────────────────────
+
+  @Test
+  void markComplete_usesManagedAccountForCompletionAndAchievementChecks() {
+    Account managedAccount = new Account();
+    managedAccount.setId(5L);
+    when(accountRepository.findById(5L)).thenReturn(Optional.of(managedAccount));
+    ChallengeDTO challenge = entryChallenge("ch1", "ACH_CH1", null);
+    when(challengeService.getChallenge("ch1")).thenReturn(Optional.of(challenge));
+    when(repository.findByAccountAndChallengeId(managedAccount, "ch1"))
+        .thenReturn(Optional.empty());
+    AccountChallengeCompletion saved =
+        completionFor(
+            managedAccount, "ch1", ChallengeCompletionStatus.COMPLETED, LocalDateTime.now());
+    when(repository.save(any())).thenReturn(saved);
+    when(repository.findByAccount(managedAccount)).thenReturn(List.of(saved));
+
+    service.markComplete(account, "ch1", "notes", null);
+
+    verify(repository).findByAccountAndChallengeId(managedAccount, "ch1");
+    verify(legacyService).unlockAchievement(managedAccount, "ACH_CH1");
+    assertSame(managedAccount, saved.getAccount());
+  }
 
   @Test
   void markComplete_firstTime_setsCompletedAt() {

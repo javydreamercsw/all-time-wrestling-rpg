@@ -27,12 +27,18 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.TournamentService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.time.Duration;
+import java.util.List;
 import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -274,7 +280,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     navigateTo("campaign-list");
 
     // 3. Verify & Capture
-    waitForVaadinElement(driver, org.openqa.selenium.By.tagName("vaadin-grid"));
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     documentFeature(
         "Campaign",
         "Campaign List",
@@ -306,7 +312,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
                           .account(admin)
                           .isPlayer(true)
                           .active(true)
-                          .gender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE)
+                          .gender(Gender.MALE)
                           .build();
                   return wrestlerRepository.saveAndFlush(w);
                 });
@@ -371,7 +377,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     navigateTo("campaign-list");
 
     // 3. Open the universe selector (top-right of MainLayout) to show universe scope
-    waitForVaadinElement(driver, org.openqa.selenium.By.tagName("vaadin-grid"));
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     documentFeature(
         "Campaign",
         "Campaign List – Universe Scope",
@@ -451,22 +457,20 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
 
     // 3. Perform Action (Click a hook)
     waitForPageSourceToContain("The crowd is buzzing");
-    org.openqa.selenium.WebElement hookButton =
-        waitForVaadinElement(driver, org.openqa.selenium.By.id("promo-hook-cheap-heat"));
+    WebElement hookButton = waitForVaadinElement(driver, By.id("promo-hook-cheap-heat"));
     clickElement(hookButton);
 
     // 4. Verify & Capture (synchronous processing may take a few seconds due to Mock AI sleep)
-    waitForVaadinElement(driver, org.openqa.selenium.By.id("promo-outcome-status"));
-    org.openqa.selenium.WebElement status =
-        driver.findElement(org.openqa.selenium.By.id("promo-outcome-status"));
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+    waitForVaadinElement(driver, By.id("promo-outcome-status"));
+    WebElement status = driver.findElement(By.id("promo-outcome-status"));
+    new WebDriverWait(driver, Duration.ofSeconds(30))
         .until(d -> status.getText().contains("SUCCESSFUL"));
 
     // Also verify text in the container
-    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(30))
+    new WebDriverWait(driver, Duration.ofSeconds(30))
         .until(
-            org.openqa.selenium.support.ui.ExpectedConditions.textToBePresentInElementLocated(
-                org.openqa.selenium.By.id("narrative-container"), "Promo SUCCESSFUL"));
+            ExpectedConditions.textToBePresentInElementLocated(
+                By.id("narrative-container"), "Promo SUCCESSFUL"));
 
     documentFeature(
         "Campaign",
@@ -483,12 +487,14 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   @Order(15)
   void testCaptureCampaignCardExport() {
     // Card export reads chapters from classpath — no DB data setup needed.
-    login("admin", "admin");
-    navigateTo("campaign-card-export");
-    waitForVaadinClientToLoad();
-
+    // NOTE: must use the real seeded password — the route is @RolesAllowed(ADMIN), and the
+    // old "admin"/"admin" typo only worked while a stale admin session happened to survive.
+    login();
     // Default selection is extreme_campaign; wait for at least one card to render.
-    waitForText("The Extreme Path");
+    // Uses retry navigation because the card-export view loads classpath resources asynchronously
+    // and can appear done before the content is injected into the DOM.
+    navigateToAndWaitForElement(
+        "campaign-card-export", By.xpath("//*[contains(., 'The Extreme Path')]"));
 
     documentFeature(
         "Campaign",
@@ -502,7 +508,7 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private Wrestler getOrCreateWrestler(@NonNull final Account account) {
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     if (!wrestlers.isEmpty()) {
       return wrestlers.get(0);
     }
@@ -537,6 +543,6 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
         text.contains("'")
             ? "//*[contains(., \"" + text + "\")]"
             : "//*[contains(., '" + text + "')]";
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath(xpath));
+    waitForVaadinElement(driver, By.xpath(xpath));
   }
 }

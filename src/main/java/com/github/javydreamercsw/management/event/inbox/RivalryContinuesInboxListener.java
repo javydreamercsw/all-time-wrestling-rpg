@@ -52,7 +52,7 @@ public class RivalryContinuesInboxListener implements ApplicationListener<Rivalr
   public void onApplicationEvent(@NonNull final RivalryContinuesEvent event) {
     log.debug(
         "Received RivalryContinuesEvent for rivalry: {}", event.getRivalry().getDisplayName());
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             rivalryContinues,
             "Rivalry Continues: " + event.getRivalry().getDisplayName(),

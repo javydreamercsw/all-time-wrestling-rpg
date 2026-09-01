@@ -70,7 +70,7 @@ public class DramaEventInboxListener implements ApplicationListener<DramaEventCr
       return;
     }
 
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             dramaEventCreated,
             dramaEvent.getTitle(),

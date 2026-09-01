@@ -21,20 +21,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.campaign.BackstageEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import java.time.Duration;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @Slf4j
 class CampaignPromoE2ETest extends AbstractE2ETest {
@@ -44,33 +53,22 @@ class CampaignPromoE2ETest extends AbstractE2ETest {
   @Autowired private CampaignService campaignService;
   @Autowired private CampaignRepository campaignRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository
-      wrestlerAlignmentRepository;
+  @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
 
-  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
+  @Autowired private DataInitializer dataInitializer;
 
-  @org.springframework.test.context.bean.override.mockito.MockitoBean
-  private com.github.javydreamercsw.management.service.campaign.BackstageEncounterService
-      backstageEncounterService;
+  @MockitoBean private BackstageEncounterService backstageEncounterService;
 
   @BeforeEach
   void setupCampaign() {
     // Disable random encounters for this test
-    org.mockito.Mockito.when(
-            backstageEncounterService.shouldTriggerEncounter(org.mockito.ArgumentMatchers.any()))
+    Mockito.when(backstageEncounterService.shouldTriggerEncounter(ArgumentMatchers.any()))
         .thenReturn(false);
 
     wrestlerAlignmentRepository.deleteAllInBatch();

@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -186,16 +187,8 @@ public class Team extends AbstractEntity<Long> {
     }
     Long universeId = universe.getId();
 
-    Faction f1 =
-        wrestler1
-            .getState(universeId)
-            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
-            .orElse(null);
-    Faction f2 =
-        wrestler2
-            .getState(universeId)
-            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
-            .orElse(null);
+    Faction f1 = wrestler1.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction f2 = wrestler2.getState(universeId).map(WrestlerState::getFaction).orElse(null);
 
     return f1 != null && f2 != null && f1.equals(f2);
   }
@@ -207,16 +200,8 @@ public class Team extends AbstractEntity<Long> {
     }
     Long universeId = universe.getId();
 
-    Faction f1 =
-        wrestler1
-            .getState(universeId)
-            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
-            .orElse(null);
-    Faction f2 =
-        wrestler2
-            .getState(universeId)
-            .map(com.github.javydreamercsw.management.domain.wrestler.WrestlerState::getFaction)
-            .orElse(null);
+    Faction f1 = wrestler1.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction f2 = wrestler2.getState(universeId).map(WrestlerState::getFaction).orElse(null);
 
     if (f1 != null && f1.equals(f2)) {
       return f1;

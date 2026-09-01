@@ -73,7 +73,7 @@ public class ChampionshipChangeInboxListener
               .formatted(event.getTitleId(), newChampions, oldChampions);
     }
 
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             championshipChange,
             "Championship Change",

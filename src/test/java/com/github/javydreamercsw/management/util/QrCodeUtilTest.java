@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.Base64;
 import org.junit.jupiter.api.Test;
 
 class QrCodeUtilTest {
@@ -30,7 +31,7 @@ class QrCodeUtilTest {
     assertNotNull(result);
     assertFalse(result.isBlank());
     // verify it decodes without error
-    byte[] decoded = java.util.Base64.getDecoder().decode(result);
+    byte[] decoded = Base64.getDecoder().decode(result);
     assertNotEquals(0, decoded.length);
   }
 

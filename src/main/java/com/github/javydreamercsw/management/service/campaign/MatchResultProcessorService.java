@@ -36,8 +36,8 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
@@ -60,15 +60,16 @@ import com.github.javydreamercsw.management.service.match.SegmentAdjudicationSer
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.function.Supplier;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -108,20 +109,16 @@ public class MatchResultProcessorService {
   private final LegacyService legacyService;
 
   // Field-injected with @Lazy to break circular dependency with CampaignService
-  @org.springframework.beans.factory.annotation.Autowired
-  @org.springframework.context.annotation.Lazy
-  private CampaignService campaignService;
+  @Autowired @Lazy private CampaignService campaignService;
 
   // Field-injected with @Lazy to break the cycle: MatchResultProcessorService →
   // CampaignEncounterService → CampaignService → MatchResultProcessorService
-  @org.springframework.beans.factory.annotation.Autowired
-  @org.springframework.context.annotation.Lazy
-  private CampaignEncounterService campaignEncounterService;
+  @Autowired @Lazy private CampaignEncounterService campaignEncounterService;
 
   private final Random random = new Random();
 
-  private static final java.util.Set<String> PROMO_CAMPAIGN_RULES =
-      java.util.Set.of("Faction Beatdown", "GM Office Confrontation", "Performance Review");
+  private static final Set<String> PROMO_CAMPAIGN_RULES =
+      Set.of("Faction Beatdown", "GM Office Confrontation", "Performance Review");
 
   private static final String KEY_FINALS_PHASE = "finalsPhase";
   private static final String KEY_TOURNAMENT_WINNER = "tournamentWinner";
@@ -157,9 +154,7 @@ public class MatchResultProcessorService {
 
     String actualTypeName = segmentTypeName;
     List<String> actualRules =
-        segmentRules != null
-            ? new ArrayList<>(java.util.Arrays.asList(segmentRules))
-            : new ArrayList<>();
+        segmentRules != null ? new ArrayList<>(Arrays.asList(segmentRules)) : new ArrayList<>();
 
     if (isNarrativeFinale) {
       if (chapter.getRules().getFinalMatchType() != null) {
@@ -173,24 +168,24 @@ public class MatchResultProcessorService {
     }
 
     if (PROMO_CAMPAIGN_RULES.stream().anyMatch(actualRules::contains)) {
-      actualTypeName = SegmentTypeNames.PROMO;
+      actualTypeName = "Promo";
     }
-    String finalTypeName = actualTypeName != null ? actualTypeName : SegmentTypeNames.ONE_ON_ONE;
+    String finalTypeName = actualTypeName != null ? actualTypeName : "One on One";
     SegmentType type =
         segmentTypeRepository
             .findByName(finalTypeName)
             .orElseGet(
                 () ->
                     segmentTypeRepository
-                        .findByName(SegmentTypeNames.ONE_ON_ONE)
+                        .findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode())
                         .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
 
     Segment newSegment = new Segment();
     newSegment.setShow(show);
     newSegment.setSegmentType(type);
-    newSegment.setSegmentDate(java.time.Instant.now());
+    newSegment.setSegmentDate(Instant.now());
     newSegment.setIsTitleSegment(false);
-    newSegment.setTitles(new java.util.HashSet<>());
+    newSegment.setTitles(new HashSet<>());
     final Segment segment = segmentRepository.save(newSegment);
     segment.setNarration(narration);
 
@@ -217,7 +212,7 @@ public class MatchResultProcessorService {
 
     addParticipant(segment, player);
 
-    if (SegmentTypeNames.TAG_TEAM.equalsIgnoreCase(type.getName())) {
+    if (WellKnownSegmentType.TAG_TEAM.matches(type)) {
       Long partnerId = featureDataService.getFeatureValue(state, KEY_PARTNER_ID, Long.class, null);
       if (partnerId != null) {
         wrestlerRepository.findById(partnerId).ifPresent(p -> addParticipant(segment, p));
@@ -303,7 +298,7 @@ public class MatchResultProcessorService {
       final double finalMultiplier = multiplier;
       final Segment finalMatch = match;
       GeneralSecurityUtils.runAsAdmin(
-          (java.util.function.Supplier<Void>)
+          (Supplier<Void>)
               () -> {
                 adjudicationService.adjudicateMatchForCampaign(finalMatch, finalMultiplier);
                 return null;
@@ -371,7 +366,7 @@ public class MatchResultProcessorService {
       final boolean finalWon = won;
       final Show finalShow = currentShow;
       GeneralSecurityUtils.runAsAdmin(
-          (java.util.function.Supplier<Void>)
+          (Supplier<Void>)
               () -> {
                 tournamentService.advanceTournament(campaign, finalWon, finalShow);
                 return null;
@@ -383,7 +378,7 @@ public class MatchResultProcessorService {
         while (tournament != null && tournament.getCurrentRound() <= tournament.getTotalRounds()) {
           log.info("Simulating round {}...", tournament.getCurrentRound());
           GeneralSecurityUtils.runAsAdmin(
-              (java.util.function.Supplier<Void>)
+              (Supplier<Void>)
                   () -> {
                     tournamentService.advanceTournament(campaign, false, currentShow);
                     return null;
@@ -487,7 +482,7 @@ public class MatchResultProcessorService {
     state.setMomentumBonus(0);
 
     if (state.getCurrentGameDate() == null) {
-      state.setCurrentGameDate(java.time.LocalDate.now());
+      state.setCurrentGameDate(LocalDate.now());
     }
     state.setCurrentGameDate(state.getCurrentGameDate().plusDays(1));
 
@@ -555,7 +550,7 @@ public class MatchResultProcessorService {
               show.setName(finalShowName);
               show.setDescription("Story matches for " + player.getName());
               show.setShowDate(finalDate);
-              show.setCreationDate(java.time.Instant.now());
+              show.setCreationDate(Instant.now());
               show.setType(weekly);
               show.setSeason(finalSeason);
               if (finalTemplateId != null) {
@@ -567,11 +562,11 @@ public class MatchResultProcessorService {
 
   public SegmentType getPromoSegmentType() {
     return segmentTypeRepository
-        .findByName(SegmentTypeNames.PROMO)
+        .findByCode(WellKnownSegmentType.PROMO.getCode())
         .orElseGet(
             () ->
                 segmentTypeRepository
-                    .findByName(SegmentTypeNames.ONE_ON_ONE)
+                    .findByCode("one_on_one")
                     .orElseGet(
                         () -> {
                           var all = segmentTypeRepository.findAll();
@@ -579,7 +574,7 @@ public class MatchResultProcessorService {
                             return all.get(0);
                           }
                           SegmentType st = new SegmentType();
-                          st.setName(SegmentTypeNames.PROMO);
+                          st.setName("Promo");
                           st.setDescription("Standard Promo");
                           return segmentTypeRepository.save(st);
                         }));
@@ -621,8 +616,8 @@ public class MatchResultProcessorService {
       }
     }
     if (condition.getCardGroups() != null) {
-      java.util.Map<String, Integer> played =
-          participant.getCardsPlayed() != null ? participant.getCardsPlayed() : java.util.Map.of();
+      Map<String, Integer> played =
+          participant.getCardsPlayed() != null ? participant.getCardsPlayed() : Map.of();
       for (BonusVpCondition.CardExecutionGroup group : condition.getCardGroups()) {
         int total =
             group.getAnyOf() == null
@@ -657,10 +652,10 @@ public class MatchResultProcessorService {
 
     // Use the show's in-game date (kayfabe date) rather than the real-world moment this ran, so
     // reign history reflects the fictional timeline.
-    java.time.Instant awardDate =
+    Instant awardDate =
         wonAtShow != null && wonAtShow.getShowDate() != null
-            ? wonAtShow.getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant()
-            : java.time.Instant.now();
+            ? wonAtShow.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant()
+            : Instant.now();
 
     titleReignRepository
         .findByTitleAndEndDateIsNull(title)

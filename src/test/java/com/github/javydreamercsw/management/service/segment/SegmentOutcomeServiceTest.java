@@ -36,11 +36,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -101,7 +97,7 @@ class SegmentOutcomeServiceTest {
     rvdDeckCard.setDeck(rvdDeck);
     rvdDeckCards.add(rvdDeckCard);
     rvdDeck.setCards(rvdDeckCards);
-    robVanDam.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(rvdDeck)));
+    robVanDam.setDecks(new LinkedHashSet<>(List.of(rvdDeck)));
 
     // Kurt Angle setup
     Wrestler kurtAngle = Wrestler.builder().build();
@@ -144,7 +140,7 @@ class SegmentOutcomeServiceTest {
     angleDeckCard.setDeck(angleDeck);
     angleDeckCards.add(angleDeckCard);
     angleDeck.setCards(angleDeckCards);
-    kurtAngle.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(angleDeck)));
+    kurtAngle.setDecks(new LinkedHashSet<>(List.of(angleDeck)));
 
     // Generic Wrestler setup
     Wrestler genericWrestler = Wrestler.builder().build();
@@ -187,7 +183,7 @@ class SegmentOutcomeServiceTest {
     genericDeckCard.setDeck(genericDeck);
     genericDeckCards.add(genericDeckCard);
     genericDeck.setCards(genericDeckCards);
-    genericWrestler.setDecks(new java.util.LinkedHashSet<>(java.util.List.of(genericDeck)));
+    genericWrestler.setDecks(new LinkedHashSet<>(List.of(genericDeck)));
 
     lenient().when(wrestlerRepository.findByName("Rob Van Dam")).thenReturn(Optional.of(robVanDam));
     lenient().when(wrestlerRepository.findByName("Kurt Angle")).thenReturn(Optional.of(kurtAngle));
@@ -287,15 +283,11 @@ class SegmentOutcomeServiceTest {
     detachedWinner.setStartingHealth(10);
     detachedWinner.setLowHealth(2);
     detachedWinner.setDeckSize(10);
-    detachedWinner.setCreationDate(java.time.Instant.now());
+    detachedWinner.setCreationDate(Instant.now());
     // intentionally no decks — getDecks() returns null
 
     WrestlerState detachedState =
-        WrestlerState.builder()
-            .wrestler(detachedWinner)
-            .fans(200L)
-            .tier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ICON)
-            .build();
+        WrestlerState.builder().wrestler(detachedWinner).fans(200L).tier(WrestlerTier.ICON).build();
     lenient().when(wrestlerService.getOrCreateState(eq(4L), anyLong())).thenReturn(detachedState);
 
     CardSet cs = new CardSet();
@@ -309,11 +301,11 @@ class SegmentOutcomeServiceTest {
     eagerFinisher.setStamina(1);
     eagerFinisher.setMomentum(1);
     eagerFinisher.setType("Finisher");
-    eagerFinisher.setCreationDate(java.time.Instant.now());
+    eagerFinisher.setCreationDate(Instant.now());
 
     Deck eagerDeck = new Deck();
     eagerDeck.setWrestler(detachedWinner);
-    eagerDeck.setCreationDate(java.time.Instant.now());
+    eagerDeck.setCreationDate(Instant.now());
     DeckCard eagerDeckCard = new DeckCard();
     eagerDeckCard.setCard(eagerFinisher);
     eagerDeckCard.setSet(cs);
@@ -323,7 +315,7 @@ class SegmentOutcomeServiceTest {
 
     Wrestler eagerVersion = Wrestler.builder().build();
     eagerVersion.setName("Detached Winner");
-    eagerVersion.setDecks(new java.util.LinkedHashSet<>(List.of(eagerDeck)));
+    eagerVersion.setDecks(new LinkedHashSet<>(List.of(eagerDeck)));
 
     when(wrestlerRepository.findByName("Detached Winner")).thenReturn(Optional.of(detachedWinner));
     when(wrestlerRepository.findByNameWithDecksAndCards("Detached Winner"))

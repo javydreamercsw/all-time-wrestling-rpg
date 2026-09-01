@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -168,7 +169,7 @@ class ShowSchedulerServiceTest {
     verify(arenaService, atLeastOnce()).assignArenaToShow(eq(false)); // Verify for regular show
 
     // Reset mocks for next test
-    org.mockito.Mockito.reset(arenaService);
+    Mockito.reset(arenaService);
   }
 
   @Test
@@ -208,7 +209,7 @@ class ShowSchedulerServiceTest {
     verify(arenaService, atLeastOnce()).assignArenaToShow(eq(true)); // Verify for PLE
 
     // Reset mocks for next test
-    org.mockito.Mockito.reset(arenaService);
+    Mockito.reset(arenaService);
   }
 
   @Test
@@ -236,7 +237,7 @@ class ShowSchedulerServiceTest {
     showSchedulerService.generateShowsForSeason(season);
 
     // Verify no shows were created
-    verify(showService, org.mockito.Mockito.never())
+    verify(showService, Mockito.never())
         .createShow(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
   }
 }

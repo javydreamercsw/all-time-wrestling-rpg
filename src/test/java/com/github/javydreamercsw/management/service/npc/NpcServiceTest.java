@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.npc;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
@@ -46,7 +47,7 @@ class NpcServiceTest {
   @Mock private ExpansionService expansionService;
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseSettingsService universeSettingsService;
-  @Mock private com.github.javydreamercsw.base.image.DefaultImageService imageService;
+  @Mock private DefaultImageService imageService;
 
   @InjectMocks private NpcService npcService;
 

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai.image;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -75,7 +76,7 @@ public class ImageGenerationServiceFactory {
    */
   public List<ImageGenerationService> getAvailableServicesInPriorityOrder() {
     String[] priorityOrder = {"OpenAI", "Pollinations", "Mock"};
-    List<ImageGenerationService> sortedServices = new java.util.ArrayList<>();
+    List<ImageGenerationService> sortedServices = new ArrayList<>();
 
     for (String provider : priorityOrder) {
       for (ImageGenerationService service : availableServices) {

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.commentator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import lombok.Data;
@@ -30,6 +31,6 @@ public class CommentatorImportDTO {
   private String catchphrase;
   private String personaDescription;
 
-  @com.fasterxml.jackson.annotation.JsonProperty("expansion_code")
+  @JsonProperty("expansion_code")
   private String expansionCode;
 }

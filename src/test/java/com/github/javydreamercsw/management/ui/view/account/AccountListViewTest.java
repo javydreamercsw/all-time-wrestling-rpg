@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,8 +72,7 @@ class AccountListViewTest extends AbstractViewTest {
     Button newAccountButton = _get(view, Button.class, spec -> spec.withId("new-account-button"));
     newAccountButton.click();
 
-    com.vaadin.flow.component.dialog.Dialog dialog =
-        _get(com.vaadin.flow.component.dialog.Dialog.class);
+    Dialog dialog = _get(Dialog.class);
     assertTrue(dialog.isOpened());
   }
 }

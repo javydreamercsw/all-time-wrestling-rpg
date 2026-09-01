@@ -17,8 +17,10 @@
 package com.github.javydreamercsw.management.service.segment;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
@@ -30,7 +32,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -47,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,7 +124,7 @@ public class SegmentService {
     segment.setSegmentDate(dto.getSegmentDate());
     // Titles
     if (dto.getTitleIds() != null && !dto.getTitleIds().isEmpty()) {
-      Set<Title> titles = new java.util.HashSet<>();
+      Set<Title> titles = new HashSet<>();
       for (Long titleId : dto.getTitleIds()) {
         titleRepository.findById(titleId).ifPresent(titles::add);
       }
@@ -143,18 +146,13 @@ public class SegmentService {
     dto.setParticipantNames(
         segment.getParticipants().stream()
             .map(p -> p.getWrestler().getName())
-            .collect(java.util.stream.Collectors.toList()));
+            .collect(Collectors.toList()));
     dto.setWinnerNames(
-        segment.getWinners().stream()
-            .map(Wrestler::getName)
-            .collect(java.util.stream.Collectors.toList()));
+        segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.toList()));
     dto.setSegmentTypeName(segment.getSegmentType().getName());
     dto.setSegmentDate(segment.getSegmentDate());
     dto.setNarration(segment.getNarration());
-    dto.setTitleIds(
-        segment.getTitles().stream()
-            .map(Title::getId)
-            .collect(java.util.stream.Collectors.toList()));
+    dto.setTitleIds(segment.getTitles().stream().map(Title::getId).collect(Collectors.toList()));
     dto.setSegmentOrder(segment.getSegmentOrder());
     dto.setMainEvent(segment.isMainEvent());
     return dto;
@@ -229,7 +227,7 @@ public class SegmentService {
               existingSegment.setIsTitleSegment(!dto.getTitleIds().isEmpty());
 
               // Update titles
-              Set<Title> newTitles = new java.util.HashSet<>();
+              Set<Title> newTitles = new HashSet<>();
               if (dto.getTitleIds() != null) {
                 for (Long titleId : dto.getTitleIds()) {
                   titleRepository.findById(titleId).ifPresent(newTitles::add);
@@ -320,8 +318,7 @@ public class SegmentService {
 
                         return segment.getShow().getUniverse() != null
                             || (segment.getSegmentType() != null
-                                && SegmentTypeNames.PROMO.equalsIgnoreCase(
-                                    segment.getSegmentType().getName()));
+                                && WellKnownSegmentType.PROMO.matches(segment.getSegmentType()));
                       })
                   .orElse(false);
             })
@@ -576,8 +573,7 @@ public class SegmentService {
     if (isNew) {
       // Check for league match and send notifications
       checkAndNotifyLeagueMatch(saved);
-    } else if (saved.getAdjudicationStatus()
-        == com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED) {
+    } else if (saved.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED) {
       // Generate news for completed matches
       newsGenerationService.generateNewsForSegment(saved);
     }
@@ -631,7 +627,7 @@ public class SegmentService {
                   fulfillment = matchFulfillmentRepository.save(fulfillment);
 
                   // Send Notification to the owner
-                  com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+                  InboxItem inboxItem =
                       inboxService.createInboxItem(
                           matchRequestEventType,
                           "Pending match on show: "
@@ -678,8 +674,7 @@ public class SegmentService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void setAdjudicationStatus(
-      @NonNull final Segment segment,
-      @NonNull final com.github.javydreamercsw.management.domain.AdjudicationStatus status) {
+      @NonNull final Segment segment, @NonNull final AdjudicationStatus status) {
     segment.setAdjudicationStatus(status);
     segmentRepository.save(segment);
   }

@@ -63,7 +63,7 @@ public class FanAdjudicationInboxListener implements ApplicationListener<FanAwar
 
     log.debug(message);
 
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             fanAdjudication,
             "Fan Reaction: " + event.getWrestlerState().getName(),

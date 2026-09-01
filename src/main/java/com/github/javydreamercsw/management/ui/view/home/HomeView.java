@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.news.NewsItem;
 import com.github.javydreamercsw.management.service.home.LandingPageSummaryProvider;
 import com.github.javydreamercsw.management.service.news.NewsService;
+import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -41,12 +42,13 @@ import jakarta.annotation.security.PermitAll;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
-@Route(value = "", layout = com.github.javydreamercsw.management.ui.view.MainLayout.class)
+@Route(value = "", layout = MainLayout.class)
 @PageTitle("Home")
 @PermitAll
 @Slf4j
@@ -235,7 +237,7 @@ public class HomeView extends VerticalLayout {
   }
 
   private Set<RoleName> resolveRoles(final SecurityUtils securityUtils) {
-    java.util.EnumSet<RoleName> roles = java.util.EnumSet.noneOf(RoleName.class);
+    EnumSet<RoleName> roles = EnumSet.noneOf(RoleName.class);
     if (securityUtils.isAdmin()) {
       roles.add(RoleName.ADMIN);
     }

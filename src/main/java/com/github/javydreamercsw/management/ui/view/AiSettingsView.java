@@ -73,7 +73,7 @@ public class AiSettingsView extends VerticalLayout {
   public AiSettingsView(
       final AiSettingsService aiSettingsService,
       final GameSettingService gameSettingService,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService) {
+      final NotificationService notificationService) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
     this.notificationService = notificationService;
@@ -270,6 +270,35 @@ public class AiSettingsView extends VerticalLayout {
 
     pollinationsSettingsLayout.add(pollinationsEnabled, pollinationsApiKey);
     add(pollinationsSettingsLayout);
+
+    add(new H3("Ollama Settings (Local AI)"));
+    FormLayout ollamaSettingsLayout = new FormLayout();
+
+    TextField ollamaBaseUrl =
+        new TextField("Base URL", aiSettingsService.getOllamaBaseUrl(), "http://localhost:11434");
+    ollamaBaseUrl.setId("ollama-base-url");
+    ollamaBaseUrl.setHelperText(
+        "URL of the local Ollama server. Env var OLLAMA_BASE_URL takes priority.");
+    ollamaBaseUrl.addValueChangeListener(
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OLLAMA_BASE_URL", event.getValue());
+          }
+        });
+
+    TextField ollamaModel =
+        new TextField("Model", aiSettingsService.getOllamaModel(), "llama3.2:1b");
+    ollamaModel.setId("ollama-model");
+    ollamaModel.setHelperText("Model tag to pull and use. Env var OLLAMA_MODEL takes priority.");
+    ollamaModel.addValueChangeListener(
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OLLAMA_MODEL", event.getValue());
+          }
+        });
+
+    ollamaSettingsLayout.add(ollamaBaseUrl, ollamaModel);
+    add(ollamaSettingsLayout);
   }
 
   private void saveSetting(final String key, final String value) {

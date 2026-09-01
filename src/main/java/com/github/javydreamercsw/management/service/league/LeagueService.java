@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -52,14 +53,7 @@ public class LeagueService {
       final Set<Wrestler> excluded,
       final boolean commissionerPlays) {
     return createLeague(
-        name,
-        commissioner,
-        maxPicks,
-        excluded,
-        commissionerPlays,
-        java.math.BigDecimal.ZERO,
-        null,
-        100);
+        name, commissioner, maxPicks, excluded, commissionerPlays, BigDecimal.ZERO, null, 100);
   }
 
   @Transactional
@@ -69,7 +63,7 @@ public class LeagueService {
       final int maxPicks,
       final Set<Wrestler> excluded,
       final boolean commissionerPlays,
-      final java.math.BigDecimal budget,
+      final BigDecimal budget,
       final Integer durationWeeks,
       final int lockerRoomMorale) {
     League league = new League();
@@ -78,7 +72,7 @@ public class LeagueService {
     league.setMaxPicksPerPlayer(maxPicks);
     league.setExcludedWrestlers(excluded);
     league.setStatus(League.LeagueStatus.PRE_DRAFT);
-    league.setBudget(budget != null ? budget : java.math.BigDecimal.ZERO);
+    league.setBudget(budget != null ? budget : BigDecimal.ZERO);
     league.setDurationWeeks(durationWeeks);
     league.setLockerRoomMorale(lockerRoomMorale);
 
@@ -128,7 +122,7 @@ public class LeagueService {
       final int maxPicks,
       final Set<Wrestler> excluded,
       final boolean commissionerPlays,
-      final java.math.BigDecimal budget,
+      final BigDecimal budget,
       final Integer durationWeeks,
       final int lockerRoomMorale,
       final League.LeagueStatus status) {
@@ -140,7 +134,7 @@ public class LeagueService {
     league.setName(name);
     league.setMaxPicksPerPlayer(maxPicks);
     league.setExcludedWrestlers(excluded);
-    league.setBudget(budget != null ? budget : java.math.BigDecimal.ZERO);
+    league.setBudget(budget != null ? budget : BigDecimal.ZERO);
     league.setDurationWeeks(durationWeeks);
     league.setLockerRoomMorale(lockerRoomMorale);
     if (status != null) {
@@ -245,6 +239,6 @@ public class LeagueService {
     return leagueRepository
         .findById(id)
         .map(leagueRosterRepository::findByLeague)
-        .orElse(java.util.List.of());
+        .orElse(List.of());
   }
 }

@@ -22,13 +22,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -45,6 +49,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Pre;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -58,10 +63,14 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Slf4j
 public class NarrationDialog extends Dialog {
@@ -75,11 +84,10 @@ public class NarrationDialog extends Dialog {
   private final RivalryService rivalryService;
   private final RingsideActionService ringsideActionService;
   private final SegmentNarrationServiceFactory aiFactory;
-  private final com.github.javydreamercsw.management.service.relationship
-          .WrestlerRelationshipService
-      relationshipService;
+  private final WrestlerRelationshipService relationshipService;
   private final UniverseContextService universeContextService;
-  private final com.github.javydreamercsw.base.ui.service.NotificationService notificationService;
+  private final NotificationService notificationService;
+  private final DramaEventService dramaEventService;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -108,11 +116,11 @@ public class NarrationDialog extends Dialog {
       final SegmentNarrationController segmentNarrationController,
       final SegmentNarrationServiceFactory aiFactory,
       final RingsideActionService ringsideActionService,
-      final com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService
-          relationshipService,
+      final WrestlerRelationshipService relationshipService,
       final UniverseContextService universeContextService,
-      final com.github.javydreamercsw.base.ui.service.NotificationService notificationService,
-      final WrestlerStatsService wrestlerStatsService) {
+      final NotificationService notificationService,
+      final WrestlerStatsService wrestlerStatsService,
+      final DramaEventService dramaEventService) {
     this.segmentService = segmentService;
     this.segment = preloaded.segment();
     this.allWrestlerDTOs = preloaded.allWrestlerDTOs();
@@ -128,6 +136,7 @@ public class NarrationDialog extends Dialog {
     this.relationshipService = relationshipService;
     this.universeContextService = universeContextService;
     this.wrestlerStatsService = wrestlerStatsService;
+    this.dramaEventService = dramaEventService;
 
     setHeaderTitle("Generate Narration for: " + this.segment.getSegmentType().getName());
     setWidth("min(900px, 95vw)");
@@ -294,17 +303,15 @@ public class NarrationDialog extends Dialog {
     log.debug("Sending narration context to AI: {}", context);
     showProgress(true);
     UI ui = UI.getCurrent();
-    org.springframework.security.core.context.SecurityContext securityContext =
-        org.springframework.security.core.context.SecurityContextHolder.getContext();
+    SecurityContext securityContext = SecurityContextHolder.getContext();
 
-    java.util.concurrent.CompletableFuture.supplyAsync(
+    CompletableFuture.supplyAsync(
             () -> {
-              org.springframework.security.core.context.SecurityContextHolder.setContext(
-                  securityContext);
+              SecurityContextHolder.setContext(securityContext);
               try {
                 return segmentNarrationController.narrateSegment(context);
               } finally {
-                org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                SecurityContextHolder.clearContext();
               }
             })
         .thenAccept(
@@ -367,9 +374,7 @@ public class NarrationDialog extends Dialog {
 
     if (isTitleMatch) {
       String championshipNames =
-          segment.getTitles().stream()
-              .map(Title::getName)
-              .collect(java.util.stream.Collectors.joining(" and "));
+          segment.getTitles().stream().map(Title::getName).collect(Collectors.joining(" and "));
       context.setSegmentChampionship(championshipNames);
 
       List<SegmentNarrationService.TitleContext> titleContexts = new ArrayList<>();
@@ -441,7 +446,7 @@ public class NarrationDialog extends Dialog {
         segment.getParticipants().stream()
             .filter(p -> p.getIsWinner() != null && p.getIsWinner())
             .map(p -> p.getWrestler().getName())
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
 
     if (!winners.isEmpty()) {
       outcomeBuilder.append(String.join(" and ", winners)).append(" wins the segment.");
@@ -472,6 +477,13 @@ public class NarrationDialog extends Dialog {
     }
     context.setPreviousSegments(previousSegmentContexts);
 
+    List<String> pastNarrations =
+        previousSegmentContexts.stream()
+            .map(SegmentNarrationService.SegmentNarrationContext::getNarration)
+            .filter(n -> n != null && !n.isBlank())
+            .toList();
+    context.setRecentSegmentNarrations(pastNarrations);
+
     return context;
   }
 
@@ -495,8 +507,7 @@ public class NarrationDialog extends Dialog {
                 w -> {
                   Object supporter = ringsideActionService.getBestSupporter(segment, w);
                   if (supporter != null) {
-                    if (supporter
-                        instanceof com.github.javydreamercsw.management.domain.npc.Npc n) {
+                    if (supporter instanceof Npc n) {
                       wc.setManagerName(n.getName());
                     } else if (supporter instanceof Wrestler other) {
                       wc.setManagerName(other.getName());
@@ -514,6 +525,22 @@ public class NarrationDialog extends Dialog {
           feuds.add("Feuding with %s (Heat: %d)".formatted(opponent.getName(), rivalry.getHeat()));
         }
         wc.setFeudsAndHeat(feuds);
+
+        List<String> recentEvents =
+            dramaEventService
+                .getEventsForWrestler(wrestler.getId(), PageRequest.of(0, 5))
+                .getContent()
+                .stream()
+                .filter(de -> de.getEventType() != DramaEventType.OUTCOME_MATRIX_RESULT)
+                .map(
+                    de ->
+                        "[%s] %s: %s"
+                            .formatted(
+                                de.getEventType().getDisplayName(),
+                                de.getTitle(),
+                                truncateDramaDescription(de.getDescription(), 120)))
+                .toList();
+        wc.setRecentSegments(recentEvents);
 
         List<String> relationships = new ArrayList<>();
         relationshipService
@@ -602,7 +629,7 @@ public class NarrationDialog extends Dialog {
       String championshipNames =
           loadedSegment.getTitles().stream()
               .map(Title::getName)
-              .collect(java.util.stream.Collectors.joining(" and "));
+              .collect(Collectors.joining(" and "));
       context.setSegmentChampionship(championshipNames);
     }
 
@@ -657,9 +684,7 @@ public class NarrationDialog extends Dialog {
     dialog.setHeaderTitle("Narration Failed");
 
     VerticalLayout content = new VerticalLayout();
-    content.add(
-        new com.vaadin.flow.component.html.Span(
-            errorResponse.path("error").asText("Unknown error")));
+    content.add(new Span(errorResponse.path("error").asText("Unknown error")));
 
     JsonNode alternativeProviders = errorResponse.path("alternativeProviders");
     if (alternativeProviders.isArray()) {
@@ -695,17 +720,15 @@ public class NarrationDialog extends Dialog {
     log.info("Retrying narration with provider {} and context: {}", provider, context);
     showProgress(true);
     UI ui = UI.getCurrent();
-    org.springframework.security.core.context.SecurityContext retrySecurityContext =
-        org.springframework.security.core.context.SecurityContextHolder.getContext();
+    SecurityContext retrySecurityContext = SecurityContextHolder.getContext();
 
-    java.util.concurrent.CompletableFuture.supplyAsync(
+    CompletableFuture.supplyAsync(
             () -> {
-              org.springframework.security.core.context.SecurityContextHolder.setContext(
-                  retrySecurityContext);
+              SecurityContextHolder.setContext(retrySecurityContext);
               try {
                 return segmentNarrationController.narrateSegmentWithProvider(provider, context);
               } finally {
-                org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                SecurityContextHolder.clearContext();
               }
             })
         .thenAccept(
@@ -755,6 +778,14 @@ public class NarrationDialog extends Dialog {
                   });
               return null;
             });
+  }
+
+  private static String truncateDramaDescription(final String text, final int maxLen) {
+    if (text == null || text.length() <= maxLen) {
+      return text == null ? "" : text;
+    }
+    int cut = text.lastIndexOf(' ', maxLen);
+    return (cut > 0 ? text.substring(0, cut) : text.substring(0, maxLen)) + "…";
   }
 
   private void saveNarration() {

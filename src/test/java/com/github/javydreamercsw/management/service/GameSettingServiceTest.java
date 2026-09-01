@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -53,7 +54,7 @@ class GameSettingServiceTest {
   @BeforeEach
   void setUp() {
     // Return null universeId so tests resolve against global (NULL) rows by default
-    org.mockito.Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(null);
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(null);
   }
 
   private GameSetting setting(final String key, final String value) {
@@ -61,6 +62,23 @@ class GameSettingServiceTest {
     s.setSettingKey(key);
     s.setValue(value);
     return s;
+  }
+
+  @Test
+  void isIntergenderMatchesEnabled_settingMissing_returnsDefaultFalse() {
+    when(repository.findGlobal(GameSettingService.INTERGENDER_MATCHES_ENABLED_KEY))
+        .thenReturn(Optional.empty());
+
+    assertThat(service.isIntergenderMatchesEnabled()).isFalse();
+  }
+
+  @Test
+  void isIntergenderMatchesEnabled_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.INTERGENDER_MATCHES_ENABLED_KEY))
+        .thenReturn(
+            Optional.of(setting(GameSettingService.INTERGENDER_MATCHES_ENABLED_KEY, "true")));
+
+    assertThat(service.isIntergenderMatchesEnabled()).isTrue();
   }
 
   @Test

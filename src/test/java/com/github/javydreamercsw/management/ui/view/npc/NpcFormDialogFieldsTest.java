@@ -22,6 +22,8 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,18 +55,14 @@ class NpcFormDialogFieldsTest extends AbstractViewTest {
   @Test
   @DisplayName("npcTypeField ComboBox should exist in NpcFormDialog")
   void npcTypeFieldExists() {
-    com.vaadin.flow.component.combobox.ComboBox<?> typeField =
-        (com.vaadin.flow.component.combobox.ComboBox<?>)
-            ReflectionTestUtils.getField(dialog, "npcTypeField");
+    ComboBox<?> typeField = (ComboBox<?>) ReflectionTestUtils.getField(dialog, "npcTypeField");
     assertNotNull(typeField, "npcTypeField should not be null");
   }
 
   @Test
   @DisplayName("descriptionField TextArea should exist in NpcFormDialog")
   void descriptionFieldExists() {
-    com.vaadin.flow.component.textfield.TextArea descField =
-        (com.vaadin.flow.component.textfield.TextArea)
-            ReflectionTestUtils.getField(dialog, "descriptionField");
+    TextArea descField = (TextArea) ReflectionTestUtils.getField(dialog, "descriptionField");
     assertNotNull(descField, "descriptionField should not be null");
   }
 }

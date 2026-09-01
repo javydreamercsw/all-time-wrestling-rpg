@@ -96,9 +96,9 @@ class PerformanceControllerTest extends AbstractControllerTest {
 
   @Test
   void getCacheStatistics_returnsStats() throws Exception {
-    java.util.List<java.util.Map<String, Object>> perCacheStats =
-        java.util.List.of(
-            java.util.Map.of(
+    List<Map<String, Object>> perCacheStats =
+        List.of(
+            Map.of(
                 "name",
                 "wrestlers",
                 "size",

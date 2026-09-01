@@ -34,6 +34,7 @@ package com.github.javydreamercsw.management.service.league; /*
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
+import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.league.Draft;
 import com.github.javydreamercsw.management.domain.league.DraftPick;
@@ -46,12 +47,15 @@ import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRoster;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerContract;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerContractRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.league.DraftBroadcaster;
 import com.github.javydreamercsw.management.event.league.DraftUpdateEvent;
 import com.github.javydreamercsw.management.service.gm.SalaryCalculator;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -152,7 +156,7 @@ public class DraftService {
     // Send notifications to all participants (even viewers?)
     List<LeagueMembership> allMembers = leagueMembershipRepository.findByLeague(league);
     for (LeagueMembership member : allMembers) {
-      com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+      InboxItem inboxItem =
           inboxService.createInboxItem(
               draftStartedEventType,
               "The draft for league '" + league.getName() + "' has started!",
@@ -197,23 +201,20 @@ public class DraftService {
     League league = draft.getLeague();
     int duration = league.getDurationWeeks() != null ? league.getDurationWeeks() : 12;
     Long universeId = league.getUniverse() != null ? league.getUniverse().getId() : null;
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState salaryState =
+    WrestlerState salaryState =
         wrestler
             .getState(universeId)
             .or(wrestler::getDefaultState)
-            .orElseGet(
-                () ->
-                    com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
-                        .build());
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerContract contract =
-        com.github.javydreamercsw.management.domain.wrestler.WrestlerContract.builder()
+            .orElseGet(() -> WrestlerState.builder().build());
+    WrestlerContract contract =
+        WrestlerContract.builder()
             .wrestler(wrestler)
             .league(league)
             .salaryPerShow(salaryCalculator.calculateWeeklySalary(wrestler, salaryState))
             .durationWeeks(duration)
             .isInitialDraft(true)
             .isActive(true)
-            .startDate(java.time.Instant.now())
+            .startDate(Instant.now())
             .build();
     contractRepository.save(contract);
 

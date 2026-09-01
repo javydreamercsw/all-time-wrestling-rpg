@@ -30,10 +30,13 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 class ChapterTriggerLogicTest {
 
@@ -48,9 +51,8 @@ class ChapterTriggerLogicTest {
         new CampaignChapterService(
             objectMapper,
             featureDataService,
-            org.mockito.Mockito.mock(
-                com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
-            new org.springframework.core.io.support.PathMatchingResourcePatternResolver());
+            Mockito.mock(ExpansionService.class),
+            new PathMatchingResourcePatternResolver());
     chapterService.init();
   }
 

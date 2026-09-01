@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.universe.UniverseExpansionSet
 import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusion;
 import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.expansion.Expansion;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.List;
@@ -43,7 +44,7 @@ public class UniverseSettingsService {
   private final UniverseExpansionSettingRepository expansionSettingRepository;
   private final UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
   private final ExpansionService expansionService;
-  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  private final GameSettingService gameSettingService;
   private final ApplicationEventPublisher eventPublisher;
 
   /** Returns the set of expansion codes enabled for a universe (falling back to global). */
@@ -72,10 +73,7 @@ public class UniverseSettingsService {
         .map(UniverseExpansionSetting::isEnabled)
         .orElseGet(
             () -> {
-              String key =
-                  com.github.javydreamercsw.management.service.expansion.ExpansionService
-                          .SET_ENABLED_PREFIX
-                      + expansionCode;
+              String key = ExpansionService.SET_ENABLED_PREFIX + expansionCode;
               return gameSettingService
                   .findByKeyForUniverse(key, universe.getId())
                   .map(s -> Boolean.parseBoolean(s.getValue()))

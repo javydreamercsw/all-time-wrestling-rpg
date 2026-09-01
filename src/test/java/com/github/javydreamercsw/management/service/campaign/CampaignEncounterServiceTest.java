@@ -26,14 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
-import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
-import com.github.javydreamercsw.management.domain.campaign.Campaign;
-import com.github.javydreamercsw.management.domain.campaign.CampaignEncounter;
-import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignState;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
+import com.github.javydreamercsw.management.domain.campaign.*;
 import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
@@ -46,17 +39,21 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterRespon
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,8 +72,7 @@ class CampaignEncounterServiceTest {
   @Mock private CommentatorRepository commentatorRepository;
   @Mock private FeatureDataService featureDataService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.expansion.ExpansionService expansionService;
+  @Mock private ExpansionService expansionService;
 
   @Mock private InjuryService injuryService;
   @Mock private WrestlerService wrestlerService;
@@ -150,7 +146,7 @@ class CampaignEncounterServiceTest {
     assertThat(response.getChoices()).hasSize(1);
     assertThat(response.getChoices().get(0).getLabel()).isEqualTo("BTN");
 
-    verify(encounterRepository).save(org.mockito.ArgumentMatchers.any(CampaignEncounter.class));
+    verify(encounterRepository).save(ArgumentMatchers.any(CampaignEncounter.class));
   }
 
   private CampaignChapterDTO staticChapterWith(StaticEncounterDTO... encounters) {
@@ -325,7 +321,7 @@ class CampaignEncounterServiceTest {
         StaticChoiceDTO.builder()
             .text("Step into the ring")
             .label("Fight")
-            .nextPhase(com.github.javydreamercsw.management.domain.campaign.CampaignPhase.MATCH)
+            .nextPhase(CampaignPhase.MATCH)
             .matchType("One on One")
             .segmentRules(List.of("Normal"))
             .forcedOpponentName("The Villain")
@@ -362,9 +358,9 @@ class CampaignEncounterServiceTest {
     encounterService.recordEncounterChoice(campaign, choice);
 
     // Pending cards must NOT be stored when there is no routing
-    verify(featureDataService, org.mockito.Mockito.never())
+    verify(featureDataService, Mockito.never())
         .setFeatureValue(any(), eq("_pendingWinCard"), any());
-    verify(featureDataService, org.mockito.Mockito.never())
+    verify(featureDataService, Mockito.never())
         .setFeatureValue(any(), eq("_pendingLossCard"), any());
     // currentEncounterId must remain unchanged (not cleared) for sequential fallback to work
     assertThat(campaign.getState().getCurrentEncounterId()).isEqualTo("first_match");
@@ -456,7 +452,7 @@ class CampaignEncounterServiceTest {
 
     encounterService.recordEncounterChoice(campaign, choice);
 
-    org.mockito.Mockito.verifyNoInteractions(storylineDirectorService);
+    Mockito.verifyNoInteractions(storylineDirectorService);
   }
 
   @Test
@@ -575,7 +571,7 @@ class CampaignEncounterServiceTest {
     CampaignChapterDTO ch = staticChapterWith(kuOnly);
     // campaign wrestler is "Test Wrestler", so no card passes the filter
 
-    org.junit.jupiter.api.Assertions.assertThrows(
+    Assertions.assertThrows(
         IllegalStateException.class, () -> encounterService.generateStaticEncounter(campaign, ch));
   }
 
@@ -595,7 +591,7 @@ class CampaignEncounterServiceTest {
     // Attempt to route directly to the filtered-out card
     campaign.getState().setCurrentEncounterId("ku-card");
 
-    org.junit.jupiter.api.Assertions.assertThrows(
+    Assertions.assertThrows(
         IllegalStateException.class, () -> encounterService.generateStaticEncounter(campaign, ch));
   }
 

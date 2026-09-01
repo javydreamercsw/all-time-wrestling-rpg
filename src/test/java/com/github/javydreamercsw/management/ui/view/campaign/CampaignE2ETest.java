@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -119,7 +120,7 @@ class CampaignE2ETest extends AbstractE2ETest {
             waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Back to Dashboard']"));
         clickElement(backButton);
         break;
-      } catch (org.openqa.selenium.StaleElementReferenceException e) {
+      } catch (StaleElementReferenceException e) {
         log.warn("Stale element during navigation, retrying... (attempt {})", retryCount + 1);
         retryCount++;
         if (retryCount == 3) {

@@ -110,7 +110,7 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 - `Rivalry` — dynamic feuds with heat events; `DramaEvent` for random incidents
 - `Campaign` — story-driven content with player choices
 
-**Persistence:** `AbstractEntity<ID>` → `AbstractSyncableEntity<ID>` (adds Notion sync metadata). Repositories extend `JpaRepository`. Flyway migrations live in `src/main/resources/db/migration/h2/` and `.../mysql/`.
+**Persistence:** entities extend `AbstractEntity<ID>`. Repositories extend `JpaRepository`. Flyway migrations live in `src/main/resources/db/migration/h2/` and `.../mysql/`.
 
 **AI narration:** pluggable providers (Claude, Gemini, OpenAI, Mock) in `base/ai/`. Provider selection is configurable; async processing inherits the Spring Security context.
 
@@ -173,7 +173,6 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 - **Generating checksums:** after bumping `.released` at release time, run `bash scripts/generate-migration-checksums.sh` to regenerate the `.checksums` manifests and commit them. The release workflow does this automatically.
 - **H2 is production for installer users.** Most customers use a file-based H2 database (configured by the portable/desktop installers), not MySQL. H2 migrations are therefore production migrations — treat them with the same care as MySQL.
 - **Migration tests:** `FlywayMigrationIT` (MySQL, Testcontainers) validates fresh-schema and prod-dump upgrade paths. A planned `H2MigrationIT` will do the same for H2 file databases using a committed reference snapshot at the `.released` state — this will run under `-Pintegration-test` when any `db/migration/h2/` file changes.
-- **Notion sync:** entities that sync from Notion extend `AbstractSyncableEntity`. See `docs/SYNC_TROUBLESHOOTING.md` for debugging.
 
 ## Knowledge Graph
 
@@ -186,6 +185,7 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 The doc covers graphify (community detection, path tracing, GRAPH_REPORT.md), code-review-graph (MCP tools, impact analysis), when to use each, and the full auto-update pipeline.
 
 <!-- code-review-graph MCP tools -->
+
 ## MCP Tools: code-review-graph
 
 **IMPORTANT: This project has a knowledge graph. ALWAYS use the
@@ -206,16 +206,16 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 
 ### Key Tools
 
-| Tool | Use when |
-| ------ | ---------- |
-| `detect_changes_tool` | Reviewing code changes — gives risk-scored analysis |
-| `get_review_context_tool` | Need source snippets for review — token-efficient |
-| `get_impact_radius_tool` | Understanding blast radius of a change |
-| `get_affected_flows_tool` | Finding which execution paths are impacted |
-| `query_graph_tool` | Tracing callers, callees, imports, tests, dependencies |
-| `semantic_search_nodes_tool` | Finding functions/classes by name or keyword |
-| `get_architecture_overview_tool` | Understanding high-level codebase structure |
-| `refactor_tool` | Planning renames, finding dead code |
+|               Tool               |                        Use when                        |
+|----------------------------------|--------------------------------------------------------|
+| `detect_changes_tool`            | Reviewing code changes — gives risk-scored analysis    |
+| `get_review_context_tool`        | Need source snippets for review — token-efficient      |
+| `get_impact_radius_tool`         | Understanding blast radius of a change                 |
+| `get_affected_flows_tool`        | Finding which execution paths are impacted             |
+| `query_graph_tool`               | Tracing callers, callees, imports, tests, dependencies |
+| `semantic_search_nodes_tool`     | Finding functions/classes by name or keyword           |
+| `get_architecture_overview_tool` | Understanding high-level codebase structure            |
+| `refactor_tool`                  | Planning renames, finding dead code                    |
 
 ### Workflow
 

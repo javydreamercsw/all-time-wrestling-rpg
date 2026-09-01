@@ -17,22 +17,32 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -44,8 +54,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -65,19 +77,20 @@ public class ShowPlanningService {
   private final Clock clock;
   private final TitleService titleService;
   private final ShowService showService;
-  private final com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
-  private final com.github.javydreamercsw.management.service.segment.SegmentSummaryService
-      segmentSummaryService;
+  private final SegmentService segmentService;
+  private final SegmentSummaryService segmentSummaryService;
   private final SegmentTypeService segmentTypeService;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerService wrestlerService;
   private final FactionService factionService;
   private final SegmentRuleRepository segmentRuleRepository;
-  private final com.github.javydreamercsw.management.service.npc.NpcService npcService;
+  private final NpcService npcService;
   private final ApplicationEventPublisher eventPublisher;
   private final TitleReignRepository titleReignRepository;
   private final InjuryService injuryService;
   private final GameSettingService gameSettingService;
+  private final DramaEventService dramaEventService;
+  private final FeudScriptService feudScriptService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -106,6 +119,7 @@ public class ShowPlanningService {
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     context.setShowDate(showDate);
     context.setPremiumLiveEvent(show.isPremiumLiveEvent());
+    context.setIntergenderAllowed(gameSettingService.isIntergenderMatchesEnabled());
     Instant lookbackStart = showDate.minus(21, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lookbackStart, showDate);
     List<Segment> lastWeekSegments =
@@ -203,7 +217,7 @@ public class ShowPlanningService {
       // outside the original session (causes LazyInitializationException in async context).
       Instant lastDefense =
           titleReignRepository.findByTitleAndEndDateIsNull(title).stream()
-              .map(com.github.javydreamercsw.management.domain.title.TitleReign::getStartDate)
+              .map(TitleReign::getStartDate)
               .findFirst()
               .orElse(null);
 
@@ -211,7 +225,7 @@ public class ShowPlanningService {
       // Query directly instead of title.getSegments() — same lazy-collection issue as above.
       Optional<Instant> lastMatch =
           segmentRepository.findByTitle(title).stream()
-              .map(com.github.javydreamercsw.management.domain.show.segment.Segment::getSegmentDate)
+              .map(Segment::getSegmentDate)
               .max(Comparator.naturalOrder());
 
       if (lastMatch.isPresent() && (lastDefense == null || lastMatch.get().isAfter(lastDefense))) {
@@ -258,7 +272,35 @@ public class ShowPlanningService {
       context.setNextPle(ple);
     }
 
-    return mapper.toDto(context);
+    ShowPlanningContextDTO dto = mapper.toDto(context);
+
+    List<String> dramaLines =
+        dramaEventService.getRecentEvents().stream()
+            .filter(de -> de.getEventType() != DramaEventType.OUTCOME_MATRIX_RESULT)
+            .limit(15)
+            .map(
+                de ->
+                    "[%s] %s — %s: %s"
+                        .formatted(
+                            de.getEventType().getDisplayName(),
+                            de.getPrimaryWrestler().getName(),
+                            de.getTitle(),
+                            truncateDramaDescription(de.getDescription(), 100)))
+            .toList();
+    dto.setRecentDramaEvents(dramaLines);
+
+    // Inject scripted beat slots so the AI honours pre-planned match types and winner intent
+    dto.setUpcomingScriptedBeats(feudScriptService.getUpcomingBeatDTOsForShow(show));
+
+    return dto;
+  }
+
+  private static String truncateDramaDescription(final String text, final int maxLen) {
+    if (text == null || text.length() <= maxLen) {
+      return text == null ? "" : text;
+    }
+    int cut = text.lastIndexOf(' ', maxLen);
+    return (cut > 0 ? text.substring(0, cut) : text.substring(0, maxLen)) + "…";
   }
 
   /**
@@ -335,7 +377,41 @@ public class ShowPlanningService {
       }
     }
 
+    // Intergender enforcement: the AI is instructed not to mix genders in matches, but prompts
+    // are advisory — this is the authoritative check.
+    if (!gameSettingService.isIntergenderMatchesEnabled()) {
+      for (ProposedSegment segment : proposedSegments) {
+        if (isPromoSegment(segment) || segment.getTeams() == null) {
+          continue;
+        }
+        Set<Gender> genders =
+            segment.getTeams().stream()
+                .flatMap(List::stream)
+                .map(name -> wrestlerRepository.findByName(name).map(Wrestler::getGender))
+                .flatMap(Optional::stream)
+                .collect(Collectors.toSet());
+        if (genders.size() > 1) {
+          errors.add(
+              "Intergender matches are disabled but this match mixes genders: "
+                  + segment.getTeams().stream()
+                      .map(team -> String.join(" & ", team))
+                      .collect(Collectors.joining(" vs ")));
+        }
+      }
+    }
+
     return new CardValidationResult(errors, warnings);
+  }
+
+  /** True when the proposed segment's type resolves to the well-known Promo type. */
+  private boolean isPromoSegment(final ProposedSegment segment) {
+    if (segment.getType() == null) {
+      return false;
+    }
+    return segmentTypeService
+        .findByName(segment.getType())
+        .map(WellKnownSegmentType.PROMO::matches)
+        .orElseGet(() -> segment.getType().toLowerCase().contains("promo"));
   }
 
   /** Convenience overload — validates against live active rivalries from the database. */
@@ -401,8 +477,8 @@ public class ShowPlanningService {
       log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
-      Optional<com.github.javydreamercsw.management.domain.show.segment.type.SegmentType>
-          segmentTypeOpt = segmentTypeService.findByName(proposedSegment.getType());
+      Optional<SegmentType> segmentTypeOpt =
+          segmentTypeService.findByName(proposedSegment.getType());
       if (segmentTypeOpt.isEmpty()) {
         log.warn("Segment type not found: {}. Skipping segment.", proposedSegment.getType());
         continue;
@@ -469,13 +545,12 @@ public class ShowPlanningService {
       segment.setWinners(actualWinners);
 
       if (proposedSegment.getRules() != null && !proposedSegment.getRules().isEmpty()) {
-        List<com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule>
-            newSegmentRules =
-                proposedSegment.getRules().stream()
-                    .map(ruleName -> segmentRuleRepository.findByName(ruleName))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
+        List<SegmentRule> newSegmentRules =
+            proposedSegment.getRules().stream()
+                .map(ruleName -> segmentRuleRepository.findByName(ruleName))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
         segment.syncSegmentRules(newSegmentRules);
       }
       segmentsToSave.add(segment);
@@ -491,7 +566,7 @@ public class ShowPlanningService {
       String segmentLabel = "segment " + (i + 1) + " (" + ps.getType() + ")";
 
       if (ps.getTeamIds() != null && !ps.getTeamIds().isEmpty()) {
-        java.util.Set<Long> seen = new java.util.HashSet<>();
+        Set<Long> seen = new HashSet<>();
         for (List<Long> team : ps.getTeamIds()) {
           if (team == null) {
             continue;
@@ -510,7 +585,7 @@ public class ShowPlanningService {
           }
         }
       } else if (ps.getTeams() != null && !ps.getTeams().isEmpty()) {
-        java.util.Set<String> seen = new java.util.HashSet<>();
+        Set<String> seen = new HashSet<>();
         for (List<String> team : ps.getTeams()) {
           if (team == null) {
             continue;

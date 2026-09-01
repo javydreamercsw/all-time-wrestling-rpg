@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
@@ -97,7 +98,7 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
     Show show = new Show();
     show.setName("Test Show");
     show.setSeason(season);
-    show.setShowDate(java.time.LocalDate.now());
+    show.setShowDate(LocalDate.now());
     ShowType showType = new ShowType();
     showType.setName("Regular");
     showTypeService.save(showType);

@@ -62,7 +62,7 @@ public class WrestlerBumpInboxListener implements ApplicationListener<WrestlerBu
           case DRAMA_EVENT -> "drama event";
           case MANUAL -> "manual assignment";
         };
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             wrestlerBump,
             "Wrestler Bump: " + event.getWrestlerState().getName(),

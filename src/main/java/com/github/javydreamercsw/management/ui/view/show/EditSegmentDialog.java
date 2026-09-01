@@ -22,10 +22,12 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.expansion.Expansion;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -48,17 +50,25 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.hibernate.Hibernate;
+import org.slf4j.LoggerFactory;
 
 public class EditSegmentDialog extends Dialog {
 
@@ -91,14 +101,13 @@ public class EditSegmentDialog extends Dialog {
       // The universe-context-aware findAll() overload is unreliable in async threads because
       // VaadinSession.getCurrent() returns null there, and a poisoned cache entry persists for
       // 10 minutes. Using the global enabled codes is correct for the edit dialog.
-      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+      LoggerFactory.getLogger(EditSegmentDialog.class)
           .info(
               "[DEBUG-ATW8djt] PreloadedData.load() entry — thread={} VaadinSession={}",
               Thread.currentThread().getName(),
-              com.vaadin.flow.server.VaadinSession.getCurrent());
-      Set<String> enabledCodes =
-          new java.util.HashSet<>(expansionService.getEnabledExpansionCodes());
-      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+              VaadinSession.getCurrent());
+      Set<String> enabledCodes = new HashSet<>(expansionService.getEnabledExpansionCodes());
+      LoggerFactory.getLogger(EditSegmentDialog.class)
           .info("[DEBUG-ATW8djt] PreloadedData.load() enabledCodes={}", enabledCodes);
       List<Wrestler> active = wrestlerService.findAllFiltered(null, null, universeId);
       Map<String, Wrestler> byName =
@@ -106,11 +115,7 @@ public class EditSegmentDialog extends Dialog {
               .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
       Map<String, String> expNames =
           expansionService.getExpansions().stream()
-              .collect(
-                  Collectors.toMap(
-                      com.github.javydreamercsw.management.service.expansion.Expansion::getCode,
-                      com.github.javydreamercsw.management.service.expansion.Expansion::getName,
-                      (a, b) -> a));
+              .collect(Collectors.toMap(Expansion::getCode, Expansion::getName, (a, b) -> a));
       List<SegmentType> segmentTypes =
           segmentTypeService.findAll(enabledCodes).stream()
               .sorted(Comparator.comparing(SegmentType::getName))
@@ -119,13 +124,13 @@ public class EditSegmentDialog extends Dialog {
           segmentRuleService.findAll(enabledCodes).stream()
               .sorted(Comparator.comparing(SegmentRule::getName))
               .collect(Collectors.toList());
-      org.slf4j.LoggerFactory.getLogger(EditSegmentDialog.class)
+      LoggerFactory.getLogger(EditSegmentDialog.class)
           .info(
               "[DEBUG-ATW8djt] PreloadedData.load() result — {} segmentTypes, {} segmentRules",
               segmentTypes.size(),
               segmentRules.size());
       List<Team> teams =
-          teamService != null ? teamService.getActiveTeams() : java.util.Collections.emptyList();
+          teamService != null ? teamService.getActiveTeams() : Collections.emptyList();
       return new PreloadedData(
           segmentTypes,
           segmentRules,
@@ -151,6 +156,7 @@ public class EditSegmentDialog extends Dialog {
       String summary,
       String notes,
       boolean isTitleSegment,
+      boolean isContenderMatch,
       Set<Title> titles) {
 
     /** Build from a planning DTO using pre-loaded wrestler map for name resolution. */
@@ -161,7 +167,7 @@ public class EditSegmentDialog extends Dialog {
           List<Wrestler> team =
               proposed.getTeams().get(i).stream()
                   .map(name -> data.wrestlerByName().get(name))
-                  .filter(java.util.Objects::nonNull)
+                  .filter(Objects::nonNull)
                   .collect(Collectors.toList());
           teams.put(i + 1, team);
         }
@@ -175,7 +181,7 @@ public class EditSegmentDialog extends Dialog {
           List<Wrestler> team =
               proposed.getTeamIds().get(i).stream()
                   .map(wrestlerById::get)
-                  .filter(java.util.Objects::nonNull)
+                  .filter(Objects::nonNull)
                   .collect(Collectors.toList());
           teams.put(i + 1, team);
         }
@@ -190,7 +196,7 @@ public class EditSegmentDialog extends Dialog {
               ? List.of()
               : proposed.getWinners().stream()
                   .map(name -> data.wrestlerByName().get(name))
-                  .filter(java.util.Objects::nonNull)
+                  .filter(Objects::nonNull)
                   .collect(Collectors.toList());
 
       Set<SegmentRule> rules =
@@ -224,6 +230,7 @@ public class EditSegmentDialog extends Dialog {
           proposed.getSummary() != null ? proposed.getSummary() : "",
           proposed.getNotes() != null ? proposed.getNotes() : "",
           Boolean.TRUE.equals(proposed.getIsTitleSegment()),
+          false,
           proposed.getTitles() != null ? proposed.getTitles() : new HashSet<>());
     }
 
@@ -251,6 +258,7 @@ public class EditSegmentDialog extends Dialog {
           segment.getSummary() != null ? segment.getSummary() : "",
           segment.getNotes() != null ? segment.getNotes() : "",
           Boolean.TRUE.equals(segment.getIsTitleSegment()),
+          segment.isContenderMatch(),
           segment.getTitles() != null ? segment.getTitles() : new HashSet<>());
     }
   }
@@ -266,6 +274,7 @@ public class EditSegmentDialog extends Dialog {
       String summary,
       String notes,
       boolean isTitleSegment,
+      boolean isContenderMatch,
       Set<Title> titles,
       Map<Long, Integer> finalHealthValues) {}
 
@@ -295,15 +304,24 @@ public class EditSegmentDialog extends Dialog {
   /** All wrestlers currently assigned to any team; kept in sync so every combo sees them. */
   private final Set<Wrestler> allAssignedWrestlers = new HashSet<>();
 
+  /**
+   * Re-entrancy guard for {@link #refreshTeamComboItems()}: setItems() makes Vaadin re-set the
+   * combo value internally, firing value-change events that would otherwise re-trigger the refresh
+   * and recurse until StackOverflowError.
+   */
+  private boolean refreshingTeamItems;
+
   private final ComboBox<Npc> refereeCombo;
   private final ComboBox<Gender> genderFilter;
+  @Getter private final Checkbox intergenderCheckbox;
   private final ComboBox<AlignmentType> alignmentFilter;
   private final MultiSelectComboBox<SegmentRule> rulesCombo;
   private final MultiSelectComboBox<Wrestler> winnersCombo;
   private final HorizontalLayout winnerTeamButtonsLayout = new HorizontalLayout();
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
-  private final com.vaadin.flow.component.html.Span synergyBonusLabel;
+  private final Checkbox isContenderMatchCheckbox;
+  private final Span synergyBonusLabel;
   private final VerticalLayout teamsLayout = new VerticalLayout();
   @Getter private final Map<Long, IntegerField> healthFields = new HashMap<>();
 
@@ -316,6 +334,17 @@ public class EditSegmentDialog extends Dialog {
       final Gender defaultGenderConstraint,
       final Long universeId,
       final SaveCallback onSave) {
+    this(data, initial, wrestlerService, defaultGenderConstraint, true, universeId, onSave);
+  }
+
+  public EditSegmentDialog(
+      final PreloadedData data,
+      final SegmentDialogData initial,
+      final WrestlerService wrestlerService,
+      final Gender defaultGenderConstraint,
+      final boolean intergenderAllowed,
+      final Long universeId,
+      final SaveCallback onSave) {
     this.data = data;
     this.wrestlerService = wrestlerService;
     this.universeId = universeId;
@@ -326,11 +355,9 @@ public class EditSegmentDialog extends Dialog {
     formLayout.setResponsiveSteps(
         new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("500px", 2));
 
-    synergyBonusLabel = new com.vaadin.flow.component.html.Span("Synergy Bonus: +0");
+    synergyBonusLabel = new Span("Synergy Bonus: +0");
     synergyBonusLabel.addClassNames(
-        com.vaadin.flow.theme.lumo.LumoUtility.FontSize.SMALL,
-        com.vaadin.flow.theme.lumo.LumoUtility.TextColor.SUCCESS,
-        com.vaadin.flow.theme.lumo.LumoUtility.FontWeight.BOLD);
+        LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SUCCESS, LumoUtility.FontWeight.BOLD);
     synergyBonusLabel.setId("edit-synergy-bonus-label");
 
     segmentTypeCombo = new ComboBox<>("Segment Type");
@@ -378,6 +405,12 @@ public class EditSegmentDialog extends Dialog {
     genderFilter.setValue(defaultGenderConstraint);
     genderFilter.setId("edit-gender-filter-combo-box");
 
+    intergenderCheckbox = new Checkbox("Allow intergender participants");
+    intergenderCheckbox.setValue(intergenderAllowed);
+    intergenderCheckbox.setHelperText(
+        "When off, match participants are limited to one gender. Promos are unaffected.");
+    intergenderCheckbox.setId("edit-intergender-checkbox");
+
     // Winners combo — defined before teams so team lambdas can capture it
     winnersCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnersCombo.setItemLabelGenerator(Wrestler::getName);
@@ -421,7 +454,7 @@ public class EditSegmentDialog extends Dialog {
           }
         };
 
-    java.util.function.Consumer<Set<Wrestler>> addTeamRow =
+    Consumer<Set<Wrestler>> addTeamRow =
         initialWrestlers -> {
           int teamNum = teamCombos.size() + 1;
           MultiSelectComboBox<Wrestler> teamCombo = new MultiSelectComboBox<>("Team " + teamNum);
@@ -445,6 +478,13 @@ public class EditSegmentDialog extends Dialog {
                 allAssignedWrestlers.clear();
                 teamCombos.forEach(c -> allAssignedWrestlers.addAll(c.getValue()));
                 refreshWinners.run();
+                // Hard intergender enforcement: the first pick locks every combo to that
+                // gender, so the other dropdowns must be re-filtered after each selection.
+                // Only user-originated selections trigger this — the internal value-change
+                // events fired by setItems() during a refresh must not recurse.
+                if (e.isFromClient() && !intergenderCheckbox.getValue()) {
+                  refreshTeamComboItems();
+                }
               });
           teamCombos.add(teamCombo);
 
@@ -522,22 +562,9 @@ public class EditSegmentDialog extends Dialog {
     // Populate teams from initial data
     initial.teams().forEach((teamNum, wrestlers) -> addTeamRow.accept(new HashSet<>(wrestlers)));
 
-    alignmentFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(getFilteredWrestlers(current));
-            combo.setValue(current);
-          }
-        });
-    genderFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(getFilteredWrestlers(current));
-            combo.setValue(current);
-          }
-        });
+    alignmentFilter.addValueChangeListener(e -> refreshTeamComboItems());
+    genderFilter.addValueChangeListener(e -> refreshTeamComboItems());
+    intergenderCheckbox.addValueChangeListener(e -> refreshTeamComboItems());
 
     addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
     addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -591,9 +618,7 @@ public class EditSegmentDialog extends Dialog {
           healthFields.clear();
           boolean isPromo =
               segmentTypeCombo.getValue() != null
-                  && com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames
-                      .PROMO
-                      .equalsIgnoreCase(segmentTypeCombo.getValue().getName());
+                  && WellKnownSegmentType.PROMO.matches(segmentTypeCombo.getValue());
           Set<Wrestler> allTeamWrestlers =
               teamCombos.stream().flatMap(c -> c.getValue().stream()).collect(Collectors.toSet());
           List<Wrestler> playerWrestlers =
@@ -618,22 +643,39 @@ public class EditSegmentDialog extends Dialog {
           }
         };
 
-    segmentTypeCombo.addValueChangeListener(e -> refreshHealthFields.run());
+    segmentTypeCombo.addValueChangeListener(
+        e -> {
+          refreshHealthFields.run();
+          // Promo vs match changes whether the intergender restriction applies.
+          refreshTeamComboItems();
+        });
     teamCombos.forEach(c -> c.addValueChangeListener(e -> refreshHealthFields.run()));
     refreshHealthFields.run();
 
     isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
     isTitleSegmentCheckbox.setId("edit-is-title-segment-checkbox");
-    isTitleSegmentCheckbox.addValueChangeListener(
-        event -> {
-          titleMultiSelectComboBox.setVisible(event.getValue());
-          if (!event.getValue()) {
+
+    isContenderMatchCheckbox = new Checkbox("This is a #1 Contender Match");
+    isContenderMatchCheckbox.setId("edit-is-contender-match-checkbox");
+
+    // The title selector is needed for title matches (title on the line) and contender
+    // matches (which title the winner becomes #1 contender for).
+    Runnable refreshTitleComboVisibility =
+        () -> {
+          boolean visible =
+              isTitleSegmentCheckbox.getValue() || isContenderMatchCheckbox.getValue();
+          titleMultiSelectComboBox.setVisible(visible);
+          if (!visible) {
             titleMultiSelectComboBox.clear();
           }
-        });
+        };
+    isTitleSegmentCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
+    isContenderMatchCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
+
     isTitleSegmentCheckbox.setValue(initial.isTitleSegment());
-    titleMultiSelectComboBox.setVisible(initial.isTitleSegment());
-    if (initial.isTitleSegment()) {
+    isContenderMatchCheckbox.setValue(initial.isContenderMatch());
+    titleMultiSelectComboBox.setVisible(initial.isTitleSegment() || initial.isContenderMatch());
+    if (initial.isTitleSegment() || initial.isContenderMatch()) {
       titleMultiSelectComboBox.setValue(initial.titles());
     }
 
@@ -645,11 +687,13 @@ public class EditSegmentDialog extends Dialog {
         refereeCombo,
         alignmentFilter,
         genderFilter,
+        intergenderCheckbox,
         teamsSection,
         synergyBonusLabel,
         winnersCombo,
         winnerTeamButtonsLayout,
         isTitleSegmentCheckbox,
+        isContenderMatchCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
         notesArea,
@@ -682,6 +726,7 @@ public class EditSegmentDialog extends Dialog {
                       summaryArea.getValue(),
                       notesArea.getValue(),
                       isTitleSegmentCheckbox.getValue(),
+                      isContenderMatchCheckbox.getValue(),
                       titleMultiSelectComboBox.getValue(),
                       healthValues));
             });
@@ -702,11 +747,24 @@ public class EditSegmentDialog extends Dialog {
       final Gender defaultGenderConstraint,
       final Long universeId,
       final Runnable onSave) {
+    this(segment, data, wrestlerService, defaultGenderConstraint, true, universeId, onSave);
+  }
+
+  /** Same as above but with an explicit intergender-allowed default for the checkbox. */
+  public EditSegmentDialog(
+      final ProposedSegment segment,
+      final PreloadedData data,
+      final WrestlerService wrestlerService,
+      final Gender defaultGenderConstraint,
+      final boolean intergenderAllowed,
+      final Long universeId,
+      final Runnable onSave) {
     this(
         data,
         SegmentDialogData.from(segment, data),
         wrestlerService,
         defaultGenderConstraint,
+        intergenderAllowed,
         universeId,
         saveData -> {
           // finalHealthValues not applicable in planning context — health is tracked at match time
@@ -741,7 +799,7 @@ public class EditSegmentDialog extends Dialog {
       final TitleService titleService,
       final SegmentTypeService segmentTypeService,
       final SegmentRuleService segmentRuleService,
-      final com.github.javydreamercsw.management.service.npc.NpcService npcService,
+      final NpcService npcService,
       final ExpansionService expansionService,
       final Gender defaultGenderConstraint,
       final Long universeId,
@@ -765,9 +823,55 @@ public class EditSegmentDialog extends Dialog {
 
   // ==================== PRIVATE HELPERS ====================
 
+  /** Re-applies the wrestler filters to every team dropdown, keeping current selections. */
+  private void refreshTeamComboItems() {
+    if (refreshingTeamItems) {
+      return;
+    }
+    refreshingTeamItems = true;
+    try {
+      for (MultiSelectComboBox<Wrestler> combo : teamCombos) {
+        Set<Wrestler> current = combo.getValue();
+        List<Wrestler> items = getFilteredWrestlers(current);
+        // Remap selections onto the freshly loaded instances — Vaadin's KeyMapper is
+        // identity-based, so re-setting stale instances would silently deselect them.
+        Map<Long, Wrestler> itemsById =
+            items.stream().collect(Collectors.toMap(Wrestler::getId, w -> w, (a, b) -> a));
+        Set<Wrestler> canonical =
+            current.stream()
+                .map(w -> itemsById.getOrDefault(w.getId(), w))
+                .collect(Collectors.toSet());
+        combo.setItems(items);
+        combo.setValue(canonical);
+      }
+    } finally {
+      refreshingTeamItems = false;
+    }
+  }
+
+  /**
+   * Returns the gender every participant must have, or {@code null} when unrestricted. Non-promo
+   * segments with intergender disallowed are locked to the gender of the first assigned wrestler.
+   */
+  private Gender enforcedGender() {
+    if (intergenderCheckbox.getValue()) {
+      return null;
+    }
+    if (segmentTypeCombo.getValue() != null
+        && WellKnownSegmentType.PROMO.matches(segmentTypeCombo.getValue())) {
+      return null;
+    }
+    return allAssignedWrestlers.stream()
+        .map(Wrestler::getGender)
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }
+
   private List<Wrestler> getFilteredWrestlers(final Set<Wrestler> forceInclude) {
     AlignmentType alignment = alignmentFilter.getValue();
-    Gender gender = genderFilter.getValue();
+    Gender enforced = enforcedGender();
+    final Gender gender = enforced != null ? enforced : genderFilter.getValue();
 
     List<Wrestler> filtered;
     if (alignment != null) {
@@ -811,13 +915,13 @@ public class EditSegmentDialog extends Dialog {
     return filtered;
   }
 
-  private void updateSynergyBonus(final java.util.Collection<Wrestler> wrestlers) {
+  private void updateSynergyBonus(final Collection<Wrestler> wrestlers) {
     int totalBonus = 0;
     Map<Long, Integer> factionCounts = new HashMap<>();
     Map<Long, Integer> factionAffinity = new HashMap<>();
 
     for (Wrestler w : wrestlers) {
-      if (!org.hibernate.Hibernate.isInitialized(w.getWrestlerStates())) {
+      if (!Hibernate.isInitialized(w.getWrestlerStates())) {
         continue;
       }
       w.getDefaultState()

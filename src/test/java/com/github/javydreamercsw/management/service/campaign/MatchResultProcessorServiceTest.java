@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
@@ -44,6 +45,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -66,11 +68,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -108,19 +113,17 @@ class MatchResultProcessorServiceTest {
   @BeforeEach
   void setUpFeatureDataMock() {
     // @Lazy field-injected beans are not set by @InjectMocks; inject manually
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        service, "campaignService", campaignService);
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        service, "campaignEncounterService", campaignEncounterService);
-    org.mockito.Mockito.lenient()
+    ReflectionTestUtils.setField(service, "campaignService", campaignService);
+    ReflectionTestUtils.setField(service, "campaignEncounterService", campaignEncounterService);
+    Mockito.lenient()
         .when(
             featureDataService.getFeatureValue(
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any()))
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any()))
         .thenAnswer(inv -> inv.getArgument(3));
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(campaignEncounterService.getCurrentChoiceBonusConditions(any()))
         .thenReturn(Collections.emptyList());
   }
@@ -482,8 +485,7 @@ class MatchResultProcessorServiceTest {
 
   @Test
   void testProcessMatchResult_TournamentWin_incremensDeadlyCombatWins() {
-    com.github.javydreamercsw.base.domain.account.Account account =
-        new com.github.javydreamercsw.base.domain.account.Account();
+    Account account = new Account();
     Wrestler wrestler = new Wrestler();
     wrestler.setId(1L);
     wrestler.setAccount(account);
@@ -525,12 +527,10 @@ class MatchResultProcessorServiceTest {
     when(tournamentService.isPlayerChampion(campaign)).thenReturn(true);
     when(featureDataService.getFeatureValue(state, "deadlyCombatWins", Integer.class, 0))
         .thenReturn(4);
-    when(scriptedAchievementEvaluator.resolveNewlyUnlockedKeys(
-            org.mockito.ArgumentMatchers.eq(account), any()))
+    when(scriptedAchievementEvaluator.resolveNewlyUnlockedKeys(ArgumentMatchers.eq(account), any()))
         .thenReturn(List.of("OMZ_DEADLY_COMBAT_CHAMPION"));
     when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
-    com.github.javydreamercsw.management.domain.title.Title title =
-        new com.github.javydreamercsw.management.domain.title.Title();
+    Title title = new Title();
     title.setName("ATW World");
     when(titleRepository.findByName("ATW World")).thenReturn(Optional.of(title));
 

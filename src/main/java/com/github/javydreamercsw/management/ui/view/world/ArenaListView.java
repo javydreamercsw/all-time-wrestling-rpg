@@ -35,6 +35,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.provider.CallbackDataProvider;
 import com.vaadin.flow.data.provider.DataProvider;
@@ -97,8 +98,7 @@ public class ArenaListView extends Main {
     grid.addComponentColumn(
             arena -> {
               HorizontalLayout nameLayout = new HorizontalLayout();
-              nameLayout.setAlignItems(
-                  com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+              nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
               nameLayout.setSpacing(false);
               nameLayout.setPadding(false);
               if (!arena.isActive()) {
@@ -107,7 +107,7 @@ public class ArenaListView extends Main {
                 inactiveIcon.getStyle().set("margin-right", "6px");
                 nameLayout.add(inactiveIcon);
               }
-              nameLayout.add(new com.vaadin.flow.component.html.Span(arena.getName()));
+              nameLayout.add(new Span(arena.getName()));
               return nameLayout;
             })
         .setHeader("Name")

@@ -27,6 +27,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -72,7 +73,7 @@ class AiSettingsSyncTest {
 
     // At least one setting should be saved (e.g. AI_TIMEOUT default "300")
     verify(gameSettingRepository)
-        .saveAll(org.mockito.ArgumentMatchers.argThat(list -> list.iterator().hasNext()));
+        .saveAll(ArgumentMatchers.argThat(list -> list.iterator().hasNext()));
   }
 
   @Test

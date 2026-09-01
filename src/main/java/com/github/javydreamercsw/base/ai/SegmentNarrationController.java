@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarratio
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
+import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.service.segment.SegmentOutcomeProvider;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
@@ -31,10 +32,12 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -344,11 +347,9 @@ public class SegmentNarrationController {
     commentator2.setPersonality("Knowledgeable with ECW bias");
     context.setNpcs(Arrays.asList(announcer, commentator1, commentator2));
 
-    List<Arena> allArenas =
-        com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-            arenaService::findAll);
+    List<Arena> allArenas = GeneralSecurityUtils.runAsAdmin(arenaService::findAll);
     if (!allArenas.isEmpty()) {
-      Arena selectedArena = allArenas.get(new java.util.Random().nextInt(allArenas.size()));
+      Arena selectedArena = allArenas.get(new Random().nextInt(allArenas.size()));
 
       VenueContext venue = new VenueContext();
       venue.setName(selectedArena.getName());
@@ -357,26 +358,21 @@ public class SegmentNarrationController {
       venue.setType("Wrestling Arena");
       venue.setCapacity(selectedArena.getCapacity());
       venue.setAlignmentBias(selectedArena.getAlignmentBias().getDisplayName());
-      venue.setEnvironmentalTraits(
-          new java.util.ArrayList<>(selectedArena.getEnvironmentalTraits()));
+      venue.setEnvironmentalTraits(new ArrayList<>(selectedArena.getEnvironmentalTraits()));
       venue.setImageUrl(selectedArena.getImageUrl());
-      venue.setCulturalTags(
-          new java.util.ArrayList<>(selectedArena.getLocation().getCulturalTags()));
+      venue.setCulturalTags(new ArrayList<>(selectedArena.getLocation().getCulturalTags()));
       venue.setAtmosphere("Electric and historic - where legends are made");
       venue.setSignificance("A key venue in the All Time Wrestling circuit.");
       context.setVenue(venue);
     } else {
       // Fallback: try to at least get a random location if no arenas exist
-      List<Location> allLocations =
-          com.github.javydreamercsw.base.security.GeneralSecurityUtils.runAsAdmin(
-              locationService::findAll);
+      List<Location> allLocations = GeneralSecurityUtils.runAsAdmin(locationService::findAll);
 
       VenueContext venue = new VenueContext();
       if (!allLocations.isEmpty()) {
-        Location selectedLocation =
-            allLocations.get(new java.util.Random().nextInt(allLocations.size()));
+        Location selectedLocation = allLocations.get(new Random().nextInt(allLocations.size()));
         venue.setLocation(selectedLocation.getName());
-        venue.setCulturalTags(new java.util.ArrayList<>(selectedLocation.getCulturalTags()));
+        venue.setCulturalTags(new ArrayList<>(selectedLocation.getCulturalTags()));
       } else {
         venue.setLocation("New York City");
         venue.setCulturalTags(Arrays.asList("USA", "Metropolis", "Traditional"));

@@ -51,12 +51,18 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,12 +90,9 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
-      wrestlerStateRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+  @Autowired private WrestlerService wrestlerService;
 
   @BeforeEach
   public void setupData() {
@@ -116,8 +119,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
             .account(playerAccount)
             .build();
     wrestlerRepository.save(wrestler);
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        wrestlerService.getOrCreateState(wrestler.getId(), 1L);
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), 1L);
     state.setTier(WrestlerTier.MAIN_EVENTER);
     state.setFans(5000L);
     wrestlerStateRepository.saveAndFlush(state);
@@ -226,7 +228,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     // Add a Title Reign in Season 2
     TitleReign reign = new TitleReign();
     reign.setTitle(worldTitle);
-    reign.setChampions(new java.util.LinkedHashSet<>(java.util.Arrays.asList(wrestler)));
+    reign.setChampions(new LinkedHashSet<>(Arrays.asList(wrestler)));
     reign.setStartDate(Instant.parse("2026-01-15T00:00:00Z"));
     titleReignRepository.save(reign);
   }
@@ -262,7 +264,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
           selectFromVaadinComboBox("season-selector", "Season 2025: Genesis");
 
           // Wait for the stats to update
-          WebDriverWait wait = new WebDriverWait(driver, java.time.Duration.ofSeconds(10));
+          WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
           wait.until(
               ExpectedConditions.textToBePresentInElementLocated(
                   By.id("season-record"), "Record: 3-1-0"));

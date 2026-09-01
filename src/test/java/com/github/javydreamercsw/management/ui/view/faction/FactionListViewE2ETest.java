@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
-import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
@@ -42,12 +41,11 @@ class FactionListViewE2ETest extends AbstractE2ETest {
   @Test
   void testCreateFaction() {
     setVideoInfo("Community", "Creating a Faction", "create-faction");
-    navigateTo("faction-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    navigateToAndWaitForElement("faction-list", By.id("faction-grid"));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
-    // Wait for the vaadin-grid and its server-populated rows to be visible.
+    // Wait for the vaadin-grid's server-populated rows to be visible.
     waitForVaadinToLoad();
-    waitForVaadinElement(driver, By.id("faction-grid"));
 
     captureCaption(
         "Faction List view — factions group wrestlers into allied stables. Bookers can create,"
@@ -112,12 +110,11 @@ class FactionListViewE2ETest extends AbstractE2ETest {
             .build();
     factionService.save(faction);
 
-    navigateTo("faction-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    navigateToAndWaitForElement("faction-list", By.id("faction-grid"));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
-    // Wait for the vaadin-grid and its server-populated rows to be visible.
+    // Wait for the vaadin-grid's server-populated rows to be visible.
     waitForVaadinToLoad();
-    waitForVaadinElement(driver, By.id("faction-grid"));
 
     // Find the "Edit" button for the faction and click it
     WebElement editButton = driver.findElement(By.id("edit-" + faction.getId()));
@@ -162,8 +159,8 @@ class FactionListViewE2ETest extends AbstractE2ETest {
             .build();
     factionService.save(faction);
 
-    navigateTo("faction-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    navigateToAndWaitForElement("faction-list", By.id("faction-grid"));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
     long initialSize = factionService.count();
 
@@ -208,9 +205,9 @@ class FactionListViewE2ETest extends AbstractE2ETest {
             Faction.builder().name("Faction with Wrestler").universe(defaultUniverse).build());
     Wrestler wrestler = wrestlerService.save(createTestWrestler("Faction Wrestler"));
 
-    navigateTo("faction-list");
+    navigateToAndWaitForElement("faction-list", By.id("faction-grid"));
     waitForVaadinToLoad();
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
     captureCaption(
         "Faction List — each row has a Members button that opens the roster management"
@@ -278,8 +275,8 @@ class FactionListViewE2ETest extends AbstractE2ETest {
     Assertions.assertNotNull(wrestler.getId());
     factionService.addMemberToFaction(faction.getId(), wrestler.getId());
 
-    navigateTo("faction-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    navigateToAndWaitForElement("faction-list", By.id("faction-grid"));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
     // Wait for the vaadin-grid to be visible
     waitForVaadinToLoad();

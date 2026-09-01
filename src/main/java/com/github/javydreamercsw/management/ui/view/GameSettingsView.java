@@ -18,19 +18,21 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.details.DetailsVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.security.RolesAllowed;
@@ -88,10 +90,16 @@ public class GameSettingsView extends VerticalLayout {
           .set("color", "var(--lumo-secondary-text-color)");
       add(globalBadge);
     }
+    if (hasUniverse) {
+      Span note =
+          new Span(
+              "Settings marked '(inherited)' use the global default. Save a value to override for"
+                  + " this universe.");
+      note.getStyle().set("font-style", "italic").set("color", "var(--lumo-secondary-text-color)");
+      add(note);
+    }
 
     // ── System settings (always global) ─────────────────────────────────────
-    add(new H3("System Settings"));
-
     defaultThemeSelection = new ComboBox<>("Default Application Theme");
     defaultThemeSelection.setId("default-theme-selection");
     defaultThemeSelection.setItems(themeService.getAvailableThemes());
@@ -102,19 +110,8 @@ public class GameSettingsView extends VerticalLayout {
           Notification.show("Default theme updated to: " + event.getValue())
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
-    add(defaultThemeSelection);
 
-    // ── Gameplay settings (global default + per-universe override) ───────────
-    add(new H3("Gameplay Settings"));
-    if (hasUniverse) {
-      Span note =
-          new Span(
-              "Settings marked '(inherited)' use the global default. Save a value to override for"
-                  + " this universe.");
-      note.getStyle().set("font-style", "italic").set("color", "var(--lumo-secondary-text-color)");
-      add(note);
-    }
-
+    // ── General gameplay ─────────────────────────────────────────────────────
     gameDatePicker = new DatePicker("Current Game Date");
     gameDatePicker.setHelperText(
         universeInheritanceLabel(GameSettingService.CURRENT_GAME_DATE_KEY, universeId));
@@ -123,17 +120,6 @@ public class GameSettingsView extends VerticalLayout {
         event -> {
           gameSettingService.saveCurrentGameDate(event.getValue());
           Notification.show("Game date updated to: " + event.getValue())
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        });
-
-    Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
-    aiNewsEnabled.setHelperText(
-        universeInheritanceLabel(GameSettingService.AI_NEWS_ENABLED_KEY, universeId));
-    aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
-    aiNewsEnabled.addValueChangeListener(
-        event -> {
-          gameSettingService.setAiNewsEnabled(event.getValue());
-          Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
@@ -156,6 +142,33 @@ public class GameSettingsView extends VerticalLayout {
         event -> {
           gameSettingService.setStatusCardsEnabled(event.getValue());
           Notification.show("Status Cards Mechanic " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    // ── Match booking ────────────────────────────────────────────────────────
+    Checkbox intergenderMatches = new Checkbox("Allow intergender matches");
+    intergenderMatches.setId("intergender-matches-enabled");
+    intergenderMatches.setHelperText(
+        universeInheritanceLabel(GameSettingService.INTERGENDER_MATCHES_ENABLED_KEY, universeId)
+            + " — when disabled, AI show planning avoids mixed-gender matches and opponent"
+            + " selection filters by gender (promos are unaffected).");
+    intergenderMatches.setValue(gameSettingService.isIntergenderMatchesEnabled());
+    intergenderMatches.addValueChangeListener(
+        event -> {
+          gameSettingService.setIntergenderMatchesEnabled(event.getValue());
+          Notification.show("Intergender matches " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    // ── News & media ─────────────────────────────────────────────────────────
+    Checkbox aiNewsEnabled = new Checkbox("Enable AI-Powered News Feed");
+    aiNewsEnabled.setHelperText(
+        universeInheritanceLabel(GameSettingService.AI_NEWS_ENABLED_KEY, universeId));
+    aiNewsEnabled.setValue(gameSettingService.isAiNewsEnabled());
+    aiNewsEnabled.addValueChangeListener(
+        event -> {
+          gameSettingService.setAiNewsEnabled(event.getValue());
+          Notification.show("AI News Feed " + (event.getValue() ? "enabled" : "disabled"))
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
@@ -186,8 +199,6 @@ public class GameSettingsView extends VerticalLayout {
         });
 
     // ── Rivalry Configuration ────────────────────────────────────────────────
-    H4 rivalryHeader = new H4("Rivalry Configuration");
-
     IntegerField pleThreshold = new IntegerField("PLE Resolution Threshold (2d20 must exceed)");
     pleThreshold.setHelperText(
         universeInheritanceLabel(
@@ -290,21 +301,106 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-    VerticalLayout rivalrySection =
-        new VerticalLayout(
-            rivalryHeader,
-            pleThreshold,
-            regularThreshold,
-            resolutionOnRegular,
-            maxDuration,
-            heatDecayEnabled,
-            decayAmount,
-            decayInterval);
-    rivalrySection.setPadding(false);
+    // ── Contender Automation ─────────────────────────────────────────────────
+    Checkbox contenderAutoSelect = new Checkbox("Auto-select #1 contender after title matches");
+    contenderAutoSelect.setId("contender-auto-select-enabled");
+    contenderAutoSelect.setHelperText(
+        universeInheritanceLabel(GameSettingService.CONTENDER_AUTO_SELECT_ENABLED_KEY, universeId));
+    contenderAutoSelect.setValue(gameSettingService.isContenderAutoSelectEnabled());
+    contenderAutoSelect.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderAutoSelectEnabled(event.getValue());
+          Notification.show(
+                  "Contender auto-selection " + (event.getValue() ? "enabled" : "disabled"))
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    IntegerField tieThreshold = new IntegerField("Tie threshold (% fan gap)");
+    tieThreshold.setId("contender-tie-threshold-percent");
+    tieThreshold.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.CONTENDER_TIE_THRESHOLD_PERCENT_KEY, universeId));
+    tieThreshold.setMin(0);
+    tieThreshold.setMax(100);
+    tieThreshold.setStepButtonsVisible(true);
+    tieThreshold.setValue(gameSettingService.getContenderTieThresholdPercent());
+    tieThreshold.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderTieThresholdPercent(event.getValue());
+          Notification.show("Contender tie threshold updated to: " + event.getValue() + "%")
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    ComboBox<WellKnownSegmentType> tieMatchType = new ComboBox<>("Tie-breaker match type");
+    tieMatchType.setId("contender-tie-match-type");
+    tieMatchType.setHelperText(
+        universeInheritanceLabel(GameSettingService.CONTENDER_TIE_MATCH_TYPE_KEY, universeId));
+    tieMatchType.setItems(
+        List.of(
+            WellKnownSegmentType.FREE_FOR_ALL,
+            WellKnownSegmentType.ABU_DHABI_RUMBLE,
+            WellKnownSegmentType.ONE_ON_ONE));
+    tieMatchType.setItemLabelGenerator(WellKnownSegmentType::getCode);
+    tieMatchType.setValue(
+        WellKnownSegmentType.fromCode(gameSettingService.getContenderTieMatchType())
+            .orElse(WellKnownSegmentType.FREE_FOR_ALL));
+    tieMatchType.addValueChangeListener(
+        event -> {
+          if (event.getValue() != null) {
+            gameSettingService.setContenderTieMatchType(event.getValue().getCode());
+            Notification.show("Contender tie-breaker match type updated")
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          }
+        });
+
+    IntegerField tieMinWrestlers = new IntegerField("Min wrestlers for multi-man tie-breaker");
+    tieMinWrestlers.setId("contender-tie-min-wrestlers");
+    tieMinWrestlers.setHelperText(
+        universeInheritanceLabel(GameSettingService.CONTENDER_TIE_MIN_WRESTLERS_KEY, universeId));
+    tieMinWrestlers.setMin(2);
+    tieMinWrestlers.setMax(30);
+    tieMinWrestlers.setStepButtonsVisible(true);
+    tieMinWrestlers.setValue(gameSettingService.getContenderTieMinWrestlers());
+    tieMinWrestlers.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderTieMinWrestlers(event.getValue());
+          Notification.show("Contender tie-breaker minimum updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    IntegerField contenderHeatBonus = new IntegerField("Contender match heat bonus");
+    contenderHeatBonus.setId("contender-match-heat-bonus");
+    contenderHeatBonus.setHelperText(
+        universeInheritanceLabel(GameSettingService.CONTENDER_MATCH_HEAT_BONUS_KEY, universeId));
+    contenderHeatBonus.setMin(0);
+    contenderHeatBonus.setMax(100);
+    contenderHeatBonus.setStepButtonsVisible(true);
+    contenderHeatBonus.setValue(gameSettingService.getContenderMatchHeatBonus());
+    contenderHeatBonus.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderMatchHeatBonus(event.getValue());
+          Notification.show("Contender match heat bonus updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
+
+    NumberField contenderFanMultiplier = new NumberField("Contender match fan multiplier");
+    contenderFanMultiplier.setId("contender-match-fan-multiplier");
+    contenderFanMultiplier.setHelperText(
+        universeInheritanceLabel(
+            GameSettingService.CONTENDER_MATCH_FAN_MULTIPLIER_KEY, universeId));
+    contenderFanMultiplier.setMin(1.0);
+    contenderFanMultiplier.setMax(5.0);
+    contenderFanMultiplier.setStep(0.1);
+    contenderFanMultiplier.setStepButtonsVisible(true);
+    contenderFanMultiplier.setValue(gameSettingService.getContenderMatchFanMultiplier());
+    contenderFanMultiplier.addValueChangeListener(
+        event -> {
+          gameSettingService.setContenderMatchFanMultiplier(event.getValue());
+          Notification.show("Contender match fan multiplier updated to: " + event.getValue())
+              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        });
 
     // ── Tutorial Configuration ────────────────────────────────────────────────
-    H4 tutorialHeader = new H4("Tutorial Settings");
-
     Checkbox campaignTutorial = new Checkbox("Enable Campaign Tutorial");
     campaignTutorial.setHelperText(
         universeInheritanceLabel(GameSettingService.TUTORIAL_ENABLED_CAMPAIGN_KEY, universeId));
@@ -338,19 +434,69 @@ public class GameSettingsView extends VerticalLayout {
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         });
 
-    VerticalLayout tutorialSection =
-        new VerticalLayout(tutorialHeader, campaignTutorial, leagueTutorial, globalTutorial);
-    tutorialSection.setPadding(false);
-
+    // ── Collapsible sections ─────────────────────────────────────────────────
     add(
-        gameDatePicker,
-        aiNewsEnabled,
-        wearAndTearEnabled,
-        statusCardsEnabled,
-        rumorChance,
-        newsStrategy,
-        rivalrySection,
-        tutorialSection);
+        section("System Settings", "settings-section-system", true, defaultThemeSelection),
+        section(
+            "General Gameplay",
+            "settings-section-gameplay",
+            true,
+            gameDatePicker,
+            wearAndTearEnabled,
+            statusCardsEnabled),
+        section("Match Booking", "settings-section-match-booking", false, intergenderMatches),
+        section(
+            "News & Media",
+            "settings-section-news",
+            false,
+            aiNewsEnabled,
+            rumorChance,
+            newsStrategy),
+        section(
+            "Rivalry Configuration",
+            "settings-section-rivalry",
+            false,
+            pleThreshold,
+            regularThreshold,
+            resolutionOnRegular,
+            maxDuration,
+            heatDecayEnabled,
+            decayAmount,
+            decayInterval),
+        section(
+            "Contender Automation",
+            "settings-section-contender",
+            false,
+            contenderAutoSelect,
+            tieThreshold,
+            tieMatchType,
+            tieMinWrestlers,
+            contenderHeatBonus,
+            contenderFanMultiplier),
+        section(
+            "Tutorial Settings",
+            "settings-section-tutorial",
+            false,
+            campaignTutorial,
+            leagueTutorial,
+            globalTutorial));
+  }
+
+  /** Builds a collapsible settings group. */
+  private Details section(
+      final String title,
+      final String id,
+      final boolean opened,
+      final com.vaadin.flow.component.Component... content) {
+    VerticalLayout layout = new VerticalLayout(content);
+    layout.setPadding(false);
+    layout.setSpacing(false);
+    Details details = new Details(title, layout);
+    details.setId(id);
+    details.setOpened(opened);
+    details.addThemeVariants(DetailsVariant.FILLED);
+    details.setWidthFull();
+    return details;
   }
 
   /**

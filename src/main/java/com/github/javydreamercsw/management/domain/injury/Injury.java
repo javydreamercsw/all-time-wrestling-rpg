@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.time.Duration;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -113,7 +114,7 @@ public class Injury extends AbstractEntity<Long> {
   @JsonIgnore
   public long getDaysActive() {
     Instant end = healedDate != null ? healedDate : Instant.now();
-    return java.time.Duration.between(injuryDate, end).toDays();
+    return Duration.between(injuryDate, end).toDays();
   }
 
   @JsonIgnore

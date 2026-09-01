@@ -33,12 +33,15 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterCriteriaDTO;
 import com.github.javydreamercsw.management.dto.campaign.ChapterPointDTO;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 class CampaignChapterServiceTest {
 
@@ -53,9 +56,8 @@ class CampaignChapterServiceTest {
         new CampaignChapterService(
             objectMapper,
             featureDataService,
-            org.mockito.Mockito.mock(
-                com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
-            new org.springframework.core.io.support.PathMatchingResourcePatternResolver());
+            Mockito.mock(ExpansionService.class),
+            new PathMatchingResourcePatternResolver());
     chapterService.init();
   }
 
@@ -91,7 +93,7 @@ class CampaignChapterServiceTest {
     Campaign campaign = new Campaign();
     Wrestler wrestler = new Wrestler();
     // Initialize required collections
-    wrestler.setReigns(new java.util.LinkedHashSet<>());
+    wrestler.setReigns(new LinkedHashSet<>());
     campaign.setWrestler(wrestler);
     state.setCampaign(campaign);
 

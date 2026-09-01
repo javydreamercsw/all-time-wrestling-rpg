@@ -51,7 +51,7 @@ public class SegmentsApprovedInboxListener implements ApplicationListener<Segmen
   @Override
   public void onApplicationEvent(@NonNull final SegmentsApprovedEvent event) {
     log.debug("Received SegmentsApprovedEvent for show: {}", event.getShow().getName());
-    com.github.javydreamercsw.management.domain.inbox.InboxItem inboxItem =
+    InboxItem inboxItem =
         inboxService.createInboxItem(
             segmentsApproved,
             "Segments Approved: " + event.getShow().getName(),

@@ -42,6 +42,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.springframework.data.domain.Pageable;
@@ -67,7 +68,7 @@ public class FactionRivalryListView extends Main {
     this.factionRivalryService = factionRivalryService;
     this.factionRivalryRepository = factionRivalryRepository;
 
-    java.util.List<Faction> allFactions =
+    List<Faction> allFactions =
         factionService.getAllFactions(Pageable.unpaged()).stream()
             .sorted(Comparator.comparing(Faction::getName))
             .collect(Collectors.toList());

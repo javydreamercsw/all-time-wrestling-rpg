@@ -20,7 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
 import groovy.lang.Binding;
+import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyShell;
+import groovy.lang.Script;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -46,8 +48,8 @@ public class CampaignScriptService {
 
   // Compiled script classes cached by snippet text to avoid per-call classloader creation.
   private final Map<String, Class<?>> compiledSnippetCache = new ConcurrentHashMap<>();
-  private final groovy.lang.GroovyClassLoader groovyClassLoader =
-      new groovy.lang.GroovyClassLoader(
+  private final GroovyClassLoader groovyClassLoader =
+      new GroovyClassLoader(
           Thread.currentThread().getContextClassLoader(), new CompilerConfiguration());
 
   /**
@@ -74,7 +76,7 @@ public class CampaignScriptService {
   public Object executeScript(final String scriptPath, final Map<String, Object> variables) {
     try {
       Binding binding = new Binding(variables);
-      groovy.lang.Script script = getScript(scriptPath, binding);
+      Script script = getScript(scriptPath, binding);
       return script.run();
     } catch (Exception e) {
       log.error("Error executing campaign script: {}", scriptPath, e);
@@ -97,7 +99,7 @@ public class CampaignScriptService {
       Class<?> scriptClass =
           compiledSnippetCache.computeIfAbsent(snippet, s -> groovyClassLoader.parseClass(s));
       Binding binding = new Binding(variables);
-      groovy.lang.Script script = InvokerHelper.createScript(scriptClass, binding);
+      Script script = InvokerHelper.createScript(scriptClass, binding);
       return script.run();
     } catch (Exception e) {
       log.error("Error evaluating Groovy snippet: {}", snippet, e);
@@ -105,8 +107,7 @@ public class CampaignScriptService {
     }
   }
 
-  private groovy.lang.Script getScript(final String scriptPath, final Binding binding)
-      throws IOException {
+  private Script getScript(final String scriptPath, final Binding binding) throws IOException {
     // Use the class's own ClassLoader — ForkJoinPool threads have a null context ClassLoader.
     Resource resource =
         new ClassPathResource("scripts/campaign/" + scriptPath, CampaignScriptService.class);

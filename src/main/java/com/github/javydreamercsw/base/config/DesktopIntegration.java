@@ -18,14 +18,7 @@ package com.github.javydreamercsw.base.config;
 
 import com.github.javydreamercsw.base.event.UpdateAvailableEvent;
 import jakarta.servlet.ServletContext;
-import java.awt.AWTException;
-import java.awt.Desktop;
-import java.awt.Image;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
-import java.awt.SystemTray;
-import java.awt.Taskbar;
-import java.awt.TrayIcon;
+import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -66,7 +59,7 @@ public class DesktopIntegration implements ApplicationListener<ApplicationReadyE
 
   @Override
   public void onApplicationEvent(final ApplicationReadyEvent event) {
-    if (java.awt.GraphicsEnvironment.isHeadless()) {
+    if (GraphicsEnvironment.isHeadless()) {
       log.warn("Desktop integration enabled but environment is headless. Skipping.");
       return;
     }

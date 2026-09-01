@@ -50,6 +50,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,7 @@ class PlayerViewTest extends AbstractViewTest {
 
     private PlayerDashboardView view;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     @SuppressWarnings("unchecked")
     void setup() {
       MockitoAnnotations.openMocks(PlayerViewTest.this);
@@ -149,7 +150,7 @@ class PlayerViewTest extends AbstractViewTest {
     private PlayerDashboardView view;
     private Wrestler wrestler;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     @SuppressWarnings("unchecked")
     void setup() {
       MockitoAnnotations.openMocks(PlayerViewTest.this);

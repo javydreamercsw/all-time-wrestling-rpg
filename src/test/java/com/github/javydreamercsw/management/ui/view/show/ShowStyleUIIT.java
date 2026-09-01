@@ -47,8 +47,10 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -138,7 +140,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
 
     UniverseRepository universeRepository = mock(UniverseRepository.class);
     UniverseContextService universeContextService = mock(UniverseContextService.class);
-    when(universeContextService.getCurrentUniverse()).thenReturn(java.util.Optional.empty());
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     ImageGenerationServiceFactory imageGenerationServiceFactory =
         mock(ImageGenerationServiceFactory.class);
     ImageStorageService imageStorageService = mock(ImageStorageService.class);
@@ -148,7 +150,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     ShowExportService exportService = mock(ShowExportService.class);
     NotificationService notificationService = mock(NotificationService.class);
     LeagueRepository leagueRepository = mock(LeagueRepository.class);
-    when(leagueRepository.findAll()).thenReturn(java.util.Collections.emptyList());
+    when(leagueRepository.findAll()).thenReturn(Collections.emptyList());
 
     ShowListView showListView =
         new ShowListView(

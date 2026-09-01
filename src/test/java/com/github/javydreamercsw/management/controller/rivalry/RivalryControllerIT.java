@@ -23,8 +23,10 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.controller.AbstractRestControllerIT;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -51,9 +53,7 @@ class RivalryControllerIT extends AbstractRestControllerIT {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.universe.UniverseRepository
-      universeRepository;
+  @Autowired private UniverseRepository universeRepository;
 
   @BeforeEach
   public void setUp() {
@@ -270,8 +270,8 @@ class RivalryControllerIT extends AbstractRestControllerIT {
     wrestler.setIsPlayer(true);
     Wrestler savedWrestler = wrestlerRepository.save(wrestler);
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
+    WrestlerState state =
+        WrestlerState.builder()
             .wrestler(savedWrestler)
             .universe(defaultUniverse)
             .fans(fans)

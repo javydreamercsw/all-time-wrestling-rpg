@@ -32,6 +32,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -141,7 +142,7 @@ class UpdateCheckServiceTest {
         "http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
     try {
       service.checkForUpdates();
-      verify(publisher, never()).publishEvent(org.mockito.ArgumentMatchers.any());
+      verify(publisher, never()).publishEvent(ArgumentMatchers.any());
     } finally {
       server.stop(0);
     }
@@ -162,7 +163,7 @@ class UpdateCheckServiceTest {
         "http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
     try {
       service.checkForUpdates();
-      verify(publisher, never()).publishEvent(org.mockito.ArgumentMatchers.any());
+      verify(publisher, never()).publishEvent(ArgumentMatchers.any());
     } finally {
       server.stop(0);
     }
@@ -183,7 +184,7 @@ class UpdateCheckServiceTest {
         "http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
     try {
       service.checkForUpdates();
-      verify(publisher, never()).publishEvent(org.mockito.ArgumentMatchers.any());
+      verify(publisher, never()).publishEvent(ArgumentMatchers.any());
     } finally {
       server.stop(0);
     }

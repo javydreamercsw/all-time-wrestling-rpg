@@ -96,12 +96,35 @@ The `DataInitializer` automatically scans all `*.json` files in this directory.
 
 ## Wrestlers
 
-### Wrestler abilities and forward-compatible effect scripts
+### Wrestler abilities and effect scripts (display metadata)
+
+> **Superseded (2026-08):** the match ability engine will **not** be built.
+> The physical card game is played at the table; the app reminds and records,
+> it does not enforce rules. Ability scripts (`effectScript`, `costScript`,
+> `unlockCondition`) are permanent **design metadata**. The engine execution
+> semantics below are retained as historical documentation of intent.
+>
+> **What the app consumes today (required for new abilities):**
+>
+> - `description` — rendered as the effect reminder in the match view and in
+>   `[Ability]` usage notes. **Required**: every ability must have one.
+> - `timing` (`OFFENSE`/`DEFENSE`/`PINNED`/`BACKSTAGE`) — rendered as a
+>   color-coded chip; also the first fallback when the trigger cannot be
+>   humanized.
+> - `unlockCondition` — statically humanized (never evaluated) by
+>   `AbilityReminderTextService` into a "Trigger: …" line. Stick to the
+>   established vocabulary (`event == '<TOKEN>'` plus `match.attackCardType`,
+>   `match.damageAmount`-style comparisons); a data-driven test fails when a
+>   new event token is not in the humanizer's table.
+> - `type`/`maxUses` — drive the advisory uses-left counter and the
+>   "Mark used" button, which appends a machine-countable
+>   `[Ability] <wrestler>: <name> — <effect>` line to the match notes
+>   (`Segment.notes`). Those notes feed the AI narration and match summary.
 
 Wrestler-specific abilities are defined in the expansion JSON files under
 `src/main/resources/wrestlers/`. Each ability may include an `effectScript`
-field. These scripts are currently **content metadata for display and future
-use**; wrestler abilities are not executed by the match engine yet.
+field. These scripts are **content metadata for display**; wrestler abilities
+are not executed by the match engine.
 
 Use the match-oriented context names consistently when describing a future
 effect:
@@ -218,9 +241,9 @@ The engine evaluates conditions only after the relevant facts are known:
 - AERIAL, STRIKE, SIGNATURE, FINISHER, and weapon checks use the normalized
   card flags, not display-name string matching.
 
-These semantics are a specification only. No current service is required to
-execute wrestler ability `effectScript` values until the match ability engine
-is implemented.
+These semantics are historical specification only. The match ability engine
+was declined as a product decision (see the superseded note above) — no
+service executes wrestler ability `effectScript` values, and none is planned.
 
 Guide-text placeholders use inline SVG icons. Registered names currently
 include `pin`, `stamina`, `health`, `card`, `momentum`, `reversal`, `tag`,
@@ -388,7 +411,7 @@ Each variant is an object with any combination of the following optional text fi
 
 ## Challenges
 
-Challenges are scenario-based tasks that players complete outside of a normal show booking flow. They are loaded at startup from every `*.json` file found under `src/main/resources/challenges/**/*.json` — you can add as many files and subdirectories as needed.
+Challenges are scenario-based tasks that players complete outside of a normal show booking flow. The canonical bundled content lives under `src/main/resources/challenges/**/*.json` and is loaded at startup from the JAR. The documentation copy under `docs/challenges/` is synchronized from those source files for GitHub Pages and live updates; you can add as many seasons, files, and subdirectories as needed.
 
 ### File layout
 
@@ -486,36 +509,35 @@ If the same challenge `id` appears in both tiers, the downloaded (live) copy win
 
 #### Step 1 — Write the challenge JSON
 
-Add or update a JSON file under `docs/challenges/season_N/`:
+Add or update the canonical JSON file under `src/main/resources/challenges/season_N/`:
 
 ```
-docs/challenges/
+src/main/resources/challenges/
   season_1/
     weekly_challenges.json    ← official weekly challenges
+    weekly_achievements.json  ← live-update achievement definitions
     custom_challenges.json    ← custom/community challenges
   season_2/
     weekly_challenges.json    ← new season
 ```
 
-Each file is a JSON array of challenge objects (see [Structure](#structure) above). Use a new file per season to keep things tidy; the manifest references individual files, not directories.
+Each file is a JSON array of challenge objects (see [Structure](#structure) above). Use a new file per season to keep things tidy. The `sync-challenge-content.cjs` script copies every season and JSON file into `docs/challenges/` before packaging or publishing documentation; do not edit the generated documentation copy directly.
 
 #### Step 2 — Add optional images
 
-Drop any banner or card images into `docs/challenges/images/`:
+Drop bundled banner or card images into `src/main/resources/META-INF/resources/images/challenges/`:
 
 ```
-docs/challenges/images/
+src/main/resources/META-INF/resources/images/challenges/
   week4.png
-  custom_s2_01.png
+  week5.png
 ```
 
-Then set `"imageUrl": "challenge-content/images/week4.png"` on the challenge. The `challenge-content/images/` prefix is the URL path served by `ChallengeContentResourceConfig` from the downloaded images directory.
-
-For bundled challenges shipped in the JAR, the path is `images/challenges/filename.png` (served from `META-INF/resources/`).
+The synchronization script copies these images into `docs/challenges/images/`, rewrites bundled `imageUrl` values to `challenge-content/images/filename.png` in the live-update copy, and updates the matching manifest package automatically. Keep the canonical source URL as `"imageUrl": "images/challenges/filename.png"` for bundled challenges shipped in the JAR (served from `META-INF/resources/`). Already-live or external image URLs are preserved. The `challenge-content/images/` path is served by `ChallengeContentResourceConfig` from the local ATW data directory.
 
 #### Step 3 — Update the manifest
 
-`docs/challenges/manifest.json` is the index that tells the app what packages exist. Add or update an entry for every new or changed JSON file:
+`docs/challenges/manifest.json` is the index that tells the app what live-update packages exist. The synchronization script refreshes image lists for every package from the challenge JSON files, but package entries and their URLs must still be added manually for a new season or package. Add or update an entry for every new or changed JSON file:
 
 ```json
 {
@@ -542,7 +564,7 @@ For bundled challenges shipped in the JAR, the path is `images/challenges/filena
 
 #### Step 4 — Merge to `main`
 
-Open a PR that adds your files under `docs/challenges/`. Once it merges to `main`, GitHub Actions builds the VitePress site and copies `docs/challenges/` into the Pages output. The manifest is live at:
+Open a PR that adds your files under `src/main/resources/challenges/` (and any bundled images under `src/main/resources/META-INF/resources/images/challenges/`). The release/redeploy workflows and local docs preview run the synchronization script before building the documentation site. GitHub Actions then copies the synchronized `docs/challenges/` into the Pages output. The manifest is live at:
 
 ```
 https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/manifest.json

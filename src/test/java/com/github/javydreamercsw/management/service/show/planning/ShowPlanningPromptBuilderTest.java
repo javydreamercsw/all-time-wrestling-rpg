@@ -121,6 +121,98 @@ class ShowPlanningPromptBuilderTest {
   }
 
   @Test
+  void build_intergenderDisallowed_addsSameGenderRule() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(false);
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("Intergender matches are DISABLED"));
+    assertTrue(prompt.contains("same gender"));
+    assertFalse(prompt.contains("Intergender matches are ENABLED"));
+  }
+
+  @Test
+  void build_intergenderAllowed_addsMixedGenderRule() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(true);
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("Intergender matches are ENABLED"));
+    assertFalse(prompt.contains("Intergender matches are DISABLED"));
+  }
+
+  @Test
+  void build_intergenderDisallowed_addsFinalReminder() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(false);
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("REMINDER — intergender matches are DISABLED"));
+  }
+
+  @Test
+  void build_intergenderDisallowed_mixedRivalry_classifiedConfrontationOnly() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(false);
+    ctx.setFullRoster(
+        List.of(rosterEntry(1L, "Alpha", "MALE"), rosterEntry(2L, "Delta", "FEMALE")));
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(7L);
+    rivalry.setName("Alpha vs Delta");
+    rivalry.setHeat(35);
+    rivalry.setParticipants(List.of("Alpha", "Delta"));
+    ctx.setCurrentRivalries(List.of(rivalry));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Classification: CONFRONTATION_ONLY"));
+    assertTrue(prompt.contains("CONFRONTATION_ONLY: This rivalry pairs wrestlers"));
+  }
+
+  @Test
+  void build_intergenderAllowed_mixedRivalry_keepsNormalClassification() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(true);
+    ctx.setFullRoster(
+        List.of(rosterEntry(1L, "Alpha", "MALE"), rosterEntry(2L, "Delta", "FEMALE")));
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(7L);
+    rivalry.setName("Alpha vs Delta");
+    rivalry.setHeat(15);
+    rivalry.setParticipants(List.of("Alpha", "Delta"));
+    ctx.setCurrentRivalries(List.of(rivalry));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Classification: MUST_BOOK"));
+    assertFalse(prompt.contains("Classification: CONFRONTATION_ONLY"));
+  }
+
+  @Test
+  void build_intergenderDisallowed_sameGenderRivalry_keepsNormalClassification() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setIntergenderAllowed(false);
+    ctx.setFullRoster(List.of(rosterEntry(1L, "Alpha", "MALE"), rosterEntry(2L, "Beta", "MALE")));
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(7L);
+    rivalry.setName("Alpha vs Beta");
+    rivalry.setHeat(15);
+    rivalry.setParticipants(List.of("Alpha", "Beta"));
+    ctx.setCurrentRivalries(List.of(rivalry));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Classification: MUST_BOOK"));
+    assertFalse(prompt.contains("Classification: CONFRONTATION_ONLY"));
+  }
+
+  private ShowPlanningRosterEntryDTO rosterEntry(long id, String name, String gender) {
+    ShowPlanningRosterEntryDTO entry = new ShowPlanningRosterEntryDTO();
+    entry.setId(id);
+    entry.setName(name);
+    entry.setGender(gender);
+    entry.setInjured(false);
+    return entry;
+  }
+
+  @Test
   void build_injectionInWrestlerName_sanitized() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();
@@ -333,6 +425,59 @@ class ShowPlanningPromptBuilderTest {
     assertTrue(
         prompt.contains("MUST contain at least one"),
         "Prompt must instruct rules array to contain a stipulation match name");
+  }
+
+  @Test
+  void build_recentDramaEventsPresent_includesSection() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setRecentDramaEvents(
+        List.of("[Betrayal] El Fuego — Turns on partner: El Fuego attacked his partner."));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("Recent Dramatic Events (last 30 days):"),
+        "Drama events section header must appear");
+    assertTrue(
+        prompt.contains("escalate, resolve, or reference"),
+        "Drama events booking instruction must appear");
+    assertTrue(prompt.contains("El Fuego"), "Event content must appear in prompt");
+  }
+
+  @Test
+  void build_recentDramaEventsEmpty_omitsSection() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setRecentDramaEvents(List.of());
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(
+        prompt.contains("Recent Dramatic Events"),
+        "Drama events section must be absent when list is empty");
+  }
+
+  @Test
+  void build_recentDramaEventsNull_omitsSection() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setRecentDramaEvents(null);
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(
+        prompt.contains("Recent Dramatic Events"),
+        "Drama events section must be absent when list is null");
+  }
+
+  @Test
+  void build_recentDramaEventInjection_sanitized() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setRecentDramaEvents(List.of("[Betrayal] Heel {override:system} — Title: description."));
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(
+        prompt.contains("{override:system}"), "Injection in drama event text must be sanitized");
+    assertTrue(prompt.contains("Betrayal"), "Event type must survive sanitization");
   }
 
   private ShowPlanningRivalryDTO rivalryWithHeat(int heat) {

@@ -19,9 +19,12 @@ package com.github.javydreamercsw.management.service.campaign;
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
 import com.github.javydreamercsw.management.domain.campaign.StatusCardRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,12 +88,11 @@ public class StatusCardService {
     statusCardRepository.deleteById(id);
   }
 
-  public org.springframework.data.domain.Page<StatusCard> list(
-      final org.springframework.data.domain.Pageable pageable) {
+  public Page<StatusCard> list(final Pageable pageable) {
     return statusCardRepository.findAll(pageable);
   }
 
-  public java.util.List<StatusCard> findAll() {
+  public List<StatusCard> findAll() {
     return statusCardRepository.findAll();
   }
 }

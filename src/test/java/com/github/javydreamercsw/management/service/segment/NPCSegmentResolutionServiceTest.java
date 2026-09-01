@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.openai.OpenAISegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -287,8 +288,8 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
   @DisplayName("Should favor faction with high affinity in tag matches")
   void shouldFavorFactionWithHighAffinity() {
     // Given - Create a high affinity faction
-    com.github.javydreamercsw.management.domain.faction.Faction highAffinityFaction =
-        com.github.javydreamercsw.management.domain.faction.Faction.builder()
+    Faction highAffinityFaction =
+        Faction.builder()
             .name("High Affinity")
             .affinity(100)
             .isActive(true)

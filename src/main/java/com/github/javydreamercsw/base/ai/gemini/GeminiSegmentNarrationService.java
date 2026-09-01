@@ -23,10 +23,13 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -175,7 +178,7 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
 
     } catch (Exception e) {
       log.error("Failed to call Gemini API for segment narration", e);
-      if (e instanceof java.net.http.HttpTimeoutException) {
+      if (e instanceof HttpTimeoutException) {
         throw new AIServiceException(504, "Gateway Timeout", getProviderName(), e.getMessage(), e);
       }
       // Re-throw as custom exception
@@ -220,8 +223,8 @@ public class GeminiSegmentNarrationService extends AbstractSegmentNarrationServi
         if (parts != null && !parts.isEmpty()) {
           return parts.stream()
               .map(part -> (String) part.get("text"))
-              .filter(java.util.Objects::nonNull)
-              .collect(java.util.stream.Collectors.joining(""));
+              .filter(Objects::nonNull)
+              .collect(Collectors.joining(""));
         }
       }
 

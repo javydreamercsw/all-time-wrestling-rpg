@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.controller.AbstractRestControllerIT;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,17 +57,15 @@ class SeasonControllerIT extends AbstractRestControllerIT {
     Objects.requireNonNull(cacheManager.getCache(CacheConfig.SEASONS_CACHE)).clear();
 
     // Ensure active universe is set for this test
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
+    Universe universe =
         universeRepository.findAll().stream()
             .findFirst()
             .orElseGet(
                 () ->
                     universeRepository.saveAndFlush(
-                        com.github.javydreamercsw.management.domain.universe.Universe.builder()
+                        Universe.builder()
                             .name("Default Universe")
-                            .type(
-                                com.github.javydreamercsw.management.domain.universe.Universe
-                                    .UniverseType.GLOBAL)
+                            .type(Universe.UniverseType.GLOBAL)
                             .build()));
   }
 

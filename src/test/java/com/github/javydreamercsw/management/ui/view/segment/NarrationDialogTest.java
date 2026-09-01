@@ -34,12 +34,15 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
@@ -63,6 +66,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
 
 class NarrationDialogTest {
 
@@ -82,6 +86,9 @@ class NarrationDialogTest {
   @Mock private NotificationService notificationService;
   @Mock private WrestlerRelationshipService relationshipService;
   @Mock private UniverseContextService universeContextService;
+
+  @Mock private DramaEventService dramaEventService;
+
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
 
   @BeforeEach
@@ -107,6 +114,7 @@ class NarrationDialogTest {
     when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     when(wrestlerStatsService.findAllAsDTO(anyLong())).thenReturn(new ArrayList<>());
     when(wrestlerStatsService.findAllBySegment(any(), anyLong())).thenReturn(new ArrayList<>());
+    when(dramaEventService.getEventsForWrestler(anyLong(), any())).thenReturn(Page.empty());
 
     NarrationDialog.PreloadedData preloaded =
         NarrationDialog.PreloadedData.load(
@@ -125,7 +133,8 @@ class NarrationDialogTest {
             relationshipService,
             universeContextService,
             notificationService,
-            wrestlerStatsService);
+            wrestlerStatsService,
+            dramaEventService);
   }
 
   @Test
@@ -276,12 +285,10 @@ class NarrationDialogTest {
     partner.setId(99L);
     partner.setName("Seth Rollins");
 
-    com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship rel =
-        new com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship();
+    WrestlerRelationship rel = new WrestlerRelationship();
     rel.setWrestler1(wrestler);
     rel.setWrestler2(partner);
-    rel.setType(
-        com.github.javydreamercsw.management.domain.relationship.RelationshipType.BEST_FRIEND);
+    rel.setType(RelationshipType.BEST_FRIEND);
     rel.setLevel(80);
     rel.setIsStoryline(true);
 
@@ -427,6 +434,7 @@ class NarrationDialogTest {
         relationshipService,
         universeContextService,
         notificationService,
-        wrestlerStatsService);
+        wrestlerStatsService,
+        mock(DramaEventService.class));
   }
 }

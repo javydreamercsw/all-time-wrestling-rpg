@@ -22,6 +22,7 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 
 class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
@@ -30,11 +31,9 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
   @SneakyThrows
   void testToggleNPCExpansionAndVerifyFiltering() {
     // 1. Navigate to Admin and select Expansion Management tab
-    navigateTo("admin");
-
     WebElement tab =
-        waitForVaadinElement(
-            driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
+        navigateToAndWaitForElement(
+            "admin", By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(tab);
 
     // Wait for grid to load expansions
@@ -45,8 +44,7 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     WebElement checkbox = waitForVaadinElement(driver, By.id("expansion-toggle-HURT_BUSINESS"));
 
     // Use Javascript to click to be more robust
-    ((org.openqa.selenium.JavascriptExecutor) driver)
-        .executeScript("arguments[0].click();", checkbox);
+    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", checkbox);
 
     // Wait for notification
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'disabled')]"));
@@ -55,7 +53,7 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     Thread.sleep(1_000);
 
     // 3. Navigate to Wrestler List and verify MVP (HURT_BUSINESS set) is hidden from Manager column
-    navigateTo("wrestler-list");
+    navigateToAndWaitForElement("wrestler-list", By.tagName("vaadin-grid"));
 
     // Verify 'MVP' is NOT present in the Manager column
     // (Note: Bobby Lashley is from Hurt Business Expansion, but managed by MVP)
@@ -63,17 +61,15 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
         .isEmpty();
 
     // 4. Go back and re-enable it
-    navigateTo("admin");
     clickElement(
-        waitForVaadinElement(
-            driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
+        navigateToAndWaitForElement(
+            "admin", By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]")));
 
     // Re-find the checkbox — the grid re-rendered after navigation so the old reference is stale
     WebElement reenableCheckbox =
         waitForVaadinElement(driver, By.id("expansion-toggle-HURT_BUSINESS"));
 
-    ((org.openqa.selenium.JavascriptExecutor) driver)
-        .executeScript("arguments[0].click();", reenableCheckbox);
+    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", reenableCheckbox);
 
     waitForVaadinElement(driver, By.xpath("//vaadin-notification-card[contains(., 'enabled')]"));
 
@@ -81,7 +77,7 @@ class ExpansionNPCManagementE2ETest extends AbstractE2ETest {
     Thread.sleep(1_000);
 
     // 5. Verify MVP is back in the Wrestler List grid
-    navigateTo("wrestler-list");
-    waitForVaadinElement(driver, By.xpath("//vaadin-grid-cell-content[contains(., 'MVP')]"));
+    navigateToAndWaitForElement(
+        "wrestler-list", By.xpath("//vaadin-grid-cell-content[contains(., 'MVP')]"));
   }
 }

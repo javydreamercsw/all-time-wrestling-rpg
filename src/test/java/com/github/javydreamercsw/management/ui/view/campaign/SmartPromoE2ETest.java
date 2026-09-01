@@ -21,20 +21,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
-import com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignState;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.DataInitializer;
+import com.github.javydreamercsw.management.domain.campaign.*;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.campaign.BackstageEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class SmartPromoE2ETest extends AbstractE2ETest {
 
@@ -46,17 +47,14 @@ class SmartPromoE2ETest extends AbstractE2ETest {
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
   @Autowired private WrestlerAlignmentRepository wrestlerAlignmentRepository;
-  @Autowired private com.github.javydreamercsw.management.DataInitializer dataInitializer;
+  @Autowired private DataInitializer dataInitializer;
 
-  @org.springframework.test.context.bean.override.mockito.MockitoBean
-  private com.github.javydreamercsw.management.service.campaign.BackstageEncounterService
-      backstageEncounterService;
+  @MockitoBean private BackstageEncounterService backstageEncounterService;
 
   @BeforeEach
   void setupCampaign() {
     // Disable random encounters for this test
-    org.mockito.Mockito.when(
-            backstageEncounterService.shouldTriggerEncounter(org.mockito.ArgumentMatchers.any()))
+    Mockito.when(backstageEncounterService.shouldTriggerEncounter(ArgumentMatchers.any()))
         .thenReturn(false);
 
     wrestlerAlignmentRepository.deleteAllInBatch();
@@ -69,7 +67,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
 
     Account admin = accountRepository.findByUsername("admin").get();
 
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(admin);
     Wrestler player = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     if (player == null) {
@@ -94,17 +92,13 @@ class SmartPromoE2ETest extends AbstractE2ETest {
           .findByWrestler(player)
           .orElseGet(
               () -> {
-                com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment
-                    newAlignment =
-                        com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment
-                            .builder()
-                            .wrestler(finalPlayer)
-                            .alignmentType(
-                                com.github.javydreamercsw.management.domain.campaign.AlignmentType
-                                    .NEUTRAL)
-                            .level(0)
-                            .campaign(campaignRepository.findActiveByWrestler(finalPlayer).get())
-                            .build();
+                WrestlerAlignment newAlignment =
+                    WrestlerAlignment.builder()
+                        .wrestler(finalPlayer)
+                        .alignmentType(AlignmentType.NEUTRAL)
+                        .level(0)
+                        .campaign(campaignRepository.findActiveByWrestler(finalPlayer).get())
+                        .build();
                 return wrestlerAlignmentRepository.save(newAlignment);
               });
     }
@@ -116,8 +110,7 @@ class SmartPromoE2ETest extends AbstractE2ETest {
             campaign -> {
               CampaignState state = campaign.getState();
               state.setPromoUnlocked(true);
-              state.setCurrentPhase(
-                  com.github.javydreamercsw.management.domain.campaign.CampaignPhase.BACKSTAGE);
+              state.setCurrentPhase(CampaignPhase.BACKSTAGE);
               state.setActionsTaken(0);
               campaignStateRepository.save(state);
             });

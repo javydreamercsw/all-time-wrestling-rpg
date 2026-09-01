@@ -18,10 +18,12 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
+import com.github.javydreamercsw.base.image.ImageResolution;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
@@ -29,6 +31,7 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -37,6 +40,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
+import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -47,14 +51,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -75,10 +82,9 @@ public class WrestlerService {
   private final TierRecalculationService tierRecalculationService;
   private final DefaultImageService imageService;
   private final LegacyService legacyService;
-  private final com.github.javydreamercsw.management.service.injury.InjuryService injuryService;
+  private final InjuryService injuryService;
   private final SecurityUtils securityUtils;
-  private final com.github.javydreamercsw.management.domain.universe.UniverseRepository
-      universeRepository;
+  private final UniverseRepository universeRepository;
   private final WrestlerAlignmentRepository wrestlerAlignmentRepository;
   private final UniverseContextService universeContextService;
   private final UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
@@ -94,10 +100,9 @@ public class WrestlerService {
       final TierRecalculationService tierRecalculationService,
       final DefaultImageService imageService,
       final LegacyService legacyService,
-      @Lazy final com.github.javydreamercsw.management.service.injury.InjuryService injuryService,
+      @Lazy final InjuryService injuryService,
       final SecurityUtils securityUtils,
-      final com.github.javydreamercsw.management.domain.universe.UniverseRepository
-          universeRepository,
+      final UniverseRepository universeRepository,
       final WrestlerAlignmentRepository wrestlerAlignmentRepository,
       final UniverseContextService universeContextService,
       final UniverseWrestlerExclusionRepository wrestlerExclusionRepository,
@@ -213,12 +218,11 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public java.util.Map<Long, WrestlerState> getStateMapByUniverseId(
-      @NonNull final Long universeId) {
+  public Map<Long, WrestlerState> getStateMapByUniverseId(@NonNull final Long universeId) {
     return wrestlerStateRepository.findByUniverseIdWithWrestler(universeId).stream()
         .filter(s -> s.getWrestler() != null)
         .collect(
-            java.util.stream.Collectors.toMap(
+            Collectors.toMap(
                 s -> s.getWrestler().getId(), s -> s, (existing, duplicate) -> existing));
   }
 
@@ -230,9 +234,7 @@ public class WrestlerService {
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = CacheConfig.WRESTLERS_CACHE,
-      key = "'all'")
+  @Cacheable(value = CacheConfig.WRESTLERS_CACHE, key = "'all'")
   public List<Wrestler> findAll() {
     return wrestlerRepository.findAll();
   }
@@ -294,7 +296,7 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
       @Nullable final AlignmentType alignmentType,
-      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      final @Nullable Gender gender,
       @Nullable final Long universeId) {
     return findAllFiltered(alignmentType, gender, universeId, (String) null, null);
   }
@@ -303,7 +305,7 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
       @Nullable final AlignmentType alignmentType,
-      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      final @Nullable Gender gender,
       @Nullable final String expansionCode) {
     return findAllFiltered(alignmentType, gender, null, expansionCode, null);
   }
@@ -312,7 +314,7 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
       @Nullable final AlignmentType alignmentType,
-      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      final @Nullable Gender gender,
       @Nullable final Long universeId,
       @Nullable final String expansionCode) {
     return findAllFiltered(alignmentType, gender, universeId, expansionCode, null);
@@ -322,7 +324,7 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
       @Nullable final AlignmentType alignmentType,
-      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      final @Nullable Gender gender,
       @NonNull final Long universeId,
       @Nullable final Set<Wrestler> includedWrestlers) {
     return findAllFiltered(alignmentType, gender, universeId, null, includedWrestlers);
@@ -332,7 +334,7 @@ public class WrestlerService {
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findAllFiltered(
       @Nullable final AlignmentType alignmentType,
-      final com.github.javydreamercsw.base.domain.wrestler.@Nullable Gender gender,
+      final @Nullable Gender gender,
       @Nullable final Long universeId,
       @Nullable final String expansionCode,
       @Nullable final Set<Wrestler> includedWrestlers) {
@@ -348,8 +350,7 @@ public class WrestlerService {
     // When no specific expansionCode is requested, restrict to the universe's enabled expansions.
     final Set<String> enabledExpansionCodes;
     if (expansionCode == null) {
-      com.github.javydreamercsw.management.domain.universe.Universe universe =
-          universeRepository.findById(finalUniverseId).orElse(null);
+      Universe universe = universeRepository.findById(finalUniverseId).orElse(null);
       enabledExpansionCodes =
           universe != null
               ? universeSettingsService.getEnabledExpansionCodesForUniverse(universe)
@@ -508,7 +509,7 @@ public class WrestlerService {
    * @return The updated state, or empty if not found
    */
   @Transactional
-  @org.springframework.cache.annotation.Caching(
+  @Caching(
       evict = {
         @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
         @CacheEvict(
@@ -553,7 +554,7 @@ public class WrestlerService {
    * @return The updated state, or empty if not found
    */
   @Transactional
-  @org.springframework.cache.annotation.Caching(
+  @Caching(
       evict = {
         @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
         @CacheEvict(
@@ -565,7 +566,7 @@ public class WrestlerService {
     return addBump(wrestlerId, universeId, BumpSource.MANUAL);
   }
 
-  @org.springframework.cache.annotation.Caching(
+  @Caching(
       evict = {
         @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
         @CacheEvict(
@@ -596,7 +597,7 @@ public class WrestlerService {
    * @return The updated state, or empty if not found
    */
   @Transactional
-  @org.springframework.cache.annotation.Caching(
+  @Caching(
       evict = {
         @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
         @CacheEvict(
@@ -626,7 +627,7 @@ public class WrestlerService {
    * @return The updated state, or empty if not found
    */
   @Transactional
-  @org.springframework.cache.annotation.Caching(
+  @Caching(
       evict = {
         @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
         @CacheEvict(
@@ -670,7 +671,7 @@ public class WrestlerService {
     return healChance(wrestlerId, universeId, new DiceBag(6));
   }
 
-  @org.springframework.cache.annotation.Caching(
+  @Caching(
       evict = {
         @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),
         @CacheEvict(
@@ -750,8 +751,7 @@ public class WrestlerService {
    * @param wrestler The wrestler
    * @return The resolved image source
    */
-  public com.github.javydreamercsw.base.image.ImageResolution resolveWrestlerImage(
-      @NonNull final Wrestler wrestler) {
+  public ImageResolution resolveWrestlerImage(@NonNull final Wrestler wrestler) {
     return imageService.resolveImage(wrestler.getName(), ImageCategory.WRESTLER);
   }
 

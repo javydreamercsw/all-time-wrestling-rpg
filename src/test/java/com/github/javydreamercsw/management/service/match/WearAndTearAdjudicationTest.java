@@ -23,8 +23,11 @@ import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -123,6 +126,7 @@ class WearAndTearAdjudicationTest {
     when(segment.getWinners()).thenReturn(List.of(wrestler));
     when(segment.getSegmentType()).thenReturn(segmentType);
     when(segmentType.getName()).thenReturn("One on One");
+    when(segmentType.getCode()).thenReturn(WellKnownSegmentType.ONE_ON_ONE.getCode());
     when(segment.getShow()).thenReturn(show);
     when(show.isPremiumLiveEvent()).thenReturn(false);
     when(matchFulfillmentRepository.findBySegment(segment)).thenReturn(Optional.empty());
@@ -147,9 +151,7 @@ class WearAndTearAdjudicationTest {
 
     SegmentRule extremeRule = mock(SegmentRule.class);
     when(extremeRule.getName()).thenReturn("Extreme");
-    when(extremeRule.getBumpAddition())
-        .thenReturn(
-            com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition.NONE);
+    when(extremeRule.getBumpAddition()).thenReturn(BumpAddition.NONE);
     when(segment.getSegmentRules()).thenReturn(Set.of(extremeRule)); // x2
 
     // (3 * 2) + 1 = 7
@@ -161,6 +163,7 @@ class WearAndTearAdjudicationTest {
   @Test
   void testApplyWearAndTear_PromoSkips() {
     when(segmentType.getName()).thenReturn("Promo");
+    when(segmentType.getCode()).thenReturn(WellKnownSegmentType.PROMO.getCode());
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
@@ -177,13 +180,7 @@ class WearAndTearAdjudicationTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(wrestlerService)
-        .addBump(
-            eq(1L),
-            anyLong(),
-            eq(
-                com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource
-                    .WEAR_AND_TEAR));
+    verify(wrestlerService).addBump(eq(1L), anyLong(), eq(BumpSource.WEAR_AND_TEAR));
   }
 
   @Test

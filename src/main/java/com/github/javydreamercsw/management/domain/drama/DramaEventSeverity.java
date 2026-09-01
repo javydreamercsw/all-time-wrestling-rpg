@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.drama;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Random;
 import lombok.Getter;
 
 /**
@@ -88,7 +89,7 @@ public enum DramaEventSeverity {
 
   /** Represents a range of heat impact values. */
   public record HeatImpactRange(Integer min, Integer max) {
-    public Integer getRandomValue(final java.util.Random random) {
+    public Integer getRandomValue(final Random random) {
       if (min.equals(max)) {
         return min;
       }

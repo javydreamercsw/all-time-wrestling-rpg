@@ -17,18 +17,24 @@
 package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.TestSecurityContextHolder;
 
@@ -44,7 +50,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
 
   @BeforeEach
   public void prepareTestEnvironment() {
-    org.mockito.MockitoAnnotations.openMocks(this);
+    MockitoAnnotations.openMocks(this);
     log.info("Preparing test environment for: {}", this.getClass().getSimpleName());
 
     // If we have an authentication, try to refresh it
@@ -63,19 +69,14 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
 
   protected void login(@NonNull final Account account) {
     log.info("Logging in as user: {}", account.getUsername());
-    java.util.List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
+    List<Wrestler> wrestlers = wrestlerRepository.findByAccount(account);
     Wrestler wrestler = wrestlers.isEmpty() ? null : wrestlers.getFirst();
 
     var principal = new CustomUserDetails(account, wrestler);
-    Set<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
-        new java.util.HashSet<>();
-    for (com.github.javydreamercsw.base.domain.account.Role role : account.getRoles()) {
-      authorities.add(
-          new org.springframework.security.core.authority.SimpleGrantedAuthority(
-              role.getName().name()));
-      authorities.add(
-          new org.springframework.security.core.authority.SimpleGrantedAuthority(
-              "ROLE_" + role.getName().name()));
+    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+    for (Role role : account.getRoles()) {
+      authorities.add(new SimpleGrantedAuthority(role.getName().name()));
+      authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().name()));
     }
 
     var authentication =
@@ -100,7 +101,7 @@ public abstract class ManagementIntegrationTest extends AbstractMockUserIntegrat
     }
   }
 
-  @org.junit.jupiter.api.AfterEach
+  @AfterEach
   public void tearDown() {
     clearSecurityContext();
     clearCache();

@@ -27,6 +27,7 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 
+import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -53,6 +54,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Footer;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -116,9 +118,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private UniverseContextService universeContextService;
   private UniverseRepository universeRepository;
   private UniverseMembershipService universeMembershipService;
-  private com.vaadin.flow.component.combobox.ComboBox<
-          com.github.javydreamercsw.management.domain.universe.Universe>
-      universeSelector;
+  private ComboBox<Universe> universeSelector;
   private InboxService inboxService;
   private Span inboxBadge;
   private TutorialService tutorialService;
@@ -248,7 +248,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     return header;
   }
 
-  private com.vaadin.flow.component.html.Footer createFooter() {
+  private Footer createFooter() {
     Span versionSpan = new Span();
     versionSpan.setId("version-span");
     if (buildProperties != null) { // Needed for tests
@@ -261,8 +261,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         new Anchor("https://github.com/javydreamercsw/all-time-wrestling-rpg", "Source Code");
     githubLink.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
 
-    com.vaadin.flow.component.html.Footer footer =
-        new com.vaadin.flow.component.html.Footer(versionSpan, githubLink);
+    Footer footer = new Footer(versionSpan, githubLink);
     footer.addClassNames(Display.FLEX, FlexDirection.COLUMN, AlignItems.CENTER, Padding.MEDIUM);
     footer.addClassName("drawer-footer");
     return footer;
@@ -399,7 +398,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
         .flatMap(user -> accountService.findByUsername(user.getUsername()))
         .ifPresent(
             account ->
-                new com.github.javydreamercsw.management.ui.view.account.ProfileDrawer(
+                new ProfileDrawer(
                         account,
                         accountService,
                         passwordEncoder,
@@ -484,8 +483,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     if (universeSelector == null || universeSelector.getValue() == null) {
       return;
     }
-    com.github.javydreamercsw.management.domain.universe.Universe selected =
-        universeSelector.getValue();
+    Universe selected = universeSelector.getValue();
     Long currentId = universeContextService.getCurrentUniverseId();
     if (!selected.getId().equals(currentId)) {
       universeContextService.setCurrentUniverse(selected);
@@ -512,8 +510,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       return;
     }
 
-    com.github.javydreamercsw.base.domain.account.Account account =
-        accountService.get(accountId).orElse(null);
+    Account account = accountService.get(accountId).orElse(null);
     if (account == null) {
       return;
     }

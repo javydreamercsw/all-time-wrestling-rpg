@@ -44,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
@@ -201,6 +202,53 @@ class ChallengeUpdateServiceTest {
   }
 
   @Test
+  void checkAndApply_downloadsChallengeAndAchievementContent() throws Exception {
+    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+    int port = server.getAddress().getPort();
+    String challengeJson =
+        "[{\"id\":\"week_05_new\",\"title\":\"New Challenge\","
+            + "\"imageUrl\":\"challenge-content/images/week5.png\",\"active\":true,"
+            + "\"expansionCode\":\"EDDIE\",\"requiredExpansions\":[],"
+            + "\"requiredWrestlerNames\":[],\"conditions\":[],\"modifiers\":[]}]";
+    String achievementsJson =
+        "[{\"key\":\"CHALLENGE_WEEK_05\",\"name\":\"New Achievement\","
+            + "\"description\":\"Desc\",\"xpValue\":100,"
+            + "\"category\":\"CHALLENGE\"}]";
+    String manifest =
+        "{\"schemaVersion\":1,\"lastUpdated\":\"2026-08-21\",\"packages\":["
+            + "{\"id\":\"season_1_weekly\",\"jsonUrl\":\"http://localhost:"
+            + port
+            + "/weekly.json\",\"achievementsUrl\":\"http://localhost:"
+            + port
+            + "/achievements.json\",\"images\":[{\"name\":\"week5.png\","
+            + "\"url\":\"http://localhost:"
+            + port
+            + "/week5.png\"}]}]}";
+
+    serve(server, "/manifest.json", 200, manifest);
+    serve(server, "/weekly.json", 200, challengeJson);
+    serve(server, "/achievements.json", 200, achievementsJson);
+    serve(server, "/week5.png", 200, "PNG");
+    server.start();
+
+    when(achievementRepository.findByKey("CHALLENGE_WEEK_05")).thenReturn(Optional.empty());
+    when(achievementRepository.saveAll(any())).thenAnswer(i -> i.getArgument(0));
+
+    try {
+      setManifestUrl(server, "/manifest.json");
+      UpdateResult result = updateService.checkAndApply();
+
+      assertEquals(1, result.downloaded());
+      assertEquals(challengeJson, Files.readString(contentDir.resolve("season_1_weekly.json")));
+      assertEquals("PNG", Files.readString(contentDir.resolve("images/week5.png")));
+      verify(challengeService).reload();
+      verify(achievementRepository).saveAll(any(List.class));
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
   void checkAndApply_withAchievementsUrl_insertsNewAchievement() throws Exception {
     HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
     int port = server.getAddress().getPort();
@@ -231,7 +279,7 @@ class ChallengeUpdateServiceTest {
       setManifestUrl(server, "/manifest.json");
       updateService.checkAndApply();
       @SuppressWarnings("unchecked")
-      var captor = org.mockito.ArgumentCaptor.forClass(List.class);
+      var captor = ArgumentCaptor.forClass(List.class);
       verify(achievementRepository).saveAll(captor.capture());
       Achievement saved = (Achievement) captor.getValue().get(0);
       assertEquals("true", saved.getUnlockCondition());

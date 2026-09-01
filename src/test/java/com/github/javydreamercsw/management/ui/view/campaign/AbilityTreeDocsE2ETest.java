@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Tag("video")
@@ -117,7 +118,7 @@ class AbilityTreeDocsE2ETest extends AbstractDocsE2ETest {
 
     // Click 'Unlock' on the first ability to show the purchase flow
     try {
-      org.openqa.selenium.WebElement unlockButton =
+      WebElement unlockButton =
           waitForVaadinElement(driver, By.xpath("//vaadin-button[text()='Unlock']"));
       captureCaption(
           "Click Unlock to spend the tokens and activate the ability immediately."

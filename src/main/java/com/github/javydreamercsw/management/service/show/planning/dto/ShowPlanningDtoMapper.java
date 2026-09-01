@@ -23,13 +23,14 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningPle;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -71,6 +72,7 @@ public class ShowPlanningDtoMapper {
     }
     dto.setShowDate(context.getShowDate());
     dto.setPremiumLiveEvent(context.isPremiumLiveEvent());
+    dto.setIntergenderAllowed(context.isIntergenderAllowed());
     return dto;
   }
 
@@ -80,8 +82,7 @@ public class ShowPlanningDtoMapper {
     dto.setSegmentDate(segment.getSegmentDate());
     dto.setShowName(segment.getShow().getName());
     if (segment.getShow().getShowDate() != null) {
-      dto.setShowDate(
-          segment.getShow().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+      dto.setShowDate(segment.getShow().getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
     }
     if (segment.getSegmentType() != null) {
       dto.setSegmentType(segment.getSegmentType().getName());
@@ -91,7 +92,7 @@ public class ShowPlanningDtoMapper {
             .map(p -> p.getWrestler().getName())
             .collect(Collectors.toList()));
     if (segment.getSegmentType() != null
-        && SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
+        && WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
       // Find the first segment rule that matches a PromoType and use its display name
       segment.getSegmentRules().stream()
           .map(SegmentRule::getName)
@@ -163,7 +164,7 @@ public class ShowPlanningDtoMapper {
     ShowPlanningPleDTO dto = new ShowPlanningPleDTO();
     dto.setPleName(ple.getPle().getName());
     if (ple.getPle().getShowDate() != null) {
-      dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+      dto.setPleDate(ple.getPle().getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
     }
     dto.setSummary(ple.getPle().getDescription());
     dto.setMatches(

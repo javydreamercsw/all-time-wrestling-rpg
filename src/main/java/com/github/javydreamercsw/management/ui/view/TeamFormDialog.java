@@ -357,7 +357,7 @@ public class TeamFormDialog extends Dialog {
         return;
       }
 
-      Optional<com.github.javydreamercsw.management.domain.team.Team> result;
+      Optional<Team> result;
 
       if (currentTeam == null || currentTeam.getId() == null) {
         // Create new team

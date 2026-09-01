@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -44,12 +45,18 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -127,6 +134,10 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "is_main_event", nullable = false)
   private boolean isMainEvent;
 
+  /** Marks a #1 contender determination match (winner becomes the next challenger). */
+  @Column(name = "is_contender_match", nullable = false)
+  private boolean isContenderMatch = false;
+
   @Column(name = "title_skill_used", nullable = false)
   private boolean titleSkillUsed = false;
 
@@ -137,7 +148,7 @@ public class Segment extends AbstractEntity<Long> {
   private Integer durationMinutes;
 
   @Column(name = "crowd_noise_level")
-  @Min(0) @jakarta.validation.constraints.Max(100) private Integer crowdNoiseLevel = 0;
+  @Min(0) @Max(100) private Integer crowdNoiseLevel = 0;
 
   @Column(name = "rivalry_id")
   private Long rivalryId;
@@ -159,9 +170,9 @@ public class Segment extends AbstractEntity<Long> {
   @JsonIgnore
   private Set<Title> titles = new HashSet<>();
 
-  @jakarta.persistence.ManyToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "referee_id")
-  private com.github.javydreamercsw.management.domain.npc.Npc referee;
+  private Npc referee;
 
   @Column(name = "referee_awareness_level", nullable = false)
   private int refereeAwarenessLevel = 0;
@@ -211,7 +222,7 @@ public class Segment extends AbstractEntity<Long> {
     }
     return participants.stream()
         .map(SegmentParticipant::getWrestler)
-        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   public List<Wrestler> getWinners() {
@@ -221,7 +232,7 @@ public class Segment extends AbstractEntity<Long> {
     return participants.stream()
         .filter(SegmentParticipant::getIsWinner)
         .map(SegmentParticipant::getWrestler)
-        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   public List<Wrestler> getLosers() {
@@ -231,7 +242,7 @@ public class Segment extends AbstractEntity<Long> {
     return participants.stream()
         .filter(participant -> !participant.getIsWinner())
         .map(SegmentParticipant::getWrestler)
-        .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   public Set<SegmentRule> getSegmentRules() {
@@ -285,20 +296,18 @@ public class Segment extends AbstractEntity<Long> {
   /**
    * Sync participants with explicit team assignments. teamWrestlers maps teamNumber → wrestlers.
    */
-  public void syncParticipants(final java.util.Map<Integer, List<Wrestler>> teamWrestlers) {
+  public void syncParticipants(final Map<Integer, List<Wrestler>> teamWrestlers) {
     List<Wrestler> allWrestlers =
-        teamWrestlers.values().stream()
-            .flatMap(List::stream)
-            .collect(java.util.stream.Collectors.toList());
+        teamWrestlers.values().stream().flatMap(List::stream).collect(Collectors.toList());
 
     // Remove participants no longer in any team
     participants.removeIf(p -> !allWrestlers.contains(p.getWrestler()));
 
     // Update team numbers for existing participants and add new ones
-    for (java.util.Map.Entry<Integer, List<Wrestler>> entry : teamWrestlers.entrySet()) {
+    for (Map.Entry<Integer, List<Wrestler>> entry : teamWrestlers.entrySet()) {
       int teamNumber = entry.getKey();
       for (Wrestler wrestler : entry.getValue()) {
-        java.util.Optional<SegmentParticipant> existing =
+        Optional<SegmentParticipant> existing =
             participants.stream().filter(p -> p.getWrestler().equals(wrestler)).findFirst();
         if (existing.isPresent()) {
           existing.get().setTeamNumber(teamNumber);
@@ -310,17 +319,16 @@ public class Segment extends AbstractEntity<Long> {
   }
 
   /** Returns wrestlers grouped by team number, ordered by team number. */
-  public java.util.Map<Integer, List<Wrestler>> getWrestlersByTeam() {
+  public Map<Integer, List<Wrestler>> getWrestlersByTeam() {
     if (participants == null) {
-      return new java.util.LinkedHashMap<>();
+      return new LinkedHashMap<>();
     }
     return participants.stream()
         .collect(
-            java.util.stream.Collectors.groupingBy(
+            Collectors.groupingBy(
                 SegmentParticipant::getTeamNumber,
-                java.util.TreeMap::new,
-                java.util.stream.Collectors.mapping(
-                    SegmentParticipant::getWrestler, java.util.stream.Collectors.toList())));
+                TreeMap::new,
+                Collectors.mapping(SegmentParticipant::getWrestler, Collectors.toList())));
   }
 
   /** Add a segment rule to this segment. */
@@ -352,18 +360,14 @@ public class Segment extends AbstractEntity<Long> {
     if (segmentRules.isEmpty()) {
       return "Standard Match";
     }
-    return segmentRules.stream()
-        .map(SegmentRule::getName)
-        .collect(java.util.stream.Collectors.joining(", "));
+    return segmentRules.stream().map(SegmentRule::getName).collect(Collectors.joining(", "));
   }
 
   @Override
   public String getName() {
     String type = segmentType != null ? segmentType.getName() : "Unknown Type";
     String participantsStr =
-        getWrestlers().stream()
-            .map(Wrestler::getName)
-            .collect(java.util.stream.Collectors.joining(", "));
+        getWrestlers().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
     return "%s: %s (%s)".formatted(getEntityName(), type, participantsStr);
   }
 

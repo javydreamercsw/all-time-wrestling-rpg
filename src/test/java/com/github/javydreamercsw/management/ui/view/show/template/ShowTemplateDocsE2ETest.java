@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.show.template;
 
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -54,7 +55,7 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
                       5,
                       3,
                       1,
-                      com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE,
+                      RecurrenceType.NONE,
                       null,
                       null,
                       null,

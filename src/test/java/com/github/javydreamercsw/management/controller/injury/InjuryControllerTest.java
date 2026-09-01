@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -148,8 +149,7 @@ class InjuryControllerTest extends AbstractControllerTest {
     mockMvc
         .perform(post("/api/injuries/from-bumps/1").with(csrf()).param("universeId", "1"))
         .andExpect(status().isBadRequest())
-        .andExpect(
-            jsonPath("$.message").value(org.hamcrest.Matchers.containsString("less than 3 bumps")));
+        .andExpect(jsonPath("$.message").value(Matchers.containsString("less than 3 bumps")));
   }
 
   @Test

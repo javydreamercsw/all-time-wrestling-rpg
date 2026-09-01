@@ -24,6 +24,7 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +56,7 @@ class PollinationsIntegrationTest {
 
     // 3. Decode and save
     String base64Data = imageUrl.split(",")[1];
-    byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Data);
+    byte[] imageBytes = Base64.getDecoder().decode(base64Data);
 
     Path targetDir = Paths.get("target/generated-images");
     if (!Files.exists(targetDir)) {

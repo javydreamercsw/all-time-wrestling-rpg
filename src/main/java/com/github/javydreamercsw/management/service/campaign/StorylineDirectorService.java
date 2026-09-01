@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,7 +54,7 @@ public class StorylineDirectorService {
       final StorylineMilestoneRepository milestoneRepository,
       final CampaignStateRepository stateRepository,
       final CampaignChapterService chapterService,
-      @org.springframework.context.annotation.Lazy final CampaignService campaignService,
+      @Lazy final CampaignService campaignService,
       final WrestlerStatusService wrestlerStatusService,
       final ObjectMapper objectMapper) {
     this.aiFactory = aiFactory;

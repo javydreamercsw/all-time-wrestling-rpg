@@ -23,11 +23,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +49,7 @@ class ShowTemplateServiceTest {
 
   @BeforeEach
   public void setUp() {
-    lenient().when(clock.instant()).thenReturn(java.time.Instant.now());
+    lenient().when(clock.instant()).thenReturn(Instant.now());
   }
 
   @Test
@@ -68,7 +70,7 @@ class ShowTemplateServiceTest {
             null,
             null,
             1,
-            com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE,
+            RecurrenceType.NONE,
             null,
             null,
             null,
@@ -102,7 +104,7 @@ class ShowTemplateServiceTest {
             null,
             null,
             1,
-            com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE,
+            RecurrenceType.NONE,
             null,
             null,
             null,

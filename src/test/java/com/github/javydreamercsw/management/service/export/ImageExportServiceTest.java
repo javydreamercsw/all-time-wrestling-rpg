@@ -34,6 +34,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -167,7 +168,7 @@ class ImageExportServiceTest {
   }
 
   private List<String> zipEntryNames(final byte[] zipBytes) throws IOException {
-    List<String> names = new java.util.ArrayList<>();
+    List<String> names = new ArrayList<>();
     try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
       ZipEntry entry;
       while ((entry = zis.getNextEntry()) != null) {

@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -140,6 +141,9 @@ public class Title extends AbstractEntity<Long> {
     getTitleReigns().add(newReign);
 
     this.champion = new ArrayList<>(newChampions); // Ensure champion field is updated
+
+    // A challenger who wins the belt must not remain listed as their own challenger.
+    this.challengers.removeAll(newChampions);
   }
 
   public void vacateTitle(final Instant now) {
@@ -148,7 +152,7 @@ public class Title extends AbstractEntity<Long> {
   }
 
   @JsonIgnore
-  public java.util.Optional<TitleReign> getCurrentReign() {
+  public Optional<TitleReign> getCurrentReign() {
     return getTitleReigns().stream().filter(TitleReign::isCurrentReign).findFirst();
   }
 

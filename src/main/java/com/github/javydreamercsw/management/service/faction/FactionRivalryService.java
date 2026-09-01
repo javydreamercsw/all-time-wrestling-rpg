@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import java.time.Clock;
@@ -171,15 +172,9 @@ public class FactionRivalryService {
                       reason,
                       Stream.concat(
                               rivalry.getFaction1().getMembers().stream()
-                                  .map(
-                                      com.github.javydreamercsw.management.domain.wrestler
-                                              .WrestlerState
-                                          ::getWrestler),
+                                  .map(WrestlerState::getWrestler),
                               rivalry.getFaction2().getMembers().stream()
-                                  .map(
-                                      com.github.javydreamercsw.management.domain.wrestler
-                                              .WrestlerState
-                                          ::getWrestler))
+                                  .map(WrestlerState::getWrestler))
                           .collect(Collectors.toList())));
 
               return savedRivalry;

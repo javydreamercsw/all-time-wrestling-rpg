@@ -171,16 +171,17 @@ class RivalryTest extends AbstractJpaTest {
     assertThat(rivalry.getIsActive()).isFalse();
     assertThat(rivalry.getEndedDate()).isNotNull();
 
-    // Check heat events were created (resolution attempt + rivalry ended)
-    assertThat(rivalry.getHeatEvents()).hasSize(initialEventCount + 2);
+    // Exactly ONE heat event records the resolution — no duplicate end event.
+    assertThat(rivalry.getHeatEvents()).hasSize(initialEventCount + 1);
 
     // Find the resolution event
     HeatEvent resolutionEvent =
         rivalry.getHeatEvents().stream()
-            .filter(event -> event.getReason().contains("Rivalry resolved by dice roll"))
+            .filter(event -> event.getReason().contains("Resolved by dice roll"))
             .findFirst()
             .orElseThrow();
-    assertThat(resolutionEvent.getReason()).contains("(31)");
+    assertThat(resolutionEvent.getReason()).contains("Rivalry ended");
+    assertThat(resolutionEvent.getReason()).contains("= 31");
   }
 
   @Test

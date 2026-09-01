@@ -20,10 +20,12 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +66,7 @@ public class Rivalry extends AbstractEntity<Long> {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "league_id")
-  private com.github.javydreamercsw.management.domain.league.League league;
+  private League league;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "universe_id", nullable = false)
@@ -162,23 +164,20 @@ public class Rivalry extends AbstractEntity<Long> {
     boolean resolved = totalRoll > threshold;
 
     if (resolved) {
+      // endRivalry() records the final "Rivalry ended" heat event — do not add a
+      // second event for the same resolution.
       endRivalry(
           "Resolved by dice roll: " + wrestler1Roll + " + " + wrestler2Roll + " = " + totalRoll);
+    } else {
+      // Record the failed attempt so the rivalry history shows it.
+      HeatEvent event = new HeatEvent();
+      event.setRivalry(this);
+      event.setHeatChange(0);
+      event.setReason("Failed resolution attempt (" + totalRoll + ")");
+      event.setEventDate(Instant.now());
+      event.setHeatAfterEvent(this.heat);
+      heatEvents.add(event);
     }
-
-    // Create heat event for the resolution attempt
-    String reason =
-        resolved
-            ? "Rivalry resolved by dice roll (" + totalRoll + ")"
-            : "Failed resolution attempt (" + totalRoll + ")";
-
-    HeatEvent event = new HeatEvent();
-    event.setRivalry(this);
-    event.setHeatChange(0);
-    event.setReason(reason);
-    event.setEventDate(Instant.now());
-    event.setHeatAfterEvent(this.heat);
-    heatEvents.add(event);
 
     return resolved;
   }
@@ -247,7 +246,7 @@ public class Rivalry extends AbstractEntity<Long> {
   /** Get duration of the rivalry in days. */
   public long getDurationDays() {
     Instant end = endedDate != null ? endedDate : Instant.now();
-    return java.time.Duration.between(startedDate, end).toDays();
+    return Duration.between(startedDate, end).toDays();
   }
 
   @PrePersist

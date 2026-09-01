@@ -28,8 +28,16 @@ import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.security.WithCustomMockUser;
 import com.github.javydreamercsw.management.test.AbstractIntegrationTest;
 import io.github.bonigarcia.wdm.WebDriverManager;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
@@ -37,14 +45,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.imageio.ImageIO;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -55,9 +66,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -133,7 +148,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
               // Cleanup can leave a default account with a stale password, lockout state, or role.
               // Repair all login state before the browser session is established.
               account.setPassword(passwordEncoder.encode(getPassword()));
-              account.setRoles(java.util.Set.of(roleRepository.findByName(testRole).orElseThrow()));
+              account.setRoles(Set.of(roleRepository.findByName(testRole).orElseThrow()));
               account.resetFailedAttempts();
               accountRepository.saveAndFlush(account);
             },
@@ -340,6 +355,16 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         log.debug("Login attempt {}/{} for user: {}", attempt + 1, maxRetries, username);
         // Skip navigation if already on the login page (e.g. right after logout())
         if (!loginUrl.equals(driver.getCurrentUrl())) {
+          driver.get(loginUrl);
+        }
+        // A lingering authenticated session makes Spring Security redirect /login back
+        // to the app root — the login form then NEVER renders and the wait below burns
+        // its full timeout. Clear the stale session cookies and navigate again.
+        if (!driver.getCurrentUrl().startsWith(loginUrl)) {
+          log.warn(
+              "Redirected off the login page to {} — clearing stale session cookies and retrying",
+              driver.getCurrentUrl());
+          driver.manage().deleteAllCookies();
           driver.get(loginUrl);
         }
         // Wait for the login form directly — the Vaadin client on the login page can
@@ -659,9 +684,9 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       new WebDriverWait(driver, Duration.ofSeconds(5))
           .until(ExpectedConditions.visibilityOf(element));
       visible = true;
-    } catch (org.openqa.selenium.TimeoutException ignored) {
+    } catch (TimeoutException ignored) {
       visible = false;
-    } catch (org.openqa.selenium.StaleElementReferenceException ignored) {
+    } catch (StaleElementReferenceException ignored) {
       visible = false;
     }
     if (visible) {
@@ -723,7 +748,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
         WebElement element = waitForVaadinElement(driver, locator);
         clickElement(element);
         return;
-      } catch (org.openqa.selenium.StaleElementReferenceException e) {
+      } catch (StaleElementReferenceException e) {
         if (attempt == maxRetries) {
           throw e;
         }
@@ -1072,7 +1097,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
                         .executeScript(
                             "return !!(arguments[0].loading || arguments[0].pending);", grid);
                 return result == null || !(Boolean) result;
-              } catch (org.openqa.selenium.NoSuchElementException e) {
+              } catch (NoSuchElementException e) {
                 return false;
               }
             });
@@ -1090,7 +1115,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       ((JavascriptExecutor) driver)
           .executeScript(
               "arguments[0].scrollIntoView({behavior:'instant',block:'center'});", element);
-    } catch (org.openqa.selenium.StaleElementReferenceException e) {
+    } catch (StaleElementReferenceException e) {
       log.warn("StaleElementReferenceException in scrollIntoView — element was re-rendered");
     }
   }
@@ -1113,7 +1138,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       File scrFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
       FileUtils.copyFile(scrFile, new File(filePath));
       log.debug("Screenshot saved to: {}", filePath);
-    } catch (org.openqa.selenium.WebDriverException e) {
+    } catch (WebDriverException e) {
       log.warn(
           """
           WebDriverException while taking screenshot: {}. This might happen during page\
@@ -1169,7 +1194,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     try {
       new WebDriverWait(driver, Duration.ofSeconds(10))
           .until(d -> Objects.requireNonNull(d.getCurrentUrl()).contains("/login"));
-    } catch (org.openqa.selenium.TimeoutException ignored) {
+    } catch (TimeoutException ignored) {
       // Vaadin logout may not redirect in E2E mode (anyRequest().permitAll()), so navigate directly
       driver.get(loginUrl);
     }
@@ -1370,12 +1395,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
       if (!Files.exists(framePath)) {
         continue;
       }
-      java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(framePath.toFile());
+      BufferedImage img = ImageIO.read(framePath.toFile());
       if (img == null) {
         continue;
       }
       burnTextOntoImage(img, text);
-      javax.imageio.ImageIO.write(img, "png", framePath.toFile());
+      ImageIO.write(img, "png", framePath.toFile());
     }
   }
 
@@ -1391,21 +1416,20 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     return active;
   }
 
-  private void burnTextOntoImage(java.awt.image.BufferedImage img, String text) {
+  private void burnTextOntoImage(BufferedImage img, String text) {
     int w = img.getWidth();
     int h = img.getHeight();
-    java.awt.Graphics2D g = img.createGraphics();
+    Graphics2D g = img.createGraphics();
     g.setRenderingHint(
-        java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
-        java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
     int fontSize = Math.max(16, w / 60);
-    java.awt.Font font = new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.BOLD, fontSize);
+    Font font = new Font(Font.SANS_SERIF, Font.BOLD, fontSize);
     g.setFont(font);
-    java.awt.FontMetrics fm = g.getFontMetrics();
+    FontMetrics fm = g.getFontMetrics();
 
     int maxWidth = (int) (w * 0.90);
-    java.util.List<String> lines = wrapText(text.replace('\n', ' ').trim(), fm, maxWidth);
+    List<String> lines = wrapText(text.replace('\n', ' ').trim(), fm, maxWidth);
 
     int lineHeight = fm.getHeight();
     int totalTextHeight = lines.size() * lineHeight + 8;
@@ -1413,10 +1437,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     int boxX = (int) (w * 0.05);
     int boxW = (int) (w * 0.90);
 
-    g.setColor(new java.awt.Color(0, 0, 0, 180));
+    g.setColor(new Color(0, 0, 0, 180));
     g.fillRoundRect(boxX - 8, boxY - 4, boxW + 16, totalTextHeight + 8, 10, 10);
 
-    g.setColor(java.awt.Color.WHITE);
+    g.setColor(Color.WHITE);
     int y = boxY + fm.getAscent();
     for (String line : lines) {
       int x = boxX + (boxW - fm.stringWidth(line)) / 2;
@@ -1426,8 +1450,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     g.dispose();
   }
 
-  private java.util.List<String> wrapText(String text, java.awt.FontMetrics fm, int maxWidth) {
-    java.util.List<String> lines = new java.util.ArrayList<>();
+  private List<String> wrapText(String text, FontMetrics fm, int maxWidth) {
+    List<String> lines = new ArrayList<>();
     String[] words = text.split(" ");
     StringBuilder current = new StringBuilder();
     for (String word : words) {
@@ -1510,9 +1534,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     Thread reader =
         new Thread(
             () -> {
-              try (java.io.BufferedReader br =
-                  new java.io.BufferedReader(
-                      new java.io.InputStreamReader(process.getInputStream()))) {
+              try (BufferedReader br =
+                  new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 br.lines().forEach(line -> output.append(line).append('\n'));
               } catch (IOException ignored) {
               }
@@ -1631,7 +1654,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     try {
       if (Files.exists(session.frameDir)) {
         try (var stream = Files.walk(session.frameDir)) {
-          stream.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+          stream.sorted(Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
         }
       }
     } catch (IOException e) {

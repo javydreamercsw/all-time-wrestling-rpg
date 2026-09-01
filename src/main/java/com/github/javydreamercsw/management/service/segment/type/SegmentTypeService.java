@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -80,6 +81,11 @@ public class SegmentTypeService {
   @PreAuthorize("isAuthenticated()")
   public Optional<SegmentType> findByName(@NonNull final String name) {
     return segmentTypeRepository.findByName(name);
+  }
+
+  @PreAuthorize("isAuthenticated()")
+  public Optional<SegmentType> findByCode(@NonNull final String code) {
+    return segmentTypeRepository.findByCode(code);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -209,14 +215,29 @@ public class SegmentTypeService {
       @NonNull final String description,
       final String expansionCode,
       final SegmentRulePlayGuide guide) {
+    return createOrUpdateSegmentType(name, description, expansionCode, guide, null);
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
+  public SegmentType createOrUpdateSegmentType(
+      @NonNull final String name,
+      @NonNull final String description,
+      final String expansionCode,
+      final SegmentRulePlayGuide guide,
+      final String code) {
     String incomingHash = computeGuideHash(guide);
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
     if (existingOpt.isPresent()) {
       SegmentType st = existingOpt.get();
-      boolean guideChanged = !java.util.Objects.equals(st.getGuideHash(), incomingHash);
-      if (java.util.Objects.equals(st.getDescription(), description)
-          && java.util.Objects.equals(st.getExpansionCode(), expansionCode)
-          && !guideChanged) {
+      boolean guideChanged = !Objects.equals(st.getGuideHash(), incomingHash);
+      boolean codeChanged = code != null && !Objects.equals(st.getCode(), code);
+      if (Objects.equals(st.getDescription(), description)
+          && Objects.equals(st.getExpansionCode(), expansionCode)
+          && !guideChanged
+          && !codeChanged) {
         return st;
       }
       st.setDescription(description);
@@ -224,6 +245,9 @@ public class SegmentTypeService {
       if (guideChanged) {
         st.setGuide(guide);
         st.setGuideHash(incomingHash);
+      }
+      if (codeChanged) {
+        st.setCode(code);
       }
       log.debug("Updating existing segment type: {}", name);
       return segmentTypeRepository.save(st);
@@ -236,6 +260,7 @@ public class SegmentTypeService {
     segmentType.setExpansionCode(expansionCode != null ? expansionCode : "BASE_GAME");
     segmentType.setGuide(guide);
     segmentType.setGuideHash(incomingHash);
+    segmentType.setCode(code);
     return segmentTypeRepository.save(segmentType);
   }
 

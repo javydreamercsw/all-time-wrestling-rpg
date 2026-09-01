@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -166,10 +167,12 @@ public class SegmentNarrationServiceFactory {
       new ProviderPriority("Gemini", 1, 0.0, "FREE tier with excellent quality"),
       new ProviderPriority("Claude", 2, 0.25, "Claude Haiku - good quality, reasonable cost"),
       new ProviderPriority("OpenAI", 3, 0.50, "GPT-3.5 - good quality, moderate cost"),
+      new ProviderPriority(
+          "Ollama", 4, 0.0, "Local Ollama — free, privacy-preserving, requires OLLAMA_BASE_URL"),
       new ProviderPriority("Mock", 10, 0.0, "Mock AI for testing and development")
     };
 
-    List<SegmentNarrationService> sortedServices = new java.util.ArrayList<>();
+    List<SegmentNarrationService> sortedServices = new ArrayList<>();
 
     for (ProviderPriority priority : priorityOrder) {
       for (SegmentNarrationService service : availableServices) {
@@ -284,6 +287,13 @@ public class SegmentNarrationServiceFactory {
             "PAID",
             "GPT-3.5: $0.50/1K input, $1.50/1K output - good quality, moderate cost");
       }
+    } else if (lowerName.contains("ollama")) {
+      return new CostInfo(
+          4,
+          0.0,
+          "LOCAL",
+          "Local Ollama server — free to run, privacy-preserving, requires OLLAMA_BASE_URL env"
+              + " var");
     } else if (lowerName.contains("mock")) {
       return new CostInfo(
           10,

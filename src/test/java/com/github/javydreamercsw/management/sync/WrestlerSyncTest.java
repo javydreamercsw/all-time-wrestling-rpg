@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -52,9 +54,7 @@ class WrestlerSyncTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository
-      wrestlerAbilityRepository;
+  @Mock private WrestlerAbilityRepository wrestlerAbilityRepository;
 
   @Mock private WrestlerService wrestlerService;
   @Mock private UniverseRepository universeRepository;
@@ -67,13 +67,13 @@ class WrestlerSyncTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    Universe mockUniverse = org.mockito.Mockito.mock(Universe.class);
+    Universe mockUniverse = Mockito.mock(Universe.class);
     when(mockUniverse.getId()).thenReturn(1L);
     when(universeRepository.findAll()).thenReturn(List.of(mockUniverse));
 
     // Return the real wrestlers*.json from the classpath for integration-style characterization
     PathMatchingResourcePatternResolver real = new PathMatchingResourcePatternResolver();
-    Resource[] resources = real.getResources("classpath*:wrestlers*.json");
+    Resource[] resources = real.getResources("classpath*:wrestlers/*.json");
     when(resourcePatternResolver.getResources(anyString())).thenReturn(resources);
 
     sync =
@@ -158,7 +158,7 @@ class WrestlerSyncTest {
     when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(existing));
 
     WrestlerState state = new WrestlerState();
-    state.setId(1L); // pre-existing: avoids null-id trigger in sync
+    state.setId(1L);
     state.setFans(999_999L); // higher than any seed value in the file
     state.setBumps(Integer.MAX_VALUE); // higher than any seed bump value
     when(wrestlerService.getOrCreateState(any(), any())).thenReturn(state);

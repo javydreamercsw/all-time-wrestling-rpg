@@ -19,10 +19,8 @@ package com.github.javydreamercsw.base.ai.mock;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AbstractSegmentNarrationService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.NonNull;
@@ -116,8 +114,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   private String generateMockBackstageSituation(final String prompt) {
     try {
       var choice1 =
-          com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
-              .builder()
+          CampaignEncounterResponseDTO.Choice.builder()
               .text("Shake hands and show respect to the veteran.")
               .label("Respect")
               .alignmentShift(1)
@@ -127,8 +124,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               .build();
 
       var choice2 =
-          com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
-              .builder()
+          CampaignEncounterResponseDTO.Choice.builder()
               .text("Ignore the advice and walk away dismissively.")
               .label("Dismiss")
               .alignmentShift(-1)
@@ -142,7 +138,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               .build();
 
       var response =
-          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
+          new CampaignEncounterResponseDTO(
               """
               Mock Situation: You are approached by a veteran in the locker room who offers some\
                unsolicited advice about your upcoming matches.\
@@ -201,7 +197,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               1,
               "nextOnFailureIndex",
               1);
-      Map<String, Object> m2 = new java.util.HashMap<>();
+      Map<String, Object> m2 = new HashMap<>();
       m2.put("title", "The Climax");
       m2.put("description", "Final showdown and resolution.");
       m2.put("narrativeGoal", "Conclude the arc based on performance.");
@@ -209,7 +205,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       m2.put("nextOnSuccessIndex", null);
       m2.put("nextOnFailureIndex", null);
 
-      Map<String, Object> response = new java.util.HashMap<>();
+      Map<String, Object> response = new HashMap<>();
       response.put("title", "Mock AI Arc");
       response.put("description", "A mock arc generated for testing purposes.");
       response.put("milestones", List.of(m1, m2));
@@ -264,7 +260,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     String type = prompt.contains("\"type\" : \"Promo\"") ? "Promo" : "Match";
     String comm1 = "Dara Hoshiko";
     String comm2 = "Lord Bastian Von Crowe";
-    Map<String, String> participantAlignments = new java.util.HashMap<>();
+    Map<String, String> participantAlignments = new HashMap<>();
 
     try {
       String jsonMarker = "Here is the JSON context:\n\n";
@@ -371,8 +367,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
   private String generateMockCampaignEncounter(final String prompt) {
     try {
       var choice1 =
-          com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
-              .builder()
+          CampaignEncounterResponseDTO.Choice.builder()
               .text("Accept the challenge like a hero.")
               .label("Accept Heroically")
               .alignmentShift(1)
@@ -381,8 +376,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               .nextPhase("MATCH")
               .build();
       var choice2 =
-          com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO.Choice
-              .builder()
+          CampaignEncounterResponseDTO.Choice.builder()
               .text("Refuse the challenge and mock them.")
               .label("Refuse & Mock")
               .alignmentShift(-1)
@@ -391,7 +385,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               .build();
 
       var response =
-          new com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO(
+          new CampaignEncounterResponseDTO(
               "Mock narrative: You are confronted by a local legend who wants to test your mettle.",
               List.of(choice1, choice2));
 
@@ -450,7 +444,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
               "difficulty",
               5);
 
-      Map<String, Object> response = new java.util.HashMap<>();
+      Map<String, Object> response = new HashMap<>();
       response.put(
           "opener",
           """
@@ -663,7 +657,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     }
 
     return new MockSegmentDTO(
-        java.util.UUID.randomUUID().toString(),
+        UUID.randomUUID().toString(),
         type,
         "Mock description for " + type + " at " + venue,
         "Mock outcome for " + type,

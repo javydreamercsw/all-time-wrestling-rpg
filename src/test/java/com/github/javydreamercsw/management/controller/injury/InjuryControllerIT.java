@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -63,7 +64,7 @@ class InjuryControllerIT extends AbstractRestControllerIT {
             .build();
   }
 
-  @org.junit.jupiter.api.Test
+  @Test
   @DisplayName("Should create new injury successfully")
   void shouldCreateNewInjurySuccessfully() throws Exception {
     Wrestler wrestler = createTestWrestler("Test Wrestler");
@@ -88,7 +89,7 @@ class InjuryControllerIT extends AbstractRestControllerIT {
         .andExpect(jsonPath("$.isActive").value(true));
   }
 
-  @org.junit.jupiter.api.Test
+  @Test
   @DisplayName("Should create injury from bumps successfully")
   void shouldCreateInjuryFromBumpsSuccessfully() throws Exception {
     Wrestler wrestler = createTestWrestler("Test Wrestler", 50_000L);
@@ -105,7 +106,7 @@ class InjuryControllerIT extends AbstractRestControllerIT {
         .andExpect(jsonPath("$.isActive").value(true));
   }
 
-  @org.junit.jupiter.api.Test
+  @Test
   @DisplayName("Should return 400 when wrestler has less than 3 bumps")
   void shouldReturn400WhenWrestlerHasLessThan3Bumps() throws Exception {
     Wrestler wrestler = createTestWrestler("Lucky Wrestler", 10_000L);
@@ -121,7 +122,7 @@ class InjuryControllerIT extends AbstractRestControllerIT {
         .andExpect(status().isBadRequest());
   }
 
-  @org.junit.jupiter.api.Test
+  @Test
   @DisplayName("Should return 404 when creating injury from bumps for non-existent wrestler")
   void shouldReturn404WhenCreatingInjuryFromBumpsForNonExistentWrestler() throws Exception {
     mockMvc

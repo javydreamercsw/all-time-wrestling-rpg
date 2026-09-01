@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.challenge;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletion;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletionRepository;
@@ -42,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChallengeCompletionService {
 
   private final AccountChallengeCompletionRepository repository;
+  private final AccountRepository accountRepository;
   private final ChallengeService challengeService;
   private final LegacyService legacyService;
   private final ScriptedAchievementEvaluator scriptedAchievementEvaluator;
@@ -65,13 +67,19 @@ public class ChallengeCompletionService {
       final String challengeId,
       final String playerNotes,
       final String proofImageUrl) {
+    Account managedAccount =
+        accountRepository
+            .findById(account.getId())
+            .orElseThrow(
+                () -> new IllegalArgumentException("Account not found: " + account.getId()));
+
     AccountChallengeCompletion completion =
         repository
-            .findByAccountAndChallengeId(account, challengeId)
+            .findByAccountAndChallengeId(managedAccount, challengeId)
             .orElseGet(
                 () -> {
                   AccountChallengeCompletion c = new AccountChallengeCompletion();
-                  c.setAccount(account);
+                  c.setAccount(managedAccount);
                   c.setChallengeId(challengeId);
                   return c;
                 });
@@ -87,7 +95,7 @@ public class ChallengeCompletionService {
     repository.save(completion);
 
     if (firstCompletion) {
-      checkAchievements(account, challengeId);
+      checkAchievements(managedAccount, challengeId);
     }
 
     return completion;

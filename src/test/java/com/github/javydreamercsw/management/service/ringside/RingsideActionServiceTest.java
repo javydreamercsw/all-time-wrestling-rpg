@@ -29,6 +29,9 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -139,16 +142,14 @@ class RingsideActionServiceTest {
     coachAction.setType(legalType);
     coachAction.setRisk(0);
     coachAction.setImpact(5);
-    coachAction.setAlignment(
-        com.github.javydreamercsw.management.domain.campaign.AlignmentType.FACE);
+    coachAction.setAlignment(AlignmentType.FACE);
 
     weaponAction = new RingsideAction();
     weaponAction.setName("Weapon Slide");
     weaponAction.setType(illegalType);
     weaponAction.setRisk(40);
     weaponAction.setImpact(25);
-    weaponAction.setAlignment(
-        com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL);
+    weaponAction.setAlignment(AlignmentType.HEEL);
 
     // Default repository behavior
     lenient().when(segmentRepository.findById(1L)).thenReturn(Optional.of(segment));
@@ -157,10 +158,8 @@ class RingsideActionServiceTest {
 
   @Test
   void shouldShiftAlignmentOnSuccess() {
-    com.github.javydreamercsw.management.domain.campaign.Campaign campaign =
-        mock(com.github.javydreamercsw.management.domain.campaign.Campaign.class);
-    com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment alignment =
-        new com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment();
+    Campaign campaign = mock(Campaign.class);
+    WrestlerAlignment alignment = new WrestlerAlignment();
     alignment.setCampaign(campaign);
     when(wrestler.getAlignment()).thenReturn(alignment);
 

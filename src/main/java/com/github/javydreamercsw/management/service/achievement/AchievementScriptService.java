@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.achievement;
 
 import groovy.lang.Binding;
+import groovy.lang.GroovyClassLoader;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.NonNull;
@@ -40,8 +41,8 @@ import org.springframework.stereotype.Service;
 public class AchievementScriptService {
 
   private final Map<String, Class<?>> compiledScriptCache = new ConcurrentHashMap<>();
-  private final groovy.lang.GroovyClassLoader groovyClassLoader =
-      new groovy.lang.GroovyClassLoader(
+  private final GroovyClassLoader groovyClassLoader =
+      new GroovyClassLoader(
           Thread.currentThread().getContextClassLoader(), new CompilerConfiguration());
 
   public boolean evaluate(final String script, @NonNull final Map<String, Object> variables) {

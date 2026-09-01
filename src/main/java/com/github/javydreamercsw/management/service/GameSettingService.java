@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service;
 
 import com.github.javydreamercsw.management.domain.GameSetting;
 import com.github.javydreamercsw.management.domain.GameSettingRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -65,8 +66,33 @@ public class GameSettingService {
   public static final String RIVALRY_RESOLUTION_MIN_HEAT_KEY = "rivalry_resolution_min_heat";
   public static final String CONDITION_REST_THRESHOLD_KEY = "condition_rest_threshold";
 
+  /** Whether intergender (mixed-gender) matches may be booked. Default: disabled. */
+  public static final String INTERGENDER_MATCHES_ENABLED_KEY = "intergender_matches_enabled";
+
   /** Days to retain inbox items before automatic purge. -1 disables the purge. */
   public static final String INBOX_RETENTION_DAYS_KEY = "inbox.retention.days";
+
+  /** Maximum number of PLEs a feud script can appear at (1–3). */
+  public static final String MAX_PLE_FEUD_APPEARANCES_KEY = "feud.script.max_ple_appearances";
+
+  /** Whether the #1 contender is auto-selected after title matches and resolved feuds. */
+  public static final String CONTENDER_AUTO_SELECT_ENABLED_KEY = "contender.auto_select.enabled";
+
+  /** Fan-count gap (percent) below which the top-ranked contenders are considered tied. */
+  public static final String CONTENDER_TIE_THRESHOLD_PERCENT_KEY =
+      "contender.tie_threshold_percent";
+
+  /** SegmentType code used for the tie-breaker match suggestion. */
+  public static final String CONTENDER_TIE_MATCH_TYPE_KEY = "contender.tie_match_type";
+
+  /** Minimum wrestlers required to book a tie-breaker match. */
+  public static final String CONTENDER_TIE_MIN_WRESTLERS_KEY = "contender.tie_min_wrestlers";
+
+  /** Rivalry heat bonus applied to contender matches. */
+  public static final String CONTENDER_MATCH_HEAT_BONUS_KEY = "contender.match_heat_bonus";
+
+  /** Fan-gain multiplier applied to contender match participants. */
+  public static final String CONTENDER_MATCH_FAN_MULTIPLIER_KEY = "contender.match_fan_multiplier";
 
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
@@ -343,6 +369,84 @@ public class GameSettingService {
   }
 
   @PreAuthorize("permitAll()")
+  public boolean isContenderAutoSelectEnabled() {
+    return resolveValue(CONTENDER_AUTO_SELECT_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setContenderAutoSelectEnabled(final boolean enabled) {
+    saveInternal(CONTENDER_AUTO_SELECT_ENABLED_KEY, String.valueOf(enabled));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getContenderTieThresholdPercent() {
+    return resolveValue(CONTENDER_TIE_THRESHOLD_PERCENT_KEY).map(Integer::parseInt).orElse(10);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setContenderTieThresholdPercent(final int percent) {
+    saveInternal(CONTENDER_TIE_THRESHOLD_PERCENT_KEY, String.valueOf(percent));
+  }
+
+  @PreAuthorize("permitAll()")
+  public String getContenderTieMatchType() {
+    return resolveValue(CONTENDER_TIE_MATCH_TYPE_KEY)
+        .orElse(WellKnownSegmentType.FREE_FOR_ALL.getCode());
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setContenderTieMatchType(final String segmentTypeCode) {
+    saveInternal(CONTENDER_TIE_MATCH_TYPE_KEY, segmentTypeCode);
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getContenderTieMinWrestlers() {
+    return resolveValue(CONTENDER_TIE_MIN_WRESTLERS_KEY).map(Integer::parseInt).orElse(3);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setContenderTieMinWrestlers(final int minWrestlers) {
+    saveInternal(CONTENDER_TIE_MIN_WRESTLERS_KEY, String.valueOf(minWrestlers));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getContenderMatchHeatBonus() {
+    return resolveValue(CONTENDER_MATCH_HEAT_BONUS_KEY).map(Integer::parseInt).orElse(10);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setContenderMatchHeatBonus(final int heatBonus) {
+    saveInternal(CONTENDER_MATCH_HEAT_BONUS_KEY, String.valueOf(heatBonus));
+  }
+
+  @PreAuthorize("permitAll()")
+  public double getContenderMatchFanMultiplier() {
+    return resolveValue(CONTENDER_MATCH_FAN_MULTIPLIER_KEY).map(Double::parseDouble).orElse(1.5);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setContenderMatchFanMultiplier(final double multiplier) {
+    saveInternal(CONTENDER_MATCH_FAN_MULTIPLIER_KEY, String.valueOf(multiplier));
+  }
+
+  @PreAuthorize("permitAll()")
+  public boolean isIntergenderMatchesEnabled() {
+    return resolveValue(INTERGENDER_MATCHES_ENABLED_KEY).map(Boolean::parseBoolean).orElse(false);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setIntergenderMatchesEnabled(final boolean enabled) {
+    saveInternal(INTERGENDER_MATCHES_ENABLED_KEY, String.valueOf(enabled));
+  }
+
+  @PreAuthorize("permitAll()")
   public int getConditionRestThreshold() {
     return resolveValue(CONDITION_REST_THRESHOLD_KEY).map(Integer::parseInt).orElse(75);
   }
@@ -426,6 +530,20 @@ public class GameSettingService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void save(final String key, final String value) {
     saveInternal(key, value);
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getMaxPleFeudAppearances() {
+    return resolveValue(MAX_PLE_FEUD_APPEARANCES_KEY)
+        .map(Integer::parseInt)
+        .filter(v -> v >= 1 && v <= 3)
+        .orElse(3);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setMaxPleFeudAppearances(final int value) {
+    saveInternal(MAX_PLE_FEUD_APPEARANCES_KEY, String.valueOf(Math.min(Math.max(value, 1), 3)));
   }
 
   @PreAuthorize("permitAll()")

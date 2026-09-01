@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.rivalry;
 
+import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
@@ -40,8 +41,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -68,9 +72,7 @@ public class RivalryService {
   /** Create a new rivalry between two wrestlers in the Default Universe. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public Optional<Rivalry> createRivalry(
       @NonNull final Long wrestler1Id,
       @NonNull final Long wrestler2Id,
@@ -81,9 +83,7 @@ public class RivalryService {
   /** Create a new rivalry between two wrestlers in the given universe. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public Optional<Rivalry> createRivalry(
       @NonNull final Long wrestler1Id,
       @NonNull final Long wrestler2Id,
@@ -123,9 +123,7 @@ public class RivalryService {
   /** Add heat to a rivalry. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public Optional<Rivalry> addHeat(final Long rivalryId, final int heatGain, final String reason) {
     return rivalryRepository
         .findById(rivalryId)
@@ -150,9 +148,7 @@ public class RivalryService {
   /** Add heat between two specific wrestlers in the Default Universe. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public Optional<Rivalry> addHeatBetweenWrestlers(
       @NonNull final Long wrestler1Id,
       @NonNull final Long wrestler2Id,
@@ -164,9 +160,7 @@ public class RivalryService {
   /** Add heat between two specific wrestlers in the given universe. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public Optional<Rivalry> addHeatBetweenWrestlers(
       @NonNull final Long wrestler1Id,
       @NonNull final Long wrestler2Id,
@@ -194,9 +188,7 @@ public class RivalryService {
   /** Attempt to resolve a rivalry at a PLE (uses the configured PLE threshold). */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public ResolutionResult<Rivalry> attemptResolution(
       @NonNull final Long rivalryId,
       @NonNull final Integer wrestler1Roll,
@@ -211,9 +203,7 @@ public class RivalryService {
   /** Attempt to resolve a rivalry with an explicit threshold. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public ResolutionResult<Rivalry> attemptResolution(
       @NonNull final Long rivalryId,
       @NonNull final Integer wrestler1Roll,
@@ -269,9 +259,7 @@ public class RivalryService {
    */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public ResolutionResult<Rivalry> resolveAtPle(
       @NonNull final Long rivalryId,
       @NonNull final Integer wrestler1Roll,
@@ -331,9 +319,7 @@ public class RivalryService {
   /** End a rivalry manually. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public Optional<Rivalry> endRivalry(@NonNull final Long rivalryId, @NonNull final String reason) {
     return rivalryRepository
         .findById(rivalryId)
@@ -348,11 +334,16 @@ public class RivalryService {
   /** Get rivalry by ID. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      key = "#rivalryId")
+  @Cacheable(value = CacheConfig.RIVALRIES_CACHE, key = "#rivalryId")
   public Optional<Rivalry> getRivalryById(@NonNull final Long rivalryId) {
     return rivalryRepository.findById(rivalryId);
+  }
+
+  /** Loads a rivalry by ID with wrestlers eagerly fetched — safe to use outside a transaction. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<Rivalry> getRivalryByIdWithWrestlers(@NonNull final Long rivalryId) {
+    return rivalryRepository.findByIdWithWrestlers(rivalryId);
   }
 
   /**
@@ -383,9 +374,7 @@ public class RivalryService {
   /** Get active rivalries. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      key = "'active'")
+  @Cacheable(value = CacheConfig.RIVALRIES_CACHE, key = "'active'")
   public List<Rivalry> getActiveRivalries() {
     return rivalryRepository.findByIsActiveTrue();
   }
@@ -400,9 +389,7 @@ public class RivalryService {
   /** Get rivalries for a specific wrestler. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      key = "#wrestlerId")
+  @Cacheable(value = CacheConfig.RIVALRIES_CACHE, key = "#wrestlerId")
   public List<Rivalry> getRivalriesForWrestler(@NonNull final Long wrestlerId) {
     return wrestlerRepository
         .findById(wrestlerId)
@@ -446,9 +433,7 @@ public class RivalryService {
   /** Get rivalries by intensity level. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  @org.springframework.cache.annotation.Cacheable(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      key = "#intensity")
+  @Cacheable(value = CacheConfig.RIVALRIES_CACHE, key = "#intensity")
   public List<Rivalry> getRivalriesByIntensity(@NonNull final RivalryIntensity intensity) {
     return rivalryRepository.findByHeatRange(
         intensity.getMinHeat(),
@@ -459,16 +444,13 @@ public class RivalryService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Rivalry> getHottestRivalries(final int limit) {
-    return rivalryRepository.findHottestRivalries(
-        org.springframework.data.domain.PageRequest.of(0, limit));
+    return rivalryRepository.findHottestRivalries(PageRequest.of(0, limit));
   }
 
   /** Update rivalry storyline notes. */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public Optional<Rivalry> updateStorylineNotes(
       @NonNull final Long rivalryId, @NonNull final String storylineNotes) {
     return rivalryRepository
@@ -505,9 +487,7 @@ public class RivalryService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
-  @org.springframework.cache.annotation.CacheEvict(
-      value = com.github.javydreamercsw.management.config.CacheConfig.RIVALRIES_CACHE,
-      allEntries = true)
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
   public Rivalry save(@NonNull final Rivalry rivalry) {
     return rivalryRepository.saveAndFlush(rivalry);
   }

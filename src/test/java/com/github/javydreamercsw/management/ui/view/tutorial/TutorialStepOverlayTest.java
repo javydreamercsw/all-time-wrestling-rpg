@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.service.tutorial.TutorialStep.Intera
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H4;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,8 +105,8 @@ class TutorialStepOverlayTest extends AbstractViewTest {
     openAtStep(0, step);
 
     assertThat(overlay.isOpened()).isTrue();
-    assertThat(_find(overlay, com.vaadin.flow.component.html.H4.class))
-        .extracting(com.vaadin.flow.component.html.H4::getText)
+    assertThat(_find(overlay, H4.class))
+        .extracting(H4::getText)
         .containsExactly("Create Your Show");
   }
 

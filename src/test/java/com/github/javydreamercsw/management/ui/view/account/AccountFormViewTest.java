@@ -34,6 +34,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,7 +100,7 @@ class AccountFormViewTest extends AbstractViewTest {
     existing.setEmail("user1@example.com");
     Role adminRole = new Role();
     adminRole.setName(RoleName.ADMIN);
-    existing.setRoles(new java.util.HashSet<>(List.of(adminRole)));
+    existing.setRoles(new HashSet<>(List.of(adminRole)));
     when(accountService.get(1L)).thenReturn(Optional.of(existing));
     when(accountService.findByUsername(any())).thenReturn(Optional.empty());
     when(accountService.findByEmail(any())).thenReturn(Optional.empty());

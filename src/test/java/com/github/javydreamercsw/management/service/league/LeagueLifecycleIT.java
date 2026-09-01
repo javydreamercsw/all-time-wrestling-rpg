@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.account.RoleName;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
@@ -40,12 +41,15 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.persistence.EntityManager;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -72,7 +76,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
   @Autowired private EntityManager entityManager;
 
   @Autowired
-  @Qualifier("managementAccountService") private com.github.javydreamercsw.management.service.AccountService accountService;
+  @Qualifier("managementAccountService") private AccountService accountService;
 
   @Test
   @Transactional
@@ -114,7 +118,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
 
     // Simulate picks based on whoever's turn it is
     int safetyCounter = 0;
-    Set<Wrestler> locallyDrafted = new java.util.HashSet<>();
+    Set<Wrestler> locallyDrafted = new HashSet<>();
     final League finalLeague = league;
     final Draft finalDraft = draft;
     while (draft.getStatus() == Draft.DraftStatus.ACTIVE && safetyCounter < 10) {
@@ -200,7 +204,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
                 });
     segmentTypeRepository.flush();
 
-    Segment match = segmentService.createSegment(show, matchType, java.time.Instant.now());
+    Segment match = segmentService.createSegment(show, matchType, Instant.now());
     match = segmentRepository.saveAndFlush(match);
     entityManager.clear();
     match = segmentRepository.findById(match.getId()).get();
@@ -211,7 +215,7 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
     segmentService.addParticipant(match, p1Wrestler);
 
     // Verify Notification (Step 4.3)
-    java.util.List<InboxItem> p1Inbox = inboxService.getInboxItemsForWrestler(p1Wrestler, 10);
+    List<InboxItem> p1Inbox = inboxService.getInboxItemsForWrestler(p1Wrestler, 10);
     assertThat(p1Inbox).isNotEmpty();
     assertThat(p1Inbox.get(0).getDescription()).contains("Pending match on show");
 
@@ -284,11 +288,6 @@ class LeagueLifecycleIT extends ManagementIntegrationTest {
   }
 
   private Wrestler createWrestler(final String name) {
-    return wrestlerService.createWrestler(
-        name,
-        false,
-        "Test",
-        com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MIDCARDER,
-        null);
+    return wrestlerService.createWrestler(name, false, "Test", WrestlerTier.MIDCARDER, null);
   }
 }

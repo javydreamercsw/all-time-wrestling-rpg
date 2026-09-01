@@ -113,6 +113,6 @@ class NpcDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private void waitForText(final String text) {
-    waitForVaadinElement(driver, org.openqa.selenium.By.xpath("//*[contains(., '" + text + "')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

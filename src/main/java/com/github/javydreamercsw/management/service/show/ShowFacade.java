@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -39,4 +41,6 @@ public class ShowFacade {
   private final SegmentNarrationServiceFactory narrationFactory;
   private final NarrationParserService narrationParserService;
   private final NpcService npcService;
+  private final DramaEventService dramaEventService;
+  private final FeudScriptService feudScriptService;
 }

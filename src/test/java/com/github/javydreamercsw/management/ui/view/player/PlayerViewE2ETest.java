@@ -24,12 +24,7 @@ import com.github.javydreamercsw.AbstractE2ETest;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
-import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
-import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
-import com.github.javydreamercsw.management.domain.campaign.StatusCard;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
-import com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository;
+import com.github.javydreamercsw.management.domain.campaign.*;
 import com.github.javydreamercsw.management.domain.inbox.InboxRepository;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
@@ -40,6 +35,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -87,14 +84,11 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private SegmentRepository segmentRepository;
   @Autowired private ShowRepository showRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.title.TitleRepository titleChampionRepository;
+  @Autowired private TitleRepository titleChampionRepository;
 
   @Autowired private SeasonRepository seasonRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.title.TitleReignRepository
-      titleReignRepository;
+  @Autowired private TitleReignRepository titleReignRepository;
 
   @Autowired private CampaignRepository campaignRepository;
   @Autowired private CampaignStateRepository campaignStateRepository;
@@ -102,13 +96,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerStatusRepository wrestlerStatusRepository;
   @Autowired private StatusCardService statusCardService;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.BackstageActionHistoryRepository
-      backstageActionHistoryRepository;
+  @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignEncounterRepository
-      campaignEncounterRepository;
+  @Autowired private CampaignEncounterRepository campaignEncounterRepository;
 
   @BeforeEach
   public void setupTest() {
@@ -239,7 +229,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     // Navigate to the PlayerView
     assertDoesNotThrow(
         () -> {
-          navigateTo("player");
+          // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+          // and leave the browser on the Home view instead of the Player dashboard.
+          navigateToAndWaitForElement("player", By.id("wrestler-name"));
           assertEquals(
               finalWrestler.getName(),
               waitForVaadinElement(driver, By.id("wrestler-name")).getText());
@@ -337,10 +329,10 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
 
     login("player", "player123");
 
-    // Navigate to the PlayerView
-    navigateTo("player");
-
-    waitForVaadinToLoad();
+    // Navigate to the PlayerView and wait for the Go to Match button to render.
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser on the Home view instead of the Player dashboard.
+    navigateToAndWaitForElement("player", By.id("go-to-match-" + segment.getId()));
 
     captureCaption(
         "Upcoming matches grid — each scheduled segment has a 'Go to Match' button that"
@@ -390,8 +382,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     wrestlerStateRepository.saveAndFlush(state);
 
     login("player", "player123");
-    navigateTo("player");
-    waitForVaadinToLoad();
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser on the Home view instead of the Player dashboard.
+    navigateToAndWaitForElement("player", By.id("effective-stats-section"));
 
     assertDoesNotThrow(
         () -> {
@@ -444,8 +437,9 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     wrestlerStatusRepository.saveAndFlush(status);
 
     login("player", "player123");
-    navigateTo("player");
-    waitForVaadinToLoad();
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser on the Home view instead of the Player dashboard.
+    navigateToAndWaitForElement("player", By.xpath("//span[text()='Draw']"));
 
     assertDoesNotThrow(
         () -> {
@@ -533,9 +527,10 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     logout();
     login("player", "player123");
 
-    // Navigate to the PlayerView
-    navigateTo("player");
-    waitForVaadinToLoad();
+    // Navigate to the PlayerView. Retry-enabled navigation — a login redirect race can
+    // swallow a plain driver.get() and leave the browser on the Home view.
+    navigateToAndWaitForElement(
+        "player", By.xpath("//h4[contains(text(), 'Test Season 2026 Summary')]"));
 
     assertDoesNotThrow(
         () -> {

@@ -34,13 +34,17 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.SeasonStatsDTO;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,26 +78,22 @@ class SeasonStatsServiceTest {
     wrestler.setId(1L);
     wrestler.setName("Test Wrestler");
 
-    com.github.javydreamercsw.management.domain.universe.Universe universe =
-        new com.github.javydreamercsw.management.domain.universe.Universe();
+    Universe universe = new Universe();
     universe.setId(1L);
 
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    WrestlerState state = new WrestlerState();
     state.setWrestler(wrestler);
     state.setUniverse(universe);
     state.setFans(1000L);
-    wrestler.setWrestlerStates(new java.util.LinkedHashSet<>(java.util.List.of(state)));
+    wrestler.setWrestlerStates(new LinkedHashSet<>(List.of(state)));
 
-    lenient()
-        .when(wrestlerRepository.findByIdWithStates(1L))
-        .thenReturn(java.util.Optional.of(wrestler));
+    lenient().when(wrestlerRepository.findByIdWithStates(1L)).thenReturn(Optional.of(wrestler));
 
     WrestlerSeasonSnapshot snapshot = new WrestlerSeasonSnapshot();
     snapshot.setStartingFans(500L);
     lenient()
         .when(snapshotRepository.findByWrestlerIdAndSeasonId(1L, 1L))
-        .thenReturn(java.util.Optional.of(snapshot));
+        .thenReturn(Optional.of(snapshot));
 
     season = new Season();
     season.setId(1L);
@@ -150,12 +150,11 @@ class SeasonStatsServiceTest {
   @Test
   @DisplayName("startingFans falls back to 0 when no snapshot exists")
   void testStartingFansFallsBackToZeroWhenNoSnapshot() {
-    when(snapshotRepository.findByWrestlerIdAndSeasonId(1L, 1L))
-        .thenReturn(java.util.Optional.empty());
+    when(snapshotRepository.findByWrestlerIdAndSeasonId(1L, 1L)).thenReturn(Optional.empty());
     when(segmentRepository.findByWrestlerParticipationAndSeason(
             eq(wrestler), eq(season), any(Pageable.class)))
-        .thenReturn(new PageImpl<>(java.util.List.of()));
-    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(java.util.List.of());
+        .thenReturn(new PageImpl<>(List.of()));
+    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(List.of());
 
     SeasonStatsDTO stats = seasonStatsService.calculateStats(wrestler, season);
 
