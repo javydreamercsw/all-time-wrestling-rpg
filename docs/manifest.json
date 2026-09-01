@@ -862,5 +862,47 @@
     "description": "The match view reminds everyone at the table what each wrestler's abilities do. Participant cards carry compact ability chips with trigger tooltips, and the player's own panel shows when each ability fires (color-coded by offense/defense/pinned), an advisory uses-left counter, and a Mark Used button that logs the usage into the match notes — feeding the AI narration and match summary. Nothing is enforced: the table remains the authority.",
     "imagePath": "screenshots/match-ability-reminders.png",
     "order": 0
+  }, {
+    "id": "booker-booker-story-arc-wizard",
+    "category": "Booker",
+    "title": "Story Arc Wizard",
+    "description": "Three-step wizard for scripting a feud arc: select wrestlers, name the arc and choose its length, then add ordered beats (match type, stipulation, winner control).",
+    "imagePath": "screenshots/booker-story-arc-wizard.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-rivalry-detail",
+    "category": "Booker",
+    "title": "Rivalry Detail",
+    "description": "View rivalry details including heat, storyline notes, and dates. Use the Story Arc button to script a multi-beat feud arc for this rivalry.",
+    "imagePath": "screenshots/booker-rivalry-detail.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-rivalry-list",
+    "category": "Booker",
+    "title": "Rivalry List",
+    "description": "Browse all active rivalries between wrestlers. Click any row to open the rivalry detail view where you can manage story arc scripts.",
+    "imagePath": "screenshots/booker-rivalry-list.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-contender-match-badge",
+    "category": "Game Mechanics",
+    "title": "Contender Matches",
+    "description": "Mark any match as a #1 Contender Match to put the next title shot on the line. The segment carries a gold star badge on the show card, the winner is automatically designated as the title's #1 contender, and the match earns bonus rivalry heat and fan gains.",
+    "imagePath": "screenshots/contender-match-badge.png",
+    "order": 0
+  }, {
+    "id": "admin-admin-contender-settings",
+    "category": "Admin",
+    "title": "Contender Automation Settings",
+    "description": "Every contender-automation threshold is configurable: enable or disable auto-selection after title matches, tune the fan-gap percentage that counts as a tie, pick the tie-breaker match type and its minimum participants, and adjust the heat bonus and fan multiplier applied to contender matches.",
+    "imagePath": "screenshots/admin-contender-settings.png",
+    "order": 0
+  }, {
+    "id": "admin-admin-game-settings",
+    "category": "Admin",
+    "title": "Game Settings",
+    "description": "Tune gameplay from grouped, collapsible sections: system defaults, general gameplay, match booking (including whether intergender matches may be booked), news generation, rivalry lifecycle, contender automation, and tutorials. Settings can be overridden per universe.",
+    "imagePath": "screenshots/admin-game-settings.png",
+    "order": 0
   } ]
 }
