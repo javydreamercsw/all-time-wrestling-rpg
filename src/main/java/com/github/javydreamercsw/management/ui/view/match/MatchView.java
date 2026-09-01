@@ -41,12 +41,13 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
@@ -65,6 +66,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
+import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
@@ -110,6 +112,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import jakarta.annotation.security.PermitAll;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -145,6 +148,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   @Autowired private CampaignEncounterService campaignEncounterService;
   @Autowired private DeckService deckService;
   @Autowired private WrestlerAbilityRepository wrestlerAbilityRepository;
+  @Autowired private AbilityReminderTextService abilityReminderTextService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -247,7 +251,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void autoAssignRefereeIfNeeded() {
     boolean isPromo =
         segment.getSegmentType() != null
-            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
+            && WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
     if (isPromo || segment.getReferee() != null) {
       return;
     }
@@ -290,7 +294,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
     boolean isPromo =
         segment.getSegmentType() != null
-            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
+            && WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
 
     // Initialize narrationArea
     narrationArea = new TextArea(isPromo ? "Promo Transcript" : "Match Story");
@@ -464,7 +468,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void buildMatchInterface(final Wrestler playerWrestler) {
     boolean isPromo =
         segment.getSegmentType() != null
-            && SegmentTypeNames.PROMO.equalsIgnoreCase(segment.getSegmentType().getName());
+            && WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
 
     List<Wrestler> wrestlers = segment.getWrestlers();
     // Fall back to the show's universe when no universe is selected in the session.
@@ -507,15 +511,6 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     DashboardCard participantsCard = new DashboardCard("Participants");
     participantsCard.getStyle().set("flex", "1 1 500px");
 
-    Div cardGrid = new Div();
-    cardGrid
-        .getStyle()
-        .set("display", "grid")
-        .set("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))")
-        .set("gap", "var(--lumo-space-m)")
-        .set("width", "100%")
-        .set("align-items", "start");
-
     // Opponent penalty: derived from the active wrestler's campaign (primary player wrestler)
     int opponentPenalty = 0;
     if (isPlayerInMatch && playerWrestler != null) {
@@ -526,23 +521,94 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     }
     final int penalty = opponentPenalty;
 
+    Function<Wrestler, WrestlerSummaryCard> cardFactory =
+        w -> {
+          boolean isThisWrestlerPlayer = isPlayerInMatch && playerWrestlerIds.contains(w.getId());
+          WrestlerSummaryCard card =
+              new WrestlerSummaryCard(
+                  w,
+                  universeId,
+                  wrestlerService,
+                  injuryService,
+                  isThisWrestlerPlayer,
+                  isThisWrestlerPlayer ? 0 : penalty,
+                  wrestlerStatsService);
+          // Table-side reminders: everyone sees what each wrestler's default abilities do.
+          // The player's own abilities get the full interactive panel in the side column.
+          List<WrestlerAbility> defaultAbilities =
+              wrestlerAbilityRepository.findByWrestlerId(w.getId()).stream()
+                  .filter(WrestlerAbility::isDefault)
+                  .toList();
+          card.showAbilityChips(defaultAbilities, abilityReminderTextService);
+          return card;
+        };
+
+    // Group participants by team so tag partners are visually together (ordered by team number).
+    Map<Long, Integer> teamNumbers = new HashMap<>();
+    for (SegmentParticipant p : segment.getParticipants()) {
+      if (p.getWrestler() != null) {
+        teamNumbers.put(p.getWrestler().getId(), p.getTeamNumber());
+      }
+    }
+    Map<Integer, List<Wrestler>> teams = new TreeMap<>();
     wrestlers.stream()
         .filter(Objects::nonNull)
         .forEach(
-            w -> {
-              boolean isThisWrestlerPlayer =
-                  isPlayerInMatch && playerWrestlerIds.contains(w.getId());
-              cardGrid.add(
-                  new WrestlerSummaryCard(
-                      w,
-                      universeId,
-                      wrestlerService,
-                      injuryService,
-                      isThisWrestlerPlayer,
-                      isThisWrestlerPlayer ? 0 : penalty,
-                      wrestlerStatsService));
-            });
-    participantsCard.add(cardGrid);
+            w ->
+                teams
+                    .computeIfAbsent(teamNumbers.getOrDefault(w.getId(), 1), t -> new ArrayList<>())
+                    .add(w));
+    // Only draw team boxes for real team matches — a 1v1 or triple threat (every team
+    // a single wrestler) keeps the plain grid to avoid visual noise.
+    boolean isTeamMatch = teams.size() > 1 && teams.values().stream().anyMatch(m -> m.size() > 1);
+
+    if (isTeamMatch) {
+      Div teamRow = new Div();
+      teamRow
+          .getStyle()
+          .set("display", "flex")
+          .set("flex-wrap", "wrap")
+          .set("gap", "var(--lumo-space-m)")
+          .set("width", "100%")
+          .set("align-items", "stretch");
+      teams.forEach(
+          (teamNumber, members) -> {
+            Div teamBox = new Div();
+            teamBox.setId("match-team-" + teamNumber);
+            teamBox
+                .getStyle()
+                .set("flex", "1 1 280px")
+                .set("border", "1px solid var(--lumo-contrast-20pct)")
+                .set("border-radius", "var(--lumo-border-radius-m)")
+                .set("padding", "var(--lumo-space-s)");
+            Span teamLabel = new Span("Team " + teamNumber);
+            teamLabel.addClassNames(FontSize.XSMALL, FontWeight.SEMIBOLD, TextColor.SECONDARY);
+            teamLabel.getStyle().set("text-transform", "uppercase").set("letter-spacing", "0.05em");
+            Div memberGrid = new Div();
+            memberGrid
+                .getStyle()
+                .set("display", "grid")
+                .set("grid-template-columns", "repeat(auto-fill, minmax(240px, 1fr))")
+                .set("gap", "var(--lumo-space-s)")
+                .set("margin-top", "var(--lumo-space-xs)")
+                .set("align-items", "start");
+            members.forEach(w -> memberGrid.add(cardFactory.apply(w)));
+            teamBox.add(teamLabel, memberGrid);
+            teamRow.add(teamBox);
+          });
+      participantsCard.add(teamRow);
+    } else {
+      Div cardGrid = new Div();
+      cardGrid
+          .getStyle()
+          .set("display", "grid")
+          .set("grid-template-columns", "repeat(auto-fill, minmax(260px, 1fr))")
+          .set("gap", "var(--lumo-space-m)")
+          .set("width", "100%")
+          .set("align-items", "start");
+      wrestlers.stream().filter(Objects::nonNull).forEach(w -> cardGrid.add(cardFactory.apply(w)));
+      participantsCard.add(cardGrid);
+    }
     mainContent.add(participantsCard);
 
     // Side column: rules, ringside actions, adjudication — fixed width, wraps below on mobile
@@ -644,8 +710,25 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               matchPlayer -> {
                 var abilities = wrestlerAbilityRepository.findByWrestlerId(matchPlayer.getId());
                 if (!abilities.isEmpty()) {
+                  // Reminder mode: timing chips + human-readable trigger lines so the player
+                  // remembers when to apply each ability at the table. "Mark used" logs the
+                  // usage into the match notes (advisory — the table is the authority); notes
+                  // feed the AI narration and, from there, the match summary.
+                  Map<String, Integer> usedCounts = new HashMap<>();
+                  abilities.forEach(
+                      a ->
+                          usedCounts.put(
+                              a.getName(),
+                              abilityReminderTextService.countUses(
+                                  segment.getNotes(), a.getName(), matchPlayer.getName())));
                   Details abilitiesSection =
-                      new Details("Your Abilities", new WrestlerAbilityPanel(abilities));
+                      new Details(
+                          "Your Abilities",
+                          new WrestlerAbilityPanel(
+                              abilities,
+                              abilityReminderTextService,
+                              ability -> logAbilityUsage(matchPlayer.getName(), ability),
+                              usedCounts));
                   abilitiesSection.setOpened(false);
                   sideCol.add(abilitiesSection);
                 }
@@ -1135,6 +1218,20 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                                         + status.getLevel()
                                         + ")")
                             .toList());
+                    // Ability reminders so the narration can reference signature abilities.
+                    wc.setAbilities(
+                        wrestlerAbilityRepository.findByWrestlerId(w.getId()).stream()
+                            .filter(WrestlerAbility::isDefault)
+                            .map(
+                                a -> {
+                                  String trigger = abilityReminderTextService.triggerText(a);
+                                  return a.getName()
+                                      + (trigger.isBlank() ? "" : " (" + trigger + ")")
+                                      + (a.getDescription() == null
+                                          ? ""
+                                          : ": " + a.getDescription());
+                                })
+                            .toList());
                     if (w.getAlignment() != null) {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
@@ -1232,7 +1329,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
       String feedback = feedbackArea.getValue();
       String segmentType = segment.getSegmentType().getName();
-      boolean isPromo = SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType);
+      boolean isPromo = WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
 
       String instructions =
           "Narrate a compelling "
@@ -1539,5 +1636,19 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     segmentService.updateSegment(segment);
     updateCommentaryDisplay();
     Notification.show("Narration saved!");
+  }
+
+  /**
+   * Appends an ability usage line to the match notes so it flows into the AI narration and, from
+   * there, the match summary. Advisory bookkeeping only — nothing is enforced.
+   */
+  private void logAbilityUsage(final String wrestlerName, final WrestlerAbility ability) {
+    if (feedbackArea == null) {
+      return;
+    }
+    String line = abilityReminderTextService.usageNoteLine(ability, wrestlerName);
+    String current = feedbackArea.getValue();
+    feedbackArea.setValue(current == null || current.isBlank() ? line : current + "\n" + line);
+    Notification.show("Logged: " + ability.getName());
   }
 }

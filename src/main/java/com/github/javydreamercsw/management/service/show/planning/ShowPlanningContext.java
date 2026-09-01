@@ -35,4 +35,5 @@ public class ShowPlanningContext {
   private List<Faction> factions;
   private Instant showDate;
   private boolean isPremiumLiveEvent;
+  private boolean intergenderAllowed;
 }

@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -37,12 +38,15 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
@@ -92,6 +96,8 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -116,6 +122,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -157,6 +165,7 @@ public class ShowDetailView extends Main
   private final WrestlerRelationshipService relationshipService;
   private final ExpansionService expansionService;
   private final TeamService teamService;
+  private final GameSettingService gameSettingService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -182,6 +191,8 @@ public class ShowDetailView extends Main
   private final LeagueRepository leagueRepository;
   private final SecurityUtils securityUtils;
   private final NarrationParserService narrationParserService;
+  private final DramaEventService dramaEventService;
+  private final FeudScriptService feudScriptService;
 
   @Autowired
   public ShowDetailView(
@@ -230,7 +241,10 @@ public class ShowDetailView extends Main
     this.leagueRepository = leagueRepository;
     this.securityUtils = viewContext.getSecurityUtils();
     this.narrationParserService = showFacade.getNarrationParserService();
+    this.dramaEventService = showFacade.getDramaEventService();
+    this.feudScriptService = showFacade.getFeudScriptService();
     this.expansionService = viewContext.getExpansionService();
+    this.gameSettingService = viewContext.getGameSettingService();
     initializeComponents();
   }
 
@@ -723,8 +737,7 @@ public class ShowDetailView extends Main
     Long mainEventId = null;
     for (int i = segments.size() - 1; i >= 0; i--) {
       Segment s = segments.get(i);
-      if (s.getSegmentType() == null
-          || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+      if (s.getSegmentType() == null || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
         mainEventId = s.getId();
         break;
       }
@@ -804,6 +817,20 @@ public class ShowDetailView extends Main
             .set("font-weight", "bold");
         leftBadges.add(titleBadge);
       }
+    }
+
+    if (segment.isContenderMatch()) {
+      Span contenderBadge = new Span("⭐ #1 Contender Match");
+      contenderBadge.setId("contender-match-badge");
+      contenderBadge
+          .getStyle()
+          .set("background", "#ffd700")
+          .set("color", "#5c4400")
+          .set("border-radius", "4px")
+          .set("padding", "2px 8px")
+          .set("font-size", "var(--lumo-font-size-s)")
+          .set("font-weight", "bold");
+      leftBadges.add(contenderBadge);
     }
 
     Span dateLabel =
@@ -918,10 +945,48 @@ public class ShowDetailView extends Main
         .setFlexGrow(0)
         .setHeader("");
 
-    // Segment type column
-    grid.addColumn(
-            segment ->
-                segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A")
+    // Story arc badge — shown when the segment was produced by a FeudScriptBeat
+    grid.addComponentColumn(
+            segment -> {
+              return feudScriptService
+                  .findBeatForSegment(segment)
+                  .map(
+                      beat -> {
+                        String arcName = beat.getScript().getName();
+                        Span badge = new Span("🎭 " + arcName);
+                        badge.getElement().getThemeList().add("badge contrast");
+                        badge.addClassNames(
+                            LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                        Tooltip.forComponent(badge)
+                            .setText(
+                                "Story Arc beat #"
+                                    + beat.getBeatOrder()
+                                    + " — "
+                                    + beat.getScript().getName());
+                        return (Component) badge;
+                      })
+                  .orElse(new Span(""));
+            })
+        .setHeader("Arc")
+        .setAutoWidth(true)
+        .setFlexGrow(0);
+
+    // Segment type column — carries a gold star when this is a #1 contender match
+    grid.addComponentColumn(
+            segment -> {
+              String typeName =
+                  segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A";
+              Span typeSpan = new Span(typeName);
+              if (segment.isContenderMatch()) {
+                Span star = new Span(" ⭐");
+                star.setId("contender-match-badge-" + segment.getId());
+                star.getStyle().set("color", "#ffd700");
+                Tooltip.forComponent(star)
+                    .setText("#1 Contender Match — the winner becomes the next challenger");
+                typeSpan.add(star);
+              }
+              return typeSpan;
+            })
         .setHeader("Segment Type")
         .setSortable(true)
         .setFlexGrow(1);
@@ -1034,7 +1099,7 @@ public class ShowDetailView extends Main
               for (int i = segmentOrder.size() - 1; i >= 0; i--) {
                 Segment s = segmentOrder.get(i);
                 if (s.getSegmentType() == null
-                    || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+                    || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
                   mainEventId = s.getId();
                   break;
                 }
@@ -1141,7 +1206,7 @@ public class ShowDetailView extends Main
               for (int i = snapshot.size() - 1; i >= 0; i--) {
                 Segment s = snapshot.get(i);
                 if (s.getSegmentType() == null
-                    || !SegmentTypeNames.PROMO.equalsIgnoreCase(s.getSegmentType().getName())) {
+                    || !WellKnownSegmentType.PROMO.matches(s.getSegmentType())) {
                   mainEventIdx = i;
                   break;
                 }
@@ -1257,7 +1322,8 @@ public class ShowDetailView extends Main
                                       relationshipService,
                                       universeContextService,
                                       notificationService,
-                                      wrestlerStatsService)
+                                      wrestlerStatsService,
+                                      dramaEventService)
                                   .open()))
               .exceptionally(
                   ex -> {
@@ -1281,8 +1347,7 @@ public class ShowDetailView extends Main
     deleteButton.addClickListener(e -> deleteSegment(segment));
 
     SegmentType segmentType = segment.getSegmentType();
-    boolean isMatch =
-        segmentType != null && !SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName());
+    boolean isMatch = segmentType != null && !WellKnownSegmentType.PROMO.matches(segmentType);
     Button qrButton = new Button(new Icon(VaadinIcon.QRCODE));
     qrButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     qrButton.setTooltipText("Share Match QR Code");
@@ -1436,6 +1501,12 @@ public class ShowDetailView extends Main
     genderFilter.setValue(defaultGender);
     genderFilter.setId("add-gender-filter-combo-box");
 
+    Checkbox intergenderCheckbox = new Checkbox("Allow intergender participants");
+    intergenderCheckbox.setValue(gameSettingService.isIntergenderMatchesEnabled());
+    intergenderCheckbox.setHelperText(
+        "When off, match participants are limited to one gender. Promos are unaffected.");
+    intergenderCheckbox.setId("add-intergender-checkbox");
+
     // Winner combo (defined first so team lambdas can capture it)
     MultiSelectComboBox<Wrestler> winnerCombo = new MultiSelectComboBox<>("Winners (Optional)");
     winnerCombo.setItemLabelGenerator(Wrestler::getName);
@@ -1464,6 +1535,66 @@ public class ShowDetailView extends Main
               currentWinners.stream().filter(allSelected::contains).collect(Collectors.toSet()));
         };
 
+    // Hard intergender enforcement: for non-promo segments with intergender disallowed,
+    // every dropdown is locked to the gender of the first selected wrestler.
+    Supplier<Gender> enforcedGender =
+        () -> {
+          if (intergenderCheckbox.getValue()) {
+            return null;
+          }
+          if (segmentTypeCombo.getValue() != null
+              && WellKnownSegmentType.PROMO.matches(segmentTypeCombo.getValue())) {
+            return null;
+          }
+          return addTeamCombos.stream()
+              .flatMap(c -> c.getValue().stream())
+              .map(Wrestler::getGender)
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElse(null);
+        };
+
+    Function<Set<Wrestler>, List<Wrestler>> filteredWrestlers =
+        forceInclude -> {
+          Gender enforced = enforcedGender.get();
+          return wrestlerService.findAllFiltered(
+              alignmentFilter.getValue(),
+              enforced != null ? enforced : genderFilter.getValue(),
+              universeContextService.getCurrentUniverseId(),
+              forceInclude);
+        };
+
+    // Re-entrancy guard: setItems() makes Vaadin re-set the combo value internally, which fires
+    // value-change events. Without the guard those events re-trigger this refresh and recurse
+    // until StackOverflowError.
+    boolean[] refreshingTeamItems = {false};
+    Runnable refreshAddTeamItems =
+        () -> {
+          if (refreshingTeamItems[0]) {
+            return;
+          }
+          refreshingTeamItems[0] = true;
+          try {
+            for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
+              Set<Wrestler> current = combo.getValue();
+              List<Wrestler> items = filteredWrestlers.apply(current);
+              // Remap selections onto the freshly loaded instances — Vaadin's KeyMapper is
+              // identity-based, so re-setting stale instances would silently deselect them.
+              Map<Long, Wrestler> itemsById =
+                  items.stream().collect(Collectors.toMap(Wrestler::getId, w -> w, (a, b) -> a));
+              Set<Wrestler> canonical =
+                  current.stream()
+                      .map(w -> itemsById.getOrDefault(w.getId(), w))
+                      .collect(Collectors.toSet());
+              combo.setItems(items);
+              combo.setValue(canonical);
+            }
+          } finally {
+            refreshingTeamItems[0] = false;
+          }
+        };
+
+
     Consumer<Set<Wrestler>> addAddTeamRow =
         initialWrestlers -> {
           int teamNumber = addTeamCombos.size() + 1;
@@ -1471,16 +1602,19 @@ public class ShowDetailView extends Main
           teamCombo.setItemLabelGenerator(Wrestler::getName);
           teamCombo.setWidthFull();
           teamCombo.setId("add-team-combo-" + teamNumber);
-          teamCombo.setItems(
-              wrestlerService.findAllFiltered(
-                  alignmentFilter.getValue(),
-                  genderFilter.getValue(),
-                  universeContextService.getCurrentUniverseId(),
-                  initialWrestlers));
+          teamCombo.setItems(filteredWrestlers.apply(initialWrestlers));
           if (!initialWrestlers.isEmpty()) {
             teamCombo.setValue(initialWrestlers);
           }
-          teamCombo.addValueChangeListener(e -> refreshAddWinners.run());
+          teamCombo.addValueChangeListener(
+              e -> {
+                refreshAddWinners.run();
+                // Only user-originated selections re-lock the gender filter; the internal
+                // value-change events fired by setItems() during a refresh must not recurse.
+                if (e.isFromClient() && !intergenderCheckbox.getValue()) {
+                  refreshAddTeamItems.run();
+                }
+              });
           addTeamCombos.add(teamCombo);
 
           Button removeTeamButton = new Button(new Icon(VaadinIcon.MINUS));
@@ -1558,32 +1692,11 @@ public class ShowDetailView extends Main
     }
     rulesCombo.addValueChangeListener(e -> checkStipulationAdvisory.run());
 
-    alignmentFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(
-                wrestlerService.findAllFiltered(
-                    e.getValue(),
-                    genderFilter.getValue(),
-                    universeContextService.getCurrentUniverseId(),
-                    current));
-            combo.setValue(current);
-          }
-        });
-    genderFilter.addValueChangeListener(
-        e -> {
-          for (MultiSelectComboBox<Wrestler> combo : addTeamCombos) {
-            Set<Wrestler> current = combo.getValue();
-            combo.setItems(
-                wrestlerService.findAllFiltered(
-                    alignmentFilter.getValue(),
-                    e.getValue(),
-                    universeContextService.getCurrentUniverseId(),
-                    current));
-            combo.setValue(current);
-          }
-        });
+    alignmentFilter.addValueChangeListener(e -> refreshAddTeamItems.run());
+    genderFilter.addValueChangeListener(e -> refreshAddTeamItems.run());
+    intergenderCheckbox.addValueChangeListener(e -> refreshAddTeamItems.run());
+    // Promo vs match changes whether the intergender restriction applies.
+    segmentTypeCombo.addValueChangeListener(e -> refreshAddTeamItems.run());
 
     Button addTeamButton = new Button("Add Team", new Icon(VaadinIcon.PLUS));
     addTeamButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -1609,13 +1722,22 @@ public class ShowDetailView extends Main
     // Add checkbox to indicate if it's a title segment
     Checkbox isTitleSegmentCheckbox = new Checkbox("Is Title Segment");
     isTitleSegmentCheckbox.setId("is-title-segment-checkbox");
-    isTitleSegmentCheckbox.addValueChangeListener(
-        event -> {
-          titleMultiSelectComboBox.setVisible(event.getValue());
-          if (!event.getValue()) {
+
+    // #1 contender match: the winner becomes the next challenger for the selected title(s)
+    Checkbox isContenderMatchCheckbox = new Checkbox("This is a #1 Contender Match");
+    isContenderMatchCheckbox.setId("is-contender-match-checkbox");
+
+    Runnable refreshTitleComboVisibility =
+        () -> {
+          boolean visible =
+              isTitleSegmentCheckbox.getValue() || isContenderMatchCheckbox.getValue();
+          titleMultiSelectComboBox.setVisible(visible);
+          if (!visible) {
             titleMultiSelectComboBox.clear();
           }
-        });
+        };
+    isTitleSegmentCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
+    isContenderMatchCheckbox.addValueChangeListener(event -> refreshTitleComboVisibility.run());
 
     // Narration
     TextArea summaryArea = new TextArea("Summary");
@@ -1641,9 +1763,11 @@ public class ShowDetailView extends Main
         refereeCombo,
         alignmentFilter,
         genderFilter,
+        intergenderCheckbox,
         addTeamsSection,
         winnerCombo,
         isTitleSegmentCheckbox,
+        isContenderMatchCheckbox,
         titleMultiSelectComboBox,
         summaryArea,
         narrationArea,
@@ -1669,7 +1793,9 @@ public class ShowDetailView extends Main
               newSegment.setSegmentDate(Instant.now());
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
+              boolean isContenderMatch = isContenderMatchCheckbox.getValue();
               newSegment.setIsTitleSegment(isTitleSegment);
+              newSegment.setContenderMatch(isContenderMatch);
               newSegment.setIsNpcGenerated(false);
               newSegment.syncParticipants(teamMap);
               newSegment.syncSegmentRules(new ArrayList<>(rulesCombo.getValue()));
@@ -1677,8 +1803,8 @@ public class ShowDetailView extends Main
               newSegment.setWinners(new ArrayList<>(winners));
               newSegment.setReferee(refereeCombo.getValue());
 
-              // If it's a title segment, set the selected titles
-              if (isTitleSegment) {
+              // Title matches and contender matches both need the selected titles
+              if (isTitleSegment || isContenderMatch) {
                 newSegment.setTitles(titleMultiSelectComboBox.getValue());
               }
 
@@ -1751,6 +1877,7 @@ public class ShowDetailView extends Main
                               initial,
                               wrestlerService,
                               defaultGender,
+                              gameSettingService.isIntergenderMatchesEnabled(),
                               universeId,
                               saveData -> {
                                 // Non-DB field assignments
@@ -1759,7 +1886,8 @@ public class ShowDetailView extends Main
                                 seg.setNotes(saveData.notes());
                                 seg.setReferee(saveData.referee());
                                 seg.setIsTitleSegment(saveData.isTitleSegment());
-                                if (saveData.isTitleSegment()) {
+                                seg.setContenderMatch(saveData.isContenderMatch());
+                                if (saveData.isTitleSegment() || saveData.isContenderMatch()) {
                                   seg.setTitles(saveData.titles());
                                 }
                                 // Inline validation (no DB)
@@ -1771,8 +1899,7 @@ public class ShowDetailView extends Main
                                   notificationService.showError("Please select a segment type");
                                   return;
                                 }
-                                if (!SegmentTypeNames.PROMO.equalsIgnoreCase(
-                                    saveData.segmentType().getName())) {
+                                if (!WellKnownSegmentType.PROMO.matches(saveData.segmentType())) {
                                   if (wrestlers.isEmpty()) {
                                     notificationService.showError(
                                         "Please select at least one wrestler");
@@ -1813,14 +1940,33 @@ public class ShowDetailView extends Main
                                 }
                                 // Async DB write
                                 dialogHolder[0].getSaveButton().setEnabled(false);
+                                Optional<?>[] linkedBeatHolder = new Optional[] {Optional.empty()};
                                 GeneralSecurityUtils.runAsAdminAsync(
-                                        () -> segmentService.updateSegment(seg))
+                                        () -> {
+                                          segmentService.updateSegment(seg);
+                                          linkedBeatHolder[0] =
+                                              feudScriptService.autoCompleteBeatForSegment(seg);
+                                        })
                                     .thenRun(
                                         () ->
                                             ui.access(
                                                 () -> {
                                                   notificationService.showSuccess(
                                                       "Segment updated successfully!");
+                                                  linkedBeatHolder[0].ifPresent(
+                                                      b -> {
+                                                        FeudScriptBeat beat = (FeudScriptBeat) b;
+                                                        Notification.show(
+                                                                "Story arc beat #"
+                                                                    + beat.getBeatOrder()
+                                                                    + " of \""
+                                                                    + beat.getScript().getName()
+                                                                    + "\" auto-completed!",
+                                                                4000,
+                                                                Notification.Position.BOTTOM_END)
+                                                            .addThemeVariants(
+                                                                NotificationVariant.LUMO_SUCCESS);
+                                                      });
                                                   dialogHolder[0].close();
                                                   refreshSegmentsGrid();
                                                 }))
@@ -1853,7 +1999,21 @@ public class ShowDetailView extends Main
   private void deleteSegment(@NonNull Segment segment) {
     Dialog confirmDialog = new Dialog();
     confirmDialog.setHeaderTitle("Delete Segment");
-    confirmDialog.add(new Paragraph("Are you sure you want to delete this segment?"));
+
+    Optional<FeudScriptBeat> linkedBeat = feudScriptService.findBeatForSegment(segment);
+    if (linkedBeat.isPresent()) {
+      FeudScriptBeat beat = linkedBeat.get();
+      confirmDialog.add(
+          new Paragraph(
+              "⚠️ This segment is part of story arc \""
+                  + beat.getScript().getName()
+                  + "\" (beat #"
+                  + beat.getBeatOrder()
+                  + "). Deleting it will leave the arc beat unresolved."));
+      confirmDialog.add(new Paragraph("Are you sure you want to delete it?"));
+    } else {
+      confirmDialog.add(new Paragraph("Are you sure you want to delete this segment?"));
+    }
 
     Button deleteButton =
         new Button(
@@ -1894,7 +2054,7 @@ public class ShowDetailView extends Main
       return false;
     }
 
-    if (!SegmentTypeNames.PROMO.equalsIgnoreCase(segmentType.getName())) {
+    if (!WellKnownSegmentType.PROMO.matches(segmentType)) {
       if (wrestlers.isEmpty()) {
         log.debug("Validation failed: Wrestlers are null or empty for non-promo segment.");
         notificationService.showError("Please select at least one wrestler");

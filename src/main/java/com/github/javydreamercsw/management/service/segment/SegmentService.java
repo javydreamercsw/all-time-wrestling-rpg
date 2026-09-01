@@ -32,7 +32,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -318,8 +318,7 @@ public class SegmentService {
 
                         return segment.getShow().getUniverse() != null
                             || (segment.getSegmentType() != null
-                                && SegmentTypeNames.PROMO.equalsIgnoreCase(
-                                    segment.getSegmentType().getName()));
+                                && WellKnownSegmentType.PROMO.matches(segment.getSegmentType()));
                       })
                   .orElse(false);
             })

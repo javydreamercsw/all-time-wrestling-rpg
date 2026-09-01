@@ -48,6 +48,9 @@ public interface RivalryRepository
   @Query("SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2")
   Page<Rivalry> findAllWithWrestlers(Pageable pageable);
 
+  @Query("SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2 WHERE r.id = :id")
+  Optional<Rivalry> findByIdWithWrestlers(@Param("id") Long id);
+
   /** Find active rivalries. */
   @Query(
       """

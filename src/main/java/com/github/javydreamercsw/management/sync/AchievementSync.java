@@ -32,6 +32,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -53,6 +55,7 @@ public class AchievementSync implements DataSyncContributor {
   }
 
   @Override
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   @CacheEvict(value = CacheConfig.SCRIPTED_ACHIEVEMENTS_CACHE, allEntries = true)
   public void sync() {
     if (skipIfNotEmpty && achievementRepository.count() > 0) {

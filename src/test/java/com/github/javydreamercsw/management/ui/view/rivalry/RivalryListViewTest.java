@@ -19,12 +19,12 @@ package com.github.javydreamercsw.management.ui.view.rivalry;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
-import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -42,7 +42,6 @@ class RivalryListViewTest extends AbstractViewTest {
   @Mock private RivalryService rivalryService;
   @Mock private RivalryRepository rivalryRepository;
   @Mock private WrestlerService wrestlerService;
-  @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SecurityUtils securityUtils;
   @Mock private RivalryMapper rivalryMapper;
 
@@ -51,13 +50,11 @@ class RivalryListViewTest extends AbstractViewTest {
   @SuppressWarnings("unchecked")
   @BeforeEach
   void setup() {
-    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    doReturn(Collections.emptyList()).when(wrestlerService).getAllWrestlers();
     when(rivalryService.getAllRivalriesWithWrestlers(any())).thenReturn(Page.empty());
     when(rivalryService.getRivalryMapper()).thenReturn(rivalryMapper);
 
-    view =
-        new RivalryListView(
-            rivalryService, rivalryRepository, wrestlerService, wrestlerRepository, securityUtils);
+    view = new RivalryListView(rivalryService, rivalryRepository, wrestlerService, securityUtils);
     UI.getCurrent().add(view);
   }
 

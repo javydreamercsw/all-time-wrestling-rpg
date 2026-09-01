@@ -570,6 +570,40 @@ public class TitleService {
         true, wrestler.getName() + " has been added as a challenger for " + title.getName());
   }
 
+  /**
+   * Replaces the title's challenger list with the given wrestler. The #1 contender designation is
+   * exclusive — designating a new contender must not leave the previous one lingering in the list.
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
+  @Transactional
+  public ChallengeResult setSoleChallenger(
+      @NonNull final Long titleId, @NonNull final Long wrestlerId) {
+    Optional<Title> titleOpt = titleRepository.findById(titleId);
+    Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
+
+    if (titleOpt.isEmpty()) {
+      return new ChallengeResult(false, "Title not found.");
+    }
+    if (wrestlerOpt.isEmpty()) {
+      return new ChallengeResult(false, "Wrestler not found.");
+    }
+
+    Title title = titleOpt.get();
+    Wrestler wrestler = wrestlerOpt.get();
+
+    if (!isWrestlerEligible(wrestler, title)) {
+      return new ChallengeResult(false, "Wrestler is not eligible for this title.");
+    }
+
+    title.getChallengers().clear();
+    title.addChallenger(wrestler);
+    titleRepository.save(title);
+    return new ChallengeResult(
+        true, wrestler.getName() + " is now the #1 contender for " + title.getName());
+  }
+
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)

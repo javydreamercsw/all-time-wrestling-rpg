@@ -21,8 +21,10 @@ import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbility;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.vaadin.flow.component.Composite;
@@ -381,5 +383,40 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 }
               }
             });
+  }
+
+  /**
+   * Appends compact ability chips (name + trigger/description tooltip) so everyone at the table
+   * sees what each wrestler can do. Display-only reminders — nothing is enforced.
+   */
+  public void showAbilityChips(
+      @NonNull final List<WrestlerAbility> abilities,
+      @NonNull final AbilityReminderTextService reminderTextService) {
+    if (abilities.isEmpty()) {
+      return;
+    }
+    Span label = new Span("Abilities:");
+    label.addClassNames(FontSize.XSMALL, TextColor.SECONDARY);
+
+    HorizontalLayout chips = new HorizontalLayout();
+    chips.addClassNames(FlexWrap.WRAP, Gap.XSMALL);
+    abilities.forEach(
+        ability -> {
+          Span chip = new Span(ability.getName());
+          chip.setId("ability-chip-" + ability.getId());
+          chip.addClassNames(
+              FontSize.XSMALL,
+              Background.CONTRAST_10,
+              Padding.Horizontal.XSMALL,
+              BorderRadius.SMALL);
+          String trigger = reminderTextService.triggerText(ability);
+          // Tooltips are plain text, so [[icon]] tokens are converted to their names
+          // ("2 [[card]]s" -> "2 cards") rather than rendered as SVGs.
+          String description = reminderTextService.plainText(ability.getDescription());
+          String tooltip = (trigger.isBlank() ? "" : trigger + ". ") + description;
+          Tooltip.forComponent(chip).setText(tooltip.isBlank() ? ability.getName() : tooltip);
+          chips.add(chip);
+        });
+    getContent().add(label, chips);
   }
 }

@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.javydreamercsw.AbstractE2ETest;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,22 +34,21 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNavigateToRivalryListView() {
-    navigateTo("rivalry-list");
-
-    // Check that the grid is present
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-    wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
-    assertNotNull(driver.findElement(By.tagName("vaadin-grid")));
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser stranded on the Home view, so the grid never renders.
+    WebElement grid = navigateToAndWaitForElement("rivalry-list", By.tagName("vaadin-grid"));
+    assertNotNull(grid);
   }
 
   @Test
   public void testSortByHeat() {
-    navigateTo("rivalry-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser stranded on the Home view, so the grid never renders.
+    WebElement grid = navigateToAndWaitForElement("rivalry-list", By.tagName("vaadin-grid"));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
-    // Wait for the grid to be present and populated
-    WebElement grid =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
+    // Wait for the grid to be visible and populated
+    wait.until(ExpectedConditions.visibilityOf(grid));
     wait.until(d -> !grid.findElements(By.tagName("vaadin-grid-cell-content")).isEmpty());
 
     // Get the header cell for the "Heat" column
@@ -80,12 +78,13 @@ public class RivalryListViewE2ETest extends AbstractE2ETest {
 
   @Test
   public void testNewColumns() {
-    navigateTo("rivalry-list");
-    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+    // Retry-enabled navigation — a login redirect race can swallow a plain driver.get()
+    // and leave the browser stranded on the Home view, so the grid never renders.
+    WebElement grid = navigateToAndWaitForElement("rivalry-list", By.tagName("vaadin-grid"));
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
 
-    // Wait for the grid to be present and populated
-    WebElement grid =
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-grid")));
+    // Wait for the grid to be visible and populated
+    wait.until(ExpectedConditions.visibilityOf(grid));
     wait.until(d -> !grid.findElements(By.tagName("vaadin-grid-cell-content")).isEmpty());
 
     // Check for the new columns

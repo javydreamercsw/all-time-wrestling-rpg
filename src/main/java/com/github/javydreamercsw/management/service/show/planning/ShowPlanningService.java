@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -25,6 +26,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -33,7 +35,9 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.SegmentsApprovedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -85,6 +89,8 @@ public class ShowPlanningService {
   private final TitleReignRepository titleReignRepository;
   private final InjuryService injuryService;
   private final GameSettingService gameSettingService;
+  private final DramaEventService dramaEventService;
+  private final FeudScriptService feudScriptService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -113,6 +119,7 @@ public class ShowPlanningService {
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     context.setShowDate(showDate);
     context.setPremiumLiveEvent(show.isPremiumLiveEvent());
+    context.setIntergenderAllowed(gameSettingService.isIntergenderMatchesEnabled());
     Instant lookbackStart = showDate.minus(21, ChronoUnit.DAYS);
     log.debug("Getting segments between {} and {}", lookbackStart, showDate);
     List<Segment> lastWeekSegments =
@@ -265,7 +272,35 @@ public class ShowPlanningService {
       context.setNextPle(ple);
     }
 
-    return mapper.toDto(context);
+    ShowPlanningContextDTO dto = mapper.toDto(context);
+
+    List<String> dramaLines =
+        dramaEventService.getRecentEvents().stream()
+            .filter(de -> de.getEventType() != DramaEventType.OUTCOME_MATRIX_RESULT)
+            .limit(15)
+            .map(
+                de ->
+                    "[%s] %s — %s: %s"
+                        .formatted(
+                            de.getEventType().getDisplayName(),
+                            de.getPrimaryWrestler().getName(),
+                            de.getTitle(),
+                            truncateDramaDescription(de.getDescription(), 100)))
+            .toList();
+    dto.setRecentDramaEvents(dramaLines);
+
+    // Inject scripted beat slots so the AI honours pre-planned match types and winner intent
+    dto.setUpcomingScriptedBeats(feudScriptService.getUpcomingBeatDTOsForShow(show));
+
+    return dto;
+  }
+
+  private static String truncateDramaDescription(final String text, final int maxLen) {
+    if (text == null || text.length() <= maxLen) {
+      return text == null ? "" : text;
+    }
+    int cut = text.lastIndexOf(' ', maxLen);
+    return (cut > 0 ? text.substring(0, cut) : text.substring(0, maxLen)) + "…";
   }
 
   /**
@@ -342,7 +377,41 @@ public class ShowPlanningService {
       }
     }
 
+    // Intergender enforcement: the AI is instructed not to mix genders in matches, but prompts
+    // are advisory — this is the authoritative check.
+    if (!gameSettingService.isIntergenderMatchesEnabled()) {
+      for (ProposedSegment segment : proposedSegments) {
+        if (isPromoSegment(segment) || segment.getTeams() == null) {
+          continue;
+        }
+        Set<Gender> genders =
+            segment.getTeams().stream()
+                .flatMap(List::stream)
+                .map(name -> wrestlerRepository.findByName(name).map(Wrestler::getGender))
+                .flatMap(Optional::stream)
+                .collect(Collectors.toSet());
+        if (genders.size() > 1) {
+          errors.add(
+              "Intergender matches are disabled but this match mixes genders: "
+                  + segment.getTeams().stream()
+                      .map(team -> String.join(" & ", team))
+                      .collect(Collectors.joining(" vs ")));
+        }
+      }
+    }
+
     return new CardValidationResult(errors, warnings);
+  }
+
+  /** True when the proposed segment's type resolves to the well-known Promo type. */
+  private boolean isPromoSegment(final ProposedSegment segment) {
+    if (segment.getType() == null) {
+      return false;
+    }
+    return segmentTypeService
+        .findByName(segment.getType())
+        .map(WellKnownSegmentType.PROMO::matches)
+        .orElseGet(() -> segment.getType().toLowerCase().contains("promo"));
   }
 
   /** Convenience overload — validates against live active rivalries from the database. */

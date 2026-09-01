@@ -175,6 +175,9 @@ public interface SegmentNarrationService {
     private int momentum;
     private int handSize;
     private List<String> activeStatuses;
+
+    /** "Name (trigger): description" reminder strings for the wrestler's abilities. */
+    private List<String> abilities;
   }
 
   /** Wrestler's move set including finishers and trademarks. */

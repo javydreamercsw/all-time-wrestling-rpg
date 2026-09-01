@@ -36,8 +36,8 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
@@ -168,16 +168,16 @@ public class MatchResultProcessorService {
     }
 
     if (PROMO_CAMPAIGN_RULES.stream().anyMatch(actualRules::contains)) {
-      actualTypeName = SegmentTypeNames.PROMO;
+      actualTypeName = "Promo";
     }
-    String finalTypeName = actualTypeName != null ? actualTypeName : SegmentTypeNames.ONE_ON_ONE;
+    String finalTypeName = actualTypeName != null ? actualTypeName : "One on One";
     SegmentType type =
         segmentTypeRepository
             .findByName(finalTypeName)
             .orElseGet(
                 () ->
                     segmentTypeRepository
-                        .findByName(SegmentTypeNames.ONE_ON_ONE)
+                        .findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode())
                         .orElseGet(() -> segmentTypeRepository.findAll().get(0)));
 
     Segment newSegment = new Segment();
@@ -212,7 +212,7 @@ public class MatchResultProcessorService {
 
     addParticipant(segment, player);
 
-    if (SegmentTypeNames.TAG_TEAM.equalsIgnoreCase(type.getName())) {
+    if (WellKnownSegmentType.TAG_TEAM.matches(type)) {
       Long partnerId = featureDataService.getFeatureValue(state, KEY_PARTNER_ID, Long.class, null);
       if (partnerId != null) {
         wrestlerRepository.findById(partnerId).ifPresent(p -> addParticipant(segment, p));
@@ -562,11 +562,11 @@ public class MatchResultProcessorService {
 
   public SegmentType getPromoSegmentType() {
     return segmentTypeRepository
-        .findByName(SegmentTypeNames.PROMO)
+        .findByCode(WellKnownSegmentType.PROMO.getCode())
         .orElseGet(
             () ->
                 segmentTypeRepository
-                    .findByName(SegmentTypeNames.ONE_ON_ONE)
+                    .findByCode("one_on_one")
                     .orElseGet(
                         () -> {
                           var all = segmentTypeRepository.findAll();
@@ -574,7 +574,7 @@ public class MatchResultProcessorService {
                             return all.get(0);
                           }
                           SegmentType st = new SegmentType();
-                          st.setName(SegmentTypeNames.PROMO);
+                          st.setName("Promo");
                           st.setDescription("Standard Promo");
                           return segmentTypeRepository.save(st);
                         }));

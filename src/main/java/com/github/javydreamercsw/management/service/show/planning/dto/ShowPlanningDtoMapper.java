@@ -23,7 +23,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
-import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeNames;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.FactionDTO;
 import com.github.javydreamercsw.management.service.show.ShowService;
@@ -72,6 +72,7 @@ public class ShowPlanningDtoMapper {
     }
     dto.setShowDate(context.getShowDate());
     dto.setPremiumLiveEvent(context.isPremiumLiveEvent());
+    dto.setIntergenderAllowed(context.isIntergenderAllowed());
     return dto;
   }
 
@@ -91,7 +92,7 @@ public class ShowPlanningDtoMapper {
             .map(p -> p.getWrestler().getName())
             .collect(Collectors.toList()));
     if (segment.getSegmentType() != null
-        && SegmentTypeNames.PROMO.equals(segment.getSegmentType().getName())) {
+        && WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
       // Find the first segment rule that matches a PromoType and use its display name
       segment.getSegmentRules().stream()
           .map(SegmentRule::getName)

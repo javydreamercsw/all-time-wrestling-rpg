@@ -21,15 +21,3 @@ features:
   - title: Multiplayer
     details: Challenge other players in online leagues and tournaments.
 ---
-
-## Download & Play
-
-Non-technical users can download the game for their platform below. No complex setup required!
-
-::: tip Recommended
-For the best experience, use the **Native Installer** for your operating system.
-:::
-
-<DownloadLinks />
-
-- **Docker**: For advanced users. `docker pull javydreamercsw/all-time-wrestling-rpg`

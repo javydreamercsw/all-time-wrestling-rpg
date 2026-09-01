@@ -76,12 +76,15 @@
   "expansion_code": "RUMBLE",
   "abilities": [ {
     "name": "Tyrant",
+    "description": "When you play an attack, add +1 damage but lose 1 momentum.",
+    "timing": "OFFENSE",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "unlockCondition": "event == 'ATTACK_PLAY'",
     "effectScript": "match.attackDamageBonus += 1; wrestler.momentum -= 1"
   }, {
     "name": "Brick Wall",
+    "description": "When an aerial attack is incoming, block it, gain the initiative, deal 1 damage, and gain 2 momentum.",
     "type": "USES_LIMITED",
     "maxUses": 1,
     "category": "SIGNATURE",
@@ -90,6 +93,7 @@
     "effectScript": "blockAttack(); wrestler.gainInitiative(); opponent.health -= 1; wrestler.momentum += 2"
   }, {
     "name": "Redeemed",
+    "description": "Turn away from tyranny: disable Tyrant for the rest of the match and gain 5 momentum.",
     "type": "USES_LIMITED",
     "maxUses": 1,
     "effectScript": "match.disableAbility(wrestler, 'Tyrant'); wrestler.momentum += 5"
@@ -207,11 +211,13 @@
   "expansion_code": "RUMBLE",
   "abilities": [ {
     "name": "Recover",
+    "description": "Recover 3 stamina and draw a card; your opponent gains 1 stamina, 1 health, and draws a card.",
     "type": "ALWAYS_ON",
     "category": "ACTION",
     "effectScript": "wrestler.stamina += 3; wrestler.drawCard(1); opponent.stamina += 1; opponent.health += 1; opponent.drawCard(1)"
   }, {
     "name": "Reverse with Brutality",
+    "description": "Gain the initiative and discard 2 matching cards to add their bonus — stamina cost, damage, or momentum — to the reversal.",
     "type": "USES_LIMITED",
     "maxUses": 2,
     "category": "SIGNATURE",
@@ -219,18 +225,23 @@
     "effectScript": "wrestler.gainInitiative(); discardCards(2, 'MATCHING'); match.resolveCardBonus(wrestler, 'stamina_cost', 'damage', 'momentum')"
   }, {
     "name": "Savagery",
+    "description": "After a successful attack, discard cards matching the attack card — deal 1 damage and gain 1 momentum per card discarded.",
+    "timing": "OFFENSE",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "unlockCondition": "event == 'ATTACK_SUCCESS'",
     "effectScript": "discardCards(match.handMatchingAttackCard, 'MATCHING_ATTACK'); opponent.health -= match.cardsDiscarded; wrestler.momentum += match.cardsDiscarded"
   }, {
     "name": "Ugandan Giant",
+    "description": "At the start of the match, your opponent's attack rolls suffer a -1 penalty.",
     "type": "ALWAYS_ON",
     "category": "PASSIVE",
     "unlockCondition": "event == 'MATCH_START'",
     "effectScript": "opponent.attackRollModifier -= 1"
   }, {
     "name": "Ugandan Warrior",
+    "description": "When you taunt, retrieve a card from your discard pile.",
+    "timing": "OFFENSE",
     "type": "USES_LIMITED",
     "maxUses": 3,
     "category": "SIGNATURE",

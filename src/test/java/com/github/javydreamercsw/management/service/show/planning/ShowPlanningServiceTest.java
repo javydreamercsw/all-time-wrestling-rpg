@@ -28,6 +28,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.drama.DramaEvent;
+import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
+import com.github.javydreamercsw.management.domain.drama.DramaEventType;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -46,7 +49,9 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -97,6 +102,8 @@ class ShowPlanningServiceTest {
   @Mock private Clock clock;
   @Mock private InjuryService injuryService;
   @Mock private GameSettingService gameSettingService;
+  @Mock private DramaEventService dramaEventService;
+  @Mock private FeudScriptService feudScriptService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
@@ -107,7 +114,11 @@ class ShowPlanningServiceTest {
   public void setUp() {
     MockitoAnnotations.openMocks(this);
 
+    lenient().when(dramaEventService.getRecentEvents()).thenReturn(List.of());
     lenient().when(gameSettingService.getConditionRestThreshold()).thenReturn(0);
+    // Intergender validation collaborators — default: unknown wrestlers/types resolve empty
+    lenient().when(wrestlerRepository.findByName(any())).thenReturn(Optional.empty());
+    lenient().when(segmentTypeService.findByName(any())).thenReturn(Optional.empty());
     lenient()
         .when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong()))
         .thenReturn(List.of());
@@ -365,6 +376,68 @@ class ShowPlanningServiceTest {
     return rivalry;
   }
 
+  private void stubWrestler(String name, Gender gender) {
+    Wrestler w = new Wrestler();
+    w.setName(name);
+    w.setGender(gender);
+    lenient().when(wrestlerRepository.findByName(name)).thenReturn(Optional.of(w));
+  }
+
+  @Test
+  void validateCard_intergenderDisabled_mixedMatch_isError() {
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(false);
+    stubWrestler("Alpha", Gender.MALE);
+    stubWrestler("Delta", Gender.FEMALE);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("One on One");
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Delta")));
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of());
+
+    assertFalse(result.isValid());
+    assertTrue(result.getErrors().get(0).contains("Intergender matches are disabled"));
+  }
+
+  @Test
+  void validateCard_intergenderDisabled_sameGenderMatch_noError() {
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(false);
+    stubWrestler("Alpha", Gender.MALE);
+    stubWrestler("Beta", Gender.MALE);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("One on One");
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
+
+    assertTrue(showPlanningService.validateCard(List.of(seg), List.of()).isValid());
+  }
+
+  @Test
+  void validateCard_intergenderDisabled_mixedPromo_isAllowed() {
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(false);
+    stubWrestler("Alpha", Gender.MALE);
+    stubWrestler("Delta", Gender.FEMALE);
+    SegmentType promo = new SegmentType();
+    promo.setName("Promo");
+    promo.setCode("promo");
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promo));
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Promo");
+    seg.setTeams(List.of(List.of("Alpha", "Delta")));
+
+    assertTrue(showPlanningService.validateCard(List.of(seg), List.of()).isValid());
+  }
+
+  @Test
+  void validateCard_intergenderEnabled_mixedMatch_noError() {
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+    stubWrestler("Alpha", Gender.MALE);
+    stubWrestler("Delta", Gender.FEMALE);
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("One on One");
+    seg.setTeams(List.of(List.of("Alpha"), List.of("Delta")));
+
+    assertTrue(showPlanningService.validateCard(List.of(seg), List.of()).isValid());
+  }
+
   @Test
   void validateCard_noActiveRivalries_returnsNoErrors() {
     CardValidationResult result = showPlanningService.validateCard(List.of(), List.of());
@@ -545,6 +618,102 @@ class ShowPlanningServiceTest {
                 assertEquals(2, p.getTeamNumber(), "Wrestler B must be on team 2");
               }
             });
+  }
+
+  @Test
+  void getShowPlanningContext_dramaEventsPopulatedAndFormatted() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(10L);
+    wrestler.setName("El Fuego");
+
+    DramaEvent event = new DramaEvent();
+    event.setEventType(DramaEventType.BETRAYAL);
+    event.setSeverity(DramaEventSeverity.MAJOR);
+    event.setPrimaryWrestler(wrestler);
+    event.setTitle("Turns on partner");
+    event.setDescription("El Fuego attacked his longtime partner.");
+    event.setEventDate(Instant.now());
+
+    when(dramaEventService.getRecentEvents()).thenReturn(List.of(event));
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    when(titleService.getActiveTitles()).thenReturn(List.of());
+    when(factionService.findAll()).thenReturn(List.of());
+    when(showService.getUpcomingShows(10)).thenReturn(List.of());
+    ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dto);
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertFalse(result.getRecentDramaEvents().isEmpty(), "Drama events must be populated");
+    String line = result.getRecentDramaEvents().get(0);
+    assertTrue(line.contains("Betrayal"), "Event type display name must appear");
+    assertTrue(line.contains("El Fuego"), "Wrestler name must appear");
+    assertTrue(line.contains("Turns on partner"), "Title must appear");
+    assertTrue(line.contains("El Fuego attacked"), "Description excerpt must appear");
+  }
+
+  @Test
+  void getShowPlanningContext_outcomeMatrixResultEventsExcluded() {
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(11L);
+    wrestler.setName("Iron Mike");
+
+    DramaEvent kept = new DramaEvent();
+    kept.setEventType(DramaEventType.BACKSTAGE_INCIDENT);
+    kept.setSeverity(DramaEventSeverity.NEUTRAL);
+    kept.setPrimaryWrestler(wrestler);
+    kept.setTitle("Locker room tension");
+    kept.setDescription("Words exchanged after the show.");
+    kept.setEventDate(Instant.now());
+
+    DramaEvent filtered = new DramaEvent();
+    filtered.setEventType(DramaEventType.OUTCOME_MATRIX_RESULT);
+    filtered.setSeverity(DramaEventSeverity.NEUTRAL);
+    filtered.setPrimaryWrestler(wrestler);
+    filtered.setTitle("Roll result");
+    filtered.setDescription("Dice roll outcome.");
+    filtered.setEventDate(Instant.now());
+
+    when(dramaEventService.getRecentEvents()).thenReturn(List.of(kept, filtered));
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    when(titleService.getActiveTitles()).thenReturn(List.of());
+    when(factionService.findAll()).thenReturn(List.of());
+    when(showService.getUpcomingShows(10)).thenReturn(List.of());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertEquals(1, result.getRecentDramaEvents().size(), "OUTCOME_MATRIX_RESULT must be excluded");
+    assertFalse(
+        result.getRecentDramaEvents().get(0).contains("Roll result"),
+        "Filtered event title must not appear");
+    assertTrue(
+        result.getRecentDramaEvents().get(0).contains("Locker room tension"),
+        "Non-filtered event must appear");
+  }
+
+  @Test
+  void getShowPlanningContext_noRecentEvents_emptyList() {
+    when(dramaEventService.getRecentEvents()).thenReturn(List.of());
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    when(titleService.getActiveTitles()).thenReturn(List.of());
+    when(factionService.findAll()).thenReturn(List.of());
+    when(showService.getUpcomingShows(10)).thenReturn(List.of());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertNotNull(result.getRecentDramaEvents());
+    assertTrue(result.getRecentDramaEvents().isEmpty());
   }
 
   @Test

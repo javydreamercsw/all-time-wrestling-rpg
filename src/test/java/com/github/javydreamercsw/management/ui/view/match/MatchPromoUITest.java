@@ -37,8 +37,10 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
@@ -54,6 +56,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -61,6 +64,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,6 +72,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class MatchPromoUITest extends AbstractViewTest {
@@ -99,6 +104,8 @@ class MatchPromoUITest extends AbstractViewTest {
   @Mock private NotificationService notificationService;
 
   @Mock private TitleScriptService titleScriptService;
+  @Mock private WrestlerAbilityRepository wrestlerAbilityRepository;
+  @Mock private AbilityReminderTextService abilityReminderTextService;
 
   private MatchView matchView;
 
@@ -129,6 +136,10 @@ class MatchPromoUITest extends AbstractViewTest {
             ringsideActionDataService,
             titleScriptService,
             notificationService);
+    ReflectionTestUtils.setField(matchView, "wrestlerAbilityRepository", wrestlerAbilityRepository);
+    ReflectionTestUtils.setField(
+        matchView, "abilityReminderTextService", abilityReminderTextService);
+    lenient().when(wrestlerAbilityRepository.findByWrestlerId(anyLong())).thenReturn(List.of());
   }
 
   @Test
@@ -141,6 +152,7 @@ class MatchPromoUITest extends AbstractViewTest {
     segment.setShow(show);
     SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
+    promoType.setCode(WellKnownSegmentType.PROMO.getCode());
     segment.setSegmentType(promoType);
 
     // 2. Setup User and Wrestler
@@ -226,6 +238,7 @@ class MatchPromoUITest extends AbstractViewTest {
     segment.setShow(show);
     SegmentType promoType = new SegmentType();
     promoType.setName("Promo");
+    promoType.setCode(WellKnownSegmentType.PROMO.getCode());
     segment.setSegmentType(promoType);
 
     // 2. Setup User and Wrestler

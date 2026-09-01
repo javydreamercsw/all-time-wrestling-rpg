@@ -162,4 +162,16 @@ public class AiSettingsService {
         .map(GameSetting::getValue)
         .orElse("");
   }
+
+  // Ollama settings
+  public String getOllamaBaseUrl() {
+    return gameSettingService.findById("AI_OLLAMA_BASE_URL").map(GameSetting::getValue).orElse("");
+  }
+
+  public String getOllamaModel() {
+    return gameSettingService
+        .findById("AI_OLLAMA_MODEL")
+        .map(GameSetting::getValue)
+        .orElse("llama3.2:1b");
+  }
 }
