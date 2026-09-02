@@ -59,8 +59,14 @@ public class ChampionshipDefendedCooldownListener
             .orElseThrow(
                 () -> new IllegalStateException("Title not found for id: " + event.getTitleId()));
 
-    title.setDefenseCount(title.getDefenseCount() + 1);
-    titleRepository.save(title);
+    // Atomic increment — avoids lost-update if two shows run concurrently.
+    titleRepository.incrementDefenseCount(title.getId());
+    // Reload to get the post-increment snapshot.
+    title =
+        titleRepository
+            .findById(event.getTitleId())
+            .orElseThrow(
+                () -> new IllegalStateException("Title not found for id: " + event.getTitleId()));
     long defenseCountSnapshot = title.getDefenseCount();
 
     Long universeId = title.getUniverse() != null ? title.getUniverse().getId() : 1L;
@@ -68,14 +74,18 @@ public class ChampionshipDefendedCooldownListener
     for (Wrestler challenger : event.getChallengers()) {
       WrestlerState state = wrestlerService.getOrCreateState(challenger.getId(), universeId);
 
-      WrestlerTitleCooldown cooldown =
-          cooldownRepository
-              .findByWrestlerState_IdAndTitle_Id(state.getId(), title.getId())
-              .orElseGet(
-                  () -> WrestlerTitleCooldown.builder().wrestlerState(state).title(title).build());
-
-      cooldown.setDefenseCountAtChallenge(defenseCountSnapshot);
-      cooldownRepository.save(cooldown);
+      // Update-then-insert: if the record already exists update it in one query;
+      // only insert when the wrestler is a first-time challenger for this title.
+      int updated =
+          cooldownRepository.updateDefenseCount(state.getId(), title.getId(), defenseCountSnapshot);
+      if (updated == 0) {
+        cooldownRepository.save(
+            WrestlerTitleCooldown.builder()
+                .wrestlerState(state)
+                .title(title)
+                .defenseCountAtChallenge(defenseCountSnapshot)
+                .build());
+      }
 
       log.info(
           "Applied title challenge cooldown to {} for title '{}' (defense #{} — must sit out"

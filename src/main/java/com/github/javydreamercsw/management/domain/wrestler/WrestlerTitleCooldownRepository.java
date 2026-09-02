@@ -19,6 +19,9 @@ package com.github.javydreamercsw.management.domain.wrestler;
 import com.github.javydreamercsw.management.domain.title.Title;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -30,4 +33,11 @@ public interface WrestlerTitleCooldownRepository
 
   Optional<WrestlerTitleCooldown> findByWrestlerState_IdAndTitle_Id(
       Long wrestlerStateId, Long titleId);
+
+  @Modifying
+  @Query(
+      "UPDATE WrestlerTitleCooldown c SET c.defenseCountAtChallenge = :count"
+          + " WHERE c.wrestlerState.id = :stateId AND c.title.id = :titleId")
+  int updateDefenseCount(
+      @Param("stateId") Long stateId, @Param("titleId") Long titleId, @Param("count") long count);
 }
