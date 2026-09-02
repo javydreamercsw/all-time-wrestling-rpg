@@ -344,11 +344,6 @@ public class RankingService {
   }
 
   private RankedWrestlerDTO toRankedWrestlerDTO(
-      @NonNull final Wrestler wrestler, final int rank, @NonNull final Long universeId) {
-    return toRankedWrestlerDTO(wrestler, rank, universeId, null);
-  }
-
-  private RankedWrestlerDTO toRankedWrestlerDTO(
       @NonNull final Wrestler wrestler,
       final int rank,
       @NonNull final Long universeId,
