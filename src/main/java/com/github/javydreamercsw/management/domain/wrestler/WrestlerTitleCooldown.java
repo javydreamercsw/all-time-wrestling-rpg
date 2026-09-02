@@ -28,7 +28,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,8 +36,9 @@ import lombok.Setter;
 
 /**
  * Tracks a per-title challenge cooldown for a wrestler state. A record here means the wrestler
- * failed to win the title on {@link #failedChallengeDate} and cannot re-qualify as #1 contender for
- * the same title until the configured cooldown period has elapsed.
+ * failed a title challenge when the title's {@link #defenseCountAtChallenge} was recorded, and
+ * cannot re-qualify as #1 contender until the title has been defended the configured number of
+ * additional times.
  */
 @Entity
 @Table(
@@ -63,6 +63,6 @@ public class WrestlerTitleCooldown {
   @JoinColumn(name = "title_id", nullable = false)
   private Title title;
 
-  @NotNull @Column(name = "failed_challenge_date", nullable = false)
-  private LocalDate failedChallengeDate;
+  @NotNull @Column(name = "defense_count_at_challenge", nullable = false)
+  private Long defenseCountAtChallenge;
 }

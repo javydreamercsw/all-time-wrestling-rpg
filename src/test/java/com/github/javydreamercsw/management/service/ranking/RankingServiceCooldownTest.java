@@ -38,7 +38,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldow
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,8 +64,7 @@ class RankingServiceCooldownTest {
 
   private RankingService rankingService;
 
-  private static final LocalDate GAME_DATE = LocalDate.of(2026, 9, 1);
-  private static final int COOLDOWN_DAYS = 30;
+  private static final int COOLDOWN_DEFENSES = 2;
 
   @BeforeEach
   void setUp() {
@@ -82,8 +80,8 @@ class RankingServiceCooldownTest {
             gameSettingService,
             cooldownRepository);
 
-    when(gameSettingService.getCurrentGameDate()).thenReturn(GAME_DATE);
-    when(gameSettingService.getContenderFailedChallengeCooldownDays()).thenReturn(COOLDOWN_DAYS);
+    when(gameSettingService.getContenderFailedChallengeCooldownDefenses())
+        .thenReturn(COOLDOWN_DEFENSES);
     when(cooldownRepository.findByWrestlerState_IdAndTitle_Id(anyLong(), anyLong()))
         .thenReturn(Optional.empty());
   }
@@ -104,20 +102,21 @@ class RankingServiceCooldownTest {
     return s;
   }
 
-  private Title singleTitle(final long id, final WrestlerTier tier) {
+  private Title singleTitle(final long id, final WrestlerTier tier, final long defenseCount) {
     Title title = new Title();
     title.setId(id);
     title.setName("World Title");
     title.setTier(tier);
     title.setChampionshipType(ChampionshipType.SINGLE);
     title.setIncludeInRankings(true);
+    title.setDefenseCount(defenseCount);
     return title;
   }
 
   @Test
   void wrestlerNotOnCooldown_onCooldownFalse() {
     Wrestler w = wrestler(1L, "Top Star");
-    Title title = singleTitle(10L, WrestlerTier.ICON);
+    Title title = singleTitle(10L, WrestlerTier.ICON, 5L);
     WrestlerState s = state(100L, 5000L, WrestlerTier.ICON);
 
     when(titleRepository.findById(10L)).thenReturn(Optional.of(title));
@@ -131,23 +130,22 @@ class RankingServiceCooldownTest {
     assertThat(result).hasSize(1);
     RankedWrestlerDTO dto = (RankedWrestlerDTO) result.get(0);
     assertThat(dto.isOnCooldown()).isFalse();
-    assertThat(dto.getCooldownExpiresDate()).isNull();
+    assertThat(dto.getDefensesUntilEligible()).isZero();
   }
 
   @Test
   void wrestlerWithActiveCooldown_onCooldownTrue() {
     Wrestler w = wrestler(1L, "Failed Challenger");
-    Title title = singleTitle(10L, WrestlerTier.ICON);
+    // Title has been defended 3 times total; challenger failed at defense #2 → 1 defense since
+    Title title = singleTitle(10L, WrestlerTier.ICON, 3L);
     WrestlerState s = state(100L, 5000L, WrestlerTier.ICON);
 
-    // Failed 10 days ago — cooldown of 30 days is still active
-    LocalDate failedDate = GAME_DATE.minusDays(10);
     WrestlerTitleCooldown cooldown =
         WrestlerTitleCooldown.builder()
             .id(1L)
             .wrestlerState(s)
             .title(title)
-            .failedChallengeDate(failedDate)
+            .defenseCountAtChallenge(2L)
             .build();
 
     when(titleRepository.findById(10L)).thenReturn(Optional.of(title));
@@ -161,23 +159,22 @@ class RankingServiceCooldownTest {
     assertThat(result).hasSize(1);
     RankedWrestlerDTO dto = (RankedWrestlerDTO) result.get(0);
     assertThat(dto.isOnCooldown()).isTrue();
-    assertThat(dto.getCooldownExpiresDate()).isEqualTo(failedDate.plusDays(COOLDOWN_DAYS));
+    assertThat(dto.getDefensesUntilEligible()).isEqualTo(1L); // needs 2, only 1 since challenge
   }
 
   @Test
   void wrestlerWithExpiredCooldown_onCooldownFalse() {
     Wrestler w = wrestler(1L, "Recovered Challenger");
-    Title title = singleTitle(10L, WrestlerTier.ICON);
+    // Title defended 5 times total; challenger failed at #2 → 3 defenses since (>= 2 required)
+    Title title = singleTitle(10L, WrestlerTier.ICON, 5L);
     WrestlerState s = state(100L, 5000L, WrestlerTier.ICON);
 
-    // Failed 40 days ago — cooldown of 30 days has expired
-    LocalDate failedDate = GAME_DATE.minusDays(40);
     WrestlerTitleCooldown cooldown =
         WrestlerTitleCooldown.builder()
             .id(1L)
             .wrestlerState(s)
             .title(title)
-            .failedChallengeDate(failedDate)
+            .defenseCountAtChallenge(2L)
             .build();
 
     when(titleRepository.findById(10L)).thenReturn(Optional.of(title));
@@ -191,23 +188,23 @@ class RankingServiceCooldownTest {
     assertThat(result).hasSize(1);
     RankedWrestlerDTO dto = (RankedWrestlerDTO) result.get(0);
     assertThat(dto.isOnCooldown()).isFalse();
-    assertThat(dto.getCooldownExpiresDate()).isNull();
+    assertThat(dto.getDefensesUntilEligible()).isZero();
   }
 
   @Test
   void cooldownIsPerTitle_noEffectOnOtherTitle() {
     Wrestler w = wrestler(1L, "Multi-Title Contender");
-    Title titleA = singleTitle(10L, WrestlerTier.ICON);
-    Title titleB = singleTitle(20L, WrestlerTier.ICON);
+    Title titleA = singleTitle(10L, WrestlerTier.ICON, 3L);
+    Title titleB = singleTitle(20L, WrestlerTier.ICON, 3L);
     WrestlerState s = state(100L, 5000L, WrestlerTier.ICON);
 
-    // Cooldown exists only for titleA
+    // Cooldown exists only for titleA (failed at defense #2, title now at #3 → 1 more needed)
     WrestlerTitleCooldown cooldownA =
         WrestlerTitleCooldown.builder()
             .id(1L)
             .wrestlerState(s)
             .title(titleA)
-            .failedChallengeDate(GAME_DATE.minusDays(5))
+            .defenseCountAtChallenge(2L)
             .build();
 
     when(titleRepository.findById(20L)).thenReturn(Optional.of(titleB));

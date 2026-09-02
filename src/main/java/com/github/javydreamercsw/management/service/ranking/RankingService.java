@@ -42,7 +42,6 @@ import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -350,18 +349,19 @@ public class RankingService {
       final Title titleForCooldown) {
     WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
     boolean onCooldown = false;
-    LocalDate cooldownExpiresDate = null;
+    long defensesUntilEligible = 0;
     if (titleForCooldown != null) {
-      int cooldownDays = gameSettingService.getContenderFailedChallengeCooldownDays();
+      int cooldownDefenses = gameSettingService.getContenderFailedChallengeCooldownDefenses();
       Optional<WrestlerTitleCooldown> cooldown =
           cooldownRepository.findByWrestlerState_IdAndTitle_Id(
               state.getId(), titleForCooldown.getId());
       if (cooldown.isPresent()) {
-        LocalDate expiresDate = cooldown.get().getFailedChallengeDate().plusDays(cooldownDays);
-        LocalDate gameDate = gameSettingService.getCurrentGameDate();
-        if (expiresDate.isAfter(gameDate.minusDays(1))) {
+        long defensesSince =
+            titleForCooldown.getDefenseCount() - cooldown.get().getDefenseCountAtChallenge();
+        long remaining = cooldownDefenses - defensesSince;
+        if (remaining > 0) {
           onCooldown = true;
-          cooldownExpiresDate = expiresDate;
+          defensesUntilEligible = remaining;
         }
       }
     }
@@ -372,7 +372,7 @@ public class RankingService {
         .rank(rank)
         .tier(state.getTier())
         .onCooldown(onCooldown)
-        .cooldownExpiresDate(cooldownExpiresDate)
+        .defensesUntilEligible(defensesUntilEligible)
         .build();
   }
 

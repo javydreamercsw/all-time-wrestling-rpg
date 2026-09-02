@@ -133,16 +133,15 @@ public class RankingView extends Main {
                   if (wrestler.isOnCooldown()) {
                     Icon cooldownIcon = VaadinIcon.CLOCK.create();
                     cooldownIcon.setColor("var(--lumo-secondary-text-color)");
-                    String expiresText =
-                        wrestler.getCooldownExpiresDate() != null
-                            ? " Eligible again on " + wrestler.getCooldownExpiresDate()
-                            : "";
+                    long remaining = wrestler.getDefensesUntilEligible();
+                    String defenseText =
+                        remaining > 0 ? " Eligible after " + remaining + " more defense(s)." : "";
                     cooldownIcon
                         .getElement()
                         .setAttribute(
                             "title",
                             "On contender cooldown — cannot be auto-selected for this title."
-                                + expiresText);
+                                + defenseText);
                     layout.add(cooldownIcon);
                   }
 

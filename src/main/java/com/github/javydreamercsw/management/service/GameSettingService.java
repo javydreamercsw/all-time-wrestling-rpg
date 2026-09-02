@@ -95,8 +95,8 @@ public class GameSettingService {
   public static final String CONTENDER_MATCH_FAN_MULTIPLIER_KEY = "contender.match_fan_multiplier";
 
   /** Days a failed challenger is excluded from #1 contender consideration for the same title. */
-  public static final String CONTENDER_FAILED_CHALLENGE_COOLDOWN_DAYS_KEY =
-      "contender.failed_challenge_cooldown_days";
+  public static final String CONTENDER_FAILED_CHALLENGE_COOLDOWN_DEFENSES_KEY =
+      "contender.failed_challenge_cooldown_defenses";
 
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
@@ -440,16 +440,16 @@ public class GameSettingService {
   }
 
   @PreAuthorize("permitAll()")
-  public int getContenderFailedChallengeCooldownDays() {
-    return resolveValue(CONTENDER_FAILED_CHALLENGE_COOLDOWN_DAYS_KEY)
+  public int getContenderFailedChallengeCooldownDefenses() {
+    return resolveValue(CONTENDER_FAILED_CHALLENGE_COOLDOWN_DEFENSES_KEY)
         .map(Integer::parseInt)
-        .orElse(30);
+        .orElse(2);
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
-  public void setContenderFailedChallengeCooldownDays(final int days) {
-    saveInternal(CONTENDER_FAILED_CHALLENGE_COOLDOWN_DAYS_KEY, String.valueOf(days));
+  public void setContenderFailedChallengeCooldownDefenses(final int defenses) {
+    saveInternal(CONTENDER_FAILED_CHALLENGE_COOLDOWN_DEFENSES_KEY, String.valueOf(defenses));
   }
 
   @PreAuthorize("permitAll()")

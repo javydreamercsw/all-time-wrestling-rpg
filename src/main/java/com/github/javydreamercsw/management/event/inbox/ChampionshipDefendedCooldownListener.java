@@ -23,7 +23,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldown;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldownRepository;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
-import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Applies a per-title contender cooldown to every losing challenger when a championship is
  * defended. The cooldown prevents the wrestler from being auto-selected as #1 contender for the
- * same title for the configured number of game days.
+ * same title until the title has been defended the configured number of additional times.
  */
 @Component
 @Slf4j
@@ -46,7 +45,6 @@ public class ChampionshipDefendedCooldownListener
   private final TitleRepository titleRepository;
   private final WrestlerTitleCooldownRepository cooldownRepository;
   private final WrestlerService wrestlerService;
-  private final GameSettingService gameSettingService;
 
   @Override
   @Transactional
@@ -61,6 +59,10 @@ public class ChampionshipDefendedCooldownListener
             .orElseThrow(
                 () -> new IllegalStateException("Title not found for id: " + event.getTitleId()));
 
+    title.setDefenseCount(title.getDefenseCount() + 1);
+    titleRepository.save(title);
+    long defenseCountSnapshot = title.getDefenseCount();
+
     Long universeId = title.getUniverse() != null ? title.getUniverse().getId() : 1L;
 
     for (Wrestler challenger : event.getChallengers()) {
@@ -72,15 +74,15 @@ public class ChampionshipDefendedCooldownListener
               .orElseGet(
                   () -> WrestlerTitleCooldown.builder().wrestlerState(state).title(title).build());
 
-      cooldown.setFailedChallengeDate(gameSettingService.getCurrentGameDate());
+      cooldown.setDefenseCountAtChallenge(defenseCountSnapshot);
       cooldownRepository.save(cooldown);
 
       log.info(
-          "Applied title challenge cooldown to {} for title '{}' ({} days from {})",
+          "Applied title challenge cooldown to {} for title '{}' (defense #{} — must sit out"
+              + " configured defenses)",
           challenger.getName(),
           event.getTitleName(),
-          gameSettingService.getContenderFailedChallengeCooldownDays(),
-          cooldown.getFailedChallengeDate());
+          defenseCountSnapshot);
     }
   }
 }
