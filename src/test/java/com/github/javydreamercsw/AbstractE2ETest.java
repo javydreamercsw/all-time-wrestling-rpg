@@ -822,6 +822,12 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
     JavascriptExecutor js = (JavascriptExecutor) driver;
 
+    // Scroll the combo box into view first so the overlay anchors to a visible element.
+    // If the combo box is off-screen when opened, a subsequent scrollIntoView on an overlay
+    // item causes the page to scroll, which repositions the overlay and collapses the item.
+    scrollIntoView(comboBox);
+    waitForVaadinClientToLoad();
+
     // Open the dropdown via JS property
     js.executeScript("arguments[0].opened = true;", comboBox);
 
@@ -847,8 +853,10 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
               return found instanceof WebElement ? (WebElement) found : null;
             });
 
-    scrollIntoView(item);
-    js.executeScript("arguments[0].click();", item);
+    // Item already has a non-zero bounding box (confirmed by the wait above); do NOT call
+    // scrollIntoView here — scrolling after the overlay opens repositions its anchor and
+    // collapses the item before the native click can fire.
+    item.click();
 
     // Close the overlay
     js.executeScript("arguments[0].opened = false;", comboBox);
