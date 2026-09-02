@@ -94,6 +94,10 @@ public class GameSettingService {
   /** Fan-gain multiplier applied to contender match participants. */
   public static final String CONTENDER_MATCH_FAN_MULTIPLIER_KEY = "contender.match_fan_multiplier";
 
+  /** Days a failed challenger is excluded from #1 contender consideration for the same title. */
+  public static final String CONTENDER_FAILED_CHALLENGE_COOLDOWN_DAYS_KEY =
+      "contender.failed_challenge_cooldown_days";
+
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
    * defaults — each universe must configure its own. Reading without an active universe returns
@@ -433,6 +437,19 @@ public class GameSettingService {
   @Transactional
   public void setContenderMatchFanMultiplier(final double multiplier) {
     saveInternal(CONTENDER_MATCH_FAN_MULTIPLIER_KEY, String.valueOf(multiplier));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getContenderFailedChallengeCooldownDays() {
+    return resolveValue(CONTENDER_FAILED_CHALLENGE_COOLDOWN_DAYS_KEY)
+        .map(Integer::parseInt)
+        .orElse(30);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setContenderFailedChallengeCooldownDays(final int days) {
+    saveInternal(CONTENDER_FAILED_CHALLENGE_COOLDOWN_DAYS_KEY, String.valueOf(days));
   }
 
   @PreAuthorize("permitAll()")

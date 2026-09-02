@@ -80,7 +80,11 @@ class ContenderSelectionServiceTest {
   }
 
   private RankedWrestlerDTO ranked(final long id, final String name, final long fans) {
-    return RankedWrestlerDTO.builder().id(id).name(name).fans(fans).build();
+    return RankedWrestlerDTO.builder().id(id).name(name).fans(fans).onCooldown(false).build();
+  }
+
+  private RankedWrestlerDTO rankedOnCooldown(final long id, final String name, final long fans) {
+    return RankedWrestlerDTO.builder().id(id).name(name).fans(fans).onCooldown(true).build();
   }
 
   @Test
@@ -166,6 +170,43 @@ class ContenderSelectionServiceTest {
   @Test
   void autoSelectNextContender_doesNothingWhenRankingsEmpty() {
     doReturn(List.of()).when(rankingService).getRankedContenders(1L);
+
+    service.autoSelectNextContender(title);
+
+    verify(titleService, never()).setSoleChallenger(any(), any());
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  void autoSelectNextContender_skipsOnCooldownTopContender() {
+    // Top contender is on cooldown; runner-up should be selected instead
+    doReturn(
+            List.of(
+                rankedOnCooldown(10L, "Top Contender (Cooldown)", 1000L),
+                ranked(11L, "Runner Up", 500L)))
+        .when(rankingService)
+        .getRankedContenders(1L);
+    Wrestler runnerUp = new Wrestler();
+    runnerUp.setId(11L);
+    runnerUp.setName("Runner Up");
+    when(wrestlerRepository.findById(11L)).thenReturn(Optional.of(runnerUp));
+    when(titleService.setSoleChallenger(1L, 11L))
+        .thenReturn(new TitleService.ChallengeResult(true, "ok"));
+
+    service.autoSelectNextContender(title);
+
+    verify(titleService).setSoleChallenger(1L, 11L);
+    verify(titleService, never()).setSoleChallenger(1L, 10L);
+  }
+
+  @Test
+  void autoSelectNextContender_doesNothingWhenAllOnCooldown() {
+    doReturn(
+            List.of(
+                rankedOnCooldown(10L, "Top Contender (Cooldown)", 1000L),
+                rankedOnCooldown(11L, "Runner Up (Cooldown)", 500L)))
+        .when(rankingService)
+        .getRankedContenders(1L);
 
     service.autoSelectNextContender(title);
 

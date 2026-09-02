@@ -130,6 +130,22 @@ public class RankingView extends Main {
                     }
                   }
 
+                  if (wrestler.isOnCooldown()) {
+                    Icon cooldownIcon = VaadinIcon.CLOCK.create();
+                    cooldownIcon.setColor("var(--lumo-secondary-text-color)");
+                    String expiresText =
+                        wrestler.getCooldownExpiresDate() != null
+                            ? " Eligible again on " + wrestler.getCooldownExpiresDate()
+                            : "";
+                    cooldownIcon
+                        .getElement()
+                        .setAttribute(
+                            "title",
+                            "On contender cooldown — cannot be auto-selected for this title."
+                                + expiresText);
+                    layout.add(cooldownIcon);
+                  }
+
                   return layout;
                 }))
         .setHeader("Name")

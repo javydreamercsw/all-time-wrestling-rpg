@@ -160,6 +160,7 @@ public class ContenderSelectionService {
     return rankingService.getRankedContenders(title.getId()).stream()
         .filter(RankedWrestlerDTO.class::isInstance)
         .map(RankedWrestlerDTO.class::cast)
+        .filter(dto -> !dto.isOnCooldown())
         .toList();
   }
 }
