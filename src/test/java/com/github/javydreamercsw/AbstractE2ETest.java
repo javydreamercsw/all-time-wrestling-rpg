@@ -847,9 +847,8 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
               return found instanceof WebElement ? (WebElement) found : null;
             });
 
-    // Use native Selenium click so Vaadin's event handlers fire properly
     scrollIntoView(item);
-    item.click();
+    js.executeScript("arguments[0].click();", item);
 
     // Close the overlay
     js.executeScript("arguments[0].opened = false;", comboBox);
