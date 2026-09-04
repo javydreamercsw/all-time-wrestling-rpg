@@ -41,6 +41,8 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -52,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -71,6 +74,7 @@ public class TitleListView extends Main {
   private final ImageStorageService imageStorageService;
   private final UniverseContextService universeContextService;
   private final UniverseRepository universeRepository;
+  private final TextField searchField = new TextField();
   public final Grid<Title> grid = new Grid<>(Title.class, false);
   private List<Wrestler> allWrestlersCache = new ArrayList<>();
   private List<Wrestler> activeWrestlersCache = new ArrayList<>();
@@ -106,7 +110,13 @@ public class TitleListView extends Main {
     createButton.addClickListener(e -> openCreateDialog().open());
     createButton.setVisible(securityUtils.canCreate());
 
-    add(new ViewToolbar("Title List", ViewToolbar.group(createButton)));
+    searchField.setPlaceholder("Search titles...");
+    searchField.setClearButtonVisible(true);
+    searchField.setValueChangeMode(ValueChangeMode.LAZY);
+    searchField.addValueChangeListener(e -> refreshGrid());
+    searchField.setId("title-search-field");
+
+    add(new ViewToolbar("Title List", ViewToolbar.group(searchField, createButton)));
 
     setupGrid();
     grid.addClassNames(LumoUtility.Flex.GROW); // Add this to make the grid grow
@@ -261,7 +271,19 @@ public class TitleListView extends Main {
     challengerStateMap = wrestlerService.getStateMapByUniverseId(universeId);
     universeRepository
         .findById(universeId)
-        .ifPresent(u -> grid.setItems(titleService.findByUniverse(u)));
+        .ifPresent(
+            u -> {
+              List<Title> titles = titleService.findByUniverse(u);
+              String searchTerm = searchField.getValue();
+              if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                String needle = searchTerm.trim().toLowerCase(Locale.ROOT);
+                titles =
+                    titles.stream()
+                        .filter(t -> t.getName().toLowerCase(Locale.ROOT).contains(needle))
+                        .toList();
+              }
+              grid.setItems(titles);
+            });
   }
 
   TitleFormDialog openCreateDialog() {
