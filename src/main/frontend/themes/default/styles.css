@@ -37,10 +37,15 @@
 }
 
 /* Player Campaign Card Styles */
+/* Fluid campaign card: fills its column (min 280px) up to 320px on wide
+   screens instead of a fixed 320x500 that overflows phones. */
 .player-card-container {
     perspective: 1000px;
-    width: 320px;
+    width: 100%;
+    max-width: 320px;
+    min-width: min(280px, 100%);
     height: 500px;
+    max-height: 560px;
     cursor: pointer;
 }
 
