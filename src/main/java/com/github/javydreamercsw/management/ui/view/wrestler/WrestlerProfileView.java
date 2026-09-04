@@ -76,6 +76,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
@@ -281,6 +282,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     secondaryInfoAccordion.add("Rivalry History", feudHistoryLayout);
     secondaryInfoAccordion.add("Abilities", abilitiesLayout);
 
+    // Land on the content people visit this page for: Stats (0) and Match Logs (4).
+    // Accordion permits one open panel; Match Logs wins since Stats are also shown
+    // in the hero card on desktop.
+    secondaryInfoAccordion.open(4);
+
     // Configure Grid
     recentMatchesGrid.removeAllColumns();
     recentMatchesGrid.addColumn(segment -> segment.getShow().getName()).setHeader("Show");
@@ -377,17 +383,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       statsLayout.removeAll();
       statsLayout.add(new H3("Career Stats (Universe Context)"));
 
-      Paragraph conditionPara =
-          new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
-      conditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
-      if (state.getPhysicalCondition() < 50) {
-        conditionPara.addClassNames(LumoUtility.TextColor.ERROR);
-      } else if (state.getPhysicalCondition() < 80) {
-        conditionPara.addClassNames(LumoUtility.TextColor.WARNING);
-      } else {
-        conditionPara.addClassNames(LumoUtility.TextColor.SUCCESS);
-      }
-      statsLayout.add(conditionPara);
+      statsLayout.add(createConditionParagraph(state));
 
       if (stats.isPresent()) {
         WrestlerStats wrestlerStats = stats.get();
@@ -545,17 +541,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       injuriesLayout.removeAll();
       injuriesLayout.add(new H3("Bumps & Injuries"));
 
-      Paragraph physicalConditionPara =
-          new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
-      physicalConditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
-      if (state.getPhysicalCondition() < 50) {
-        physicalConditionPara.addClassNames(LumoUtility.TextColor.ERROR);
-      } else if (state.getPhysicalCondition() < 80) {
-        physicalConditionPara.addClassNames(LumoUtility.TextColor.WARNING);
-      } else {
-        physicalConditionPara.addClassNames(LumoUtility.TextColor.SUCCESS);
-      }
-      injuriesLayout.add(physicalConditionPara);
+      injuriesLayout.add(createConditionParagraph(state));
 
       if (securityUtils.isAdmin() || securityUtils.isBooker()) {
         Button resetWearAndTearButton = new Button("Reset Wear & Tear");
@@ -608,7 +594,35 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     VerticalLayout content = new VerticalLayout();
     content.setPadding(false);
     content.setSpacing(true);
+    buildStatusDialogContent(content);
 
+    dialog.add(content);
+    dialog.getFooter().add(new Button("Close", e -> dialog.close()));
+    dialog.open();
+  }
+
+  /**
+   * Shared "Physical Condition" paragraph with severity coloring (&lt;50 error, &lt;80 warning,
+   * otherwise success). Used by both the Stats and Medical Record panels so the two never drift.
+   */
+  private Paragraph createConditionParagraph(final WrestlerState state) {
+    Paragraph para = new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
+    para.addClassNames(LumoUtility.FontWeight.BOLD);
+    if (state.getPhysicalCondition() < 50) {
+      para.addClassNames(LumoUtility.TextColor.ERROR);
+    } else if (state.getPhysicalCondition() < 80) {
+      para.addClassNames(LumoUtility.TextColor.WARNING);
+    } else {
+      para.addClassNames(LumoUtility.TextColor.SUCCESS);
+    }
+    return para;
+  }
+
+  /**
+   * (Re)populates the status dialog's content: the add combo plus one removal row per active
+   * status. Used for both the initial open and in-place refresh after a removal.
+   */
+  private void buildStatusDialogContent(final VerticalLayout content) {
     ComboBox<StatusCard> cardCombo = new ComboBox<>("Add Status Card");
     cardCombo.setItems(statusCardService.findAll());
     cardCombo.setItemLabelGenerator(StatusCard::getLevel1Name);
@@ -621,9 +635,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
             event -> {
               if (cardCombo.getValue() != null) {
                 wrestlerStatusService.assignStatus(wrestler.getId(), cardCombo.getValue().getKey());
-                updateView(); // Refresh the profile
+                updateView();
                 Notification.show("Status assigned/flipped.");
-                dialog.close();
+                content.removeAll();
+                buildStatusDialogContent(content);
               }
             });
     addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -635,34 +650,43 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     content.add(addLayout);
 
     if (!wrestler.getStatuses().isEmpty()) {
-      content.add(new H4("Active Statuses (Click to Remove)"));
+      content.add(new H4("Active Statuses — remove one at a time without closing"));
       wrestler
           .getStatuses()
           .forEach(
               status -> {
-                Button removeBtn =
-                    new Button(
+                HorizontalLayout row = new HorizontalLayout();
+                row.setAlignItems(Alignment.CENTER);
+                row.setWidthFull();
+                Span statusName =
+                    new Span(
                         (status.getLevel() == 1
                                 ? status.getStatusCard().getLevel1Name()
                                 : status.getStatusCard().getLevel2Name())
                             + " (L"
                             + status.getLevel()
-                            + ")",
-                        event -> {
-                          wrestlerStatusService.removeStatus(
-                              wrestler.getId(), status.getStatusCard().getKey());
-                          updateView();
-                          Notification.show("Status removed.");
-                          dialog.close();
-                        });
-                removeBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
-                content.add(removeBtn);
+                            + ")");
+                Button removeBtn = new Button("Remove", VaadinIcon.TRASH.create());
+                removeBtn.addThemeVariants(
+                    ButtonVariant.LUMO_ERROR,
+                    ButtonVariant.LUMO_TERTIARY,
+                    ButtonVariant.LUMO_SMALL);
+                removeBtn.setAriaLabel(
+                    "Remove " + status.getStatusCard().getLevel1Name() + " status");
+                removeBtn.addClickListener(
+                    event -> {
+                      wrestlerStatusService.removeStatus(
+                          wrestler.getId(), status.getStatusCard().getKey());
+                      updateView();
+                      Notification.show("Status removed.");
+                      content.removeAll();
+                      buildStatusDialogContent(content);
+                    });
+                row.add(statusName, removeBtn);
+                row.setFlexGrow(1, statusName);
+                content.add(row);
               });
     }
-
-    dialog.add(content);
-    dialog.getFooter().add(new Button("Close", e -> dialog.close()));
-    dialog.open();
   }
 
   private void updateMatchAndFeudHistory() {
