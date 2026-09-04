@@ -319,6 +319,48 @@
     }
 }
 
+/* Inbox detail pane — keep long messages reachable; the split layout's
+   default ::slotted overflow:clip would otherwise cut them off. */
+.inbox-view vaadin-split-layout > [slot='secondary'] {
+    overflow-y: auto;
+}
+
+/* Nothing selected — the empty hint pane steals width/height from the
+   list (min-width: 300px beats its 0% flex-basis) on every screen size,
+   so hide it and give the list the full split. */
+.inbox-view vaadin-split-layout.inbox-detail-empty::part(splitter) {
+    display: none;
+}
+
+.inbox-view vaadin-split-layout.inbox-detail-empty > [slot='secondary'] {
+    display: none;
+}
+
+/* Inbox phone layout — below 768px stack the master/detail SplitLayout
+   vertically. The Flow API has no responsive orientation, but the inline
+   flex-basis percentages set by setSplitterPosition() only matter on
+   desktop, where they keep working untouched; on phone the rules below
+   override them (!important beats the inline styles) for an even stacked
+   split with each pane scrolling internally. The splitter is hidden while
+   stacked — its drag handler tracks horizontal movement and would fight
+   the column layout. */
+@media (max-width: 767.98px) {
+    .inbox-view vaadin-split-layout {
+        flex-direction: column;
+    }
+
+    .inbox-view vaadin-split-layout::part(splitter) {
+        display: none;
+    }
+
+    .inbox-view vaadin-split-layout > [slot='primary'],
+    .inbox-view vaadin-split-layout > [slot='secondary'] {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        min-height: 0;
+    }
+}
+
 /* Home view — cards that previously carried their chrome as inline styles. */
 .home-view {
     max-width: 1100px;

@@ -119,6 +119,7 @@ public class InboxView extends VerticalLayout {
     showEmptyDetail();
 
     splitLayout = new SplitLayout();
+    splitLayout.addClassName("inbox-detail-empty");
     splitLayout.setSizeFull();
     Div gridWrapper = new Div(grid);
     gridWrapper.addClassName("grid-scroll-container");
@@ -513,6 +514,7 @@ public class InboxView extends VerticalLayout {
     detailsView.add(empty);
     if (splitLayout != null) {
       splitLayout.setSplitterPosition(100);
+      splitLayout.addClassName("inbox-detail-empty");
     }
   }
 
@@ -535,6 +537,7 @@ public class InboxView extends VerticalLayout {
     detailsView.setPadding(true);
     detailsView.setSpacing(true);
     splitLayout.setSplitterPosition(45);
+    splitLayout.removeClassName("inbox-detail-empty");
 
     // From row — shown only for player-sent messages
     if (item.getSenderAccountId() != null) {

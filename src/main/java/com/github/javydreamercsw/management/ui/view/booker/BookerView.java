@@ -120,6 +120,8 @@ public class BookerView extends VerticalLayout {
 
     HorizontalLayout buttons = new HorizontalLayout(createShow, createWrestler, createRivalry);
     buttons.setSpacing(true);
+    // Wrap instead of overflowing on narrow (phone) viewports.
+    buttons.addClassNames(LumoUtility.FlexWrap.WRAP);
 
     VerticalLayout card = new VerticalLayout(title, buttons);
     card.addClassNames(
