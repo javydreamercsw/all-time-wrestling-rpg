@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -75,6 +76,7 @@ class PlayerViewTest extends AbstractViewTest {
   @Mock private SeasonStatsService seasonStatsService;
   @Mock private SeasonRepository seasonRepository;
   @Mock private UniverseContextService universeContextService;
+  @Mock private CampaignService campaignService;
 
   @SuppressWarnings("unchecked")
   private PlayerDashboardView buildView() {
@@ -85,6 +87,7 @@ class PlayerViewTest extends AbstractViewTest {
               return callback.doInTransaction(null);
             });
     when(newsService.getLatestNews()).thenReturn(Collections.emptyList());
+    when(campaignService.getCampaignForWrestler(any(Wrestler.class))).thenReturn(Optional.empty());
 
     PlayerDashboardView view =
         new PlayerDashboardView(
@@ -100,7 +103,8 @@ class PlayerViewTest extends AbstractViewTest {
             achievementRepository,
             seasonStatsService,
             seasonRepository,
-            universeContextService);
+            universeContextService,
+            campaignService);
     UI.getCurrent().add(view);
     return view;
   }

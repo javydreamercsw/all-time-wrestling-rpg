@@ -27,6 +27,9 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.injury.Injury;
@@ -37,6 +40,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -52,6 +56,7 @@ import com.github.javydreamercsw.management.ui.view.campaign.CampaignDashboardVi
 import com.github.javydreamercsw.management.ui.view.match.MatchView;
 import com.github.javydreamercsw.management.ui.view.wrestler.WrestlerProfileView;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -106,6 +111,7 @@ public class PlayerDashboardView extends VerticalLayout {
   private final SeasonStatsService seasonStatsService;
   private final SeasonRepository seasonRepository;
   private final UniverseContextService universeContextService;
+  private final CampaignService campaignService;
 
   private Wrestler playerWrestler;
   private WrestlerState playerState;
@@ -125,7 +131,8 @@ public class PlayerDashboardView extends VerticalLayout {
       final AchievementRepository achievementRepository,
       final SeasonStatsService seasonStatsService,
       final SeasonRepository seasonRepository,
-      final UniverseContextService universeContextService) {
+      final UniverseContextService universeContextService,
+      final CampaignService campaignService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
     this.rivalryService = rivalryService;
@@ -139,6 +146,7 @@ public class PlayerDashboardView extends VerticalLayout {
     this.seasonStatsService = seasonStatsService;
     this.seasonRepository = seasonRepository;
     this.universeContextService = universeContextService;
+    this.campaignService = campaignService;
 
     setHeightFull();
     setPadding(false);
@@ -243,20 +251,71 @@ public class PlayerDashboardView extends VerticalLayout {
     topLayout.addClassNames(LumoUtility.FlexWrap.WRAP);
 
     Details profileSection = new Details("Wrestler Profile", topLayout);
+    // Stays open — it is the identity anchor and holds the season summary and
+    // effective-stats sections. The CTA band above is the primary entry point.
     profileSection.setOpened(true);
     profileSection.setWidthFull();
 
     Details newsSection = new Details("News", newsTicker);
-    newsSection.setOpened(true);
+    // Collapsed: news is ambient, not a task (audit: "two always-open panels
+    // before any action").
+    newsSection.setOpened(false);
     newsSection.setWidthFull();
 
     Component tabsComponent = createTabs();
 
-    add(profileSection, newsSection, tabsComponent);
+    add(buildPrimaryAction(), profileSection, newsSection, tabsComponent);
     setFlexGrow(0, profileSection);
     setFlexGrow(0, newsSection);
     setFlexGrow(1, tabsComponent);
     getStyle().set("padding", "1em");
+  }
+
+  /**
+   * The dashboard's primary call to action, above everything else: resuming a pending match wins;
+   * otherwise surface the campaign dashboard when one is active. Nothing renders when there is no
+   * pending work (audit: "no continue-match CTA").
+   */
+  private Component buildPrimaryAction() {
+    HorizontalLayout band = new HorizontalLayout();
+    band.setWidthFull();
+    band.addClassNames(
+        LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL, LumoUtility.AlignItems.CENTER);
+    band.setSpacing(true);
+
+    campaignService
+        .getCampaignForWrestler(playerWrestler)
+        .map(Campaign::getState)
+        .ifPresent(
+            state -> {
+              if (state.getCurrentPhase() == CampaignPhase.MATCH
+                  && state.getCurrentMatch() != null
+                  && state.getCurrentMatch().getAdjudicationStatus()
+                      != AdjudicationStatus.ADJUDICATED) {
+                Button continueMatch =
+                    new Button(
+                        "Continue Match",
+                        e ->
+                            UI.getCurrent()
+                                .navigate(
+                                    MatchView.class,
+                                    new RouteParameters(
+                                        "matchId",
+                                        String.valueOf(state.getCurrentMatch().getId()))));
+                continueMatch.addThemeVariants(
+                    ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
+                continueMatch.setId("continue-match-cta");
+                band.add(continueMatch);
+              } else if (state.getCurrentPhase() != CampaignPhase.POST_MATCH) {
+                Button toCampaign =
+                    new Button("Continue Campaign", e -> UI.getCurrent().navigate("campaign"));
+                toCampaign.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                toCampaign.setId("continue-campaign-cta");
+                band.add(toCampaign);
+              }
+            });
+
+    return band;
   }
 
   private Component createProfileCard() {
