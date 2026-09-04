@@ -339,6 +339,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     contextDetails = new Details("Planning Context (technical)", contextArea);
     contextDetails.setOpened(false);
     contextDetails.setWidthFull();
+    contextDetails.setId("show-planning-context-details");
 
     VerticalLayout leftSide =
         new VerticalLayout(

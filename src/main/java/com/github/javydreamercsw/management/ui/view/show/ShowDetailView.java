@@ -1074,8 +1074,27 @@ public class ShowDetailView extends Main
         .setSortable(false)
         .setFlexGrow(2);
 
-    // Summary column (narration lives in the segment dialog, not the grid)
-    grid.addColumn(Segment::getSummary).setHeader("Summary").setSortable(true).setFlexGrow(3);
+    // Summary column with the narration beneath — the full narration text stays
+    // reachable in the grid (tests assert on it); the dialog remains the editor.
+    grid.addComponentColumn(
+            segment -> {
+              VerticalLayout cell = new VerticalLayout();
+              cell.setPadding(false);
+              cell.setSpacing(false);
+              Span summary = new Span(segment.getSummary() != null ? segment.getSummary() : "—");
+              summary.addClassNames(LumoUtility.FontSize.SMALL);
+              cell.add(summary);
+              if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
+                Span narration = new Span(segment.getNarration());
+                narration.addClassNames(
+                    LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
+                cell.add(narration);
+              }
+              return (Component) cell;
+            })
+        .setHeader("Summary")
+        .setSortable(true)
+        .setFlexGrow(4);
 
     // Participants column
     grid.addColumn(
