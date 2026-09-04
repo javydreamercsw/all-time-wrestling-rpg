@@ -234,6 +234,8 @@ public class TitleListView extends Main {
               toggleButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
               toggleButton.setTooltipText(
                   Boolean.TRUE.equals(title.getIsActive()) ? "Deactivate" : "Activate");
+              toggleButton.setAriaLabel(
+                  Boolean.TRUE.equals(title.getIsActive()) ? "Deactivate" : "Activate");
               toggleButton.setVisible(securityUtils.canEdit());
               toggleButton.addClickListener(
                   e -> {

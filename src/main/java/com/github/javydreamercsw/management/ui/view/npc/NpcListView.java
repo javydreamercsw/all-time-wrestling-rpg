@@ -147,6 +147,7 @@ public class NpcListView extends Main {
                 Button toggleButton = new Button(toggleIcon);
                 toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
                 toggleButton.setTooltipText(npc.isActive() ? "Deactivate" : "Activate");
+                toggleButton.setAriaLabel(npc.isActive() ? "Deactivate" : "Activate");
                 toggleButton.addClickListener(
                     e -> {
                       npcService.setActive(npc.getId(), !npc.isActive());

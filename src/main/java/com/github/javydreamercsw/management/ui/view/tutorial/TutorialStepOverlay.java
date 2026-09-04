@@ -99,11 +99,13 @@ public class TutorialStepOverlay extends Dialog {
     Button minimizeBtn = new Button(VaadinIcon.MINUS.create());
     minimizeBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
     minimizeBtn.setTooltipText("Minimize");
+    minimizeBtn.setAriaLabel("Minimize tutorial");
     minimizeBtn.addClickListener(e -> toggleMinimize());
 
     Button skipBtn = new Button(VaadinIcon.CLOSE_SMALL.create());
     skipBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
     skipBtn.setTooltipText("Skip tutorial");
+    skipBtn.setAriaLabel("Skip tutorial");
     skipBtn.addClickListener(
         e -> {
           if (account != null && universeType != null) {

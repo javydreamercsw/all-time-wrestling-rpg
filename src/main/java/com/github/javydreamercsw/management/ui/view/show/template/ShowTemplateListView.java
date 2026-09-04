@@ -341,6 +341,7 @@ public class ShowTemplateListView extends Main {
               Button toggleBtn = new Button(toggleIcon);
               toggleBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               toggleBtn.setTooltipText(template.isActive() ? "Deactivate" : "Activate");
+              toggleBtn.setAriaLabel(template.isActive() ? "Deactivate" : "Activate");
               toggleBtn.setVisible(securityUtils.canEdit());
               toggleBtn.addClickListener(
                   e -> {

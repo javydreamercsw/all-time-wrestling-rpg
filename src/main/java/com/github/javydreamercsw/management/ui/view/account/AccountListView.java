@@ -92,6 +92,7 @@ public class AccountListView extends Main {
               Button editButton = new Button(VaadinIcon.EDIT.create());
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
               editButton.setTooltipText("Edit");
+              editButton.setAriaLabel("Edit account");
               editButton.setId("edit-button-" + account.getId());
               editButton.addClickListener(
                   e -> {
@@ -113,6 +114,7 @@ public class AccountListView extends Main {
                     ButtonVariant.LUMO_TERTIARY,
                     ButtonVariant.LUMO_ERROR);
                 toggleButton.setTooltipText("Disable");
+                toggleButton.setAriaLabel("Disable account");
                 toggleButton.setId("disable-button-" + account.getId());
                 toggleButton.addClickListener(
                     e -> {
@@ -138,6 +140,7 @@ public class AccountListView extends Main {
                     ButtonVariant.LUMO_TERTIARY,
                     ButtonVariant.LUMO_SUCCESS);
                 toggleButton.setTooltipText("Enable");
+                toggleButton.setAriaLabel("Enable account");
                 toggleButton.setId("enable-button-" + account.getId());
                 toggleButton.addClickListener(
                     e -> {
@@ -154,6 +157,7 @@ public class AccountListView extends Main {
                     ButtonVariant.LUMO_TERTIARY,
                     ButtonVariant.LUMO_ERROR);
                 deleteButton.setTooltipText("Delete");
+                deleteButton.setAriaLabel("Delete account");
                 deleteButton.setId("delete-button-" + account.getId());
                 deleteButton.addClickListener(
                     e -> {

@@ -184,6 +184,8 @@ public class SeasonListView extends Main {
               toggleBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
               toggleBtn.setTooltipText(
                   Boolean.TRUE.equals(season.getIsActive()) ? "Deactivate" : "Activate");
+              toggleBtn.setAriaLabel(
+                  Boolean.TRUE.equals(season.getIsActive()) ? "Deactivate" : "Activate");
               toggleBtn.setVisible(securityUtils.canEdit());
               toggleBtn.addClickListener(
                   e -> {

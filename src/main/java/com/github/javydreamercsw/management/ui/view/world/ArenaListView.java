@@ -161,6 +161,7 @@ public class ArenaListView extends Main {
     Button toggleButton = new Button(toggleIcon);
     toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     toggleButton.setTooltipText(arena.isActive() ? "Deactivate" : "Activate");
+    toggleButton.setAriaLabel(arena.isActive() ? "Deactivate" : "Activate");
     toggleButton.addClickListener(
         e -> {
           arenaService.setActive(arena.getId(), !arena.isActive());

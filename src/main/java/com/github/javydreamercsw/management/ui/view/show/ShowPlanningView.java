@@ -317,6 +317,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposedSegmentsGrid.addComponentColumn(
         segment -> {
           Button removeButton = new Button(VaadinIcon.TRASH.create());
+          removeButton.setAriaLabel("Remove proposed segment");
           removeButton.addClickListener(
               e -> {
                 segments.remove(segment);

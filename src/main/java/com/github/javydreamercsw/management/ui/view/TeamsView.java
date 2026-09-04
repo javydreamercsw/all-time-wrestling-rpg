@@ -128,6 +128,7 @@ public class TeamsView extends VerticalLayout {
     Button editButton = new Button(VaadinIcon.EDIT.create());
     editButton.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL);
     editButton.setTooltipText("Edit team");
+    editButton.setAriaLabel("Edit team");
     editButton.addClickListener(e -> editTeam(team));
     editButton.setVisible(securityUtils.canEdit(teamEntity));
 
@@ -135,6 +136,7 @@ public class TeamsView extends VerticalLayout {
     deleteButton.addThemeVariants(
         ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
     deleteButton.setTooltipText("Delete team");
+    deleteButton.setAriaLabel("Delete team");
     deleteButton.addClickListener(e -> confirmDeleteTeam(team));
     deleteButton.setVisible(securityUtils.canDelete(teamEntity));
 
@@ -153,11 +155,13 @@ public class TeamsView extends VerticalLayout {
     if (team.isActive()) {
       statusButton.setIcon(VaadinIcon.PAUSE.create());
       statusButton.setTooltipText("Disband team");
+      statusButton.setAriaLabel("Disband team");
       statusButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
       statusButton.addClickListener(e -> confirmDisbandTeam(team));
     } else if (team.isDisbanded()) {
       statusButton.setIcon(VaadinIcon.PLAY.create());
       statusButton.setTooltipText("Reactivate team");
+      statusButton.setAriaLabel("Reactivate team");
       statusButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
       statusButton.addClickListener(e -> reactivateTeam(team));
     } else {
@@ -187,6 +191,7 @@ public class TeamsView extends VerticalLayout {
     addButton.setVisible(securityUtils.canCreate());
 
     Button refreshButton = new Button(VaadinIcon.REFRESH.create());
+    refreshButton.setAriaLabel("Refresh teams");
     refreshButton.addThemeVariants(ButtonVariant.LUMO_ICON);
     refreshButton.setTooltipText("Refresh");
     refreshButton.addClickListener(e -> updateGrid());

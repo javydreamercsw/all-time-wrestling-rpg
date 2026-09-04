@@ -392,6 +392,7 @@ public class ShowListView extends Main {
               Button viewBtn = new Button(new Icon(VaadinIcon.EYE));
               viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               viewBtn.setTooltipText("View Details");
+              viewBtn.setAriaLabel("View details");
               viewBtn.setId("view-details-button-" + show.getId());
               viewBtn.addClickListener(
                   e ->
@@ -405,6 +406,7 @@ public class ShowListView extends Main {
               Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
               editBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               editBtn.setTooltipText("Edit Show");
+              editBtn.setAriaLabel("Edit show");
               editBtn.setId("edit-show-button-" + show.getId());
               editBtn.addClickListener(e -> openEditDialog(show));
               editBtn.setVisible(securityUtils.canEdit());
@@ -412,6 +414,7 @@ public class ShowListView extends Main {
               Button generateArtBtn = new Button(new Icon(VaadinIcon.PICTURE));
               generateArtBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               generateArtBtn.setTooltipText("Generate Template Art");
+              generateArtBtn.setAriaLabel("Generate template art");
               generateArtBtn.setId("generate-template-art-button-" + show.getId());
               generateArtBtn.addClickListener(e -> openGenerateArtDialog(show.getTemplate()));
               generateArtBtn.setVisible(securityUtils.canEdit() && show.getTemplate() != null);
@@ -420,6 +423,7 @@ public class ShowListView extends Main {
               deleteBtn.addThemeVariants(
                   ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
               deleteBtn.setTooltipText("Delete Show");
+              deleteBtn.setAriaLabel("Delete show");
               deleteBtn.setId("delete-show-button-" + show.getId());
               deleteBtn.addClickListener(e -> openDeleteDialog(show));
               deleteBtn.setVisible(securityUtils.canDelete());
@@ -428,6 +432,7 @@ public class ShowListView extends Main {
               Button exportBtn = new Button(new Icon(VaadinIcon.DOWNLOAD));
               exportBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               exportBtn.setTooltipText("Export Show Card");
+              exportBtn.setAriaLabel("Export show card");
               exportBtn.setId("export-show-button-" + show.getId());
               exportBtn.addClickListener(
                   e -> new ShowExportDialog(exportService, notificationService, show).open());
@@ -437,6 +442,7 @@ public class ShowListView extends Main {
                 Button calendarBtn = new Button(new Icon(VaadinIcon.CALENDAR));
                 calendarBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
                 calendarBtn.setTooltipText("View in Calendar");
+                calendarBtn.setAriaLabel("View in calendar");
                 calendarBtn.setId("view-in-calendar-button-" + show.getId());
                 calendarBtn.addClickListener(
                     e -> {
