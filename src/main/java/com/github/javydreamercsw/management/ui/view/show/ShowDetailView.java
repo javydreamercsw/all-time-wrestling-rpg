@@ -931,20 +931,64 @@ public class ShowDetailView extends Main
                   });
         });
 
-    // Drag handle column — visual affordance for row drag-and-drop
+    // Story arc badge — shown when the segment was produced by a FeudScriptBeat
     grid.addComponentColumn(
             segment -> {
-              Icon handle = new Icon(VaadinIcon.GRID_BEVEL);
-              handle
-                  .getStyle()
-                  .set("cursor", "grab")
-                  .set("color", "var(--lumo-secondary-text-color)");
-              handle.setTooltipText("Drag to reorder");
-              return handle;
+              return feudScriptService
+                  .findBeatForSegment(segment)
+                  .map(
+                      beat -> {
+                        String arcName = beat.getScript().getName();
+                        Span badge = new Span("🎭 " + arcName);
+                        badge.getElement().getThemeList().add("badge contrast");
+                        badge.addClassNames(
+                            LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                        Tooltip.forComponent(badge)
+                            .setText(
+                                "Story Arc beat #"
+                                    + beat.getBeatOrder()
+                                    + " — "
+                                    + beat.getScript().getName());
+                        return (Component) badge;
+                      })
+                  .orElse(new Span(""));
             })
-        .setWidth("3em")
-        .setFlexGrow(0)
-        .setHeader("");
+        .setHeader("Arc")
+        .setAutoWidth(true)
+        .setFlexGrow(0);
+
+    // Date + segment type merged — one identity column instead of two thin ones
+    grid.addComponentColumn(
+            segment -> {
+              VerticalLayout cell = new VerticalLayout();
+              cell.setPadding(false);
+              cell.setSpacing(false);
+              Span typeSpan = new Span();
+              String typeName =
+                  segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A";
+              typeSpan.setText(typeName);
+              if (segment.isContenderMatch()) {
+                Span star = new Span(" ⭐");
+                star.setId("contender-match-badge-" + segment.getId());
+                star.getStyle().set("color", "var(--lumo-warning-color)");
+                Tooltip.forComponent(star)
+                    .setText("#1 Contender Match — the winner becomes the next challenger");
+                typeSpan.add(star);
+              }
+              typeSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+              Span dateSpan =
+                  new Span(
+                      segment
+                          .getSegmentDate()
+                          .atZone(ZoneId.systemDefault())
+                          .format(DateTimeFormatter.ofPattern("MMM d, yyyy")));
+              dateSpan.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
+              cell.add(typeSpan, dateSpan);
+              return (Component) cell;
+            })
+        .setHeader("Segment")
+        .setSortable(false)
+        .setFlexGrow(2);
 
     // Story arc badge — shown when the segment was produced by a FeudScriptBeat
     grid.addComponentColumn(
