@@ -306,6 +306,19 @@
     min-height: 0;
 }
 
+/* Navbar phone collapse — below 768px the Profile/Logout buttons reduce to
+   their icons and the username/Inbox labels hide (LumoUtility md: classes
+   handle the spans; this rule strips the label part of the buttons). */
+.navbar-action::part(label) {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .navbar-action::part(label) {
+        display: inline-flex;
+    }
+}
+
 /* Profile Drawer */
 .profile-drawer::part(overlay) {
     position: absolute;
