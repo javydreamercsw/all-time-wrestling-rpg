@@ -88,7 +88,6 @@ public class InboxView extends VerticalLayout {
   private SplitLayout splitLayout;
   private final Button markSelectedReadButton = new Button("Mark Selected as Read");
   private final Button markSelectedUnreadButton = new Button("Mark Selected as Unread");
-  private final Checkbox hideReadCheckbox = new Checkbox("Hide Read");
   private final Button deleteSelectedButton = new Button("Delete Selected");
   private final Set<InboxItem> selectedItems = new HashSet<>();
   private final SecurityUtils securityUtils;
@@ -154,11 +153,9 @@ public class InboxView extends VerticalLayout {
     targetFilter.addValueChangeListener(e -> updateList());
     targetFilter.setId("inbox-target-filter");
 
-    readStatusFilter.setItems("All", "Read", "Unread");
+    readStatusFilter.setItems("All", "Unread", "Read");
     readStatusFilter.setValue("All");
     readStatusFilter.addValueChangeListener(e -> updateList());
-
-    hideReadCheckbox.addValueChangeListener(e -> updateList());
 
     List<String> eventTypes =
         eventTypeRegistry.getEventTypes().stream()
@@ -262,7 +259,6 @@ public class InboxView extends VerticalLayout {
             clearTargetFilter,
             readStatusFilter,
             eventTypeFilter,
-            hideReadCheckbox,
             selectAllCheckbox,
             markSelectedReadButton,
             markSelectedUnreadButton,
@@ -667,7 +663,7 @@ public class InboxView extends VerticalLayout {
             targetFilter.getValue(),
             readStatusFilter.getValue(),
             eventTypeFilter.getValue(),
-            hideReadCheckbox.getValue(),
+            null, // hideRead removed: the Read Status filter fully controls unread visibility
             accountId));
   }
 }
