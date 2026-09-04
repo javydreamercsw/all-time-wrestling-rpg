@@ -106,7 +106,7 @@ public class LocationFormDialog extends Dialog {
 
   private void initUI(final ImageStorageService storageService) {
     setHeaderTitle(location == null ? "Add New Location" : "Edit Location");
-    setWidth("800px");
+    setWidth("min(800px, 95vw)");
 
     name.setWidthFull();
     name.setMaxLength(Location.DESCRIPTION_MAX_LENGTH);

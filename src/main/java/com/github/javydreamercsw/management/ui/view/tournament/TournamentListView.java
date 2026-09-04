@@ -123,7 +123,7 @@ public class TournamentListView extends VerticalLayout {
   private void openCreationWizard() {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("New Tournament");
-    dialog.setWidth("600px");
+    dialog.setWidth("min(600px, 95vw)");
 
     TabSheet tabs = new TabSheet();
     Tab tab1 = new Tab("1. Details");

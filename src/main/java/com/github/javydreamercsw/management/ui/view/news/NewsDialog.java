@@ -33,7 +33,7 @@ import lombok.NonNull;
 public class NewsDialog extends Dialog {
 
   public NewsDialog(@NonNull final NewsService newsService, @NonNull final Runnable onSave) {
-    setWidth("600px");
+    setWidth("min(600px, 95vw)");
     setHeaderTitle("Create News Item");
 
     TextField headline = new TextField("Headline");

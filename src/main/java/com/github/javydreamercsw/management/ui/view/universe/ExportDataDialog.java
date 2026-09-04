@@ -56,7 +56,7 @@ public class ExportDataDialog extends Dialog {
       WrestlerStateRepository wrestlerStateRepository) {
 
     setHeaderTitle("Export Data — " + universe.getName());
-    setWidth("480px");
+    setWidth("min(480px, 95vw)");
 
     // --- Categories ---
     CheckboxGroup<ExportCategory> categoryGroup = new CheckboxGroup<>();

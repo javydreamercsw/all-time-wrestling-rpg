@@ -340,7 +340,7 @@ public class ChallengeListView extends VerticalLayout {
 
   private void openDetailDialog(final ChallengeDTO challenge) {
     Dialog dialog = new Dialog();
-    dialog.setWidth("640px");
+    dialog.setWidth("min(640px, 95vw)");
     dialog.setMaxWidth("95vw");
 
     VerticalLayout content = new VerticalLayout();

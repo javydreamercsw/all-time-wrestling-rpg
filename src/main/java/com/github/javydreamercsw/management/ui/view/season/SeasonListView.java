@@ -214,7 +214,7 @@ public class SeasonListView extends Main {
 
   private void configureEditDialog() {
     editDialog = new Dialog();
-    editDialog.setWidth("500px");
+    editDialog.setWidth("min(500px, 95vw)");
     editDialog.setCloseOnEsc(true);
     editDialog.setCloseOnOutsideClick(false);
 

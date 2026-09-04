@@ -132,7 +132,7 @@ public class ArenaFormDialog extends Dialog {
 
   private void initUI(final ImageStorageService storageService) {
     setHeaderTitle(arena == null ? "Add New Arena" : "Edit Arena");
-    setWidth("800px");
+    setWidth("min(800px, 95vw)");
 
     name.setWidthFull();
     name.setMaxLength(Arena.DESCRIPTION_MAX_LENGTH);

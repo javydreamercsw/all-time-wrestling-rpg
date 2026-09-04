@@ -835,7 +835,7 @@ public class CampaignDashboardView extends VerticalLayout {
   private void openChapterSelectionDialog(List<CampaignChapterDTO> options) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Choose Your Next Path");
-    dialog.setWidth("600px");
+    dialog.setWidth("min(600px, 95vw)");
     dialog.setCloseOnOutsideClick(false);
 
     VerticalLayout content = new VerticalLayout();
