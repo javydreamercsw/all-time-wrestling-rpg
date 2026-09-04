@@ -661,7 +661,9 @@ public class ShowDetailView extends Main
 
     segmentsGrid = createSegmentsGrid(segments);
     segmentsGrid.setSizeFull();
-    segmentsGrid.setMinWidth("1100px");
+    // Columns merged (15 -> 11 cells); the grid now fits ~900px, still inside the
+    // touch-scroll wrapper for narrower viewports.
+    segmentsGrid.setMinWidth("860px");
     segmentsGrid.setId("segments-grid");
 
     segmentsProgressBar = new ProgressBar();
@@ -1017,25 +1019,6 @@ public class ShowDetailView extends Main
         .setFlexGrow(0);
 
     // Segment type column — carries a gold star when this is a #1 contender match
-    grid.addComponentColumn(
-            segment -> {
-              String typeName =
-                  segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A";
-              Span typeSpan = new Span(typeName);
-              if (segment.isContenderMatch()) {
-                Span star = new Span(" ⭐");
-                star.setId("contender-match-badge-" + segment.getId());
-                star.getStyle().set("color", "var(--lumo-warning-color)");
-                Tooltip.forComponent(star)
-                    .setText("#1 Contender Match — the winner becomes the next challenger");
-                typeSpan.add(star);
-              }
-              return typeSpan;
-            })
-        .setHeader("Segment Type")
-        .setSortable(true)
-        .setFlexGrow(1);
-
     // Per-segment quality score column — shown as stars matching the show header
     grid.addComponentColumn(
             segment -> {
@@ -1055,37 +1038,44 @@ public class ShowDetailView extends Main
         .setAutoWidth(true)
         .setFlexGrow(0);
 
-    // Segment rules column
-    grid.addColumn(
+    // Stakes column — rules and titles merged; both were thin "N/A"-heavy columns
+    grid.addComponentColumn(
             segment -> {
+              VerticalLayout cell = new VerticalLayout();
+              cell.setPadding(false);
+              cell.setSpacing(false);
               List<String> ruleNames =
                   segment.getSegmentRules().stream().map(SegmentRule::getName).toList();
-              return String.join(", ", ruleNames);
-            })
-        .setHeader("Segment Rule(s)")
-        .setSortable(true)
-        .setFlexGrow(1);
-
-    // Titles column
-    grid.addColumn(
-            segment -> {
-              if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
-                return segment.getTitles().stream()
-                    .map(Title::getName)
-                    .collect(Collectors.joining(", "));
-              } else {
-                return "N/A";
+              if (!ruleNames.isEmpty()) {
+                Span rules = new Span(String.join(", ", ruleNames));
+                rules.addClassNames(LumoUtility.FontSize.SMALL);
+                cell.add(rules);
               }
+              if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
+                Span titles =
+                    new Span(
+                        segment.getTitles().stream()
+                            .map(Title::getName)
+                            .collect(Collectors.joining(", ")));
+                titles.addClassNames(
+                    LumoUtility.FontSize.SMALL,
+                    LumoUtility.TextColor.PRIMARY,
+                    LumoUtility.FontWeight.SEMIBOLD);
+                cell.add(titles);
+              }
+              if (cell.getComponentCount() == 0) {
+                Span none = new Span("—");
+                none.addClassNames(LumoUtility.TextColor.SECONDARY);
+                cell.add(none);
+              }
+              return (Component) cell;
             })
-        .setHeader("Titles")
+        .setHeader("Stakes")
         .setSortable(false)
-        .setFlexGrow(1);
+        .setFlexGrow(2);
 
-    // Summary column
+    // Summary column (narration lives in the segment dialog, not the grid)
     grid.addColumn(Segment::getSummary).setHeader("Summary").setSortable(true).setFlexGrow(3);
-
-    // Narration column
-    grid.addColumn(Segment::getNarration).setHeader("Narration").setSortable(true).setFlexGrow(6);
 
     // Participants column
     grid.addColumn(
@@ -1116,19 +1106,9 @@ public class ShowDetailView extends Main
                     .findBySegment(segment)
                     .map(f -> f.getStatus().toString())
                     .orElse("N/A"))
-        .setHeader("League Status")
-        .setFlexGrow(1);
-
-    // Segment date column
-    grid.addColumn(
-            segment ->
-                segment
-                    .getSegmentDate()
-                    .atZone(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
-        .setHeader("Date")
-        .setSortable(true)
-        .setFlexGrow(1);
+        .setHeader("League")
+        .setAutoWidth(true)
+        .setFlexGrow(0);
 
     grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
 
