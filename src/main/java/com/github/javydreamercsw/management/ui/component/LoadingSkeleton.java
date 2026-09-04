@@ -17,9 +17,11 @@
 package com.github.javydreamercsw.management.ui.component;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasComponents;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.List;
 
 /**
@@ -61,10 +63,7 @@ public final class LoadingSkeleton {
   /** A row of placeholder stat blocks (label over value), for dashboard stat rows. */
   public static Div statRow(final int count) {
     Div row = new Div();
-    row.addClassNames(
-        "atw-skeleton-row",
-        com.vaadin.flow.theme.lumo.LumoUtility.Display.FLEX,
-        com.vaadin.flow.theme.lumo.LumoUtility.Gap.MEDIUM);
+    row.addClassNames("atw-skeleton-row", LumoUtility.Display.FLEX, LumoUtility.Gap.MEDIUM);
     for (int i = 0; i < count; i++) {
       Div cell = block("3.5rem");
       cell.setWidth("7rem");
@@ -91,7 +90,7 @@ public final class LoadingSkeleton {
   /** Marks a section as loading while its real content is being built. */
   public static Component withSkeleton(final HasStyle container, final Component... skeleton) {
     for (Component c : skeleton) {
-      ((com.vaadin.flow.component.HasComponents) container).add(c);
+      ((HasComponents) container).add(c);
     }
     return (Component) container;
   }

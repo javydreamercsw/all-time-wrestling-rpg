@@ -31,6 +31,7 @@ import com.vaadin.flow.data.binder.Binder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.node.ObjectNode;
 
 class AtwDialogTest extends AbstractViewTest {
 
@@ -55,12 +56,8 @@ class AtwDialogTest extends AbstractViewTest {
   @DisplayName("FormLayout has responsive single-column and two-column steps")
   void formLayout_hasResponsiveSteps() {
     // ResponsiveStep has no getters; the client-visible JSON is the API surface.
-    tools.jackson.databind.node.ObjectNode first =
-        (tools.jackson.databind.node.ObjectNode)
-            dialog.getFormLayout().getResponsiveSteps().get(0).toJson();
-    tools.jackson.databind.node.ObjectNode second =
-        (tools.jackson.databind.node.ObjectNode)
-            dialog.getFormLayout().getResponsiveSteps().get(1).toJson();
+    ObjectNode first = (ObjectNode) dialog.getFormLayout().getResponsiveSteps().get(0).toJson();
+    ObjectNode second = (ObjectNode) dialog.getFormLayout().getResponsiveSteps().get(1).toJson();
     assertThat(first.get("minWidth").asText()).isEqualTo("0");
     assertThat(first.get("columns").asInt()).isEqualTo(1);
     assertThat(second.get("minWidth").asText()).isEqualTo("600px");

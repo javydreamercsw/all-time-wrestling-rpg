@@ -26,6 +26,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.binder.Binder;
+import lombok.Getter;
 
 /**
  * Shared responsive base for form dialogs. Standardizes what every form dialog in the app repeats
@@ -51,8 +52,8 @@ public class AtwDialog extends Dialog {
   public static final String WIDTH_FORM = "min(800px, 95vw)";
   public static final String WIDTH_LARGE = "min(900px, 95vw)";
 
-  private final FormLayout formLayout = new FormLayout();
-  private final HorizontalLayout buttonRow = new HorizontalLayout();
+  @Getter private final FormLayout formLayout = new FormLayout();
+  @Getter private final HorizontalLayout buttonRow = new HorizontalLayout();
   private final VerticalLayout content = new VerticalLayout(formLayout);
 
   public AtwDialog() {
@@ -75,16 +76,6 @@ public class AtwDialog extends Dialog {
     content.setSpacing(false);
     content.add(buttonRow);
     add(content);
-  }
-
-  /** The responsive FormLayout subclasses should add their fields to. */
-  public FormLayout getFormLayout() {
-    return formLayout;
-  }
-
-  /** The full-width button row rendered below the form; {@link JustifyContentMode#START}. */
-  public HorizontalLayout getButtonRow() {
-    return buttonRow;
   }
 
   /** Adds arbitrary components to the content area above the form (e.g. an image preview block). */
