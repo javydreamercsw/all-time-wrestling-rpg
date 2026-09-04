@@ -397,6 +397,41 @@ vaadin-grid::part(ple-show) {
     width: 100%;
 }
 
+/* Loading skeletons — shimmer placeholders shown while a section's data
+   loads asynchronously (see LoadingSkeleton component). */
+.atw-skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--lumo-contrast-5pct) 25%,
+        var(--lumo-contrast-10pct) 50%,
+        var(--lumo-contrast-5pct) 75%
+    );
+    background-size: 200% 100%;
+    animation: atw-skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: var(--lumo-border-radius-s);
+    width: 100%;
+}
+
+.atw-skeleton-text {
+    color: var(--lumo-secondary-text-color);
+    font-size: var(--lumo-font-size-s);
+}
+
+@keyframes atw-skeleton-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .atw-skeleton {
+        animation: none;
+    }
+}
+
 /* Profile Drawer */
 .profile-drawer::part(overlay) {
     position: absolute;
