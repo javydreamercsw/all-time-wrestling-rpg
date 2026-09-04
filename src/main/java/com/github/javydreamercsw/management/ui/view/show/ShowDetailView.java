@@ -407,7 +407,7 @@ public class ShowDetailView extends Main
           LumoUtility.FontSize.MEDIUM,
           LumoUtility.FontWeight.SEMIBOLD,
           LumoUtility.Margin.Top.XSMALL);
-      qualityBadge.getStyle().set("color", "#d97706");
+      qualityBadge.getStyle().set("color", "var(--lumo-warning-color)");
       qualityBadge.setTitle("Show quality rating");
       titleInfo.add(qualityBadge);
     }
@@ -794,8 +794,8 @@ public class ShowDetailView extends Main
       Span mainBadge = new Span("★ Main Event");
       mainBadge
           .getStyle()
-          .set("background-color", "#fff3cd")
-          .set("color", "#856404")
+          .set("background-color", "var(--lumo-warning-color-10pct)")
+          .set("color", "var(--lumo-warning-color)")
           .set("border-radius", "4px")
           .set("padding", "2px 8px")
           .set("font-weight", "bold")
@@ -810,8 +810,8 @@ public class ShowDetailView extends Main
         Span titleBadge = new Span("🏆 " + title.getName() + " (c: " + champion + ")");
         titleBadge
             .getStyle()
-            .set("background", "#fff8e1")
-            .set("color", "#c17900")
+            .set("background", "var(--lumo-warning-color-10pct)")
+            .set("color", "var(--lumo-warning-color)")
             .set("border-radius", "4px")
             .set("padding", "2px 8px")
             .set("font-size", "var(--lumo-font-size-s)")
@@ -825,8 +825,8 @@ public class ShowDetailView extends Main
       contenderBadge.setId("contender-match-badge");
       contenderBadge
           .getStyle()
-          .set("background", "#ffd700")
-          .set("color", "#5c4400")
+          .set("background", "var(--lumo-warning-color)")
+          .set("color", "var(--lumo-warning-contrast-color)")
           .set("border-radius", "4px")
           .set("padding", "2px 8px")
           .set("font-size", "var(--lumo-font-size-s)")
@@ -981,7 +981,7 @@ public class ShowDetailView extends Main
               if (segment.isContenderMatch()) {
                 Span star = new Span(" ⭐");
                 star.setId("contender-match-badge-" + segment.getId());
-                star.getStyle().set("color", "#ffd700");
+                star.getStyle().set("color", "var(--lumo-warning-color)");
                 Tooltip.forComponent(star)
                     .setText("#1 Contender Match — the winner becomes the next challenger");
                 typeSpan.add(star);
@@ -1002,7 +1002,7 @@ public class ShowDetailView extends Main
               double stars = Math.round(Math.max(1.0, Math.min(5.0, raw / 20.0)) * 2.0) / 2.0;
               Span badge = new Span(renderStars(stars));
               badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-              badge.getStyle().set("color", "#d97706");
+              badge.getStyle().set("color", "var(--lumo-warning-color)");
               Tooltip.forComponent(badge).setText(raw + "/100");
               return badge;
             })
@@ -1109,8 +1109,8 @@ public class ShowDetailView extends Main
                 Span badge = new Span("★ Main Event");
                 badge
                     .getStyle()
-                    .set("background-color", "#fff3cd")
-                    .set("color", "#856404")
+                    .set("background-color", "var(--lumo-warning-color-10pct)")
+                    .set("color", "var(--lumo-warning-color)")
                     .set("border-radius", "4px")
                     .set("padding", "2px 6px")
                     .set("font-weight", "bold")

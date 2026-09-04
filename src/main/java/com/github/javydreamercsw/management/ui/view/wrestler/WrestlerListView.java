@@ -124,24 +124,24 @@ public class WrestlerListView extends Main {
                   nameLayout.setAlignItems(FlexComponent.Alignment.CENTER);
                   if (wrestler.getActive()) {
                     Icon activeIcon = new Icon(VaadinIcon.CHECK);
-                    activeIcon.setColor("green");
+                    activeIcon.setColor("var(--lumo-success-color)");
                     activeIcon.getStyle().set("margin-right", "5px");
                     nameLayout.add(activeIcon);
                   } else {
                     Icon inactiveIcon = new Icon(VaadinIcon.MINUS_CIRCLE);
-                    inactiveIcon.setColor("red");
+                    inactiveIcon.setColor("var(--lumo-error-color)");
                     inactiveIcon.getStyle().set("margin-right", "5px");
                     nameLayout.add(inactiveIcon);
                   }
                   if (injuredWrestlerIds.contains(wrestler.getId())) {
                     Icon injuryIcon = new Icon(VaadinIcon.AMBULANCE);
-                    injuryIcon.setColor("red");
+                    injuryIcon.setColor("var(--lumo-error-color)");
                     injuryIcon.getStyle().set("margin-right", "5px");
                     nameLayout.add(injuryIcon);
                   }
                   if (wrestler.getAccount() != null) {
                     Icon userIcon = new Icon(VaadinIcon.USER);
-                    userIcon.setColor("blue");
+                    userIcon.setColor("var(--lumo-primary-color)");
                     userIcon.getStyle().set("margin-right", "5px");
                     nameLayout.add(userIcon);
                   }
@@ -154,14 +154,14 @@ public class WrestlerListView extends Main {
                     badge.getStyle().set("border-radius", "4px");
                     badge.getStyle().set("font-weight", "bold");
                     if (alignment.getAlignmentType() == AlignmentType.FACE) {
-                      badge.getStyle().set("background-color", "#c8e6c9");
-                      badge.getStyle().set("color", "#1b5e20");
+                      badge.getStyle().set("background-color", "var(--lumo-success-color-10pct)");
+                      badge.getStyle().set("color", "var(--lumo-success-color)");
                     } else if (alignment.getAlignmentType() == AlignmentType.HEEL) {
-                      badge.getStyle().set("background-color", "#ffcdd2");
-                      badge.getStyle().set("color", "#b71c1c");
+                      badge.getStyle().set("background-color", "var(--lumo-error-color-10pct)");
+                      badge.getStyle().set("color", "var(--lumo-error-color)");
                     } else {
-                      badge.getStyle().set("background-color", "#e0e0e0");
-                      badge.getStyle().set("color", "#424242");
+                      badge.getStyle().set("background-color", "var(--lumo-contrast-10pct)");
+                      badge.getStyle().set("color", "var(--lumo-secondary-text-color)");
                     }
                     nameLayout.add(badge);
                   }

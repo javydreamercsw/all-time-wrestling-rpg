@@ -301,7 +301,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     todayHighlight.setStart(currentGameDate.atStartOfDay());
     todayHighlight.setEnd(currentGameDate.atTime(23, 59, 59));
     todayHighlight.setAllDay(true);
-    todayHighlight.setColor("#fbbf24"); // Amber highlight
+    todayHighlight.setColor("var(--lumo-warning-color)"); // Theme-aware amber highlight
     todayHighlight.setDisplayMode(DisplayMode.BACKGROUND);
     calendar.getEntryProvider().asInMemory().addEntries(todayHighlight);
 
@@ -315,11 +315,11 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
 
       // Set color based on show type
       if (show.isPremiumLiveEvent()) {
-        entry.setColor("#dc2626"); // Red for PLEs
+        entry.setColor("var(--lumo-error-color)"); // Error red for PLEs
       } else if (show.isWeeklyShow()) {
-        entry.setColor("#2563eb"); // Blue for Weekly shows
+        entry.setColor("var(--lumo-primary-color)"); // Primary blue for weekly shows
       } else {
-        entry.setColor("#8A2BE2"); // Purple for other shows
+        entry.setColor("var(--lumo-header-text-color)"); // Neutral for other shows
       }
 
       // Store show ID for navigation
@@ -403,7 +403,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
         });
 
     if (!show.isPremiumLiveEvent() && !show.isWeeklyShow()) {
-      showItem.getStyle().set("border-color", "#8A2BE2");
+      showItem.getStyle().set("border-color", "var(--lumo-header-text-color)");
       showItem.getStyle().set("border-width", "2px");
     }
 
@@ -442,7 +442,7 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     if (show.getQualityScore() != null) {
       Span starBadge = new Span(renderStars(show.getQualityScore()) + " " + show.getQualityScore());
       starBadge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-      starBadge.getStyle().set("color", "#d97706");
+      starBadge.getStyle().set("color", "var(--lumo-warning-color)");
       textLayout.add(starBadge);
     }
 

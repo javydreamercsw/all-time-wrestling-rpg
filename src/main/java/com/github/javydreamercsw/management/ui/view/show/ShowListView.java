@@ -349,8 +349,8 @@ public class ShowListView extends Main {
                 typeSpan.addClassNames(
                     LumoUtility.Background.PRIMARY, LumoUtility.TextColor.PRIMARY_CONTRAST);
               } else {
-                typeSpan.getStyle().set("background-color", "#8A2BE2");
-                typeSpan.getStyle().set("color", "white");
+                typeSpan.getStyle().set("background-color", "var(--lumo-primary-color)");
+                typeSpan.getStyle().set("color", "var(--lumo-primary-contrast-color)");
               }
 
               return typeSpan;
