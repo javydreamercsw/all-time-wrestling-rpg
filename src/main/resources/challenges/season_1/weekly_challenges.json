@@ -98,4 +98,24 @@
   "imageUrl": "images/challenges/week5.png",
   "notes": "Use spare dice or pen and paper to track completed objectives. Once all three objectives are complete, Eddie may finish the match normally.",
   "active": true
-} ]
+}, {
+  "id": "week_06_who_needs_friends",
+  "weekNumber": 6,
+  "season": "Season 1",
+  "title": "Who Needs Friends?!",
+  "flavorText": "LADIES AND GENTLEMEN! It's time for the ATW Weekly Main Event! This week's challenge is “WHO NEEDS FRIENDS?!”. Tag Team wrestling is all about teamwork. Trust. Communication. Helping your partner when they need you most. Yeah... Forget ALL of that. Your team absolutely HATES each other.",
+  "productLine": "ATW All or Nothing",
+  "expansionCode": "BASE_GAME",
+  "requiredExpansions": [ ],
+  "requiredWrestlerNames": [ ],
+  "difficulty": "MEDIUM",
+  "objective": "Both wrestlers must enter the match at least once AND each wrestler must successfully perform a Signature/Finisher before your team is allowed to win.",
+  "setupInstructions": "ATW All or Nothing / Double Trouble Tag Team setup.\nChoose ANY TWO compatible ATW wrestlers to form your team.\nChoose another two wrestlers as your opponents.\nPlay it solo on Medium difficulty (or Hard for some extra heat)\nOR\nPlay it as a 2 Player game - Tag Match (Both Players can play with the Modifiers).",
+  "matchType": "Tag Team Match",
+  "conditions": [ "Both wrestlers must enter the match at least once.", "Each wrestler must successfully perform a Signature/Finisher before your team is allowed to win." ],
+  "modifiers": [ "I Don't Need Your Help: No tagging until the active wrestler reaches half Starting Health (Blind Tag modifier overrides this).", "You Stole My Spotlight: Whenever the active wrestler Taunts, their partner loses 2 Stamina.", "Blind Tag: The first time either wrestler successfully performs a Signature Move, their partner immediately tags themselves in.", "Fine! Do It Yourself: The first time a wrestler reaches 1/4 Starting Health, their partner refuses to tag in until the active wrestler successfully lands an attack.", "Not My Problem: No interrupting pinfalls until the very last kickout attempt." ],
+  "achievementKey": "CHALLENGE_WEEK_06",
+  "imageUrl": "images/challenges/week6.png",
+  "notes": "Post a picture of your match and, most importantly, tell us which crazy ATW pairing you created!",
+  "active": true
+}]
