@@ -59,6 +59,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
+import com.github.javydreamercsw.management.ui.component.StatusBar;
 import com.github.javydreamercsw.management.ui.component.WrestlerAbilityPanel;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.accordion.Accordion;
@@ -384,6 +385,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       statsLayout.add(new H3("Career Stats (Universe Context)"));
 
       statsLayout.add(createConditionParagraph(state));
+      statsLayout.add(createMoraleBar(state));
+      statsLayout.add(createStaminaBar(state));
 
       if (stats.isPresent()) {
         WrestlerStats wrestlerStats = stats.get();
@@ -602,20 +605,35 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   }
 
   /**
-   * Shared "Physical Condition" paragraph with severity coloring (&lt;50 error, &lt;80 warning,
-   * otherwise success). Used by both the Stats and Medical Record panels so the two never drift.
+   * Shared "Physical Condition" meter with severity coloring (at/below 50 renders in the error
+   * color, otherwise success). Used by both the Stats and Medical Record panels so the two never
+   * drift.
    */
-  private Paragraph createConditionParagraph(final WrestlerState state) {
-    Paragraph para = new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
-    para.addClassNames(LumoUtility.FontWeight.BOLD);
-    if (state.getPhysicalCondition() < 50) {
-      para.addClassNames(LumoUtility.TextColor.ERROR);
-    } else if (state.getPhysicalCondition() < 80) {
-      para.addClassNames(LumoUtility.TextColor.WARNING);
-    } else {
-      para.addClassNames(LumoUtility.TextColor.SUCCESS);
-    }
-    return para;
+  private Div createConditionParagraph(final WrestlerState state) {
+    return StatusBar.bar(
+        "Physical Condition",
+        state.getPhysicalCondition() + "%",
+        state.getPhysicalCondition(),
+        100,
+        50,
+        "condition");
+  }
+
+  /** Morale meter (0–100). */
+  private Div createMoraleBar(final WrestlerState state) {
+    return StatusBar.bar(
+        "Morale", state.getMorale() + "/100", state.getMorale(), 100, 25, "condition");
+  }
+
+  /** Management stamina meter (0–100). */
+  private Div createStaminaBar(final WrestlerState state) {
+    return StatusBar.bar(
+        "Management Stamina",
+        state.getManagementStamina() + "/100",
+        state.getManagementStamina(),
+        100,
+        -1,
+        "condition");
   }
 
   /**

@@ -162,6 +162,16 @@
     background-color: #FFD700; /* Gold/Yellow */
 }
 
+/* Shared StatusBar component (StatusBar.java) — theme-safe success fill and
+   the low-value error state used outside the campaign card context. */
+.status-bar-fill.condition {
+    background-color: var(--lumo-success-color);
+}
+
+.status-bar-fill.status-bar-low {
+    background-color: var(--lumo-error-color) !important;
+}
+
 .status-bar-limit-marker {
     position: absolute;
     top: 0;
