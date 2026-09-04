@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.ui.view.injury;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -44,7 +46,8 @@ class InjuryTypeListViewTest extends AbstractViewTest {
   void setup() {
     when(injuryTypeService.getAllInjuryTypes(any(Pageable.class))).thenReturn(Page.empty());
     when(injuryTypeService.countAll()).thenReturn(0L);
-    view = new InjuryTypeListView(injuryTypeService, securityUtils);
+    view =
+        new InjuryTypeListView(injuryTypeService, securityUtils, mock(NotificationService.class));
     UI.getCurrent().add(view);
   }
 

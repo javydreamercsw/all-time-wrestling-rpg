@@ -44,6 +44,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -257,7 +258,9 @@ public class FactionListView extends VerticalLayout {
                             ev -> {
                               factionService.deleteById(faction.getId());
                               refreshGrid();
-                              Notification.show("Faction deleted.");
+                              Notification.show(
+                                      "Faction deleted.", 3000, Notification.Position.BOTTOM_END)
+                                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                             });
                         confirm.open();
                       });
@@ -400,7 +403,8 @@ public class FactionListView extends VerticalLayout {
       factionService.save(editingFaction);
       editDialog.close();
       refreshGrid();
-      Notification.show("Faction saved successfully.");
+      Notification.show("Faction saved successfully.", 3000, Notification.Position.BOTTOM_END)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
   }
 

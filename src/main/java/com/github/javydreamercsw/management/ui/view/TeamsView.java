@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.dto.TeamDTO;
 import com.github.javydreamercsw.management.service.team.TeamService;
@@ -27,8 +28,6 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -53,6 +52,7 @@ public class TeamsView extends VerticalLayout {
 
   private final TeamService teamService;
   private final SecurityUtils securityUtils;
+  private final NotificationService notificationService;
   private final Grid<TeamDTO> grid;
   private final TextField searchField;
 
@@ -61,10 +61,12 @@ public class TeamsView extends VerticalLayout {
   public TeamsView(
       final TeamService teamService,
       final TeamFormDialog teamFormDialog,
-      final SecurityUtils securityUtils) {
+      final SecurityUtils securityUtils,
+      final NotificationService notificationService) {
     this.teamService = teamService;
     this.teamFormDialog = teamFormDialog;
     this.securityUtils = securityUtils;
+    this.notificationService = notificationService;
     this.grid = new Grid<>(TeamDTO.class, false);
     this.searchField = new TextField();
 
@@ -299,12 +301,10 @@ public class TeamsView extends VerticalLayout {
   }
 
   private void showSuccessNotification(final String message) {
-    Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-    notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    notificationService.showSuccess(message);
   }
 
   private void showErrorNotification(final String message) {
-    Notification notification = Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+    notificationService.showError(message);
   }
 }

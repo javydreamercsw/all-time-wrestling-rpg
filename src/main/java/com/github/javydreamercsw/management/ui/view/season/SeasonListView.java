@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.season;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.vaadin.flow.component.button.Button;
@@ -33,8 +34,6 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -70,6 +69,7 @@ public class SeasonListView extends Main {
 
   private final SeasonService seasonService;
   private final SecurityUtils securityUtils;
+  private final NotificationService notificationService;
   private final Grid<Season> grid;
   private final TextField searchField;
 
@@ -84,9 +84,12 @@ public class SeasonListView extends Main {
   private Binder<Season> binder;
 
   public SeasonListView(
-      @NonNull final SeasonService seasonService, @NonNull final SecurityUtils securityUtils) {
+      @NonNull final SeasonService seasonService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final NotificationService notificationService) {
     this.seasonService = seasonService;
     this.securityUtils = securityUtils;
+    this.notificationService = notificationService;
     this.grid = new Grid<>(Season.class, false);
     this.searchField = new TextField();
 
@@ -391,12 +394,10 @@ public class SeasonListView extends Main {
   }
 
   private void showSuccessNotification(final String message) {
-    Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-    notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    notificationService.showSuccess(message);
   }
 
   private void showErrorNotification(final String message) {
-    Notification notification = Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+    notificationService.showError(message);
   }
 }

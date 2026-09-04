@@ -60,7 +60,9 @@ class TeamFormDialogFieldsTest extends AbstractViewTest {
             wrestlerRepository,
             factionService,
             npcService,
-            securityUtils);
+            securityUtils,
+            org.mockito.Mockito.mock(
+                com.github.javydreamercsw.base.ui.service.NotificationService.class));
   }
 
   @Test
