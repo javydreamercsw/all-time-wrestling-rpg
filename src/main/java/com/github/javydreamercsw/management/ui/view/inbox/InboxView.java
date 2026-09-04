@@ -268,7 +268,6 @@ public class InboxView extends VerticalLayout {
             markSelectedUnreadButton,
             deleteSelectedButton);
     toolbar.addClassName("toolbar");
-    toolbar.getStyle().set("flex-wrap", "wrap");
     return toolbar;
   }
 

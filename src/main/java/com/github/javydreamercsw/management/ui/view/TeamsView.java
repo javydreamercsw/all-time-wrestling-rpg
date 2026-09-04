@@ -201,7 +201,6 @@ public class TeamsView extends VerticalLayout {
     toolbar.setFlexGrow(1, title);
     toolbar.setWidthFull();
     toolbar.addClassName("toolbar");
-    toolbar.getStyle().set("flex-wrap", "wrap");
 
     return toolbar;
   }

@@ -49,6 +49,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -116,8 +117,8 @@ public class SeasonListView extends Main {
     refreshBtn.addClickListener(e -> updateGrid());
 
     HorizontalLayout toolbar = new HorizontalLayout(searchField, addSeasonBtn, refreshBtn);
+    // .toolbar (styles.css) provides the responsive wrap
     toolbar.addClassName("toolbar");
-    toolbar.getStyle().set("flex-wrap", "wrap");
     return toolbar;
   }
 
@@ -205,7 +206,7 @@ public class SeasonListView extends Main {
                       "Details",
                       SeasonDetailView.class,
                       new RouteParameters("seasonId", String.valueOf(season.getId())));
-              detailLink.addClassNames("lumo-small");
+              detailLink.addClassNames(LumoUtility.FontSize.SMALL);
 
               return new HorizontalLayout(detailLink, editBtn, toggleBtn, deleteBtn);
             })

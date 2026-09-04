@@ -149,11 +149,8 @@ public class HomeView extends VerticalLayout {
 
   private Component buildProviderCard(final String title, final Component content) {
     VerticalLayout card = new VerticalLayout();
+    // Chrome (border, radius, padding) comes from the .summary-card rule in styles.css
     card.addClassName("summary-card");
-    card.getStyle()
-        .set("border", "1px solid var(--lumo-contrast-10pct)")
-        .set("border-radius", "var(--lumo-border-radius-m)")
-        .set("padding", "var(--lumo-space-m)");
 
     H4 cardTitle = new H4(title);
     cardTitle.getStyle().set("margin", "0 0 var(--lumo-space-xs) 0");
@@ -192,10 +189,8 @@ public class HomeView extends VerticalLayout {
 
   private Component buildNewsCard(final NewsItem item) {
     Div card = new Div();
+    // Separator + spacing come from the .news-card rule in styles.css
     card.addClassName("news-card");
-    card.getStyle()
-        .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
-        .set("padding", "var(--lumo-space-s) 0");
 
     HorizontalLayout meta = new HorizontalLayout();
     meta.setSpacing(true);

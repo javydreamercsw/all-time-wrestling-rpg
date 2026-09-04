@@ -319,6 +319,42 @@
     }
 }
 
+/* Home view — cards that previously carried their chrome as inline styles. */
+.home-view {
+    max-width: 1100px;
+    margin-inline: auto;
+    width: 100%;
+}
+
+.summary-card {
+    border: 1px solid var(--lumo-contrast-10pct);
+    border-radius: var(--lumo-border-radius-m);
+    padding: var(--lumo-space-m);
+    background-color: var(--lumo-base-color);
+}
+
+.news-card {
+    border-bottom: 1px solid var(--lumo-contrast-10pct);
+    padding: var(--lumo-space-s) 0;
+}
+
+/* Premium live event rows on the Show List get a subtle warning accent.
+   setPartNameGenerator("ple-show") marks each row's cells; ::part() on the
+   grid host reaches into the shadow DOM. */
+vaadin-grid::part(ple-show) {
+    box-shadow: inset 3px 0 0 var(--lumo-warning-color);
+}
+
+/* Manual toolbars (Season/Teams/Inbox) — the old .toolbar hook finally works:
+   wraps on narrow screens so the controls stay reachable. */
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--lumo-space-s);
+    align-items: flex-end;
+    width: 100%;
+}
+
 /* Profile Drawer */
 .profile-drawer::part(overlay) {
     position: absolute;
