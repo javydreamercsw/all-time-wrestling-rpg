@@ -206,6 +206,14 @@ public class FactionService {
     return factionRepository.findByName(name);
   }
 
+  /** Case-insensitive name search backing the faction list view's search box. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Page<Faction> searchFactions(
+      @NonNull final String searchTerm, @NonNull final Pageable pageable) {
+    return factionRepository.findByNameContainingIgnoreCase(searchTerm, pageable);
+  }
+
   /** Get all active factions. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")

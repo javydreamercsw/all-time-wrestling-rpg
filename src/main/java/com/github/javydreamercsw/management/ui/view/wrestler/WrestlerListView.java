@@ -46,6 +46,8 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -56,6 +58,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -86,6 +89,7 @@ public class WrestlerListView extends Main {
   private Map<Long, WrestlerState> statesByWrestlerId = new HashMap<>();
   private Map<Long, WrestlerAlignment> alignmentsByWrestlerId = new HashMap<>();
   final Grid<Wrestler> wrestlerGrid;
+  private final TextField searchField = new TextField();
 
   public WrestlerListView(
       @NonNull final WrestlerService wrestlerService,
@@ -268,11 +272,17 @@ public class WrestlerListView extends Main {
     Div gridWrapper = new Div(wrestlerGrid);
     gridWrapper.addClassName("grid-scroll-container");
 
+    searchField.setPlaceholder("Search wrestlers...");
+    searchField.setClearButtonVisible(true);
+    searchField.setValueChangeMode(ValueChangeMode.LAZY);
+    searchField.addValueChangeListener(e -> reloadGrid());
+    searchField.setId("wrestler-search-field");
+
     Button createButton = createWrestlerButton();
     if (securityUtils.canCreate()) {
-      add(new ViewToolbar("Wrestler List", createButton));
+      add(new ViewToolbar("Wrestler List", searchField, createButton));
     } else {
-      add(new ViewToolbar("Wrestler List"));
+      add(new ViewToolbar("Wrestler List", searchField));
     }
     add(gridWrapper);
   }
@@ -335,15 +345,19 @@ public class WrestlerListView extends Main {
                         .map(Wrestler::getId)
                         .collect(Collectors.toSet()))
             .orElseGet(Collections::emptySet);
+    String searchTerm = searchField.getValue();
 
     if (securityUtils.isAdmin() || securityUtils.isBooker()) {
       wrestlerGrid.setItems(
           query ->
               wrestlerService
                   .findPageFiltered(
-                      enabledCodes, excludedIds, VaadinSpringDataHelpers.toSpringPageRequest(query))
+                      enabledCodes,
+                      excludedIds,
+                      searchTerm,
+                      VaadinSpringDataHelpers.toSpringPageRequest(query))
                   .stream(),
-          query -> (int) wrestlerService.countFiltered(enabledCodes, excludedIds));
+          query -> (int) wrestlerService.countFiltered(enabledCodes, excludedIds, searchTerm));
     } else {
       securityUtils
           .getAuthenticatedUser()
@@ -353,6 +367,13 @@ public class WrestlerListView extends Main {
                     wrestlerService.findAllByAccount(user.getAccount()).stream()
                         .filter(w -> enabledCodes.contains(w.getExpansionCode()))
                         .filter(w -> !excludedIds.contains(w.getId()))
+                        .filter(
+                            w ->
+                                searchTerm == null
+                                    || searchTerm.isBlank()
+                                    || w.getName()
+                                        .toLowerCase(Locale.ROOT)
+                                        .contains(searchTerm.trim().toLowerCase(Locale.ROOT)))
                         .toList());
               });
     }
