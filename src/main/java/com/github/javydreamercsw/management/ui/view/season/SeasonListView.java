@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -349,14 +350,27 @@ public class SeasonListView extends Main {
   }
 
   private void deleteSeason(final Season season) {
-    try {
-      seasonService.deleteSeason(season.getId());
-      showSuccessNotification("Season deleted successfully");
-      updateGrid();
-    } catch (Exception e) {
-      log.error("Error deleting season: {}", season.getName(), e);
-      showErrorNotification("Error deleting season: " + e.getMessage());
-    }
+    ConfirmDialog confirmDialog = new ConfirmDialog();
+    confirmDialog.setHeader("Delete Season");
+    confirmDialog.setText(
+        "Are you sure you want to delete the season '"
+            + season.getName()
+            + "'? This cannot be undone.");
+    confirmDialog.setCancelable(true);
+    confirmDialog.setConfirmText("Delete");
+    confirmDialog.setConfirmButtonTheme("error primary");
+    confirmDialog.addConfirmListener(
+        e -> {
+          try {
+            seasonService.deleteSeason(season.getId());
+            showSuccessNotification("Season deleted successfully");
+            updateGrid();
+          } catch (Exception ex) {
+            log.error("Error deleting season: {}", season.getName(), ex);
+            showErrorNotification("Error deleting season: " + ex.getMessage());
+          }
+        });
+    confirmDialog.open();
   }
 
   private void updateGrid() {

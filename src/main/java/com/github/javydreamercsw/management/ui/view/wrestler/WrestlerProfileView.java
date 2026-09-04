@@ -65,6 +65,7 @@ import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -561,9 +562,23 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         resetWearAndTearButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
         resetWearAndTearButton.addClickListener(
             e -> {
-              wrestlerService.resetWearAndTear(wrestler.getId(), universeId);
-              updateView();
-              Notification.show("Wear & Tear reset to 100%!");
+              ConfirmDialog confirmDialog = new ConfirmDialog();
+              confirmDialog.setHeader("Reset Wear & Tear");
+              confirmDialog.setText(
+                  "Reset "
+                      + wrestler.getName()
+                      + "'s Wear & Tear to 100%? All accumulated damage will be erased. This"
+                      + " cannot be undone.");
+              confirmDialog.setCancelable(true);
+              confirmDialog.setConfirmText("Reset");
+              confirmDialog.setConfirmButtonTheme("error primary");
+              confirmDialog.addConfirmListener(
+                  ev -> {
+                    wrestlerService.resetWearAndTear(wrestler.getId(), universeId);
+                    updateView();
+                    Notification.show("Wear & Tear reset to 100%!");
+                  });
+              confirmDialog.open();
             });
         injuriesLayout.add(resetWearAndTearButton);
       }

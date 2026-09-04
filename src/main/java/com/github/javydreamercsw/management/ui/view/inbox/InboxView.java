@@ -38,6 +38,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridMultiSelectionModel;
 import com.vaadin.flow.component.html.Div;
@@ -211,14 +212,29 @@ public class InboxView extends VerticalLayout {
     deleteSelectedButton.addClickListener(
         event -> {
           int selectedCount = selectedItems.size();
-          inboxService.deleteSelected(selectedItems);
-          updateList();
-          Notification.show(selectedCount + " items deleted.")
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-          selectedItems.clear();
-          grid.deselectAll();
-          selectAllCheckbox.setValue(false);
-          updateSelectedButtonsState();
+          ConfirmDialog confirmDialog = new ConfirmDialog();
+          confirmDialog.setHeader("Delete messages");
+          confirmDialog.setText(
+              "Permanently delete "
+                  + selectedCount
+                  + " selected message"
+                  + (selectedCount == 1 ? "" : "s")
+                  + "? This cannot be undone.");
+          confirmDialog.setCancelable(true);
+          confirmDialog.setConfirmText("Delete");
+          confirmDialog.setConfirmButtonTheme("error primary");
+          confirmDialog.addConfirmListener(
+              e -> {
+                inboxService.deleteSelected(selectedItems);
+                updateList();
+                Notification.show(selectedCount + " items deleted.")
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                selectedItems.clear();
+                grid.deselectAll();
+                selectAllCheckbox.setValue(false);
+                updateSelectedButtonsState();
+              });
+          confirmDialog.open();
         });
 
     markSelectedReadButton.setVisible(securityUtils.canEdit());
