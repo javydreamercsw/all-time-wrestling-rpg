@@ -47,6 +47,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.NonNull;
 import org.vaadin.stefan.fullcalendar.DisplayMode;
@@ -124,7 +125,10 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     // Create FullCalendar
     calendar = FullCalendarBuilder.create().withAutoBrowserLocale().build();
     calendar.setSizeFull();
-    calendar.setHeight("600px");
+    // Fluid height: fill the viewport alongside the toolbar and panel instead of a
+    // fixed 600px that either wasted space or cramped short screens.
+    calendar.setHeight("min(70vh, 100%)");
+    calendar.getElement().getStyle().set("min-height", "420px");
 
     // Navigate the calendar to the specific date
     LocalDate targetDate = currentYearMonth.atDay(1);
@@ -169,9 +173,12 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
   }
 
   private void createNavigationControls() {
-    // Initialize year select
+    // Initialize year select — centered on the current game date rather than a
+    // hardcoded range, so the calendar stays usable as the game clock advances.
     yearSelect = new Select<>();
-    yearSelect.setItems(2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030);
+    int gameYear = gameSettingService.getCurrentGameDate().getYear();
+    yearSelect.setItems(
+        IntStream.rangeClosed(gameYear - 5, gameYear + 5).boxed().toArray(Integer[]::new));
     yearSelect.setValue(currentYearMonth.getYear());
     yearSelect.addValueChangeListener(
         e -> navigateToYearMonth(e.getValue(), currentYearMonth.getMonthValue()));
@@ -224,6 +231,8 @@ public class ShowCalendarView extends Main implements BeforeEnterObserver {
     HorizontalLayout navigation = new HorizontalLayout();
     navigation.setAlignItems(FlexComponent.Alignment.CENTER);
     navigation.setSpacing(true);
+    // Wrap instead of overflowing on narrow (phone) viewports.
+    navigation.addClassNames(LumoUtility.FlexWrap.WRAP);
     navigation.add(prevBtn, currentDateLabel, nextBtn, yearSelect, monthSelect, todayBtn);
 
     return navigation;
