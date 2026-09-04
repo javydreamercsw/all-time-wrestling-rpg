@@ -176,7 +176,9 @@ public class ShowTemplateListView extends Main {
 
     // Toolbar with filters and create button
     add(new ViewToolbar("Show Templates", ViewToolbar.group(filterLayout, createBtn)));
-    add(templateGrid);
+    Div gridWrapper = new Div(templateGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
 
     refreshGrid();
   }

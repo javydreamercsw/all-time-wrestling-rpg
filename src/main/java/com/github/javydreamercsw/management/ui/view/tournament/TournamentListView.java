@@ -38,6 +38,7 @@ import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -83,7 +84,9 @@ public class TournamentListView extends VerticalLayout {
     setPadding(false);
 
     grid = buildGrid();
-    add(buildToolbar(), grid);
+    Div gridWrapper = new Div(grid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(buildToolbar(), gridWrapper);
     refresh();
   }
 

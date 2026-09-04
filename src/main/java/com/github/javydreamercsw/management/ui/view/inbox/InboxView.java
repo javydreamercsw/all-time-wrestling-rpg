@@ -40,6 +40,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridMultiSelectionModel;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
@@ -119,7 +120,9 @@ public class InboxView extends VerticalLayout {
 
     splitLayout = new SplitLayout();
     splitLayout.setSizeFull();
-    splitLayout.addToPrimary(new VerticalLayout(getToolbar(), grid));
+    Div gridWrapper = new Div(grid);
+    gridWrapper.addClassName("grid-scroll-container");
+    splitLayout.addToPrimary(new VerticalLayout(getToolbar(), gridWrapper));
     splitLayout.addToSecondary(detailsView);
     splitLayout.setSplitterPosition(100);
 
@@ -295,6 +298,8 @@ public class InboxView extends VerticalLayout {
     grid.setId("inbox-grid");
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
+    // 8 columns; below this the grid scrolls horizontally inside .grid-scroll-container
+    grid.setMinWidth("900px");
     grid.addColumn(this::getSenderDisplay).setHeader("From").setId("from-column");
     grid.addColumn(InboxItem::getEventType).setHeader("Event Type").setId("event-type-column");
     grid.addComponentColumn(this::createUrgencyBadge)

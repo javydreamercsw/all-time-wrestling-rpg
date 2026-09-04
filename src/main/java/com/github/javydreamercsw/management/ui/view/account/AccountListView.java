@@ -23,6 +23,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -64,7 +65,9 @@ public class AccountListView extends Main {
     add(new ViewToolbar("Account List", ViewToolbar.group(createButton)));
 
     setupGrid();
-    add(grid);
+    Div gridWrapper = new Div(grid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
     refreshGrid();
   }
 

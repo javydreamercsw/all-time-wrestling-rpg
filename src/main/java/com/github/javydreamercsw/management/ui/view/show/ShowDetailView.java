@@ -672,7 +672,8 @@ public class ShowDetailView extends Main
     segmentsLayout.add(segmentsProgressBar);
 
     Div gridWrapper = new Div(segmentsGrid);
-    gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+    // .grid-scroll-container adds touch momentum scrolling on top of the overflow behavior
+    gridWrapper.addClassNames("grid-scroll-container", LumoUtility.Width.FULL);
     gridWrapper.setSizeFull();
     gridWrapper.setId("segments-grid-wrapper");
     segmentsLayout.add(gridWrapper);

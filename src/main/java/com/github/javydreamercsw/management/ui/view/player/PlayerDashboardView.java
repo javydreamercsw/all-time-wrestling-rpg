@@ -394,10 +394,20 @@ public class PlayerDashboardView extends VerticalLayout {
     Grid<InboxItem> inboxGrid = createInboxGrid();
     Grid<Achievement> achievementsGrid = createAchievementsGrid();
 
-    pages.add(upcomingMatchesGrid, rivalriesGrid, inboxGrid, achievementsGrid);
-    rivalriesGrid.setVisible(false);
-    inboxGrid.setVisible(false);
-    achievementsGrid.setVisible(false);
+    // Wrap each tab grid in the touch-scroll container so wide grids scroll on phones
+    Div upcomingWrapper = new Div(upcomingMatchesGrid);
+    upcomingWrapper.addClassName("grid-scroll-container");
+    Div rivalriesWrapper = new Div(rivalriesGrid);
+    rivalriesWrapper.addClassName("grid-scroll-container");
+    Div inboxWrapper = new Div(inboxGrid);
+    inboxWrapper.addClassName("grid-scroll-container");
+    Div achievementsWrapper = new Div(achievementsGrid);
+    achievementsWrapper.addClassName("grid-scroll-container");
+
+    pages.add(upcomingWrapper, rivalriesWrapper, inboxWrapper, achievementsWrapper);
+    rivalriesWrapper.setVisible(false);
+    inboxWrapper.setVisible(false);
+    achievementsWrapper.setVisible(false);
 
     Tab matchesTab = new Tab("Upcoming Matches");
     Tab rivalriesTab = new Tab("Rivalries");
@@ -406,10 +416,10 @@ public class PlayerDashboardView extends VerticalLayout {
 
     Map<Tab, Component> tabsToPages =
         Map.of(
-            matchesTab, upcomingMatchesGrid,
-            rivalriesTab, rivalriesGrid,
-            inboxTab, inboxGrid,
-            achievementsTab, achievementsGrid);
+            matchesTab, upcomingWrapper,
+            rivalriesTab, rivalriesWrapper,
+            inboxTab, inboxWrapper,
+            achievementsTab, achievementsWrapper);
 
     Set<Tab> loadedTabs = new HashSet<>();
     loadedTabs.add(matchesTab);
@@ -495,6 +505,8 @@ public class PlayerDashboardView extends VerticalLayout {
       grid.setItems(Collections.emptyList());
     }
     grid.setSizeFull();
+    // 5 columns incl. button column; scrolls horizontally inside .grid-scroll-container
+    grid.setMinWidth("640px");
     return grid;
   }
 
@@ -546,6 +558,8 @@ public class PlayerDashboardView extends VerticalLayout {
     grid.addColumn(Achievement::getDescription).setHeader("Requirement");
     grid.addColumn(a -> a.getXpValue() + " XP").setHeader("Reward").setSortable(true);
     grid.setSizeFull();
+    // 4 columns incl. fixed 50px icon; scrolls horizontally inside .grid-scroll-container
+    grid.setMinWidth("520px");
     return grid;
   }
 

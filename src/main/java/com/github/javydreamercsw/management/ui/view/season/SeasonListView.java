@@ -27,6 +27,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.Icon;
@@ -92,7 +93,9 @@ public class SeasonListView extends Main {
     configureEditDialog();
     updateGrid();
 
-    add(createToolbar(), grid);
+    Div gridWrapper = new Div(grid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(createToolbar(), gridWrapper);
   }
 
   private HorizontalLayout createToolbar() {
@@ -120,6 +123,8 @@ public class SeasonListView extends Main {
   private void configureGrid() {
     grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
     grid.setSizeFull();
+    // 7 columns; below this the grid scrolls horizontally inside .grid-scroll-container
+    grid.setMinWidth("800px");
 
     // Add columns
     grid.addColumn(Season::getName).setHeader("Name").setSortable(true).setResizable(true);

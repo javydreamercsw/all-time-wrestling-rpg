@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -202,7 +203,9 @@ public class NpcListView extends Main {
         LumoUtility.Gap.SMALL);
 
     add(new ViewToolbar("NPC List", ViewToolbar.group(createBtn)));
-    add(npcGrid);
+    Div gridWrapper = new Div(npcGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
   }
 
   private void refreshGrid() {

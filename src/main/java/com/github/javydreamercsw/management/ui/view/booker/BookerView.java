@@ -146,16 +146,24 @@ public class BookerView extends VerticalLayout {
     Grid<Show> showsGrid = createUpcomingShowsGrid();
     Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();
 
-    Div pages = new Div(rosterGrid, showsGrid, rivalriesGrid);
+    // Wrap each tab grid in the touch-scroll container so wide grids scroll on phones
+    Div rosterWrapper = new Div(rosterGrid);
+    rosterWrapper.addClassName("grid-scroll-container");
+    Div showsWrapper = new Div(showsGrid);
+    showsWrapper.addClassName("grid-scroll-container");
+    Div rivalriesWrapper = new Div(rivalriesGrid);
+    rivalriesWrapper.addClassName("grid-scroll-container");
+
+    Div pages = new Div(rosterWrapper, showsWrapper, rivalriesWrapper);
     pages.setSizeFull();
-    showsGrid.setVisible(false);
-    rivalriesGrid.setVisible(false);
+    showsWrapper.setVisible(false);
+    rivalriesWrapper.setVisible(false);
 
     Map<Tab, Component> tabsToPages =
         Map.of(
-            tabs.getTabAt(0), rosterGrid,
-            tabs.getTabAt(1), showsGrid,
-            tabs.getTabAt(2), rivalriesGrid);
+            tabs.getTabAt(0), rosterWrapper,
+            tabs.getTabAt(1), showsWrapper,
+            tabs.getTabAt(2), rivalriesWrapper);
 
     tabs.addSelectedChangeListener(
         event -> {

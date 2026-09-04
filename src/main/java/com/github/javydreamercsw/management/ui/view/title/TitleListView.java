@@ -33,6 +33,7 @@ import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.Icon;
@@ -109,12 +110,16 @@ public class TitleListView extends Main {
 
     setupGrid();
     grid.addClassNames(LumoUtility.Flex.GROW); // Add this to make the grid grow
-    add(grid);
+    Div gridWrapper = new Div(grid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
     refreshGrid();
   }
 
   private void setupGrid() {
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+    // 10 columns; below this the grid scrolls horizontally inside .grid-scroll-container
+    grid.setMinWidth("1100px");
     grid.addColumn(Title::getName).setHeader("Name").setSortable(true);
     grid.addComponentColumn(
             title -> {

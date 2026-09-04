@@ -47,6 +47,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
@@ -379,6 +380,8 @@ public class ShowListView extends Main {
         .setFlexGrow(1);
 
     showGrid.setSizeFull();
+    // 9 columns need room; below this the grid scrolls horizontally inside .grid-scroll-container
+    showGrid.setMinWidth("1000px");
 
     showGrid
         .addComponentColumn(
@@ -468,7 +471,9 @@ public class ShowListView extends Main {
     } else {
       add(new ViewToolbar("Show List"));
     }
-    add(showGrid);
+    Div gridWrapper = new Div(showGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
 
     refreshGrid();
   }
