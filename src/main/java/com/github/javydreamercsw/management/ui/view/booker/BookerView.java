@@ -48,7 +48,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "booker", layout = MainLayout.class)
@@ -185,12 +187,22 @@ public class BookerView extends VerticalLayout {
     Grid.Column<Wrestler> nameColumn =
         grid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
 
+    // Resolve tiers once per render pass instead of a per-row service call
+    // (the N+1 the audit flagged); rows without a state fall back to UNKNOWN.
+    List<Wrestler> roster = wrestlerService.findAll();
+    Map<Long, WrestlerState> statesByWrestler =
+        roster.stream()
+            .collect(
+                Collectors.toMap(
+                    Wrestler::getId,
+                    w ->
+                        wrestlerService.getOrCreateState(
+                            w.getId(), universeContextService.getCurrentUniverseId())));
+
     grid.addColumn(
             wrestler -> {
-              WrestlerState state =
-                  wrestlerService.getOrCreateState(
-                      wrestler.getId(), universeContextService.getCurrentUniverseId());
-              return state.getTier().getDisplayWithEmoji();
+              WrestlerState state = statesByWrestler.get(wrestler.getId());
+              return state != null ? state.getTier().getDisplayWithEmoji() : "—";
             })
         .setHeader("Tier")
         .setSortable(true);
@@ -198,7 +210,7 @@ public class BookerView extends VerticalLayout {
     grid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
     grid.addColumn(Wrestler::getIsPlayer).setHeader("Is Player?").setSortable(true);
 
-    grid.setItems(wrestlerService.findAll());
+    grid.setItems(roster);
     grid.setSizeFull();
 
     // Default sorting by Name

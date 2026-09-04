@@ -915,9 +915,20 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void refreshUI() {
+    // Preserve the scroll position across the rebuild — in-place actions
+    // (picks, upgrades, next-day) would otherwise throw the user back to
+    // the top of a tall dashboard.
+    getUI().ifPresent(ui -> ui.getPage().executeJs("window.__atwScrollY = window.scrollY"));
     removeAll();
     loadCampaign();
     initUI();
+    getUI()
+        .ifPresent(
+            ui ->
+                ui.getPage()
+                    .executeJs(
+                        "if (window.__atwScrollY != null) window.scrollTo(0, window.__atwScrollY);"
+                            + " window.__atwScrollY = null;"));
   }
 
   private void addGlobalCardLibrary() {
