@@ -126,6 +126,35 @@ class ChallengeListViewTest extends AbstractViewTest {
   }
 
   @Test
+  @DisplayName("Objective with [[icon]] placeholders renders inline SVGs instead of raw tokens")
+  void objectiveWithIconPlaceholders_rendersInlineSvg() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    ChallengeDTO challenge =
+        ChallengeDTO.builder()
+            .id("test_placeholders")
+            .title("Placeholder Challenge")
+            .season("Season 1")
+            .expansionCode("BASE_GAME")
+            .difficulty(Difficulty.MEDIUM)
+            .objective("Each wrestler must successfully perform a [[signature]]/[[finisher]].")
+            .active(true)
+            .build();
+    ChallengeListView view = buildView(List.of(challenge), List.of());
+
+    // The rendered objective is a Div whose children include SVG spans for the
+    // two known icons — no literal "[[signature]]" text anywhere in the card.
+    List<Span> spans = _find(view, Span.class);
+    boolean hasRawToken = spans.stream().anyMatch(s -> s.getText().contains("[[signature]]"));
+    assertFalse(hasRawToken, "Raw [[signature]] token should not leak into the UI");
+
+    boolean hasInlineSvg =
+        spans.stream()
+            .anyMatch(
+                s -> s.getText().isEmpty() && !s.getElement().getProperty("innerHTML").isBlank());
+    assertTrue(hasInlineSvg, "Expected at least one inline SVG icon in the objective");
+  }
+
+  @Test
   @DisplayName("Locked challenge shows Locked badge")
   void lockedChallengeShowsLockedBadge() {
     when(securityUtils.isAdmin()).thenReturn(false);
