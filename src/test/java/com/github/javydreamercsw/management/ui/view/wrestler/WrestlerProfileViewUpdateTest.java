@@ -66,8 +66,11 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -397,11 +400,8 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
     card.setKey("hot_streak");
     card.setLevel1Name("Hot Streak");
     card.setLevel2Name("On Fire");
-    com.vaadin.flow.component.combobox.ComboBox<StatusCard> combo =
-        _get(
-            UI.getCurrent(),
-            com.vaadin.flow.component.combobox.ComboBox.class,
-            spec -> spec.withLabel("Add Status Card"));
+    ComboBox<StatusCard> combo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Add Status Card"));
     combo.setValue(card);
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Add/Flip")).click();
 
@@ -444,8 +444,7 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
     enterView();
 
     _get(view, Button.class, spec -> spec.withText("Reset Wear & Tear")).click();
-    com.vaadin.flow.component.confirmdialog.ConfirmDialog confirm =
-        _get(UI.getCurrent(), com.vaadin.flow.component.confirmdialog.ConfirmDialog.class);
+    ConfirmDialog confirm = _get(UI.getCurrent(), ConfirmDialog.class);
     assertTrue(confirm.isOpened(), "Confirm dialog should open");
     fireConfirmEvent(confirm);
 
@@ -464,14 +463,10 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
 
   /** Fires ConfirmDialog's confirm action via reflection (fireEvent is protected). */
   @SuppressWarnings("unchecked")
-  private static void fireConfirmEvent(
-      com.vaadin.flow.component.confirmdialog.ConfirmDialog dialog) {
+  private static void fireConfirmEvent(ConfirmDialog dialog) {
     try {
-      var event =
-          new com.vaadin.flow.component.confirmdialog.ConfirmDialog.ConfirmEvent(dialog, true);
-      var fireEvent =
-          com.vaadin.flow.component.Component.class.getDeclaredMethod(
-              "fireEvent", com.vaadin.flow.component.ComponentEvent.class);
+      var event = new ConfirmDialog.ConfirmEvent(dialog, true);
+      var fireEvent = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
       fireEvent.setAccessible(true);
       fireEvent.invoke(dialog, event);
     } catch (ReflectiveOperationException e) {

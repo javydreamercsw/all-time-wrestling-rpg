@@ -24,10 +24,13 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -100,7 +103,7 @@ class AchievementSyncTest {
 
     strict.sync();
 
-    verify(achievementRepository, org.mockito.Mockito.never()).saveAll(any());
+    verify(achievementRepository, Mockito.never()).saveAll(any());
   }
 
   @Test
@@ -121,7 +124,7 @@ class AchievementSyncTest {
     // differently: scanning an empty challenge directory yields no saveAll.
     missingFile.sync();
 
-    verify(achievementRepository, org.mockito.Mockito.atLeastOnce()).saveAll(any());
+    verify(achievementRepository, Mockito.atLeastOnce()).saveAll(any());
   }
 
   @Test
@@ -136,11 +139,10 @@ class AchievementSyncTest {
 
     // The shipped file's content was copied onto the existing entity, and the
     // same instance flows into the save batch (update in place, not a new row).
-    org.mockito.ArgumentCaptor<java.util.List<Achievement>> captor =
-        org.mockito.ArgumentCaptor.forClass(java.util.List.class);
-    verify(achievementRepository, org.mockito.Mockito.atLeastOnce()).saveAll(captor.capture());
-    org.junit.jupiter.api.Assertions.assertTrue(
-        captor.getAllValues().stream().flatMap(java.util.List::stream).anyMatch(a -> a == existing),
+    ArgumentCaptor<List<Achievement>> captor = ArgumentCaptor.forClass(List.class);
+    verify(achievementRepository, Mockito.atLeastOnce()).saveAll(captor.capture());
+    Assertions.assertTrue(
+        captor.getAllValues().stream().flatMap(List::stream).anyMatch(a -> a == existing),
         "The pre-existing entity instance should be saved after copyContentFrom");
   }
 }

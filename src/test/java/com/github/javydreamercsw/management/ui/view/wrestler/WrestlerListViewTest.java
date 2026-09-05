@@ -38,12 +38,15 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.data.provider.Query;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.springframework.data.domain.Page;
 
 class WrestlerListViewTest extends AbstractViewTest {
 
@@ -104,19 +107,17 @@ class WrestlerListViewTest extends AbstractViewTest {
   void searchFieldFiltersThroughService() {
     when(wrestlerService.getStateMapByUniverseId(1L)).thenReturn(Collections.emptyMap());
     when(alignmentService.getAlignmentMapByUniverseId(1L)).thenReturn(Collections.emptyMap());
-    when(wrestlerService.findPageFiltered(any(), any(), any(), any()))
-        .thenReturn(org.springframework.data.domain.Page.empty());
+    when(wrestlerService.findPageFiltered(any(), any(), any(), any())).thenReturn(Page.empty());
     when(wrestlerService.countFiltered(any(), any(), any())).thenReturn(0L);
     when(securityUtils.canCreate()).thenReturn(true);
 
     view.reloadGridForTest("rey");
     // findPageFiltered runs inside the grid's lazy DataProvider — force a fetch.
     Grid<?> grid = _get(view, Grid.class, spec -> spec.withId("wrestler-list-grid"));
-    grid.getDataProvider().fetch(new com.vaadin.flow.data.provider.Query<>());
+    grid.getDataProvider().fetch(new Query<>());
 
-    verify(wrestlerService)
-        .findPageFiltered(any(), any(), org.mockito.ArgumentMatchers.eq("rey"), any());
-    verify(wrestlerService).countFiltered(any(), any(), org.mockito.ArgumentMatchers.eq("rey"));
+    verify(wrestlerService).findPageFiltered(any(), any(), ArgumentMatchers.eq("rey"), any());
+    verify(wrestlerService).countFiltered(any(), any(), ArgumentMatchers.eq("rey"));
   }
 
   @Test
@@ -124,13 +125,12 @@ class WrestlerListViewTest extends AbstractViewTest {
   void emptySearchLoadsGrid() {
     when(wrestlerService.getStateMapByUniverseId(1L)).thenReturn(Collections.emptyMap());
     when(alignmentService.getAlignmentMapByUniverseId(1L)).thenReturn(Collections.emptyMap());
-    when(wrestlerService.findPageFiltered(any(), any(), any(), any()))
-        .thenReturn(org.springframework.data.domain.Page.empty());
+    when(wrestlerService.findPageFiltered(any(), any(), any(), any())).thenReturn(Page.empty());
     when(wrestlerService.countFiltered(any(), any(), any())).thenReturn(0L);
 
     view.reloadGridForTest("");
     Grid<?> grid = _get(view, Grid.class, spec -> spec.withId("wrestler-list-grid"));
-    grid.getDataProvider().fetch(new com.vaadin.flow.data.provider.Query<>());
+    grid.getDataProvider().fetch(new Query<>());
 
     verify(wrestlerService).findPageFiltered(any(), any(), any(), any());
     verify(wrestlerService).countFiltered(any(), any(), any());
