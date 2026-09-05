@@ -23,13 +23,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.Resource;
@@ -159,25 +163,42 @@ class ChallengeServiceTest {
   }
 
   @Test
-  void allChallengeAchievementKeysExistInAchievementsJson() throws Exception {
+  void allChallengeAchievementKeysExistInShippedAchievementFiles() throws Exception {
+    // Achievement keys may ship in achievements.json (the global catalog) OR in
+    // any challenges/**/weekly_achievements.json — AchievementSync upserts both
+    // at startup (single-source-of-truth change, ATW-i2ar). Assert each
+    // challenge's key is defined in at least one of the shipped files.
+    Set<String> knownKeys = new HashSet<>();
     try (InputStream is = getClass().getResourceAsStream("/achievements.json")) {
-      Set<String> knownKeys =
-          new ObjectMapper()
-              .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
-                  .map(a -> (String) a.get("key"))
-                  .collect(Collectors.toSet());
-
-      service.getAllChallenges().stream()
-          .filter(c -> c.getAchievementKey() != null && !c.getAchievementKey().isBlank())
-          .forEach(
-              c ->
-                  assertTrue(
-                      knownKeys.contains(c.getAchievementKey()),
-                      "Challenge '"
-                          + c.getId()
-                          + "' has achievementKey '"
-                          + c.getAchievementKey()
-                          + "' not found in achievements.json"));
+      new ObjectMapper()
+          .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
+              .map(a -> (String) a.get("key"))
+              .forEach(knownKeys::add);
     }
+    // Walk the challenges directory the same way ChallengeService does.
+    try (var files = Files.walk(Path.of("src", "main", "resources", "challenges"))) {
+      for (Path p : files.filter(f -> f.toString().endsWith(".json")).toList()) {
+        if (p.getFileName().toString().toLowerCase(Locale.ROOT).contains("achievements")) {
+          try (InputStream is = new FileInputStream(p.toFile())) {
+            new ObjectMapper()
+                .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
+                    .map(a -> (String) a.get("key"))
+                    .forEach(knownKeys::add);
+          }
+        }
+      }
+    }
+
+    service.getAllChallenges().stream()
+        .filter(c -> c.getAchievementKey() != null && !c.getAchievementKey().isBlank())
+        .forEach(
+            c ->
+                assertTrue(
+                    knownKeys.contains(c.getAchievementKey()),
+                    "Challenge '"
+                        + c.getId()
+                        + "' has achievementKey '"
+                        + c.getAchievementKey()
+                        + "' not found in any shipped achievements file"));
   }
 }

@@ -61,29 +61,64 @@ public class AchievementSync implements DataSyncContributor {
     if (skipIfNotEmpty && achievementRepository.count() > 0) {
       return;
     }
-    ClassPathResource resource = new ClassPathResource("achievements.json");
-    if (resource.exists()) {
-      log.debug("Loading achievements from file: {}", resource.getPath());
-      try (var is = resource.getInputStream()) {
-        List<Achievement> fromFile = objectMapper.readValue(is, new TypeReference<>() {});
-        List<Achievement> toSave = new ArrayList<>();
-        for (Achievement a : fromFile) {
-          Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
-          if (existingOpt.isPresent()) {
-            Achievement existing = existingOpt.get();
-            existing.copyContentFrom(a);
-            toSave.add(existing);
-          } else {
-            toSave.add(a);
-          }
+    syncClasspathFile("achievements.json");
+    // Weekly-challenge achievements live in their challenge directories (one
+    // entry per week's file) rather than being hand-copied into
+    // achievements.json — single source of truth, and the live-update path
+    // (ChallengeUpdateService via the content manifest) publishes the same
+    // file to installed clients.
+    syncChallengeAchievements();
+  }
+
+  private void syncChallengeAchievements() {
+    try {
+      org.springframework.core.io.support.ResourcePatternResolver resolver =
+          new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
+      org.springframework.core.io.Resource[] files =
+          resolver.getResources("classpath*:challenges/**/*achievements*.json");
+      for (org.springframework.core.io.Resource file : files) {
+        // getFilename() drops subdirectories; recover the full classpath path
+        // (e.g. challenges/season_1/weekly_achievements.json) from the URL.
+        String url = file.getURL().toString();
+        int idx = url.indexOf("challenges/");
+        if (idx >= 0) {
+          syncClasspathFile(url.substring(idx));
+        } else {
+          log.warn("Skipping unrecognized challenge achievement resource: {}", url);
         }
-        achievementRepository.saveAll(toSave);
-        log.debug("Achievement loading completed - {} achievements processed", fromFile.size());
-      } catch (IOException e) {
-        log.error("Error loading achievements from file", e);
       }
-    } else {
-      log.warn("Achievements file not found: {}", resource.getPath());
+    } catch (IOException e) {
+      log.error("Error scanning challenge achievement files", e);
+    }
+  }
+
+  private void syncClasspathFile(final String path) {
+    ClassPathResource resource = new ClassPathResource(path);
+    if (!resource.exists()) {
+      log.warn("Achievements file not found: {}", path);
+      return;
+    }
+    log.debug("Loading achievements from file: {}", path);
+    try (var is = resource.getInputStream()) {
+      List<Achievement> fromFile = objectMapper.readValue(is, new TypeReference<>() {});
+      List<Achievement> toSave = new ArrayList<>();
+      for (Achievement a : fromFile) {
+        Optional<Achievement> existingOpt = achievementRepository.findByKey(a.getKey());
+        if (existingOpt.isPresent()) {
+          Achievement existing = existingOpt.get();
+          existing.copyContentFrom(a);
+          toSave.add(existing);
+        } else {
+          toSave.add(a);
+        }
+      }
+      achievementRepository.saveAll(toSave);
+      log.debug(
+          "Achievement loading completed for {} - {} achievements processed",
+          path,
+          fromFile.size());
+    } catch (IOException e) {
+      log.error("Error loading achievements from file {}", path, e);
     }
   }
 }
