@@ -48,6 +48,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.splitlayout.SplitLayout;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -196,6 +197,42 @@ class InboxViewTest extends AbstractViewTest {
     GridKt._clickItem(grid, 0, 1, false, false, false, false);
 
     verify(inboxService).toggleReadStatus(unreadItem);
+  }
+
+  @Test
+  @DisplayName("Opening a message shows the detail pane; clearing it hides it again")
+  void splitLayout_emptyDetailPane_classTogglesOnSelection() {
+    InboxEventType eventType = new InboxEventType("MATCH_REQUEST", "Match Request");
+    InboxItem unreadItem = new InboxItem();
+    unreadItem.setId(12L);
+    unreadItem.setEventType(eventType);
+    unreadItem.setRead(false);
+    unreadItem.setDescription("Test description");
+
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(unreadItem));
+    when(inboxService.toggleReadStatus(any())).thenReturn(unreadItem);
+    when(securityUtils.canEdit(any())).thenReturn(true);
+
+    InboxView freshView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService);
+    UI.getCurrent().add(freshView);
+
+    // No selection: the empty hint pane is hidden (saves phone screen space).
+    SplitLayout splitLayout = _get(freshView, SplitLayout.class);
+    assertTrue(splitLayout.hasClassName("inbox-detail-empty"));
+
+    // Selecting a message reveals the detail pane.
+    Grid<InboxItem> grid = _get(freshView, Grid.class);
+    GridKt._clickItem(grid, 0, 1, false, false, false, false);
+    assertFalse(splitLayout.hasClassName("inbox-detail-empty"));
   }
 
   @Test

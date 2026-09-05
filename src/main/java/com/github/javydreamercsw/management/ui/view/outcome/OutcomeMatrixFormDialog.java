@@ -63,7 +63,7 @@ public class OutcomeMatrixFormDialog extends Dialog {
 
     setHeaderTitle(
         existingMatrix == null ? "New Outcome Matrix" : "Edit: " + existingMatrix.getName());
-    setWidth("900px");
+    setWidth("min(900px, 95vw)");
     setMaxHeight("90vh");
 
     buildForm();

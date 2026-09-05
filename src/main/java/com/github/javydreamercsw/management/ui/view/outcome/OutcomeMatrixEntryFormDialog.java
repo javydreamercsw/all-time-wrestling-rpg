@@ -68,7 +68,7 @@ public class OutcomeMatrixEntryFormDialog extends Dialog {
         existingEntry == null
             ? "New Entry"
             : "Edit Entry (Roll " + existingEntry.getDiceRoll() + ")");
-    setWidth("500px");
+    setWidth("min(500px, 95vw)");
 
     buildForm();
     if (existingEntry != null) {

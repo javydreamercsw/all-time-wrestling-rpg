@@ -54,6 +54,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.editor.Editor;
@@ -110,6 +111,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final Button loadContextButton;
   private final Button viewDetailsButton;
   private final TextArea contextArea;
+  private final Details contextDetails;
   private final Grid<ProposedSegment> proposedSegmentsGrid;
   private final Image templateImage;
   private final Button approveButton;
@@ -169,23 +171,27 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     viewDetailsButton = new Button("View Show Details", e -> navigateToShowDetail());
     viewDetailsButton.setEnabled(false);
 
-    showComboBox.addValueChangeListener(
-        e -> {
-          loadContextButton.setEnabled(e.getValue() != null);
-          viewDetailsButton.setEnabled(e.getValue() != null);
-          updateTemplateImage(e.getValue());
-        });
-
     contextArea = new TextArea("Planning Context (JSON)");
     contextArea.setWidthFull();
     contextArea.setHeight("200px");
     contextArea.setReadOnly(true);
     contextArea.setId("show-planning-context-area");
 
+    // The guided flow: picking a show enables AI planning directly — the
+    // context is loaded server-side inside proposeSegments(), so the old
+    // mandatory "Load Context" + JSON inspection gate is unnecessary.
     proposeSegmentsButton = new Button("AI Propose Segments", e -> proposeSegments());
     proposeSegmentsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     proposeSegmentsButton.setEnabled(false);
     proposeSegmentsButton.setId("propose-segments-button");
+
+    showComboBox.addValueChangeListener(
+        e -> {
+          loadContextButton.setEnabled(e.getValue() != null);
+          viewDetailsButton.setEnabled(e.getValue() != null);
+          proposeSegmentsButton.setEnabled(e.getValue() != null);
+          updateTemplateImage(e.getValue());
+        });
 
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
     proposedSegmentsGrid.setId("proposed-segments-grid");
@@ -234,16 +240,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     binder.bind(descriptionField, "narration");
     descriptionColumn.setEditorComponent(descriptionField);
 
-    proposedSegmentsGrid.addItemDoubleClickListener(
-        e -> {
-          editor.editItem(e.getItem());
-          descriptionField.focus();
-        });
-
-    editor.addSaveListener(
-        e -> {
-          // Save logic will go here
-        });
+    // The Edit dialog is the one true editor; the old double-click inline
+    // editor (with its dead save listener) is gone.
 
     proposedSegmentsGrid.addComponentColumn(
         segment -> {
@@ -317,6 +315,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     proposedSegmentsGrid.addComponentColumn(
         segment -> {
           Button removeButton = new Button(VaadinIcon.TRASH.create());
+          removeButton.setAriaLabel("Remove proposed segment");
           removeButton.addClickListener(
               e -> {
                 segments.remove(segment);
@@ -335,13 +334,21 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     templateImage.setHeight("150px");
     templateImage.setVisible(false);
 
+    // Planning context stays reachable for power users, but collapsed — it is
+    // diagnostic detail, not a step in the flow.
+    contextDetails = new Details("Planning Context (technical)", contextArea);
+    contextDetails.setOpened(false);
+    contextDetails.setWidthFull();
+    contextDetails.setId("show-planning-context-details");
+
     VerticalLayout leftSide =
         new VerticalLayout(
             new H2("Show Planning"),
             new HorizontalLayout(showComboBox, loadContextButton, viewDetailsButton),
             templateImage,
-            contextArea,
-            proposeSegmentsButton);
+            new Paragraph("1. Pick a show, then let the AI draft a card you can edit."),
+            proposeSegmentsButton,
+            contextDetails);
     leftSide.setPadding(false);
 
     VerticalLayout rightSide =

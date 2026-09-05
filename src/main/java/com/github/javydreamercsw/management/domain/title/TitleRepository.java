@@ -41,6 +41,9 @@ public interface TitleRepository
 
   Optional<Title> findByName(String name);
 
+  /** Case-insensitive name search for the title list view's search box. */
+  Page<Title> findByNameContainingIgnoreCase(String searchTerm, Pageable pageable);
+
   List<Title> findByTier(WrestlerTier tier);
 
   List<Title> findByIsActiveTrue();

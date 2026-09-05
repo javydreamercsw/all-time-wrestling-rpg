@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.injury;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.injury.InjuryType;
 import com.github.javydreamercsw.management.service.injury.InjuryTypeService;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -29,8 +30,6 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -63,6 +62,7 @@ public class InjuryTypeListView extends Main {
 
   private final InjuryTypeService injuryTypeService;
   private final SecurityUtils securityUtils;
+  private final NotificationService notificationService;
   private final Grid<InjuryType> grid;
   private final TextField searchField;
   private final Button createButton;
@@ -78,9 +78,11 @@ public class InjuryTypeListView extends Main {
 
   public InjuryTypeListView(
       @NonNull final InjuryTypeService injuryTypeService,
-      @NonNull final SecurityUtils securityUtils) {
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final NotificationService notificationService) {
     this.injuryTypeService = injuryTypeService;
     this.securityUtils = securityUtils;
+    this.notificationService = notificationService;
     this.grid = new Grid<>(InjuryType.class, false);
     this.searchField = new TextField();
     this.createButton = new Button("Create Injury Type", VaadinIcon.PLUS.create());
@@ -393,12 +395,10 @@ public class InjuryTypeListView extends Main {
   }
 
   private void showSuccessNotification(final String message) {
-    Notification notification = Notification.show(message, 3000, Notification.Position.TOP_END);
-    notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    notificationService.showSuccess(message);
   }
 
   private void showErrorNotification(final String message) {
-    Notification notification = Notification.show(message, 5000, Notification.Position.TOP_END);
-    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+    notificationService.showError(message);
   }
 }

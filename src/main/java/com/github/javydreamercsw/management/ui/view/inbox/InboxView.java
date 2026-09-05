@@ -38,8 +38,10 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridMultiSelectionModel;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
@@ -86,7 +88,6 @@ public class InboxView extends VerticalLayout {
   private SplitLayout splitLayout;
   private final Button markSelectedReadButton = new Button("Mark Selected as Read");
   private final Button markSelectedUnreadButton = new Button("Mark Selected as Unread");
-  private final Checkbox hideReadCheckbox = new Checkbox("Hide Read");
   private final Button deleteSelectedButton = new Button("Delete Selected");
   private final Set<InboxItem> selectedItems = new HashSet<>();
   private final SecurityUtils securityUtils;
@@ -118,8 +119,11 @@ public class InboxView extends VerticalLayout {
     showEmptyDetail();
 
     splitLayout = new SplitLayout();
+    splitLayout.addClassName("inbox-detail-empty");
     splitLayout.setSizeFull();
-    splitLayout.addToPrimary(new VerticalLayout(getToolbar(), grid));
+    Div gridWrapper = new Div(grid);
+    gridWrapper.addClassName("grid-scroll-container");
+    splitLayout.addToPrimary(new VerticalLayout(getToolbar(), gridWrapper));
     splitLayout.addToSecondary(detailsView);
     splitLayout.setSplitterPosition(100);
 
@@ -150,11 +154,9 @@ public class InboxView extends VerticalLayout {
     targetFilter.addValueChangeListener(e -> updateList());
     targetFilter.setId("inbox-target-filter");
 
-    readStatusFilter.setItems("All", "Read", "Unread");
+    readStatusFilter.setItems("All", "Unread", "Read");
     readStatusFilter.setValue("All");
     readStatusFilter.addValueChangeListener(e -> updateList());
-
-    hideReadCheckbox.addValueChangeListener(e -> updateList());
 
     List<String> eventTypes =
         eventTypeRegistry.getEventTypes().stream()
@@ -208,14 +210,29 @@ public class InboxView extends VerticalLayout {
     deleteSelectedButton.addClickListener(
         event -> {
           int selectedCount = selectedItems.size();
-          inboxService.deleteSelected(selectedItems);
-          updateList();
-          Notification.show(selectedCount + " items deleted.")
-              .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-          selectedItems.clear();
-          grid.deselectAll();
-          selectAllCheckbox.setValue(false);
-          updateSelectedButtonsState();
+          ConfirmDialog confirmDialog = new ConfirmDialog();
+          confirmDialog.setHeader("Delete messages");
+          confirmDialog.setText(
+              "Permanently delete "
+                  + selectedCount
+                  + " selected message"
+                  + (selectedCount == 1 ? "" : "s")
+                  + "? This cannot be undone.");
+          confirmDialog.setCancelable(true);
+          confirmDialog.setConfirmText("Delete");
+          confirmDialog.setConfirmButtonTheme("error primary");
+          confirmDialog.addConfirmListener(
+              e -> {
+                inboxService.deleteSelected(selectedItems);
+                updateList();
+                Notification.show(selectedCount + " items deleted.")
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                selectedItems.clear();
+                grid.deselectAll();
+                selectAllCheckbox.setValue(false);
+                updateSelectedButtonsState();
+              });
+          confirmDialog.open();
         });
 
     markSelectedReadButton.setVisible(securityUtils.canEdit());
@@ -243,13 +260,11 @@ public class InboxView extends VerticalLayout {
             clearTargetFilter,
             readStatusFilter,
             eventTypeFilter,
-            hideReadCheckbox,
             selectAllCheckbox,
             markSelectedReadButton,
             markSelectedUnreadButton,
             deleteSelectedButton);
     toolbar.addClassName("toolbar");
-    toolbar.getStyle().set("flex-wrap", "wrap");
     return toolbar;
   }
 
@@ -295,6 +310,8 @@ public class InboxView extends VerticalLayout {
     grid.setId("inbox-grid");
     grid.addClassName("inbox-grid");
     grid.setSizeFull();
+    // 8 columns; below this the grid scrolls horizontally inside .grid-scroll-container
+    grid.setMinWidth("900px");
     grid.addColumn(this::getSenderDisplay).setHeader("From").setId("from-column");
     grid.addColumn(InboxItem::getEventType).setHeader("Event Type").setId("event-type-column");
     grid.addComponentColumn(this::createUrgencyBadge)
@@ -497,6 +514,7 @@ public class InboxView extends VerticalLayout {
     detailsView.add(empty);
     if (splitLayout != null) {
       splitLayout.setSplitterPosition(100);
+      splitLayout.addClassName("inbox-detail-empty");
     }
   }
 
@@ -519,6 +537,7 @@ public class InboxView extends VerticalLayout {
     detailsView.setPadding(true);
     detailsView.setSpacing(true);
     splitLayout.setSplitterPosition(45);
+    splitLayout.removeClassName("inbox-detail-empty");
 
     // From row — shown only for player-sent messages
     if (item.getSenderAccountId() != null) {
@@ -647,7 +666,7 @@ public class InboxView extends VerticalLayout {
             targetFilter.getValue(),
             readStatusFilter.getValue(),
             eventTypeFilter.getValue(),
-            hideReadCheckbox.getValue(),
+            null, // hideRead removed: the Read Status filter fully controls unread visibility
             accountId));
   }
 }

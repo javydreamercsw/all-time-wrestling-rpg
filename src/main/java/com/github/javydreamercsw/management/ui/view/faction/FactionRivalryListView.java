@@ -30,6 +30,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -178,6 +179,8 @@ public class FactionRivalryListView extends Main {
     } else {
       add(new ViewToolbar("Faction Rivalry List"));
     }
-    add(factionRivalryGrid);
+    Div gridWrapper = new Div(factionRivalryGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
   }
 }

@@ -47,6 +47,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
@@ -348,8 +349,8 @@ public class ShowListView extends Main {
                 typeSpan.addClassNames(
                     LumoUtility.Background.PRIMARY, LumoUtility.TextColor.PRIMARY_CONTRAST);
               } else {
-                typeSpan.getStyle().set("background-color", "#8A2BE2");
-                typeSpan.getStyle().set("color", "white");
+                typeSpan.getStyle().set("background-color", "var(--lumo-primary-color)");
+                typeSpan.getStyle().set("color", "var(--lumo-primary-contrast-color)");
               }
 
               return typeSpan;
@@ -379,6 +380,8 @@ public class ShowListView extends Main {
         .setFlexGrow(1);
 
     showGrid.setSizeFull();
+    // 9 columns need room; below this the grid scrolls horizontally inside .grid-scroll-container
+    showGrid.setMinWidth("1000px");
 
     showGrid
         .addComponentColumn(
@@ -389,6 +392,7 @@ public class ShowListView extends Main {
               Button viewBtn = new Button(new Icon(VaadinIcon.EYE));
               viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               viewBtn.setTooltipText("View Details");
+              viewBtn.setAriaLabel("View details");
               viewBtn.setId("view-details-button-" + show.getId());
               viewBtn.addClickListener(
                   e ->
@@ -402,6 +406,7 @@ public class ShowListView extends Main {
               Button editBtn = new Button(new Icon(VaadinIcon.EDIT));
               editBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               editBtn.setTooltipText("Edit Show");
+              editBtn.setAriaLabel("Edit show");
               editBtn.setId("edit-show-button-" + show.getId());
               editBtn.addClickListener(e -> openEditDialog(show));
               editBtn.setVisible(securityUtils.canEdit());
@@ -409,6 +414,7 @@ public class ShowListView extends Main {
               Button generateArtBtn = new Button(new Icon(VaadinIcon.PICTURE));
               generateArtBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               generateArtBtn.setTooltipText("Generate Template Art");
+              generateArtBtn.setAriaLabel("Generate template art");
               generateArtBtn.setId("generate-template-art-button-" + show.getId());
               generateArtBtn.addClickListener(e -> openGenerateArtDialog(show.getTemplate()));
               generateArtBtn.setVisible(securityUtils.canEdit() && show.getTemplate() != null);
@@ -417,6 +423,7 @@ public class ShowListView extends Main {
               deleteBtn.addThemeVariants(
                   ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY_INLINE);
               deleteBtn.setTooltipText("Delete Show");
+              deleteBtn.setAriaLabel("Delete show");
               deleteBtn.setId("delete-show-button-" + show.getId());
               deleteBtn.addClickListener(e -> openDeleteDialog(show));
               deleteBtn.setVisible(securityUtils.canDelete());
@@ -425,6 +432,7 @@ public class ShowListView extends Main {
               Button exportBtn = new Button(new Icon(VaadinIcon.DOWNLOAD));
               exportBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               exportBtn.setTooltipText("Export Show Card");
+              exportBtn.setAriaLabel("Export show card");
               exportBtn.setId("export-show-button-" + show.getId());
               exportBtn.addClickListener(
                   e -> new ShowExportDialog(exportService, notificationService, show).open());
@@ -434,6 +442,7 @@ public class ShowListView extends Main {
                 Button calendarBtn = new Button(new Icon(VaadinIcon.CALENDAR));
                 calendarBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
                 calendarBtn.setTooltipText("View in Calendar");
+                calendarBtn.setAriaLabel("View in calendar");
                 calendarBtn.setId("view-in-calendar-button-" + show.getId());
                 calendarBtn.addClickListener(
                     e -> {
@@ -468,7 +477,9 @@ public class ShowListView extends Main {
     } else {
       add(new ViewToolbar("Show List"));
     }
-    add(showGrid);
+    Div gridWrapper = new Div(showGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
 
     refreshGrid();
   }

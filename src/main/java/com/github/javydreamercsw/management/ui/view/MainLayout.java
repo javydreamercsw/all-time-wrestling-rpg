@@ -301,9 +301,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       Avatar avatar = new Avatar(username);
       avatar.setTooltipEnabled(true);
 
-      // Username label
+      // Username label — hidden below the medium breakpoint so the navbar fits on phones
       Span usernameLabel = new Span(username);
       usernameLabel.addClassNames(FontWeight.SEMIBOLD, FontSize.SMALL);
+      usernameLabel.addClassNames(Display.HIDDEN, Display.Breakpoint.Medium.INLINE);
 
       // Inbox badge (pill showing unread count)
       inboxBadge = new Span();
@@ -311,12 +312,14 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       inboxBadge.getElement().getThemeList().add("badge pill");
       inboxBadge.setVisible(false);
 
-      // Inbox button with badge
+      // Inbox button with badge — label hidden below medium, envelope icon + badge remain
       Span inboxLabel = new Span("Inbox");
-      Div inboxContent = new Div(inboxLabel, inboxBadge);
+      inboxLabel.addClassNames(Display.HIDDEN, Display.Breakpoint.Medium.INLINE);
+      Div inboxContent = new Div(VaadinIcon.ENVELOPE.create(), inboxLabel, inboxBadge);
       inboxContent.addClassNames(Display.FLEX, AlignItems.CENTER, Gap.SMALL);
       Button inboxButton = new Button(inboxContent);
       inboxButton.setId("inbox-button");
+      inboxButton.setAriaLabel("Open inbox");
       inboxButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       inboxButton.addClickListener(e -> UI.getCurrent().navigate("inbox"));
 
@@ -325,6 +328,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
       // Profile button (opens drawer)
       Button profileButton = new Button("Profile", VaadinIcon.USER.create());
+      profileButton.addClassName("navbar-action");
+      profileButton.setId("profile-button");
+      profileButton.setAriaLabel("Open profile");
       profileButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       profileButton.addClickListener(
           e ->
@@ -345,6 +351,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       // Logout button
       Button logoutButton = new Button("Logout", VaadinIcon.SIGN_OUT.create());
       logoutButton.setId("logout-button");
+      logoutButton.addClassName("navbar-action");
       logoutButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
       logoutButton.addClickListener(e -> securityUtils.logout());
 

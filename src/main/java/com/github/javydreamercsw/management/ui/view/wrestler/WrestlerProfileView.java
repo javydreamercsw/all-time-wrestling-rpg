@@ -59,12 +59,14 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
 import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
+import com.github.javydreamercsw.management.ui.component.StatusBar;
 import com.github.javydreamercsw.management.ui.component.WrestlerAbilityPanel;
 import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -75,6 +77,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
@@ -280,6 +283,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     secondaryInfoAccordion.add("Rivalry History", feudHistoryLayout);
     secondaryInfoAccordion.add("Abilities", abilitiesLayout);
 
+    // Land on the content people visit this page for: Stats (0) and Match Logs (4).
+    // Accordion permits one open panel; Match Logs wins since Stats are also shown
+    // in the hero card on desktop.
+    secondaryInfoAccordion.open(4);
+
     // Configure Grid
     recentMatchesGrid.removeAllColumns();
     recentMatchesGrid.addColumn(segment -> segment.getShow().getName()).setHeader("Show");
@@ -376,17 +384,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       statsLayout.removeAll();
       statsLayout.add(new H3("Career Stats (Universe Context)"));
 
-      Paragraph conditionPara =
-          new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
-      conditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
-      if (state.getPhysicalCondition() < 50) {
-        conditionPara.addClassNames(LumoUtility.TextColor.ERROR);
-      } else if (state.getPhysicalCondition() < 80) {
-        conditionPara.addClassNames(LumoUtility.TextColor.WARNING);
-      } else {
-        conditionPara.addClassNames(LumoUtility.TextColor.SUCCESS);
-      }
-      statsLayout.add(conditionPara);
+      statsLayout.add(createConditionParagraph(state));
+      statsLayout.add(createMoraleBar(state));
+      statsLayout.add(createStaminaBar(state));
 
       if (stats.isPresent()) {
         WrestlerStats wrestlerStats = stats.get();
@@ -544,26 +544,30 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       injuriesLayout.removeAll();
       injuriesLayout.add(new H3("Bumps & Injuries"));
 
-      Paragraph physicalConditionPara =
-          new Paragraph("Physical Condition: " + state.getPhysicalCondition() + "%");
-      physicalConditionPara.addClassNames(LumoUtility.FontWeight.BOLD);
-      if (state.getPhysicalCondition() < 50) {
-        physicalConditionPara.addClassNames(LumoUtility.TextColor.ERROR);
-      } else if (state.getPhysicalCondition() < 80) {
-        physicalConditionPara.addClassNames(LumoUtility.TextColor.WARNING);
-      } else {
-        physicalConditionPara.addClassNames(LumoUtility.TextColor.SUCCESS);
-      }
-      injuriesLayout.add(physicalConditionPara);
+      injuriesLayout.add(createConditionParagraph(state));
 
       if (securityUtils.isAdmin() || securityUtils.isBooker()) {
         Button resetWearAndTearButton = new Button("Reset Wear & Tear");
         resetWearAndTearButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
         resetWearAndTearButton.addClickListener(
             e -> {
-              wrestlerService.resetWearAndTear(wrestler.getId(), universeId);
-              updateView();
-              Notification.show("Wear & Tear reset to 100%!");
+              ConfirmDialog confirmDialog = new ConfirmDialog();
+              confirmDialog.setHeader("Reset Wear & Tear");
+              confirmDialog.setText(
+                  "Reset "
+                      + wrestler.getName()
+                      + "'s Wear & Tear to 100%? All accumulated damage will be erased. This"
+                      + " cannot be undone.");
+              confirmDialog.setCancelable(true);
+              confirmDialog.setConfirmText("Reset");
+              confirmDialog.setConfirmButtonTheme("error primary");
+              confirmDialog.addConfirmListener(
+                  ev -> {
+                    wrestlerService.resetWearAndTear(wrestler.getId(), universeId);
+                    updateView();
+                    Notification.show("Wear & Tear reset to 100%!");
+                  });
+              confirmDialog.open();
             });
         injuriesLayout.add(resetWearAndTearButton);
       }
@@ -593,7 +597,50 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     VerticalLayout content = new VerticalLayout();
     content.setPadding(false);
     content.setSpacing(true);
+    buildStatusDialogContent(content);
 
+    dialog.add(content);
+    dialog.getFooter().add(new Button("Close", e -> dialog.close()));
+    dialog.open();
+  }
+
+  /**
+   * Shared "Physical Condition" meter with severity coloring (at/below 50 renders in the error
+   * color, otherwise success). Used by both the Stats and Medical Record panels so the two never
+   * drift.
+   */
+  private Div createConditionParagraph(final WrestlerState state) {
+    return StatusBar.bar(
+        "Physical Condition",
+        state.getPhysicalCondition() + "%",
+        state.getPhysicalCondition(),
+        100,
+        50,
+        "condition");
+  }
+
+  /** Morale meter (0–100). */
+  private Div createMoraleBar(final WrestlerState state) {
+    return StatusBar.bar(
+        "Morale", state.getMorale() + "/100", state.getMorale(), 100, 25, "condition");
+  }
+
+  /** Management stamina meter (0–100). */
+  private Div createStaminaBar(final WrestlerState state) {
+    return StatusBar.bar(
+        "Management Stamina",
+        state.getManagementStamina() + "/100",
+        state.getManagementStamina(),
+        100,
+        -1,
+        "condition");
+  }
+
+  /**
+   * (Re)populates the status dialog's content: the add combo plus one removal row per active
+   * status. Used for both the initial open and in-place refresh after a removal.
+   */
+  private void buildStatusDialogContent(final VerticalLayout content) {
     ComboBox<StatusCard> cardCombo = new ComboBox<>("Add Status Card");
     cardCombo.setItems(statusCardService.findAll());
     cardCombo.setItemLabelGenerator(StatusCard::getLevel1Name);
@@ -606,9 +653,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
             event -> {
               if (cardCombo.getValue() != null) {
                 wrestlerStatusService.assignStatus(wrestler.getId(), cardCombo.getValue().getKey());
-                updateView(); // Refresh the profile
+                updateView();
                 Notification.show("Status assigned/flipped.");
-                dialog.close();
+                content.removeAll();
+                buildStatusDialogContent(content);
               }
             });
     addBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -620,34 +668,43 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     content.add(addLayout);
 
     if (!wrestler.getStatuses().isEmpty()) {
-      content.add(new H4("Active Statuses (Click to Remove)"));
+      content.add(new H4("Active Statuses — remove one at a time without closing"));
       wrestler
           .getStatuses()
           .forEach(
               status -> {
-                Button removeBtn =
-                    new Button(
+                HorizontalLayout row = new HorizontalLayout();
+                row.setAlignItems(Alignment.CENTER);
+                row.setWidthFull();
+                Span statusName =
+                    new Span(
                         (status.getLevel() == 1
                                 ? status.getStatusCard().getLevel1Name()
                                 : status.getStatusCard().getLevel2Name())
                             + " (L"
                             + status.getLevel()
-                            + ")",
-                        event -> {
-                          wrestlerStatusService.removeStatus(
-                              wrestler.getId(), status.getStatusCard().getKey());
-                          updateView();
-                          Notification.show("Status removed.");
-                          dialog.close();
-                        });
-                removeBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
-                content.add(removeBtn);
+                            + ")");
+                Button removeBtn = new Button("Remove", VaadinIcon.TRASH.create());
+                removeBtn.addThemeVariants(
+                    ButtonVariant.LUMO_ERROR,
+                    ButtonVariant.LUMO_TERTIARY,
+                    ButtonVariant.LUMO_SMALL);
+                removeBtn.setAriaLabel(
+                    "Remove " + status.getStatusCard().getLevel1Name() + " status");
+                removeBtn.addClickListener(
+                    event -> {
+                      wrestlerStatusService.removeStatus(
+                          wrestler.getId(), status.getStatusCard().getKey());
+                      updateView();
+                      Notification.show("Status removed.");
+                      content.removeAll();
+                      buildStatusDialogContent(content);
+                    });
+                row.add(statusName, removeBtn);
+                row.setFlexGrow(1, statusName);
+                content.add(row);
               });
     }
-
-    dialog.add(content);
-    dialog.getFooter().add(new Button("Close", e -> dialog.close()));
-    dialog.open();
   }
 
   private void updateMatchAndFeudHistory() {

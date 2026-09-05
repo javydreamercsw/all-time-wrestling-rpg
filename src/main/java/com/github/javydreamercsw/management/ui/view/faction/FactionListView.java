@@ -44,6 +44,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -52,6 +53,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -60,6 +62,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,6 +92,7 @@ public class FactionListView extends VerticalLayout {
   final DatePicker formedDate;
   final DatePicker disbandedDate;
   final Grid<Faction> factionGrid = new Grid<>(Faction.class, false);
+  private final TextField searchField = new TextField();
   final Button createBtn;
 
   @Autowired
@@ -179,10 +183,16 @@ public class FactionListView extends VerticalLayout {
       createBtn.setVisible(false);
     }
 
+    searchField.setPlaceholder("Search factions...");
+    searchField.setClearButtonVisible(true);
+    searchField.setValueChangeMode(ValueChangeMode.LAZY);
+    searchField.addValueChangeListener(e -> refreshGrid());
+    searchField.setId("faction-search-field");
+
     ViewToolbar toolbar =
         createBtn.isVisible()
-            ? new ViewToolbar("Factions", createBtn)
-            : new ViewToolbar("Factions");
+            ? new ViewToolbar("Factions", searchField, createBtn)
+            : new ViewToolbar("Factions", searchField);
 
     Div gridWrapper = new Div(factionGrid);
     gridWrapper.addClassName("grid-scroll-container");
@@ -257,7 +267,9 @@ public class FactionListView extends VerticalLayout {
                             ev -> {
                               factionService.deleteById(faction.getId());
                               refreshGrid();
-                              Notification.show("Faction deleted.");
+                              Notification.show(
+                                      "Faction deleted.", 3000, Notification.Position.BOTTOM_END)
+                                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                             });
                         confirm.open();
                       });
@@ -325,6 +337,14 @@ public class FactionListView extends VerticalLayout {
   private void refreshGrid() {
     Long universeId = universeContextService.getCurrentUniverseId();
     List<Faction> factions = factionService.findAllByUniverse(universeId);
+    String searchTerm = searchField.getValue();
+    if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+      String needle = searchTerm.trim().toLowerCase(Locale.ROOT);
+      factions =
+          factions.stream()
+              .filter(f -> f.getName().toLowerCase(Locale.ROOT).contains(needle))
+              .toList();
+    }
     factionGrid.setItems(factions);
   }
 
@@ -400,7 +420,8 @@ public class FactionListView extends VerticalLayout {
       factionService.save(editingFaction);
       editDialog.close();
       refreshGrid();
-      Notification.show("Faction saved successfully.");
+      Notification.show("Faction saved successfully.", 3000, Notification.Position.BOTTOM_END)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
   }
 

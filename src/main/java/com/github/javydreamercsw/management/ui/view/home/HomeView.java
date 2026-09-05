@@ -38,6 +38,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -76,6 +77,7 @@ public class HomeView extends VerticalLayout {
     Account account = userOpt.get().getAccount();
 
     add(buildWelcomeHeader(account));
+    add(buildQuickActions(securityUtils));
 
     if (account.getPreviousLastLogin() != null) {
       add(buildSinceLastVisitSection(summaryProviders, account, securityUtils));
@@ -101,6 +103,51 @@ public class HomeView extends VerticalLayout {
     }
 
     return header;
+  }
+
+  /**
+   * Role-aware action row giving each persona one obvious next step (the audit's "no primary CTA"
+   * finding). Wraps on narrow screens.
+   */
+  private Component buildQuickActions(final SecurityUtils securityUtils) {
+    HorizontalLayout actions = new HorizontalLayout();
+    actions.addClassNames(
+        LumoUtility.FlexWrap.WRAP,
+        LumoUtility.Gap.SMALL,
+        LumoUtility.Margin.Top.SMALL,
+        LumoUtility.Margin.Bottom.SMALL);
+
+    if (securityUtils.isPlayer()) {
+      Button myDashboard = new Button("My Dashboard", e -> UI.getCurrent().navigate("player"));
+      myDashboard.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      myDashboard.setId("home-cta-player");
+      actions.add(myDashboard);
+    }
+    if (securityUtils.isBooker()) {
+      Button bookerDashboard =
+          new Button("Booker Dashboard", e -> UI.getCurrent().navigate("booker"));
+      if (!securityUtils.isPlayer()) {
+        bookerDashboard.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      }
+      bookerDashboard.setId("home-cta-booker");
+      actions.add(bookerDashboard);
+    }
+    if (securityUtils.isAdmin()) {
+      Button wrestlers =
+          new Button("Manage Wrestlers", e -> UI.getCurrent().navigate("wrestler-list"));
+      if (!securityUtils.isPlayer() && !securityUtils.isBooker()) {
+        wrestlers.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      }
+      wrestlers.setId("home-cta-wrestlers");
+      actions.add(wrestlers);
+    }
+    if (actions.getComponentCount() == 0) {
+      Button inbox = new Button("Open Inbox", e -> UI.getCurrent().navigate("inbox"));
+      inbox.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      inbox.setId("home-cta-inbox");
+      actions.add(inbox);
+    }
+    return actions;
   }
 
   private Component buildSinceLastVisitSection(
@@ -149,11 +196,8 @@ public class HomeView extends VerticalLayout {
 
   private Component buildProviderCard(final String title, final Component content) {
     VerticalLayout card = new VerticalLayout();
+    // Chrome (border, radius, padding) comes from the .summary-card rule in styles.css
     card.addClassName("summary-card");
-    card.getStyle()
-        .set("border", "1px solid var(--lumo-contrast-10pct)")
-        .set("border-radius", "var(--lumo-border-radius-m)")
-        .set("padding", "var(--lumo-space-m)");
 
     H4 cardTitle = new H4(title);
     cardTitle.getStyle().set("margin", "0 0 var(--lumo-space-xs) 0");
@@ -192,10 +236,8 @@ public class HomeView extends VerticalLayout {
 
   private Component buildNewsCard(final NewsItem item) {
     Div card = new Div();
+    // Separator + spacing come from the .news-card rule in styles.css
     card.addClassName("news-card");
-    card.getStyle()
-        .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
-        .set("padding", "var(--lumo-space-s) 0");
 
     HorizontalLayout meta = new HorizontalLayout();
     meta.setSpacing(true);
