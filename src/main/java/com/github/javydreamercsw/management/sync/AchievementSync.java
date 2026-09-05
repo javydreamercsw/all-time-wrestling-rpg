@@ -31,6 +31,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,11 +75,9 @@ public class AchievementSync implements DataSyncContributor {
 
   private void syncChallengeAchievements() {
     try {
-      org.springframework.core.io.support.ResourcePatternResolver resolver =
-          new org.springframework.core.io.support.PathMatchingResourcePatternResolver();
-      org.springframework.core.io.Resource[] files =
-          resolver.getResources("classpath*:challenges/**/*achievements*.json");
-      for (org.springframework.core.io.Resource file : files) {
+      ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+      Resource[] files = resolver.getResources("classpath*:challenges/**/*achievements*.json");
+      for (Resource file : files) {
         // getFilename() drops subdirectories; recover the full classpath path
         // (e.g. challenges/season_1/weekly_achievements.json) from the URL.
         String url = file.getURL().toString();

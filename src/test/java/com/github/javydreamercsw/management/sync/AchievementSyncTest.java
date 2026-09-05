@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -89,6 +90,6 @@ class AchievementSyncTest {
     // Every upsert goes through the same saveAll path whether new or existing;
     // the repository is the dedup point (findByKey before save). One saveAll
     // batch per loaded file: the catalog plus the weekly-challenge file.
-    verify(achievementRepository, org.mockito.Mockito.times(2)).saveAll(any());
+    verify(achievementRepository, Mockito.times(2)).saveAll(any());
   }
 }
