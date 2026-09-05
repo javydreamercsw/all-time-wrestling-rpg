@@ -443,6 +443,12 @@ jobs:
         run: node --test scripts/sync-challenge-content.test.cjs
       - name: Sync challenge content
         run: node scripts/sync-challenge-content.cjs
+      - name: Create screenshot placeholders for docs build
+        run: |
+          mkdir -p docs/site/public/screenshots
+          while IFS= read -r img; do
+            touch "docs/site/public${img}"
+          done < <(grep -rho '/screenshots/[[:alnum:]_-]*\.png' docs/site/guide/ | sort -u)
       - name: Build VitePress docs
         run: cd docs/site && npm run docs:build
 
