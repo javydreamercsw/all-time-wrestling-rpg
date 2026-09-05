@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -79,10 +80,9 @@ public class FeudScriptWizardDialog extends Dialog {
   private VerticalLayout beatContainer;
 
   // Nav
-  private Button backButton;
-  private Button nextButton;
-  private Button cancelButton;
-  private H3 stepTitle;
+  private final Button backButton;
+  private final Button nextButton;
+  private final H3 stepTitle;
 
   public FeudScriptWizardDialog(
       List<Wrestler> allWrestlers,
@@ -102,7 +102,7 @@ public class FeudScriptWizardDialog extends Dialog {
     setHeight("min(90vh, 90vh)");
     setDraggable(true);
     setResizable(true);
-    setModal(false);
+    setModality(ModalityMode.STRICT);
     setCloseOnEsc(true);
     setCloseOnOutsideClick(false);
 
@@ -111,7 +111,7 @@ public class FeudScriptWizardDialog extends Dialog {
     nextButton = new Button("Next", e -> navigateForward());
     nextButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     backButton.setVisible(false);
-    cancelButton = new Button("Cancel", e -> close());
+    Button cancelButton = new Button("Cancel", e -> close());
     cancelButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
     content.setPadding(false);
