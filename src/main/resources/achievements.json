@@ -428,6 +428,12 @@
   "xpValue": 100,
   "category": "CHALLENGE"
 }, {
+  "key": "CHALLENGE_WEEK_06",
+  "name": "Who needs friends?",
+  "description": "Completed the \"Who needs friends?\" challenge as your favorite tag team",
+  "xpValue": 100,
+  "category": "CHALLENGE"
+}, {
   "key": "CHALLENGE_FIRST_HARD",
   "name": "Glutton for Punishment",
   "description": "Completed your first HARD-difficulty challenge",
