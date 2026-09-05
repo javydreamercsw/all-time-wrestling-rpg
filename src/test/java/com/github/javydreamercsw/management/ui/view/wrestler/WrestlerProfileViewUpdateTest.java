@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -66,6 +67,8 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
@@ -371,5 +374,122 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
     when(wrestlerService.findByIdWithDetails(5L)).thenReturn(Optional.of(blank));
     enterView();
     assertTrue(anyTextContains("No biography available."));
+  }
+
+  @Test
+  @DisplayName("Manage Statuses dialog lists active statuses and Add/Flip assigns")
+  void manageStatusesDialogAddFlow() {
+    stubCommonLookups();
+    when(securityUtils.hasAnyRole(RoleName.ADMIN, RoleName.BOOKER)).thenReturn(true);
+    enterView();
+
+    // Open the manage dialog. The header title lives in shadow DOM, so assert
+    // on the content's Add/Flip button instead.
+    _get(view, Button.class, spec -> spec.withText("Manage Statuses")).click();
+    Dialog dialog = _get(UI.getCurrent(), Dialog.class);
+    assertTrue(dialog.isOpened(), "Manage statuses dialog should open");
+    assertNotNull(
+        _get(UI.getCurrent(), Button.class, spec -> spec.withText("Add/Flip")),
+        "Dialog content should offer the Add/Flip action");
+
+    // Add a status card through the combo + Add/Flip button.
+    StatusCard card = new StatusCard();
+    card.setKey("hot_streak");
+    card.setLevel1Name("Hot Streak");
+    card.setLevel2Name("On Fire");
+    com.vaadin.flow.component.combobox.ComboBox<StatusCard> combo =
+        _get(
+            UI.getCurrent(),
+            com.vaadin.flow.component.combobox.ComboBox.class,
+            spec -> spec.withLabel("Add Status Card"));
+    combo.setValue(card);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Add/Flip")).click();
+
+    verify(wrestlerStatusService).assignStatus(5L, "hot_streak");
+  }
+
+  @Test
+  @DisplayName("Remove button in Manage Statuses dialog removes the status")
+  void manageStatusesDialogRemoveFlow() {
+    stubCommonLookups();
+    when(securityUtils.hasAnyRole(RoleName.ADMIN, RoleName.BOOKER)).thenReturn(true);
+    StatusCard card = new StatusCard();
+    card.setKey("hot_streak");
+    card.setLevel1Name("Hot Streak");
+    card.setLevel2Name("On Fire");
+    WrestlerStatus status = new WrestlerStatus();
+    status.setLevel(2);
+    status.setStatusCard(card);
+    wrestler.getStatuses().add(status);
+    lenient().when(statusCardService.findAll()).thenReturn(List.of(card));
+    enterView();
+
+    _get(view, Button.class, spec -> spec.withText("Manage Statuses")).click();
+    Dialog dialog = _get(UI.getCurrent(), Dialog.class);
+    assertTrue(dialog.isOpened(), "Manage statuses dialog should open");
+    assertTrue(
+        dialogText(dialog).contains("On Fire (L2)"),
+        "Active status row should render in the dialog content");
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Remove")).click();
+
+    verify(wrestlerStatusService).removeStatus(5L, "hot_streak");
+  }
+
+  @Test
+  @DisplayName("Reset Wear & Tear confirms and calls the service")
+  void resetWearAndTearConfirmed() {
+    stubCommonLookups();
+    when(securityUtils.isAdmin()).thenReturn(true);
+    enterView();
+
+    _get(view, Button.class, spec -> spec.withText("Reset Wear & Tear")).click();
+    com.vaadin.flow.component.confirmdialog.ConfirmDialog confirm =
+        _get(UI.getCurrent(), com.vaadin.flow.component.confirmdialog.ConfirmDialog.class);
+    assertTrue(confirm.isOpened(), "Confirm dialog should open");
+    fireConfirmEvent(confirm);
+
+    verify(wrestlerService).resetWearAndTear(5L, 1L);
+  }
+
+  @Test
+  @DisplayName("State fans render via details and condition paragraph exists")
+  void conditionParagraphRenders() {
+    stubCommonLookups();
+    state.setPhysicalCondition(45); // below the 50 threshold
+    enterView();
+
+    assertTrue(anyTextContains("Physical Condition"), "Condition meter should render");
+  }
+
+  /** Fires ConfirmDialog's confirm action via reflection (fireEvent is protected). */
+  @SuppressWarnings("unchecked")
+  private static void fireConfirmEvent(
+      com.vaadin.flow.component.confirmdialog.ConfirmDialog dialog) {
+    try {
+      var event =
+          new com.vaadin.flow.component.confirmdialog.ConfirmDialog.ConfirmEvent(dialog, true);
+      var fireEvent =
+          com.vaadin.flow.component.Component.class.getDeclaredMethod(
+              "fireEvent", com.vaadin.flow.component.ComponentEvent.class);
+      fireEvent.setAccessible(true);
+      fireEvent.invoke(dialog, event);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to fire confirm event", e);
+    }
+  }
+
+  private String dialogText(Dialog dialog) {
+    StringBuilder sb = new StringBuilder();
+    collectText(dialog, sb);
+    return sb.toString();
+  }
+
+  private void collectText(Component c, StringBuilder sb) {
+    String own = c.getElement().getText();
+    if (own != null && !own.isBlank()) {
+      sb.append(own).append('\n');
+    }
+    c.getChildren().forEach(child -> collectText(child, sb));
   }
 }

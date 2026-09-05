@@ -378,4 +378,11 @@ public class WrestlerListView extends Main {
               });
     }
   }
+
+  // --- Test hooks (package-private) for WrestlerListViewTest ---
+
+  void reloadGridForTest(final String searchTerm) {
+    searchField.setValue(searchTerm);
+    reloadGrid();
+  }
 }

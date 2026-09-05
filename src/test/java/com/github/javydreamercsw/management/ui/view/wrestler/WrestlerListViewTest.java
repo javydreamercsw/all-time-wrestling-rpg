@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.wrestler;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
@@ -96,5 +97,42 @@ class WrestlerListViewTest extends AbstractViewTest {
   void shouldRenderGrid() {
     Grid<?> grid = _get(view, Grid.class, spec -> spec.withId("wrestler-list-grid"));
     assertTrue(grid.isVisible());
+  }
+
+  @Test
+  @DisplayName("Search term is passed through to findPageFiltered and countFiltered")
+  void searchFieldFiltersThroughService() {
+    when(wrestlerService.getStateMapByUniverseId(1L)).thenReturn(Collections.emptyMap());
+    when(alignmentService.getAlignmentMapByUniverseId(1L)).thenReturn(Collections.emptyMap());
+    when(wrestlerService.findPageFiltered(any(), any(), any(), any()))
+        .thenReturn(org.springframework.data.domain.Page.empty());
+    when(wrestlerService.countFiltered(any(), any(), any())).thenReturn(0L);
+    when(securityUtils.canCreate()).thenReturn(true);
+
+    view.reloadGridForTest("rey");
+    // findPageFiltered runs inside the grid's lazy DataProvider — force a fetch.
+    Grid<?> grid = _get(view, Grid.class, spec -> spec.withId("wrestler-list-grid"));
+    grid.getDataProvider().fetch(new com.vaadin.flow.data.provider.Query<>());
+
+    verify(wrestlerService)
+        .findPageFiltered(any(), any(), org.mockito.ArgumentMatchers.eq("rey"), any());
+    verify(wrestlerService).countFiltered(any(), any(), org.mockito.ArgumentMatchers.eq("rey"));
+  }
+
+  @Test
+  @DisplayName("Empty search term still loads the grid with a null filter")
+  void emptySearchLoadsGrid() {
+    when(wrestlerService.getStateMapByUniverseId(1L)).thenReturn(Collections.emptyMap());
+    when(alignmentService.getAlignmentMapByUniverseId(1L)).thenReturn(Collections.emptyMap());
+    when(wrestlerService.findPageFiltered(any(), any(), any(), any()))
+        .thenReturn(org.springframework.data.domain.Page.empty());
+    when(wrestlerService.countFiltered(any(), any(), any())).thenReturn(0L);
+
+    view.reloadGridForTest("");
+    Grid<?> grid = _get(view, Grid.class, spec -> spec.withId("wrestler-list-grid"));
+    grid.getDataProvider().fetch(new com.vaadin.flow.data.provider.Query<>());
+
+    verify(wrestlerService).findPageFiltered(any(), any(), any(), any());
+    verify(wrestlerService).countFiltered(any(), any(), any());
   }
 }
