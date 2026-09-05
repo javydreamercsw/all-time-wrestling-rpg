@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -151,5 +152,47 @@ class RankingViewTest extends AbstractViewTest {
     assertNotNull(button);
     button.click();
     assertNotNull(_get(Dialog.class));
+  }
+
+  @Test
+  void contenderOnCooldownShowsClockIconWithTooltip() {
+    java.util.List<RankedWrestlerDTO> extended = new ArrayList<>();
+    extended.add(
+        RankedWrestlerDTO.builder()
+            .id(2L)
+            .name("Contender 2")
+            .fans(700L)
+            .rank(1)
+            .tier(WrestlerTier.MIDCARDER)
+            .build());
+    extended.add(
+        RankedWrestlerDTO.builder()
+            .id(4L)
+            .name("Cooling Down")
+            .fans(400L)
+            .rank(3)
+            .tier(WrestlerTier.ROOKIE)
+            .onCooldown(true)
+            .defensesUntilEligible(2)
+            .build());
+    when(rankingService.getRankedContenders(championshipDTO.getId()))
+        .thenAnswer(invocation -> extended);
+
+    RankingView view = new RankingView(rankingService, tierBoundaryService);
+    UI.getCurrent().add(view);
+    ComboBox<ChampionshipDTO> comboBox = _get(view, ComboBox.class);
+    comboBox.setValue(championshipDTO);
+
+    Grid<RankedWrestlerDTO> grid =
+        _get(view, Grid.class, spec -> spec.withId("wrestler-contenders-grid"));
+    grid.getDataProvider().fetch(new Query<>());
+
+    // Component-column content is rendered per row; verify the data contract
+    // the renderer relies on: the cooldown flags ride through to the rows.
+    RankedWrestlerDTO cooling =
+        ((java.util.List<RankedWrestlerDTO>) grid.getGenericDataView().getItems().toList())
+            .stream().filter(w -> "Cooling Down".equals(w.getName())).findFirst().orElseThrow();
+    org.junit.jupiter.api.Assertions.assertTrue(cooling.isOnCooldown());
+    org.junit.jupiter.api.Assertions.assertEquals(2, cooling.getDefensesUntilEligible());
   }
 }
