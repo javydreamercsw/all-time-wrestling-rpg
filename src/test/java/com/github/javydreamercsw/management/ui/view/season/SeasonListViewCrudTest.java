@@ -29,6 +29,8 @@ import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -101,8 +104,7 @@ class SeasonListViewCrudTest extends AbstractViewTest {
     search.setValue("Spring");
     view.updateGridForTest(); // LAZY value-change mode: trigger the load explicitly
 
-    verify(seasonService, org.mockito.Mockito.atLeastOnce())
-        .searchSeasons("Spring", Pageable.unpaged());
+    verify(seasonService, Mockito.atLeastOnce()).searchSeasons("Spring", Pageable.unpaged());
   }
 
   @Test
@@ -208,17 +210,14 @@ class SeasonListViewCrudTest extends AbstractViewTest {
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Cancel")).click();
 
     assertFalse(dialog.isOpened());
-    verify(seasonService, org.mockito.Mockito.never()).createSeason(any(), any(), any());
+    verify(seasonService, Mockito.never()).createSeason(any(), any(), any());
   }
 
   /** Fires ConfirmDialog's confirm action via reflection (fireEvent is protected). */
   private static void fireConfirm(ConfirmDialog dialog) {
     try {
-      var event =
-          new com.vaadin.flow.component.confirmdialog.ConfirmDialog.ConfirmEvent(dialog, true);
-      var fireEvent =
-          com.vaadin.flow.component.Component.class.getDeclaredMethod(
-              "fireEvent", com.vaadin.flow.component.ComponentEvent.class);
+      var event = new ConfirmDialog.ConfirmEvent(dialog, true);
+      var fireEvent = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
       fireEvent.setAccessible(true);
       fireEvent.invoke(dialog, event);
     } catch (ReflectiveOperationException e) {

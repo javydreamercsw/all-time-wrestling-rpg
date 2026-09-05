@@ -32,6 +32,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import com.github.javydreamercsw.management.domain.challenge.AccountChallengeCompletion;
 import com.github.javydreamercsw.management.domain.challenge.ChallengeCompletionStatus;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
 import com.github.javydreamercsw.management.service.challenge.ChallengeCompletionService;
@@ -39,9 +40,11 @@ import com.github.javydreamercsw.management.service.challenge.ChallengeService;
 import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.UnorderedList;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -104,7 +107,7 @@ class ChallengeListViewDetailTest extends AbstractViewTest {
     return sb.toString();
   }
 
-  private void collectText(com.vaadin.flow.component.Component c, StringBuilder sb) {
+  private void collectText(Component c, StringBuilder sb) {
     String own = c.getElement().getText();
     if (own != null && !own.isBlank()) {
       sb.append(own).append('\n');
@@ -154,8 +157,7 @@ class ChallengeListViewDetailTest extends AbstractViewTest {
     ChallengeListView view = buildView();
     openDetail(view);
 
-    List<com.vaadin.flow.component.html.UnorderedList> lists =
-        _find(UI.getCurrent(), com.vaadin.flow.component.html.UnorderedList.class);
+    List<UnorderedList> lists = _find(UI.getCurrent(), UnorderedList.class);
     assertFalse(lists.isEmpty(), "Conditions/modifiers with 2+ items should render as a list");
   }
 
@@ -173,8 +175,7 @@ class ChallengeListViewDetailTest extends AbstractViewTest {
   @Test
   @DisplayName("Known match type renders an info button that opens MatchInfoDialog")
   void knownMatchTypeRendersInfoButton() {
-    com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule =
-        new com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule();
+    SegmentRule rule = new SegmentRule();
     when(segmentRuleRepository.findByName("Normal")).thenReturn(Optional.of(rule));
 
     ChallengeListView view = buildView();

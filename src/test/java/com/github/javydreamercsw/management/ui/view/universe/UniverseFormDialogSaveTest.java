@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
+import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
@@ -119,11 +121,9 @@ class UniverseFormDialogSaveTest extends AbstractViewTest {
     assertEquals(0, saved.get());
   }
 
-  @Mock
-  private com.github.javydreamercsw.management.service.universe.UniverseMembershipService
-      membershipService;
+  @Mock private UniverseMembershipService membershipService;
 
-  @Mock private com.github.javydreamercsw.management.service.AccountService accountService;
+  @Mock private AccountService accountService;
 
   @Test
   @DisplayName("Edit mode with membership services builds Details + Members tabs")

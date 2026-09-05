@@ -39,6 +39,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 class ChampionshipDefendedCooldownListenerTest {
 
@@ -128,7 +129,7 @@ class ChampionshipDefendedCooldownListenerTest {
 
     listener.onApplicationEvent(event(challenger, second));
 
-    verify(cooldownRepository, org.mockito.Mockito.times(2)).save(any());
+    verify(cooldownRepository, Mockito.times(2)).save(any());
   }
 
   @Test
@@ -141,7 +142,7 @@ class ChampionshipDefendedCooldownListenerTest {
     listener.onApplicationEvent(event(challenger));
 
     // Reload happened twice: once for the title, once post-increment.
-    verify(titleRepository, org.mockito.Mockito.times(2)).findById(10L);
+    verify(titleRepository, Mockito.times(2)).findById(10L);
     verify(cooldownRepository).updateDefenseCount(77L, 10L, 9L);
     assertTrue(title.getDefenseCount() == 9L);
   }

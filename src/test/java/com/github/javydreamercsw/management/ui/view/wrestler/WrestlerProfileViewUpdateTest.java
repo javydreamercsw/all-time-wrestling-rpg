@@ -29,10 +29,16 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
+import com.github.javydreamercsw.base.image.ImageResolution;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerStatus;
+import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -65,6 +71,7 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.RouteParameters;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -131,7 +138,7 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
     lenient().when(wrestlerService.getOrCreateState(anyLong(), anyLong())).thenReturn(state);
     lenient()
         .when(wrestlerService.resolveWrestlerImage(any()))
-        .thenReturn(new com.github.javydreamercsw.base.image.ImageResolution("test-url.png", true));
+        .thenReturn(new ImageResolution("test-url.png", true));
 
     view =
         new WrestlerProfileView(
@@ -175,11 +182,10 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
     lenient()
         .when(alignmentService.getOrCreateUniverseAlignment(any(), any()))
         .thenReturn(
-            com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment.builder()
+            WrestlerAlignment.builder()
                 .wrestler(wrestler)
                 .universe(universe)
-                .alignmentType(
-                    com.github.javydreamercsw.management.domain.campaign.AlignmentType.FACE)
+                .alignmentType(AlignmentType.FACE)
                 .build());
     lenient().when(wrestlerStatsService.getWrestlerStats(5L, 1L)).thenReturn(Optional.empty());
     lenient().when(relationshipService.getRelationshipsForWrestler(5L)).thenReturn(List.of());
@@ -206,12 +212,12 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
     return flatten(view).anyMatch(text -> text.contains(snippet));
   }
 
-  private java.util.stream.Stream<String> flatten(Component root) {
-    java.util.stream.Stream<String> own =
+  private Stream<String> flatten(Component root) {
+    Stream<String> own =
         root.getElement().getText() == null
-            ? java.util.stream.Stream.empty()
-            : java.util.stream.Stream.of(root.getElement().getText());
-    return java.util.stream.Stream.concat(own, root.getChildren().flatMap(this::flatten));
+            ? Stream.empty()
+            : Stream.of(root.getElement().getText());
+    return Stream.concat(own, root.getChildren().flatMap(this::flatten));
   }
 
   @Test
@@ -300,12 +306,8 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
     Wrestler partner = new Wrestler();
     partner.setId(6L);
     partner.setName("Tag Partner");
-    com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship rel =
-        mock(com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship.class);
-    lenient()
-        .when(rel.getType())
-        .thenReturn(
-            com.github.javydreamercsw.management.domain.relationship.RelationshipType.BEST_FRIEND);
+    WrestlerRelationship rel = mock(WrestlerRelationship.class);
+    lenient().when(rel.getType()).thenReturn(RelationshipType.BEST_FRIEND);
     lenient().when(rel.getPartner(wrestler)).thenReturn(partner);
     lenient().when(rel.getLevel()).thenReturn(3);
     lenient().when(rel.getIsStoryline()).thenReturn(true);
@@ -334,8 +336,7 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
   @DisplayName("Injuries render their display strings")
   void injuriesRender() {
     stubCommonLookups();
-    com.github.javydreamercsw.management.domain.injury.Injury injury =
-        mock(com.github.javydreamercsw.management.domain.injury.Injury.class);
+    Injury injury = mock(Injury.class);
     lenient().when(injury.getDisplayString()).thenReturn("Knee Injury (2 weeks)");
     when(injuryService.getAllInjuriesForWrestler(5L, 1L)).thenReturn(List.of(injury));
 
