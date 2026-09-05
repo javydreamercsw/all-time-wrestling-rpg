@@ -72,7 +72,7 @@ public class GenericImageGenerationDialog extends Dialog {
     VerticalLayout layout = new VerticalLayout();
     layout.setPadding(false);
     layout.setSpacing(true);
-    layout.setWidth("500px");
+    layout.setWidth("min(500px, 95vw)");
 
     promptArea = new TextArea("Prompt");
     promptArea.setWidthFull();

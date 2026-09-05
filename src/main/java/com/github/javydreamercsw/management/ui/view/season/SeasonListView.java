@@ -17,22 +17,23 @@
 package com.github.javydreamercsw.management.ui.view.season;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -47,6 +48,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -67,6 +69,7 @@ public class SeasonListView extends Main {
 
   private final SeasonService seasonService;
   private final SecurityUtils securityUtils;
+  private final NotificationService notificationService;
   private final Grid<Season> grid;
   private final TextField searchField;
 
@@ -81,9 +84,12 @@ public class SeasonListView extends Main {
   private Binder<Season> binder;
 
   public SeasonListView(
-      @NonNull final SeasonService seasonService, @NonNull final SecurityUtils securityUtils) {
+      @NonNull final SeasonService seasonService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final NotificationService notificationService) {
     this.seasonService = seasonService;
     this.securityUtils = securityUtils;
+    this.notificationService = notificationService;
     this.grid = new Grid<>(Season.class, false);
     this.searchField = new TextField();
 
@@ -92,7 +98,9 @@ public class SeasonListView extends Main {
     configureEditDialog();
     updateGrid();
 
-    add(createToolbar(), grid);
+    Div gridWrapper = new Div(grid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(createToolbar(), gridWrapper);
   }
 
   private HorizontalLayout createToolbar() {
@@ -112,14 +120,16 @@ public class SeasonListView extends Main {
     refreshBtn.addClickListener(e -> updateGrid());
 
     HorizontalLayout toolbar = new HorizontalLayout(searchField, addSeasonBtn, refreshBtn);
+    // .toolbar (styles.css) provides the responsive wrap
     toolbar.addClassName("toolbar");
-    toolbar.getStyle().set("flex-wrap", "wrap");
     return toolbar;
   }
 
   private void configureGrid() {
     grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
     grid.setSizeFull();
+    // 7 columns; below this the grid scrolls horizontally inside .grid-scroll-container
+    grid.setMinWidth("800px");
 
     // Add columns
     grid.addColumn(Season::getName).setHeader("Name").setSortable(true).setResizable(true);
@@ -178,6 +188,8 @@ public class SeasonListView extends Main {
               toggleBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
               toggleBtn.setTooltipText(
                   Boolean.TRUE.equals(season.getIsActive()) ? "Deactivate" : "Activate");
+              toggleBtn.setAriaLabel(
+                  Boolean.TRUE.equals(season.getIsActive()) ? "Deactivate" : "Activate");
               toggleBtn.setVisible(securityUtils.canEdit());
               toggleBtn.addClickListener(
                   e -> {
@@ -197,7 +209,7 @@ public class SeasonListView extends Main {
                       "Details",
                       SeasonDetailView.class,
                       new RouteParameters("seasonId", String.valueOf(season.getId())));
-              detailLink.addClassNames("lumo-small");
+              detailLink.addClassNames(LumoUtility.FontSize.SMALL);
 
               return new HorizontalLayout(detailLink, editBtn, toggleBtn, deleteBtn);
             })
@@ -209,7 +221,7 @@ public class SeasonListView extends Main {
 
   private void configureEditDialog() {
     editDialog = new Dialog();
-    editDialog.setWidth("500px");
+    editDialog.setWidth("min(500px, 95vw)");
     editDialog.setCloseOnEsc(true);
     editDialog.setCloseOnOutsideClick(false);
 
@@ -344,14 +356,27 @@ public class SeasonListView extends Main {
   }
 
   private void deleteSeason(final Season season) {
-    try {
-      seasonService.deleteSeason(season.getId());
-      showSuccessNotification("Season deleted successfully");
-      updateGrid();
-    } catch (Exception e) {
-      log.error("Error deleting season: {}", season.getName(), e);
-      showErrorNotification("Error deleting season: " + e.getMessage());
-    }
+    ConfirmDialog confirmDialog = new ConfirmDialog();
+    confirmDialog.setHeader("Delete Season");
+    confirmDialog.setText(
+        "Are you sure you want to delete the season '"
+            + season.getName()
+            + "'? This cannot be undone.");
+    confirmDialog.setCancelable(true);
+    confirmDialog.setConfirmText("Delete");
+    confirmDialog.setConfirmButtonTheme("error primary");
+    confirmDialog.addConfirmListener(
+        e -> {
+          try {
+            seasonService.deleteSeason(season.getId());
+            showSuccessNotification("Season deleted successfully");
+            updateGrid();
+          } catch (Exception ex) {
+            log.error("Error deleting season: {}", season.getName(), ex);
+            showErrorNotification("Error deleting season: " + ex.getMessage());
+          }
+        });
+    confirmDialog.open();
   }
 
   private void updateGrid() {
@@ -369,12 +394,10 @@ public class SeasonListView extends Main {
   }
 
   private void showSuccessNotification(final String message) {
-    Notification notification = Notification.show(message, 3000, Notification.Position.TOP_CENTER);
-    notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    notificationService.showSuccess(message);
   }
 
   private void showErrorNotification(final String message) {
-    Notification notification = Notification.show(message, 5000, Notification.Position.TOP_CENTER);
-    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+    notificationService.showError(message);
   }
 }

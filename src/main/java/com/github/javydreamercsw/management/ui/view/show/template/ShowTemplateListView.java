@@ -176,7 +176,9 @@ public class ShowTemplateListView extends Main {
 
     // Toolbar with filters and create button
     add(new ViewToolbar("Show Templates", ViewToolbar.group(filterLayout, createBtn)));
-    add(templateGrid);
+    Div gridWrapper = new Div(templateGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
 
     refreshGrid();
   }
@@ -339,6 +341,7 @@ public class ShowTemplateListView extends Main {
               Button toggleBtn = new Button(toggleIcon);
               toggleBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
               toggleBtn.setTooltipText(template.isActive() ? "Deactivate" : "Activate");
+              toggleBtn.setAriaLabel(template.isActive() ? "Deactivate" : "Activate");
               toggleBtn.setVisible(securityUtils.canEdit());
               toggleBtn.addClickListener(
                   e -> {

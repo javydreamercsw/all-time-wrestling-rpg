@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>2.8.0</version>
+  <version>2.9.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
@@ -43,15 +43,15 @@
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <selenium.version>4.47.0</selenium.version>
+    <selenium.version>4.48.0</selenium.version>
     <skipTests>false</skipTests>
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.5</testcontainers.version>
     <!-- npm packages for @vaadin/* components lag behind Maven releases. Set this to the latest
          version actually published to npm. Update when npm catches up to vaadin.version. -->
-    <vaadin.npm.version>25.2.4</vaadin.npm.version>
-    <vaadin.version>25.2.3</vaadin.version>
+    <vaadin.npm.version>25.2.6</vaadin.npm.version>
+    <vaadin.version>25.2.6</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>
@@ -387,7 +387,7 @@
     <dependency>
       <groupId>org.yaml</groupId>
       <artifactId>snakeyaml</artifactId>
-      <version>2.6</version>
+      <version>2.7</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -593,7 +593,7 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations-jakarta</artifactId>
-      <version>2.2.54</version>
+      <version>2.2.55</version>
     </dependency>
     <dependency>
       <groupId>jakarta.persistence</groupId>
@@ -630,7 +630,7 @@
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-models-jakarta</artifactId>
-      <version>2.2.54</version>
+      <version>2.2.55</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>

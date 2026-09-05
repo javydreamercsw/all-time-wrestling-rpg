@@ -36,7 +36,7 @@ public class MatchInfoDialog extends Dialog {
   public MatchInfoDialog(final SegmentType type, final List<SegmentRule> rules) {
     setDraggable(true);
     setResizable(true);
-    setWidth("600px");
+    setWidth("min(600px, 95vw)");
     setMaxHeight("80vh");
 
     Button closeButton = new Button("Close", e -> close());

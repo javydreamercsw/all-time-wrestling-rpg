@@ -29,8 +29,10 @@ import com.github.javydreamercsw.management.service.challenge.ChallengeCompletio
 import com.github.javydreamercsw.management.service.challenge.ChallengeService;
 import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.ui.component.GuideTextRenderer;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.show.MatchInfoDialog;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -284,10 +286,11 @@ public class ChallengeListView extends VerticalLayout {
       card.add(product);
     }
 
-    Paragraph objective = new Paragraph(challenge.getObjective());
-    objective.addClassNames(FontSize.SMALL, Margin.Bottom.MEDIUM);
+    Component objective = GuideTextRenderer.render(challenge.getObjective());
+    objective.getElement().getStyle().set("font-size", "var(--lumo-font-size-s)");
+    objective.getElement().getStyle().set("margin-bottom", "var(--lumo-space-m)");
     if (isLocked) {
-      objective.addClassName(TextColor.SECONDARY);
+      objective.getElement().getStyle().set("color", "var(--lumo-secondary-text-color)");
     }
     card.add(objective);
 
@@ -340,7 +343,7 @@ public class ChallengeListView extends VerticalLayout {
 
   private void openDetailDialog(final ChallengeDTO challenge) {
     Dialog dialog = new Dialog();
-    dialog.setWidth("640px");
+    dialog.setWidth("min(640px, 95vw)");
     dialog.setMaxWidth("95vw");
 
     VerticalLayout content = new VerticalLayout();
@@ -371,8 +374,10 @@ public class ChallengeListView extends VerticalLayout {
     }
 
     if (challenge.getFlavorText() != null && !challenge.getFlavorText().isBlank()) {
-      Paragraph flavor = new Paragraph(challenge.getFlavorText());
-      flavor.addClassNames(FontSize.SMALL, TextColor.SECONDARY, Margin.Bottom.MEDIUM);
+      Component flavor = GuideTextRenderer.render(challenge.getFlavorText());
+      flavor.getElement().getStyle().set("font-size", "var(--lumo-font-size-s)");
+      flavor.getElement().getStyle().set("color", "var(--lumo-secondary-text-color)");
+      flavor.getElement().getStyle().set("margin-bottom", "var(--lumo-space-m)");
       content.add(flavor);
     }
 
@@ -531,14 +536,26 @@ public class ChallengeListView extends VerticalLayout {
 
     if (asList && items.size() > 1) {
       UnorderedList ul = new UnorderedList();
-      items.forEach(item -> ul.add(new ListItem(item)));
+      // List items render through GuideTextRenderer so [[icon]] placeholders
+      // (e.g. [[signature]], [[finisher]]) become inline SVGs; plain text is
+      // unaffected. The renderer returns a Div that works as a ListItem child.
+      items.forEach(
+          item -> {
+            ListItem li = new ListItem();
+            li.add(GuideTextRenderer.render(item));
+            ul.add(li);
+          });
       parent.add(ul);
     } else {
       items.forEach(
           item -> {
-            Paragraph p = new Paragraph(item);
-            p.addClassNames(FontSize.SMALL, Margin.Top.NONE, Margin.Bottom.XSMALL);
-            parent.add(p);
+            Component rendered = GuideTextRenderer.render(item);
+            rendered.getElement().getStyle().set("font-size", "var(--lumo-font-size-s)");
+            rendered
+                .getElement()
+                .getStyle()
+                .set("margin", "0 var(--lumo-space-m) var(--lumo-space-xs) 0");
+            parent.add(rendered);
           });
     }
   }

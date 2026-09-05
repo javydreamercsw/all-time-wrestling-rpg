@@ -114,21 +114,26 @@ public class SeasonDetailView extends Main implements BeforeEnterObserver {
 
     String status = Boolean.TRUE.equals(season.getIsActive()) ? "Active" : "Completed";
     String statusColor =
-        Boolean.TRUE.equals(season.getIsActive()) ? "#16a34a" : "var(--lumo-secondary-text-color)";
+        Boolean.TRUE.equals(season.getIsActive())
+            ? "var(--lumo-success-color)"
+            : "var(--lumo-secondary-text-color)";
 
     cards.add(statCard("Status", status, statusColor));
-    cards.add(statCard("Total Shows", String.valueOf(season.getTotalShows()), "#2563eb"));
+    cards.add(
+        statCard(
+            "Total Shows", String.valueOf(season.getTotalShows()), "var(--lumo-primary-color)"));
     cards.add(
         statCard(
             "Start Date",
             season.getStartDate() != null ? DATE_FMT.format(season.getStartDate()) : "—",
-            "#7c3aed"));
+            "var(--lumo-header-text-color)"));
     cards.add(
         statCard(
             "End Date",
             season.getEndDate() != null ? DATE_FMT.format(season.getEndDate()) : "Ongoing",
-            "#d97706"));
-    cards.add(statCard("Duration", season.getDurationDays() + " days", "#0891b2"));
+            "var(--lumo-warning-color)"));
+    cards.add(
+        statCard("Duration", season.getDurationDays() + " days", "var(--lumo-primary-text-color)"));
 
     section.add(cards);
     return section;

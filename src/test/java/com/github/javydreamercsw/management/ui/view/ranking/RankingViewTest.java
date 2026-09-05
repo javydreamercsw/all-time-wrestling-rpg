@@ -62,8 +62,22 @@ class RankingViewTest extends AbstractViewTest {
             List.of(
                 ChampionDTO.builder().id(1L).name("Champion").fans(1000L).reignDays(1L).build()));
     List<RankedWrestlerDTO> contenders = new ArrayList<>();
-    contenders.add(new RankedWrestlerDTO(2L, "Contender 2", 700L, 1, WrestlerTier.MIDCARDER));
-    contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2, WrestlerTier.ROOKIE));
+    contenders.add(
+        RankedWrestlerDTO.builder()
+            .id(2L)
+            .name("Contender 2")
+            .fans(700L)
+            .rank(1)
+            .tier(WrestlerTier.MIDCARDER)
+            .build());
+    contenders.add(
+        RankedWrestlerDTO.builder()
+            .id(3L)
+            .name("Contender 1")
+            .fans(500L)
+            .rank(2)
+            .tier(WrestlerTier.ROOKIE)
+            .build());
     when(rankingService.getRankedContenders(championshipDTO.getId()))
         .thenAnswer(invocation -> contenders);
   }

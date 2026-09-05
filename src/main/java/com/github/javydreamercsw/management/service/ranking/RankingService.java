@@ -32,6 +32,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldown;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldownRepository;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
@@ -69,6 +71,7 @@ public class RankingService {
   private final WrestlerService wrestlerService;
   private final WrestlerStateRepository wrestlerStateRepository;
   private final GameSettingService gameSettingService;
+  private final WrestlerTitleCooldownRepository cooldownRepository;
 
   @Autowired
   public RankingService(
@@ -79,7 +82,8 @@ public class RankingService {
       final DefaultImageService imageService,
       final WrestlerService wrestlerService,
       final WrestlerStateRepository wrestlerStateRepository,
-      final GameSettingService gameSettingService) {
+      final GameSettingService gameSettingService,
+      final WrestlerTitleCooldownRepository cooldownRepository) {
     this.titleRepository = titleRepository;
     this.wrestlerRepository = wrestlerRepository;
     this.factionRepository = factionRepository;
@@ -88,6 +92,7 @@ public class RankingService {
     this.wrestlerService = wrestlerService;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.gameSettingService = gameSettingService;
+    this.cooldownRepository = cooldownRepository;
   }
 
   private Instant currentGameInstant() {
@@ -257,6 +262,7 @@ public class RankingService {
               });
 
       AtomicInteger rank = new AtomicInteger(1);
+      final Title titleRef = title;
       return contenders.stream()
           .sorted(
               (w1, w2) -> {
@@ -285,7 +291,7 @@ public class RankingService {
                 // Tertiary sort: if tiers are the same, sort by fans (descending)
                 return Long.compare(s2.getFans(), s1.getFans());
               })
-          .map(w -> toRankedWrestlerDTO(w, rank.getAndIncrement(), universeId))
+          .map(w -> toRankedWrestlerDTO(w, rank.getAndIncrement(), universeId, titleRef))
           .toList();
     }
   }
@@ -337,14 +343,36 @@ public class RankingService {
   }
 
   private RankedWrestlerDTO toRankedWrestlerDTO(
-      @NonNull final Wrestler wrestler, final int rank, @NonNull final Long universeId) {
+      @NonNull final Wrestler wrestler,
+      final int rank,
+      @NonNull final Long universeId,
+      final Title titleForCooldown) {
     WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+    boolean onCooldown = false;
+    long defensesUntilEligible = 0;
+    if (titleForCooldown != null) {
+      int cooldownDefenses = gameSettingService.getContenderFailedChallengeCooldownDefenses();
+      Optional<WrestlerTitleCooldown> cooldown =
+          cooldownRepository.findByWrestlerState_IdAndTitle_Id(
+              state.getId(), titleForCooldown.getId());
+      if (cooldown.isPresent()) {
+        long defensesSince =
+            titleForCooldown.getDefenseCount() - cooldown.get().getDefenseCountAtChallenge();
+        long remaining = cooldownDefenses - defensesSince;
+        if (remaining > 0) {
+          onCooldown = true;
+          defensesUntilEligible = remaining;
+        }
+      }
+    }
     return RankedWrestlerDTO.builder()
         .id(wrestler.getId())
         .name(wrestler.getName())
         .fans(state.getFans())
         .rank(rank)
         .tier(state.getTier())
+        .onCooldown(onCooldown)
+        .defensesUntilEligible(defensesUntilEligible)
         .build();
   }
 

@@ -37,10 +37,15 @@
 }
 
 /* Player Campaign Card Styles */
+/* Fluid campaign card: fills its column (min 280px) up to 320px on wide
+   screens instead of a fixed 320x500 that overflows phones. */
 .player-card-container {
     perspective: 1000px;
-    width: 320px;
+    width: 100%;
+    max-width: 320px;
+    min-width: min(280px, 100%);
     height: 500px;
+    max-height: 560px;
     cursor: pointer;
 }
 
@@ -160,6 +165,16 @@
 
 .status-bar-fill.stamina {
     background-color: #FFD700; /* Gold/Yellow */
+}
+
+/* Shared StatusBar component (StatusBar.java) — theme-safe success fill and
+   the low-value error state used outside the campaign card context. */
+.status-bar-fill.condition {
+    background-color: var(--lumo-success-color);
+}
+
+.status-bar-fill.status-bar-low {
+    background-color: var(--lumo-error-color) !important;
 }
 
 .status-bar-limit-marker {
@@ -304,6 +319,132 @@
     -webkit-overflow-scrolling: touch;
     flex-grow: 1;
     min-height: 0;
+}
+
+/* Navbar phone collapse — below 768px the Profile/Logout buttons reduce to
+   their icons and the username/Inbox labels hide (LumoUtility md: classes
+   handle the spans; this rule strips the label part of the buttons). */
+.navbar-action::part(label) {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .navbar-action::part(label) {
+        display: inline-flex;
+    }
+}
+
+/* Inbox detail pane — keep long messages reachable; the split layout's
+   default ::slotted overflow:clip would otherwise cut them off. */
+.inbox-view vaadin-split-layout > [slot='secondary'] {
+    overflow-y: auto;
+}
+
+/* Nothing selected — the empty hint pane steals width/height from the
+   list (min-width: 300px beats its 0% flex-basis) on every screen size,
+   so hide it and give the list the full split. */
+.inbox-view vaadin-split-layout.inbox-detail-empty::part(splitter) {
+    display: none;
+}
+
+.inbox-view vaadin-split-layout.inbox-detail-empty > [slot='secondary'] {
+    display: none;
+}
+
+/* Inbox phone layout — below 768px stack the master/detail SplitLayout
+   vertically. The Flow API has no responsive orientation, but the inline
+   flex-basis percentages set by setSplitterPosition() only matter on
+   desktop, where they keep working untouched; on phone the rules below
+   override them (!important beats the inline styles) for an even stacked
+   split with each pane scrolling internally. The splitter is hidden while
+   stacked — its drag handler tracks horizontal movement and would fight
+   the column layout. */
+@media (max-width: 767.98px) {
+    .inbox-view vaadin-split-layout {
+        flex-direction: column;
+    }
+
+    .inbox-view vaadin-split-layout::part(splitter) {
+        display: none;
+    }
+
+    .inbox-view vaadin-split-layout > [slot='primary'],
+    .inbox-view vaadin-split-layout > [slot='secondary'] {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        min-height: 0;
+    }
+}
+
+/* Home view — cards that previously carried their chrome as inline styles. */
+.home-view {
+    max-width: 1100px;
+    margin-inline: auto;
+    width: 100%;
+}
+
+.summary-card {
+    border: 1px solid var(--lumo-contrast-10pct);
+    border-radius: var(--lumo-border-radius-m);
+    padding: var(--lumo-space-m);
+    background-color: var(--lumo-base-color);
+}
+
+.news-card {
+    border-bottom: 1px solid var(--lumo-contrast-10pct);
+    padding: var(--lumo-space-s) 0;
+}
+
+/* Premium live event rows on the Show List get a subtle warning accent.
+   setPartNameGenerator("ple-show") marks each row's cells; ::part() on the
+   grid host reaches into the shadow DOM. */
+vaadin-grid::part(ple-show) {
+    box-shadow: inset 3px 0 0 var(--lumo-warning-color);
+}
+
+/* Manual toolbars (Season/Teams/Inbox) — the old .toolbar hook finally works:
+   wraps on narrow screens so the controls stay reachable. */
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--lumo-space-s);
+    align-items: flex-end;
+    width: 100%;
+}
+
+/* Loading skeletons — shimmer placeholders shown while a section's data
+   loads asynchronously (see LoadingSkeleton component). */
+.atw-skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--lumo-contrast-5pct) 25%,
+        var(--lumo-contrast-10pct) 50%,
+        var(--lumo-contrast-5pct) 75%
+    );
+    background-size: 200% 100%;
+    animation: atw-skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: var(--lumo-border-radius-s);
+    width: 100%;
+}
+
+.atw-skeleton-text {
+    color: var(--lumo-secondary-text-color);
+    font-size: var(--lumo-font-size-s);
+}
+
+@keyframes atw-skeleton-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .atw-skeleton {
+        animation: none;
+    }
 }
 
 /* Profile Drawer */

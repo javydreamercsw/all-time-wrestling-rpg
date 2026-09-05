@@ -188,8 +188,11 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
         (ComponentRenderer<Span, Show>) typeColumn.getRenderer();
 
     Span otherSpan = renderer.createComponent(otherShow);
+    // Views use Lumo theme variables (ATW-dfbb.5) so styling adapts to the
+    // retro/neon/high-contrast themes instead of hardcoded light-mode hexes.
     assertEquals(
-        "background-color:#8A2BE2;color:white", otherSpan.getElement().getAttribute("style"));
+        "background-color:var(--lumo-primary-color);color:var(--lumo-primary-contrast-color)",
+        otherSpan.getElement().getAttribute("style"));
   }
 
   @Test
@@ -212,10 +215,11 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
     EntryQuery query = new EntryQuery(start, end);
     List<Entry> entries = showCalendarView.getCalendar().getEntryProvider().fetch(query).toList();
 
+    // Colors ride Lumo theme variables (ATW-dfbb.5) for theme awareness.
     Entry pleEntry =
         entries.stream().filter(e -> "My PLE Show".equals(e.getTitle())).findFirst().orElse(null);
     assertNotNull(pleEntry);
-    assertEquals("#dc2626", pleEntry.getColor());
+    assertEquals("var(--lumo-error-color)", pleEntry.getColor());
 
     Entry weeklyEntry =
         entries.stream()
@@ -223,11 +227,11 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
             .findFirst()
             .orElse(null);
     assertNotNull(weeklyEntry);
-    assertEquals("#2563eb", weeklyEntry.getColor());
+    assertEquals("var(--lumo-primary-color)", weeklyEntry.getColor());
 
     Entry otherEntry =
         entries.stream().filter(e -> "My Other Show".equals(e.getTitle())).findFirst().orElse(null);
     assertNotNull(otherEntry);
-    assertEquals("#8A2BE2", otherEntry.getColor());
+    assertEquals("var(--lumo-header-text-color)", otherEntry.getColor());
   }
 }
