@@ -400,4 +400,18 @@ public class SeasonListView extends Main {
   private void showErrorNotification(final String message) {
     notificationService.showError(message);
   }
+
+  // --- Test-visible delegates (package-private) for SeasonListViewCrudTest ---
+
+  void updateGridForTest() {
+    updateGrid();
+  }
+
+  void openEditDialogForTest(final Season season) {
+    openEditDialog(season);
+  }
+
+  void deleteSeasonForTest(final Season season) {
+    deleteSeason(season);
+  }
 }
