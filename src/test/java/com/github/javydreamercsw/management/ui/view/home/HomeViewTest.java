@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.service.home.LandingPageSummaryProvi
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -238,11 +239,7 @@ class HomeViewTest extends AbstractViewTest {
     when(securityUtils.isPlayer()).thenReturn(true);
     HomeView view = buildView(Collections.emptyList());
 
-    com.vaadin.flow.component.button.Button cta =
-        _get(
-            view,
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("home-cta-player"));
+    Button cta = _get(view, Button.class, spec -> spec.withId("home-cta-player"));
     assertTrue(cta.isEnabled());
   }
 
@@ -252,11 +249,7 @@ class HomeViewTest extends AbstractViewTest {
     when(securityUtils.isBooker()).thenReturn(true);
     HomeView view = buildView(Collections.emptyList());
 
-    var booker =
-        _get(
-            view,
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("home-cta-booker"));
+    var booker = _get(view, Button.class, spec -> spec.withId("home-cta-booker"));
     assertTrue(
         booker.getThemeNames().contains("primary"),
         "Booker-only user should get the primary booker CTA");
@@ -269,16 +262,8 @@ class HomeViewTest extends AbstractViewTest {
     when(securityUtils.isBooker()).thenReturn(true);
     HomeView view = buildView(Collections.emptyList());
 
-    var player =
-        _get(
-            view,
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("home-cta-player"));
-    var booker =
-        _get(
-            view,
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("home-cta-booker"));
+    var player = _get(view, Button.class, spec -> spec.withId("home-cta-player"));
+    var booker = _get(view, Button.class, spec -> spec.withId("home-cta-booker"));
     assertTrue(player.getThemeNames().contains("primary"));
     assertFalse(booker.getThemeNames().contains("primary"));
   }
@@ -287,11 +272,7 @@ class HomeViewTest extends AbstractViewTest {
   @DisplayName("Admin sees the Manage Wrestlers CTA; primary only when no other persona")
   void adminWrestlersCta() {
     HomeView view = buildView(Collections.emptyList());
-    var wrestlers =
-        _get(
-            view,
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("home-cta-wrestlers"));
+    var wrestlers = _get(view, Button.class, spec -> spec.withId("home-cta-wrestlers"));
     assertTrue(wrestlers.getThemeNames().contains("primary"));
   }
 
@@ -301,16 +282,8 @@ class HomeViewTest extends AbstractViewTest {
     when(securityUtils.isPlayer()).thenReturn(true);
     HomeView view = buildView(Collections.emptyList());
 
-    var player =
-        _get(
-            view,
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("home-cta-player"));
-    var wrestlers =
-        _get(
-            view,
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("home-cta-wrestlers"));
+    var player = _get(view, Button.class, spec -> spec.withId("home-cta-player"));
+    var wrestlers = _get(view, Button.class, spec -> spec.withId("home-cta-wrestlers"));
     assertTrue(player.getThemeNames().contains("primary"));
     assertFalse(wrestlers.getThemeNames().contains("primary"));
   }
@@ -321,11 +294,7 @@ class HomeViewTest extends AbstractViewTest {
     when(securityUtils.isAdmin()).thenReturn(false);
     HomeView view = buildView(Collections.emptyList());
 
-    var inbox =
-        _get(
-            view,
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("home-cta-inbox"));
+    var inbox = _get(view, Button.class, spec -> spec.withId("home-cta-inbox"));
     assertTrue(inbox.getThemeNames().contains("primary"));
   }
 }

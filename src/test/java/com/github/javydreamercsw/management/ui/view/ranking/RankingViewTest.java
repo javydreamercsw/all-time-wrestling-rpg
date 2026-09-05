@@ -39,6 +39,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.provider.Query;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -156,7 +157,7 @@ class RankingViewTest extends AbstractViewTest {
 
   @Test
   void contenderOnCooldownShowsClockIconWithTooltip() {
-    java.util.List<RankedWrestlerDTO> extended = new ArrayList<>();
+    List<RankedWrestlerDTO> extended = new ArrayList<>();
     extended.add(
         RankedWrestlerDTO.builder()
             .id(2L)
@@ -190,9 +191,9 @@ class RankingViewTest extends AbstractViewTest {
     // Component-column content is rendered per row; verify the data contract
     // the renderer relies on: the cooldown flags ride through to the rows.
     RankedWrestlerDTO cooling =
-        ((java.util.List<RankedWrestlerDTO>) grid.getGenericDataView().getItems().toList())
+        ((List<RankedWrestlerDTO>) grid.getGenericDataView().getItems().toList())
             .stream().filter(w -> "Cooling Down".equals(w.getName())).findFirst().orElseThrow();
-    org.junit.jupiter.api.Assertions.assertTrue(cooling.isOnCooldown());
-    org.junit.jupiter.api.Assertions.assertEquals(2, cooling.getDefensesUntilEligible());
+    Assertions.assertTrue(cooling.isOnCooldown());
+    Assertions.assertEquals(2, cooling.getDefensesUntilEligible());
   }
 }

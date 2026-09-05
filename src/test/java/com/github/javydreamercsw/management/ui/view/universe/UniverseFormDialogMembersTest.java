@@ -34,14 +34,16 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.tabs.TabSheet;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 /**
  * Covers the Members and Settings tabs of {@link UniverseFormDialog}: add/remove member (with the
@@ -70,26 +72,11 @@ class UniverseFormDialogMembersTest extends AbstractViewTest {
     member.setUsername("member1");
   }
 
-  /** Fires ConfirmDialog's confirm action via reflection (fireEvent is protected). */
-  private static void fireConfirm(ConfirmDialog dialog) {
-    try {
-      var event = new ConfirmDialog.ConfirmEvent(dialog, true);
-      var fireEvent =
-          com.vaadin.flow.component.Component.class.getDeclaredMethod(
-              "fireEvent", com.vaadin.flow.component.ComponentEvent.class);
-      fireEvent.setAccessible(true);
-      fireEvent.invoke(dialog, event);
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("Failed to fire confirm event", e);
-    }
-  }
-
   /** Selects a tab and forces the content swap (updateContent is deferred to client round-trip). */
   private void selectTab(TabSheet tabs, int index) {
     tabs.setSelectedIndex(index);
     try {
-      var updateContent =
-          com.vaadin.flow.component.tabs.TabSheet.class.getDeclaredMethod("updateContent");
+      var updateContent = TabSheet.class.getDeclaredMethod("updateContent");
       updateContent.setAccessible(true);
       updateContent.invoke(tabs);
     } catch (ReflectiveOperationException e) {
@@ -125,7 +112,7 @@ class UniverseFormDialogMembersTest extends AbstractViewTest {
   }
 
   private void assertEquals3(int actual, String message) {
-    org.junit.jupiter.api.Assertions.assertEquals(3, actual, message);
+    Assertions.assertEquals(3, actual, message);
   }
 
   @Test
@@ -144,11 +131,8 @@ class UniverseFormDialogMembersTest extends AbstractViewTest {
     dialog.open();
     selectTab(tabs, 1); // Members tab
     // The handler requires a selected account (and role defaults to MEMBER).
-    com.vaadin.flow.component.combobox.ComboBox<Account> accountPicker =
-        _get(
-            UI.getCurrent(),
-            com.vaadin.flow.component.combobox.ComboBox.class,
-            spec -> spec.withLabel("Add Account"));
+    ComboBox<Account> accountPicker =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Add Account"));
     accountPicker.setValue(member);
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Add Member")).click();
@@ -171,11 +155,8 @@ class UniverseFormDialogMembersTest extends AbstractViewTest {
     TabSheet tabs = (TabSheet) dialog.getChildren().findFirst().orElseThrow();
     dialog.open();
     selectTab(tabs, 2); // Settings tab
-    com.vaadin.flow.component.combobox.ComboBox<Wrestler> picker =
-        _get(
-            UI.getCurrent(),
-            com.vaadin.flow.component.combobox.ComboBox.class,
-            spec -> spec.withLabel("Exclude Wrestler"));
+    ComboBox<Wrestler> picker =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Exclude Wrestler"));
     picker.setValue(target);
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Exclude")).click();
@@ -198,6 +179,6 @@ class UniverseFormDialogMembersTest extends AbstractViewTest {
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Exclude")).click();
 
-    verify(settingsService, org.mockito.Mockito.never()).excludeWrestler(any(), any());
+    verify(settingsService, Mockito.never()).excludeWrestler(any(), any());
   }
 }
