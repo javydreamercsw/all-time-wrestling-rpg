@@ -226,10 +226,16 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+This project has **two graph sources**. Use the right one for the job:
+
+| Source | When to use | Caveats |
+|---|---|---|
+| **Local graph** (`graphify-out/graph.json` via `graphify` CLI) | Default for all codebase questions, release-branch work, and anything involving uncommitted changes | Reflects the current checkout (`graphify update .` keeps it current) |
+| **Online graph** (`mcp__graphify__*` tools) | Cross-repo questions (this repo + `BlueCubs/xinco`), architecture overviews, symbol lookup when the local graph is missing | Built from `main`, so release-branch-only code is invisible to it; when the workspace has 2+ repos, every call needs `repository_id: "javydreamercsw/all-time-wrestling-rpg"` |
 
 Rules:
 - For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Use the online MCP tools (`mcp__graphify__graphify_find`, `graphify_callers`, `graphify_references`, `query_graph`) for cross-repo reach or when you need symbol/caller data regardless of branch; pass `repository_id` explicitly.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

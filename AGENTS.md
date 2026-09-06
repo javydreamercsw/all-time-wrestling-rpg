@@ -62,6 +62,11 @@ To ensure a fast feedback loop and efficient context usage, always follow this h
 
 The doc covers graphify (community detection, path tracing, GRAPH_REPORT.md), code-review-graph (MCP tools, impact analysis), when to use each, and the full auto-update pipeline.
 
+### Graph data sources (hybrid)
+
+- **Local graph** (`graphify-out/` via `graphify` CLI) is the default for codebase questions — it reflects the current checkout. Run `graphify update .` after modifying code.
+- **Online graph** (`mcp__graphify__*` tools) is for cross-repo questions (this repo + `BlueCubs/xinco`) or symbol/caller lookup when the local graph lacks context. It is built from `main`, so release-branch-only code is invisible to it, and every call needs `repository_id: "javydreamercsw/all-time-wrestling-rpg"` when both repos are indexed.
+
 ### Fallback to raw Read/grep only when:
 
 - The response contains `bounds: "approximate"` or `_meta.stale_warning`
