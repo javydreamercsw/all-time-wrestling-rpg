@@ -360,8 +360,4 @@ public class TitleListView extends Main {
   void searchForTest(final String searchTerm) {
     searchField.setValue(searchTerm);
   }
-
-  void refreshGridForTest() {
-    refreshGrid();
-  }
 }

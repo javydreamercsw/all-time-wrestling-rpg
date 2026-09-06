@@ -397,6 +397,35 @@ class TitleListViewTest extends AbstractViewTest {
   }
 
   @Test
+  void actionsColumnToggleActivatesInactiveTitle() {
+    testTitle.setIsActive(false);
+
+    Grid.Column<Title> actionsColumn =
+        titleListView.grid.getColumns().stream()
+            .filter(col -> "Actions".equals(col.getHeaderText()))
+            .findFirst()
+            .orElseThrow();
+
+    @SuppressWarnings("unchecked")
+    ComponentRenderer<Component, Title> renderer =
+        (ComponentRenderer<Component, Title>) actionsColumn.getRenderer();
+    Component cell = renderer.createComponent(testTitle);
+
+    Button toggle =
+        cell.getChildren()
+            .filter(Button.class::isInstance)
+            .map(Button.class::cast)
+            .skip(1)
+            .findFirst()
+            .orElseThrow();
+
+    when(titleService.findByUniverse(any())).thenReturn(new ArrayList<>());
+    toggle.click();
+
+    verify(titleService).setActive(1L, true);
+  }
+
+  @Test
   void deleteConfirmDialogDeletesTitle() {
     // Render the actions cell and click Delete.
     Grid.Column<Title> actionsColumn =

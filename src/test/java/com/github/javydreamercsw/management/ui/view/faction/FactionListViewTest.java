@@ -43,8 +43,10 @@ import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
+import com.vaadin.flow.component.textfield.TextField;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -243,5 +245,68 @@ class FactionListViewTest extends AbstractViewTest {
     List<Faction> items = factionGrid.getListDataView().getItems().toList();
     assertEquals(1, items.size(), "Only the name-matching faction should remain");
     assertEquals("Monday Night Rew", items.get(0).getName());
+  }
+
+  @Test
+  @DisplayName("Edit dialog Save persists through the service")
+  void editDialogSavePersists() {
+    Faction f = faction(9L, "Editable Faction");
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(List.of(f));
+    view.refreshGridForTest();
+
+    @SuppressWarnings("unchecked")
+    Grid<Faction> factionGrid = _get(view, Grid.class);
+    Component actionsCell = _getCellComponent(factionGrid, 0, "actions");
+    Button editButton = _get(actionsCell, Button.class, spec -> spec.withId("edit-9"));
+    _click(editButton);
+
+    // The edit dialog opens with the faction bound; give the required name a
+    // value in case the fixture lacks one, then save.
+    Dialog editDialog = _get(UI.getCurrent(), Dialog.class);
+    TextField nameField = _get(editDialog, TextField.class, spec -> spec.withId("edit-name"));
+    nameField.setValue("Editable Faction");
+
+    Button save = _get(editDialog, Button.class, spec -> spec.withId("save-button"));
+    _click(save);
+
+    verify(factionService).save(f);
+  }
+
+  @Test
+  @DisplayName("Toolbar omits the Create Faction button when canCreate is false")
+  void toolbarWithoutCreateButton() {
+    when(securityUtils.canCreate()).thenReturn(false);
+    view =
+        new FactionListView(
+            factionService,
+            wrestlerService,
+            npcService,
+            securityUtils,
+            universeContextService,
+            imageStorageService);
+    UI.getCurrent().add(view);
+
+    // The grid still renders; the create button exists but is hidden.
+    Grid<?> grid = _get(view, Grid.class);
+    assertTrue(grid.isVisible());
+    // Hidden components are skipped by the locator; walk the tree.
+    Component create = findDescendantById(view, "create-faction-button");
+    assertTrue(
+        create == null || !create.isVisible(),
+        "Create button should be absent or hidden without canCreate");
+  }
+
+  /** Tree-walks for a component by id (karibu's locator skips INVIS components). */
+  private Component findDescendantById(final Component root, final String id) {
+    if (root.getId().orElse("").equals(id)) {
+      return root;
+    }
+    for (Component child : root.getChildren().toList()) {
+      Component found = findDescendantById(child, id);
+      if (found != null) {
+        return found;
+      }
+    }
+    return null;
   }
 }
