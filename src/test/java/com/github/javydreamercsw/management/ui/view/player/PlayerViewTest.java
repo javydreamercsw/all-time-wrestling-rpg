@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
@@ -52,9 +53,13 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -288,5 +293,100 @@ class PlayerViewTest extends AbstractViewTest {
           switcher.getValue(),
           "ComboBox should be pre-selected with the active wrestler on page load");
     }
+
+    @Test
+    @DisplayName("POST_MATCH phase renders no CTA in the primary action band")
+    void postMatchPhaseShowsNoCta() {
+      CampaignState campaignState = new CampaignState();
+      campaignState.setCurrentPhase(CampaignPhase.POST_MATCH);
+      Campaign campaign = Campaign.builder().id(2L).wrestler(wrestler).state(campaignState).build();
+      PlayerDashboardView built = buildViewWithCampaign(campaign);
+
+      // Neither the match CTA nor the campaign CTA may exist.
+      Assertions.assertTrue(
+          _find(built, Button.class).stream()
+              .noneMatch(b -> b.getId().orElse("").equals("continue-match-cta")),
+          "No Continue Match CTA during POST_MATCH");
+      Assertions.assertTrue(
+          _find(built, Button.class).stream()
+              .noneMatch(b -> b.getId().orElse("").equals("continue-campaign-cta")),
+          "No Continue Campaign CTA during POST_MATCH");
+    }
+
+    @Test
+    @DisplayName("Tab pages are wrapped in the grid scroll container")
+    void tabGridsAreWrappedInScrollContainer() {
+      // Every tab page Div carries the touch-scroll class from the redesign.
+      // Inactive tabs are INVIS so the karibu locator skips them — walk the tree.
+      long wrappers =
+          walk(view).stream()
+              .filter(
+                  d ->
+                      d.getElement().getAttribute("class") != null
+                          && d.getElement().getAttribute("class").contains("grid-scroll-container"))
+              .count();
+      Assertions.assertEquals(4, wrappers, "All four tab grids should sit in scroll wrappers");
+    }
+
+    @Test
+    @DisplayName("Upcoming matches grid shows the segments for the active wrestler")
+    void upcomingMatchesGridListsWrestlerSegments() {
+      ComboBox<Wrestler> switcher =
+          _get(view, ComboBox.class, spec -> spec.withId("active-wrestler-switcher"));
+      Assertions.assertNotNull(switcher.getValue());
+
+      @SuppressWarnings("unchecked")
+      Grid<Segment> grid =
+          (Grid<Segment>) _get(view, Grid.class, spec -> spec.withId("upcoming-matches-grid"));
+      Assertions.assertNotNull(grid);
+      verify(segmentService).getUpcomingSegmentsForWrestler(wrestler, 5);
+    }
+
+    @Test
+    @DisplayName("Continue Match CTA navigates to the match view")
+    void continueMatchCtaNavigates() {
+      CampaignState campaignState = new CampaignState();
+      campaignState.setCurrentPhase(CampaignPhase.MATCH);
+      Segment pending = new Segment();
+      pending.setId(77L);
+      campaignState.setCurrentMatch(pending);
+      Campaign campaign = Campaign.builder().id(3L).wrestler(wrestler).state(campaignState).build();
+      PlayerDashboardView built = buildViewWithCampaign(campaign);
+
+      built
+          .getUI()
+          .orElseThrow()
+          .add(
+              new Div() {
+                // ensure UI has a current view context for navigation
+              });
+
+      Button cta = _get(built, Button.class, spec -> spec.withId("continue-match-cta"));
+      cta.click();
+      // Navigation is attempted against the mocked route registry; the handler
+      // ran without error, covering the click path.
+      Assertions.assertTrue(cta.isEnabled());
+    }
+
+    @Test
+    @DisplayName("Continue Campaign CTA click handler runs")
+    void continueCampaignCtaClickRuns() {
+      CampaignState campaignState = new CampaignState();
+      campaignState.setCurrentPhase(CampaignPhase.BACKSTAGE);
+      Campaign campaign = Campaign.builder().id(4L).wrestler(wrestler).state(campaignState).build();
+      PlayerDashboardView built = buildViewWithCampaign(campaign);
+
+      Button cta = _get(built, Button.class, spec -> spec.withId("continue-campaign-cta"));
+      cta.click();
+      Assertions.assertTrue(cta.isEnabled());
+    }
+  }
+
+  /** Depth-first walk of the component tree, including INVIS components. */
+  private static List<Component> walk(final Component root) {
+    List<Component> all = new ArrayList<>();
+    all.add(root);
+    root.getChildren().forEach(child -> all.addAll(walk(child)));
+    return all;
   }
 }

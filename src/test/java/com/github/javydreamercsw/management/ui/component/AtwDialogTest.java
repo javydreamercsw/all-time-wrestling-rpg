@@ -27,6 +27,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.data.binder.Binder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -122,5 +123,32 @@ class AtwDialogTest extends AbstractViewTest {
     assertThat(below.getParent()).isNotNull();
     FormLayout located = _get(dialog, FormLayout.class);
     assertThat(located).isSameAs(dialog.getFormLayout());
+  }
+
+  @Test
+  @DisplayName("Primary and delete button click handlers run their callback")
+  void buttonClickHandlers_runCallbacks() {
+    boolean[] primaryFired = {false};
+    boolean[] deleteFired = {false};
+    Button save = dialog.createPrimaryButton("cb-save", "Save", () -> primaryFired[0] = true);
+    Button delete = dialog.createDeleteButton("cb-delete", "Delete", () -> deleteFired[0] = true);
+
+    save.click();
+    delete.click();
+
+    assertThat(primaryFired[0]).isTrue();
+    assertThat(deleteFired[0]).isTrue();
+  }
+
+  @Test
+  @DisplayName("addHelperText adds a styled span above the form")
+  void addHelperText_addsStyledSpanAboveForm() {
+    dialog.addHelperText("Fill in every field");
+
+    Span helper = _get(dialog, Span.class);
+    assertThat(helper.getText()).isEqualTo("Fill in every field");
+    // Muted styling comes from the Lumo token, set inline.
+    assertThat(helper.getStyle().get("color")).contains("lumo-secondary-text-color");
+    assertThat(helper.getStyle().get("font-size")).contains("lumo-font-size-s");
   }
 }
