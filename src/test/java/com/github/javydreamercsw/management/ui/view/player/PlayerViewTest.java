@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.player;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -31,6 +32,10 @@ import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.campaign.Campaign;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
+import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -186,6 +191,104 @@ class PlayerViewTest extends AbstractViewTest {
       when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
 
       view = buildView();
+    }
+
+    /** buildView() but preserving a caller-provided campaign for the primary-action band. */
+    @SuppressWarnings("unchecked")
+    private PlayerDashboardView buildViewWithCampaign(Campaign campaign) {
+      when(transactionTemplate.execute(any(TransactionCallback.class)))
+          .thenAnswer(
+              inv -> {
+                TransactionCallback<?> callback = inv.getArgument(0);
+                return callback.doInTransaction(null);
+              });
+      when(newsService.getLatestNews()).thenReturn(Collections.emptyList());
+      when(campaignService.getCampaignForWrestler(any(Wrestler.class)))
+          .thenReturn(Optional.of(campaign));
+
+      PlayerDashboardView built =
+          new PlayerDashboardView(
+              wrestlerService,
+              wrestlerStatsService,
+              rivalryService,
+              inboxService,
+              securityUtils,
+              accountService,
+              segmentService,
+              newsService,
+              transactionTemplate,
+              achievementRepository,
+              seasonStatsService,
+              seasonRepository,
+              universeContextService,
+              campaignService);
+      UI.getCurrent().add(built);
+      return built;
+    }
+
+    @Test
+    @DisplayName("MATCH phase with a pending match shows Continue Match as primary CTA")
+    void matchPhaseShowsContinueMatchCta() {
+      CampaignState campaignState = new CampaignState();
+      campaignState.setCurrentPhase(CampaignPhase.MATCH);
+      com.github.javydreamercsw.management.domain.show.segment.Segment match =
+          new com.github.javydreamercsw.management.domain.show.segment.Segment();
+      match.setId(9L);
+      match.setAdjudicationStatus(AdjudicationStatus.PENDING);
+      campaignState.setCurrentMatch(match);
+      Campaign campaign = Campaign.builder().id(1L).wrestler(wrestler).state(campaignState).build();
+      view = buildViewWithCampaign(campaign);
+
+      var cta =
+          _get(
+              view,
+              com.vaadin.flow.component.button.Button.class,
+              spec -> spec.withId("continue-match-cta"));
+      assertNotNull(cta, "Continue Match CTA should render for a pending match");
+      assertTrue(cta.getThemeNames().contains("primary"));
+    }
+
+    @Test
+    @DisplayName("Adjudicated match falls back to Continue Campaign CTA")
+    void adjudicatedMatchShowsContinueCampaignCta() {
+      CampaignState campaignState = new CampaignState();
+      campaignState.setCurrentPhase(CampaignPhase.MATCH);
+      com.github.javydreamercsw.management.domain.show.segment.Segment match =
+          new com.github.javydreamercsw.management.domain.show.segment.Segment();
+      match.setId(9L);
+      match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+      campaignState.setCurrentMatch(match);
+      Campaign campaign = Campaign.builder().id(1L).wrestler(wrestler).state(campaignState).build();
+      view = buildViewWithCampaign(campaign);
+
+      assertNotNull(
+          _get(
+              view,
+              com.vaadin.flow.component.button.Button.class,
+              spec -> spec.withId("continue-campaign-cta")),
+          "Continue Campaign CTA should render when the match is already adjudicated");
+      org.junit.jupiter.api.Assertions.assertTrue(
+          _find(
+                  view,
+                  com.vaadin.flow.component.button.Button.class,
+                  spec -> spec.withId("continue-match-cta"))
+              .isEmpty(),
+          "Continue Match CTA must not render for an adjudicated match");
+    }
+
+    @Test
+    @DisplayName("BACKSTAGE phase shows Continue Campaign CTA")
+    void backstagePhaseShowsContinueCampaignCta() {
+      CampaignState campaignState = new CampaignState();
+      campaignState.setCurrentPhase(CampaignPhase.BACKSTAGE);
+      Campaign campaign = Campaign.builder().id(1L).wrestler(wrestler).state(campaignState).build();
+      view = buildViewWithCampaign(campaign);
+
+      assertNotNull(
+          _get(
+              view,
+              com.vaadin.flow.component.button.Button.class,
+              spec -> spec.withId("continue-campaign-cta")));
     }
 
     @Test

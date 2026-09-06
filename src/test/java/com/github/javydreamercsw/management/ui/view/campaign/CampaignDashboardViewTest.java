@@ -19,6 +19,9 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -32,6 +35,7 @@ import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStoryline;
@@ -549,5 +553,89 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     _click(_get(dialog, Button.class, spec -> spec.withText("Cancel")));
 
     Mockito.verify(campaignService, Mockito.never()).startCampaign(any(), any());
+  }
+
+  @Test
+  public void testMatchPhaseShowsBackToMatchPrimaryCta() {
+    mockState.setCurrentPhase(CampaignPhase.MATCH);
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    var backToMatch =
+        LocatorJ._get(
+            com.vaadin.flow.component.button.Button.class, spec -> spec.withText("Back to Match"));
+    assertNotNull(backToMatch);
+    assertTrue(backToMatch.getThemeNames().contains("primary"));
+  }
+
+  @Test
+  public void testPostMatchPhaseShowsContinueToNextDayCta() {
+    mockState.setCurrentPhase(CampaignPhase.POST_MATCH);
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    var nextDay =
+        LocatorJ._get(
+            com.vaadin.flow.component.button.Button.class,
+            spec -> spec.withText("Continue to Next Day"));
+    assertNotNull(nextDay);
+    assertTrue(nextDay.getThemeNames().contains("primary"));
+  }
+
+  @Test
+  public void testBackstagePhaseShowsStoryCtaPlusBackstageSecondary() {
+    mockState.setCurrentPhase(CampaignPhase.BACKSTAGE);
+    mockState.setActionsTaken(2); // no unused-actions confirm needed
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    var story =
+        LocatorJ._get(
+            com.vaadin.flow.component.button.Button.class,
+            spec -> spec.withId("story-narrative-cta"));
+    assertNotNull(story);
+    assertTrue(story.getThemeNames().contains("primary"));
+    var backstage =
+        LocatorJ._get(
+            com.vaadin.flow.component.button.Button.class,
+            spec -> spec.withText("Backstage Actions"));
+    assertNotNull(backstage);
+    assertFalse(backstage.getThemeNames().contains("primary"), "Backstage is tertiary");
+  }
+
+  @Test
+  public void testStoryNarrativeWithUnusedActionsWarnsBeforeSkipping() {
+    mockState.setCurrentPhase(CampaignPhase.BACKSTAGE);
+    mockState.setActionsTaken(1); // one action unused
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    LocatorJ._click(
+        LocatorJ._get(
+            com.vaadin.flow.component.button.Button.class,
+            spec -> spec.withId("story-narrative-cta")));
+
+    // The unused-actions ConfirmDialog opens instead of navigating immediately.
+    assertNotNull(LocatorJ._get(ConfirmDialog.class));
+  }
+
+  @Test
+  public void testRemainingActionsLabelShowsWhenActionsLeft() {
+    mockState.setCurrentPhase(CampaignPhase.BACKSTAGE);
+    mockState.setActionsTaken(1);
+    CampaignDashboardView view = buildView();
+    UI.getCurrent().add(view);
+
+    boolean hasLabel =
+        flattenText(view).anyMatch(t -> t.contains("Remaining actions for today: 1"));
+    assertTrue(hasLabel, "Unused-action counter should render");
+  }
+
+  private java.util.stream.Stream<String> flattenText(com.vaadin.flow.component.Component root) {
+    java.util.stream.Stream<String> own =
+        root.getElement().getText() == null
+            ? java.util.stream.Stream.empty()
+            : java.util.stream.Stream.of(root.getElement().getText());
+    return java.util.stream.Stream.concat(own, root.getChildren().flatMap(this::flattenText));
   }
 }
