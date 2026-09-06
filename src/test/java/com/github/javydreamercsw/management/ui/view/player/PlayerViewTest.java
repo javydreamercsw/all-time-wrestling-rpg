@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.campaign.Campaign;
 import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.AccountService;
@@ -52,10 +53,12 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -231,19 +234,14 @@ class PlayerViewTest extends AbstractViewTest {
     void matchPhaseShowsContinueMatchCta() {
       CampaignState campaignState = new CampaignState();
       campaignState.setCurrentPhase(CampaignPhase.MATCH);
-      com.github.javydreamercsw.management.domain.show.segment.Segment match =
-          new com.github.javydreamercsw.management.domain.show.segment.Segment();
+      Segment match = new Segment();
       match.setId(9L);
       match.setAdjudicationStatus(AdjudicationStatus.PENDING);
       campaignState.setCurrentMatch(match);
       Campaign campaign = Campaign.builder().id(1L).wrestler(wrestler).state(campaignState).build();
       view = buildViewWithCampaign(campaign);
 
-      var cta =
-          _get(
-              view,
-              com.vaadin.flow.component.button.Button.class,
-              spec -> spec.withId("continue-match-cta"));
+      var cta = _get(view, Button.class, spec -> spec.withId("continue-match-cta"));
       assertNotNull(cta, "Continue Match CTA should render for a pending match");
       assertTrue(cta.getThemeNames().contains("primary"));
     }
@@ -253,8 +251,7 @@ class PlayerViewTest extends AbstractViewTest {
     void adjudicatedMatchShowsContinueCampaignCta() {
       CampaignState campaignState = new CampaignState();
       campaignState.setCurrentPhase(CampaignPhase.MATCH);
-      com.github.javydreamercsw.management.domain.show.segment.Segment match =
-          new com.github.javydreamercsw.management.domain.show.segment.Segment();
+      Segment match = new Segment();
       match.setId(9L);
       match.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
       campaignState.setCurrentMatch(match);
@@ -262,17 +259,10 @@ class PlayerViewTest extends AbstractViewTest {
       view = buildViewWithCampaign(campaign);
 
       assertNotNull(
-          _get(
-              view,
-              com.vaadin.flow.component.button.Button.class,
-              spec -> spec.withId("continue-campaign-cta")),
+          _get(view, Button.class, spec -> spec.withId("continue-campaign-cta")),
           "Continue Campaign CTA should render when the match is already adjudicated");
-      org.junit.jupiter.api.Assertions.assertTrue(
-          _find(
-                  view,
-                  com.vaadin.flow.component.button.Button.class,
-                  spec -> spec.withId("continue-match-cta"))
-              .isEmpty(),
+      Assertions.assertTrue(
+          _find(view, Button.class, spec -> spec.withId("continue-match-cta")).isEmpty(),
           "Continue Match CTA must not render for an adjudicated match");
     }
 
@@ -284,11 +274,7 @@ class PlayerViewTest extends AbstractViewTest {
       Campaign campaign = Campaign.builder().id(1L).wrestler(wrestler).state(campaignState).build();
       view = buildViewWithCampaign(campaign);
 
-      assertNotNull(
-          _get(
-              view,
-              com.vaadin.flow.component.button.Button.class,
-              spec -> spec.withId("continue-campaign-cta")));
+      assertNotNull(_get(view, Button.class, spec -> spec.withId("continue-campaign-cta")));
     }
 
     @Test

@@ -43,6 +43,8 @@ import com.github.javydreamercsw.management.service.league.MatchFulfillmentServi
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.GridKt;
 import com.github.mvysny.kaributesting.v10.LocatorJ;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -51,9 +53,12 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
+import com.vaadin.flow.data.provider.Query;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -503,8 +508,7 @@ class InboxViewTest extends AbstractViewTest {
   void bulkDeleteRequiresConfirmation() {
     when(securityUtils.canDelete()).thenReturn(true);
     when(securityUtils.canEdit()).thenReturn(true);
-    com.github.javydreamercsw.management.domain.inbox.InboxItem item =
-        new com.github.javydreamercsw.management.domain.inbox.InboxItem();
+    InboxItem item = new InboxItem();
     item.setId(1L);
     when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(item));
 
@@ -521,16 +525,14 @@ class InboxViewTest extends AbstractViewTest {
     UI.getCurrent().add(adminView);
 
     // Force the grid to render the item and select it through the selection model.
-    Grid<com.github.javydreamercsw.management.domain.inbox.InboxItem> grid =
-        (Grid<com.github.javydreamercsw.management.domain.inbox.InboxItem>)
-            _get(adminView, Grid.class);
-    grid.getDataProvider().fetch(new com.vaadin.flow.data.provider.Query<>());
+    Grid<InboxItem> grid = (Grid<InboxItem>) _get(adminView, Grid.class);
+    grid.getDataProvider().fetch(new Query<>());
     // Select through the UI's own select-all control (grid.select's listener
     // interacts with the select-all checkbox in ways that clear selectedItems).
     Checkbox selectAll =
         _get(adminView, Checkbox.class, spec -> spec.withId("select-all-checkbox"));
     selectAll.setValue(true);
-    org.junit.jupiter.api.Assertions.assertTrue(
+    Assertions.assertTrue(
         _get(adminView, Button.class, spec -> spec.withText("Delete Selected")).isEnabled(),
         "Selection must enable Delete Selected");
 
@@ -539,14 +541,12 @@ class InboxViewTest extends AbstractViewTest {
 
     ConfirmDialog confirm = _get(UI.getCurrent(), ConfirmDialog.class);
     assertTrue(confirm.isOpened(), "Bulk delete must confirm first");
-    verify(inboxService, org.mockito.Mockito.never()).deleteSelected(any());
+    verify(inboxService, Mockito.never()).deleteSelected(any());
 
     // Confirm via reflection — ConfirmDialog's buttons live in shadow DOM.
     try {
       var event = new ConfirmDialog.ConfirmEvent(confirm, true);
-      var fireEvent =
-          com.vaadin.flow.component.Component.class.getDeclaredMethod(
-              "fireEvent", com.vaadin.flow.component.ComponentEvent.class);
+      var fireEvent = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
       fireEvent.setAccessible(true);
       fireEvent.invoke(confirm, event);
     } catch (ReflectiveOperationException e) {
@@ -578,9 +578,7 @@ class InboxViewTest extends AbstractViewTest {
     // karibu's locator only returns effectively-visible components, and the
     // button is hidden — walk the tree directly to reach it.
     Button deleteButton =
-        com.github.javydreamercsw.management.ui.view.inbox.InboxViewTest.findAllButtons(
-                readOnlyView)
-            .stream()
+        InboxViewTest.findAllButtons(readOnlyView).stream()
             .filter(b -> "Delete Selected".equals(b.getText()))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Delete Selected button should exist"));
@@ -588,8 +586,8 @@ class InboxViewTest extends AbstractViewTest {
   }
 
   /** Walks all descendants regardless of visibility (karibu's locator hides INVIS ones). */
-  private static java.util.List<Button> findAllButtons(com.vaadin.flow.component.Component root) {
-    java.util.List<Button> found = new java.util.ArrayList<>();
+  private static List<Button> findAllButtons(Component root) {
+    List<Button> found = new ArrayList<>();
     if (root instanceof Button b) {
       found.add(b);
     }

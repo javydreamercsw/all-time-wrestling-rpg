@@ -55,6 +55,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.LocatorJ;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -68,6 +69,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -561,9 +563,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     CampaignDashboardView view = buildView();
     UI.getCurrent().add(view);
 
-    var backToMatch =
-        LocatorJ._get(
-            com.vaadin.flow.component.button.Button.class, spec -> spec.withText("Back to Match"));
+    var backToMatch = LocatorJ._get(Button.class, spec -> spec.withText("Back to Match"));
     assertNotNull(backToMatch);
     assertTrue(backToMatch.getThemeNames().contains("primary"));
   }
@@ -574,10 +574,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     CampaignDashboardView view = buildView();
     UI.getCurrent().add(view);
 
-    var nextDay =
-        LocatorJ._get(
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withText("Continue to Next Day"));
+    var nextDay = LocatorJ._get(Button.class, spec -> spec.withText("Continue to Next Day"));
     assertNotNull(nextDay);
     assertTrue(nextDay.getThemeNames().contains("primary"));
   }
@@ -589,16 +586,10 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     CampaignDashboardView view = buildView();
     UI.getCurrent().add(view);
 
-    var story =
-        LocatorJ._get(
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("story-narrative-cta"));
+    var story = LocatorJ._get(Button.class, spec -> spec.withId("story-narrative-cta"));
     assertNotNull(story);
     assertTrue(story.getThemeNames().contains("primary"));
-    var backstage =
-        LocatorJ._get(
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withText("Backstage Actions"));
+    var backstage = LocatorJ._get(Button.class, spec -> spec.withText("Backstage Actions"));
     assertNotNull(backstage);
     assertFalse(backstage.getThemeNames().contains("primary"), "Backstage is tertiary");
   }
@@ -610,10 +601,7 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     CampaignDashboardView view = buildView();
     UI.getCurrent().add(view);
 
-    LocatorJ._click(
-        LocatorJ._get(
-            com.vaadin.flow.component.button.Button.class,
-            spec -> spec.withId("story-narrative-cta")));
+    LocatorJ._click(LocatorJ._get(Button.class, spec -> spec.withId("story-narrative-cta")));
 
     // The unused-actions ConfirmDialog opens instead of navigating immediately.
     assertNotNull(LocatorJ._get(ConfirmDialog.class));
@@ -631,11 +619,11 @@ public class CampaignDashboardViewTest extends AbstractViewTest {
     assertTrue(hasLabel, "Unused-action counter should render");
   }
 
-  private java.util.stream.Stream<String> flattenText(com.vaadin.flow.component.Component root) {
-    java.util.stream.Stream<String> own =
+  private Stream<String> flattenText(Component root) {
+    Stream<String> own =
         root.getElement().getText() == null
-            ? java.util.stream.Stream.empty()
-            : java.util.stream.Stream.of(root.getElement().getText());
-    return java.util.stream.Stream.concat(own, root.getChildren().flatMap(this::flattenText));
+            ? Stream.empty()
+            : Stream.of(root.getElement().getText());
+    return Stream.concat(own, root.getChildren().flatMap(this::flattenText));
   }
 }
