@@ -41,8 +41,10 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -529,5 +531,215 @@ class ShowDetailViewTest extends AbstractViewTest {
     var grid = LocatorJ._get(view, Grid.class);
     grid.getDataProvider().fetch(new Query<>());
     Assertions.assertThat(grid.getGenericDataView().getItems().count()).isEqualTo(1);
+  }
+
+  /** Builds a fully-loaded segment exercising every grid column's branches. */
+  private Segment richSegment(
+      final long id,
+      final String typeName,
+      final String ruleName,
+      final Title title,
+      final Integer rating,
+      final String summary,
+      final String narration) {
+    Segment segment = new Segment();
+    segment.setId(id);
+    SegmentType type = new SegmentType();
+    type.setName(typeName);
+    segment.setSegmentType(type);
+    segment.setSegmentDate(Instant.parse("2026-09-01T00:00:00Z"));
+    if (ruleName != null) {
+      SegmentRule rule = new SegmentRule();
+      rule.setName(ruleName);
+      segment.setSegmentRules(new HashSet<>(Set.of(rule)));
+    }
+    if (title != null) {
+      segment.setIsTitleSegment(true);
+      segment.setTitles(Set.of(title));
+    }
+    segment.setSegmentRating(rating);
+    segment.setSummary(summary);
+    segment.setNarration(narration);
+    return segment;
+  }
+
+  /**
+   * Renders one segment through every component column and returns the text of each produced cell
+   * (value-provider columns are not included).
+   */
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private List<String> renderSegmentCells(final ShowDetailView view, final Segment segment) {
+    Grid<Segment> grid = LocatorJ._get(view, Grid.class, spec -> spec.withId("segments-grid"));
+    List<String> texts = new ArrayList<>();
+    for (var column : grid.getColumns()) {
+      if (column.getRenderer() instanceof ComponentRenderer<?, ?> cr) {
+        Component cell = ((ComponentRenderer) cr).createComponent(segment);
+        if (cell != null) {
+          texts.add(flattenCellText(cell));
+        }
+      }
+    }
+    return texts;
+  }
+
+  /** Recursive text collection over a component subtree. */
+  private String flattenCellText(final Component root) {
+    StringBuilder sb = new StringBuilder();
+    appendCellText(root, sb);
+    return sb.toString();
+  }
+
+  private void appendCellText(final Component component, final StringBuilder sb) {
+    sb.append(component.getElement().getText()).append(' ');
+    component.getChildren().forEach(child -> appendCellText(child, sb));
+  }
+
+  @Test
+  void segmentGrid_allCellColumnsRenderLoadedSegment() {
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Rich Show");
+    show.setType(showType);
+
+    Title title = new Title();
+    title.setId(3L);
+    title.setName("World Title");
+
+    Segment rich =
+        richSegment(
+            20L, "Singles Match", "No DQ", title, 85, "Big match summary", "Crowd goes wild");
+    Segment unrated = richSegment(21L, "Promo", null, null, null, null, null);
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(rich, unrated));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(rich, unrated));
+    Mockito.when(feudScriptService.findBeatForSegment(any())).thenReturn(Optional.empty());
+    Mockito.when(titleService.getCurrentChampionNamesByTitleIds(any()))
+        .thenReturn(Map.of(3L, "Champ"));
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 1L);
+
+    List<String> richCells = renderSegmentCells(view, rich);
+    String richAll = String.join(" | ", richCells);
+    // Merged Segment column: type name plus formatted date (local-zone render
+    // of the UTC instant can fall on Aug 31).
+    Assertions.assertThat(richAll).contains("Singles Match").contains(", 2026");
+    // Score column: 85/100 renders as 4.5 stars ("85/100" lives in the tooltip).
+    Assertions.assertThat(richAll).contains("★★★★½");
+    // Stakes column: rule and title names, with the champion from the service.
+    Assertions.assertThat(richAll).contains("No DQ").contains("World Title");
+    // Summary column: summary text plus narration underneath.
+    Assertions.assertThat(richAll).contains("Big match summary").contains("Crowd goes wild");
+
+    // Unrated segment: Score renders a dash; stakes fall back to the em-dash.
+    List<String> bareCells = renderSegmentCells(view, unrated);
+    String bareAll = String.join(" | ", bareCells);
+    Assertions.assertThat(bareAll).contains("-");
+    Assertions.assertThat(bareAll).contains("Promo");
+  }
+
+  @Test
+  void viewerFeed_rendersMainEventTitleAndContenderBadges() {
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Viewer Show");
+    show.setType(showType);
+
+    Title title = new Title();
+    title.setId(4L);
+    title.setName("Tag Titles");
+
+    // Promo first (so the later match is the main event), then the title match.
+    Segment promo = richSegment(30L, "Promo", null, null, null, "Promo summary", null);
+    Segment titleMatch = richSegment(31L, "Singles Match", null, title, 70, "Title summary", null);
+    titleMatch.setContenderMatch(true);
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(promo, titleMatch));
+    Mockito.when(segmentRepository.findByShow(any(Show.class)))
+        .thenReturn(List.of(promo, titleMatch));
+    Mockito.when(feudScriptService.findBeatForSegment(any())).thenReturn(Optional.empty());
+    Mockito.when(titleService.getCurrentChampionNamesByTitleIds(any()))
+        .thenReturn(Map.of(4L, "Champ Two"));
+
+    SecurityUtils su = mock(SecurityUtils.class);
+    Mockito.when(su.isViewer()).thenReturn(true);
+    ShowDetailView view = buildView(su);
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 1L);
+
+    // The viewer feed replaces the editing grid.
+    Component feed = walkForId(view, "viewer-segment-feed");
+    String feedText = flattenCellText(feed);
+    Assertions.assertThat(feedText).contains("★ Main Event");
+    Assertions.assertThat(feedText).contains("Tag Titles").contains("Champ Two");
+    Assertions.assertThat(feedText).contains("#1 Contender Match");
+    Assertions.assertThat(feedText).contains("Promo summary").contains("Title summary");
+  }
+
+  /** Tree-walks for a component by id (the feed may sit inside an INVIS container). */
+  private Component walkForId(final Component root, final String id) {
+    if (id.equals(root.getId().orElse(""))) {
+      return root;
+    }
+    for (Component child : root.getChildren().toList()) {
+      Component found = walkForId(child, id);
+      if (found != null) {
+        return found;
+      }
+    }
+    return null;
+  }
+
+  @Test
+  void segmentGrid_contenderStarAndQualityBadgeRender() {
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Star Show");
+    show.setType(showType);
+    show.setQualityScore(4.5);
+
+    // A contender match produced by a feud script: covers the star in the
+    // merged Segment column and the full Arc badge (name + tooltip).
+    Segment contender = richSegment(40L, "Singles Match", null, null, 100, "S", null);
+    contender.setContenderMatch(true);
+
+    FeudScript script = new FeudScript();
+    script.setName("Rise of Dom");
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setScript(script);
+    beat.setBeatOrder(3);
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(contender));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(contender));
+    Mockito.when(feudScriptService.findBeatForSegment(contender)).thenReturn(Optional.of(beat));
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 1L);
+
+    List<String> cells = renderSegmentCells(view, contender);
+    String all = String.join(" | ", cells);
+    // Contender star rides in the Segment column with its tooltip text.
+    Assertions.assertThat(all).contains("⭐");
+    // Arc badge carries the script name; beat order lives in the tooltip.
+    Assertions.assertThat(all).contains("Rise of Dom");
+    // A 100 rating renders as a full 5 stars.
+    Assertions.assertThat(all).contains("★★★★★");
   }
 }
