@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.Universe.UniverseType;
+import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership.UniverseMemberRole;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -32,11 +33,18 @@ import com.github.javydreamercsw.management.service.universe.UniverseMembershipS
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -180,5 +188,191 @@ class UniverseFormDialogMembersTest extends AbstractViewTest {
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Exclude")).click();
 
     verify(settingsService, Mockito.never()).excludeWrestler(any(), any());
+  }
+
+  /** Renders one item through every component column of the grid. */
+  @SuppressWarnings("unchecked")
+  private List<Component> renderCells(final Grid<?> grid, final Object item) {
+    return grid.getColumns().stream()
+        .map(
+            column -> {
+              if (column.getRenderer() instanceof ComponentRenderer<?, ?> cr) {
+                var renderer = (ComponentRenderer<Component, Object>) cr;
+                return renderer.createComponent(item);
+              }
+              return null;
+            })
+        .toList();
+  }
+
+  /** Fires the confirm event on a ConfirmDialog (the click path is client-side only). */
+  private void fireConfirm(final ConfirmDialog dialog) {
+    try {
+      Class<?> eventClass =
+          Class.forName("com.vaadin.flow.component.confirmdialog.ConfirmDialog$ConfirmEvent");
+      var ctor = eventClass.getDeclaredConstructor(dialog.getClass(), boolean.class);
+      ctor.setAccessible(true);
+      var event = ctor.newInstance(dialog, true);
+      var method = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
+      method.setAccessible(true);
+      method.invoke(dialog, event);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to fire confirm event", e);
+    }
+  }
+
+  @Test
+  @DisplayName("Remove-member button opens a confirm dialog; confirming removes the member")
+  void removeMemberConfirmFlow() {
+    UniverseMembership membership = new UniverseMembership();
+    membership.setAccount(member);
+    when(membershipService.getMembersForUniverse(universe)).thenReturn(List.of(membership));
+    when(accountService.findAll()).thenReturn(List.of());
+    when(settingsService.getExpansionsForUniverse(universe)).thenReturn(List.of());
+    when(settingsService.getExcludedWrestlers(universe)).thenReturn(Set.of());
+    when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of());
+
+    UniverseFormDialog dialog = buildEditDialog();
+    TabSheet tabs = (TabSheet) dialog.getChildren().findFirst().orElseThrow();
+    dialog.open();
+
+    // Tab content is not attached to the TabSheet until a client round-trip;
+    // reach it directly through getComponent(getTabAt(n)).
+    Grid<?> membersGrid =
+        gridsIn(tabs.getComponent(tabs.getTabAt(1))).stream()
+            .filter(
+                g -> g.getColumns().stream().anyMatch(c -> "Username".equals(c.getHeaderText())))
+            .findFirst()
+            .orElseThrow();
+
+    renderCells(membersGrid, membership).stream()
+        .filter(Objects::nonNull)
+        .flatMap(c -> flattenTree(c).stream())
+        .filter(Button.class::isInstance)
+        .map(Button.class::cast)
+        .filter(b -> "Remove".equals(b.getText()))
+        .findFirst()
+        .orElseThrow()
+        .click();
+
+    ConfirmDialog confirm = _get(UI.getCurrent(), ConfirmDialog.class);
+    fireConfirm(confirm);
+
+    verify(membershipService).removeMember(universe, member);
+  }
+
+  @Test
+  @DisplayName("Remove-member failure surfaces as an error notification, not an exception")
+  void removeMemberFailureShowsNotification() {
+    UniverseMembership membership = new UniverseMembership();
+    membership.setAccount(member);
+    when(membershipService.getMembersForUniverse(universe)).thenReturn(List.of(membership));
+    when(accountService.findAll()).thenReturn(List.of());
+    when(settingsService.getExpansionsForUniverse(universe)).thenReturn(List.of());
+    when(settingsService.getExcludedWrestlers(universe)).thenReturn(Set.of());
+    when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of());
+    Mockito.doThrow(new IllegalStateException("Last remaining admin"))
+        .when(membershipService)
+        .removeMember(universe, member);
+
+    UniverseFormDialog dialog =
+        new UniverseFormDialog(
+            universeService,
+            membershipService,
+            accountService,
+            settingsService,
+            wrestlerRepository,
+            universe,
+            () -> {});
+    TabSheet tabs = (TabSheet) dialog.getChildren().findFirst().orElseThrow();
+    dialog.open();
+
+    Grid<?> membersGrid =
+        gridsIn(tabs.getComponent(tabs.getTabAt(1))).stream()
+            .filter(
+                g -> g.getColumns().stream().anyMatch(c -> "Username".equals(c.getHeaderText())))
+            .findFirst()
+            .orElseThrow();
+
+    renderCells(membersGrid, membership).stream()
+        .filter(Objects::nonNull)
+        .flatMap(c -> flattenTree(c).stream())
+        .filter(Button.class::isInstance)
+        .map(Button.class::cast)
+        .filter(b -> "Remove".equals(b.getText()))
+        .findFirst()
+        .orElseThrow()
+        .click();
+
+    ConfirmDialog confirm = _get(UI.getCurrent(), ConfirmDialog.class);
+    fireConfirm(confirm);
+
+    verify(membershipService).removeMember(universe, member);
+  }
+
+  @Test
+  @DisplayName("Remove-exclusion button confirms and re-includes the wrestler")
+  void removeExclusionConfirmFlow() {
+    Wrestler excluded = new Wrestler();
+    excluded.setId(3L);
+    excluded.setName("Excluded");
+    when(settingsService.getExcludedWrestlers(universe)).thenReturn(Set.of(excluded));
+    when(settingsService.getExpansionsForUniverse(universe)).thenReturn(List.of());
+    when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of());
+    when(membershipService.getMembersForUniverse(universe)).thenReturn(List.of());
+    when(accountService.findAll()).thenReturn(List.of());
+
+    // Built inline: buildEditDialog() would re-stub getExcludedWrestlers to empty.
+    UniverseFormDialog dialog =
+        new UniverseFormDialog(
+            universeService,
+            membershipService,
+            accountService,
+            settingsService,
+            wrestlerRepository,
+            universe,
+            () -> {});
+    TabSheet tabs = (TabSheet) dialog.getChildren().findFirst().orElseThrow();
+    dialog.open();
+
+    // The exclusion grid lives in the Settings tab content.
+    Grid<?> exclusionGrid =
+        gridsIn(tabs.getComponent(tabs.getTabAt(2))).stream()
+            .filter(g -> g.getListDataView().getItems().anyMatch(i -> i instanceof Wrestler))
+            .findFirst()
+            .orElseThrow();
+
+    renderCells(exclusionGrid, excluded).stream()
+        .filter(Objects::nonNull)
+        .flatMap(c -> flattenTree(c).stream())
+        .filter(Button.class::isInstance)
+        .map(Button.class::cast)
+        .filter(b -> b.getText().contains("Remove Exclusion"))
+        .findFirst()
+        .orElseThrow()
+        .click();
+
+    ConfirmDialog confirm = _get(UI.getCurrent(), ConfirmDialog.class);
+    fireConfirm(confirm);
+
+    verify(settingsService).includeWrestler(universe, excluded);
+  }
+
+  /** Depth-first collection of every Grid in the given component tree. */
+  private List<Grid<?>> gridsIn(final Component root) {
+    List<Grid<?>> grids = new ArrayList<>();
+    if (root instanceof Grid<?> g) {
+      grids.add(g);
+    }
+    root.getChildren().forEach(child -> grids.addAll(gridsIn(child)));
+    return grids;
+  }
+
+  /** Depth-first collection of the component and all its descendants. */
+  private List<Component> flattenTree(final Component root) {
+    List<Component> all = new ArrayList<>();
+    all.add(root);
+    root.getChildren().forEach(child -> all.addAll(flattenTree(child)));
+    return all;
   }
 }
