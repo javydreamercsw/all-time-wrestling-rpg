@@ -21,9 +21,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
@@ -144,5 +147,42 @@ class AchievementSyncTest {
     Assertions.assertTrue(
         captor.getAllValues().stream().flatMap(List::stream).anyMatch(a -> a == existing),
         "The pre-existing entity instance should be saved after copyContentFrom");
+  }
+
+  @Test
+  void sync_survivesBrokenChallengeFileWithoutFailing() {
+    // A challenge file that fails to deserialize is logged and skipped; the
+    // next file (and the catalog) still syncs.
+    ObjectMapper brokenMapper =
+        new ObjectMapper() {
+          @Override
+          public <T> T readValue(InputStream src, TypeReference<T> typeRef) throws IOException {
+            throw new IOException("boom");
+          }
+        };
+    AchievementSync broken = new AchievementSync(false, achievementRepository, brokenMapper);
+    when(achievementRepository.count()).thenReturn(0L);
+    when(achievementRepository.findByKey(anyString())).thenReturn(Optional.empty());
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Assertions.assertDoesNotThrow(broken::sync);
+    // The catalog file (achievements.json) also goes through readValue, so no
+    // save ever succeeds — but the sync must not propagate the failure.
+    verify(achievementRepository, Mockito.never()).saveAll(any());
+  }
+
+  @Test
+  void sync_challengeScanFailureDoesNotBreakSync() {
+    // A resolver explosion inside the challenge scan is caught and logged;
+    // the catalog file was already synced before the scan runs.
+    AchievementSync scanning =
+        new AchievementSync(false, achievementRepository, new ObjectMapper());
+    when(achievementRepository.count()).thenReturn(0L);
+    when(achievementRepository.findByKey(anyString())).thenReturn(Optional.empty());
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Assertions.assertDoesNotThrow(scanning::sync);
+    // The catalog achievements.json exists on the test classpath and syncs.
+    verify(achievementRepository, Mockito.atLeastOnce()).saveAll(any());
   }
 }

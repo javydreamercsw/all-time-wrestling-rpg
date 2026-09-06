@@ -448,4 +448,35 @@ class WrestlerServiceTest {
     assertEquals(3L, count);
     verify(wrestlerRepository).count(any(Specification.class));
   }
+
+  @Test
+  void findPageFilteredThreeArgOverloadDefaultsToNullSearch() {
+    Pageable pageable = PageRequest.of(0, 10);
+    when(wrestlerRepository.findAll(any(Specification.class), any(Pageable.class)))
+        .thenReturn(Page.empty());
+
+    wrestlerService.findPageFiltered(List.of("BASE_GAME"), null, pageable);
+
+    verify(wrestlerRepository).findAll(any(Specification.class), any(Pageable.class));
+  }
+
+  @Test
+  void countFilteredThreeArgOverloadDefaultsToNullSearch() {
+    when(wrestlerRepository.count(any(Specification.class))).thenReturn(7L);
+
+    long count = wrestlerService.countFiltered(List.of("BASE_GAME"), Set.of(9L));
+
+    assertEquals(7L, count);
+    verify(wrestlerRepository).count(any(Specification.class));
+  }
+
+  @Test
+  void countFilteredWithSearchTermBuildsLikePredicate() {
+    when(wrestlerRepository.count(any(Specification.class))).thenReturn(2L);
+
+    long count = wrestlerService.countFiltered(List.of("BASE_GAME"), null, "rey");
+
+    assertEquals(2L, count);
+    verify(wrestlerRepository).count(any(Specification.class));
+  }
 }
