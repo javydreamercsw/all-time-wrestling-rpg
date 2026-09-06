@@ -86,10 +86,14 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.data.provider.Query;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.Location;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -443,15 +447,13 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     Segment withArc = new Segment();
     withArc.setId(10L);
-    withArc.setSegmentType(
-        new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType());
-    withArc.setSegmentDate(java.time.Instant.parse("2026-09-01T00:00:00Z"));
+    withArc.setSegmentType(new SegmentType());
+    withArc.setSegmentDate(Instant.parse("2026-09-01T00:00:00Z"));
 
     Segment plain = new Segment();
     plain.setId(11L);
-    plain.setSegmentType(
-        new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType());
-    plain.setSegmentDate(java.time.Instant.parse("2026-09-02T00:00:00Z"));
+    plain.setSegmentType(new SegmentType());
+    plain.setSegmentDate(Instant.parse("2026-09-02T00:00:00Z"));
 
     FeudScript script = new FeudScript();
     script.setName("The Bloodline Saga");
@@ -461,9 +463,8 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
     Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
-        .thenReturn(java.util.List.of(withArc, plain));
-    Mockito.when(segmentRepository.findByShow(any(Show.class)))
-        .thenReturn(java.util.List.of(withArc, plain));
+        .thenReturn(List.of(withArc, plain));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(withArc, plain));
     Mockito.when(feudScriptService.findBeatForSegment(withArc)).thenReturn(Optional.of(beat));
     Mockito.when(feudScriptService.findBeatForSegment(plain)).thenReturn(Optional.empty());
 
@@ -474,31 +475,26 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     // Component-column renderers run at row-render time, not on data fetch, so
     // drive the renderer directly: find the Arc column and render both rows.
-    com.vaadin.flow.component.grid.Grid<Segment> grid =
-        LocatorJ._get(
-            view, com.vaadin.flow.component.grid.Grid.class, spec -> spec.withId("segments-grid"));
+    Grid<Segment> grid = LocatorJ._get(view, Grid.class, spec -> spec.withId("segments-grid"));
     // Vaadin 25 has no getHeaderText(); find the Arc column by probing each
     // component renderer for the feudScriptService call (exactly one column does).
-    com.vaadin.flow.data.renderer.ComponentRenderer<?, Segment> arcRenderer = null;
+    ComponentRenderer<?, Segment> arcRenderer = null;
     for (var column : grid.getColumns()) {
-      if (column.getRenderer()
-          instanceof com.vaadin.flow.data.renderer.ComponentRenderer<?, ?> cr) {
-        var probe = (com.vaadin.flow.data.renderer.ComponentRenderer<Component, Segment>) cr;
+      if (column.getRenderer() instanceof ComponentRenderer<?, ?> cr) {
+        var probe = (ComponentRenderer<Component, Segment>) cr;
         Component test = probe.createComponent(withArc);
         if (test != null && test.getElement().getText().contains("The Bloodline Saga")) {
-          arcRenderer =
-              (com.vaadin.flow.data.renderer.ComponentRenderer<?, Segment>) column.getRenderer();
+          arcRenderer = (ComponentRenderer<?, Segment>) column.getRenderer();
           break;
         }
       }
     }
-    org.assertj.core.api.Assertions.assertThat(arcRenderer).as("Arc column").isNotNull();
+    Assertions.assertThat(arcRenderer).as("Arc column").isNotNull();
     Component arcBadge = arcRenderer.createComponent(withArc);
     Component plainCell = arcRenderer.createComponent(plain);
-    org.assertj.core.api.Assertions.assertThat(arcBadge.getElement().getText())
-        .contains("The Bloodline Saga");
+    Assertions.assertThat(arcBadge.getElement().getText()).contains("The Bloodline Saga");
     // Plain segment renders an empty placeholder span, not a badge.
-    org.assertj.core.api.Assertions.assertThat(plainCell.getElement().getText()).isEmpty();
+    Assertions.assertThat(plainCell.getElement().getText()).isEmpty();
     Mockito.verify(feudScriptService, Mockito.atLeastOnce()).findBeatForSegment(withArc);
     Mockito.verify(feudScriptService, Mockito.atLeastOnce()).findBeatForSegment(plain);
   }
@@ -514,15 +510,14 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     Segment bare = new Segment();
     bare.setId(12L);
-    bare.setSegmentType(
-        new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType());
-    bare.setSegmentDate(java.time.Instant.now());
-    bare.setSegmentRules(new java.util.HashSet<>());
+    bare.setSegmentType(new SegmentType());
+    bare.setSegmentDate(Instant.now());
+    bare.setSegmentRules(new HashSet<>());
 
     Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
     Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
-        .thenReturn(java.util.List.of(bare));
-    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(java.util.List.of(bare));
+        .thenReturn(List.of(bare));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(bare));
     Mockito.when(feudScriptService.findBeatForSegment(any())).thenReturn(Optional.empty());
 
     ShowDetailView view = buildView(mock(SecurityUtils.class));
@@ -531,9 +526,8 @@ class ShowDetailViewTest extends AbstractViewTest {
     view.setParameter(event, 1L);
 
     // The bare segment renders without rules or titles; no exception and grid populated.
-    var grid = LocatorJ._get(view, com.vaadin.flow.component.grid.Grid.class);
-    grid.getDataProvider().fetch(new com.vaadin.flow.data.provider.Query<>());
-    org.assertj.core.api.Assertions.assertThat(grid.getGenericDataView().getItems().count())
-        .isEqualTo(1);
+    var grid = LocatorJ._get(view, Grid.class);
+    grid.getDataProvider().fetch(new Query<>());
+    Assertions.assertThat(grid.getGenericDataView().getItems().count()).isEqualTo(1);
   }
 }

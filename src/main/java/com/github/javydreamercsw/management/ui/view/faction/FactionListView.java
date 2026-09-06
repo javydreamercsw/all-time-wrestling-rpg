@@ -520,4 +520,14 @@ public class FactionListView extends VerticalLayout {
     dialog.add(content);
     dialog.open();
   }
+
+  // --- Test hooks (package-private) for FactionListViewTest ---
+
+  void refreshGridForTest() {
+    refreshGrid();
+  }
+
+  void searchForTest(final String searchTerm) {
+    searchField.setValue(searchTerm);
+  }
 }

@@ -354,4 +354,14 @@ public class TitleListView extends Main {
 
     confirmDialog.open();
   }
+
+  // --- Test hooks (package-private) for TitleListViewTest ---
+
+  void searchForTest(final String searchTerm) {
+    searchField.setValue(searchTerm);
+  }
+
+  void refreshGridForTest() {
+    refreshGrid();
+  }
 }

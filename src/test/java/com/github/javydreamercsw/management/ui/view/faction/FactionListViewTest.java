@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
@@ -38,8 +39,10 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import java.util.Collections;
@@ -163,5 +166,82 @@ class FactionListViewTest extends AbstractViewTest {
         "Low Fans",
         items.get(items.size() - 1).getWrestler().getName(),
         "If sorting were lexicographic, '56,100' and '57,630' would order before '6,720'");
+  }
+
+  /** Builds one faction with the given id/name and registers the list stub. */
+  private Faction faction(final long id, final String name) {
+    Faction f = Faction.builder().id(id).name(name).build();
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(List.of(f));
+    when(factionService.resolveFactionImage(f)).thenReturn("");
+    return f;
+  }
+
+  @Test
+  @DisplayName("Delete button opens a confirm dialog; confirming deletes the faction")
+  void deleteButtonConfirmsThenDeletes() {
+    Faction f = faction(5L, "Doomed Faction");
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(List.of(f));
+    view.refreshGridForTest();
+
+    @SuppressWarnings("unchecked")
+    Grid<Faction> factionGrid = _get(view, Grid.class);
+    Component actionsCell = _getCellComponent(factionGrid, 0, "actions");
+    Button deleteButton = _get(actionsCell, Button.class, spec -> spec.withId("delete-5"));
+    _click(deleteButton);
+
+    // ConfirmDialog attaches to the UI, not the view.
+    ConfirmDialog confirm = _get(ConfirmDialog.class);
+
+    fireConfirm(confirm);
+    verify(factionService).deleteById(5L);
+  }
+
+  /** Fires the confirm event on a ConfirmDialog (the click path is client-side only). */
+  private void fireConfirm(final ConfirmDialog dialog) {
+    try {
+      Class<?> eventClass = Class.forName(ConfirmDialog.class.getName() + "$ConfirmEvent");
+      var ctor = eventClass.getDeclaredConstructor(ConfirmDialog.class, boolean.class);
+      ctor.setAccessible(true);
+      var event = ctor.newInstance(dialog, true);
+      var method =
+          Component.class.getDeclaredMethod("fireEvent", new Class<?>[] {ComponentEvent.class});
+      method.setAccessible(true);
+      method.invoke(dialog, event);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to fire confirm event", e);
+    }
+  }
+
+  @Test
+  @DisplayName("Toggle button flips the active flag through the service")
+  void toggleButtonFlipsActive() {
+    Faction f = faction(6L, "Switchable");
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(List.of(f));
+    view.refreshGridForTest();
+
+    @SuppressWarnings("unchecked")
+    Grid<Faction> factionGrid = _get(view, Grid.class);
+    Component actionsCell = _getCellComponent(factionGrid, 0, "actions");
+    Button toggleButton = _get(actionsCell, Button.class, spec -> spec.withId("toggle-6"));
+    _click(toggleButton);
+
+    verify(factionService).setActive(6L, false);
+  }
+
+  @Test
+  @DisplayName("Search term filters the faction grid by name")
+  void searchFiltersByName() {
+    Faction rey = faction(7L, "Monday Night Rew");
+    Faction usos = faction(8L, "Uso Crazy");
+    when(factionService.findAllByUniverse(anyLong())).thenReturn(List.of(rey, usos));
+    view.refreshGridForTest();
+
+    view.searchForTest("rew");
+
+    @SuppressWarnings("unchecked")
+    Grid<Faction> factionGrid = _get(view, Grid.class);
+    List<Faction> items = factionGrid.getListDataView().getItems().toList();
+    assertEquals(1, items.size(), "Only the name-matching faction should remain");
+    assertEquals("Monday Night Rew", items.get(0).getName());
   }
 }
