@@ -30,6 +30,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Dialog for appending a beat to an existing story arc. The beat is saved through the same {@link
@@ -90,7 +91,7 @@ public class AddBeatDialog extends Dialog {
   private List<Wrestler> sortParticipants(List<Wrestler> participants) {
     return participants.stream()
         .sorted(Comparator.comparing(Wrestler::getName))
-        .collect(java.util.stream.Collectors.toList());
+        .collect(Collectors.toList());
   }
 
   private void saveBeat() {
