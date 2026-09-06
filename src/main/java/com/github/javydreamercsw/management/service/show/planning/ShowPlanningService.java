@@ -289,8 +289,11 @@ public class ShowPlanningService {
             .toList();
     dto.setRecentDramaEvents(dramaLines);
 
-    // Inject scripted beat slots so the AI honours pre-planned match types and winner intent
-    dto.setUpcomingScriptedBeats(feudScriptService.getUpcomingBeatDTOsForShow(show));
+    // Inject scripted beat slots so the AI honours pre-planned match types and winner intent.
+    // Beats without an explicit target show (the common case) fall back to the next pending beat
+    // of every active arc — but only when all of the arc's participants are on this roster.
+    Set<Long> rosterIds = allWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
+    dto.setUpcomingScriptedBeats(feudScriptService.getUpcomingBeatDTOsForShow(show, rosterIds));
 
     return dto;
   }

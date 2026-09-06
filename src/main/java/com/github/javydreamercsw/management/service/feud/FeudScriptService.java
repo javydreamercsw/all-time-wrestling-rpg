@@ -34,9 +34,11 @@ import com.github.javydreamercsw.management.service.show.ShowSegmentReservationS
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -75,17 +77,50 @@ public class FeudScriptService {
     return feudScriptRepository.findByFeudAndStatus(feud, FeudScriptStatus.ACTIVE);
   }
 
-  /** Returns pending beats targeting the given show, used to inject into show planning context. */
-  public List<FeudScriptBeat> getUpcomingBeatsForShow(@NonNull Show show) {
+  /**
+   * Returns pending beats to inject into show planning context: beats explicitly targeted at the
+   * show, plus — for beats with no target show (the common case; the wizard has no show picker) —
+   * the next pending beat of every active script whose participants are all on {@code rosterIds}.
+   */
+  @Transactional(readOnly = true)
+  public List<FeudScriptBeat> getUpcomingBeatsForShow(
+      @NonNull Show show, @NonNull Set<Long> rosterIds) {
     if (show.getId() == null) {
       return List.of();
     }
-    return feudScriptBeatRepository.findPendingBeatsForShow(show.getId());
+    List<FeudScriptBeat> beats =
+        new ArrayList<>(feudScriptBeatRepository.findPendingBeatsForShow(show.getId()));
+    Set<Long> present = beats.stream().map(FeudScriptBeat::getId).collect(Collectors.toSet());
+    for (FeudScriptBeat next : feudScriptBeatRepository.findNextPendingBeatPerActiveScript()) {
+      if (present.add(next.getId()) && rosterIds.containsAll(participantIdsOf(next))) {
+        beats.add(next);
+      }
+    }
+    return beats;
+  }
+
+  /** Wrestler IDs the beat's script involves (rivalry pair or active feud members). */
+  private Set<Long> participantIdsOf(@NonNull FeudScriptBeat beat) {
+    FeudScript script = beat.getScript();
+    if (script.getRivalry() != null) {
+      Rivalry rivalry = script.getRivalry();
+      return Set.of(rivalry.getWrestler1().getId(), rivalry.getWrestler2().getId());
+    }
+    if (script.getFeud() != null) {
+      return script.getFeud().getParticipants().stream()
+          .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
+          .map(p -> p.getWrestler().getId())
+          .collect(Collectors.toSet());
+    }
+    return Set.of();
   }
 
   /** Maps pending beats for a show to DTOs suitable for the AI prompt. */
-  public List<FeudScriptBeatDTO> getUpcomingBeatDTOsForShow(@NonNull Show show) {
-    return getUpcomingBeatsForShow(show).stream().map(this::toDTO).collect(Collectors.toList());
+  public List<FeudScriptBeatDTO> getUpcomingBeatDTOsForShow(
+      @NonNull Show show, @NonNull Set<Long> rosterIds) {
+    return getUpcomingBeatsForShow(show, rosterIds).stream()
+        .map(this::toDTO)
+        .collect(Collectors.toList());
   }
 
   /** Returns the beat that produced a given segment, if any (used for UI warnings). */

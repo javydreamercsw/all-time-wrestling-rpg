@@ -29,6 +29,8 @@ import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatRepository
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -39,6 +41,7 @@ import com.github.javydreamercsw.management.service.title.ContenderSelectionServ
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -316,5 +319,102 @@ class FeudScriptServiceTest {
 
     assertThat(service.getDefaultMaxPleAppearances()).isEqualTo(2);
     verify(gameSettingService).getMaxPleFeudAppearances();
+  }
+
+  // ── getUpcomingBeatsForShow fallback (ATW-kpyt) ──────────────────────────
+
+  private Show show(Long id) {
+    Show show = new Show();
+    show.setId(id);
+    return show;
+  }
+
+  private FeudScriptBeat pendingBeat(long id, FeudScript script) {
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setId(id);
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setScript(script);
+    return beat;
+  }
+
+  @Test
+  void getUpcomingBeatsForShow_noTargetShow_fallsBackToNextPendingBeat() {
+    FeudScript script = new FeudScript();
+    script.setName("Lashley Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    Rivalry rivalry = new Rivalry();
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    script.setRivalry(rivalry);
+
+    FeudScriptBeat beat = pendingBeat(10L, script);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of());
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript()).thenReturn(List.of(beat));
+
+    List<FeudScriptBeat> result = service.getUpcomingBeatsForShow(show(5L), Set.of(1L, 2L));
+
+    assertThat(result).containsExactly(beat);
+  }
+
+  @Test
+  void getUpcomingBeatsForShow_participantsNotOnRoster_beatExcluded() {
+    FeudScript script = new FeudScript();
+    script.setName("Inactive Roster Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    Rivalry rivalry = new Rivalry();
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    script.setRivalry(rivalry);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of());
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript())
+        .thenReturn(List.of(pendingBeat(11L, script)));
+
+    List<FeudScriptBeat> result = service.getUpcomingBeatsForShow(show(5L), Set.of(3L, 4L));
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getUpcomingBeatsForShow_showTargetedBeat_takesPrecedenceAndDeduplicates() {
+    FeudScript script = new FeudScript();
+    script.setName("Targeted Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    Rivalry rivalry = new Rivalry();
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    script.setRivalry(rivalry);
+
+    FeudScriptBeat targeted = pendingBeat(20L, script);
+    Show targetShow = show(5L);
+    targeted.setTargetShow(targetShow);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of(targeted));
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript())
+        .thenReturn(List.of(pendingBeat(20L, script)));
+
+    List<FeudScriptBeat> result = service.getUpcomingBeatsForShow(show(5L), Set.of(1L, 2L));
+
+    assertThat(result).containsExactly(targeted);
+  }
+
+  @Test
+  void getUpcomingBeatsForShow_nullShowId_returnsEmpty() {
+    assertThat(service.getUpcomingBeatsForShow(show(null), Set.of())).isEmpty();
+    verifyNoInteractions(feudScriptBeatRepository);
   }
 }
