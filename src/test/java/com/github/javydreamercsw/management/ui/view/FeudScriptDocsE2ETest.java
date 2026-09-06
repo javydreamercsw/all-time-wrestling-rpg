@@ -17,9 +17,12 @@
 package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private RivalryService rivalryService;
   @Autowired private WrestlerRepository wrestlerRepository;
+  @Autowired private FeudScriptService feudScriptService;
 
   /**
    * The docs data initializer does not seed rivalries, so each capture creates (or reuses) one
@@ -100,5 +104,31 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
         "Three-step wizard for scripting a feud arc: select wrestlers, name the arc and choose"
             + " its length, then add ordered beats (match type, stipulation, winner control).",
         "booker-story-arc-wizard");
+  }
+
+  @Test
+  void captureAddBeatToArc() {
+    Rivalry rivalry = ensureRivalry();
+
+    FeudScript script =
+        feudScriptService.createFromWizard(
+            "Docs Add-Beat Arc", List.of(rivalry.getWrestler1(), rivalry.getWrestler2()), 2);
+    FeudScriptBeat opener = new FeudScriptBeat();
+    opener.setSegmentType("Singles Match");
+    feudScriptService.addBeat(script, opener);
+
+    navigateTo("rivalry/" + rivalry.getId());
+
+    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='+ Add Beat']"));
+    clickElement(By.xpath("//vaadin-button[normalize-space()='+ Add Beat']"));
+
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Add Beat — Docs Add-Beat Arc')]"));
+    documentFeature(
+        "Booker",
+        "Add Beat to Story Arc",
+        "Append new beats to an existing story arc after it has been saved. The Add Beat dialog"
+            + " offers the same match type, stipulation, winner control and notes fields as the"
+            + " creation wizard.",
+        "booker-story-arc-add-beat");
   }
 }

@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.view.feud.AddBeatDialog;
 import com.github.javydreamercsw.management.ui.view.feud.FeudScriptWizardDialog;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -160,11 +161,11 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
       H3 arcsHeader = new H3("Story Arcs");
       arcsHeader.addClassNames(LumoUtility.Margin.Top.MEDIUM);
       content.add(arcsHeader);
-      scripts.forEach(script -> content.add(buildScriptCard(script)));
+      scripts.forEach(script -> content.add(buildScriptCard(rivalry, script)));
     }
   }
 
-  private VerticalLayout buildScriptCard(FeudScript script) {
+  private VerticalLayout buildScriptCard(Rivalry rivalry, FeudScript script) {
     VerticalLayout card = new VerticalLayout();
     card.setPadding(true);
     card.setSpacing(true);
@@ -203,7 +204,12 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
           ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
       cancelButton.addClickListener(e -> confirmCancelScript(script));
 
-      header.add(editButton, cancelButton);
+      Button addBeatButton = new Button("+ Add Beat");
+      addBeatButton.addThemeVariants(
+          ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SUCCESS);
+      addBeatButton.addClickListener(e -> openAddBeatDialog(rivalry, script));
+
+      header.add(addBeatButton, editButton, cancelButton);
     }
 
     List<FeudScriptBeat> beats =
@@ -255,6 +261,27 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
 
     card.add(header, beatGrid);
     return card;
+  }
+
+  private void openAddBeatDialog(Rivalry rivalry, FeudScript script) {
+    List<Wrestler> participants = AddBeatDialog.participantsOf(rivalry);
+
+    List<String> typeNames =
+        segmentTypeService.findAll().stream()
+            .map(SegmentType::getName)
+            .sorted()
+            .collect(Collectors.toList());
+
+    List<String> ruleNames =
+        segmentRuleService.findAll().stream()
+            .map(SegmentRule::getName)
+            .sorted()
+            .collect(Collectors.toList());
+
+    AddBeatDialog dialog =
+        new AddBeatDialog(
+            script, participants, typeNames, ruleNames, feudScriptService, this::reload);
+    dialog.open();
   }
 
   private void openEditDialog(FeudScript script) {
