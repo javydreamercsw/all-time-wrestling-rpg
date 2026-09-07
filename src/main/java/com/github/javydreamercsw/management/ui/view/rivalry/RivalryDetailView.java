@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -69,6 +70,7 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
   private final FeudScriptService feudScriptService;
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
+  private final FeudBeatAssistantService feudBeatAssistantService;
   private final SecurityUtils securityUtils;
 
   private final VerticalLayout content = new VerticalLayout();
@@ -80,12 +82,14 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
       @NonNull final FeudScriptService feudScriptService,
       @NonNull final SegmentTypeService segmentTypeService,
       @NonNull final SegmentRuleService segmentRuleService,
+      @NonNull final FeudBeatAssistantService feudBeatAssistantService,
       @NonNull final SecurityUtils securityUtils) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.feudScriptService = feudScriptService;
     this.segmentTypeService = segmentTypeService;
     this.segmentRuleService = segmentRuleService;
+    this.feudBeatAssistantService = feudBeatAssistantService;
     this.securityUtils = securityUtils;
 
     setSizeFull();
@@ -229,6 +233,21 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
         .addColumn(b -> b.getSegmentRule() != null ? b.getSegmentRule() : "—")
         .setHeader("Stipulation")
         .setFlexGrow(1);
+    beatGrid
+        .addColumn(
+            b ->
+                b.getExternalParticipants().isEmpty()
+                    ? "—"
+                    : b.getExternalParticipants().stream()
+                        .map(
+                            p ->
+                                p.getWrestler().getName()
+                                    + " ("
+                                    + p.getRole().getDisplayName()
+                                    + ")")
+                        .collect(Collectors.joining(", ")))
+        .setHeader("External")
+        .setFlexGrow(1);
     beatGrid.addColumn(b -> b.getWinnerControl().name()).setHeader("Winner Control").setFlexGrow(1);
     beatGrid
         .addColumn(b -> b.isCulmination() ? "★ Blowoff" : "")
@@ -280,8 +299,20 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
 
     AddBeatDialog dialog =
         new AddBeatDialog(
-            script, participants, typeNames, ruleNames, feudScriptService, this::reload);
+            script,
+            participants,
+            typeNames,
+            ruleNames,
+            feudScriptService,
+            externalCandidates(),
+            feudBeatAssistantService,
+            this::reload);
     dialog.open();
+  }
+
+  /** Roster eligible for external participation: active/universe-filtered, any wrestler. */
+  private List<Wrestler> externalCandidates() {
+    return wrestlerService.findAllFiltered(null, null, null, null, null);
   }
 
   private void openEditDialog(FeudScript script) {
@@ -410,6 +441,7 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
             ruleNames,
             feudScriptService.getDefaultMaxPleAppearances(),
             feudScriptService,
+            feudBeatAssistantService,
             this::reload);
     dialog.preSelectWrestlers(participants);
     dialog.open();

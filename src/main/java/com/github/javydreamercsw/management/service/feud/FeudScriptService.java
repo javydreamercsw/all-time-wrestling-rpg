@@ -16,8 +16,11 @@
 */
 package com.github.javydreamercsw.management.service.feud;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.feud.FeudParticipant;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatParticipant;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
@@ -27,15 +30,19 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -60,6 +67,7 @@ public class FeudScriptService {
   private final GameSettingService gameSettingService;
   private final UniverseContextService universeContextService;
   private final ContenderSelectionService contenderSelectionService;
+  private final SegmentTypeService segmentTypeService;
 
   // ── Query ────────────────────────────────────────────────────────────────
 
@@ -123,6 +131,11 @@ public class FeudScriptService {
         .collect(Collectors.toList());
   }
 
+  /** Test-visible DTO mapping (toDTO is shared with the show-planning context builder). */
+  FeudScriptBeatDTO toDTOForTest(FeudScriptBeat beat) {
+    return toDTO(beat);
+  }
+
   /** Returns the beat that produced a given segment, if any (used for UI warnings). */
   public Optional<FeudScriptBeat> findBeatForSegment(@NonNull Segment segment) {
     if (segment.getId() == null) {
@@ -182,6 +195,7 @@ public class FeudScriptService {
   public FeudScriptBeat addBeat(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
     validatePleCap(script, beat);
     beat.setScript(script);
+    validateExternals(script, beat);
     beat.setBeatOrder(script.getBeats().size() + 1);
     FeudScriptBeat saved = feudScriptBeatRepository.save(beat);
     script.getBeats().add(saved);
@@ -310,11 +324,16 @@ public class FeudScriptService {
     return feudScriptRepository.save(script);
   }
 
-  /** Removes a beat and renumbers the remaining beats in order. */
+  /**
+   * Removes a beat and renumbers the remaining beats in order. External participant rows go with it
+   * via the {@code ON DELETE CASCADE} FK and {@code orphanRemoval} on the collection — no explicit
+   * cleanup needed here.
+   */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void removeBeat(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
     script.getBeats().remove(beat);
+    feudScriptBeatRepository.delete(beat);
     feudScriptBeatRepository.delete(beat);
     int order = 1;
     for (FeudScriptBeat remaining :
@@ -352,6 +371,82 @@ public class FeudScriptService {
               + script.getName()
               + "'");
     }
+  }
+
+  /**
+   * Validates the beat's external (non-feud) participants: no null wrestler/role, no feud member
+   * doubling as an external, no wrestler on both external roles, and — when intergender matches are
+   * disabled and the beat is not a promo — no external whose gender differs from a feud
+   * participant's. Show-template gender constraints remain the authoritative check at card
+   * validation, because the target show is unknown at beat-creation time.
+   */
+  private void validateExternals(FeudScript script, FeudScriptBeat beat) {
+    Set<Long> feudParticipantIds = participantIdsOf(beat);
+    Set<Long> seen = new HashSet<>();
+    for (FeudScriptBeatParticipant external : beat.getExternalParticipants()) {
+      if (external.getWrestler() == null || external.getWrestler().getId() == null) {
+        throw new IllegalStateException("External participant requires a wrestler");
+      }
+      if (external.getRole() == null) {
+        throw new IllegalStateException(
+            "External participant " + external.getWrestler().getName() + " requires a role");
+      }
+      if (feudParticipantIds.contains(external.getWrestler().getId())) {
+        throw new IllegalStateException(
+            external.getWrestler().getName()
+                + " is part of this arc and cannot be added as an external participant");
+      }
+      if (!seen.add(external.getWrestler().getId())) {
+        throw new IllegalStateException(
+            external.getWrestler().getName() + " cannot be added more than once to the same beat");
+      }
+    }
+    if (beat.getExternalParticipants().isEmpty()
+        || gameSettingService.isIntergenderMatchesEnabled()
+        || isPromoSegmentType(beat.getSegmentType())) {
+      return;
+    }
+    Set<Gender> feudGenders =
+        feudParticipantsOf(beat).stream().map(Wrestler::getGender).collect(Collectors.toSet());
+    if (feudGenders.size() > 1) {
+      throw new IllegalStateException(
+          "Intergender matches are disabled; the arc's participants are mixed-gender");
+    }
+    Gender feudGender = feudGenders.isEmpty() ? null : feudGenders.iterator().next();
+    for (FeudScriptBeatParticipant external : beat.getExternalParticipants()) {
+      if (feudGender != null && external.getWrestler().getGender() != feudGender) {
+        throw new IllegalStateException(
+            "Intergender matches are disabled; "
+                + external.getWrestler().getName()
+                + " cannot face the arc's participants");
+      }
+    }
+  }
+
+  /** True when the segment type name refers to a promo (no physical match, intergender moot). */
+  private boolean isPromoSegmentType(String segmentTypeName) {
+    if (segmentTypeName == null || segmentTypeName.isBlank()) {
+      return false;
+    }
+    return segmentTypeService
+        .findByName(segmentTypeName)
+        .map(type -> WellKnownSegmentType.PROMO.matches(type))
+        .orElseGet(() -> segmentTypeName.toLowerCase().contains("promo"));
+  }
+
+  /** The beat's feud wrestlers (rivalry pair or active feud members); empty when unresolvable. */
+  private List<Wrestler> feudParticipantsOf(FeudScriptBeat beat) {
+    FeudScript script = beat.getScript();
+    if (script.getRivalry() != null) {
+      return List.of(script.getRivalry().getWrestler1(), script.getRivalry().getWrestler2());
+    }
+    if (script.getFeud() != null) {
+      return script.getFeud().getParticipants().stream()
+          .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
+          .map(FeudParticipant::getWrestler)
+          .collect(Collectors.toList());
+    }
+    return List.of();
   }
 
   private Rivalry findOrCreateRivalry(Wrestler w1, Wrestler w2) {
@@ -407,6 +502,34 @@ public class FeudScriptService {
     dto.setParticipantNames(participants);
     dto.setParticipantIds(participantIds);
     dto.setRivalryId(rivalryId);
+
+    // Explicit team layout: feud wrestlers = team 1, external opponent + extras = team 2.
+    List<Wrestler> opponents = beat.getExternalOpponents();
+    List<Wrestler> extras = beat.getExternalExtras();
+    if (!opponents.isEmpty() || !extras.isEmpty()) {
+      List<List<String>> teams = new ArrayList<>();
+      teams.add(
+          Arrays.stream(participants.split(","))
+              .map(String::trim)
+              .filter(s -> !s.isEmpty())
+              .collect(Collectors.toList()));
+      List<List<Long>> teamIds = new ArrayList<>();
+      teamIds.add(new ArrayList<>(participantIds));
+      List<String> team2Names = new ArrayList<>();
+      List<Long> team2Ids = new ArrayList<>();
+      for (FeudScriptBeatParticipant external : beat.getExternalParticipants()) {
+        team2Names.add(external.getWrestler().getName());
+        team2Ids.add(external.getWrestler().getId());
+      }
+      teams.add(team2Names);
+      teamIds.add(team2Ids);
+      dto.setTeams(teams);
+      dto.setTeamIds(teamIds);
+      dto.setExternalSummary(
+          beat.getExternalParticipants().stream()
+              .map(p -> p.getWrestler().getName() + " (" + p.getRole().getDisplayName() + ")")
+              .collect(Collectors.joining(", ")));
+    }
     return dto;
   }
 }

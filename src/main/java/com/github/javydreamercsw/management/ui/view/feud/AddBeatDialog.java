@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -52,6 +53,31 @@ public class AddBeatDialog extends Dialog {
       List<String> segmentRuleNames,
       FeudScriptService feudScriptService,
       Runnable onComplete) {
+    this(
+        script,
+        participants,
+        segmentTypeNames,
+        segmentRuleNames,
+        feudScriptService,
+        List.of(),
+        null,
+        onComplete);
+  }
+
+  /**
+   * Full dialog: {@code externalCandidates} (active roster minus the feud's wrestlers) enables
+   * external opponent/extras selection; {@code opponentAssistant} enables the AI suggestion button
+   * when non-null.
+   */
+  public AddBeatDialog(
+      FeudScript script,
+      List<Wrestler> participants,
+      List<String> segmentTypeNames,
+      List<String> segmentRuleNames,
+      FeudScriptService feudScriptService,
+      List<Wrestler> externalCandidates,
+      FeudBeatAssistantService opponentAssistant,
+      Runnable onComplete) {
     this.script = script;
     this.feudScriptService = feudScriptService;
     this.onComplete = onComplete;
@@ -63,7 +89,14 @@ public class AddBeatDialog extends Dialog {
 
     beatEditor =
         new BeatEditor(
-            sortParticipants(participants), segmentTypeNames, segmentRuleNames, false, null);
+            sortParticipants(participants),
+            segmentTypeNames,
+            segmentRuleNames,
+            externalCandidates != null ? externalCandidates : List.of(),
+            false,
+            null,
+            opponentAssistant);
+    beatEditor.bindScriptContext(script, participants);
 
     Button saveBtn =
         new Button(

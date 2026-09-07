@@ -123,8 +123,8 @@ public class ShowPlanningAiService {
       segment.setRules(List.of(beat.getSegmentRule()));
     }
     segment.setRivalryId(beat.getRivalryId());
-    segment.setTeams(beat.getParticipantNameLists());
-    segment.setTeamIds(beat.getParticipantIdLists());
+    segment.setTeams(beat.getTeamNameLists());
+    segment.setTeamIds(beat.getTeamIdLists());
     if ("BOOKER_PICKS".equals(beat.getWinnerControl())
         && beat.getPlannedWinnerName() != null
         && !beat.getPlannedWinnerName().isBlank()) {
