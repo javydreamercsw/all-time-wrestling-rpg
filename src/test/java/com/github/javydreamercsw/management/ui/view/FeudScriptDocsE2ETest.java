@@ -128,7 +128,8 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
         "Add Beat to Story Arc",
         "Append new beats to an existing story arc after it has been saved. The Add Beat dialog"
             + " offers the same match type, stipulation, winner control and notes fields as the"
-            + " creation wizard.",
+            + " creation wizard, plus external participants — an opponent and run-in extras from"
+            + " outside the feud, with an AI-assisted opponent suggestion.",
         "booker-story-arc-add-beat");
   }
 }
