@@ -16,16 +16,26 @@
 */
 package com.github.javydreamercsw.management.dto.feud;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.jackson.Jacksonized;
 
-/** AI's single opponent suggestion for a story arc beat. */
+/**
+ * AI's single opponent suggestion for a story arc beat. Tolerates extra fields and accepts {@code
+ * "id"} as an alias for {@code wrestlerId} — smaller local models (e.g. llama3.2:1b on the nightly
+ * Ollama run) don't always echo the exact schema. The wrestler id is still validated against the
+ * candidate list server-side.
+ */
 @Data
 @Builder
 @Jacksonized
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AiSuggestedOpponentDTO {
+  @JsonAlias("id")
   private Long wrestlerId;
+
   private String name;
   private String rationale;
 }

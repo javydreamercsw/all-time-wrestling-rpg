@@ -4,19 +4,28 @@ on:
   schedule:
     - cron: '0 3 * * *'  # 3 AM UTC nightly
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run against'
+        required: false
+        default: 'release/2.9.0'
 
 permissions:
   contents: read
 
 jobs:
   ollama-it:
+    # Ollama coverage tracks the release line, not main — main can drift from
+    # what ships. The nightly runs against the active release branch.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || 'release/2.9.0' }}
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
 
@@ -45,7 +54,7 @@ jobs:
           OLLAMA_TIMEOUT_SECONDS: 300
         run: >
           mvn -Pintegration-test verify
-          -Dit.test=OllamaSegmentNarrationServiceIT
+          "-Dit.test=OllamaSegmentNarrationServiceIT,FeudBeatAssistantOllamaIT"
           -Dsurefire.skip=true
           -DrerunFailingTestsCount=2
           --no-transfer-progress

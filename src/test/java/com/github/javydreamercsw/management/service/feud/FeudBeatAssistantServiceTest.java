@@ -190,6 +190,24 @@ class FeudBeatAssistantServiceTest {
   }
 
   @Test
+  void suggestOpponent_idAliasAndUnknownFields_tolerated() {
+    // Smaller local models (llama3.2:1b) echo "id" instead of "wrestlerId" and add extras;
+    // the DTO must tolerate both — candidate validation still guards the id.
+    Wrestler candidate = wrestler(30L, "Randy Orton", Gender.MALE);
+    stubEligibleRoster(candidate);
+    when(injuryService.getAllInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
+    when(aiFactory.generateText(anyString()))
+        .thenReturn(
+            "{\"id\": 30, \"name\": \"Randy Orton\", \"rationale\": \"r\", \"tier\":"
+                + " \"MAIN_EVENTER\"}");
+
+    AiSuggestedOpponentDTO dto =
+        service.suggestOpponent(scriptOf(), feudOf(), "Singles Match", null, null);
+
+    assertThat(dto.getWrestlerId()).isEqualTo(30L);
+  }
+
+  @Test
   void suggestOpponent_intergenderDisabled_filtersCandidatesToFeudGender() {
     Wrestler male = wrestler(30L, "Male Star", Gender.MALE);
     when(aiFactory.getBestAvailableService()).thenReturn(narrationService);
