@@ -38,7 +38,6 @@ import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservation;
-import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
@@ -52,6 +51,7 @@ import com.github.javydreamercsw.management.service.show.ShowSegmentReservationS
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -76,6 +76,7 @@ class FeudScriptServiceTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private ContenderSelectionService contenderSelectionService;
   @Mock private SegmentTypeService segmentTypeService;
+  @Mock private WrestlerService wrestlerService;
 
   @InjectMocks private FeudScriptService service;
 
@@ -789,15 +790,15 @@ class FeudScriptServiceTest {
     script.setMaxPleAppearances(1);
     FeudScriptBeat existing = pendingBeat(10L, script);
     existing.setSegmentType("Singles Match");
+    existing.setTargetShow(pleShow(90L));
     script.getBeats().add(existing);
 
     FeudScriptBeat other = pendingBeat(11L, script);
-    other.setTargetShow(pleShow(90L));
+    other.setTargetShow(pleShow(91L));
     script.getBeats().add(other);
 
     FeudScriptBeat edited = new FeudScriptBeat();
     edited.setSegmentType("Singles Match");
-    edited.setTargetShow(pleShow(91L));
 
     assertThatThrownBy(() -> service.updateBeat(script, existing, edited))
         .isInstanceOf(IllegalStateException.class)
@@ -826,106 +827,7 @@ class FeudScriptServiceTest {
   }
 
   @Test
-  void updateBeat_pleToNonPle_cancelsReservation() {
-    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
-    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
-    FeudScript script = rivalryScript(rivalry(w1, w2));
-    FeudScriptBeat existing = pendingBeat(10L, script);
-    existing.setSegmentType("Singles Match");
-    existing.setTargetShow(pleShow(90L));
-    ShowSegmentReservation reservation = new ShowSegmentReservation();
-    existing.setReservation(reservation);
-    script.getBeats().add(existing);
-
-    FeudScriptBeat edited = new FeudScriptBeat();
-    edited.setSegmentType("Singles Match");
-    edited.setScript(script);
-    when(feudScriptBeatRepository.save(existing)).thenReturn(existing);
-
-    service.updateBeat(script, existing, edited);
-
-    verify(reservationService).cancelReservation(reservation);
-    assertThat(existing.getReservation()).isNull();
-    verify(reservationService, never()).reserveSlot(any(), any(), any(), any());
-  }
-
-  @Test
-  void updateBeat_nonPleToPle_reservesSlot() {
-    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
-    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
-    FeudScript script = rivalryScript(rivalry(w1, w2));
-    script.setId(5L);
-    FeudScriptBeat existing = pendingBeat(10L, script);
-    existing.setSegmentType("Singles Match");
-    script.getBeats().add(existing);
-
-    Show ple = pleShow(90L);
-    FeudScriptBeat edited = new FeudScriptBeat();
-    edited.setSegmentType("Ladder Match");
-    edited.setTargetShow(ple);
-    edited.setScript(script);
-    when(feudScriptBeatRepository.save(existing)).thenReturn(existing);
-    when(reservationService.reserveSlot(
-            ple,
-            ShowSegmentReservationPurpose.FEUD_BLOWOFF,
-            script.getId(),
-            "External Arc — Ladder Match"))
-        .thenReturn(new ShowSegmentReservation());
-
-    service.updateBeat(script, existing, edited);
-
-    verify(reservationService)
-        .reserveSlot(
-            ple,
-            ShowSegmentReservationPurpose.FEUD_BLOWOFF,
-            script.getId(),
-            "External Arc — Ladder Match");
-    assertThat(existing.getReservation()).isNotNull();
-    verify(reservationService, never()).cancelReservation(any());
-  }
-
-  @Test
-  void updateBeat_pleToDifferentPle_replacesReservation() {
-    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
-    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
-    FeudScript script = rivalryScript(rivalry(w1, w2));
-    script.setId(5L);
-    FeudScriptBeat existing = pendingBeat(10L, script);
-    existing.setSegmentType("Singles Match");
-    Show oldPle = pleShow(90L);
-    existing.setTargetShow(oldPle);
-    ShowSegmentReservation oldReservation = new ShowSegmentReservation();
-    existing.setReservation(oldReservation);
-    script.getBeats().add(existing);
-
-    Show newPle = pleShow(91L);
-    FeudScriptBeat edited = new FeudScriptBeat();
-    edited.setSegmentType("Ladder Match");
-    edited.setTargetShow(newPle);
-    edited.setScript(script);
-    when(feudScriptBeatRepository.save(existing)).thenReturn(existing);
-    when(reservationService.reserveSlot(
-            newPle,
-            ShowSegmentReservationPurpose.FEUD_BLOWOFF,
-            script.getId(),
-            "External Arc — Ladder Match"))
-        .thenReturn(new ShowSegmentReservation());
-
-    service.updateBeat(script, existing, edited);
-
-    verify(reservationService).cancelReservation(oldReservation);
-    verify(reservationService)
-        .reserveSlot(
-            newPle,
-            ShowSegmentReservationPurpose.FEUD_BLOWOFF,
-            script.getId(),
-            "External Arc — Ladder Match");
-    assertThat(existing.getReservation()).isNotNull();
-    assertThat(existing.getReservation()).isNotEqualTo(oldReservation);
-  }
-
-  @Test
-  void updateBeat_samePleShow_keepsReservation() {
+  void updateBeat_pleTargetedBeat_preservesShowAndReservation() {
     Wrestler w1 = wrestlerWith(1L, Gender.MALE);
     Wrestler w2 = wrestlerWith(2L, Gender.MALE);
     FeudScript script = rivalryScript(rivalry(w1, w2));
@@ -939,15 +841,64 @@ class FeudScriptServiceTest {
 
     FeudScriptBeat edited = new FeudScriptBeat();
     edited.setSegmentType("Ladder Match");
-    edited.setTargetShow(ple);
     edited.setScript(script);
+    when(feudScriptBeatRepository.save(existing)).thenReturn(existing);
+
+    FeudScriptBeat saved = service.updateBeat(script, existing, edited);
+
+    // The beat editor has no show picker: the target show and its PLE reservation are untouched.
+    assertThat(saved.getTargetShow()).isSameAs(ple);
+    assertThat(saved.getReservation()).isSameAs(reservation);
+    verify(reservationService, never()).cancelReservation(any());
+    verify(reservationService, never()).reserveSlot(any(), any(), any(), any());
+  }
+
+  @Test
+  void updateBeat_detachedScript_reloadsById() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript detached = rivalryScript(rivalry(w1, w2));
+    detached.setId(5L);
+    FeudScript managed = rivalryScript(rivalry(w1, w2));
+    managed.setId(5L);
+    when(feudScriptRepository.findById(5L)).thenReturn(Optional.of(managed));
+    FeudScriptBeat existing = pendingBeat(10L, managed);
+    existing.setSegmentType("Singles Match");
+    managed.getBeats().add(existing);
+
+    FeudScriptBeat edited = new FeudScriptBeat();
+    edited.setSegmentType("Promo");
+    edited.setScript(detached);
+    when(feudScriptBeatRepository.save(existing)).thenReturn(existing);
+
+    service.updateBeat(detached, existing, edited);
+
+    verify(feudScriptRepository).findById(5L);
+  }
+
+  @Test
+  void updateBeat_externalWrestler_resolvedById() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat existing = pendingBeat(10L, script);
+    existing.setSegmentType("Singles Match");
+    script.getBeats().add(existing);
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+
+    Wrestler detachedExternal = wrestlerWith(30L, Gender.MALE);
+    detachedExternal.setName("Randy Orton");
+    FeudScriptBeat edited = new FeudScriptBeat();
+    edited.setSegmentType("Singles Match");
+    edited.addExternalParticipant(detachedExternal, FeudBeatParticipantRole.OPPONENT);
+    edited.setScript(script);
+    when(wrestlerService.findById(30L)).thenReturn(Optional.of(detachedExternal));
     when(feudScriptBeatRepository.save(existing)).thenReturn(existing);
 
     service.updateBeat(script, existing, edited);
 
-    verify(reservationService, never()).cancelReservation(any());
-    verify(reservationService, never()).reserveSlot(any(), any(), any(), any());
-    assertThat(existing.getReservation()).isSameAs(reservation);
+    verify(wrestlerService).findById(30L);
+    assertThat(existing.getExternalOpponents()).containsExactly(detachedExternal);
   }
 
   private Show pleShow(long id) {

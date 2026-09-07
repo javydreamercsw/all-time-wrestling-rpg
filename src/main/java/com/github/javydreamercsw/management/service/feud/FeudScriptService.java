@@ -39,12 +39,12 @@ import com.github.javydreamercsw.management.service.show.ShowSegmentReservationS
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,6 +69,7 @@ public class FeudScriptService {
   private final UniverseContextService universeContextService;
   private final ContenderSelectionService contenderSelectionService;
   private final SegmentTypeService segmentTypeService;
+  private final WrestlerService wrestlerService;
 
   // ── Query ────────────────────────────────────────────────────────────────
 
@@ -194,6 +195,7 @@ public class FeudScriptService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')"
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public FeudScriptBeat addBeat(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
+    script = reattachScript(script);
     validatePleCap(script, beat);
     beat.setScript(script);
     validateExternals(script, beat);
@@ -327,11 +329,15 @@ public class FeudScriptService {
 
   /**
    * Updates a PENDING beat's editable fields (match type, stipulation, winner control, planned
-   * winner, culmination, notes, external participants, target show) from {@code edited}. Only
-   * pending beats may be edited — completed/skipped beats are immutable history. Re-runs the same
-   * validation as creation (PLE cap excluding this beat, external participant rules) and syncs the
-   * PLE reservation when the target show changed: cancels the old FEUD_BLOWOFF reservation and
-   * creates one on the new PLE show.
+   * winner, culmination, notes, external participants) from {@code edited}. Only pending beats may
+   * be edited — completed/skipped beats are immutable history. Re-runs creation-time external
+   * participant validation and the PLE appearance cap (relevant when the cap was lowered after the
+   * beat was created). The target show and its PLE reservation are preserved: the beat editor has
+   * no show picker, so an edit never moves a beat between shows.
+   *
+   * <p>UI dialogs hold entities detached from the render request's session; the script, existing
+   * beat and every wrestler reference are re-attached by id so LAZY associations resolve inside
+   * this transaction instead of throwing {@code no session}.
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -339,77 +345,62 @@ public class FeudScriptService {
       @NonNull FeudScript script,
       @NonNull FeudScriptBeat existing,
       @NonNull FeudScriptBeat edited) {
-    if (existing.getBeatStatus() != FeudScriptBeatStatus.PENDING) {
+    script = reattachScript(script);
+    FeudScriptBeat managed =
+        existing.getId() == null
+            ? existing
+            : feudScriptBeatRepository.findById(existing.getId()).orElse(existing);
+    if (managed.getBeatStatus() != FeudScriptBeatStatus.PENDING) {
       throw new IllegalStateException(
           "Only pending beats can be edited (beat #"
-              + existing.getBeatOrder()
+              + managed.getBeatOrder()
               + " is "
-              + existing.getBeatStatus()
+              + managed.getBeatStatus()
               + ")");
     }
+    // The beat editor has no target-show picker: an edit never moves the beat to another
+    // show, so preserve the persisted assignment (and its reservation linkage) as-is.
+    edited.setTargetShow(managed.getTargetShow());
+    edited.setPlannedWinner(reattachWrestler(edited.getPlannedWinner()));
+    for (FeudScriptBeatParticipant external : edited.getExternalParticipants()) {
+      external.setWrestler(reattachWrestler(external.getWrestler()));
+    }
+
     edited.setScript(script);
     validateExternals(script, edited);
-    validatePleCapExcluding(script, edited, existing);
+    validatePleCapExcluding(script, edited, managed);
 
-    boolean oldWasPle =
-        existing.getTargetShow() != null && existing.getTargetShow().isPremiumLiveEvent();
-    boolean newIsPle =
-        edited.getTargetShow() != null && edited.getTargetShow().isPremiumLiveEvent();
-    // Captured before the field copy below overwrites existing's target show.
-    boolean movedShow = showChanged(existing, edited);
-
-    existing.setSegmentType(edited.getSegmentType());
-    existing.setSegmentRule(edited.getSegmentRule());
-    existing.setWinnerControl(edited.getWinnerControl());
-    existing.setPlannedWinner(edited.getPlannedWinner());
-    existing.setCulmination(edited.isCulmination());
-    existing.setNotes(edited.getNotes());
-    existing.setTargetShow(edited.getTargetShow());
+    managed.setSegmentType(edited.getSegmentType());
+    managed.setSegmentRule(edited.getSegmentRule());
+    managed.setWinnerControl(edited.getWinnerControl());
+    managed.setPlannedWinner(edited.getPlannedWinner());
+    managed.setCulmination(edited.isCulmination());
+    managed.setNotes(edited.getNotes());
 
     // Replace external participants wholesale (upsert + removal via orphanRemoval).
-    existing.getExternalParticipants().clear();
+    managed.getExternalParticipants().clear();
     for (FeudScriptBeatParticipant external : edited.getExternalParticipants()) {
-      existing.addExternalParticipant(external.getWrestler(), external.getRole());
+      managed.addExternalParticipant(external.getWrestler(), external.getRole());
     }
 
-    // Keep the reservation in sync with the target show.
-    if (oldWasPle && (!newIsPle || movedShow)) {
-      if (existing.getReservation() != null) {
-        reservationService.cancelReservation(existing.getReservation());
-        existing.setReservation(null);
-      }
-    }
-    if (newIsPle && (existing.getReservation() == null || movedShow)) {
-      String label = script.getName() + " — " + existing.getSegmentType();
-      var reservation =
-          reservationService.reserveSlot(
-              existing.getTargetShow(),
-              ShowSegmentReservationPurpose.FEUD_BLOWOFF,
-              script.getId(),
-              label);
-      existing.setReservation(reservation);
-    }
-
-    FeudScriptBeat saved = feudScriptBeatRepository.save(existing);
+    FeudScriptBeat saved = feudScriptBeatRepository.save(managed);
     log.info("Updated beat #{} of arc '{}'", saved.getBeatOrder(), script.getName());
     return saved;
-  }
-
-  /** True when the two beats point at different target shows (by id). */
-  private boolean showChanged(FeudScriptBeat a, FeudScriptBeat b) {
-    return !Objects.equals(
-        a.getTargetShow() == null ? null : a.getTargetShow().getId(),
-        b.getTargetShow() == null ? null : b.getTargetShow().getId());
   }
 
   /**
    * Removes a beat and renumbers the remaining beats in order. External participant rows go with it
    * via the {@code ON DELETE CASCADE} FK and {@code orphanRemoval} on the collection; the PLE
-   * reservation, if any, is cancelled so the show's auto-booked segment count recovers.
+   * reservation, if any, is cancelled so the show's auto-booked segment count recovers. UI-supplied
+   * script and beat are re-attached by id first (they arrive detached; see {@link #updateBeat}).
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void removeBeat(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
+    script = reattachScript(script);
+    if (beat.getId() != null) {
+      beat = feudScriptBeatRepository.findById(beat.getId()).orElse(beat);
+    }
     if (beat.getReservation() != null) {
       reservationService.cancelReservation(beat.getReservation());
       beat.setReservation(null);
@@ -435,6 +426,27 @@ public class FeudScriptService {
   }
 
   // ── Internal helpers ─────────────────────────────────────────────────────
+
+  /**
+   * Re-attaches a UI-supplied (detached) script to the current transaction. {@code open-in-view} is
+   * off, so a {@link FeudScript} held by a Vaadin dialog carries LAZY proxies (rivalry, feud) bound
+   * to the closed render-request session; touching them throws {@code no session}. Reloading by id
+   * returns a managed instance with fresh proxies. Falls back to the argument when it is transient
+   * (unit tests) or already managed.
+   */
+  private FeudScript reattachScript(FeudScript script) {
+    return script.getId() == null
+        ? script
+        : feudScriptRepository.findById(script.getId()).orElse(script);
+  }
+
+  /** Wrestler variant of {@link #reattachScript}: resolves a detached wrestler by id. */
+  private Wrestler reattachWrestler(Wrestler wrestler) {
+    if (wrestler == null || wrestler.getId() == null) {
+      return wrestler;
+    }
+    return wrestlerService.findById(wrestler.getId()).orElse(wrestler);
+  }
 
   private void validatePleCap(FeudScript script, FeudScriptBeat newBeat) {
     if (newBeat.getTargetShow() == null || !newBeat.getTargetShow().isPremiumLiveEvent()) {

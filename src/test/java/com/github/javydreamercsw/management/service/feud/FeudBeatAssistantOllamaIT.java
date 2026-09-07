@@ -29,6 +29,7 @@ import com.github.javydreamercsw.base.ai.ollama.OllamaSegmentNarrationService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -115,6 +116,7 @@ class FeudBeatAssistantOllamaIT {
         new FeudBeatAssistantService(
             factory,
             new ObjectMapper(),
+            mock(FeudScriptRepository.class),
             wrestlerService,
             gameSettingService,
             injuryService,

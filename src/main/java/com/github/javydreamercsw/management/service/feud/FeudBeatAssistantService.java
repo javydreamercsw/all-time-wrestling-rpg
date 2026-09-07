@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.dto.feud.AiSuggestedOpponentDTO;
@@ -67,6 +68,7 @@ public class FeudBeatAssistantService {
 
   private final SegmentNarrationServiceFactory aiFactory;
   private final ObjectMapper objectMapper;
+  private final FeudScriptRepository feudScriptRepository;
   private final WrestlerService wrestlerService;
   private final GameSettingService gameSettingService;
   private final InjuryService injuryService;
@@ -96,6 +98,11 @@ public class FeudBeatAssistantService {
       String notes) {
     if (aiFactory.getBestAvailableService() == null) {
       throw new IllegalStateException("No AI providers available");
+    }
+    // UI dialogs hand over a script detached from the render request's session; reload so the
+    // LAZY rivalry/feud proxies resolve inside this transaction instead of throwing no-session.
+    if (script.getId() != null) {
+      script = feudScriptRepository.findById(script.getId()).orElse(script);
     }
 
     Set<Long> feudIds = feudParticipants.stream().map(Wrestler::getId).collect(Collectors.toSet());

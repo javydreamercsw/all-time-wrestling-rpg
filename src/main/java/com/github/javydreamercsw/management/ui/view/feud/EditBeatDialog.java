@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * Dialog for editing an existing PENDING story arc beat. Reuses {@link BeatEditor} pre-filled via
  * {@link BeatEditor#setBeat(FeudScriptBeat, List)} so the edit widgets can never drift from the
  * creation widgets; saves through {@link FeudScriptService#updateBeat}, which re-runs the same
- * validation as creation and keeps the PLE reservation in sync when the target show changes.
+ * validation as creation and preserves the beat's target show and PLE reservation.
  */
 public class EditBeatDialog extends Dialog {
 

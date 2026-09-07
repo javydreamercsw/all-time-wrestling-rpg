@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -53,6 +54,7 @@ import org.mockito.quality.Strictness;
 class FeudBeatAssistantServiceTest {
 
   @Mock private SegmentNarrationServiceFactory aiFactory;
+  @Mock private FeudScriptRepository feudScriptRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private GameSettingService gameSettingService;
   @Mock private InjuryService injuryService;
@@ -72,6 +74,7 @@ class FeudBeatAssistantServiceTest {
         new FeudBeatAssistantService(
             aiFactory,
             new ObjectMapper(), // real mapper — parses the AI JSON response
+            feudScriptRepository,
             wrestlerService,
             gameSettingService,
             injuryService,
