@@ -387,17 +387,26 @@ public class FeudScriptService {
 
     FeudScript script = beat.getScript();
     String participants = "";
+    List<Long> participantIds = List.of();
+    Long rivalryId = null;
     if (script.getRivalry() != null) {
       Rivalry r = script.getRivalry();
       participants = r.getWrestler1().getName() + " vs " + r.getWrestler2().getName();
+      participantIds = List.of(r.getWrestler1().getId(), r.getWrestler2().getId());
+      rivalryId = r.getId();
     } else if (script.getFeud() != null) {
-      participants =
+      List<Wrestler> activeMembers =
           script.getFeud().getParticipants().stream()
               .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
-              .map(p -> p.getWrestler().getName())
-              .collect(Collectors.joining(", "));
+              .map(p -> p.getWrestler())
+              .collect(Collectors.toList());
+      participants =
+          activeMembers.stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+      participantIds = activeMembers.stream().map(Wrestler::getId).collect(Collectors.toList());
     }
     dto.setParticipantNames(participants);
+    dto.setParticipantIds(participantIds);
+    dto.setRivalryId(rivalryId);
     return dto;
   }
 }

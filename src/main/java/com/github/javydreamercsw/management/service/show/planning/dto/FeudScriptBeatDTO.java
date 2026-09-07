@@ -16,6 +16,9 @@
 */
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Data;
 
 /** Compact representation of a FeudScriptBeat for use in show-planning AI prompts. */
@@ -31,6 +34,38 @@ public class FeudScriptBeatDTO {
   private boolean culmination;
   private String notes;
   private String participantNames;
+  private List<Long> participantIds;
+
+  /** Rivalry Id of the arc (null for multi-wrestler feuds) — carried onto the segment. */
+  private Long rivalryId;
+
+  /** Participants as one team per wrestler, for locally-built beat segments. */
+  public List<List<String>> getParticipantNameLists() {
+    if (participantNames == null || participantNames.isBlank()) {
+      return List.of();
+    }
+    return Arrays.stream(participantNames.split(","))
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .map(List::of)
+        .collect(Collectors.toList());
+  }
+
+  /** Wrestler IDs of the beat's participants, mirroring {@link #getParticipantNameLists()}. */
+  public List<List<Long>> getParticipantIdLists() {
+    if (participantIds == null) {
+      return List.of();
+    }
+    return participantIds.stream().map(List::of).collect(Collectors.toList());
+  }
+
+  /** Active participant wrestler IDs, flattened. */
+  public List<Long> getParticipantIds() {
+    if (participantIds == null) {
+      return List.of();
+    }
+    return participantIds;
+  }
 
   /** Returns a one-line AI instruction for the prompt builder. */
   public String toAiInstruction() {

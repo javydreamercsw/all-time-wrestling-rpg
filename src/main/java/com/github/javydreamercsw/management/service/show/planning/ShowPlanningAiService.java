@@ -19,12 +19,17 @@ package com.github.javydreamercsw.management.service.show.planning;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +66,100 @@ public class ShowPlanningAiService {
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public ProposedShow planShow(@NonNull final ShowPlanningContextDTO context) {
+    ProposedShow proposedShow = planShowWithAi(context);
+    applyScriptedBeats(proposedShow, context);
+    return proposedShow;
+  }
+
+  /**
+   * Deterministically enforces the booker-mandated scripted beats on the AI-proposed card: any AI
+   * match segment covering a beat's participants is removed and replaced by a locally-built segment
+   * from the beat (exact match type, stipulation, winner control). The AI still books the rest of
+   * the card around the slots. Prompt-side instructions remain as a hint, but this pass no longer
+   * trusts the AI to honor them.
+   */
+  private void applyScriptedBeats(ProposedShow proposedShow, ShowPlanningContextDTO context) {
+    List<FeudScriptBeatDTO> beats = context.getUpcomingScriptedBeats();
+    if (beats == null || beats.isEmpty()) {
+      return;
+    }
+    List<ProposedSegment> segments = proposedShow.getSegments();
+
+    // Drop AI match segments that cover a scripted slot (by participant overlap), so the beat
+    // segment replaces them rather than duplicating the rivalry on the card.
+    for (FeudScriptBeatDTO beat : beats) {
+      Set<Long> beatIds = participantIdsOf(beat);
+      if (beatIds.isEmpty()) {
+        continue;
+      }
+      segments.removeIf(
+          segment -> isMatchSegment(segment) && coversAnyParticipant(segment, beatIds));
+    }
+
+    // Insert locally-built beat segments ahead of the AI's card.
+    List<ProposedSegment> beatSegments = new ArrayList<>();
+    for (FeudScriptBeatDTO beat : beats) {
+      ProposedSegment beatSegment = buildBeatSegment(beat);
+      if (beatSegment != null) {
+        beatSegments.add(beatSegment);
+      }
+    }
+    beatSegments.addAll(segments);
+    proposedShow.setSegments(beatSegments);
+    log.info(
+        "Applied {} scripted beat(s) deterministically; card now has {} segments",
+        beatSegments.size() - segments.size(),
+        beatSegments.size());
+  }
+
+  /** Builds a ProposedSegment straight from the beat definition; null when unusable. */
+  private ProposedSegment buildBeatSegment(FeudScriptBeatDTO beat) {
+    if (beat.getSegmentType() == null || beat.getSegmentType().isBlank()) {
+      return null;
+    }
+    ProposedSegment segment = new ProposedSegment();
+    segment.setType(beat.getSegmentType());
+    if (beat.getSegmentRule() != null && !beat.getSegmentRule().isBlank()) {
+      segment.setRules(List.of(beat.getSegmentRule()));
+    }
+    segment.setRivalryId(beat.getRivalryId());
+    segment.setTeams(beat.getParticipantNameLists());
+    segment.setTeamIds(beat.getParticipantIdLists());
+    if ("BOOKER_PICKS".equals(beat.getWinnerControl())
+        && beat.getPlannedWinnerName() != null
+        && !beat.getPlannedWinnerName().isBlank()) {
+      segment.setWinners(List.of(beat.getPlannedWinnerName()));
+    }
+    if (beat.getNotes() != null && !beat.getNotes().isBlank()) {
+      segment.setNotes(beat.getNotes());
+    }
+    return segment;
+  }
+
+  private boolean isMatchSegment(ProposedSegment segment) {
+    if (segment.getType() == null) {
+      return false;
+    }
+    return segmentTypeService
+        .findByName(segment.getType())
+        .map(type -> !WellKnownSegmentType.PROMO.matches(type))
+        .orElseGet(() -> !segment.getType().toLowerCase().contains("promo"));
+  }
+
+  private boolean coversAnyParticipant(ProposedSegment segment, Set<Long> beatIds) {
+    return segment.getTeamIds() != null
+        && segment.getTeamIds().stream().flatMap(List::stream).anyMatch(beatIds::contains);
+  }
+
+  private Set<Long> participantIdsOf(FeudScriptBeatDTO beat) {
+    Set<Long> ids = new HashSet<>();
+    if (beat.getParticipantIdLists() != null) {
+      beat.getParticipantIdLists().stream().flatMap(List::stream).forEach(ids::add);
+    }
+    return ids;
+  }
+
+  private ProposedShow planShowWithAi(@NonNull final ShowPlanningContextDTO context) {
     if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");
       return new ProposedShow();
