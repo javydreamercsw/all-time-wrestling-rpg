@@ -22,6 +22,7 @@ jobs:
       branches: ${{ steps.list.outputs.branches }}
     steps:
       - name: List release branches
+        id: list
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
