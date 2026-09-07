@@ -46,18 +46,16 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
 
+      # No caches in this workflow (neither setup-java's maven cache nor
+      # actions/cache): this job checks out arbitrary release branches in a
+      # default-branch (schedule/dispatch) context, and any cache saved from
+      # untrusted code is the cache-poisoning vector CodeQL flags
+      # (actions/cache-poisoning/poisonable-step). Cold Maven downloads add a
+      # couple of minutes to a nightly job — an acceptable price.
       - uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Cache Ollama models
-        uses: actions/cache@v5
-        with:
-          path: ~/.ollama/models
-          key: ollama-models-llama3.2-1b
-          restore-keys: ollama-models-
 
       - name: Install Ollama
         run: curl -fsSL https://ollama.ai/install.sh | sh
