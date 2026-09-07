@@ -6,22 +6,44 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to run against'
+        description: 'Single release/* branch to run against (empty = all release/* branches)'
         required: false
-        default: 'release/2.9.0'
+        default: ''
 
 permissions:
   contents: read
 
 jobs:
-  ollama-it:
-    # Ollama coverage tracks the release line, not main — main can drift from
-    # what ships. The nightly runs against the active release branch.
+  # Discover every release/* branch (release-line coverage tracks what ships,
+  # not main). A manual dispatch may pin one branch instead.
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.list.outputs.branches }}
+    steps:
+      - name: List release branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "${{ github.event.inputs.branch }}" ]; then
+            branches='["${{ github.event.inputs.branch }}"]'
+          else
+            branches=$(gh api repos/${{ github.repository }}/branches --paginate \
+              --jq '[.[] | .name | select(startswith("release/"))] | unique')
+          fi
+          echo "branches=$branches" >> "$GITHUB_OUTPUT"
+
+  ollama-it:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJson(needs.discover.outputs.branches) }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || 'release/2.9.0' }}
+          ref: ${{ matrix.branch }}
 
       - uses: actions/setup-java@v4
         with:
