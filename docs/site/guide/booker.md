@@ -92,7 +92,7 @@ Three-step wizard for scripting a feud arc: select wrestlers, name the arc and c
 
 ## Rivalry Detail
 
-View rivalry details including heat, storyline notes, and dates. Use the Story Arc button to script a multi-beat feud arc for this rivalry.
+View rivalry details including heat, storyline notes, and dates. Use the Story Arc button to script a multi-beat feud arc for this rivalry. Pending beats on an arc can be edited (✎) or removed (✕) after creation — completed and skipped beats are locked as history.
 
 ![Rivalry Detail](/screenshots/booker-rivalry-detail.png)
 

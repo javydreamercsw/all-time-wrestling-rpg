@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.feud.AddBeatDialog;
+import com.github.javydreamercsw.management.ui.view.feud.EditBeatDialog;
 import com.github.javydreamercsw.management.ui.view.feud.FeudScriptWizardDialog;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -261,17 +262,30 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
           .addComponentColumn(
               beat -> {
                 if (beat.getBeatStatus() == FeudScriptBeatStatus.PENDING) {
+                  HorizontalLayout actions = new HorizontalLayout();
+                  actions.setSpacing(false);
+                  actions.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+
+                  Button editBtn = new Button("✎");
+                  editBtn.addThemeVariants(
+                      ButtonVariant.LUMO_SMALL,
+                      ButtonVariant.LUMO_TERTIARY,
+                      ButtonVariant.LUMO_CONTRAST);
+                  editBtn.addClickListener(e -> openEditBeatDialog(rivalry, script, beat));
+                  actions.add(editBtn);
+
                   Button removeBtn = new Button("✕");
                   removeBtn.addThemeVariants(
                       ButtonVariant.LUMO_SMALL,
                       ButtonVariant.LUMO_TERTIARY,
                       ButtonVariant.LUMO_ERROR);
                   removeBtn.addClickListener(e -> confirmRemoveBeat(script, beat));
-                  return removeBtn;
+                  actions.add(removeBtn);
+                  return actions;
                 }
                 return new Span();
               })
-          .setWidth("4em")
+          .setWidth("6em")
           .setFlexGrow(0);
     }
 
@@ -313,6 +327,35 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
   /** Roster eligible for external participation: active/universe-filtered, any wrestler. */
   private List<Wrestler> externalCandidates() {
     return wrestlerService.findAllFiltered(null, null, null, null, null);
+  }
+
+  private void openEditBeatDialog(Rivalry rivalry, FeudScript script, FeudScriptBeat beat) {
+    List<Wrestler> participants = AddBeatDialog.participantsOf(rivalry);
+
+    List<String> typeNames =
+        segmentTypeService.findAll().stream()
+            .map(SegmentType::getName)
+            .sorted()
+            .collect(Collectors.toList());
+
+    List<String> ruleNames =
+        segmentRuleService.findAll().stream()
+            .map(SegmentRule::getName)
+            .sorted()
+            .collect(Collectors.toList());
+
+    EditBeatDialog dialog =
+        new EditBeatDialog(
+            script,
+            beat,
+            participants,
+            typeNames,
+            ruleNames,
+            feudScriptService,
+            externalCandidates(),
+            feudBeatAssistantService,
+            this::reload);
+    dialog.open();
   }
 
   private void openEditDialog(FeudScript script) {
